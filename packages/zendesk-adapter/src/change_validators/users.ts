@@ -44,7 +44,7 @@ type userPathAndInstance = { user: string; userPath: ElemID; instance: InstanceE
 const MISSING_USERS_DOC_LINK = 'https://help.salto.io/en/articles/6955302-element-references-users-which-don-t-exist-in-target-environment-zendesk'
 const MISSING_USERS_ERROR_MSG = 'Instance references users which don\'t exist in target environment'
 
-export const getDefaultMissingUsersError = (
+const getDefaultMissingUsersError = (
   instance: InstanceElement,
   missingUsers: string[],
 ): ChangeError => ({
@@ -54,7 +54,7 @@ export const getDefaultMissingUsersError = (
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIn order to deploy this instance, add these users to your target environment, edit this instance to use valid usernames, or set the target environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 
-export const getMissingUsersChangeWarning = (
+const getMissingUsersChangeWarning = (
   instance: InstanceElement,
   missingUsers: string[],
   userFallbackValue: string
@@ -65,7 +65,7 @@ export const getMissingUsersChangeWarning = (
   detailedMessage: `The following users are referenced by this instance, but do not exist in the target environment: ${missingUsers.join(', ')}.\nIf you continue, they will be set to ${userFallbackValue} according to the environment's user fallback options.\nLearn more: ${MISSING_USERS_DOC_LINK}`,
 })
 
-export const getFallbackUserIsMissingError = (
+const getFallbackUserIsMissingError = (
   instance: InstanceElement,
   missingUsers: string[],
   userFallbackValue: string
@@ -81,7 +81,7 @@ const handleNonExistingUsers = async ({ missingUserFallback, existingUsersEmails
     existingUsersEmails: Set<string>
     client: ZendeskClient
     nonExistingUsersPaths: userPathAndInstance[]
-}): Promise<{ defaultUserPaths?: userPathAndInstance[]; notExistingUsersErrors?: ChangeError[] }> => {
+}): Promise<{ defaultUserPaths: userPathAndInstance[]; notExistingUsersErrors: ChangeError[] }> => {
   // Group each instance with its missing users, to create one error per instance
   const instancesAndUsers = Object.values(
     _.groupBy(nonExistingUsersPaths, pathInstance => pathInstance.instance.elemID.getFullName())
@@ -91,23 +91,25 @@ const handleNonExistingUsers = async ({ missingUserFallback, existingUsersEmails
     const fallbackValue = await getUserFallbackValue(missingUserFallback, existingUsersEmails, client)
     if (fallbackValue !== undefined) {
       // Warn about users that do not exist because they will be replaced by the fallback user
-      // return the paths with, now with the fallback user that is going to be used
+      // Return the users paths that were received, with the fallback user instead of the missing user
       return {
         notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
           getMissingUsersChangeWarning(instanceAndUsers.instance, instanceAndUsers.users, fallbackValue)),
         defaultUserPaths: nonExistingUsersPaths.map(path => ({ ...path, user: fallbackValue })),
       }
     }
-    // Error about users that do not exist because the chosen fallback user is missing
+    // Error about users that do not exist because we could not get fallback user value
     return {
       notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
         getFallbackUserIsMissingError(instanceAndUsers.instance, instanceAndUsers.users, missingUserFallback)),
+      defaultUserPaths: [],
     }
   }
   // Error about users that do not exist because no fallback user was provided
   return {
     notExistingUsersErrors: instancesAndUsers.map(instanceAndUsers =>
       getDefaultMissingUsersError(instanceAndUsers.instance, instanceAndUsers.users)),
+    defaultUserPaths: [],
   }
 }
 
@@ -118,8 +120,8 @@ const handleExistingUsers = ({ existingUsersPaths, customRolesById, usersByEmail
 }): ChangeError[] => {
   const pathsWithoutPermissions = existingUsersPaths.filter(({ user, userPath, instance }) => {
     // The field is in the same nesting as the user value
-    const fieldPath = userPath.createBaseID().path.slice(0, -1).concat('field')
-    const field = _.get(instance.value, fieldPath)
+    const fieldPath = userPath.createParentID().createNestedID('field')
+    const field = resolvePath(instance, fieldPath)
     // Currently it seems that only assignee_id requires special permissions
     if (field !== 'assignee_id') {
       return false
@@ -149,12 +151,9 @@ const handleExistingUsers = ({ existingUsersPaths, customRolesById, usersByEmail
 export const usersValidator: (client: ZendeskClient, deployConfig?: ZedneskDeployConfig) =>
     ChangeValidator = (client, deployConfig) =>
       async (changes, elementSource) => {
-        if (elementSource === undefined) {
-          log.error('Failed to run userPermissionsValidator because no element source was provided')
-          return []
-        }
-
-        const relevantInstances = await awu(changes).filter(isAdditionOrModificationChange).filter(isInstanceChange)
+        const relevantInstances = await awu(changes)
+          .filter(isAdditionOrModificationChange)
+          .filter(isInstanceChange)
           .map(getChangeData)
           .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
           .map(data => resolveValues(data, lookupFunc))
@@ -168,7 +167,9 @@ export const usersValidator: (client: ZendeskClient, deployConfig?: ZedneskDeplo
           client,
           paginationFuncCreator: paginate,
         })
-        const existingUsersEmails = new Set((await getUsers(paginator)).map(user => user.email))
+        const users = await getUsers(paginator)
+
+        const existingUsersEmails = new Set(users.map(user => user.email))
         const instancesUserPaths = relevantInstances.flatMap(instance => {
           const userPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
           return userPaths.map(userPath => {
@@ -176,29 +177,38 @@ export const usersValidator: (client: ZendeskClient, deployConfig?: ZedneskDeplo
             // Filter our valid values that are not users
             return VALID_USER_VALUES.includes(user)
               ? undefined
-              : { user: resolvePath(instance, userPath), userPath, instance }
+              : { user, userPath, instance }
           }).filter(isDefined)
         })
 
         const [existingUsersPaths, nonExistingUsersPaths] = _.partition(instancesUserPaths,
           userPath => existingUsersEmails.has(userPath.user))
 
-        const { notExistingUsersErrors = [], defaultUserPaths = [] } = await handleNonExistingUsers({
+        const { notExistingUsersErrors, defaultUserPaths } = await handleNonExistingUsers({
           missingUserFallback: deployConfig?.defaultMissingUserFallback,
           existingUsersEmails,
           client,
           nonExistingUsersPaths,
         })
 
-        // Non-existing users were replaced by the default user are handled as existing users
+        if (elementSource === undefined) {
+          log.error('Failed to handleExistingUsers in userPermissionsValidator because no element source was provided')
+          return notExistingUsersErrors
+        }
+
+        // Non-existing users will be replaced with the fallback user value and therefore handled as existing users
         const updatedExistingUsersPaths = [...existingUsersPaths, ...defaultUserPaths]
 
         // Don't waste time fetching the elements if there are no existing users to check
-        const elements = updatedExistingUsersPaths.length > 0 ? await elementSource.getAll() : []
+        if (updatedExistingUsersPaths.length === 0) {
+          return notExistingUsersErrors
+        }
+
+        const elements = await elementSource.getAll()
         const customRoles = await awu(elements).filter(isInstanceElement)
           .filter(e => e.elemID.typeName === CUSTOM_ROLE_TYPE_NAME).toArray()
 
-        const usersByEmail = _.keyBy(await getUsers(paginator), user => user.email)
+        const usersByEmail = _.keyBy(users, user => user.email)
         const customRolesById = _.keyBy(customRoles, (role): number => role.value.id)
 
         const existingUsersWarnings = handleExistingUsers(

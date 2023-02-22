@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, PlaceholderObjectType, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
@@ -111,8 +111,7 @@ export const issueTypeSchemeMigrationValidator = (
       }
       const removedIssueTypeNames = await awu(getRemovedIssueTypeIds(change))
         .filter(async (ref: ReferenceExpression): Promise<boolean> =>
-          (await elementSource.has(ref.elemID)
-      && !(await ref.getResolvedValue(elementSource) instanceof PlaceholderObjectType)))
+          ref.value instanceof InstanceElement)
         .map(issueTypeId => issueTypeId.value.value.name).toArray()
       const removedTypesWithIssues = await awu(removedIssueTypeNames).filter(async issueType => (
         areIssueTypesUsed(client, issueType, linkedProjectNames)

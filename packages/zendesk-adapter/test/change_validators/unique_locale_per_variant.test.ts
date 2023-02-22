@@ -81,17 +81,36 @@ describe('noDuplicateLocaleIdInDynamicContentItemValidator', () => {
     ])
     expect(errors).toEqual([])
   })
-  it('should return an error if the variant does not have a parent', async () => {
+  it('should not return an error if the variant does not have a parent', async () => {
     const clonedVariant = variant2.clone()
     delete clonedVariant.annotations[CORE_ANNOTATIONS.PARENT]
+    const errors = await noDuplicateLocaleIdInDynamicContentItemValidator([
+      toChange({ after: clonedVariant }),
+    ])
+    expect(errors).toEqual([])
+  })
+  it('should return an error if the variant does not have a parent', async () => {
+    const clonedVariant = variant2.clone()
+    const item2 = new InstanceElement(
+      'item2',
+      itemType,
+      {
+        name: 'test2',
+        [VARIANTS_FIELD_NAME]: [
+          new ReferenceExpression(variant2.elemID, variant2),
+          'some string',
+        ],
+      },
+    )
+    clonedVariant.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(item2.elemID, item2)]
     const errors = await noDuplicateLocaleIdInDynamicContentItemValidator([
       toChange({ after: clonedVariant }),
     ])
     expect(errors).toEqual([{
       elemID: clonedVariant.elemID,
       severity: 'Error',
-      message: `Can not change ${clonedVariant.elemID.getFullName()} because we failed to find all the relevant variants`,
-      detailedMessage: `Can not change ${clonedVariant.elemID.getFullName()} because we failed to find all the relevant variants`,
+      message: 'Invalid child variant reference in parent dynamic content',
+      detailedMessage: `Parent dynamic content ‘${item2.elemID.getFullName()}’ includes an invalid child variant reference.`,
     }])
   })
   it('should return an error if the variant does not have a locale', async () => {

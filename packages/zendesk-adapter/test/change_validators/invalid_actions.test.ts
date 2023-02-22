@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { ZENDESK } from '../../src/constants'
 import { invalidActionsValidator } from '../../src/change_validators/invalid_actions'
 

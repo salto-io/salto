@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
-  isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import {
+  ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
+  isAdditionOrModificationChange, isReferenceExpression,
+} from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
 import { isArrayOfRefExprToInstances } from '../filters/utils'
 
-const createFailedToFindVariantsErrorMessage = (fullName: string): string =>
-  `Can not change ${fullName} because we failed to find all the relevant variants`
+const log = logger(module)
 
 const createEmptyLocaleIdErrorMessage = (): string =>
   'Can’t change an instance with an invalid locale'
@@ -35,14 +37,18 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME)
     .flatMap(instance => {
-      const variants = instance
-        .annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.value?.value?.[VARIANTS_FIELD_NAME]
+      const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
+      if (!isReferenceExpression(parent)) {
+        log.debug(`variant ${instance.elemID.getFullName()} does not have a parent, this is caught in another change validator`)
+        return []
+      }
+      const variants = parent.value?.value?.[VARIANTS_FIELD_NAME]
       if (!isArrayOfRefExprToInstances(variants)) {
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: createFailedToFindVariantsErrorMessage(instance.elemID.getFullName()),
-          detailedMessage: createFailedToFindVariantsErrorMessage(instance.elemID.getFullName()),
+          message: 'Invalid child variant reference in parent dynamic content',
+          detailedMessage: `Parent dynamic content ‘${parent.elemID.getFullName()}’ includes an invalid child variant reference.`,
         }]
       }
       const relevantVariants = variants.map(variant => variant.value).filter(isInstanceElement)

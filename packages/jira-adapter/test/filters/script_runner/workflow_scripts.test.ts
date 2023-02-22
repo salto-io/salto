@@ -17,7 +17,8 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams } from '../../utils'
-import workflowPostFunctionsFilter, { isCompressedObject } from '../../../src/filters/script_runner/workflow_scripts'
+import { isCompressedObject } from '../../../src/filters/script_runner/workflow_scripts'
+import workflowFilter from '../../../src/filters/script_runner/workflow_filter'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
@@ -47,8 +48,8 @@ describe('Cloud Workflow post functions', () => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     config.fetch.enableScriptRunnerAddon = true
-    filter = workflowPostFunctionsFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterOff = workflowPostFunctionsFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = workflowFilter(getFilterParams({ config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterOff = workflowFilter(getFilterParams({ config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   })
   describe('post functions', () => {
     const goodBase64 = 'eyJjb21wcmVzc2VkIjpbMzEsMTM5LDgsMCwwLDAsMCwwLDAsMTksMTcxLDg2LDc0LDg0LDE3OCw1MCwxNzIsNSwwLDE3NSwxNzIsMjcsODYsNywwLDAsMF19'

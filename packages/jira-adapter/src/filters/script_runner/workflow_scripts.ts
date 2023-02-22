@@ -16,11 +16,9 @@
 
 import { gzip, ungzip } from 'pako'
 import { logger } from '@salto-io/logging'
-import { createSchemeGuard, safeJsonStringify, WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { createSchemeGuard, safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
-import { FilterCreator } from '../../filter'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { Value } from '@salto-io/adapter-api'
 
 const log = logger(module)
 const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
@@ -120,51 +118,5 @@ const transfromConfigValue = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
     return WALK_NEXT_STEP.RECURSE
   })
 
-const filter: FilterCreator = ({ client, config }) => ({
-  name: 'scriptRunnerWorkflowFilter',
-  onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
-      return
-    }
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: transfromConfigValue(typeToDecodeFuncMap) })
-      })
-  },
-  preDeploy: async changes => {
-    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
-      return
-    }
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: transfromConfigValue(typeToEncodeFuncMap) })
-      })
-  },
-  onDeploy: async changes => {
-    if (!config.fetch.enableScriptRunnerAddon || client.isDataCenter) {
-      return
-    }
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: transfromConfigValue(typeToDecodeFuncMap) })
-      })
-  },
-})
-
-export default filter
+export const decodeCloudFields = transfromConfigValue(typeToDecodeFuncMap)
+export const encodeCloudFields = transfromConfigValue(typeToEncodeFuncMap)

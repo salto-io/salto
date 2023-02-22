@@ -118,8 +118,7 @@ import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
-import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_scripts'
-import scriptRunneDCrWorkflowFilter from './filters/script_runner/workflow_scripts_dc'
+import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 
 const {
   generateTypes,
@@ -225,7 +224,6 @@ export const DEFAULT_FILTERS = [
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
   scriptRunnerWorkflowFilter,
-  scriptRunneDCrWorkflowFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

@@ -17,7 +17,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
-import workflowScriptsDcFilter from '../../../src/filters/script_runner/workflow_scripts_dc'
+import workflowFilter from '../../../src/filters/script_runner/workflow_filter'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
@@ -49,8 +49,8 @@ describe('DC Workflow post functions', () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
     const { client } = mockClient(true)
     config.fetch.enableScriptRunnerAddon = true
-    filter = workflowScriptsDcFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-    filterOff = workflowScriptsDcFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filter = workflowFilter(getFilterParams({ client, config })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+    filterOff = workflowFilter(getFilterParams({ client, config: configOff })) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
     instance = new InstanceElement(
       'instance',
       workflowType,

@@ -16,7 +16,7 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, USER_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, POLICY_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, APP_USER_TYPE_NAME, ROLE_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, POLICY_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME } from './constants'
 
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
@@ -31,26 +31,10 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
   },
-  // TODO SALTO-2737 change this reference
-  {
-    src: { field: 'id', parentTypes: [APP_USER_TYPE_NAME] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
-  {
-    src: { field: 'users', parentTypes: [GROUP_TYPE_NAME] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
   {
     src: { field: 'roles', parentTypes: [GROUP_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: ROLE_TYPE_NAME },
-  },
-  {
-    src: { field: 'users', parentTypes: [IDENTITY_PROVIDER_TYPE_NAME] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
   },
   {
     src: { field: 'featureDependencies', parentTypes: [FEATURE_TYPE_NAME] },
@@ -63,16 +47,6 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'include', parentTypes: ['GroupRuleUserCondition'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
-  {
-    src: { field: 'exclude', parentTypes: ['GroupRuleUserCondition'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
-  {
     src: { field: 'include', parentTypes: ['UserTypePolicyRuleCondition'] },
     serializationStrategy: 'id',
     target: { type: USERTYPE_TYPE_NAME },
@@ -81,16 +55,6 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'exclude', parentTypes: ['UserTypePolicyRuleCondition'] },
     serializationStrategy: 'id',
     target: { type: USERTYPE_TYPE_NAME },
-  },
-  {
-    src: { field: 'createdBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
-  {
-    src: { field: 'lastUpdatedBy', parentTypes: [USERTYPE_TYPE_NAME, 'EventHook', 'TrustedOrigin'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
   },
   {
     src: { field: 'include', parentTypes: ['GroupCondition'] },
@@ -111,16 +75,6 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     src: { field: 'exclude', parentTypes: ['PolicyNetworkCondition'] },
     serializationStrategy: 'id',
     target: { type: NETWORK_ZONE_TYPE_NAME },
-  },
-  {
-    src: { field: 'include', parentTypes: ['UserCondition'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
-  },
-  {
-    src: { field: 'exclude', parentTypes: ['UserCondition'] },
-    serializationStrategy: 'id',
-    target: { type: USER_TYPE_NAME },
   },
   {
     src: { field: 'id', parentTypes: ['IdpPolicyRuleActionProvider'] },

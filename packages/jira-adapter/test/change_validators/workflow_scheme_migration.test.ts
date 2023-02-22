@@ -214,6 +214,7 @@ describe('workflow scheme migration', () => {
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
+<<<<<<< Updated upstream
   it('should not throw on unresolved reference', async () => {
     modifiedInstance.value.items.push(
       {
@@ -221,6 +222,11 @@ describe('workflow scheme migration', () => {
         issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')),
       },
     )
+=======
+  it('should not throw if there are no items at all', async () => {
+    workflowInstance.value.items = undefined
+    modifiedInstance.value.items = undefined
+>>>>>>> Stashed changes
     const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     await expect(errorsPromise).resolves.not.toThrow()
   })

@@ -108,6 +108,8 @@ const getChangedItemsFromChange = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<ChangedItem[]> => {
   const { before, after } = change.data
+  const beforeItems = (before.value.items ?? []).filter(isWorkflowSchemeItem)
+  const afterItems = (after.value.items ?? []).filter(isWorkflowSchemeItem)
   const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, assignedProjects)
   const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
     ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes) : []
@@ -117,8 +119,8 @@ const getChangedItemsFromChange = async (
     issueType,
   }))
   const removedItems = _.differenceWith(
-    before.value.items.filter(isWorkflowSchemeItem),
-    after.value.items.filter(isWorkflowSchemeItem),
+    beforeItems,
+    afterItems,
     isItemEquals,
   ).map((item: WorkflowSchemeItem) => ({
     before: item.workflow,
@@ -126,22 +128,21 @@ const getChangedItemsFromChange = async (
     issueType: item.issueType,
   }))
   const addedItems = _.differenceWith(
-    after.value.items.filter(isWorkflowSchemeItem),
-    before.value.items.filter(isWorkflowSchemeItem),
+    afterItems,
+    beforeItems,
     isItemEquals,
   ).map(item => ({
     before: before.value.defaultWorkflow,
     after: item.workflow,
     issueType: item.issueType,
   }))
-  const afterItems = _.keyBy(
-    after.value.items.filter(isWorkflowSchemeItem),
+  const afterItemsIssueTypes = _.keyBy(
+    afterItems,
     item => item.issueType.elemID.getFullName(),
   )
-  const modifiedItems = before.value.items
-    .filter(isWorkflowSchemeItem)
+  const modifiedItems = beforeItems
     .map((beforeItem: WorkflowSchemeItem) => {
-      const afterItem: WorkflowSchemeItem = afterItems[beforeItem.issueType.elemID.getFullName()]
+      const afterItem: WorkflowSchemeItem = afterItemsIssueTypes[beforeItem.issueType.elemID.getFullName()]
       if (afterItem === undefined || !isItemModified(beforeItem, afterItem)) {
         return undefined
       }

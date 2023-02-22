@@ -22,20 +22,27 @@ const log = logger(module)
 const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
   'com.onresolve.jira.groovy.GroovyValidator',
   'com.onresolve.jira.groovy.GroovyCondition']
-const DC_BASE64_PREFIX = 'YCFg'
-const CANNED_SCRIPT = '"canned-script"'
+const DC_ENCODE_PREFIX = '`!`'
+const CANNED_SCRIPT = 'canned-script'
 const FIELD_COMMENT_TYPE = 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.CommentIssue'
 
-
 const decodeBase64 = (base64: string): string => {
-  if (!base64.startsWith(DC_BASE64_PREFIX)) {
+  try {
+    const decoded = Buffer.from(base64, 'base64').toString('utf8')
+    if (!decoded.startsWith(DC_ENCODE_PREFIX)) {
+      log.warn(`Could not decode DC ScriptRunner script, expected to start with ${DC_ENCODE_PREFIX}, got: ${decoded}`)
+      return base64
+    }
+    // all base64 strings of DC ScriptRunner scripts start with `!` (or YCFg in base 64)
+    return decoded.substring(DC_ENCODE_PREFIX.length)
+  } catch (e) {
     log.warn(`Could not decode DC ScriptRunner script, expected base64, got: ${base64}`)
     return base64
   }
-  return Buffer.from(base64.substring(DC_BASE64_PREFIX.length), 'base64').toString('utf8')
 }
 
-const encodeBase64 = (script: string): string => DC_BASE64_PREFIX + Buffer.from(script).toString('base64')
+// see decode comment about the prefix
+const encodeBase64 = (script: string): string => Buffer.from(DC_ENCODE_PREFIX + script).toString('base64')
 
 const decodeScriptObject = (base64: string): unknown => {
   const script = decodeBase64(base64)
@@ -83,7 +90,7 @@ const transformConfigFields = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
   ({ value }): WALK_NEXT_STEP => {
     if (SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined) {
       funcMap.forEach((_value, fieldName) => {
-        // Field comment is base64 encoded only in some cases
+        // Field comment is base64 encoded only in some cases. In others the field is plain text
         if (value.configuration[fieldName] !== undefined
           && (fieldName !== 'FIELD_COMMENT' || value.configuration[CANNED_SCRIPT] === FIELD_COMMENT_TYPE)) {
           value.configuration[fieldName] = funcMap.get(fieldName)(value.configuration[fieldName])

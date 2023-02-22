@@ -21,7 +21,8 @@ import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { decodeDcFields, encodeDcFields } from './workflow_dc'
 import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
 
-
+// This filter is used to encode/decode the fields of the workflow transitions for scriptRunner
+// There are different decodings for cloud and dc, and the filter encodes back before deploy
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerWorkflowDcFilter',
   onFetch: async (elements: Element[]) => {

@@ -86,7 +86,7 @@ describe('DC Workflow post functions', () => {
   })
   describe('post functions', () => {
     const scriptRunnerPostFunctionType = 'com.onresolve.jira.groovy.GroovyFunctionPlugin'
-    const CANNED_SCRIPT = '"canned-script"'
+    const CANNED_SCRIPT = 'canned-script'
     const FIELD_COMMENT_TYPE = 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.CommentIssue'
     beforeEach(() => {
       instance.value.transitions[0].rules.postFunctions[0].type = scriptRunnerPostFunctionType

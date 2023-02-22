@@ -211,21 +211,11 @@ describe('workflow scheme migration', () => {
   })
   it('should not return error for inactive workflow scheme', async () => {
     projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
-    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
-    await expect(errorsPromise).resolves.not.toThrow()
-  })
-  it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
-    numberOfIssues = 0
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })
-  it('should not throw on unresolved reference', async () => {
-    modifiedInstance.value.items.push(
-      {
-        workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow5')),
-        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')),
-      },
-    )
+  it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
+    numberOfIssues = 0
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
   })

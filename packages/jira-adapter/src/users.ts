@@ -136,6 +136,7 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
           .map(userInfo => [userInfo.userId, userInfo]))
       } catch (e) {
         if (isMissingUserPermissionError(e)) {
+          log.error('Failed to get users map due to missing permissions.')
           throw new MissingUsersPermissionError(e)
         }
         throw e

@@ -57,31 +57,6 @@ const potentiallyMissingListValues: FieldMissingReferenceDefinition[] = [
   },
 ]
 
-const handleStringValue = ({ value, valueType, valueIndexToRedefine, elements }:
-{
-  value: string
-  valueType: string
-  valueIndexToRedefine: number
-  elements: Element[]
-}): string | [ReferenceExpression, ...unknown[]] => {
-  try {
-    const fixedValue = JSON.parse(value.replace(/\\\[/g, '[').replace(/\\\]/g, ']'))
-    const referencedInstance = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === valueType)
-      .find(e => e.value.id === fixedValue[valueIndexToRedefine])
-    if (referencedInstance !== undefined) {
-      fixedValue[valueIndexToRedefine] = new ReferenceExpression(
-        referencedInstance.elemID,
-        referencedInstance
-      )
-      return fixedValue
-    }
-  } catch (e) {
-    // do nothing
-  }
-  return value
-}
-
 /**
  * Convert field list values into references, based on predefined configuration.
  */
@@ -112,24 +87,15 @@ const filter: FilterCreator = ({ config }) => ({
             && (isNumberStr(valueToRedefine)
               || NON_NUMERIC_MISSING_VALUES_TYPES.includes(valueType)
             )) {
-            if (_.isString(obj.value)) {
-              obj.value = handleStringValue({
-                value: obj.value,
-                valueType,
-                valueIndexToRedefine: def.valueIndexToRedefine,
-                elements,
-              })
-            } else {
-              const missingInstance = createMissingInstance(
-                instance.elemID.adapter,
-                valueType,
-                valueToRedefine
-              )
-              obj.value[def.valueIndexToRedefine] = new ReferenceExpression(
-                missingInstance.elemID,
-                missingInstance
-              )
-            }
+            const missingInstance = createMissingInstance(
+              instance.elemID.adapter,
+              valueType,
+              valueToRedefine
+            )
+            obj.value[def.valueIndexToRedefine] = new ReferenceExpression(
+              missingInstance.elemID,
+              missingInstance
+            )
           }
         })
       })

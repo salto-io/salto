@@ -116,6 +116,7 @@ import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
+import auditTimeFilter from './filters/audit_logs'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,6 +155,7 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  auditTimeFilter, // needs to be before userFilter as it uses the ids of the users
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,

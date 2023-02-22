@@ -375,7 +375,7 @@ type RunAdapterFetchFunctionParams = {
   adapter: AdapterOperations
   fetchOptions: FetchOptions
   adapterName: string
-  withChangeDetection?: boolean
+  withChangeDetection: boolean | undefined
 }
 
 const runAdapterFetchFunction = ({
@@ -463,7 +463,7 @@ const fetchAndProcessMergeErrors = async (
       (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
     const fetchResults = await Promise.all(
-      Object.entries((accountsToAdapters))
+      Object.entries(accountsToAdapters)
         .map(async ([accountName, adapter]) => {
           const fetchOptions = { progressReporter: progressReporters[accountName] }
           const fetchResult = await runAdapterFetchFunction({

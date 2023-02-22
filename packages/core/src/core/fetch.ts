@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement,
+  isAdditionOrModificationChange, Value, StaticFile, isElement, FetchOptions,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -371,26 +371,26 @@ const runPostFetch = async ({
   )
 }
 
-type CreateAdapterToFetchFunctionMapParams = {
-  accountsToAdapters: Record<string, AdapterOperations>
-  accountToServiceNameMap: Record<string, string>
-  withChangeDetection: boolean | undefined
+type RunAdapterFetchFunctionParams = {
+  adapter: AdapterOperations
+  fetchOptions: FetchOptions
+  adapterName: string
+  withChangeDetection?: boolean
 }
 
-const createAdapterToFetchFunctionMap = (
-  { accountsToAdapters, accountToServiceNameMap, withChangeDetection }: CreateAdapterToFetchFunctionMapParams
-): Record<string, AdapterOperations['fetch']> => {
-  const accountNameToFetchFunction = Object.fromEntries(
-    Object.entries(accountsToAdapters).map(([accountName, adapter]) =>
-      ([accountName, withChangeDetection ? adapter.fetchWithChangeDetection : adapter.fetch]))
-  )
-  const adaptersWithoutFetchFunction = Array.from(new Set(Object.entries(accountNameToFetchFunction)
-    .filter(([, fetchFunction]) => fetchFunction === undefined)
-    .map(([accountName]) => accountToServiceNameMap[accountName])))
-  if (adaptersWithoutFetchFunction.length > 0) {
-    throw new Error(`Adapters: ${adaptersWithoutFetchFunction.join(', ')} do not support fetch with change detection operation`)
+const runAdapterFetchFunction = ({
+  adapter,
+  fetchOptions,
+  adapterName,
+  withChangeDetection,
+}: RunAdapterFetchFunctionParams): Promise<FetchResult> => {
+  if (withChangeDetection) {
+    if (adapter.fetchWithChangeDetection === undefined) {
+      throw new Error(`Adapter: ${adapterName} does not support fetch with change detection operation`)
+    }
+    return adapter.fetchWithChangeDetection(fetchOptions)
   }
-  return _.pickBy(accountNameToFetchFunction, isDefined)
+  return adapter.fetch(fetchOptions)
 }
 
 const fetchAndProcessMergeErrors = async (
@@ -462,14 +462,15 @@ const fetchAndProcessMergeErrors = async (
       accountsToAdapters,
       (_adapter, accountName) => createAdapterProgressReporter(accountName, 'fetch', progressEmitter)
     )
-    const accountNameToFetchFunction = createAdapterToFetchFunctionMap({
-      accountsToAdapters, accountToServiceNameMap, withChangeDetection,
-    })
     const fetchResults = await Promise.all(
-      Object.entries((accountNameToFetchFunction))
-        .map(async ([accountName, fetchFunction]) => {
-          const fetchResult = await fetchFunction({
-            progressReporter: progressReporters[accountName],
+      Object.entries((accountsToAdapters))
+        .map(async ([accountName, adapter]) => {
+          const fetchOptions = { progressReporter: progressReporters[accountName] }
+          const fetchResult = await runAdapterFetchFunction({
+            adapter,
+            fetchOptions,
+            adapterName: accountToServiceNameMap[accountName],
+            withChangeDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (

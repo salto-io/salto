@@ -18,8 +18,8 @@ import { walkOnValue } from '@salto-io/adapter-utils'
 import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
-import { decodeDcFields, encodeDcFields } from './workflow_scripts_dc'
-import { decodeCloudFields, encodeCloudFields } from './workflow_scripts'
+import { decodeDcFields, encodeDcFields } from './workflow_dc'
+import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
 
 
 const filter: FilterCreator = ({ client, config }) => ({

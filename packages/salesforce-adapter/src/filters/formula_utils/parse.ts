@@ -26,23 +26,8 @@ import { mapCPQField } from './cpq'
 
 const log = logger(module)
 
-export class IdentifierType {
-  static CUSTOM_FIELD = new IdentifierType('customFields')
-  static STANDARD_FIELD = new IdentifierType('standardFields')
-  static CUSTOM_OBJECT = new IdentifierType('customObjects')
-  static STANDARD_OBJECT = new IdentifierType('standardObjects')
-  static CUSTOM_LABEL = new IdentifierType('customLabels')
-  static CUSTOM_SETTING = new IdentifierType('customSettings')
-  static CUSTOM_METADATA_TYPE_RECORD = new IdentifierType('customMetadataTypeRecords')
-  static CUSTOM_METADATA_TYPE = new IdentifierType('customMetadataTypes')
-  static UNKNOWN_RELATIONSHIP = new IdentifierType('unknownRelationships')
-
-  name: string
-
-  constructor(name: string) {
-    this.name = name
-  }
-}
+export type IdentifierType = 'customField'|'standardField'|'customObject'|'standardObject'|'customLabel'
+  |'customSetting'|'customMetadataTypeRecord'|'customMetadataType'|'unknownRelationship'
 
 export type FormulaIdentifierInfo = {
   type: IdentifierType
@@ -60,20 +45,20 @@ export const parseField = (value: string, object?: string): FormulaIdentifierInf
   }
 
   return {
-    type: (isCustom(actualValue) ? IdentifierType.CUSTOM_FIELD : IdentifierType.STANDARD_FIELD),
+    type: (isCustom(actualValue) ? 'customField' : 'standardField'),
     instance: actualValue,
   }
 }
 
 export const parseObject = (object: string): FormulaIdentifierInfo => {
-  let type = IdentifierType.STANDARD_OBJECT
+  let type: IdentifierType = 'standardObject'
 
   if (isCustom(object)) {
-    type = IdentifierType.CUSTOM_OBJECT
+    type = 'customObject'
   } else if (isCustomMetadata(object)) {
-    type = IdentifierType.CUSTOM_METADATA_TYPE
+    type = 'customMetadataType'
   } else if (!isStandardRelationship(object)) {
-    type = IdentifierType.UNKNOWN_RELATIONSHIP
+    type = 'unknownRelationship'
   }
 
   return {
@@ -89,11 +74,11 @@ export const parseCustomMetadata = (value: string): FormulaIdentifierInfo[] => {
   return [
     {
       instance: createApiName(sobject, sobjInstance),
-      type: IdentifierType.CUSTOM_METADATA_TYPE_RECORD,
+      type: 'customMetadataTypeRecord',
     },
     {
       instance: sobject,
-      type: IdentifierType.CUSTOM_METADATA_TYPE,
+      type: 'customMetadataType',
     },
     parseField(fieldName, sobject),
   ]
@@ -101,7 +86,7 @@ export const parseCustomMetadata = (value: string): FormulaIdentifierInfo[] => {
 
 export const parseCustomLabel = (value: string): FormulaIdentifierInfo => (
   {
-    type: IdentifierType.CUSTOM_LABEL,
+    type: 'customLabel',
     instance: getField(value),
   }
 )
@@ -111,7 +96,7 @@ export const parseCustomSetting = (value: string): FormulaIdentifierInfo[] => {
 
   return [
     {
-      type: IdentifierType.CUSTOM_SETTING,
+      type: 'customSetting',
       instance: object,
     },
     parseField(field, object),

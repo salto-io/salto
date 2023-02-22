@@ -215,8 +215,8 @@ describe('api.ts', () => {
       })
       it('should override state but also include existing elements', async () => {
         const existingElements = [stateElements[1]]
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
+        const overrideElementsParam = await awu(stateOverride.mock.calls[0][0]).toArray()
+        expect(overrideElementsParam).toEqual([...existingElements, ...fetchedElements])
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
@@ -698,7 +698,6 @@ describe('api.ts', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
 
-
       beforeAll(async () => {
         ws = mockWorkspace({ accounts: ['salto', 'salesforce'] })
         ows = mockWorkspace({ accounts: ['salto', 'netsuite'] })
@@ -716,7 +715,6 @@ describe('api.ts', () => {
       })
     })
 
-    // TODO: (not sure) Add tests for the applyToState part
     describe('with elementsScope', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace

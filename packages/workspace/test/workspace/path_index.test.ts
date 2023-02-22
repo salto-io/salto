@@ -57,6 +57,31 @@ const singlePathObject = new ObjectType({
   },
   path: ['salto', 'obj', 'simple'],
 })
+
+const singlePathObjectDiffAccount = new ObjectType({
+  elemID: new ElemID('notSalto', 'singlePathObj'),
+  fields: {
+    simple: {
+      refType: BuiltinTypes.STRING,
+    },
+    nested: {
+      refType: nestedType,
+    },
+  },
+  annotationRefsOrTypes: {
+    simple: BuiltinTypes.STRING,
+    nested: nestedType,
+  },
+  annotations: {
+    simple: 'simple',
+    nested: {
+      str: 'Str',
+      num: 7,
+      list: [1, 2, 3],
+    },
+  },
+  path: ['notSalto', 'obj', 'simple'],
+})
 // multiPathObject
 // singlePathObject
 const multiPathObjID = new ElemID('salto', 'multiPathObj')
@@ -124,62 +149,228 @@ const multiPathInstanceFull = new InstanceElement(
   },
 )
 
-// TODO: Add the case of old that should not maintain
-// TODO: Add the case of overriding things that exist but should maintain
 describe('updatePathIndex', () => {
   let index: PathIndex
-  beforeAll(async () => {
+
+  const updatedElements = [
+    multiPathAnnoObj,
+    multiPathFieldsObj,
+    multiPathInstanceA,
+    multiPathInstanceB,
+  ]
+  beforeEach(async () => {
     index = new InMemoryRemoteMap<Path[]>()
-    await index.setAll(getElementsPathHints([singlePathObject]))
-    await updatePathIndex(
-      index,
-      [
-        multiPathAnnoObj,
-        multiPathFieldsObj,
-        multiPathInstanceA,
-        multiPathInstanceB,
-      ],
-      (elemID: ElemID) => (elemID.adapter === 'salto'),
-    )
-  })
-  it('should add new elements with proper paths', async () => {
-    expect(await index.get(multiPathObjID.getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'anno'],
-        ['salto', 'obj', 'multi', 'fields'],
-      ])
-    expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'fields'],
-      ])
-    expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'anno'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'A'],
-        ['salto', 'inst', 'B'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'A'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'B'],
-      ])
-    expect(
-      await index.get(multiPathInstanceA.elemID
-        .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
-    ).toEqual([
-      ['salto', 'inst', 'B'],
-    ])
+    await index.setAll(getElementsPathHints([singlePathObjectDiffAccount, singlePathObject]))
   })
 
-  it('should maintain old elements according to the shouldMaintain logic', async () => {
-    expect(await index.get(singlePathObject.elemID.getFullName()))
-      .toEqual([singlePathObject.path])
+  describe('with no notFetchedAccounts nor elementsScope', () => {
+    beforeEach(async () => {
+      await updatePathIndex(
+        index,
+        updatedElements,
+        [],
+      )
+    })
+
+    it('should add new elements with proper paths', async () => {
+      expect(await index.get(multiPathObjID.getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+          ['salto', 'inst', 'B'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'B'],
+        ])
+      expect(
+        await index.get(multiPathInstanceA.elemID
+          .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
+      ).toEqual([
+        ['salto', 'inst', 'B'],
+      ])
+    })
+
+    it('should not keep old elements from other accounts and elements from outside of the scope', async () => {
+      expect(await index.get(singlePathObjectDiffAccount.elemID.getFullName()))
+        .toBeUndefined()
+      expect(await index.get(singlePathObject.elemID.getFullName()))
+        .toBeUndefined()
+    })
+  })
+
+  describe('with notFetchedAccounts', () => {
+    beforeEach(async () => {
+      await updatePathIndex(
+        index,
+        updatedElements,
+        ['notSalto'],
+      )
+    })
+
+    it('should add new elements with proper paths', async () => {
+      expect(await index.get(multiPathObjID.getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+          ['salto', 'inst', 'B'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'B'],
+        ])
+      expect(
+        await index.get(multiPathInstanceA.elemID
+          .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
+      ).toEqual([
+        ['salto', 'inst', 'B'],
+      ])
+    })
+
+    it('should maintain old elements from not fetched accounts and not keep elements from same account outside of scope', async () => {
+      expect(await index.get(singlePathObjectDiffAccount.elemID.getFullName()))
+        .toEqual([singlePathObjectDiffAccount.path])
+      expect(await index.get(singlePathObject.elemID.getFullName()))
+        .toBeUndefined()
+    })
+  })
+
+  describe('with notFetchedAccounts and elementsScope', () => {
+    beforeEach(async () => {
+      await updatePathIndex(
+        index,
+        updatedElements,
+        ['notSalto'],
+        updatedElements.map(e => e.elemID.getFullName()),
+      )
+    })
+
+    it('should add new elements with proper paths', async () => {
+      expect(await index.get(multiPathObjID.getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+          ['salto', 'inst', 'B'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'B'],
+        ])
+      expect(
+        await index.get(multiPathInstanceA.elemID
+          .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
+      ).toEqual([
+        ['salto', 'inst', 'B'],
+      ])
+    })
+
+    it('should maintain old elements from not fetched accounts and elements from same account outside of scope', async () => {
+      expect(await index.get(singlePathObjectDiffAccount.elemID.getFullName()))
+        .toEqual([singlePathObjectDiffAccount.path])
+      expect(await index.get(singlePathObject.elemID.getFullName()))
+        .toEqual([singlePathObject.path])
+    })
+  })
+
+  describe('with no notFetchedAccounts but with elementsScope', () => {
+    beforeEach(async () => {
+      await updatePathIndex(
+        index,
+        updatedElements,
+        [],
+        [...updatedElements, singlePathObjectDiffAccount].map(e => e.elemID.getFullName()),
+      )
+    })
+
+    it('should add new elements with proper paths', async () => {
+      expect(await index.get(multiPathObjID.getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'fields'],
+        ])
+      expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
+        .toEqual([
+          ['salto', 'obj', 'multi', 'anno'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+          ['salto', 'inst', 'B'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'A'],
+        ])
+      expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
+        .toEqual([
+          ['salto', 'inst', 'B'],
+        ])
+      expect(
+        await index.get(multiPathInstanceA.elemID
+          .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
+      ).toEqual([
+        ['salto', 'inst', 'B'],
+      ])
+    })
+
+    it('should maintain elements from outside of scope', async () => {
+      expect(await index.get(singlePathObjectDiffAccount.elemID.getFullName()))
+        .toBeUndefined()
+      expect(await index.get(singlePathObject.elemID.getFullName()))
+        .toEqual([singlePathObject.path])
+    })
   })
 })
 

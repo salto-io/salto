@@ -236,24 +236,30 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
+const getNotFetchedAccounts = async (
+  workspace: Workspace,
+  fetchedAccounts: string[],
+): Promise<string[]> =>
+  (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key))
+
 const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
   fetchedAccounts: string[],
-  shouldMaintain?: (elemID: ElemID) => boolean,
+  elementsScope?: string[],
 ): Promise<void> => {
-  const actualShouldMaintain = shouldMaintain
-    ?? ((elemID: ElemID): boolean =>
-      (!shouldElementBeIncluded(fetchedAccounts)(elemID)))
-  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
-    .filter(element => actualShouldMaintain(element.elemID)).toArray()
-  await workspace.state()
-    .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
+  const stateElementsToKeep = awu(await workspace.state().getAll())
+    .filter(element =>
+      // Elements not from the fetchedAccounts
+      !shouldElementBeIncluded(fetchedAccounts)(element.elemID)
+      // Elements from the fetchedAccounts that are not in the scope
+      || (elementsScope !== undefined && !elementsScope.includes(element.elemID.getFullName())))
+  await workspace.state().override(awu(stateElementsToKeep).concat(mergedElements), fetchedAccounts)
   await workspace.state().updatePathIndex(
     unmergedElements,
-    actualShouldMaintain,
+    await getNotFetchedAccounts(workspace, fetchedAccounts),
+    elementsScope,
   )
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
@@ -355,16 +361,12 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   })
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  const shouldMaintain = (elemID: ElemID): boolean => (
-    !shouldElementBeIncluded(fetchAccounts)(elemID)
-    || (!!elementsScope && !elementsScope.includes(elemID.getFullName()))
-  )
   await updateStateWithFetchResults(
     workspace,
     elements,
     unmergedElements,
     fetchAccounts,
-    shouldMaintain,
+    elementsScope,
   )
   return {
     changes,

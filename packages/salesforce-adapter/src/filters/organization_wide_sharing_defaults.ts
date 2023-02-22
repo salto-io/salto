@@ -17,9 +17,9 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { RemoteFilterCreator } from '../filter'
+import { FilterWith } from '../filter'
 import { queryClient } from './utils'
-import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
+import { apiName, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
   API_NAME,
   CUSTOM_OBJECT,
@@ -35,8 +35,8 @@ const ORGANIZATION_SETTINGS_TYPE = 'Organization'
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
-  const apiName = type.elemID.typeName // TODO
-  const describeSObjectsResult = await client.describeSObjects([apiName])
+  const typeApiName = await apiName(type)
+  const describeSObjectsResult = await client.describeSObjects([typeApiName])
   if (describeSObjectsResult.errors.length !== 0 || describeSObjectsResult.result.length !== 1) {
     log.warn('describeSObject on %o failed with errors: %o and %o results',
       apiName,
@@ -56,7 +56,7 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
   )
 
   const fields = topLevelFields
-    .map(field => getSObjectFieldElement(type, field, { [API_NAME]: apiName }, objCompoundFieldNames))
+    .map(field => getSObjectFieldElement(type, field, { [API_NAME]: typeApiName }, objCompoundFieldNames))
 
   type.fields = { ...type.fields, ..._.keyBy(fields, field => _.camelCase(field.name)) }
 }
@@ -87,14 +87,11 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
     },
     [SALESFORCE, RECORDS_PATH, ORGANIZATION_SETTINGS_TYPE, ORGANIZATION_SETTINGS_INSTANCE_NAME],
     {
-      [CORE_ANNOTATIONS.UPDATABLE]: false,
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-      [CORE_ANNOTATIONS.DELETABLE]: false,
     },
   )
 )
 
-const filterCreator: RemoteFilterCreator = ({ client }) => ({
+const filterCreator = ({ client }: { client: SalesforceClient}): FilterWith<'onFetch'> => ({
   name: 'organization_wide_sharing_defaults',
   onFetch: async elements => {
     const objectType = createOrganizationType()

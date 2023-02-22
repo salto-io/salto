@@ -296,6 +296,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'QuickAction' },
   },
   {
+    src: { field: 'content', parentTypes: ['AppActionOverride', 'ActionOverride'] },
+    target: { type: 'LightningPage' },
+  },
+  {
     src: { field: 'name', parentTypes: ['AppMenuItem'] },
     target: { typeContext: 'neighborTypeLookup' },
   },

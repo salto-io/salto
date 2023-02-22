@@ -36,34 +36,6 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
 
-/**
- * Clear response data values might contain secrets, returns a new object
- */
-const clearSecrets = (
-  object: Values,
-  secretFieldNames: string[]
-): Values => {
-  const SECRET_PLACEHOLER = '<SECRET>'
-  const replaceValuesInplace = (values: Values): void => {
-    if (_.isPlainObject(values)) {
-      Object.keys(values).forEach(key => {
-        if (secretFieldNames.includes(key)) {
-          values[key] = SECRET_PLACEHOLER
-        } else if (_.isPlainObject(values[key]) || Array.isArray(values[key])) {
-          replaceValuesInplace(values[key])
-        }
-      })
-    }
-    if (Array.isArray(values)) {
-      values.forEach(item => replaceValuesInplace(item))
-    }
-  }
-
-  const clonedObject = _.cloneDeep(object)
-  replaceValuesInplace(clonedObject)
-  return clonedObject
-}
-
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
@@ -85,18 +57,27 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
+  /**
+  * Clear response data values might contain secrets, returns a new object
+  */
   // eslint-disable-next-line class-methods-use-this
   protected clearValuesFromResponseData(
     responseData: Values,
     url: string
   ): Values {
+    const SECRET_PLACEHOLER = '<SECRET>'
     const URL_TO_SECRET_FIELDS: Record<string, string[]> = {
       '/api/v1/idps': ['credentials'],
-      '/api/v1/authenticators': ['sharedSecret, secretKey'],
+      '/api/v1/authenticators': ['sharedSecret', 'secretKey'],
     }
     if (!Object.keys(URL_TO_SECRET_FIELDS).includes(url)) {
       return responseData
     }
-    return clearSecrets(responseData, URL_TO_SECRET_FIELDS[url])
+    const res = _.cloneDeepWith(responseData, (_val, key) => (
+      (_.isString(key) && URL_TO_SECRET_FIELDS[url].includes(key))
+        ? SECRET_PLACEHOLER
+        : undefined
+    ))
+    return res
   }
 }

@@ -15,16 +15,24 @@
 */
 
 import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
-import { createInstanceElement, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
-import { API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, SALESFORCE } from '../constants'
+import { getSObjectFieldElement, getTypePath } from '../transformers/transformer'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  RECORDS_PATH,
+  SALESFORCE,
+} from '../constants'
 import SalesforceClient from '../client/client'
 
 const log = logger(module)
 
+const ORGANIZATION_SETTINGS_TYPE = 'Organization'
+const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
   const apiName = type.elemID.typeName // TODO
@@ -55,21 +63,35 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
 
 const createOrganizationType = (): ObjectType => (
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, 'Organization'),
+    elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS_TYPE),
     fields: {
-      fullName: {
-        refType: BuiltinTypes.STRING,
-      },
     },
     annotations: {
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.DELETABLE]: false,
-      [METADATA_TYPE]: 'Organization',
+      [METADATA_TYPE]: CUSTOM_OBJECT,
+      [API_NAME]: ORGANIZATION_SETTINGS_TYPE,
     },
     isSettings: true,
-    path: getTypePath('Organization'),
+    path: getTypePath(ORGANIZATION_SETTINGS_TYPE),
   })
+)
+
+const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values): InstanceElement => (
+  new InstanceElement(
+    ElemID.CONFIG_NAME,
+    objectType,
+    {
+      ..._.pick(fieldValues, Object.keys(objectType.fields)),
+    },
+    [SALESFORCE, RECORDS_PATH, ORGANIZATION_SETTINGS_TYPE, ORGANIZATION_SETTINGS_INSTANCE_NAME],
+    {
+      [CORE_ANNOTATIONS.UPDATABLE]: false,
+      [CORE_ANNOTATIONS.CREATABLE]: false,
+      [CORE_ANNOTATIONS.DELETABLE]: false,
+    },
+  )
 )
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
@@ -84,21 +106,9 @@ const filterCreator: RemoteFilterCreator = ({ client }) => ({
       return
     }
 
-    const organizationObject = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
+    const fieldsFromQuery = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
 
-    const organizationInstance = createInstanceElement(
-      {
-        [INSTANCE_FULL_NAME_FIELD]: 'OrganizationSettings', // Note: Query results don't have a fullName field
-        ..._.pick(organizationObject, Object.keys(objectType.fields)),
-      },
-      objectType,
-      undefined,
-      {
-        [CORE_ANNOTATIONS.UPDATABLE]: false,
-        [CORE_ANNOTATIONS.CREATABLE]: false,
-        [CORE_ANNOTATIONS.DELETABLE]: false,
-      }
-    )
+    const organizationInstance = createOrganizationInstance(objectType, fieldsFromQuery)
 
     elements.push(objectType, organizationInstance)
   },

@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/organization_wide_sharing_defaults'
 import { FilterWith } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { defaultFilterContext } from '../utils'
 import * as filterUtilsModule from '../../src/filters/utils'
-import { CUSTOM_OBJECT_ID_FIELD, SALESFORCE } from '../../src/constants'
+import { API_NAME, CUSTOM_OBJECT_ID_FIELD, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -149,6 +149,13 @@ describe('When fetching organization-wide defaults', () => {
     expect(elements).toIncludeAllPartialMembers([
       {
         elemID: new ElemID(SALESFORCE, 'Organization'),
+        annotations: {
+          [CORE_ANNOTATIONS.CREATABLE]: false,
+          [CORE_ANNOTATIONS.DELETABLE]: false,
+          [CORE_ANNOTATIONS.UPDATABLE]: false,
+          [API_NAME]: 'Organization',
+          [METADATA_TYPE]: 'CustomObject',
+        },
       },
       {
         elemID: new ElemID(SALESFORCE, 'Organization', 'instance', '_config'),
@@ -160,7 +167,6 @@ describe('When fetching organization-wide defaults', () => {
           defaultContactAccess: 'ControlledByParent',
           defaultLeadAccess: 'ReadEditTransfer',
           defaultOpportunityAccess: 'None',
-          fullName: 'OrganizationSettings',
         },
       },
     ])

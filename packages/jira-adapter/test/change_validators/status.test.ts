@@ -66,6 +66,12 @@ describe('statusValidator', () => {
       },
     ])
   })
+  it('should not throw on unresolved reference', async () => {
+    instance.value.statusCategory = new ReferenceExpression(
+      invalidStatusCategory.elemID, undefined
+    )
+    await expect(statusValidator([toChange({ after: instance })])).resolves.not.toThrow()
+  })
 
   it('should not return an error if status category is not No_Category', async () => {
     instance.value.statusCategory = new ReferenceExpression(

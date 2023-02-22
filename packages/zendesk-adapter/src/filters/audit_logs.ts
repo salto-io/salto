@@ -114,8 +114,7 @@ const getChangedByName = async ({
   client: ZendeskClient
   start: string
   end: string
-})
-  : Promise<string | undefined> => {
+}): Promise<string | undefined> => {
   const { id } = instance.value
   if (id === undefined) {
     log.error(`the instance ${instance.elemID.getFullName()} does not have an id`)
@@ -134,7 +133,7 @@ const getChangedByName = async ({
     })).data
     if (isValidAuditRes(res)) {
       if (_.isEmpty(res.audit_logs)) {
-        log.error(`there was no change for id ${id} between the times ${start} and ${end}`)
+        log.debug(`there was no change for instance ${instance.elemID.getFullName()} with id ${id} between the times ${start} and ${end}`)
         return undefined
       }
       return res.audit_logs[0].actor_name
@@ -197,7 +196,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
       const name = idToName[elem.value.updated_by_id]
       if (name === undefined) {
         elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = DELETED_USER
-        log.error(`could not find user with id ${elem.value.updated_by_id} `)
+        log.debug(`could not find user with id ${elem.value.updated_by_id} for instance ${elem.elemID.getFullName()}`)
       } else {
         elem.annotations[CORE_ANNOTATIONS.CHANGED_BY] = idToName[elem.value.updated_by_id]
       }
@@ -226,7 +225,7 @@ const addChangedByUsingAuditLog = async ({
       const isBeforeNewFetch = instTime.isSameOrBefore(newLastAuditTimeMoment)
       if (!isBeforeNewFetch) {
         // can happen for changes in ticket_fields, routing_attribute(_value), and user_fields for example
-        log.info(`There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`)
+        log.debug(`There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`)
       }
       return isAfterPrevFetch && isBeforeNewFetch
     })
@@ -238,14 +237,12 @@ const addChangedByUsingAuditLog = async ({
   await awu(updatedInstances)
     .filter(inst => !GUIDE_ELEMENTS.has(inst.elemID.typeName))
     .forEach(async inst => {
-      const name = await getChangedByName(
-        {
-          instance: inst,
-          client,
-          start: prevLastAuditTimeMoment.format(),
-          end: newLastAuditTimeMoment.format(),
-        }
-      )
+      const name = await getChangedByName({
+        instance: inst,
+        client,
+        start: prevLastAuditTimeMoment.format(),
+        end: newLastAuditTimeMoment.format(),
+      })
       if (name === undefined) {
         // error was logged earlier
         return

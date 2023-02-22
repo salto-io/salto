@@ -21,7 +21,7 @@ import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, Refere
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
-import { FORMULA, SALESFORCE } from '../constants'
+import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
 import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
@@ -33,29 +33,45 @@ const { extract } = formulon
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const identifierTypeToElemIdType = (typeInfo: FormulaIdentifierInfo): ElemIDType => {
-  if ((typeInfo.instance.match(/\./g) || []).length > 0) {
-    return 'field'
+const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
+  if (identifierInfo.type === IdentifierType.CUSTOM_LABEL) {
+    return [identifierInfo.instance]
+  }
+  if (identifierInfo.type === IdentifierType.CUSTOM_METADATA_TYPE_RECORD) {
+    const [typeName, instanceName] = identifierInfo.instance.split('.')
+    return [`${typeName.slice(0, -1 * CUSTOM_METADATA_SUFFIX.length)}_${instanceName}`]
+  }
+  return identifierInfo.instance.split('.').slice(1)
+}
+
+const identifierTypeToElementType = (identifierInfo: FormulaIdentifierInfo): string => {
+  if (identifierInfo.type === IdentifierType.CUSTOM_LABEL) {
+    return 'CustomLabel'
   }
 
-  return ({
+  return identifierInfo.instance.split('.')[0]
+}
+
+const identifierTypeToElemIdType = (identifierInfo: FormulaIdentifierInfo): ElemIDType => (
+  ({
     [IdentifierType.STANDARD_OBJECT.name]: 'type',
     [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
     [IdentifierType.CUSTOM_OBJECT.name]: 'type',
     [IdentifierType.CUSTOM_SETTING.name]: 'type',
     [IdentifierType.STANDARD_FIELD.name]: 'field',
     [IdentifierType.CUSTOM_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'type',
-  } as Record<string, ElemIDType>)[typeInfo.type.name]
-}
+    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance',
+    [IdentifierType.CUSTOM_LABEL.name]: 'instance',
+  } as Record<string, ElemIDType>)[identifierInfo.type.name]
+)
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
   typeInfos
     .map(identifierInfo => (
       new ElemID(SALESFORCE,
-        identifierInfo.instance.split('.')[0],
+        identifierTypeToElementType(identifierInfo),
         identifierTypeToElemIdType(identifierInfo),
-        ...identifierInfo.instance.split('.').slice(1))
+        ...identifierTypeToElementName(identifierInfo))
     ))
 )
 
@@ -131,8 +147,6 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  * This filter parses formulas, identifies such references and adds them to the _generated_references annotation of the
  * formula field.
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
- * Note: Because formulas are part of the type's definition we assume they can only refer to other types/fields and to
- *       instances
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'formula_deps',

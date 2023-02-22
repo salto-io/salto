@@ -14,34 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { AUTOMATION_TYPE_NAME } from '../change_validators/automation_all_conditions'
 
 const POTENTIAL_BAD_FORMAT_TYPES = [AUTOMATION_TYPE_NAME, 'trigger']
 const POTENTIAL_BAD_FORMAT_KEY = 'actions'
 const POTENTIAL_BAD_FORMAT_FIELD = 'notification_webhook'
-const POTENTIAL_BAD_FORMAT_VALUE_INDEX = 0
 
-const handleStringValue = ({ value, valueType, valueIndexToRedefine, elements }:
+const handleStringValue = ({ value }:
 {
  value: string
- valueType: string
- valueIndexToRedefine: number
- elements: Element[]
 }): string | [ReferenceExpression, ...unknown[]] => {
   try {
     const fixedValue = JSON.parse(value.replace(/\\\[/g, '[').replace(/\\\]/g, ']'))
-    const referencedInstance = elements.filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === valueType)
-      .find(e => e.value.id === fixedValue[valueIndexToRedefine])
-    if (referencedInstance !== undefined) {
-      fixedValue[valueIndexToRedefine] = new ReferenceExpression(
-        referencedInstance.elemID,
-        referencedInstance
-      )
-      return fixedValue
-    }
+    return fixedValue
   } catch (e) {
     // do nothing
   }
@@ -62,12 +49,7 @@ const filter: FilterCreator = () => ({
         actions.filter(action => action.field === POTENTIAL_BAD_FORMAT_FIELD).forEach(action => {
           const { value } = action
           if (_.isString(value)) {
-            action.value = handleStringValue({
-              value,
-              valueType: POTENTIAL_BAD_FORMAT_FIELD,
-              valueIndexToRedefine: POTENTIAL_BAD_FORMAT_VALUE_INDEX,
-              elements,
-            })
+            action.value = handleStringValue({ value })
           }
         })
       })

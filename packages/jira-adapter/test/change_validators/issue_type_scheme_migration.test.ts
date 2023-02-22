@@ -22,10 +22,15 @@ import { issueTypeSchemeMigrationValidator } from '../../src/change_validators/i
 import { ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, JIRA, PROJECT_TYPE } from '../../src/constants'
 
 describe('issue type scheme migration validator', () => {
-  const issueTypeReference = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), new InstanceElement('issueType1', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType1' }))
-  const issueTypeReference2 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), new InstanceElement('issueType2', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType2' }))
-  const issueTypeReference3 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'), new InstanceElement('issueType3', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType3' }))
-  const issueTypeReference4 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'), new InstanceElement('issueType4', new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) }), { name: 'issueType4' }))
+  const issueTypeObject = new ObjectType({ elemID: new ElemID(JIRA, ISSUE_TYPE_NAME) })
+  const issueTypeInstance1 = new InstanceElement('issueType1', issueTypeObject, { name: 'issueType1' })
+  const issueTypeInstance2 = new InstanceElement('issueType2', issueTypeObject, { name: 'issueType2' })
+  const issueTypeInstance3 = new InstanceElement('issueType3', issueTypeObject, { name: 'issueType3' })
+  const issueTypeInstance4 = new InstanceElement('issueType4', issueTypeObject, { name: 'issueType4' })
+  const issueTypeReference1 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), issueTypeInstance1)
+  const issueTypeReference2 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), issueTypeInstance2)
+  const issueTypeReference3 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType3'), issueTypeInstance3)
+  const issueTypeReference4 = new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType4'), issueTypeInstance4)
   const projectType = new ObjectType({ elemID: new ElemID(JIRA, PROJECT_TYPE) })
   let projectInstance: InstanceElement
   let secondProjectInstance: InstanceElement
@@ -72,7 +77,7 @@ describe('issue type scheme migration validator', () => {
       {
         defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
         issueTypeIds: [
-          issueTypeReference,
+          issueTypeReference1,
           issueTypeReference2,
           issueTypeReference3,
         ],
@@ -84,12 +89,21 @@ describe('issue type scheme migration validator', () => {
       {
         defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
         issueTypeIds: [
-          issueTypeReference,
+          issueTypeReference1,
           issueTypeReference4,
         ],
       }
     )
-    elementSource = buildElementsSourceFromElements([projectInstance, secondProjectInstance])
+    elementSource = buildElementsSourceFromElements([
+      projectInstance,
+      secondProjectInstance,
+      issueTypeInstance1,
+      issueTypeInstance2,
+      issueTypeInstance3,
+      issueTypeInstance4,
+      issueTypeScheme,
+      modifiedIssueTypeScheme,
+    ])
     mockConnection.get.mockImplementation(async url => {
       if (url === '/rest/api/3/search') {
         return {
@@ -108,6 +122,15 @@ describe('issue type scheme migration validator', () => {
     modifiedIssueTypeScheme.value.issueTypeIds = [
       ...issueTypeScheme.value.issueTypeIds,
       issueTypeReference4,
+    ]
+    expect(await callValidator()).toEqual([])
+  })
+
+  it('should not throw on unresolved issue type reference', async () => {
+    issueTypeScheme.value.issueTypeIds = [
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType5')),
+    ]
+    modifiedIssueTypeScheme.value.issueTypeIds = [
     ]
     expect(await callValidator()).toEqual([])
   })

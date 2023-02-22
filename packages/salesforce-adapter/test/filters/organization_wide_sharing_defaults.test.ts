@@ -15,9 +15,7 @@
 */
 import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/organization_wide_sharing_defaults'
-import { FilterWith } from '../../src/filter'
 import mockAdapter from '../adapter'
-import { defaultFilterContext } from '../utils'
 import * as filterUtilsModule from '../../src/filters/utils'
 import { API_NAME, CUSTOM_OBJECT_ID_FIELD, METADATA_TYPE, SALESFORCE } from '../../src/constants'
 
@@ -27,12 +25,14 @@ jest.mock('../../src/filters/utils', () => ({
 }))
 
 
-describe('When fetching organization-wide defaults', () => {
+describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
   const { client, connection } = mockAdapter({})
-  let filter: FilterWith<'onFetch'>
+  const filter = filterCreator({
+    client,
+  })
 
-  const setDescribeSObjectsReturnValue = (fields: string[]):void => {
+  describe('onFetch', () => {
     const objectDefaults = {
       activateable: false,
       childRelationships: [],
@@ -95,80 +95,72 @@ describe('When fetching organization-wide defaults', () => {
       unique: false,
       updateable: false,
     } as const
-    connection.soap.describeSObjects.mockResolvedValue([
-      {
-        ...objectDefaults,
-        name: 'Organization',
-        fields: [
-          {
-            ...fieldDefaults,
-            name: 'name',
-            nameField: true,
+
+    beforeEach(() => {
+      mockedFilterUtils.queryClient.mockResolvedValue([{
+        [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+        DefaultAccountAccess: 'Edit',
+        DefaultContactAccess: 'ControlledByParent',
+        DefaultOpportunityAccess: 'None',
+        DefaultLeadAccess: 'ReadEditTransfer',
+        DefaultCaseAccess: 'None',
+        DefaultCalendarAccess: 'HideDetailsInsert',
+        DefaultPricebookAccess: 'ReadSelect',
+        DefaultCampaignAccess: 'All',
+        SomeIrrelevantField: 'SomeIrrelevantValue',
+      }])
+      const fieldsOfInterest = [
+        'defaultAccountAccess',
+        'defaultCalendarAccess',
+        'defaultCampaignAccess',
+        'defaultCaseAccess',
+        'defaultContactAccess',
+        'defaultLeadAccess',
+        'defaultOpportunityAccess',
+      ]
+      connection.soap.describeSObjects.mockResolvedValue([
+        {
+          ...objectDefaults,
+          name: 'Organization',
+          fields: [
+            {
+              ...fieldDefaults,
+              name: 'name',
+              nameField: true,
+            },
+            ...fieldsOfInterest.map(fieldName => ({ name: fieldName, ...fieldDefaults })),
+          ],
+        },
+      ])
+    })
+
+    it('should fetch them', async () => {
+      const elements: Element[] = []
+      await filter.onFetch(elements)
+      expect(elements).toIncludeAllPartialMembers([
+        {
+          elemID: new ElemID(SALESFORCE, 'Organization'),
+          annotations: {
+            [CORE_ANNOTATIONS.CREATABLE]: false,
+            [CORE_ANNOTATIONS.DELETABLE]: false,
+            [CORE_ANNOTATIONS.UPDATABLE]: false,
+            [API_NAME]: 'Organization',
+            [METADATA_TYPE]: 'CustomObject',
           },
-          ...fields.map(fieldName => ({ name: fieldName, ...fieldDefaults })),
-        ],
-      },
-    ])
-  }
-
-  beforeAll(() => {
-    filter = filterCreator({
-      config: { ...defaultFilterContext },
-      client,
-    }) as typeof filter
-  })
-
-  beforeEach(() => {
-    mockedFilterUtils.queryClient.mockResolvedValue([{
-      [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
-      DefaultAccountAccess: 'Edit',
-      DefaultContactAccess: 'ControlledByParent',
-      DefaultOpportunityAccess: 'None',
-      DefaultLeadAccess: 'ReadEditTransfer',
-      DefaultCaseAccess: 'None',
-      DefaultCalendarAccess: 'HideDetailsInsert',
-      DefaultPricebookAccess: 'ReadSelect',
-      DefaultCampaignAccess: 'All',
-      SomeIrrelevantField: 'SomeIrrelevantValue',
-    }])
-    setDescribeSObjectsReturnValue([
-      'defaultAccountAccess',
-      'defaultCalendarAccess',
-      'defaultCampaignAccess',
-      'defaultCaseAccess',
-      'defaultContactAccess',
-      'defaultLeadAccess',
-      'defaultOpportunityAccess',
-    ])
-  })
-
-  it('should fetch them', async () => {
-    const elements: Element[] = []
-    await filter.onFetch(elements)
-    expect(elements).toHaveLength(2)
-    expect(elements).toIncludeAllPartialMembers([
-      {
-        elemID: new ElemID(SALESFORCE, 'Organization'),
-        annotations: {
-          [CORE_ANNOTATIONS.CREATABLE]: false,
-          [CORE_ANNOTATIONS.DELETABLE]: false,
-          [CORE_ANNOTATIONS.UPDATABLE]: false,
-          [API_NAME]: 'Organization',
-          [METADATA_TYPE]: 'CustomObject',
         },
-      },
-      {
-        elemID: new ElemID(SALESFORCE, 'Organization', 'instance', '_config'),
-        value: {
-          defaultAccountAccess: 'Edit',
-          defaultCalendarAccess: 'HideDetailsInsert',
-          defaultCampaignAccess: 'All',
-          defaultCaseAccess: 'None',
-          defaultContactAccess: 'ControlledByParent',
-          defaultLeadAccess: 'ReadEditTransfer',
-          defaultOpportunityAccess: 'None',
+        {
+          elemID: new ElemID(SALESFORCE, 'Organization', 'instance', '_config'),
+          value: {
+            defaultAccountAccess: 'Edit',
+            defaultCalendarAccess: 'HideDetailsInsert',
+            defaultCampaignAccess: 'All',
+            defaultCaseAccess: 'None',
+            defaultContactAccess: 'ControlledByParent',
+            defaultLeadAccess: 'ReadEditTransfer',
+            defaultOpportunityAccess: 'None',
+          },
         },
-      },
-    ])
+      ])
+    })
   })
 })

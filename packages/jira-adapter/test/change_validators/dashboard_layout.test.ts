@@ -67,6 +67,17 @@ describe('dashboardLayoutValidator', () => {
     expect(await dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })]))
       .toEqual([])
   })
+  it('should not on unresolved reference', async () => {
+    instance.value.layout = 'AA'
+
+    const afterInstance = instance.clone()
+    afterInstance.value.layout = 'AAA'
+    afterInstance.value.gadgets = [
+      new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'inst')),
+    ]
+    const errorPromise = dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })])
+    await expect(errorPromise).resolves.not.toThrow()
+  })
 
   it('should not return an error when there are no gadgets', async () => {
     instance.value.layout = 'AA'

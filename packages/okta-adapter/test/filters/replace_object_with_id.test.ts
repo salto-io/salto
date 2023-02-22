@@ -37,22 +37,14 @@ describe('replaceObjectWithIdFilter', () => {
           name: 'Marketing',
           description: 'Marketing Dep',
         },
-        users: [
+        roles: [
           {
             id: '0oa66j371cnRcCeQB5d7',
-            profile: {
-              firstName: 'test',
-              lastName: 'user',
-              login: 'user@test.io',
-            },
+            type: 'CUSTOM',
           },
           {
             id: '0oa68k9spoT0zHGQe5d7',
-            profile: {
-              firstName: 'test2',
-              lastName: 'user2',
-              login: 'user2@test.io',
-            },
+            type: 'HELP_DESK_ADMIN',
           },
         ],
       },
@@ -61,24 +53,20 @@ describe('replaceObjectWithIdFilter', () => {
 
   it('should replace object with ids', async () => {
     await filter.onFetch?.([groupType, groupInstance])
-    expect(groupInstance.value.users).toEqual([
+    expect(groupInstance.value.roles).toEqual([
       '0oa66j371cnRcCeQB5d7',
-      '0oa68k9spoT0zHGQe5d7',
+      'HELP_DESK_ADMIN',
     ])
   })
   it('should not replace object with ids if id does not exists', async () => {
     const group2 = groupInstance.clone()
-    delete group2.value.users[1].id
+    delete group2.value.roles[0].id
     await filter.onFetch?.([groupType, group2])
-    expect(group2.value.users).toEqual([
-      '0oa66j371cnRcCeQB5d7',
+    expect(group2.value.roles).toEqual([
       {
-        profile: {
-          firstName: 'test2',
-          lastName: 'user2',
-          login: 'user2@test.io',
-        },
+        type: 'CUSTOM',
       },
+      'HELP_DESK_ADMIN',
     ])
   })
 })

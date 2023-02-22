@@ -154,8 +154,8 @@ describe('oneTranslationPerLocalValidator',
       expect(errors).toEqual([{
         elemID: article.elemID,
         severity: 'Error',
-        message: `Multiple translations with the same locale found in ${article.elemID.typeName} instance. Only one translation per locale is supported.`,
-        detailedMessage: `Instance ${article.elemID.getFullName()} has multiple translations for locales: en-us. Only one translation per locale is supported.`,
+        message: 'Can’t do this change since there are too many translations per locale',
+        detailedMessage: 'More than one translation found for locales en-us. Only one translation per locale is supported.',
       }])
     })
     it('should not return an error when parent does not exist', async () => {

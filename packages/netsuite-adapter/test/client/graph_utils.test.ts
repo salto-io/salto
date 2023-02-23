@@ -26,9 +26,9 @@ describe('graph utils tests', () => {
   const testNode2 = new GraphNode({ name: 'node2', num: 2 })
   const testNode3 = new GraphNode({ name: 'node3', num: 3 })
   const testGraph = new Graph<testNode>('name', [testNode1, testNode2, testNode3])
-  testNode1.addEdge(testNode2)
-  testNode1.addEdge(testNode3)
-  testNode2.addEdge(testNode1)
+  testNode1.addEdge(testGraph.key, testNode2)
+  testNode1.addEdge(testGraph.key, testNode3)
+  testNode2.addEdge(testGraph.key, testNode1)
 
 
   it('should find the nodes dependencies', async () => {

@@ -14,25 +14,25 @@
 * limitations under the License.
 */
 
+import { CustomizationInfo } from '../../src/client/types'
 import { reorderDeployXml } from '../../src/client/deploy_xml_utils'
 import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
 import { FILE, FOLDER } from '../../src/constants'
 
 describe('deploy xml utils tests', () => {
-  const emptyCustInfo = { typeName: '', values: {} }
   let testGraph: Graph<SDFObjectNode>
   beforeEach(() => {
     const testNode1 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: emptyCustInfo }
+      { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: { scriptId: 'scriptid1', typeName: '', values: {} } as CustomizationInfo }
     )
     const testNode2 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: emptyCustInfo }
+      { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: { scriptId: 'scriptid2', typeName: '', values: {} } as CustomizationInfo }
     )
     const testNode3 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: emptyCustInfo }
+      { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: { scriptId: 'scriptid3', typeName: '', values: {} } as CustomizationInfo }
     )
-    testNode1.addEdge(testNode2)
-    testNode3.addEdge(testNode1)
+    testNode3.addEdge('elemIdFullName', testNode1)
+    testNode1.addEdge('elemIdFullName', testNode2)
     testGraph = new Graph<SDFObjectNode>('elemIdFullName', [testNode1, testNode2, testNode3])
   })
   const originalDeployXml = `<deploy>
@@ -78,7 +78,7 @@ describe('deploy xml utils tests', () => {
     const emptyFolderCustInfo = { typeName: FOLDER, values: {}, path: ['SuiteScripts', 'InnerFolder'] }
     const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: emptyFileCustInfo, changeType: 'addition' })
     const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: emptyFolderCustInfo, changeType: 'addition' })
-    fileTestNode.addEdge(folderTestNode)
+    fileTestNode.addEdge(testGraph.key, folderTestNode)
     testGraph.addNodes([fileTestNode, folderTestNode])
     const fixedDeployXml = `<deploy>
   <configuration>

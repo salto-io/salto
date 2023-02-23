@@ -201,7 +201,7 @@ export default class NetsuiteClient {
           currSet.add(serviceIdInfo.serviceId)
           const startNode = dependencyGraph.findNodeByField('serviceid', serviceIdInfo.serviceId)
           if (startNode && endNode && startNode.value.changeType === 'addition') {
-            startNode.addEdge(endNode)
+            startNode.addEdge(dependencyGraph.key, endNode)
           }
         })
       })

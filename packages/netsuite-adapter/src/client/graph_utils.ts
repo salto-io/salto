@@ -26,16 +26,16 @@ export type SDFObjectNode = {
 }
 
 export class GraphNode<T> {
-  edges: GraphNode<T>[]
+  edges: Map<T[keyof T], GraphNode<T>>
   value: T
 
   constructor(value: T) {
     this.value = value
-    this.edges = []
+    this.edges = new Map<T[keyof T], GraphNode<T>>()
   }
 
-  addEdge(node: GraphNode<T>): void {
-    this.edges.push(node)
+  addEdge(key: keyof T, node: GraphNode<T>): void {
+    this.edges.set(node.value[key], node)
   }
 }
 
@@ -103,9 +103,7 @@ export class Graph<T> {
     const node = this.nodes.get(key)
     if (node) {
       Array.from(this.nodes.values()).forEach(otherNode => {
-        if (otherNode.edges.includes(node)) {
-          _.remove(otherNode.edges, edgeNode => _.isEqual(node, edgeNode))
-        }
+        otherNode.edges.delete(key)
       })
       this.nodes.delete(key)
     }

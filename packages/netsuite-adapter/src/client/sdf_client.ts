@@ -56,7 +56,7 @@ import {
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
-import { reorderDeployXml, getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX, XML_FILE_SUFFIX } from './deploy_xml_utils'
+import { reorderDeployXml, getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -998,12 +998,12 @@ export default class SdfClient {
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,
     srcDirPath: string): Promise<void> {
     await writeFile(
-      `${getCustomTypeInfoPath(srcDirPath, customTypeInfo.scriptId, XML_FILE_SUFFIX)}`,
+      getCustomTypeInfoPath(srcDirPath, customTypeInfo),
       convertToXmlContent(customTypeInfo)
     )
     if (isTemplateCustomTypeInfo(customTypeInfo)) {
       await writeFile(getCustomTypeInfoPath(srcDirPath,
-        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`, ''),
+        customTypeInfo, `${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
       customTypeInfo.fileContent)
     }
   }
@@ -1025,11 +1025,11 @@ export default class SdfClient {
   private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
     srcDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
+    const fileFolderPath = getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo)
     const attrsFolderPath = osPath.resolve(
-      getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+      fileFolderPath, ATTRIBUTES_FOLDER_NAME
     )
     const filename = fileCustomizationInfo.path.slice(-1)[0]
-    const fileFolderPath = getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo)
     await Promise.all([
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
       writeFileInFolder(attrsFolderPath, attrsFilename, convertToXmlContent(fileCustomizationInfo)),

@@ -456,7 +456,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
             }),
           })
-          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo })])
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -644,7 +644,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           typeName: 'type',
           values: { scriptid: 'someObject' },
         }
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo } as SDFObjectNode)])
         await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           undefined,

@@ -1268,6 +1268,7 @@ describe('sdf client', () => {
     let client: SdfClient
     const testGraph = DEFAULT_DEPLOY_PARAMS[2]
     let customTypeInfo: CustomTypeInfo
+    let testSDFNode: SDFObjectNode
     beforeEach(() => {
       client = mockClient()
       testGraph.nodes.clear()
@@ -1278,6 +1279,7 @@ describe('sdf client', () => {
         },
         scriptId: 'scriptId',
       } as CustomTypeInfo
+      testSDFNode = { serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo }
     })
     describe('deployCustomObject', () => {
       it('should succeed for CustomTypeInfo', async () => {
@@ -1410,7 +1412,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1505,7 +1507,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1555,7 +1557,7 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1606,7 +1608,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1658,7 +1660,7 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1712,7 +1714,7 @@ File: ~/AccountConfiguration/features.xml`
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode({ serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
@@ -1735,7 +1737,7 @@ File: ~/AccountConfiguration/features.xml`
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
-        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder', elemIdFullName: 'name', changeType: 'addition', customizationInfo: folderCustomizationInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder', elemIdFullName: 'name', changeType: 'addition', customizationInfo: folderCustomizationInfo } as SDFObjectNode)])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
@@ -1764,7 +1766,7 @@ File: ~/AccountConfiguration/features.xml`
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: dummyFileContent,
         }
-        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder/content.html', elemIdFullName: 'name', changeType: 'addition', customizationInfo: fileCustomizationInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder/content.html', elemIdFullName: 'name', changeType: 'addition', customizationInfo: fileCustomizationInfo } as SDFObjectNode)])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
         expect(mkdirpMock)
@@ -1798,7 +1800,7 @@ File: ~/AccountConfiguration/features.xml`
         },
       }
       it('should succeed', async () => {
-        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(writeFileMock).toHaveBeenCalledTimes(3)
@@ -1813,7 +1815,7 @@ File: ~/AccountConfiguration/features.xml`
 
       it('should throw FeaturesDeployError on failed features deploy', async () => {
         const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
-        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
         await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
@@ -1845,8 +1847,8 @@ File: ~/AccountConfiguration/features.xml`
         scriptId: scriptId2,
       }
       testGraph.addNodes([
-        new GraphNode({ serviceid: scriptId1, elemIdFullName: 'name1', changeType: 'addition', customizationInfo: customTypeInfo1 }),
-        new GraphNode({ serviceid: scriptId2, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: customTypeInfo2 }),
+        new GraphNode({ serviceid: scriptId1, elemIdFullName: 'name1', changeType: 'addition', customizationInfo: customTypeInfo1 } as SDFObjectNode),
+        new GraphNode({ serviceid: scriptId2, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: customTypeInfo2 } as SDFObjectNode),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
       expect(writeFileMock).toHaveBeenCalledTimes(4)
@@ -1864,8 +1866,8 @@ File: ~/AccountConfiguration/features.xml`
     describe('validate only', () => {
       const failObject = 'fail_object'
       testGraph.addNodes([
-        new GraphNode({ serviceid: failObject, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject } }),
-        new GraphNode({ serviceid: 'successObject', elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' } }),
+        new GraphNode({ serviceid: failObject, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject } } as SDFObjectNode),
+        new GraphNode({ serviceid: 'successObject', elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' } } as SDFObjectNode),
       ])
       const deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
         undefined,

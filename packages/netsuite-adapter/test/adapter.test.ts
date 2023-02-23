@@ -644,7 +644,7 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         const customizationInfo = await toCustomizationInfo(expectedResolvedInstance)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'addition', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'addition', customizationInfo } as SDFObjectNode)])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -661,7 +661,7 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(fileInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'addition', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'addition', customizationInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -677,7 +677,7 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(folderInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'addition', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'addition', customizationInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -701,8 +701,8 @@ describe('Adapter', () => {
         const folderServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
         const fileServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
         testGraph.addNodes([
-          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo }),
-          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo }),
+          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo } as SDFObjectNode),
+          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo } as SDFObjectNode),
         ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
@@ -730,8 +730,8 @@ describe('Adapter', () => {
         const folderServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
         const fileServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
         testGraph.addNodes([
-          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo }),
-          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo }),
+          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo } as SDFObjectNode),
+          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo } as SDFObjectNode),
         ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
@@ -767,7 +767,7 @@ describe('Adapter', () => {
         const expectedResolvedInstance = instance.clone()
         expectedResolvedInstance.value.description = 'description value'
         const customizationInfo = await toCustomizationInfo(expectedResolvedInstance)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo } as SDFObjectNode)])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -784,7 +784,7 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(fileInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'modification', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'modification', customizationInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -800,7 +800,7 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(folderInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'modification', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'modification', customizationInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -823,7 +823,7 @@ describe('Adapter', () => {
         const expectedResolvedAfter = after.clone()
         expectedResolvedAfter.value.description = 'edited description value'
         const customizationInfo = await toCustomizationInfo(expectedResolvedAfter)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo })])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo } as SDFObjectNode)])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -870,7 +870,7 @@ describe('Adapter', () => {
             changes: [{ action: 'add', data: { after: instance } }],
           },
         })
-        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           {
@@ -887,7 +887,7 @@ describe('Adapter', () => {
 
       it('should call deploy without additional dependencies', async () => {
         await adapterAdd(instance)
-        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo })])
+        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo } as SDFObjectNode)])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,

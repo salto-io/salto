@@ -13,12 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
-import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
+import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
-import { hideFields, fixFieldTypes } from '../../type_elements'
+import { hideFields, fixFieldTypes, getContainerForType } from '../../type_elements'
 
 const log = logger(module)
 
@@ -90,4 +91,31 @@ export const fixTypes = (
         type.isSettings = true
       }
     })
+}
+
+/**
+ * Get additional schemas from from type names in FieldTypeOverrideType config
+ */
+export const getFieldTypeOverridesTypes = (
+  typeConfig: Record<string, TypeSwaggerConfig>,
+  typeDefaultConfig: TypeSwaggerDefaultConfig,
+): string[] => {
+  const primitiveTypeNames = Object.values(BuiltinTypes).map(type => type.elemID.name)
+  const getInnerTypeName = (typeName: string): string => {
+    const nestedTypeName = getContainerForType(typeName)
+    return nestedTypeName === undefined ? typeName : getInnerTypeName(nestedTypeName.typeNameSubstring)
+  }
+
+  return _.uniq(Object.keys(typeConfig)
+    .filter(typeName =>
+      getTypeTransformationConfig(
+        typeName, typeConfig, typeDefaultConfig
+      ).fieldTypeOverrides !== undefined)
+    .flatMap(typeName => {
+      const fieldTypeOverrides = getTypeTransformationConfig(
+        typeName, typeConfig, typeDefaultConfig,
+      ).fieldTypeOverrides as FieldTypeOverrideType[]
+      return fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType))
+    }))
+    .filter(typeName => !primitiveTypeNames.includes(typeName))
 }

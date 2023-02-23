@@ -87,10 +87,10 @@ describe('workflow scheme migration', () => {
   const issueType3Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')
   const issueType4Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType4')
   const issueType5Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')
-  let workflow1: InstanceElement
-  let workflow2: InstanceElement
-  let workflow3: InstanceElement
-  let workflow4: InstanceElement
+  let workflow1: ReferenceExpression
+  let workflow2: ReferenceExpression
+  let workflow3: ReferenceExpression
+  let workflow4: ReferenceExpression
   let workflowSchemeType: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType

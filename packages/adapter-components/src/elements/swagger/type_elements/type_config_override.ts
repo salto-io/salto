@@ -16,12 +16,15 @@
 import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
-import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../../../config/transformation'
+import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
 import { hideFields, fixFieldTypes, getContainerForType } from '../../type_elements'
+import { getConfigWithDefault } from '../../../config/shared'
 
 const log = logger(module)
+const { isDefined } = values
 
 /**
  * Define additional types/endpoints from config that were missing in the swagger.
@@ -106,16 +109,12 @@ export const getFieldTypeOverridesTypes = (
     return nestedTypeName === undefined ? typeName : getInnerTypeName(nestedTypeName.typeNameSubstring)
   }
 
-  return _.uniq(Object.keys(typeConfig)
-    .filter(typeName =>
-      getTypeTransformationConfig(
-        typeName, typeConfig, typeDefaultConfig
-      ).fieldTypeOverrides !== undefined)
-    .flatMap(typeName => {
-      const fieldTypeOverrides = getTypeTransformationConfig(
-        typeName, typeConfig, typeDefaultConfig,
-      ).fieldTypeOverrides as FieldTypeOverrideType[]
-      return fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType))
-    }))
+  return _.uniq(Object.values(typeConfig)
+    .map(config =>
+      getConfigWithDefault(
+        config.transformation, typeDefaultConfig.transformation
+      ).fieldTypeOverrides)
+    .filter(isDefined)
+    .flatMap(fieldTypeOverrides => fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType))))
     .filter(typeName => !primitiveTypeNames.includes(typeName))
 }

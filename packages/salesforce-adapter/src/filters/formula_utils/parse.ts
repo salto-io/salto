@@ -41,13 +41,15 @@ export const parseField = (value: string, object: string): FormulaIdentifierInfo
 }
 
 export const parseObject = (object: string): FormulaIdentifierInfo => {
-  let type: IdentifierType = 'standardObject'
+  let type: IdentifierType
 
   if (isCustom(object)) {
     type = 'customObject'
   } else if (isCustomMetadata(object)) {
     type = 'customMetadataType'
-  } else if (!isStandardRelationship(object)) {
+  } else if (isStandardRelationship(object)) {
+    type = 'standardObject'
+  } else {
     type = 'unknownRelationship'
   }
 
@@ -58,7 +60,7 @@ export const parseObject = (object: string): FormulaIdentifierInfo => {
 }
 
 export const parseCustomMetadata = (value: string): FormulaIdentifierInfo[] => {
-  // $CustomMetadata.Trigger_Context_Status__mdt.SRM_Metadata_c.Enable_After_Insert__c
+  // 'value' looks like $CustomMetadata.Trigger_Context_Status__mdt.SRM_Metadata_c.Enable_After_Insert__c
   const [, sobject, sobjInstance, fieldName] = parts(value)
 
   return [

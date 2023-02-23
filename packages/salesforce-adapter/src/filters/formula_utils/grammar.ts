@@ -49,7 +49,8 @@ export const isProcessBuilderIdentifier = (value: string): boolean => (
   value.startsWith('[') && value.endsWith(']')
 )
 export const isCPQRelationship = (value: string): boolean => {
-  const obj = getObject(value).toLocaleUpperCase()
+  const objectUpperCase = getObject(value).toLocaleUpperCase()
 
-  return obj.startsWith(`${CPQ_NAMESPACE}${NAMESPACE_SEPARATOR}`) && obj.endsWith(RELATIONSHIP_SUFFIX)
+  return objectUpperCase.startsWith(`${CPQ_NAMESPACE}${NAMESPACE_SEPARATOR}`)
+    && objectUpperCase.endsWith(RELATIONSHIP_SUFFIX)
 }

@@ -116,7 +116,6 @@ import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
-import tempName from './filters/tempName'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -182,7 +181,6 @@ export const DEFAULT_FILTERS = [
   guideDefaultLanguage, // needs to be after guideGuideSettings
   guideServiceUrl,
   guideLocalesFilter, // Needs to be after guideServiceUrl
-  tempName,
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
   fieldReferencesFilter,
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter

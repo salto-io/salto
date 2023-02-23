@@ -230,6 +230,14 @@ describe('workflow scheme migration', () => {
     const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     await expect(errorsPromise).resolves.not.toThrow()
   })
+  it('should not throw if workflow has no statuses', async () => {
+    workflow1.value.value.statuses = undefined
+    workflow2.value.value.statuses = undefined
+    workflow3.value.value.statuses = undefined
+    workflow4.value.value.statuses = undefined
+    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    await expect(errorsPromise).resolves.not.toThrow()
+  })
   it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
     numberOfIssues = 0
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)

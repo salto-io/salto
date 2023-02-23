@@ -60,20 +60,14 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
 
 const getSavedSearchesMap = async (
   client: NetsuiteClient,
-  timeZone: string,
 ): Promise<Record<string, ModificationInformation>> => {
   const savedSearches = await fetchSavedSearches(client)
-  const now = moment.tz(timeZone)
-  return Object.fromEntries(savedSearches
-    .filter(savedSearch =>
-      isDefined(savedSearch.datemodified)
-      && !now.isBefore(moment.tz(savedSearch.datemodified, timeZone)))
-    .map(savedSearch => [
-      savedSearch.id,
-      {
-        name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified,
-      },
-    ]))
+  return Object.fromEntries(savedSearches.map(savedSearch => [
+    savedSearch.id,
+    {
+      name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified,
+    },
+  ]))
 }
 
 export const changeDateFormat = (date: string, timeAndFormat: TimeZoneAndFormat): string => {
@@ -144,11 +138,14 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
     if (_.isEmpty(savedSearchesInstances)) {
       return
     }
-    const { timeZone, timeFormat, dateFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
-    const savedSearchesMap = await getSavedSearchesMap(client, timeZone)
+
+    const savedSearchesMap = await getSavedSearchesMap(client)
     if (_.isEmpty(savedSearchesMap)) {
       return
     }
+
+    const { timeZone, timeFormat, dateFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
+
     savedSearchesInstances.forEach(search => {
       if (isDefined(savedSearchesMap[search.value.scriptid])) {
         const { name, date } = savedSearchesMap[search.value.scriptid]

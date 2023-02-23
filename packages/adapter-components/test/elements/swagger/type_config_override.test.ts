@@ -39,6 +39,11 @@ describe('type_config_override', () => {
             ],
           },
         },
+        SomeType: {
+          transformation: {
+            idFields: ['name', 'parent'],
+          },
+        },
       }
       const typeDefaults = { transformation: { idFields: ['name'] } }
       const result = getFieldTypeOverridesTypes(typeConfig, typeDefaults)

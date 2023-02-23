@@ -15,7 +15,7 @@ Currently, Salto supports the following business applications:
 - [Salesforce](https://github.com/salto-io/salto/tree/main/packages/salesforce-adapter)
 - [NetSuite](https://github.com/salto-io/salto/tree/main/packages/netsuite-adapter)
 - [Workato](https://github.com/salto-io/salto/tree/main/packages/workato-adapter)
-- [Zendesk](https://github.com/salto-io/salto/tree/main/packages/zendesk-adapter)
+- [SAP](https://github.com/salto-io/salto/tree/main/packages/sap-adapter)
 - [Zuora Billing](https://github.com/salto-io/salto/tree/main/packages/zuora-billing-adapter)
 - [Jira](https://github.com/salto-io/salto/tree/main/packages/jira-adapter)
 - [Stripe](https://github.com/salto-io/salto/tree/main/packages/stripe-adapter)

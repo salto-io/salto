@@ -25,6 +25,7 @@
         { "path": "../netsuite-adapter" },
         { "path": "../okta-adapter" },
         { "path": "../salesforce-adapter" },
+        { "path": "../sap-adapter" },
         { "path": "../stripe-adapter" },
         { "path": "../test-utils" },
         { "path": "../workato-adapter" },

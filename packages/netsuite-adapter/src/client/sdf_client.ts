@@ -315,10 +315,12 @@ export default class SdfClient {
       return
     }
 
-    const dataLines = data.filter(_.isString)
+    const dataLines = data.map(String.toString)
 
     if (dataLines.some(line => fatalErrorMessageRegex.test(line))) {
-      throw new Error(dataLines.join(os.EOL))
+      const errorMessage = dataLines.join(os.EOL)
+      log.error('non-thrown sdf error was detected: %o', errorMessage)
+      throw new Error(errorMessage)
     }
 
     const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))

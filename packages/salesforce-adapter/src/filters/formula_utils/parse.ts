@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   isCPQRelationship, isCustom, isCustomLabel, isCustomMetadata, isCustomSetting, isObjectType, isParent, isParentField,
   isProcessBuilderIdentifier, isRelationshipField, isSpecialPrefix, isStandardRelationship, isUserField,
@@ -108,18 +109,17 @@ export const parseObjectType = (value: string): FormulaIdentifierInfo[] => {
 export const parseFormulaIdentifier = (variableName: string, originalObject: string): FormulaIdentifierInfo[] => {
   const types: FormulaIdentifierInfo[] = []
 
-  const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): void => {
-    const field = fieldWithPrefix.startsWith('$') ? fieldWithPrefix.substring(1) : fieldWithPrefix
+  const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): FormulaIdentifierInfo[] => {
+    const field = _.trimStart(fieldWithPrefix, '$')
 
-    // e.g. 'Account.Industry' - the field has an explicit parent object
-    if (parts(field).length === 2) {
-      types.push(parseField(field, getObject(field)))
-      types.push(parseObject(getObject(field)))
-    } else {
-      // e.g. 'Name' - the field implicitly refers to the parent object
-      types.push(parseField(field, parentObject))
-      types.push(parseObject(parentObject))
-    }
+    // Either the field identifier has an explicit parent (e.g. 'Account.Industry') or it implicitly refers to
+    // the provided parent object (e.g. 'Name')
+    const fieldParent = field.includes('.') ? getObject(field) : parentObject
+
+    return [
+      parseField(field, fieldParent),
+      parseObject(fieldParent),
+    ]
   }
 
   // this order matters, we have to evaluate object types before anything else because the syntax can be extremely
@@ -180,10 +180,10 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
         fieldName = createApiName(lastKnownParent, getField(fieldName))
       }
 
-      parseFieldIdentifier(fieldName, originalObject)
+      types.push(...parseFieldIdentifier(fieldName, originalObject))
     })
   } else {
-    parseFieldIdentifier(variableName, originalObject)
+    types.push(...parseFieldIdentifier(variableName, originalObject))
   }
 
   return types

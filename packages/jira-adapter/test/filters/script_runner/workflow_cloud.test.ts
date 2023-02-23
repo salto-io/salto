@@ -36,7 +36,7 @@ const compareScripts = (script1: string, script2: string): void => {
   expect(zipBuffer1).toEqual(zipBuffer2)
 }
 
-describe('Cloud Workflow post functions', () => {
+describe('Cloud ScriptRunner Workflow', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement

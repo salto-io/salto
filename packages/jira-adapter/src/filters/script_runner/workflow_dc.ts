@@ -19,7 +19,7 @@ import { safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter
 import { Value } from '@salto-io/adapter-api'
 
 const log = logger(module)
-const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
+export const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
   'com.onresolve.jira.groovy.GroovyValidator',
   'com.onresolve.jira.groovy.GroovyCondition']
 const DC_ENCODE_PREFIX = '`!`'

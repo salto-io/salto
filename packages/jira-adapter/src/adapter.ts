@@ -119,6 +119,7 @@ import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
+import scriptRunnerWorkflowOrFilter from './filters/script_runner/workflow_ors'
 
 const {
   generateTypes,
@@ -224,6 +225,8 @@ export const DEFAULT_FILTERS = [
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
   scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowOrFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

@@ -28,7 +28,7 @@ const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
 }
 
 
-describe('DC Workflow post functions', () => {
+describe('Scriptrunner Workflow in DC', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement

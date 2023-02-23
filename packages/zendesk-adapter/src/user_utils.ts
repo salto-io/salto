@@ -31,7 +31,7 @@ const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback 
 // system options that do not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
-type User = {
+export type User = {
   id: number
   name: string
   email: string
@@ -199,7 +199,7 @@ export const getUserFallbackValue = async (
   defaultMissingUserFallback: string,
   existingUsers: Set<string>,
   client: ZendeskClient
-): Promise<string> => {
+): Promise<string | undefined> => {
   if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.getSinglePage({
@@ -209,15 +209,14 @@ export const getUserFallbackValue = async (
         return response.user.email
       }
       log.error('Received invalid response from endpoint \'/api/v2/users/me\'')
-      throw new Error('Received invalid user response')
     } catch (e) {
       log.error('Attempt to get current user details has failed with error: %o', e)
-      throw new Error('Failed to get current user from endpoint \'/api/v2/users/me\'')
     }
+    return undefined
   }
   if (!existingUsers.has(defaultMissingUserFallback)) {
     log.error(MISSING_DEPLOY_CONFIG_USER)
-    throw new Error(MISSING_DEPLOY_CONFIG_USER)
+    return undefined
   }
   return defaultMissingUserFallback
 }

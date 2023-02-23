@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, ReadOnlyElementsSource, ObjectType, BuiltinTypesByFullName,
+  Adapter, AdapterAuthentication, ReadOnlyElementsSource, ObjectType, BuiltinTypesByFullName, GLOBAL_ADAPTER,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -156,6 +156,8 @@ const filterElementsSource = (
 ): ReadOnlyElementsSource => {
   const isRelevantID = (elemID: ElemID): boolean =>
     (elemID.adapter === adapterName
+      || elemID.adapter === GLOBAL_ADAPTER
+      // This is because getFullName and fromFullName is not symetric for BuiltinTypes
       || (Object.keys(BuiltinTypesByFullName).includes(elemID.getFullName())))
 
   const isRelevantFullName = (key: string): boolean =>

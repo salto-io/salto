@@ -16,7 +16,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { FieldDefinition, BuiltinTypes, ObjectType, ElemID, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { SUBTYPES_PATH, TYPES_PATH } from '../../src/elements/constants'
-import { filterTypes, hideFields, markServiceIdField } from '../../src/elements/type_elements'
+import { filterTypes, getContainerForType, hideFields, markServiceIdField } from '../../src/elements/type_elements'
 
 describe('type_elements', () => {
   describe('hideFields', () => {
@@ -155,6 +155,21 @@ describe('type_elements', () => {
         markServiceIdField('id', typeFields, 'test')
         expect(typeFields.id).not.toBeDefined()
       })
+    })
+  })
+
+  describe('getContainerForType', () => {
+    it('should return the correct container and type name substring', () => {
+      const listType = getContainerForType('list<SomeType>')
+      expect(listType?.container).toEqual('list')
+      expect(listType?.typeNameSubstring).toEqual('SomeType')
+      const mapType = getContainerForType('map<list<AnotherType>>')
+      expect(mapType?.container).toEqual('map')
+      expect(mapType?.typeNameSubstring).toEqual('list<AnotherType>')
+    })
+    it('should return undefined if there is no container', () => {
+      const result = getContainerForType('SomeType')
+      expect(result).toBeUndefined()
     })
   })
 })

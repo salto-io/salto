@@ -95,6 +95,9 @@ export default class SAPAdapter implements AdapterOperations {
     return generateTypes(
       SAP,
       this.userConfig[API_DEFINITIONS_CONFIG],
+      undefined,
+      undefined,
+      true,
     )
   }
 
@@ -103,13 +106,16 @@ export default class SAPAdapter implements AdapterOperations {
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
-    return getAllInstances({
-      paginator: this.paginator,
-      objectTypes: _.pickBy(allTypes, isObjectType),
-      apiConfig: this.apiDefinitions(parsedConfigs),
-      supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-      fetchQuery: this.fetchQuery,
-    })
+    if (this.paginator === undefined) { // TODO temp
+      return getAllInstances({
+        paginator: this.paginator,
+        objectTypes: _.pickBy(allTypes, isObjectType),
+        apiConfig: this.apiDefinitions(parsedConfigs),
+        supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+        fetchQuery: this.fetchQuery,
+      })
+    }
+    return { elements: [] }
   }
 
   /**

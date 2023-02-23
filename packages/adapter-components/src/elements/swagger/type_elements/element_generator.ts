@@ -289,6 +289,7 @@ export const generateTypes = async (
   }: AdapterSwaggerApiConfig,
   preParsedDefs?: SchemasAndRefs,
   loadedSwagger?: LoadedSwagger,
+  includeAllTypes?: boolean,
 ): Promise<ParsedTypes> => {
   // TODO SALTO-1252 - persist swagger locally
 

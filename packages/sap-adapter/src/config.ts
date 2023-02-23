@@ -53,7 +53,7 @@ const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
 }
 
 export const SUPPORTED_TYPES = { // TODO
-  AccountingCodeItem: ['AccountingCodes'],
+  MCMService_EnergySourceTypes: ['EnergySourceTypes'],
 }
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {

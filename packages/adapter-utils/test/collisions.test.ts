@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
 import { getAndLogCollisionWarnings, getInstancesWithCollidingElemID } from '../src/collisions'
 
 describe('collisions', () => {
@@ -102,6 +102,32 @@ Alternatively, you can exclude obj from the default configuration in salto.nacl`
         idFieldsName: 'unique fields',
       })
       expect(errors).toHaveLength(0)
+    })
+  })
+  describe('when collision occurs due to instances with empty name', () => {
+    let collisionWarnings: SaltoError[]
+    beforeEach(async () => {
+      const instanceWithEmptyName = new InstanceElement(
+        ElemID.CONFIG_NAME,
+        instType,
+      )
+      collisionWarnings = await getAndLogCollisionWarnings({
+        instances: [instanceWithEmptyName, instanceWithEmptyName.clone()],
+        adapterName: 'salto',
+        configurationName: 'default',
+        getInstanceName: async inst => inst.elemID.name,
+        getTypeName: async inst => inst.elemID.typeName,
+        getIdFieldsByType: () => ['title'],
+        idFieldsName: 'unique fields',
+      })
+    })
+    it('should create indicative warning', () => {
+      expect(collisionWarnings).toEqual(([
+        expect.objectContaining({
+          severity: 'Warning',
+          message: expect.stringContaining('Instances with empty name (Due to no values in any of the provided ID fields)'),
+        }),
+      ]))
     })
   })
 })

@@ -31,7 +31,6 @@ import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
-import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
 import fetchUserSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
@@ -51,7 +50,6 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   standardRolesFilter,
   fetchUserSchemaFilter,
-  appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
   // should run before fieldReferencesFilter

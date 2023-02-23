@@ -82,7 +82,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       toChange({ before: instance, after: afterInstance }),
     ])
     expect(errors).toEqual([{
-      elemID: instance.elemID,
+      elemID: instance.elemID.createNestedID('notUpdatableField'),
       severity: 'Info',
       message: 'Operation not supported for specific value',
       detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The current value in the target environment will not be modified',
@@ -97,7 +97,7 @@ describe('checkDeploymentAnnotationsValidator', () => {
       toChange({ after: afterInstance }),
     ])
     expect(errors).toEqual([{
-      elemID: instance.elemID,
+      elemID: instance.elemID.createNestedID('notUpdatableField'),
       severity: 'Info',
       message: 'Operation not supported for specific value',
       detailedMessage: 'Deploying "notUpdatableField" in adapter.test.instance.instance is not supported. The instance will be created with the default value of the target environment',

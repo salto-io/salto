@@ -44,6 +44,6 @@ export const automationsValidator: ChangeValidator = async (changes, elementsSou
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Automation name is already in use',
-      detailedMessage: `The name ${instance.value.name} of ${instance.elemID.getFullName()} is already used by other automations: ${nameToAutomations[instance.value.name].filter(inst => !inst.elemID.isEqual(instance.elemID)).map(inst => inst.elemID.getFullName()).join(', ')}.`,
+      detailedMessage: `The automation name “${instance.value.name}” is already used by other automations in the target environment. To deploy this automation using Salto, rename it and try again.`,
     }))
 }

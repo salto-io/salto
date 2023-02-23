@@ -31,7 +31,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
+        detailedMessage: 'This is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed.',
       },
     ])
   })
@@ -48,7 +48,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
+        detailedMessage: 'This is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed.',
       },
     ])
   })
@@ -65,7 +65,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
+        detailedMessage: 'This is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed.',
       },
     ])
   })
@@ -80,7 +80,7 @@ describe('systemFieldsValidator', () => {
         elemID: systemFieldInstance.elemID,
         severity: 'Error',
         message: 'Can not deploy changes to a Jira system field',
-        detailedMessage: 'jira.Field.instance.instance is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed',
+        detailedMessage: 'This is a built-in Jira system field, and can not be edited or deleted. Changes to this field will not be deployed.',
       },
     ])
   })

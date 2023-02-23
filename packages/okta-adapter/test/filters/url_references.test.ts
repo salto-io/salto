@@ -44,22 +44,20 @@ describe('urlReferencesFilter', () => {
             },
           },
           _links: {
-            additionalProperties: {
-              profileEnrollment: {
-                href: 'https://test/api/v1/policies/rst69dxiihma5xwSX5d7',
+            profileEnrollment: {
+              href: 'https://test/api/v1/policies/rst69dxiihma5xwSX5d7',
+            },
+            policies: {
+              href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/policies',
+              hints: {
+                allow: ['PUT'],
               },
-              policies: {
-                href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/policies',
-                hints: {
-                  allow: ['PUT'],
-                },
-              },
-              accessPolicy: {
-                href: 'https://test/api/v1/policies/rst69c9wqljY2xknk5d7',
-              },
-              users: {
-                href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
-              },
+            },
+            accessPolicy: {
+              href: 'https://test/api/v1/policies/rst69c9wqljY2xknk5d7',
+            },
+            users: {
+              href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
             },
           },
         },
@@ -82,19 +80,17 @@ describe('urlReferencesFilter', () => {
             },
           },
           _links: {
-            additionalProperties: {
-              policies: {
-                href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/policies',
-                hints: {
-                  allow: ['PUT'],
-                },
+            policies: {
+              href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/policies',
+              hints: {
+                allow: ['PUT'],
               },
-              accessPolicy: {
-                self: 'https://test/api/v1/policies/rst69c9wqljY2xknk5d7',
-              },
-              users: {
-                href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
-              },
+            },
+            accessPolicy: {
+              self: 'https://test/api/v1/policies/rst69c9wqljY2xknk5d7',
+            },
+            users: {
+              href: 'https://test/api/v1/apps/0oa6987q6jWCCgCQC5d7/users',
             },
           },
         },

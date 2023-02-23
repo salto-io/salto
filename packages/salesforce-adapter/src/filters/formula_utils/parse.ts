@@ -97,7 +97,7 @@ export const parseCustomSetting = (value: string): FormulaIdentifierInfo[] => {
 }
 
 export const parseObjectType = (value: string): FormulaIdentifierInfo[] => {
-  // $ObjectType.Center__c.Fields.My_text_field__c
+  // value is e.g. $ObjectType.Center__c.Fields.My_text_field__c
   const [, sobject, , fieldName] = parts(value)
 
   return [
@@ -106,21 +106,84 @@ export const parseObjectType = (value: string): FormulaIdentifierInfo[] => {
   ]
 }
 
+const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): FormulaIdentifierInfo[] => {
+  const field = _.trimStart(fieldWithPrefix, '$')
+
+  // Either the field identifier has an explicit parent (e.g. 'Account.Industry') or it implicitly refers to
+  // the provided parent object (e.g. 'Name')
+  const fieldParent = field.includes('.') ? getObject(field) : parentObject
+
+  return [
+    parseField(field, fieldParent),
+    parseObject(fieldParent),
+  ]
+}
+
+const parseRelationship = (variableName: string, originalObject: string): FormulaIdentifierInfo[] => {
+  const parseRelationshipElement = (field: string,
+    index: number,
+    fields: string[],
+    lastKnownParent: string): {
+      lastKnownParent: string
+      identifiers: FormulaIdentifierInfo[]
+    } => {
+    if (isSpecialPrefix(field) || isProcessBuilderIdentifier(field)) {
+      return { lastKnownParent, identifiers: [] }
+    }
+
+    let baseObject = (index === 0) ? originalObject : canonicalizeProcessBuilderIdentifier(fields[index - 1])
+
+    if (isParent(baseObject) && lastKnownParent !== '') {
+      baseObject = lastKnownParent
+    }
+
+    let fieldName = createApiName(baseObject, field)
+
+    const isLastField = (fields.length - 1 === index)
+
+    if (!isLastField) {
+      if (isStandardRelationship(fieldName)) {
+        fieldName = transformToId(fieldName)
+      } else {
+        // We assume the field ends with '_r'
+        fieldName = fieldName.slice(0, -1).concat('c')
+      }
+    }
+
+    if (isCPQRelationship(fieldName)) {
+      fieldName = mapCPQField(fieldName, originalObject)
+    }
+
+    if (isUserField(fieldName)) {
+      fieldName = transformToUserField(fieldName)
+    }
+
+    let updatedLastKnownParent = lastKnownParent
+    if (isParentField(fieldName) && lastKnownParent === '') {
+      updatedLastKnownParent = baseObject
+    } else if (isParentField(fieldName) && lastKnownParent !== '') {
+      fieldName = createApiName(lastKnownParent, getField(fieldName))
+    }
+
+    return {
+      lastKnownParent: updatedLastKnownParent,
+      identifiers: parseFieldIdentifier(fieldName, originalObject),
+    }
+  }
+
+  let lastKnownParent = ''
+
+  return parts(variableName)
+    .flatMap((field, index, fields) => {
+      const { lastKnownParent: updatedLastKnownParent, identifiers } = parseRelationshipElement(field,
+        index, fields, lastKnownParent)
+      lastKnownParent = updatedLastKnownParent
+      return identifiers
+    })
+}
+
 export const parseFormulaIdentifier = (variableName: string, originalObject: string): FormulaIdentifierInfo[] => {
   const types: FormulaIdentifierInfo[] = []
-
-  const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): FormulaIdentifierInfo[] => {
-    const field = _.trimStart(fieldWithPrefix, '$')
-
-    // Either the field identifier has an explicit parent (e.g. 'Account.Industry') or it implicitly refers to
-    // the provided parent object (e.g. 'Name')
-    const fieldParent = field.includes('.') ? getObject(field) : parentObject
-
-    return [
-      parseField(field, fieldParent),
-      parseObject(fieldParent),
-    ]
-  }
 
   // this order matters, we have to evaluate object types before anything else because the syntax can be extremely
   // similar to other types
@@ -134,54 +197,7 @@ export const parseFormulaIdentifier = (variableName: string, originalObject: str
   } else if (isCustomSetting(variableName)) {
     types.push(...parseCustomSetting(variableName))
   } else if (isRelationshipField(variableName)) {
-    let lastKnownParent = ''
-
-    parts(variableName).forEach((field, index, fields) => {
-      if (isSpecialPrefix(field) || isProcessBuilderIdentifier(field)) return
-
-      const isLastField = (fields.length - 1 === index)
-
-      let baseObject
-      if (index === 0) {
-        baseObject = originalObject
-      } else {
-        baseObject = fields[index - 1]
-
-        if (isProcessBuilderIdentifier(baseObject)) {
-          baseObject = canonicalizeProcessBuilderIdentifier(baseObject)
-        }
-      }
-
-      if (isParent(baseObject) && lastKnownParent !== '') {
-        baseObject = lastKnownParent
-      }
-
-      let fieldName = createApiName(baseObject, field)
-
-      if (!isLastField) {
-        if (isStandardRelationship(fieldName)) {
-          fieldName = transformToId(fieldName)
-        } else {
-          fieldName = fieldName.slice(0, -1).concat('c')
-        }
-      }
-
-      if (isCPQRelationship(fieldName)) {
-        fieldName = mapCPQField(fieldName, originalObject)
-      }
-
-      if (isUserField(fieldName)) {
-        fieldName = transformToUserField(fieldName)
-      }
-
-      if (isParentField(fieldName) && lastKnownParent === '') {
-        lastKnownParent = baseObject
-      } else if (isParentField(fieldName) && lastKnownParent !== '') {
-        fieldName = createApiName(lastKnownParent, getField(fieldName))
-      }
-
-      types.push(...parseFieldIdentifier(fieldName, originalObject))
-    })
+    types.push(...parseRelationship(variableName, originalObject))
   } else {
     types.push(...parseFieldIdentifier(variableName, originalObject))
   }

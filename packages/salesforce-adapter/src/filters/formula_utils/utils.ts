@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
 
 const STANDARD_RELATIONSHIP_ID_NAME = 'Id'
 
@@ -22,6 +23,6 @@ export const getObject = (value: string): string => parts(value)[0]
 export const getField = (value: string): string => parts(value)[1]
 
 export const createApiName = (object: string, field: string): string => `${object}.${field}`
-export const canonicalizeProcessBuilderIdentifier = (value: string): string => value.slice(1, -1)
+export const canonicalizeProcessBuilderIdentifier = (value: string): string => _.trim(value, '[]')
 export const transformToId = (fieldName: string): string => `${fieldName}${STANDARD_RELATIONSHIP_ID_NAME}`
 export const transformToUserField = (identifier: string): string => `User.${getField(identifier)}`

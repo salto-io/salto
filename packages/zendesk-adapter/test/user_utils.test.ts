@@ -22,6 +22,15 @@ import { ZedneskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
 
+const logError = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
+  return {
+    ...actual,
+    logger: () => ({ ...actual.logger('test'), error: (...args: unknown[]) => logError(args) }),
+  }
+})
+
 describe('userUtils', () => {
   describe('getUsers', () => {
     let userUtils: typeof usersUtilsModule
@@ -656,7 +665,7 @@ describe('userUtils', () => {
       )
       expect(fallbackValue).toEqual('saltoo@io')
     })
-    it('should throw in case of fallback to deployer and invalid user reponse', async () => {
+    it('should fail and log an error in case of fallback to deployer and invalid user response', async () => {
       mockGet
         .mockResolvedValueOnce({ status: 200, data: { users: [{ id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' }] } })
       deployConfig = {
@@ -667,8 +676,9 @@ describe('userUtils', () => {
         existingUsers,
         client
       )).toBe(undefined)
+      expect(logError).toHaveBeenCalledWith(['Received invalid response from endpoint \'/api/v2/users/me\''])
     })
-    it('should throw in case of an error in current user request', async () => {
+    it('should fail and log an error in case of an error in current user request', async () => {
       mockGet.mockRejectedValue({ status: 400, data: {} })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
@@ -678,6 +688,7 @@ describe('userUtils', () => {
         existingUsers,
         client
       )).toBe(undefined)
+      expect(logError).toHaveBeenCalledWith(['Attempt to get current user details has failed with error: %o', { data: {}, status: 400 }])
     })
   })
 })

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import {
   isCPQRelationship, isCustom, isCustomLabel, isCustomMetadata, isCustomSetting, isObjectType, isParent, isParentField,
   isProcessBuilderIdentifier, isRelationshipField, isSpecialPrefix, isStandardRelationship, isUserField,
@@ -24,8 +23,6 @@ import {
 } from './utils'
 import { mapCPQField } from './cpq'
 
-const log = logger(module)
-
 export type IdentifierType = 'customField'|'standardField'|'customObject'|'standardObject'|'customLabel'
   |'customSetting'|'customMetadataTypeRecord'|'customMetadataType'|'unknownRelationship'
 
@@ -34,15 +31,8 @@ export type FormulaIdentifierInfo = {
   instance: string
 }
 
-export const parseField = (value: string, object?: string): FormulaIdentifierInfo => {
-  let actualValue = value
-  if (!value.includes('.')) {
-    if (object === undefined) {
-      log.error('In a formula field, there`s an identifier that seems to implicitly refer to a field in the parent object, but no parent object was passed to the parsing function.This should not happen!')
-    } else {
-      actualValue = createApiName(object, value)
-    }
-  }
+export const parseField = (value: string, object: string): FormulaIdentifierInfo => {
+  const actualValue = value.includes('.') ? value : createApiName(object, value)
 
   return {
     type: (isCustom(actualValue) ? 'customField' : 'standardField'),
@@ -116,17 +106,17 @@ export const parseObjectType = (value: string): FormulaIdentifierInfo[] => {
 export const parseFormulaIdentifier = (variableName: string, originalObject: string): FormulaIdentifierInfo[] => {
   const types: FormulaIdentifierInfo[] = []
 
-  const parseFieldIdentifier = (fieldWithPrefix: string, object: string): void => {
+  const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): void => {
     const field = fieldWithPrefix.startsWith('$') ? fieldWithPrefix.substring(1) : fieldWithPrefix
 
-    // i.e Account.Industry
+    // e.g. 'Account.Industry' - the field has an explicit parent object
     if (parts(field).length === 2) {
-      types.push(parseField(field))
+      types.push(parseField(field, getObject(field)))
       types.push(parseObject(getObject(field)))
     } else {
-      // i.e Name
-      types.push(parseField(createApiName(object, field)))
-      types.push(parseObject(object))
+      // e.g. 'Name' - the field implicitly refers to the parent object
+      types.push(parseField(field, parentObject))
+      types.push(parseObject(parentObject))
     }
   }
 

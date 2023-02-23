@@ -224,6 +224,12 @@ describe('workflow scheme migration', () => {
     const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     await expect(errorsPromise).resolves.not.toThrow()
   })
+  it('should not throw if there are no items at all', async () => {
+    workflowInstance.value.items = undefined
+    modifiedInstance.value.items = undefined
+    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    await expect(errorsPromise).resolves.not.toThrow()
+  })
   it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
     numberOfIssues = 0
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)

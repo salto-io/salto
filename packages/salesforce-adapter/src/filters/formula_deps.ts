@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
@@ -39,7 +39,7 @@ const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): str
   }
   if (identifierInfo.type === IdentifierType.CUSTOM_METADATA_TYPE_RECORD) {
     const [typeName, instanceName] = identifierInfo.instance.split('.')
-    return [`${typeName.slice(0, -1 * CUSTOM_METADATA_SUFFIX.length)}_${instanceName}`]
+    return [`${typeName.slice(0, -1 * CUSTOM_METADATA_SUFFIX.length)}.${instanceName}`]
   }
   return identifierInfo.instance.split('.').slice(1)
 }
@@ -69,9 +69,9 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
   typeInfos
     .map(identifierInfo => (
       new ElemID(SALESFORCE,
-        identifierTypeToElementType(identifierInfo),
+        naclCase(identifierTypeToElementType(identifierInfo)),
         identifierTypeToElemIdType(identifierInfo),
-        ...identifierTypeToElementName(identifierInfo))
+        ...identifierTypeToElementName(identifierInfo).map(naclCase))
     ))
 )
 

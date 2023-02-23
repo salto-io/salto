@@ -164,7 +164,7 @@ describe('Formula dependencies', () => {
           reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt', 'field', 'SomeTextField__c')),
         },
         {
-          reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt', 'instance', 'SomeCustomMetadataType_SomeCustomMetadataTypeRecord')),
+          reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt', 'instance', 'SomeCustomMetadataType_SomeCustomMetadataTypeRecord@v')),
         },
       ]
       expect(deps).toEqual(expectedRefs)
@@ -216,15 +216,15 @@ describe('Formula dependencies', () => {
       'salesforce.SRM_API_Metadata_Client_Setting__mdt.field.CreatedDate', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.DeveloperName',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c',
-      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class',
-      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_handler', 'salesforce.User',
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class@uuvu',
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_handler@uuvu', 'salesforce.User',
       'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
       'salesforce.User.field.ProfileId']
     const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
       'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
-      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class', 'salesforce.User',
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class@uuvu', 'salesforce.User',
       'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
       'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {

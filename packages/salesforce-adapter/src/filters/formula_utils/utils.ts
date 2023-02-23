@@ -17,7 +17,6 @@
 
 const STANDARD_RELATIONSHIP_ID_NAME = 'Id'
 
-export const $ = (value: string): string => value.toUpperCase()
 export const parts = (value: string): string[] => value.split('.')
 export const getObject = (value: string): string => parts(value)[0]
 export const getField = (value: string): string => parts(value)[1]

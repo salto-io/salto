@@ -36,6 +36,9 @@ const isAction = (value: unknown): value is Action => (
 
 const POTENTIAL_BAD_FORMAT_TYPES = ['automation', 'trigger']
 
+/**
+ * Validate that automation and trigger with notification_webhook actions, have the correct value type of array.
+ */
 export const badFormatWebhookActionValidator : ChangeValidator = async changes =>
   changes.filter(isInstanceChange).filter(isAdditionOrModificationChange)
     .map(getChangeData).filter(instance => POTENTIAL_BAD_FORMAT_TYPES.includes(instance.elemID.typeName))

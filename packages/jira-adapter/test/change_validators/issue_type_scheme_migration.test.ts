@@ -134,6 +134,11 @@ describe('issue type scheme migration validator', () => {
     ]
     await expect(callValidator()).resolves.not.toThrow()
   })
+  it('should not throw on missing issue type ids ', async () => {
+    issueTypeScheme.value.issueTypeIds = undefined
+    modifiedIssueTypeScheme.value.issueTypeIds = undefined
+    await expect(callValidator()).resolves.not.toThrow()
+  })
 
   it('should not return an error on removal/addition changes', async () => {
     expect(await validator([toChange({ before: issueTypeScheme })], elementSource)).toEqual([])

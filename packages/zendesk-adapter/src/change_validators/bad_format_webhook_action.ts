@@ -48,7 +48,7 @@ export const badFormatWebhookActionValidator : ChangeValidator = async changes =
           elemID: instance.elemID,
           severity: 'Warning',
           message: `${typeName} instance might not work properly`,
-          detailedMessage: `The element have an action with of notification_webhook with a value in a bad format. This might cause the ${typeName} to not work properly.`,
+          detailedMessage: `The instance have an action of notification_webhook with a value in a bad format. This might cause the ${typeName} to not work properly.`,
         }
       }
       return undefined

@@ -170,8 +170,8 @@ const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpre
   status1.elemID.isEqual(status2.elemID)
 
 const getMissingStatuses = (before: InstanceElement, after: InstanceElement): ReferenceExpression[] => {
-  const beforeStatuses = before.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
-  const afterStatuses = after.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
+  const beforeStatuses = (before.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
+  const afterStatuses = (after.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
   return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
 }
 

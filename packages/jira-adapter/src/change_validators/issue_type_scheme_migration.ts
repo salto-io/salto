@@ -31,8 +31,8 @@ const isSameRef = (ref1: ReferenceExpression, ref2: ReferenceExpression): boolea
 
 const getRemovedIssueTypeIds = (change: ModificationChange<InstanceElement>): ReferenceExpression[] => {
   const { before, after } = change.data
-  const beforeIssueIds = before.value.issueTypeIds.filter(isReferenceExpression)
-  const afterIssueIds = after.value.issueTypeIds.filter(isReferenceExpression)
+  const beforeIssueIds = (before.value.issueTypeIds ?? []).filter(isReferenceExpression)
+  const afterIssueIds = (after.value.issueTypeIds ?? []).filter(isReferenceExpression)
   return _.differenceWith(beforeIssueIds, afterIssueIds, isSameRef)
 }
 

@@ -19,7 +19,7 @@ import { safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter
 import { Value } from '@salto-io/adapter-api'
 
 const log = logger(module)
-const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
+export const SCRIPT_RUNNER_DC_TYPES = ['com.onresolve.jira.groovy.GroovyFunctionPlugin',
   'com.onresolve.jira.groovy.GroovyValidator',
   'com.onresolve.jira.groovy.GroovyCondition']
 const DC_ENCODE_PREFIX = '`!`'
@@ -72,6 +72,10 @@ const encodeScriptObject = (value: Value): string => {
 type FieldToCodeFuncMap = Map<string, Value>
 const fieldToDecodeMap: FieldToCodeFuncMap = new Map([
   ['FIELD_NOTES', decodeBase64],
+  ['FIELD_MESSAGE', decodeBase64],
+  ['FIELD_INCLUDE_ATTACHMENTS_CALLBACK', decodeBase64],
+  ['FIELD_EMAIL_TEMPLATE', decodeBase64],
+  ['FIELD_EMAIL_SUBJECT_TEMPLATE', decodeBase64],
   ['FIELD_CONDITION', decodeScriptObject],
   ['FIELD_SCRIPT_FILE_OR_SCRIPT', decodeScriptObject],
   ['FIELD_ADDITIONAL_SCRIPT', decodeBase64],
@@ -80,6 +84,10 @@ const fieldToDecodeMap: FieldToCodeFuncMap = new Map([
 
 const fieldToEncodeMap: FieldToCodeFuncMap = new Map([
   ['FIELD_NOTES', encodeBase64],
+  ['FIELD_MESSAGE', encodeBase64],
+  ['FIELD_INCLUDE_ATTACHMENTS_CALLBACK', encodeBase64],
+  ['FIELD_EMAIL_TEMPLATE', encodeBase64],
+  ['FIELD_EMAIL_SUBJECT_TEMPLATE', encodeBase64],
   ['FIELD_CONDITION', encodeScriptObject],
   ['FIELD_SCRIPT_FILE_OR_SCRIPT', encodeScriptObject],
   ['FIELD_ADDITIONAL_SCRIPT', encodeBase64],

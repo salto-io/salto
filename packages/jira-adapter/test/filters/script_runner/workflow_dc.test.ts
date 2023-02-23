@@ -28,7 +28,7 @@ const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
 }
 
 
-describe('DC Workflow post functions', () => {
+describe('Scriptrunner DC Workflow', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
@@ -40,7 +40,7 @@ describe('DC Workflow post functions', () => {
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
-  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_ADDITIONAL_SCRIPT']
+  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_MESSAGE', 'FIELD_INCLUDE_ATTACHMENTS_CALLBACK', 'FIELD_EMAIL_TEMPLATE', 'FIELD_EMAIL_SUBJECT_TEMPLATE']
   const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
 
 

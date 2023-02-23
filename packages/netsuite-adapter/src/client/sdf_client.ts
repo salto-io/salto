@@ -315,7 +315,7 @@ export default class SdfClient {
       return
     }
 
-    const dataLines = data.map(String.toString)
+    const dataLines = data.map(line => String(line))
 
     if (dataLines.some(line => fatalErrorMessageRegex.test(line))) {
       const errorMessage = dataLines.join(os.EOL)

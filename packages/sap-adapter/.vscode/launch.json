@@ -25,7 +25,7 @@
       "name": "sap-adapter Debug Jest E2E Tests",
       "cwd": "${workspaceFolder}",
       "env": {
-        "RUN_E2E_TESTS": "1"
+        "RUN_E2E_TESTS": "1",
       },
       "args": [
         "${workspaceRoot}/node_modules/.bin/jest",

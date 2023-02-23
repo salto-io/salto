@@ -13,27 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, SaltoError } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import SAPClient from './client/client'
 import { FilterContext } from './config'
 
 export const { filtersRunner } = filterUtils
 
-export type FilterResult = {
-  errors?: SaltoError[]
-}
+export type Filter = filterUtils.Filter
 
-export type Filter = filterUtils.Filter<FilterResult>
-export type BrandIdToClient = Record<string, SAPClient>
-
-export type FilterAdditionalParams = {
-  elementsSource: ReadOnlyElementsSource
-  brandIdToClient?: BrandIdToClient
-}
-
-export type FilterCreator = filterUtils.FilterCreator<
-    SAPClient,
-    FilterContext,
-    FilterResult,
-    FilterAdditionalParams>
+export type FilterCreator = filterUtils.FilterCreator<SAPClient, FilterContext>

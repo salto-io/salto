@@ -17,11 +17,6 @@ import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials, UsernamePasswordCredentials } from '../auth'
 
-export const instanceUrl = (subdomain: string, domain?: string): string => (
-  domain === undefined ? `https://${subdomain}.sap.com` : `https://${subdomain}.${domain}`
-)
-const baseUrl = instanceUrl
-
 export const validateCredentials = async (): Promise<AccountId> => ''
 
 const usernamePasswordAuthParamsFunc = (
@@ -33,13 +28,13 @@ const usernamePasswordAuthParamsFunc = (
   },
 })
 
-export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
-  retryOptions: clientUtils.RetryOptions,
-) => (
+export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
-    authParamsFunc: async (creds: Credentials) => usernamePasswordAuthParamsFunc(creds),
-    baseURLFunc: ({ subdomain, domain }) => baseUrl(subdomain, domain),
+    authParamsFunc: async (creds: Credentials) => (
+      usernamePasswordAuthParamsFunc(creds)
+    ),
+    baseURLFunc: () => 'http://localhost', // TODO
     credValidateFunc: validateCredentials,
   })
 )

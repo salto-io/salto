@@ -14,63 +14,58 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { InstanceElement, Adapter, ElemID } from '@salto-io/adapter-api'
+import {
+  InstanceElement, Adapter, ElemID,
+} from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
+import SAPClient from './client/client'
 import SAPAdapter from './adapter'
 import { Credentials, usernamePasswordCredentialsType } from './auth'
 import {
-  configType,
-  SAPConfig,
-  CLIENT_CONFIG,
-  FETCH_CONFIG,
-  validateFetchConfig,
-  API_DEFINITIONS_CONFIG,
-  DEFAULT_CONFIG,
-  SAPFetchConfig,
+  configType, SAPConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG, DEFAULT_CONFIG, SAPApiConfig,
 } from './config'
-import SAPClient from './client/client'
 import { createConnection } from './client/connection'
-import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateDuckTypeApiDefinitionConfig } = configUtils
+const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const domain = config.value.domain === undefined || config.value.domain === ''
-    ? undefined
-    : config.value.domain
+  const { username, password, subdomain, domain } = config.value
   return {
-    username: config.value.username,
-    password: config.value.password,
-    subdomain: config.value.subdomain,
+    username,
+    password,
+    subdomain,
     domain,
   }
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): SAPConfig => {
-  const configValue = config?.value ?? {}
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions
-  ) as configUtils.AdapterDuckTypeApiConfig
+  ) as SAPApiConfig
 
-  const fetch = configUtils.mergeWithDefaultConfig(
-    DEFAULT_CONFIG.fetch,
-    config?.value.fetch
-  ) as SAPFetchConfig
+  const fetch = _.defaults(
+    {}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG],
+  )
+
+  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateSwaggerFetchConfig(
+    FETCH_CONFIG,
+    fetch,
+    apiDefinitions
+  )
 
   const adapterConfig: { [K in keyof Required<SAPConfig>]: SAPConfig[K] } = {
-    client: configValue.client,
-    fetch,
+    client: config?.value?.client,
+    fetch: config?.value?.fetch,
     apiDefinitions,
   }
-
-  validateClientConfig(CLIENT_CONFIG, adapterConfig.client)
-  validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
-  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
-
-  Object.keys(configValue)
+  Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig
@@ -95,11 +90,7 @@ export const adapter: Adapter = {
         credentials,
         config: config[CLIENT_CONFIG],
       }),
-      credentials,
       config,
-      getElemIdFunc: context.getElemIdFunc,
-      configInstance: context.config,
-      elementsSource: context.elementsSource,
     })
 
     return {
@@ -126,5 +117,4 @@ export const adapter: Adapter = {
     },
   },
   configType,
-  configCreator,
 }

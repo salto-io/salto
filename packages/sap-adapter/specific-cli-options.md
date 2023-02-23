@@ -1,13 +1,13 @@
 # SAP CLI options
 
 ## Non interactive Login Parameters
-Supported parameters are:
-* `username`
-* `password`
+Supprted parameters are:
+* `clientId`
+* `clientSecret`
 * `subdomain`
-* `domain` (optional)
+* `production` - true/false
 
 ### Example
 ```
-salto account add sap --login-parameters username=SomeUsername password=SomePasswd subdomain=SomeSubdomain
+salto account add sap --login-parameters clientId=SomeClientId clientSecret=SomeClientSecret subdomain=SomeSubdomain production=false
 ```

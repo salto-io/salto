@@ -17,7 +17,6 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { createConnection } from './connection'
 import { SAP } from '../constants'
 import { Credentials } from '../auth'
-import { PAGE_SIZE } from '../config'
 
 const {
   DEFAULT_RETRY_OPTS, RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -25,17 +24,17 @@ const {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  get: 20,
-  deploy: 20,
+  get: 15,
+  deploy: 15,
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: PAGE_SIZE,
+  get: 100,
 }
 
 export default class SAPClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
-  > {
+> {
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
   ) {
@@ -48,7 +47,7 @@ export default class SAPClient extends clientUtils.AdapterHTTPClient<
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
         maxRequestsPerMinute: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
         retry: DEFAULT_RETRY_OPTS,
-      },
+      }
     )
   }
 }

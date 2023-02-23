@@ -25,15 +25,16 @@ module.exports = deepMerge(
       '!<rootDir>/index.ts',
     ],
     testEnvironment: process.env.RUN_E2E_TESTS
-    ? '@salto-io/sap-adapter/dist/e2e_test/jest_environment'
-    : undefined,
+      ? '@salto-io/sap-adapter/dist/e2e_test/jest_environment'
+      : undefined,
     coverageThreshold: {
       'global': {
-        branches: 84,
-        functions: 92,
+        branches: 89,
+        functions: 94,
         lines: 95,
         statements: 95,
       },
     },
   },
 )
+

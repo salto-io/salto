@@ -13,146 +13,126 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
-  InstanceElement, ElemIdGetter,
-  ReadOnlyElementsSource,
+  FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType,
+  DeployModifiers, FetchOptions,
 } from '@salto-io/adapter-api'
-import {
-  client as clientUtils,
-  elements as elementUtils,
-} from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration } from '@salto-io/adapter-utils'
-import { objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SAPClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
-import { FETCH_CONFIG, SAPConfig } from './config'
-import { SAP } from './constants'
-import changeValidator from './change_validator'
-import { paginate } from './client/pagination'
+import { SAPConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, SAPApiConfig } from './config'
+import { FilterCreator, Filter, filtersRunner } from './filter'
+import commonFilters from './filters/common'
 import fieldReferencesFilter from './filters/field_references'
-import { Credentials } from './auth'
-import { getConfigFromConfigChanges } from './config_change'
+import changeValidator from './change_validator'
+import { SAP } from './constants'
+import { paginate } from './client/pagination'
 
-const log = logger(module)
 const { createPaginator } = clientUtils
-const { findDataField, computeGetArgs } = elementUtils
-const {
-  getAllElements,
-} = elementUtils.ducktype
-const { concatObjects } = objects
+const { generateTypes, getAllInstances } = elementUtils.swagger
+const log = logger(module)
+
+const { hideTypes, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
+  hideTypes,
+  // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
+  ...Object.values(otherCommonFilters),
 ]
 
 export interface SAPAdapterParams {
   filterCreators?: FilterCreator[]
   client: SAPClient
-  credentials: Credentials
   config: SAPConfig
-  elementsSource: ReadOnlyElementsSource
-  // callback function to get an existing elemId or create a new one by the ServiceIds values
-  getElemIdFunc?: ElemIdGetter
-  configInstance?: InstanceElement
 }
 
 export default class SAPAdapter implements AdapterOperations {
+  private createFiltersRunner: () => Required<Filter>
   private client: SAPClient
   private paginator: clientUtils.Paginator
   private userConfig: SAPConfig
-  private getElemIdFunc?: ElemIdGetter
-  private configInstance?: InstanceElement
   private fetchQuery: elementUtils.query.ElementQuery
-  private createFiltersRunner: ({ filterRunnerClient, paginator } : {
-    filterRunnerClient?: SAPClient
-    paginator?: clientUtils.Paginator
-  }) => Promise<Required<Filter>>
 
   public constructor({
-    filterCreators = DEFAULT_FILTERS as FilterCreator[],
+    filterCreators = DEFAULT_FILTERS,
     client,
-    getElemIdFunc,
     config,
-    configInstance,
-    elementsSource,
   }: SAPAdapterParams) {
     this.userConfig = config
-    this.configInstance = configInstance
-    this.getElemIdFunc = getElemIdFunc
     this.client = client
-    this.paginator = createPaginator({
+    const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
     })
-
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
-
-    this.createFiltersRunner = async ({
-      filterRunnerClient,
-      paginator,
-    } : {
-      filterRunnerClient?: SAPClient
-      paginator?: clientUtils.Paginator
-      brandIdToClient?: BrandIdToClient
-    }) => (
-      filtersRunner(
-        {
-          client: filterRunnerClient ?? this.client,
-          paginator: paginator ?? this.paginator,
-          config: {
-            fetch: config.fetch,
-            apiDefinitions: config.apiDefinitions,
-          },
-          getElemIdFunc,
-          fetchQuery: this.fetchQuery,
-          elementsSource,
-        },
-        filterCreators,
-        concatObjects,
-      )
+    this.paginator = paginator
+    this.fetchQuery = elementUtils.query.createElementQuery(config[FETCH_CONFIG])
+    this.createFiltersRunner = () => (
+      filtersRunner({ client, paginator, config, fetchQuery: this.fetchQuery }, filterCreators)
     )
   }
 
-  @logDuration('generating instances and types from service')
-  private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const { supportedTypes } = this.userConfig.apiDefinitions
-    // SAP Support and (if enabled) global SAP Guide types
-    return getAllElements({
-      adapterName: SAP,
-      types: this.userConfig.apiDefinitions.types,
-      supportedTypes,
-      fetchQuery: this.fetchQuery,
+  private apiDefinitions(
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+  ): SAPApiConfig {
+    return {
+      ...this.userConfig[API_DEFINITIONS_CONFIG],
+      // user config takes precedence over parsed config
+      types: {
+        ...parsedConfigs,
+        ..._.mapValues(
+          this.userConfig[API_DEFINITIONS_CONFIG].types,
+          (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
+        ),
+      },
+    }
+  }
+
+  @logDuration('generating types from swagger')
+  private async getTypes(): Promise<elementUtils.swagger.ParsedTypes> {
+    return generateTypes(
+      SAP,
+      this.userConfig[API_DEFINITIONS_CONFIG],
+    )
+  }
+
+  @logDuration('getting instances from service')
+  private async getInstances(
+    allTypes: TypeMap,
+    parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
+  ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
+    return getAllInstances({
       paginator: this.paginator,
-      nestedFieldFinder: findDataField,
-      computeGetArgs,
-      typeDefaults: this.userConfig.apiDefinitions.typeDefaults,
-      getElemIdFunc: this.getElemIdFunc,
+      objectTypes: _.pickBy(allTypes, isObjectType),
+      apiConfig: this.apiDefinitions(parsedConfigs),
+      supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      fetchQuery: this.fetchQuery,
     })
   }
 
   /**
-   * Fetch configuration elements in the given account.
+   * Fetch configuration elements in the given sap account.
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch sap account configuration..')
-    progressReporter.reportProgress({ message: 'Fetching types and instances' })
-    const { elements, configChanges, errors } = await this.getElements()
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const { allTypes, parsedConfigs } = await this.getTypes()
+    progressReporter.reportProgress({ message: 'Fetching instances' })
+    const { elements: instances } = await this.getInstances(allTypes, parsedConfigs)
+    const elements = [
+      ...Object.values(allTypes),
+      ...instances,
+    ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    // This exposes different subdomain clients for Guide related types filters
-    const result = await (await this.createFiltersRunner({}))
-      .onFetch(elements) as FilterResult
-    const updatedConfig = this.configInstance && configChanges
-      ? getConfigFromConfigChanges(configChanges, this.configInstance)
-      : undefined
 
-    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
-    return { elements, errors: fetchErrors, updatedConfig }
+    await this.createFiltersRunner().onFetch(elements)
+    return { elements }
   }
 
   /**
@@ -161,7 +141,7 @@ export default class SAPAdapter implements AdapterOperations {
   @logDuration('deploying account configuration')
   // eslint-disable-next-line class-methods-use-this
   async deploy(): Promise<DeployResult> {
-    throw new Error('deploy not supported')
+    throw new Error('Not implemented.')
   }
 
   // eslint-disable-next-line class-methods-use-this

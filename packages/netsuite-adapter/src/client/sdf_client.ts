@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils, strings } from '@salto-io/lowerdash'
-import { Values, AccountId, Value } from '@salto-io/adapter-api'
+import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -115,6 +115,9 @@ const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[
 const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
 const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
 
+// e.g. *** ERREUR ***
+const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
+
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
 const READ_CONCURRENCY = 100
@@ -129,7 +132,7 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
 
-const safeQuoteArgument = (argument: Value): Value => {
+const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {
     return shellQuote.quote([argument])
   }
@@ -306,16 +309,19 @@ export default class SdfClient {
     }
   }
 
-  private static verifySuccessfulDeploy(data: Value): void {
+  private static verifySuccessfulDeploy(data: unknown): void {
     if (!_.isArray(data)) {
       log.warn('suitecloud deploy returned unexpected value: %o', data)
       return
     }
 
-    const featureDeployFailes = data
-      .filter(_.isString)
-      .filter(line => configureFeatureFailRegex.test(line))
+    const dataLines = data.filter(_.isString)
 
+    if (dataLines.some(line => fatalErrorMessageRegex.test(line))) {
+      throw new Error(dataLines.join(os.EOL))
+    }
+
+    const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))
     if (featureDeployFailes.length === 0) return
 
     log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
@@ -324,8 +330,7 @@ export default class SdfClient {
       .filter(isDefined)
       .map(groups => groups[FEATURE_ID])
 
-    const errorMessage = data
-      .filter(_.isString)
+    const errorMessage = dataLines
       .filter(line => errorIds.some(id => (new RegExp(`\\b${id}\\b`)).test(line)))
       .join(os.EOL)
 
@@ -338,7 +343,10 @@ export default class SdfClient {
       log.error(`SDF command ${commandName} has failed.`)
       throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
     }
-    if (commandName === COMMANDS.DEPLOY_PROJECT) {
+    if ([
+      COMMANDS.DEPLOY_PROJECT,
+      COMMANDS.VALIDATE_PROJECT,
+    ].includes(commandName)) {
       SdfClient.verifySuccessfulDeploy(actionResult.data)
     }
   }
@@ -913,6 +921,10 @@ export default class SdfClient {
   }
 
   private static customizeDeployError(error: Error): Error {
+    if (error instanceof FeaturesDeployError) {
+      return error
+    }
+
     const errorMessage = error.message
     if (settingsValidationErrorRegex.test(errorMessage)) {
       const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)

@@ -77,11 +77,13 @@ export const parseCustomMetadata = (value: string): FormulaIdentifierInfo[] => {
   ]
 }
 
-export const parseCustomLabel = (value: string): FormulaIdentifierInfo => (
-  {
-    type: 'customLabel',
-    instance: getField(value),
-  }
+export const parseCustomLabel = (value: string): FormulaIdentifierInfo[] => (
+  [
+    {
+      type: 'customLabel',
+      instance: getField(value),
+    },
+  ]
 )
 
 export const parseCustomSetting = (value: string): FormulaIdentifierInfo[] => {
@@ -183,24 +185,23 @@ const parseRelationship = (variableName: string, originalObject: string): Formul
 }
 
 export const parseFormulaIdentifier = (variableName: string, originalObject: string): FormulaIdentifierInfo[] => {
-  const types: FormulaIdentifierInfo[] = []
-
   // this order matters, we have to evaluate object types before anything else because the syntax can be extremely
   // similar to other types
 
   if (isObjectType(variableName)) {
-    types.push(...parseObjectType(variableName))
-  } else if (isCustomMetadata(variableName)) {
-    types.push(...parseCustomMetadata(variableName))
-  } else if (isCustomLabel(variableName)) {
-    types.push(parseCustomLabel(variableName))
-  } else if (isCustomSetting(variableName)) {
-    types.push(...parseCustomSetting(variableName))
-  } else if (isRelationshipField(variableName)) {
-    types.push(...parseRelationship(variableName, originalObject))
-  } else {
-    types.push(...parseFieldIdentifier(variableName, originalObject))
+    return parseObjectType(variableName)
   }
-
-  return types
+  if (isCustomMetadata(variableName)) {
+    return parseCustomMetadata(variableName)
+  }
+  if (isCustomLabel(variableName)) {
+    return parseCustomLabel(variableName)
+  }
+  if (isCustomSetting(variableName)) {
+    return parseCustomSetting(variableName)
+  }
+  if (isRelationshipField(variableName)) {
+    return parseRelationship(variableName, originalObject)
+  }
+  return parseFieldIdentifier(variableName, originalObject)
 }

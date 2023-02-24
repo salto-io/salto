@@ -58,8 +58,8 @@ describe('Formula identifier parsing', () => {
   it('Should parse custom labels correctly', () => {
     const value = parseCustomLabel('$Label.SomeName')
 
-    expect(value).toHaveProperty('instance', 'SomeName')
-    expect(value).toHaveProperty('type', 'customLabel')
+    expect(value[0]).toHaveProperty('instance', 'SomeName')
+    expect(value[0]).toHaveProperty('type', 'customLabel')
   })
 
   it('Should parse custom settings correctly', () => {

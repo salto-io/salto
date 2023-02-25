@@ -141,6 +141,9 @@ export const DEFAULT_FILTERS = [
   webhookFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
+  workflowStructureFilter,
+  // This should happen after workflowStructureFilter and before fieldStructureFilter
+  queryFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,
@@ -155,7 +158,6 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter,
   avatarsFilter,
   iconUrlFilter,
-  workflowStructureFilter,
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
@@ -217,7 +219,6 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
-  queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,

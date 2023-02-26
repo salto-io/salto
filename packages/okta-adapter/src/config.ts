@@ -83,6 +83,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 }
 
 const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
+const getPolicyRuleItemsName = (policyRuleName: string):string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
@@ -113,7 +114,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
           },
           recurseInto: [
             {
-              type: `${details.ruleName}s`,
+              type: getPolicyRuleItemsName(details.ruleName),
               toField: 'policyRules',
               context: [{ name: 'policyId', fromField: 'id' }],
             },
@@ -123,7 +124,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
           fieldTypeOverrides: [{ fieldName: 'items', fieldType: `list<${typeName}>` }],
         },
       },
-      [`${details.ruleName}s`]: {
+      [getPolicyRuleItemsName(details.ruleName)]: {
         request: {
           url: '/api/v1/policies/{policyId}/rules',
         },
@@ -679,7 +680,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
     ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
-      .map(policy => ({ typeName: `${policy.ruleName}s`, cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
+      .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have its own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
@@ -715,14 +716,7 @@ export const SUPPORTED_TYPES = {
   UserSchema: ['UserSchema'],
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
-  Policy: [
-    'PasswordPolicies',
-    'OktaSignOnPolicies',
-    'IdentityProviderPolicies',
-    'AccessPolicies',
-    'MultifactorEnrollmentPolicies',
-    'ProfileEnrollmentPolicies',
-  ],
+  Policy: Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => getPolicyItemsName(typeName)),
   PasswordPolicy: ['api__v1__policies'],
   OktaSignOnPolicy: ['api__v1__policies'],
   IdentityProviderPolicy: ['api__v1__policies'],

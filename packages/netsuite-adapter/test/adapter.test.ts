@@ -383,6 +383,35 @@ describe('Adapter', () => {
       })
     })
 
+    describe('fetchWithChangeDetection', () => {
+      const withChangesDetection = true
+      const conf = {
+        fetch: {
+          exclude: {
+            types: [
+              { name: SAVED_SEARCH },
+              { name: TRANSACTION_FORM },
+            ],
+            fileCabinet: ['Some/File/Regex'],
+            customRecords: [],
+          },
+        },
+      }
+      const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })
+      const adapter = new NetsuiteAdapter({
+        client: new NetsuiteClient(client),
+        elementsSource: buildElementsSourceFromElements([dummyElement]),
+        filtersCreators: [firstDummyFilter, secondDummyFilter],
+        config: conf,
+        getElemIdFunc: mockGetElemIdFunc,
+      })
+
+      it('isPartial should be true', async () => {
+        const { isPartial } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
+        expect(isPartial).toBeTruthy()
+      })
+    })
+
     describe('fetchTarget', () => {
       const conf = {
         fetch: {
@@ -403,35 +432,55 @@ describe('Adapter', () => {
           filePaths: ['Some/File/.*'],
         },
       }
-      const adapter = new NetsuiteAdapter({
-        client: new NetsuiteClient(client),
-        elementsSource: buildElementsSourceFromElements([]),
-        filtersCreators: [firstDummyFilter, secondDummyFilter],
-        config: conf,
-        getElemIdFunc: mockGetElemIdFunc,
+
+      describe('define fetchTarget for the first fetch', () => {
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: conf,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        it('should throw an error when defining fetchTarget for the first fetch', async () => {
+          await expect(() => adapter.fetch(mockFetchOpts)).rejects.toThrow(
+            'Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file'
+          )
+        })
       })
 
-      it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeTruthy()
-      })
+      describe('define fetchTarget after a full fetch', () => {
+        const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })
+        const adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client),
+          elementsSource: buildElementsSourceFromElements([dummyElement]),
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: conf,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
 
-      it('should match the types that match fetchTarget and exclude', async () => {
-        await adapter.fetch(mockFetchOpts)
+        it('isPartial should be true', async () => {
+          const { isPartial } = await adapter.fetch(mockFetchOpts)
+          expect(isPartial).toBeTruthy()
+        })
 
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
-        expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
-        expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
-        expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
-      })
+        it('should match the types that match fetchTarget and exclude', async () => {
+          await adapter.fetch(mockFetchOpts)
 
-      it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
-        await adapter.fetch(mockFetchOpts)
+          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+          expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
+          expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
+          expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
+        })
 
-        const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
-        expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
-        expect(fileCabinetQuery.isFileMatch('Some/AnotherFile/another')).toBeFalsy()
-        expect(fileCabinetQuery.isFileMatch('Some/File/another')).toBeTruthy()
+        it('should match the files that match fetchTarget and not in filePathRegexSkipList', async () => {
+          await adapter.fetch(mockFetchOpts)
+
+          const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
+          expect(fileCabinetQuery.isFileMatch('Some/File/Regex')).toBeFalsy()
+          expect(fileCabinetQuery.isFileMatch('Some/AnotherFile/another')).toBeFalsy()
+          expect(fileCabinetQuery.isFileMatch('Some/File/another')).toBeTruthy()
+        })
       })
     })
 
@@ -550,7 +599,6 @@ describe('Adapter', () => {
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
     })
   })
-
 
   describe('deploy', () => {
     const origInstance = new InstanceElement('elementName',
@@ -916,7 +964,8 @@ describe('Adapter', () => {
     })
     let adapter: NetsuiteAdapter
 
-    const elementsSource = buildElementsSourceFromElements([])
+    const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })
+    const elementsSource = buildElementsSourceFromElements([dummyElement])
     const getElementMock = jest.spyOn(elementsSource, 'get')
     const getChangedObjectsMock = jest.spyOn(changesDetector, 'getChangedObjects')
 

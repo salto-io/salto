@@ -190,7 +190,7 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
       refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrecord[0-9a-z_]+', enforce_value: false }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrecord[0-9a-z_]+$', enforce_value: false }),
       },
     },
   },

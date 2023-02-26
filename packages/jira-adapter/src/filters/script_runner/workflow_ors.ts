@@ -16,6 +16,7 @@
 
 import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
@@ -34,7 +35,7 @@ const returnOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
 }
 
 const replaceOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
-  if (typeof value === 'object' && value !== null) {
+  if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].includes(SCRIPT_RUNNER_OR))
       .forEach(([key, val]) => {
@@ -55,6 +56,9 @@ const findScriptRunnerDC = (func: Value): WalkOnFunc => (
     return WALK_NEXT_STEP.RECURSE
   })
 
+// Changes script runners strings that represent several values and are split by '|||' to an array
+// for example:
+// FIELD_TRANSITION_OPTIONS = "FIELD_SKIP_PERMISSIONS|||FIELD_SKIP_VALIDATORS|||FIELD_SKIP_CONDITIONS"
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'scriptRunnerWorkflowOrFilter',
   onFetch: async (elements: Element[]) => {

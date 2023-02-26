@@ -55,9 +55,9 @@ export const removedFromParentValidatorCreator = (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Can’t remove this instance since it is referred to by its children',
-        detailedMessage: `Can’t remove this instance since it is referred to by the following children: ${nonFullyRemovedChildren.map(e => e.getFullName()).join(', ')}
-Please make sure to remove these references in order to remove the instance`,
+        message: 'Cannot remove this element since it is referenced by its children',
+        detailedMessage: `Cannot remove this element since it is referred to by the following children: ${nonFullyRemovedChildren.map(e => e.getFullName()).join(', ')}
+Please make sure to remove these references in order to remove the element`,
       }]
     })
   })

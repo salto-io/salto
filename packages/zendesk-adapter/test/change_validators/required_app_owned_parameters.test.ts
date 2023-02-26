@@ -105,7 +105,7 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationNoSettings.elemID,
       severity: 'Error',
-      message: 'Can’t change app installation since some required parameters are missing',
+      message: 'Cannot change app installation since some required parameters are missing',
       detailedMessage: `The following parameters are required: ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))}`,
     }])
   })
@@ -136,7 +136,7 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationInvalidSettings.elemID,
       severity: 'Error',
-      message: 'Can’t change app installation since some required parameters are missing',
+      message: 'Cannot change app installation since some required parameters are missing',
       detailedMessage: `The following parameters are required: ${['checkRequired']}`,
     }])
   })

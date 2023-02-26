@@ -80,14 +80,14 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
       {
         elemID: optionToAdd.elemID,
         severity: 'Error',
-        message: 'Can’t do this change since this tag value is already in use',
+        message: 'Cannot do this change since this tag value is already in use',
         detailedMessage: `The tag ‘cTag’ is already used by the following elements:
 ${[checkboxTicketField.elemID.getFullName(), checkboxToAdd.elemID.getFullName()].join(', ')}`,
       },
       {
         elemID: checkboxToAdd.elemID,
         severity: 'Error',
-        message: 'Can’t do this change since this tag value is already in use',
+        message: 'Cannot do this change since this tag value is already in use',
         detailedMessage: `The tag ‘cTag’ is already used by the following elements:
 ${[optionToAdd.elemID.getFullName(), checkboxTicketField.elemID.getFullName()].join(', ')}`,
       },

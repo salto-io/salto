@@ -15,10 +15,11 @@
 */
 import _ from 'lodash'
 import {
-  ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceElement,
+  ChangeValidator, getChangeData, InstanceElement, isInstanceElement,
   isAdditionOrModificationChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { getParents } from '@salto-io/adapter-utils'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
 import { isArrayOfRefExprToInstances } from '../filters/utils'
 
@@ -37,9 +38,9 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
     .filter(isInstanceElement)
     .filter(instance => instance.elemID.typeName === DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME)
     .flatMap(instance => {
-      const parent = instance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]
+      const parent = getParents(instance)[0]
       if (!isReferenceExpression(parent)) {
-        log.debug(`variant ${instance.elemID.getFullName()} does not have a parent, this is caught in another change validator`)
+        log.debug(`variant ${instance.elemID.getFullName()} does not have a valid parent, this is caught in another change validator`)
         return []
       }
       const variants = parent.value?.value?.[VARIANTS_FIELD_NAME]
@@ -72,7 +73,7 @@ export const noDuplicateLocaleIdInDynamicContentItemValidator: ChangeValidator =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can’t change instance since there are other variants with the same locale id',
+          message: 'Can’t change instance since there are other variants with the same locale',
           detailedMessage: `The following variants have the same locale id: ${conflictedInstances.map(conflictedInstance => conflictedInstance.elemID.getFullName()).join(', ')}`,
         }]
       }

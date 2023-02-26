@@ -59,8 +59,8 @@ describe('macro', () => {
     expect(errors).toEqual([{
       elemID: clonedInstance.elemID,
       severity: 'Error',
-      message: 'Can’t do this change since there are too many macro attachments',
-      detailedMessage: 'Can not have more than 5 attachments in a single macro',
+      message: 'Cannot make this change since there are too many macro attachments',
+      detailedMessage: 'Cannot have more than 5 attachments in a single macro',
     }])
   })
   it('should not return an error when we change macro to have 5 attachments or less', async () => {

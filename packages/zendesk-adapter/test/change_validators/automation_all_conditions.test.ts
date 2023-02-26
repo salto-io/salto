@@ -165,7 +165,7 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomation.elemID,
       severity: 'Error',
-      message: 'Can’t do this change due to an invalid automation conditions configuration',
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
       detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
@@ -176,7 +176,7 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomationSeveralConditions.elemID,
       severity: 'Error',
-      message: 'Can’t do this change due to an invalid automation conditions configuration',
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
       detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
@@ -205,7 +205,7 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noConditionInAutomation.elemID,
       severity: 'Error',
-      message: 'Can’t do this change due to an invalid automation conditions configuration',
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
       detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
@@ -216,7 +216,7 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noAllInConditionAutomation.elemID,
       severity: 'Error',
-      message: 'Can’t do this change due to an invalid automation conditions configuration',
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
       detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })

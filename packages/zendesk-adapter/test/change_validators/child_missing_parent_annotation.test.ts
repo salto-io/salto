@@ -89,7 +89,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: 'Can’t add or modify elements without updating references to them from their children',
+        message: 'Cannot add or modify elements without updating references to them from their children',
         detailedMessage: `This element must be referenced by its child ‘${option2.elemID.getFullName()}‘`,
       }])
   })
@@ -115,7 +115,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: 'Can’t add or modify elements without updating references to them from their children',
+        message: 'Cannot add or modify elements without updating references to them from their children',
         detailedMessage: `This element must be referenced by its child ‘${option2.elemID.getFullName()}‘`,
       }])
   })
@@ -183,7 +183,7 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: 'Can’t add or modify elements without updating references to them from their children',
+        message: 'Cannot add or modify elements without updating references to them from their children',
         detailedMessage: `This element must be referenced by its child ‘${optionWithoutAParent.elemID.getFullName()}‘`,
       }])
   })

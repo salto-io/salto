@@ -76,7 +76,7 @@ export const sideConversationsValidator: ChangeValidator = async (
     return [{
       elemID: macroInstance.elemID,
       severity: 'Error',
-      message: 'Can’t change a macro with side conversation actions since the feature is disabled in the account',
+      message: 'Cannot change a macro with side conversation actions since the feature is disabled in the account',
       detailedMessage: `Macro contains the following side conversation actions which are disabled in the account: ${macrosDisabledSCFields.join(', ')}.
 Please enable side conversations in your account or remove those actions from the macro in order to deploy.`,
     }]

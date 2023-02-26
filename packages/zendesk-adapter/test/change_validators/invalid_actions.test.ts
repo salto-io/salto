@@ -67,7 +67,7 @@ describe('invalidActionsValidator', () => {
     expect(errors).toEqual([{
       elemID: trigger.elemID,
       severity: 'Error',
-      message: 'Can’t change this element since one of its action types is not supported',
+      message: 'Cannot change this element since one of its action types is not supported',
       detailedMessage: 'Actions {deflection} are not supported',
     }])
   })

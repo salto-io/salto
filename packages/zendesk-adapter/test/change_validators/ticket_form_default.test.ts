@@ -45,7 +45,7 @@ describe('onlyOneTicketFormDefaultValidator', () => {
     expect(errors).toEqual([{
       elemID: anotherDefaultTicketForm.elemID,
       severity: 'Error',
-      message: 'Can’t set this as the default ticket form since another one is already defined as the default',
+      message: 'Cannot set this as the default ticket form since another one is already defined as the default',
       detailedMessage: `The following ticket forms are also marked as default: ${defaultTicketForm.elemID.getFullName()}`,
     }])
   })

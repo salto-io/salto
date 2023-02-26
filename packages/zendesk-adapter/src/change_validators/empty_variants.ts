@@ -29,7 +29,7 @@ export const emptyVariantsValidator: ChangeValidator = async changes => (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can’t do this change due to missing variants',
+          message: 'Cannot make this change due to missing variants',
           detailedMessage: 'Dynamic content item must have at least one variant',
         }]
       }

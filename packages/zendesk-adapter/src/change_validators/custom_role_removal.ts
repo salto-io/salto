@@ -56,7 +56,7 @@ export const customRoleRemovalValidator: (client: ZendeskClient) =>
         return {
           elemID: customRoleInstance.elemID,
           severity: 'Error',
-          message: 'Can’t remove a custom role with associated agents',
+          message: 'Cannot remove a custom role with associated agents',
           detailedMessage: `${relatedAgents.length} agents are associated with this role (partial list): [${(relatedAgents.map(agent => agent.email).slice(0, 10).join(', '))}].\nPlease disconnect the agents from the role in the Zendesk UI before deploying this change.`,
         }
       })

@@ -123,7 +123,7 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
       elemID: automation3.elemID,
       severity: 'Warning',
       message: 'Order not specified',
-      detailedMessage: `Instance ${automation3.elemID.name} of type ${automation3.elemID.typeName} is not listed in ${automation3.elemID.typeName} sort order.  Therefore, it will be added at the end by default.  If the order is important, please include it in ${orderTypeName} under the inactive list`,
+      detailedMessage: `Element ${automation3.elemID.name} of type ${automation3.elemID.typeName} is not listed in ${automation3.elemID.typeName} sort order.  Therefore, it will be added at the end by default.  If the order is important, please include it in ${orderTypeName} under the inactive list`,
     }])
   })
   it('should return an error if the instance exist on the other activity list', async () => {

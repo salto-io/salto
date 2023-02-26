@@ -126,7 +126,7 @@ export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes,
       .map(({ elemID, duplicatedLocales }): ChangeError => ({
         elemID,
         severity: 'Error',
-        message: 'Can’t do this change since there are too many translations per locale',
+        message: 'Cannot make this change since there are too many translations per locale',
         detailedMessage: `More than one translation found for locales ${duplicatedLocales}. Only one translation per locale is supported.`,
       }))
       .toArray()

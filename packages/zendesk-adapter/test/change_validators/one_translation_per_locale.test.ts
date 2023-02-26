@@ -154,7 +154,7 @@ describe('oneTranslationPerLocalValidator',
       expect(errors).toEqual([{
         elemID: article.elemID,
         severity: 'Error',
-        message: 'Can’t do this change since there are too many translations per locale',
+        message: 'Cannot make this change since there are too many translations per locale',
         detailedMessage: 'More than one translation found for locales en-us. Only one translation per locale is supported.',
       }])
     })

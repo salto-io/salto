@@ -68,7 +68,7 @@ describe('noDuplicateLocaleIdInDynamicContentItemValidator', () => {
     expect(errors).toEqual([{
       elemID: variant2.elemID,
       severity: 'Error',
-      message: 'Can’t change instance since there are other variants with the same locale id',
+      message: 'Can’t change instance since there are other variants with the same locale',
       detailedMessage: `The following variants have the same locale id: ${variant1.elemID.getFullName()}`,
     }])
   })

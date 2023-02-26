@@ -28,8 +28,8 @@ export const createParentReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Can’t add this instance since it is missing a reference from its parent',
-    detailedMessage: `In order to add this instance, please add reference to it from its parent ‘${parentFullName}’`,
+    message: 'Cannot add this element since it is missing a reference from its parent',
+    detailedMessage: `In order to add this element, please add a reference to it from its parent ‘${parentFullName}’`,
   }
 }
 

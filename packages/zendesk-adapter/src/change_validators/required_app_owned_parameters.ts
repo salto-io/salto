@@ -129,7 +129,7 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     .flatMap(({ elemID, missingRequiredParams }) => [{
       elemID,
       severity: 'Error',
-      message: 'Can’t change app installation since some required parameters are missing',
+      message: 'Cannot change app installation since some required parameters are missing',
       detailedMessage: `The following parameters are required: ${missingRequiredParams}`,
     }])
 }

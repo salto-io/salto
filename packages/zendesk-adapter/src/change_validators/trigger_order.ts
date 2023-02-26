@@ -33,8 +33,8 @@ export const createWrongPlaceErrorMessage = (
 ): ChangeError => ({
   elemID: instanceId,
   severity: 'Warning',
-  message: `Instance misplaced in ${orderTypeName}`,
-  detailedMessage: `Instance ${instanceId.name} of type ${instanceId.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
+  message: `Element misplaced in ${orderTypeName}`,
+  detailedMessage: `Element ${instanceId.name} of type ${instanceId.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
 })
 
 export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (

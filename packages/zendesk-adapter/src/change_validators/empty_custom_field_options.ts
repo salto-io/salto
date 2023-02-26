@@ -35,7 +35,7 @@ export const emptyCustomFieldOptionsValidator: ChangeValidator = async changes =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can’t make this change since dropdown, tagger and multi-select fields can’t to be empty',
+          message: 'Cannot make this change since dropdown, tagger and multi-select fields can’t to be empty',
           detailedMessage: 'Custom field options are required for dropdown, tagger and multi select fields',
         }]
       }

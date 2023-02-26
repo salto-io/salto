@@ -31,7 +31,7 @@ const createChildReferencesError = (
   return {
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Can’t add or modify elements without updating references to them from their children',
+    message: 'Cannot add or modify elements without updating references to them from their children',
     detailedMessage: `This element must be referenced by its child ‘${childFullName}‘`,
   }
 }

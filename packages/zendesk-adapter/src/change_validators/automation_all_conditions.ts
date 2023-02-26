@@ -53,7 +53,7 @@ export const automationAllConditionsValidator: ChangeValidator = async changes =
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Can’t do this change due to an invalid automation conditions configuration',
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
       detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
 }

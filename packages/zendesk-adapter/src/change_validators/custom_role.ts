@@ -59,7 +59,7 @@ export const customRoleNameValidator: ChangeValidator = async (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can’t change this custom_role since its name is reserved for a system role',
+          message: 'Cannot change this custom_role since its name is reserved for a system role',
           detailedMessage: `The name (${instance.value.name}) is reserved for a system role, please use another name`,
         }]
       }

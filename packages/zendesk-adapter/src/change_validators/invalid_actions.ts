@@ -34,6 +34,6 @@ export const invalidActionsValidator: ChangeValidator = async changes =>
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Can’t change this element since one of its action types is not supported',
+      message: 'Cannot change this element since one of its action types is not supported',
       detailedMessage: `Actions {${_.uniq(instance.value.actions.filter(isNotSupportedAction).map((action: Values) => action.field)).join(', ')}} are not supported`,
     }))

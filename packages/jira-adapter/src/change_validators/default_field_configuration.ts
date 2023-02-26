@@ -25,6 +25,6 @@ export const defaultFieldConfigurationValidator: ChangeValidator = async changes
       elemID: getChangeData(change).elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Modifying the default field configuration is not supported',
-      detailedMessage: `Modifying the default field configuration ${getChangeData(change).elemID.getFullName()} is not supported`,
+      detailedMessage: 'Modifying the default field configuration is not supported.',
     }))
 )

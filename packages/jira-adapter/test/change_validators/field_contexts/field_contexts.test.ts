@@ -142,6 +142,13 @@ describe('Field contexts', () => {
       },
     ])
   })
+  it('should not throw when one of the contexts is unresolved', async () => {
+    fieldInstance.value.contexts.push(new ReferenceExpression(new ElemID(JIRA, 'unresolved'), undefined))
+    await expect(fieldContextValidator(
+      changes,
+      elementsSource
+    )).resolves.not.toThrow()
+  })
 
   it('should not return an error when all contexts have valid references', async () => {
     expect(await fieldContextValidator(

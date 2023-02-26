@@ -62,7 +62,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'apps', fieldType: 'list<Application>' },
-        { fieldName: 'users', fieldType: 'list<User>' },
         { fieldName: 'roles', fieldType: 'list<Role>' },
       ],
       fieldsToHide: [
@@ -147,13 +146,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Application: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'appUsers', fieldType: 'list<AppUser>' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
       ],
-      standaloneFields: [{ fieldName: 'appUsers' }],
       idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
@@ -186,63 +183,10 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
     },
   },
-  AppUser: {
-    transformation: {
-      idFields: ['&id'],
-      extendsParentId: true,
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-        { fieldName: 'statusChanged' },
-        { fieldName: '_links' },
-      ],
-    },
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{applicationId}/users/{userId}',
-        urlParamsToFields: {
-          applicationId: '_parent.0.id',
-          userId: 'id',
-        },
-        method: 'post',
-        fieldsToIgnore: ['id', 'status', 'syncState'],
-      },
-      modify: {
-        url: '/api/v1/apps/{applicationId}/users/{userId}',
-        urlParamsToFields: {
-          applicationId: '_parent.0.id',
-          userId: 'id',
-        },
-        method: 'post',
-        fieldsToIgnore: ['id', 'status', 'syncState'],
-      },
-      remove: {
-        url: '/api/v1/apps/{applicationId}/users/{userId}',
-        urlParamsToFields: {
-          applicationId: '_parent.0.id',
-          userId: 'id',
-        },
-        method: 'delete',
-        fieldsToIgnore: ['id'],
-      },
-    },
-  },
   api__v1__meta__types__user: {
     transformation: {
       // by default there is an unwanted traversal here
       dataField: '.',
-    },
-  },
-  api__v1__users: {
-    request: {
-      url: '/api/v1/users',
-      recurseInto: [
-        {
-          type: 'api__v1__users___userId___roles@uuuuuu_00123_00125uu',
-          toField: 'roles',
-          context: [{ name: 'userId', fromField: 'id' }],
-        },
-      ],
     },
   },
   api__v1__idps: {
@@ -260,7 +204,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   IdentityProvider: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'users', fieldType: 'list<IdentityProviderApplicationUser>' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
       ],
       serviceIdField: 'id',
@@ -393,18 +336,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-    },
-  },
-  User: {
-    transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'roles', fieldType: 'list<Role>' },
-      ],
-      idFields: ['profile.firstName', 'profile.lastName'],
-      serviceIdField: 'id',
-      fieldsToOmit: [
-        { fieldName: 'lastLogin' },
-      ],
     },
   },
   Policy: {
@@ -682,22 +613,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
-    },
-  },
-  AppUserCredentials: {
-    transformation: {
-      fieldsToOmit: [
-        // we are not managing secrets
-        { fieldName: 'password' },
-      ],
-    },
-  },
-  UserCredentials: {
-    transformation: {
-      fieldsToOmit: [
-        // we are not managing secrets
-        { fieldName: 'password' },
-      ],
     },
   },
   Protocol: {

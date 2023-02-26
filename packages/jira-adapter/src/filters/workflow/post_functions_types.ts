@@ -79,7 +79,7 @@ const postFunctionConfigurationType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },
-    value: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    value: { refType: BuiltinTypes.UNKNOWN, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, 'PostFunctionConfiguration'],
 })

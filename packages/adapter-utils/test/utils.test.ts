@@ -35,6 +35,7 @@ import {
   elementExpressionStringifyReplacer,
   createSchemeGuard,
   getParent,
+  getPath,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -1492,6 +1493,14 @@ describe('Test utils.ts', () => {
     })
   })
 
+  describe('getPath', () => {
+    it('should get annotations inside fields', () => {
+      const clonedMockField = new Field(mockType, 'field', BuiltinTypes.STRING, { str: 'val' })
+      const annoPath = getPath(clonedMockField, clonedMockField.elemID.createNestedID('str'))
+      expect(annoPath).toEqual(['annotations', 'str'])
+    })
+  })
+
   describe('set path func', () => {
     let clonedMockType: ObjectType
     beforeEach(() => {
@@ -1532,6 +1541,12 @@ describe('Test utils.ts', () => {
       const clonedMockInstance = mockInstance.clone()
       setPath(clonedMockInstance, clonedMockInstance.elemID.createNestedID('str'), 'new val')
       expect(clonedMockInstance.value.str).toEqual('new val')
+    })
+
+    it('should set field annotation', () => {
+      const clonedMockField = new Field(mockType, 'field', BuiltinTypes.STRING)
+      setPath(clonedMockField, clonedMockField.elemID.createNestedID('str'), 'new val')
+      expect(clonedMockField.annotations.str).toEqual('new val')
     })
 
     it('should unset an instance value path', () => {

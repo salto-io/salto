@@ -40,8 +40,8 @@ const getUpdateErrorsForNonUpdateableFields = async (
         return {
           elemID: beforeResolved.elemID,
           severity: 'Warning',
-          message: `Unable to edit ${afterResolved.elemID.typeName}.${field.name} because it is a non-updateable field.`,
-          detailedMessage: `Unable to edit ${field.name} inside ${beforeResolved.elemID.getFullName()} because it is a non-updateable field.`,
+          message: 'Cannot modify the value of a non-updatable field',
+          detailedMessage: `Cannot modify ${field.name}’s value of ${beforeResolved.elemID.getFullName()} because its field is defined as non-updateable.`,
         } as ChangeError
       }
       return undefined
@@ -59,8 +59,8 @@ const getCreateErrorsForNonCreatableFields = async (
         return {
           elemID: afterResolved.elemID,
           severity: 'Warning',
-          message: `Unable to create ${afterResolved.elemID.typeName}.${field.name} because it is a non-creatable field.`,
-          detailedMessage: `Unable to create ${field.name} inside ${afterResolved.elemID.getFullName()} because it is a non-creatable field.`,
+          message: 'Cannot set a value to a non-creatable field',
+          detailedMessage: `Cannot set a value for ${field.name} of ${afterResolved.elemID.getFullName()} because its field is defined as non-creatable.`,
         } as ChangeError
       }
       return undefined

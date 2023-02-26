@@ -46,7 +46,7 @@ describe('defaultFieldConfigurationValidator', () => {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Modifying the default field configuration is not supported',
-        detailedMessage: 'Modifying the default field configuration jira.FieldConfiguration.instance.instance is not supported',
+        detailedMessage: 'Modifying the default field configuration is not supported.',
       },
     ])
   })

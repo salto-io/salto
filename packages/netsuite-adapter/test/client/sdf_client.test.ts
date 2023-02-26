@@ -1334,6 +1334,27 @@ describe('sdf client', () => {
         await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
+      it('should throw error when sdf result contain error in other language', async () => {
+        const sdfResult = [
+          'Starting deploy',
+          '*** ERREUR ***',
+          'some error',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
+        const customTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId: 'some_id',
+        } as CustomTypeInfo
+        await expect(client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+          .toThrow(new Error(
+            'Starting deploy\n'
+            + '*** ERREUR ***\n'
+            + 'some error'
+          ))
+      })
       it('should throw ObjectsDeployError when deploy failed on object validation', async () => {
         const errorMessage = `
 The deployment process has encountered an error.
@@ -1878,6 +1899,20 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         })
         await expect(client.deploy(...deployParams)).rejects.toThrow(errorMessage)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
+      })
+      it('should throw error when sdf result contain error in other language', async () => {
+        const sdfResult = [
+          'Starting validation',
+          '*** ERREUR ***',
+          'some error',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
+        await expect(client.deploy(...deployParams)).rejects
+          .toThrow(new Error(
+            'Starting validation\n'
+            + '*** ERREUR ***\n'
+            + 'some error'
+          ))
       })
     })
   })

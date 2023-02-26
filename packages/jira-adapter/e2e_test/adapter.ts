@@ -33,14 +33,20 @@ export type Opts = {
   adapterParams?: Partial<JiraAdapterParams>
   credentials: Credentials
   isDataCenter?: boolean
+  enableScriptRunner?: boolean
 }
 
-export const realAdapter = ({ adapterParams, credentials, isDataCenter = false }: Opts, config?: JiraConfig): Reals => {
+export const realAdapter = (
+  { adapterParams, credentials, isDataCenter = false, enableScriptRunner = true }: Opts,
+  jiraConfig?: JiraConfig
+): Reals => {
   const client = (adapterParams && adapterParams.client)
     || new JiraClient({ credentials, isDataCenter })
+  const config = jiraConfig ?? getDefaultConfig({ isDataCenter })
+  config.fetch.enableScriptRunnerAddon = enableScriptRunner
   const adapter = new JiraAdapter({
     client,
-    config: config ?? getDefaultConfig({ isDataCenter }),
+    config,
     elementsSource: buildElementsSourceFromElements([]),
   })
   return { client, adapter }

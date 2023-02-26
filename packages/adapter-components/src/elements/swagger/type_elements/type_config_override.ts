@@ -13,14 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { values } from '@salto-io/lowerdash'
 import { TypeSwaggerConfig, AdditionalTypeConfig, TypeSwaggerDefaultConfig } from '../../../config/swagger'
 import { FieldToHideType, getTypeTransformationConfig } from '../../../config/transformation'
 import { toPrimitiveType } from './swagger_parser'
-import { hideFields, fixFieldTypes } from '../../type_elements'
+import { hideFields, fixFieldTypes, getContainerForType } from '../../type_elements'
+import { getConfigWithDefault } from '../../../config/shared'
 
 const log = logger(module)
+const { isDefined } = values
 
 /**
  * Define additional types/endpoints from config that were missing in the swagger.
@@ -90,4 +93,27 @@ export const fixTypes = (
         type.isSettings = true
       }
     })
+}
+
+/**
+ * Get additional schemas from type names in FieldTypeOverrideType config
+ */
+export const getFieldTypeOverridesTypes = (
+  typeConfig: Record<string, TypeSwaggerConfig>,
+  typeDefaultConfig: TypeSwaggerDefaultConfig,
+): Set<string> => {
+  const primitiveTypeNames = new Set(Object.values(BuiltinTypes).map(type => type.elemID.name))
+  const getInnerTypeName = (typeName: string): string => {
+    const nestedTypeName = getContainerForType(typeName)
+    return nestedTypeName === undefined ? typeName : getInnerTypeName(nestedTypeName.typeNameSubstring)
+  }
+
+  return new Set(Object.values(typeConfig)
+    .map(config =>
+      getConfigWithDefault(
+        config.transformation, typeDefaultConfig.transformation
+      ).fieldTypeOverrides)
+    .filter(isDefined)
+    .flatMap(fieldTypeOverrides => fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType)))
+    .filter(typeName => !primitiveTypeNames.has(typeName)))
 }

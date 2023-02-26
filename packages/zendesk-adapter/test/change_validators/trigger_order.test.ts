@@ -122,12 +122,12 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       elementsToAdd.map(e => toChange({ after: e })),
       elementsSource,
     )
-    const orderTypeName = createOrderTypeName(trigger3.elemID.typeName)
     expect(errors).toEqual([{
       elemID: trigger3.elemID,
       severity: 'Warning',
-      message: `Instance order not specified in ${orderTypeName}`,
-      detailedMessage: `Instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} not listed in ${trigger3.elemID.typeName} sort order under the ${category1.elemID.name} category, and will be added at the end by default. If order is important, please include it under the ${category1.elemID.name} category in the inactive list`,
+      message: 'Order not specified',
+      detailedMessage: `Element ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} is not listed in the ${trigger3.elemID.typeName} sort order under the ${category1.elemID.name} category.  Therefore, it will be added at the end by default.  
+If the order is important, please include it under the ${category1.elemID.name} category in the inactive list`,
     }])
   })
   it('should return an error if the instance does exist in the wrong activity list in the same category', async () => {
@@ -167,7 +167,6 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([createWrongPlaceErrorMessage(
       trigger3.elemID,
       createOrderTypeName(trigger3.elemID.typeName),
-      category1.elemID.name,
       false
     )])
   })
@@ -209,7 +208,6 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([createWrongPlaceErrorMessage(
       trigger3.elemID,
       createOrderTypeName(trigger3.elemID.typeName),
-      category2.elemID.name,
       false,
     )])
   })
@@ -272,8 +270,8 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: invalidTrigger.elemID,
       severity: 'Error',
-      message: 'Invalid category id',
-      detailedMessage: `Invalid category id '${invalidTrigger.value.category_id}' for instance ${invalidTrigger.elemID.name} of type ${invalidTrigger.elemID.typeName}`,
+      message: `Invalid category id '${invalidTrigger.value.category_id}'`,
+      detailedMessage: `Invalid category id '${invalidTrigger.value.category_id}'`,
     }])
   })
   it('should not return an error if active field is missing and the change should not result error', async () => {

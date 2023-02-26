@@ -79,6 +79,7 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import removeConnectedAppOauthConfigConsumerKeyFilter from './filters/remove_connected_app_oauth_config_consumer_key'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
+import formulaDepsFilter from './filters/formula_deps'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -150,6 +151,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
+  { creator: formulaDepsFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },

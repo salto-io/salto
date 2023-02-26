@@ -105,10 +105,8 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationNoSettings.elemID,
       severity: 'Error',
-      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
-      detailedMessage: `Can not change app installation ${appInstallationNoSettings.elemID.getFullName()},
-      because the parameters: ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))}, 
-      are required but not populated.`,
+      message: 'Cannot change app installation since some required parameters are missing',
+      detailedMessage: `The following parameters are required: ${Object.keys(_.pickBy(appOwnedWithParameters.value.parameters, val => val.required))}`,
     }])
   })
   it('should not return an error when app installation contains all required parameters', async () => {
@@ -138,10 +136,8 @@ describe('requiredAppOwnedParametersValidator', () => {
     expect(errors).toEqual([{
       elemID: appInstallationInvalidSettings.elemID,
       severity: 'Error',
-      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
-      detailedMessage: `Can not change app installation ${appInstallationInvalidSettings.elemID.getFullName()},
-      because the parameters: ${['checkRequired']}, 
-      are required but not populated.`,
+      message: 'Cannot change app installation since some required parameters are missing',
+      detailedMessage: `The following parameters are required: ${['checkRequired']}`,
     }])
   })
   it('should not return an error when app installation does not have a corresponding app owned', async () => {

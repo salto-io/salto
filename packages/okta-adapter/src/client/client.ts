@@ -13,7 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { Values } from '@salto-io/adapter-api'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
@@ -53,5 +55,29 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         retry: { ...DEFAULT_RETRY_OPTS, retryDelay: 10000 },
       }
     )
+  }
+
+  /**
+  * Clear response data values might contain secrets, returns a new object
+  */
+  // eslint-disable-next-line class-methods-use-this
+  protected clearValuesFromResponseData(
+    responseData: Values,
+    url: string
+  ): Values {
+    const SECRET_PLACEHOLER = '<SECRET>'
+    const URL_TO_SECRET_FIELDS: Record<string, string[]> = {
+      '/api/v1/idps': ['credentials'],
+      '/api/v1/authenticators': ['sharedSecret', 'secretKey'],
+    }
+    if (!Object.keys(URL_TO_SECRET_FIELDS).includes(url)) {
+      return responseData
+    }
+    const res = _.cloneDeepWith(responseData, (_val, key) => (
+      (_.isString(key) && URL_TO_SECRET_FIELDS[url].includes(key))
+        ? SECRET_PLACEHOLER
+        : undefined
+    ))
+    return res
   }
 }

@@ -31,8 +31,8 @@ export const maxAttachmentsInMacroValidator: ChangeValidator = async changes => 
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: `Can not have more than ${MAX_ATTACHMENTS_IN_MACRO} attachments in a single macro`,
-          detailedMessage: `Can not have more than ${MAX_ATTACHMENTS_IN_MACRO} attachments in ${instance.elemID.getFullName()}`,
+          message: 'Cannot make this change since there are too many macro attachments',
+          detailedMessage: `Cannot have more than ${MAX_ATTACHMENTS_IN_MACRO} attachments in a single macro`,
         }]
       }
       return []

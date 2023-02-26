@@ -23,16 +23,6 @@ import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
 const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
-  users: {
-    add: {
-      url: '/api/v1/groups/{source}/users/{target}',
-      method: 'put',
-    },
-    remove: {
-      url: '/api/v1/groups/{source}/users/{target}',
-      method: 'delete',
-    },
-  },
   roles: {
     // TODO SALTO-2743 add role addition deploy request
     remove: {
@@ -62,7 +52,7 @@ const deployGroup = async (
 }
 
 /**
- * Group type is deployed separately to update groups's users and group's roles
+ * Group type is deployed separately to update group's roles
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'groupDeploymentFilter',

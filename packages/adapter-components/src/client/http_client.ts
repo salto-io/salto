@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
@@ -125,6 +126,14 @@ export abstract class AdapterHTTPClient<
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  protected clearValuesFromResponseData(
+    responseData: Values,
+    _url: string,
+  ): Values {
+    return responseData
+  }
+
   /**
    * Get a single response
    */
@@ -199,7 +208,11 @@ export abstract class AdapterHTTPClient<
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
       log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
-        url, queryParams, response: res.data, headers: res.headers, method: method.toUpperCase(),
+        url,
+        queryParams,
+        response: this.clearValuesFromResponseData(res.data, url),
+        headers: res.headers,
+        method: method.toUpperCase(),
       }))
       const { data, status, headers: responseHeaders } = res
       return {

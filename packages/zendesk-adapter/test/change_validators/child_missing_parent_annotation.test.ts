@@ -89,8 +89,8 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
-        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${option2.elemID.getFullName()} as its child`,
+        message: 'Cannot add or modify elements without updating references to them from their children',
+        detailedMessage: `This element must be referenced by its child ‘${option2.elemID.getFullName()}‘`,
       }])
   })
   it('should return an error when we modify a ticket_field instance but child _parent is not modified', async () => {
@@ -115,8 +115,8 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
-        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${option2.elemID.getFullName()} as its child`,
+        message: 'Cannot add or modify elements without updating references to them from their children',
+        detailedMessage: `This element must be referenced by its child ‘${option2.elemID.getFullName()}‘`,
       }])
   })
   it('should not return an error when we add a ticket_field instance and child _parent is modified', async () => {
@@ -183,8 +183,8 @@ describe('childMissingParentAnnotationValidatorCreator', () => {
       .toEqual([{
         elemID: clonedTicketField.elemID,
         severity: 'Error',
-        message: `Can't add or modify instances of ${clonedTicketField.elemID.typeName} without updating their related children as well`,
-        detailedMessage: `Can't add or modify ${clonedTicketField.elemID.getFullName()} without updating ${optionWithoutAParent.elemID.getFullName()} as its child`,
+        message: 'Cannot add or modify elements without updating references to them from their children',
+        detailedMessage: `This element must be referenced by its child ‘${optionWithoutAParent.elemID.getFullName()}‘`,
       }])
   })
 })

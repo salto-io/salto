@@ -118,6 +118,7 @@ import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
+import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 
 const {
   generateTypes,
@@ -140,6 +141,9 @@ export const DEFAULT_FILTERS = [
   webhookFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
+  workflowStructureFilter,
+  // This should happen after workflowStructureFilter and before fieldStructureFilter
+  queryFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,
@@ -154,7 +158,6 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter,
   avatarsFilter,
   iconUrlFilter,
-  workflowStructureFilter,
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
@@ -216,12 +219,12 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
-  queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
+  scriptRunnerWorkflowFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

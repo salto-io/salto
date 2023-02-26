@@ -20,22 +20,23 @@ import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE, JIRA } from '../../src/constants
 describe('dashboardLayoutValidator', () => {
   let dashboardType: ObjectType
   let instance: InstanceElement
+  const gadgetInstance = new InstanceElement('gadget', new ObjectType({ elemID: new ElemID(JIRA, DASHBOARD_GADGET_TYPE) }),
+    {
+      position: {
+        row: 0,
+        column: 2,
+      },
+    })
 
   beforeEach(() => {
     dashboardType = new ObjectType({ elemID: new ElemID(JIRA, DASHBOARD_TYPE) })
+
     instance = new InstanceElement(
       'instance',
       dashboardType,
       {
         gadgets: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'inst'), {
-            value: {
-              position: {
-                row: 0,
-                column: 2,
-              },
-            },
-          }),
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'inst'), gadgetInstance),
         ],
       },
     )
@@ -66,6 +67,17 @@ describe('dashboardLayoutValidator', () => {
 
     expect(await dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })]))
       .toEqual([])
+  })
+  it('should not on unresolved reference', async () => {
+    instance.value.layout = 'AA'
+
+    const afterInstance = instance.clone()
+    afterInstance.value.layout = 'AAA'
+    afterInstance.value.gadgets = [
+      new ReferenceExpression(new ElemID(JIRA, DASHBOARD_GADGET_TYPE, 'instance', 'inst')),
+    ]
+    const errorPromise = dashboardLayoutValidator([toChange({ before: instance, after: afterInstance })])
+    await expect(errorPromise).resolves.not.toThrow()
   })
 
   it('should not return an error when there are no gadgets', async () => {

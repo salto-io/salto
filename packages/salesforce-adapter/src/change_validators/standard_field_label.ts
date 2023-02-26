@@ -38,8 +38,8 @@ const isLabelModification = (change: ModificationChange<Field>): boolean => {
 const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
-  message: `You cannot modify labels of standard fields. This change will NOT be deployed. Field: ${field.name}`,
-  detailedMessage: `You cannot modify labels of standard fields. This change will NOT be deployed. Field: ${field.name}`,
+  message: 'Modification of standard field labels is not supported',
+  detailedMessage: `Standard field ‘${field.name}’ label cannot be modified`,
 })
 
 /**

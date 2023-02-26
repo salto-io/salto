@@ -1155,14 +1155,6 @@ describe('fetch', () => {
           fetch: mockFetch,
           deploy: mockDeploy,
         },
-        adapter2WithoutFetchWithChangeDetection: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-        },
-        adapter3WithoutFetchWithChangeDetection: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-        },
       }
       it('should throw an error when run fetchWithChangeDetection with unsupported adapters', async () => {
         await expect(fetchChanges(
@@ -1171,13 +1163,11 @@ describe('fetch', () => {
           createElementSource([]),
           {
             adapterWithoutFetchWithChangeDetection: 'adapter1',
-            adapter2WithoutFetchWithChangeDetection: 'adapter1',
-            adapter3WithoutFetchWithChangeDetection: 'adapter2',
           },
           [],
           undefined,
           true,
-        )).rejects.toThrow('Adapters: adapter1, adapter2 do not support fetch with change detection operation')
+        )).rejects.toThrow('Adapter: adapter1 does not support fetch with change detection operation')
       })
       it('should call fetchWithChangeDetection function', async () => {
         mockFetch.mockClear()
@@ -1188,8 +1178,6 @@ describe('fetch', () => {
           createElementSource([]),
           {
             adapterWithoutFetchWithChangeDetection: 'adapter1',
-            adapter2WithoutFetchWithChangeDetection: 'adapter1',
-            adapter3WithoutFetchWithChangeDetection: 'adapter2',
           },
           [],
           undefined,

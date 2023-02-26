@@ -19,7 +19,7 @@ import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
+import { getIdByEmail, getUsers, TYPE_NAME_TO_REPLACER, VALID_USER_VALUES, getUserFallbackValue } from '../user_utils'
 import { deployModificationFunc } from '../replacers_utils'
 import { paginate } from '../client/pagination'
 import { DEPLOY_CONFIG } from '../config'
@@ -61,13 +61,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
         client,
         paginationFuncCreator: paginate,
       })
-      const users = await getUsers(paginator)
-      if (_.isEmpty(users)) {
-        return
-      }
-      const mapping = Object.fromEntries(
-        users.map(user => [user.id.toString(), user.email])
-      ) as Record<string, string>
+      const mapping = await getIdByEmail(paginator)
       const instances = elements.filter(isInstanceElement)
       instances.forEach(instance => {
         TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance, mapping)
@@ -86,18 +80,17 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       if (_.isEmpty(users)) {
         return
       }
-
       const { defaultMissingUserFallback } = config[DEPLOY_CONFIG] ?? {}
       if (defaultMissingUserFallback !== undefined) {
         const userEmails = new Set(users.map(user => user.email))
-        try {
-          const fallbackValue = await getUserFallbackValue(
-            defaultMissingUserFallback,
-            userEmails,
-            client
-          )
+        const fallbackValue = await getUserFallbackValue(
+          defaultMissingUserFallback,
+          userEmails,
+          client
+        )
+        if (fallbackValue !== undefined) {
           replaceMissingUsers(relevantChanges, userEmails, fallbackValue)
-        } catch (e) {
+        } else {
           log.error('Error while trying to get defaultMissingUserFallback value')
         }
       }
@@ -105,6 +98,7 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       userIdToEmail = Object.fromEntries(
         users.map(user => [user.id.toString(), user.email])
       ) as Record<string, string>
+      userIdToEmail = await getIdByEmail(paginator)
       const emailToUserId = Object.fromEntries(
         users.map(user => [user.email, user.id.toString()])
       ) as Record<string, string>

@@ -54,18 +54,16 @@ const isInstanceInOrderList = (orderList: unknown, instance: InstanceElement): b
       .filter(isReferenceExpression)
       .find(ref => ref.elemID.isEqual(instance.elemID))) !== undefined
 
-export const notInOrderError = ({ instance, orderTypeName, defaultLocation = 'last', messageExtra = '' }
+export const notInOrderError = ({ instance, orderTypeName, defaultLocation = 'end', messageExtra = '' }
 :{
     instance: InstanceElement
     orderTypeName: string
     defaultLocation?: string
     messageExtra?: string
-}): ChangeError => ({
-  elemID: instance.elemID,
+}): ChangeError => ({ elemID: instance.elemID,
   severity: 'Warning',
-  message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-  detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added ${defaultLocation} by default. If order is important, please include it in ${orderTypeName}${messageExtra}`,
-})
+  message: 'Order not specified',
+  detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in ${instance.elemID.typeName} sort order.  Therefore, it will be added at the ${defaultLocation} by default.  If the order is important, please include it in ${orderTypeName}${messageExtra}` })
 
 export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
   changes, elementSource
@@ -119,8 +117,9 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         return [{
           elemID: instance.elemID,
           severity: 'Warning',
-          message: `Instance misplaced in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: `Element misplaced in ${orderTypeName}`,
+          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. 
+Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       return []

@@ -117,8 +117,8 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
         return [{
           elemID: instance.elemID,
           severity: 'Warning',
-          message: `Instance misplaced in ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. 
+          message: `Element misplaced in ${orderTypeName}`,
+          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is misplaced in ${orderTypeName}. 
 Please make sure to place it under the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }

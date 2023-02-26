@@ -58,7 +58,7 @@ describe('customRoleNameValidator', () => {
     expect(errors).toEqual([{
       elemID: clonedCustomRole.elemID,
       severity: 'Error',
-      message: 'Can’t change this custom_role since its name is already in use',
+      message: 'Cannot change this custom_role since its name is already in use',
       detailedMessage: `This name is already in use by ${testCustomRole.elemID.getFullName()}.
 Please use another name`,
     }])

@@ -73,7 +73,7 @@ export const customRoleNameValidator: ChangeValidator = async (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Can’t change this custom_role since its name is already in use',
+        message: 'Cannot change this custom_role since its name is already in use',
         detailedMessage: `This name is already in use by ${otherCustomRoleWithTheSameName.map(customRole => customRole.elemID.getFullName()).join(', ')}.
 Please use another name`,
       }]

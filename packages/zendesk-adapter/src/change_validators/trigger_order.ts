@@ -84,7 +84,7 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
           elemID: instance.elemID,
           severity: 'Warning',
           message: 'Order not specified',
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in the ${instance.elemID.typeName} sort order under the ${categoryId.elemID.name} category.  Therefore, it will be added at the end by default.  
+          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in the ${instance.elemID.typeName} sort order under the ${categoryId.elemID.name} category.  Therefore, it will be added at the end by default.  
 If the order is important, please include it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }

@@ -154,8 +154,8 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: workspace1.elemID,
       severity: 'Warning',
-      message: `Instance misplaced in ${orderTypeName}`,
-      detailedMessage: `Instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. 
+      message: `Element misplaced in ${orderTypeName}`,
+      detailedMessage: `Element ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. 
 Please make sure to place it under the active list`,
     }])
   })

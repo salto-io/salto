@@ -126,7 +126,7 @@ describe('triggerOrderInstanceContainsAllTheInstancesValidator', () => {
       elemID: trigger3.elemID,
       severity: 'Warning',
       message: 'Order not specified',
-      detailedMessage: `Instance ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} is not listed in the ${trigger3.elemID.typeName} sort order under the ${category1.elemID.name} category.  Therefore, it will be added at the end by default.  
+      detailedMessage: `Element ${trigger3.elemID.name} of type ${trigger3.elemID.typeName} is not listed in the ${trigger3.elemID.typeName} sort order under the ${category1.elemID.name} category.  Therefore, it will be added at the end by default.  
 If the order is important, please include it under the ${category1.elemID.name} category in the inactive list`,
     }])
   })

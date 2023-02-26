@@ -154,8 +154,15 @@ export const toSchema = (
   swaggerVersion === SwaggerVersion.V2 ? toSchemaV2(def as V2Def) : toSchemaV3(def as V3Def)
 )
 
-export const getParsedDefs = async (swaggerPath: string, loadedSwagger?: LoadedSwagger):
-  Promise<SchemasAndRefs> => {
+export const getParsedDefs = async ({
+  swaggerPath,
+  loadedSwagger,
+  additionalTypes,
+}:{
+  swaggerPath: string
+  loadedSwagger?: LoadedSwagger
+  additionalTypes?: Set<string>
+}):Promise<SchemasAndRefs> => {
   const swagger = loadedSwagger ?? await loadSwagger(swaggerPath)
 
   const swaggerVersion = getSwaggerVersion(swagger)
@@ -163,8 +170,17 @@ export const getParsedDefs = async (swaggerPath: string, loadedSwagger?: LoadedS
     _.mapValues(swagger.document.paths, def => toSchema(swaggerVersion, def.get?.responses?.[200])),
     isDefined,
   )
+  const additionalSchemas = isV3(swagger.document)
+    ? _.pickBy(
+      swagger.document.components?.schemas,
+      (_value, key) => additionalTypes?.has(key)
+    )
+    : _.pickBy(
+      swagger.document.definitions,
+      (_value, key) => additionalTypes?.has(key)
+    )
   return {
-    schemas: responseSchemas,
+    schemas: { ...responseSchemas, ...additionalSchemas },
     refs: swagger.parser.$refs,
   }
 }

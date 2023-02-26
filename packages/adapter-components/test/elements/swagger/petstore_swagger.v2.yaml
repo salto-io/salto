@@ -777,6 +777,22 @@ definitions:
       message:
         type: string
     additionalProperties: false
+  NestedType:
+    type: object
+    properties:
+      id:
+        type: string
+      name: 
+        type: string
+  AdditionalType:
+    type: object
+    properties:
+      id:
+        type: string
+      type: 
+        type: string
+      nestedtype:
+        $ref: '#/definitions/NestedType'
 externalDocs:
   description: Find out more about Swagger
   url: 'http://swagger.io'

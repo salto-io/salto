@@ -19,6 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
+import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
@@ -185,8 +186,10 @@ const indexSystemNotes = (
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
-  lastFetchTime: Date
+  lastFetchTime: Date,
+  timeZone: string,
 ): Promise<Record<string, ModificationInformation>> => {
+  const now = moment.tz(timeZone)
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -195,7 +198,13 @@ const fetchSystemNotes = async (
     log.warn('System note query failed')
     return {}
   }
-  return indexSystemNotes(distinctSortedSystemNotes(systemNotes))
+  return indexSystemNotes(
+    distinctSortedSystemNotes(
+      systemNotes.filter(
+        systemNote => isDefined(systemNote.date) && !now.isBefore(moment.tz(systemNote.date, timeZone))
+      )
+    )
+  )
 }
 
 const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
@@ -257,8 +266,9 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
+    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
     const systemNotes = !_.isEmpty(employeeNames)
-      ? await fetchSystemNotes(client, queryIds, lastFetchTime)
+      ? await fetchSystemNotes(client, queryIds, lastFetchTime, timeZone)
       : {}
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)
@@ -280,8 +290,6 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
         }
       }
     }
-
-    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
 
     const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
       if (isDefined(lastModifiedDate)) {

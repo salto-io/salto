@@ -161,7 +161,7 @@ export const getParsedDefs = async ({
 }:{
   swaggerPath: string
   loadedSwagger?: LoadedSwagger
-  additionalTypes?: string[]
+  additionalTypes?: Set<string>
 }):Promise<SchemasAndRefs> => {
   const swagger = loadedSwagger ?? await loadSwagger(swaggerPath)
 
@@ -173,11 +173,11 @@ export const getParsedDefs = async ({
   const additionalSchemas = isV3(swagger.document)
     ? _.pickBy(
       swagger.document.components?.schemas,
-      (_value, key) => additionalTypes?.includes(key)
+      (_value, key) => additionalTypes?.has(key)
     )
     : _.pickBy(
       swagger.document.definitions,
-      (_value, key) => additionalTypes?.includes(key)
+      (_value, key) => additionalTypes?.has(key)
     )
   return {
     schemas: { ...responseSchemas, ...additionalSchemas },

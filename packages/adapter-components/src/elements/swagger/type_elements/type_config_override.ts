@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
 import { ObjectType, ElemID, BuiltinTypes } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
@@ -97,24 +96,24 @@ export const fixTypes = (
 }
 
 /**
- * Get additional schemas from from type names in FieldTypeOverrideType config
+ * Get additional schemas from type names in FieldTypeOverrideType config
  */
 export const getFieldTypeOverridesTypes = (
   typeConfig: Record<string, TypeSwaggerConfig>,
   typeDefaultConfig: TypeSwaggerDefaultConfig,
-): string[] => {
-  const primitiveTypeNames = Object.values(BuiltinTypes).map(type => type.elemID.name)
+): Set<string> => {
+  const primitiveTypeNames = new Set(Object.values(BuiltinTypes).map(type => type.elemID.name))
   const getInnerTypeName = (typeName: string): string => {
     const nestedTypeName = getContainerForType(typeName)
     return nestedTypeName === undefined ? typeName : getInnerTypeName(nestedTypeName.typeNameSubstring)
   }
 
-  return _.uniq(Object.values(typeConfig)
+  return new Set(Object.values(typeConfig)
     .map(config =>
       getConfigWithDefault(
         config.transformation, typeDefaultConfig.transformation
       ).fieldTypeOverrides)
     .filter(isDefined)
-    .flatMap(fieldTypeOverrides => fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType))))
-    .filter(typeName => !primitiveTypeNames.includes(typeName))
+    .flatMap(fieldTypeOverrides => fieldTypeOverrides.map(field => getInnerTypeName(field.fieldType)))
+    .filter(typeName => !primitiveTypeNames.has(typeName)))
 }

@@ -47,7 +47,7 @@ describe('type_config_override', () => {
       }
       const typeDefaults = { transformation: { idFields: ['name'] } }
       const result = getFieldTypeOverridesTypes(typeConfig, typeDefaults)
-      expect(result).toEqual(['Type1', 'Category', 'Type2', 'Type3'])
+      expect(result).toEqual(new Set(['Type1', 'Category', 'Type2', 'Type3']))
     })
   })
 })

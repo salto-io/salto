@@ -71,6 +71,6 @@ export const issueTypeSchemeValidator: ChangeValidator = async changes => {
     elemID,
     severity: 'Error' as SeverityLevel,
     message: 'Cannot remove issue types from default issue type scheme',
-    detailedMessage: `Removing issue types from the default issue type scheme ${elemID.getFullName()} is not supported`,
+    detailedMessage: 'Removing issue types from the default issue type scheme is not supported',
   }]
 }

@@ -390,8 +390,36 @@ describe('SalesforceAdapter CRUD', () => {
               },
             })
           })
-          it('should fail the deploy', () => {
+          it('should not deploy', () => {
             expect(result.appliedChanges).toBeEmpty()
+          })
+        })
+        describe('when the quick deploy fails in SF', () => {
+          beforeEach(async () => {
+            ({ connection, adapter } = mockAdapter({
+              adapterParams: {
+                config: {
+                  client: {
+                    deploy: {
+                      quickDeployParams: {
+                        requestId: '1',
+                        hash: 'ae603ec5f43ad6e8d4aaae0b44996ebd',
+                      },
+                    },
+                  },
+                },
+              },
+            }))
+            connection.metadata.deployRecentValidation.mockImplementation(() => { throw new Error('INVALID_TOKEN') })
+            await adapter.deploy({
+              changeGroup: {
+                groupID: instance.elemID.getFullName(),
+                changes: [{ action: 'add', data: { after: instance } }],
+              },
+            })
+          })
+          it('should fallback to the regular deploy', () => {
+            expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)
           })
         })
       })

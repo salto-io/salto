@@ -34,8 +34,8 @@ describe('emptyVariantsValidator', () => {
     expect(errors).toEqual([{
       elemID: item.elemID,
       severity: 'Error',
-      message: `Can not change ${item.elemID.getFullName()}' ${VARIANTS_FIELD_NAME} to be empty`,
-      detailedMessage: `Can not change ${item.elemID.getFullName()}' ${VARIANTS_FIELD_NAME} to be empty`,
+      message: 'Cannot make this change due to missing variants',
+      detailedMessage: 'Dynamic content item must have at least one variant',
     }])
   })
   it('should not return an error when we remove an item', async () => {

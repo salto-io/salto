@@ -70,7 +70,7 @@ const packageChangeError = async (
   return ({
     elemID: element.elemID,
     severity: 'Error',
-    message: `Cannot change a managed package using Salto. Package namespace: ${packageNamespace}`,
+    message: `Element is part of a package namespace ${packageNamespace}`,
     detailedMessage: detailedMessage ?? `Cannot ${action} ${element.elemID.getFullName()} because it is part of a package namespace: ${packageNamespace}`,
   })
 }

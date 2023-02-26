@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { resolvePath, setPath, createSchemeGuard } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { ValueReplacer, deployModificationFunc, replaceConditionsAndActionsCreator, fieldReplacer } from '../replacers_utils'
 import ZendeskClient from '../client/client'
@@ -33,13 +33,19 @@ const { makeArray } = collections.array
 
 const DEFAULT_ORGANIZATION_FIELDS = [{ name: 'organization_id' }]
 
-type Organization = {
+export type Organization = {
   id: number
   name: string
 }
 
 type OrganizationResponse = {
   organizations: Organization[]
+}
+
+type organizationIdInstanceAndPath = {
+    instance: InstanceElement
+    path: ElemID
+    identifier: string
 }
 
 const ORGANIZATIONS_SCHEMA = Joi.array().items(Joi.object({
@@ -55,7 +61,7 @@ const isOrganizationsResponse = createSchemeGuard<OrganizationResponse>(EXPECTED
 
 const areOrganizations = createSchemeGuard<Organization[]>(ORGANIZATIONS_SCHEMA, 'Received invalid organizations')
 
-const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
+export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
   automation: replaceConditionsAndActionsCreator([
     { fieldName: ['conditions', 'all'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
     { fieldName: ['conditions', 'any'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
@@ -87,7 +93,7 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean => (
   Object.keys(TYPE_NAME_TO_REPLACER).includes(getChangeData(change).elemID.typeName)
 )
 
-const getOrganizationsByIds = async (
+export const getOrganizationsByIds = async (
   organizationIds: string[],
   client: ZendeskClient,
 ): Promise<Organization[]> => {
@@ -107,7 +113,7 @@ const getOrganizationsByIds = async (
   return results.flatMap(orgResponse => orgResponse.organizations)
 }
 
-const getOrganizationsByNames = async (
+export const getOrganizationsByNames = async (
   organizationNames: string[],
   paginator: clientUtils.Paginator,
 ): Promise<Organization[]> => {
@@ -127,17 +133,33 @@ const getOrganizationsByNames = async (
           log.error('invalid organization response')
           return undefined
         }
+
         // the endpoint returns all organizations with names matching the wildcard `organizationName`
         const organization = res.find(org => org.name === organizationName)
         if (organization === undefined) {
           log.error(`could not find any organization with name ${organizationName}`)
-          return undefined
         }
         return organization
       })
   )).filter(isDefined)
 
   return organizations
+}
+
+// Returns the organization ids or names that are referenced in the instance
+export const createOrganizationPathEntries = (instances: InstanceElement[])
+    : organizationIdInstanceAndPath[] => {
+  const organizationPathsEntries = instances.flatMap(instance => {
+    const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance) ?? []
+    return organizationPaths
+      .map(path => {
+        const orgId = resolvePath(instance, path)
+        const stringOrgId = !_.isString(orgId) ? orgId.toString() : orgId
+        return { identifier: stringOrgId, instance, path }
+      })
+  })
+    .filter(entry => !_.isEmpty(entry.identifier)) // organization id value might be an empty string
+  return organizationPathsEntries
 }
 
 /**
@@ -156,18 +178,8 @@ const filterCreator: FilterCreator = ({ client, config }) => {
       const relevantInstances = elements.filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_NAME_TO_REPLACER).includes(instance.elemID.typeName))
 
-      const organizationPathsEntries = relevantInstances.flatMap(instance => {
-        const organizationPaths = TYPE_NAME_TO_REPLACER[instance.elemID.typeName]?.(instance)
-        return organizationPaths
-          .map(path => {
-            const orgId = resolvePath(instance, path)
-            const stringOrgId = !_.isString(orgId) ? orgId.toString() : orgId
-            return { id: stringOrgId, instance, path }
-          })
-      })
-        .filter(entry => !_.isEmpty(entry.id)) // organization id value might be an empty string
-
-      const pathEntriesByOrgId = _.groupBy(organizationPathsEntries, entry => entry.id)
+      const pathEntries = createOrganizationPathEntries(relevantInstances)
+      const pathEntriesByOrgId = _.groupBy(pathEntries, entry => entry.identifier)
       const organizationIds = _.uniq(Object.keys(pathEntriesByOrgId))
 
       const organizations = await getOrganizationsByIds(organizationIds, client)

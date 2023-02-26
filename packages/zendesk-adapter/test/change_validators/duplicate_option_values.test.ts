@@ -80,16 +80,16 @@ describe('duplicateCustomFieldOptionValuesValidator', () => {
       {
         elemID: optionToAdd.elemID,
         severity: 'Error',
-        message: `Can not change ${optionToAdd.elemID.getFullName()} because there are others ticket_field with the same tag value`,
-        detailedMessage: `Can not change ${optionToAdd.elemID.getFullName()} because there are others ticket_field with the same tag value: ${
-          [checkboxTicketField.elemID.getFullName(), checkboxToAdd.elemID.getFullName()].join(', ')}`,
+        message: 'Cannot do this change since this tag value is already in use',
+        detailedMessage: `The tag ‘cTag’ is already used by the following elements:
+${[checkboxTicketField.elemID.getFullName(), checkboxToAdd.elemID.getFullName()].join(', ')}`,
       },
       {
         elemID: checkboxToAdd.elemID,
         severity: 'Error',
-        message: `Can not change ${checkboxToAdd.elemID.getFullName()} because there are others ticket_field with the same tag value`,
-        detailedMessage: `Can not change ${checkboxToAdd.elemID.getFullName()} because there are others ticket_field with the same tag value: ${
-          [optionToAdd.elemID.getFullName(), checkboxTicketField.elemID.getFullName()].join(', ')}`,
+        message: 'Cannot do this change since this tag value is already in use',
+        detailedMessage: `The tag ‘cTag’ is already used by the following elements:
+${[optionToAdd.elemID.getFullName(), checkboxTicketField.elemID.getFullName()].join(', ')}`,
       },
     ])
   })

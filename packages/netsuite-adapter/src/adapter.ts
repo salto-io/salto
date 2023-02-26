@@ -120,7 +120,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean
+  private readonly useChangesDetection: boolean // TODO remove this from configuration SALTO-3676
   private elementsSourceIndex: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
     isPartial: boolean
@@ -239,6 +239,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
+      isPartial,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -248,7 +249,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(
         serverTime,
         this.elementsSource,
-        this.isPartialFetch(),
+        isPartial,
       )
       : undefined
 
@@ -340,12 +341,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  /**
-   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
-   * Account credentials were given in the constructor.
-   */
-
-  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+  private async innerFetch(
+    {
+      fetchOptions,
+      useChangesDetection,
+      isPartial,
+    }:
+    {
+      fetchOptions: FetchOptions
+      useChangesDetection: boolean
+      isPartial: boolean
+    }
+  ): Promise<FetchResult> {
+    const { progressReporter } = fetchOptions
     const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
       .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
@@ -361,14 +369,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = this.isPartialFetch()
 
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypes,
       elements,
-    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection, isPartial)
+    } = await this.fetchByQuery(fetchQuery, progressReporter, useChangesDetection, isPartial)
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
@@ -380,9 +387,31 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { elements, updatedConfig, isPartial }
   }
 
+  /**
+   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
+   * Account credentials were given in the constructor.
+   */
+
+  public async fetch(fetchOptions: FetchOptions): Promise<FetchResult> {
+    return this.innerFetch({
+      fetchOptions,
+      useChangesDetection: this.useChangesDetection,
+      isPartial: this.isPartialFetch(),
+    })
+  }
+
+  public async fetchWithChangeDetection(fetchOptions: FetchOptions): Promise<FetchResult> {
+    return this.innerFetch({
+      fetchOptions,
+      useChangesDetection: true,
+      isPartial: true,
+    })
+  }
+
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
+    isPartial: boolean,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -394,7 +423,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return {}
     }
 
-    if (!this.isPartialFetch()) {
+    if (!isPartial) {
       return {
         serverTime: sysInfo.time,
       }

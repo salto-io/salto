@@ -82,15 +82,15 @@ describe('workflow scheme migration', () => {
   const status2 = new ReferenceExpression(status2Id, new InstanceElement('status2', new ObjectType({ elemID: statusID }), { id: '2' }))
   const status3 = new ReferenceExpression(status3Id, new InstanceElement('status3', new ObjectType({ elemID: statusID }), { id: '3' }))
   const status4 = new ReferenceExpression(status4Id, new InstanceElement('status4', new ObjectType({ elemID: statusID }), { id: '4' }))
-  const workflow1 = new ReferenceExpression(new ElemID(JIRA, 'workflow1'), new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '1', statuses: [{ id: status1 }, { id: status2 }] }))
-  const workflow2 = new ReferenceExpression(new ElemID(JIRA, 'workflow2'), new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '2', statuses: [{ id: status3 }, { id: status4 }] }))
-  const workflow3 = new ReferenceExpression(new ElemID(JIRA, 'workflow3'), new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '3', statuses: [{ id: status1 }, { id: status2 }] }))
-  const workflow4 = new ReferenceExpression(new ElemID(JIRA, 'workflow4'), new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '4', statuses: [{ id: status1 }, { id: status4 }] }))
   const issueType1Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType1')
   const issueType2Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType2')
   const issueType3Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType3')
   const issueType4Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType4')
   const issueType5Id = new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')
+  let workflow1: ReferenceExpression
+  let workflow2: ReferenceExpression
+  let workflow3: ReferenceExpression
+  let workflow4: ReferenceExpression
   let workflowSchemeType: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let projectType: ObjectType
@@ -111,6 +111,10 @@ describe('workflow scheme migration', () => {
     numberOfIssues = 100
     workflowSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'WorkflowScheme') })
     issueTypeSchemeType = new ObjectType({ elemID: new ElemID(JIRA, 'IssueTypeScheme') })
+    workflow1 = new ReferenceExpression(new ElemID(JIRA, 'workflow1'), new InstanceElement('workflow1', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '1', statuses: [{ id: status1 }, { id: status2 }] }))
+    workflow2 = new ReferenceExpression(new ElemID(JIRA, 'workflow2'), new InstanceElement('workflow2', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '2', statuses: [{ id: status3 }, { id: status4 }] }))
+    workflow3 = new ReferenceExpression(new ElemID(JIRA, 'workflow3'), new InstanceElement('workflow3', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '3', statuses: [{ id: status1 }, { id: status2 }] }))
+    workflow4 = new ReferenceExpression(new ElemID(JIRA, 'workflow4'), new InstanceElement('workflow4', new ObjectType({ elemID: new ElemID(JIRA, 'workflow') }), { id: '4', statuses: [{ id: status1 }, { id: status4 }] }))
     issueTypeSchemeInstance = new InstanceElement(
       'issueTypeScheme',
       issueTypeSchemeType,
@@ -213,6 +217,30 @@ describe('workflow scheme migration', () => {
     projectInstance.value.workflowScheme = new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow2'))
     const errors = await validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
     expect(errors).toHaveLength(0)
+  })
+  it('should not throw on unresolved reference', async () => {
+    modifiedInstance.value.items.push(
+      {
+        workflow: new ReferenceExpression(new ElemID(JIRA, 'Workflow', 'instance', 'workflow5')),
+        issueType: new ReferenceExpression(new ElemID(JIRA, 'IssueType', 'instance', 'issueType5')),
+      },
+    )
+    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    await expect(errorsPromise).resolves.not.toThrow()
+  })
+  it('should not throw if there are no items at all', async () => {
+    workflowInstance.value.items = undefined
+    modifiedInstance.value.items = undefined
+    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    await expect(errorsPromise).resolves.not.toThrow()
+  })
+  it('should not throw if workflow has no statuses', async () => {
+    workflow1.value.value.statuses = undefined
+    workflow2.value.value.statuses = undefined
+    workflow3.value.value.statuses = undefined
+    workflow4.value.value.statuses = undefined
+    const errorsPromise = validator([toChange({ before: workflowInstance, after: modifiedInstance })], elementSource)
+    await expect(errorsPromise).resolves.not.toThrow()
   })
   it('should not return an error for active workflow scheme with no issues in assigned projects', async () => {
     numberOfIssues = 0

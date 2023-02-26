@@ -29,12 +29,12 @@ const isRelevantChange = (change: Change<InstanceElement>): boolean =>
   (getChangeData(change).elemID.typeName === TRIGGER_TYPE_NAME)
 
 export const createWrongPlaceErrorMessage = (
-  instanceId: ElemID, orderTypeName: string, categoryFullName: string, active: boolean,
+  instanceId: ElemID, orderTypeName: string, active: boolean,
 ): ChangeError => ({
   elemID: instanceId,
   severity: 'Warning',
-  message: `Instance misplaced in ${orderTypeName}`,
-  detailedMessage: `Instance ${instanceId.name} of type ${instanceId.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${categoryFullName} category in the ${active ? 'active' : 'inactive'} list`,
+  message: `Element misplaced in ${orderTypeName}`,
+  detailedMessage: `Element ${instanceId.name} of type ${instanceId.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the ${active ? 'active' : 'inactive'} list`,
 })
 
 export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidator = async (
@@ -67,8 +67,8 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return {
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Invalid category id',
-          detailedMessage: `Invalid category id '${categoryId}' for instance ${instance.elemID.name} of type ${instance.elemID.typeName}`,
+          message: `Invalid category id '${categoryId}'`,
+          detailedMessage: `Invalid category id '${categoryId}'`,
         }
       }
       const instanceActivityValue = instance.value.active
@@ -83,8 +83,9 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return [{
           elemID: instance.elemID,
           severity: 'Warning',
-          message: `Instance order not specified in ${triggerOrderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order under the ${categoryId.elemID.name} category, and will be added at the end by default. If order is important, please include it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
+          message: 'Order not specified',
+          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in the ${instance.elemID.typeName} sort order under the ${categoryId.elemID.name} category.  Therefore, it will be added at the end by default.  
+If the order is important, please include it under the ${categoryId.elemID.name} category in the ${instanceActivityValue ? 'active' : 'inactive'} list`,
         }]
       }
       if (((instanceActivityValue ? orderEntry.inactive : orderEntry.active) ?? [])
@@ -93,7 +94,6 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
         return [createWrongPlaceErrorMessage(
           instance.elemID,
           triggerOrderTypeName,
-          categoryId.elemID.name,
           instanceActivityValue,
         )]
       }
@@ -112,9 +112,6 @@ export const triggerOrderInstanceContainsAllTheInstancesValidator: ChangeValidat
             return [createWrongPlaceErrorMessage(
               instance.elemID,
               triggerOrderTypeName,
-              isReferenceExpression(entry.category)
-                ? entry.category.elemID.name
-                : entry.category,
               instanceActivityValue,
             )]
           }

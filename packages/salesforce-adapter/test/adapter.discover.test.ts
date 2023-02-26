@@ -38,12 +38,13 @@ import { fetchMetadataInstances } from '../src/fetch'
 import * as fetchModule from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
-import { INVALID_CROSS_REFERENCE_KEY, SOCKET_TIMEOUT } from '../src/constants'
+import { SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
 import { isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>

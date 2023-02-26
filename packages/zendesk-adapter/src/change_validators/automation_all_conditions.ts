@@ -24,10 +24,10 @@ import { resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isConditions } from '../filters/utils'
 import { lookupFunc } from '../filters/field_references'
+import { AUTOMATION_TYPE_NAME } from '../constants'
 
 
 const { awu } = collections.asynciterable
-export const AUTOMATION_TYPE_NAME = 'automation'
 
 const fieldExist = (field: string): boolean =>
   ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
@@ -53,10 +53,7 @@ export const automationAllConditionsValidator: ChangeValidator = async changes =
     .flatMap(instance => [{
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-          + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${instance.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
+      detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
 }

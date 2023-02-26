@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement,
+  isAdditionOrModificationChange, Value, StaticFile, isElement, FetchOptions,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -371,12 +371,35 @@ const runPostFetch = async ({
   )
 }
 
+type RunAdapterFetchFunctionParams = {
+  adapter: AdapterOperations
+  fetchOptions: FetchOptions
+  adapterName: string
+  withChangeDetection: boolean | undefined
+}
+
+const runAdapterFetchFunction = ({
+  adapter,
+  fetchOptions,
+  adapterName,
+  withChangeDetection,
+}: RunAdapterFetchFunctionParams): Promise<FetchResult> => {
+  if (withChangeDetection) {
+    if (adapter.fetchWithChangeDetection === undefined) {
+      throw new Error(`Adapter: ${adapterName} does not support fetch with change detection operation`)
+    }
+    return adapter.fetchWithChangeDetection(fetchOptions)
+  }
+  return adapter.fetch(fetchOptions)
+}
+
 const fetchAndProcessMergeErrors = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangeDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -442,8 +465,12 @@ const fetchAndProcessMergeErrors = async (
     const fetchResults = await Promise.all(
       Object.entries(accountsToAdapters)
         .map(async ([accountName, adapter]) => {
-          const fetchResult = await adapter.fetch({
-            progressReporter: progressReporters[accountName],
+          const fetchOptions = { progressReporter: progressReporters[accountName] }
+          const fetchResult = await runAdapterFetchFunction({
+            adapter,
+            fetchOptions,
+            adapterName: accountToServiceNameMap[accountName],
+            withChangeDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (
@@ -714,7 +741,8 @@ export const fetchChanges = async (
   // As part of SALTO-1661, parameters here should be replaced with named parameters
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
-  progressEmitter?: EventEmitter<FetchProgressEvents>
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangeDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -728,7 +756,8 @@ export const fetchChanges = async (
     stateElements,
     accountToServiceNameMap,
     getChangesEmitter,
-    progressEmitter
+    progressEmitter,
+    withChangeDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

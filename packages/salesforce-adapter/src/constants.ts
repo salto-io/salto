@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { types } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -456,14 +458,42 @@ export const UNLIMITED_INSTANCES_VALUE = -1
 
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
-export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'
-export const DUPLICATE_VALUE = 'sf:DUPLICATE_VALUE'
-export const INVALID_ID_FIELD = 'sf:INVALID_ID_FIELD'
-export const INVALID_FIELD = 'sf:INVALID_FIELD'
-export const INVALID_TYPE = 'sf:INVALID_TYPE'
-export const UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
-export const INVALID_QUERY_FILTER_OPERATOR = 'sf:INVALID_QUERY_FILTER_OPERATOR'
-export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
-export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 export const INVALID_GRANT = 'invalid_grant'
 export const ENOTFOUND = 'ENOTFOUND'
+export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
+
+export const ERROR_PROPERTIES = {
+  MESSAGE: 'message',
+  STACKTRACE: 'stacktrace',
+  NAME: 'name',
+  HOSTNAME: 'hostname',
+  CODE: 'code',
+  ERROR_CODE: 'errorCode',
+} as const
+
+export type ErrorProperty = types.ValueOf<typeof ERROR_PROPERTIES>
+
+// Salesforce Errors
+export const SALESFORCE_ERROR_PREFIX = 'sf:'
+
+export const SALESFORCE_ERRORS = {
+  INVALID_CROSS_REFERENCE_KEY: `${SALESFORCE_ERROR_PREFIX}INVALID_CROSS_REFERENCE_KEY`,
+  DUPLICATE_VALUE: `${SALESFORCE_ERROR_PREFIX}DUPLICATE_VALUE`,
+  INVALID_ID_FIELD: `${SALESFORCE_ERROR_PREFIX}INVALID_ID_FIELD`,
+  INVALID_FIELD: `${SALESFORCE_ERROR_PREFIX}INVALID_FIELD`,
+  INVALID_TYPE: `${SALESFORCE_ERROR_PREFIX}INVALID_TYPE`,
+  UNKNOWN_EXCEPTION: `${SALESFORCE_ERROR_PREFIX}UNKNOWN_EXCEPTION`,
+  REQUEST_LIMIT_EXCEEDED: `${SALESFORCE_ERROR_PREFIX}REQUEST_LIMIT_EXCEEDED`,
+  INVALID_QUERY_FILTER_OPERATOR: `${SALESFORCE_ERROR_PREFIX}INVALID_QUERY_FILTER_OPERATOR`,
+} as const
+
+export type SalesforceErrorName = types.ValueOf<typeof SALESFORCE_ERRORS>
+
+export type SalesforceError = Error & {
+  [ERROR_PROPERTIES.ERROR_CODE]: SalesforceErrorName
+}
+
+export const isSalesforceError = (error: Error): error is SalesforceError => {
+  const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
+  return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
+}

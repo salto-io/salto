@@ -623,14 +623,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  IdentityProviderCredentialsClient: {
-    transformation: {
-      fieldsToOmit: [
-        // we are not managing secrets
-        { fieldName: 'client_secret' },
-      ],
-    },
-  },
   AuthenticatorProviderConfiguration: {
     transformation: {
       fieldsToOmit: [

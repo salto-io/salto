@@ -129,7 +129,7 @@ export const filterTypes = async (
  * This can be called recursively to generate the right type from existing types, potentially
  * wrapped in containers - such as List<Map<List<someTypeName>>>
  */
-const getContainerForType = (typeName: string): {
+export const getContainerForType = (typeName: string): {
   container: 'list' | 'map'
   typeNameSubstring: string
 } | undefined => {

@@ -25,7 +25,7 @@ import {
   extractProperties, ADDITIONAL_PROPERTIES_FIELD, toPrimitiveType, toTypeName, SwaggerRefs,
   SchemaOrReference, SWAGGER_ARRAY, SWAGGER_OBJECT, isArraySchemaObject, SchemasAndRefs,
 } from './swagger_parser'
-import { fixTypes, defineAdditionalTypes } from './type_config_override'
+import { fixTypes, defineAdditionalTypes, getFieldTypeOverridesTypes } from './type_config_override'
 import { filterTypes, markServiceIdField } from '../../type_elements'
 import { LoadedSwagger } from '../swagger'
 import { getConfigWithDefault } from '../../../config/shared'
@@ -47,7 +47,7 @@ type TypeAdderType = (
  */
 const typeAdder = ({
   adapterName,
-  getResponseSchemas,
+  schemas,
   toUpdatedResourceName,
   definedTypes,
   parsedConfigs,
@@ -55,7 +55,7 @@ const typeAdder = ({
 }: {
   adapterName: string
   toUpdatedResourceName: (origResourceName: string) => string
-  getResponseSchemas: Record<string, SchemaOrReference>
+  schemas: Record<string, SchemaOrReference>
   definedTypes: Record<string, ObjectType>
   parsedConfigs: Record<string, RequestableTypeSwaggerConfig>
   refs: SwaggerRefs
@@ -63,7 +63,7 @@ const typeAdder = ({
   // keep track of the top-level schemas, so that even if they are reached from another
   // endpoint before being reached directly, they will be treated as top-level
   // (alternatively, we could create a DAG if we knew there are no cyclic dependencies)
-  const endpointRootSchemaRefs = _(getResponseSchemas)
+  const endpointRootSchemaRefs = _(schemas)
     .pickBy(isReferenceObject)
     .mapValues(toNormalizedRefName)
     .entries()
@@ -301,19 +301,24 @@ export const generateTypes = async (
   const definedTypes: Record<string, ObjectType> = {}
   const parsedConfigs: Record<string, RequestableTypeSwaggerConfig> = {}
 
-  const { schemas: getResponseSchemas, refs } = preParsedDefs
-    ?? await getParsedDefs(swagger.url, loadedSwagger)
+  const additionalTypesFromConfig = getFieldTypeOverridesTypes(types, typeDefaults)
+  const { schemas, refs } = preParsedDefs
+    ?? await getParsedDefs({
+      swaggerPath: swagger.url,
+      loadedSwagger,
+      additionalTypes: additionalTypesFromConfig,
+    })
 
   const addType = typeAdder({
     adapterName,
-    getResponseSchemas,
+    schemas,
     toUpdatedResourceName,
     definedTypes,
     parsedConfigs,
     refs,
   })
 
-  Object.entries(getResponseSchemas).forEach(
+  Object.entries(schemas).forEach(
     ([endpointName, schema]) => addType(
       schema,
       toTypeName(endpointName),
@@ -346,7 +351,7 @@ export const generateTypes = async (
   const filteredTypes = await filterTypes(
     adapterName,
     Object.values(definedTypes),
-    extendedSupportedTypes,
+    _.uniq([...extendedSupportedTypes, ...additionalTypesFromConfig]),
   )
 
   return {

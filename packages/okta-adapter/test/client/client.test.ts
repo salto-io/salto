@@ -21,6 +21,8 @@ import OktaClient from '../../src/client/client'
 describe('client', () => {
   let client: OktaClient
   let mockAxios: MockAdapter
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const clearValuesFromResponseDataFunc = jest.spyOn(OktaClient.prototype as any, 'clearValuesFromResponseData')
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' } })
@@ -44,6 +46,56 @@ describe('client', () => {
       expect(request.headers.Authorization).toEqual('SSWS token')
       expect(request.baseURL).toEqual('http://my.okta.net')
       expect(request.url).toEqual('/myPath')
+    })
+  })
+
+  describe('clearValuesFromResponseData', () => {
+    const idpsResponse = {
+      id: '123',
+      protocol: {
+        type: 'OIDC',
+        credentials: {
+          client: {
+            client_id: 'test',
+            client_secret: 'test2',
+          },
+        },
+      },
+      array: [{ credentials: 'a' }, { somethingElse: 'b' }],
+    }
+    const autheticatorsRes = [
+      { id: 'a', type: 'google', methods: [{ google: { secretKey: '123' } }, { sso: { secretKey: '122' } }] },
+      { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: 'a' },
+    ]
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios
+        .onGet('/api/v1/org').replyOnce(200, { id: 1 })
+        .onGet('/api/v1/idps').replyOnce(200, idpsResponse, { h: '123' })
+        .onGet('/api/v1/authenticators')
+        .replyOnce(200, autheticatorsRes, { h: '123' })
+    })
+    it('should return response data with no secrets', async () => {
+      const firstRes = await client.getSinglePage({ url: '/api/v1/idps' })
+      expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { h: '123' } })
+      const secondRes = await client.getSinglePage({ url: '/api/v1/authenticators' })
+      expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { h: '123' } })
+      expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
+      expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(1,
+        {
+          id: '123',
+          protocol: {
+            type: 'OIDC',
+            credentials: '<SECRET>',
+          },
+          array: [{ credentials: '<SECRET>' }, { somethingElse: 'b' }],
+        })
+      expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2,
+        [
+          { id: 'a', type: 'google', methods: [{ google: { secretKey: '<SECRET>' } }, { sso: { secretKey: '<SECRET>' } }] },
+          { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<SECRET>' },
+        ])
     })
   })
 })

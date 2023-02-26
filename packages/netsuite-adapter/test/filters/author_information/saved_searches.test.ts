@@ -118,6 +118,15 @@ describe('netsuite saved searches author information tests', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T04:17:00Z')
   })
+  it('should not assign change at if the date is from the future', async () => {
+    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D Month, YYYY'
+    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE = 'Asia/Jerusalem'
+    runSavedSearchQueryMock.mockResolvedValue([
+      { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 3995 6:17 am' },
+    ])
+    await filterCreator(filterOpts).onFetch?.(elements)
+    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toBeUndefined()
+  })
 
   it('should not add last modified date when the account date format isnt avaible', async () => {
     userPreferenceInstance.value.configRecord.data.fields = {}

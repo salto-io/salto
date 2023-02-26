@@ -346,6 +346,10 @@ const PLUGIN_URL_PATTERNS: UrlPattern[] = [
     httpMethods: ['get', 'put'],
     url: '/rest/api/3/field/.+/context/defaultValue',
   },
+  {
+    httpMethods: ['get'],
+    url: '/rest/api/3/plugininfo',
+  },
 ]
 
 const replaceRestVersion = (url: string): string => url.replace(

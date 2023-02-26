@@ -30,7 +30,7 @@ import {
   isObjectType,
   CORE_ANNOTATIONS, createRestriction,
 } from '@salto-io/adapter-api'
-import { core } from '@salto-io/adapter-utils'
+import { isRequired } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import {
   FIELD_ANNOTATIONS,
@@ -77,7 +77,7 @@ const isFieldWithValueSet = (field: Field): field is ValueSetField => {
 
 const restrictValueSet = (field: ValueSetField): void => {
   field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-    enforce_value: core.isRequired(field),
+    enforce_value: isRequired(field),
     values: field.annotations[FIELD_ANNOTATIONS.VALUE_SET].map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
   })
 }

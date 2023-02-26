@@ -15,9 +15,9 @@
 */
 import { Element, BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ObjectType } from '@salto-io/adapter-api'
 import { types } from '@salto-io/lowerdash'
-import { isHidden, isHiddenValue, isRequired, isUpdatable } from '../src/core'
+import { isHidden, isHiddenValue, isRequired, isUpdatable } from '../src/annotations'
 
-describe('core utils', () => {
+describe('annotations utils', () => {
   const MOCK_TYPE = new ObjectType({ elemID: new ElemID('adapter', 'TestType') })
   describe('annotations', () => {
     type TestInput = {

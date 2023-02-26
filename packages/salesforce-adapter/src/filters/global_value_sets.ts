@@ -27,7 +27,7 @@ import {
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { core } from '@salto-io/adapter-utils'
+import { isRequired } from '@salto-io/adapter-utils'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import {
   FIELD_ANNOTATIONS,
@@ -77,7 +77,7 @@ const addRefAndRestrict = (
   }
   if (isRestrictableField(field)) {
     field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-      enforce_value: core.isRequired(field),
+      enforce_value: isRequired(field),
       values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
     })
   }

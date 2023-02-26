@@ -37,7 +37,7 @@ describe(filter.name, () => {
       await filter.onFetch([connectedAppInstance])
     })
 
-    it('should annotate secret fields with core _hidden_value', () => {
+    it('should remove the consumerKey from the ConnectedApp instance', () => {
       expect(connectedAppInstance.value.oauthConfig.consumerKey).toBeUndefined()
     })
   })

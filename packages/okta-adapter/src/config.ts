@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { OKTA } from './constants'
+import { ACCESS_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
 const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -44,6 +44,108 @@ const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy' },
   { fieldName: 'lastUpdatedBy' },
 ]
+
+// Policy type is splitted to different kinds of policies
+// The full list of policy types is taken from here:
+// https://developer.okta.com/docs/reference/api/policy/#policy-types
+type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorEnrollmentPolicy' | 'OktaSignOnPolicy' | 'PasswordPolicy' | 'ProfileEnrollmentPolicy'
+
+type PolicyParams = {
+  queryParam: string
+  ruleName: string
+}
+
+const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
+  [ACCESS_POLICY_TYPE_NAME]: {
+    queryParam: 'ACCESS_POLICY',
+    ruleName: 'AccessPolicyRule',
+  },
+  [IDP_POLICY_TYPE_NAME]: {
+    queryParam: 'IDP_DISCOVERY',
+    ruleName: 'IdentityProviderPolicyRule',
+  },
+  [MFA_POLICY_TYPE_NAME]: {
+    queryParam: 'MFA_ENROLL',
+    ruleName: 'MultifactorEnrollmentPolicyRule',
+  },
+  [SIGN_ON_POLICY_TYPE_NAME]: {
+    queryParam: 'OKTA_SIGN_ON',
+    ruleName: 'OktaSignOnPolicyRule',
+  },
+  [PASSWORD_POLICY_TYPE_NAME]: {
+    queryParam: 'PASSWORD',
+    ruleName: 'PasswordPolicyRule',
+  },
+  [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
+    queryParam: 'PROFILE_ENROLLMENT',
+    ruleName: 'ProfileEnrollmentPolicyRule',
+  },
+}
+
+const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
+const getPolicyConfig = (): OktaApiConfig['types'] => {
+  const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
+    const policyRuleConfig = {
+      transformation: {
+        serviceIdField: 'id',
+        fieldsToHide: [{ fieldName: 'id' }],
+        fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
+        fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      },
+    }
+    if (['IdentityProviderPolicy', 'MultifactorEnrollmentPolicy'].includes(typeName)) {
+      _.set(
+        policyRuleConfig.transformation,
+        'fieldTypeOverrides',
+        [
+          { fieldName: '_links', fieldType: 'LinksSelf' },
+          { fieldName: 'actions', fieldType: 'PolicyRuleActions' },
+          { fieldName: 'conditions', fieldType: 'PolicyRuleConditions' },
+        ]
+      )
+    }
+    return {
+      [getPolicyItemsName(typeName)]: {
+        request: {
+          url: '/api/v1/policies',
+          queryParams: {
+            type: details.queryParam,
+          },
+          recurseInto: [
+            {
+              type: `${details.ruleName}s`,
+              toField: 'policyRules',
+              context: [{ name: 'policyId', fromField: 'id' }],
+            },
+          ],
+        },
+        transformation: {
+          fieldTypeOverrides: [{ fieldName: 'items', fieldType: `list<${typeName}>` }],
+        },
+      },
+      [`${details.ruleName}s`]: {
+        request: {
+          url: '/api/v1/policies/{policyId}/rules',
+        },
+        transformation: {
+          dataField: '.',
+          fieldTypeOverrides: [{ fieldName: 'items', fieldType: `list<${details.ruleName}>` }],
+        },
+      },
+      [typeName]: {
+        transformation: {
+          serviceIdField: 'id',
+          fieldsToHide: [{ fieldName: 'id' }],
+          fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+          fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
+          standaloneFields: [{ fieldName: 'policyRules' }],
+        },
+      },
+      [details.ruleName]: policyRuleConfig,
+    }
+  })
+  return Object.assign({}, ...policiesConfig)
+}
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   api__v1__groups: {
@@ -146,6 +248,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   Application: {
     transformation: {
       fieldTypeOverrides: [
+        { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'credentials', fieldType: 'unknown' },
+        { fieldName: 'settings', fieldType: 'unknown' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
@@ -234,107 +339,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
-  'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu': {
-    request: {
-      url: '/api/v1/policies/{policyId}/rules',
-    },
-    transformation: {
-      dataField: '.',
-    },
-  },
-  // Policy type is splitted to different kinds of policies
-  // The full list of policy types is taken from here:
-  // https://developer.okta.com/docs/reference/api/policy/#policy-types
-  AuthenticatorEnrollmentPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'MFA_ENROLL',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
-  GlobalSessionPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'OKTA_SIGN_ON',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
-  AuthenticationPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'ACCESS_POLICY',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
-  ProfileEnrollmentPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'PROFILE_ENROLLMENT',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
-  IdentityProviderRoutingRules: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'IDP_DISCOVERY',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
-  PasswordPolicies: {
-    request: {
-      url: '/api/v1/policies',
-      queryParams: {
-        type: 'PASSWORD',
-      },
-      recurseInto: [
-        {
-          type: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu',
-          toField: 'policyRules',
-          context: [{ name: 'policyId', fromField: 'id' }],
-        },
-      ],
-    },
-  },
   UserSchema: {
     request: {
       url: '/api/v1/meta/schemas/user/default',
@@ -344,41 +348,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-    },
-  },
-  Policy: {
-    transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'policyRules', fieldType: 'list<PolicyRule>' },
-        { fieldName: 'conditions', fieldType: 'PolicyRuleConditions' },
-      ],
-      idFields: ['name', 'type'],
-      standaloneFields: [{ fieldName: 'policyRules' }],
-      serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-        { fieldName: '_links' },
-      ],
-    },
-  },
-  PolicyRule: {
-    transformation: {
-      fieldTypeOverrides: [
-        { fieldName: '_links', fieldType: 'list<Policy__links>' },
-      ],
-      fieldsToHide: [
-        { fieldName: 'id' },
-      ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-        { fieldName: '_links' },
-      ],
-      serviceIdField: 'id',
     },
   },
   OrgContactTypeObj: {
@@ -709,17 +678,19 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'profileEnrollment', fieldType: 'HrefObject' }],
     },
   },
+  ...getPolicyConfig(),
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
   url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/5c352e8236fdced0ccd2caed13bf26b608c8ab03/okta/management-swagger-v3.yaml',
   additionalTypes: [
-    { typeName: 'AuthenticatorEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'GlobalSessionPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'AuthenticationPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'ProfileEnrollmentPolicies', cloneFrom: 'api__v1__policies' },
-    { typeName: 'IdentityProviderRoutingRules', cloneFrom: 'api__v1__policies' },
-    { typeName: 'PasswordPolicies', cloneFrom: 'api__v1__policies' },
+    ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
+      .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
+    ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
+      .map(policy => ({ typeName: `${policy.ruleName}s`, cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
+    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have its own 'rule' type
+    { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
+    { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
     // TODO SALTO-2735 this is not the right type to clone from
     { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
@@ -753,13 +724,19 @@ export const SUPPORTED_TYPES = {
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   Policy: [
-    'AuthenticatorEnrollmentPolicies',
-    'GlobalSessionPolicies',
-    'AuthenticationPolicies',
-    'ProfileEnrollmentPolicies',
-    'IdentityProviderRoutingRules',
     'PasswordPolicies',
+    'OktaSignOnPolicies',
+    'IdentityProviderPolicies',
+    'AccessPolicies',
+    'MultifactorEnrollmentPolicies',
+    'ProfileEnrollmentPolicies',
   ],
+  PasswordPolicy: ['api__v1__policies'],
+  OktaSignOnPolicy: ['api__v1__policies'],
+  IdentityProviderPolicy: ['api__v1__policies'],
+  AccessPolicy: ['api__v1__policies'],
+  MultifactorEnrollmentPolicy: ['api__v1__policies'],
+  ProfileEnrollmentPolicy: ['api__v1__policies'],
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],

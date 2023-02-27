@@ -41,7 +41,7 @@ const validateRemovableChange = async (
       return {
         elemID: element.elemID,
         severity: 'Error',
-        message: `Can't remove instance of ${element.elemID.typeName}`,
+        message: `Can't remove instance of type ${element.elemID.typeName}`,
         detailedMessage: `Can't remove this ${element.elemID.typeName}. Try fetching and deploying again, or remove it in Netsuite UI`,
       }
     }

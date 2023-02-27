@@ -18,6 +18,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType, hasInternalId } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { NetsuiteChangeValidator } from './types'
+import { isSupportedInstance } from '../filters/internal_ids/sdf_internal_ids'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -28,12 +29,20 @@ const validateRemovableChange = async (
   elementsSourceIndex?: LazyElementsSourceIndexes
 ): Promise<ChangeError | undefined> => {
   if (isInstanceElement(element) && isStandardType(element.refType)) {
-    if (!hasInternalId(element)) {
+    if (!isSupportedInstance(element)) {
       return {
         elemID: element.elemID,
         severity: 'Error',
         message: `Can't remove instances of type ${element.elemID.typeName}`,
         detailedMessage: `Can't remove this ${element.elemID.typeName}. Remove it in NetSuite UI`,
+      }
+    }
+    if (!hasInternalId(element)) {
+      return {
+        elemID: element.elemID,
+        severity: 'Error',
+        message: `Can't remove instance of ${element.elemID.typeName}`,
+        detailedMessage: `Can't remove this ${element.elemID.typeName}. Try fetching and deploying again, or remove it in Netsuite UI`,
       }
     }
   } else if (isObjectType(element) && isCustomRecordType(element)) {

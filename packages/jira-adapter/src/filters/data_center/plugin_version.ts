@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import Joi from 'joi'
+import semver from 'semver'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
@@ -21,27 +22,13 @@ import { FilterCreator } from '../../filter'
 const log = logger(module)
 export const PLUGIN_VERSION_NUMBER = '1.0.4'
 
-const versionNumberCompare = (version1: string, version2: string): number => {
-  const version1Parts = version1.split('.')
-  const version2Parts = version2.split('.')
-  const maxParts = Math.max(version1Parts.length, version2Parts.length)
-  for (let i = 0; i < maxParts; i += 1) {
-    const version1Part = version1Parts[i] ?? '0'
-    const version2Part = version2Parts[i] ?? '0'
-    if (version1Part !== version2Part) {
-      return parseInt(version1Part, 10) - parseInt(version2Part, 10)
-    }
-  }
-  return 0
-}
-
 type InfoResponse = {
   version: string
 }
 
 const INFO_RESPONSE_SCHEME = Joi.object({
   version: Joi.string().required(),
-}).required()
+}).unknown(true).required()
 
 const isInfoResonse = createSchemeGuard<InfoResponse>(INFO_RESPONSE_SCHEME, 'Failed to get plugin info')
 
@@ -56,13 +43,12 @@ const filter: FilterCreator = ({ client }) => ({
     }
     try {
       const response = await client.getSinglePage({
-        url: '/rest/api/3/plugininfo',
+        url: '/rest/salto/1.0/plugininfo',
       })
       if (!isInfoResonse(response.data)) {
         throw new Error('Invalid pluginInfo response')
       }
-      const compareResult = versionNumberCompare(response.data.version, PLUGIN_VERSION_NUMBER)
-      if (compareResult > 0) {
+      if (semver.gt(response.data.version, PLUGIN_VERSION_NUMBER)) {
         return {
           errors: [
             {
@@ -72,7 +58,7 @@ const filter: FilterCreator = ({ client }) => ({
           ],
         }
       }
-      if (compareResult < 0) {
+      if (semver.lt(response.data.version, PLUGIN_VERSION_NUMBER)) {
         return {
           errors: [
             {

@@ -92,38 +92,4 @@ describe('plugin_version', () => {
       }],
     })
   })
-  it('should act correctly when versions length are different', async () => {
-    const versionParts = PLUGIN_VERSION_NUMBER.split('.')
-    versionParts.push('1')
-    const versionMore = versionParts.join('.')
-    mockConnection.get.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        version: versionMore,
-      },
-    })
-    const errors = await filter.onFetch([])
-    expect(errors).toEqual({
-      errors: [{
-        message: 'The Salto for Jira DC addon version number is higher than expected. You may be running an outdated Salto CLI; please update it to the latest version from https://github.com/salto-io/salto/releases',
-        severity: 'Info',
-      }],
-    })
-    versionParts.pop()
-    versionParts.pop()
-    const versionLess = versionParts.join('.')
-    mockConnection.get.mockResolvedValueOnce({
-      status: 200,
-      data: {
-        version: versionLess,
-      },
-    })
-    const errors2 = await filter.onFetch([])
-    expect(errors2).toEqual({
-      errors: [{
-        message: `Your Jira instance is running an old version ${versionLess} of Salto Configuration Manager for Jira Data Center. Please update the app by setting up automatic updates, or visit https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira to download the latest version.`,
-        severity: 'Warning',
-      }],
-    })
-  })
 })

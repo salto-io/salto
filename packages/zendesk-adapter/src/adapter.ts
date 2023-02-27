@@ -428,7 +428,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           credentials: { ...credentials, subdomain },
           config: clientConfig,
         },
-        { filterOrganizationNames: !this.userConfig[FETCH_CONFIG].resolveOrganizationIDs },
+        { allowOrganizationNames: this.userConfig[FETCH_CONFIG].resolveOrganizationIDs },
       )
     }
 

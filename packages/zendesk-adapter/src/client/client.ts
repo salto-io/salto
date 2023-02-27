@@ -30,6 +30,11 @@ const {
 } = clientUtils
 const log = logger(module)
 
+type FilterLogsConfig = {
+  allowOrganizationNames?: boolean
+}
+
+
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // this is arbitrary, could not find official limits
@@ -41,9 +46,11 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
-type FilterLogsConfig = {
-  filterOrganizationNames: boolean | undefined
+const DEFAULT_FILTER_LOGS_CONFIG: FilterLogsConfig = {
+  // It is safer to default filter out organization names
+  allowOrganizationNames: false,
 }
+
 
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
@@ -53,7 +60,6 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
-
   private filterLogsConfig: FilterLogsConfig
 
   constructor(
@@ -78,7 +84,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
-    this.filterLogsConfig = filterLogsConfig ?? { filterOrganizationNames: false }
+    this.filterLogsConfig = filterLogsConfig ?? DEFAULT_FILTER_LOGS_CONFIG
   }
 
   public getUrl(): URL {
@@ -157,7 +163,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     responseData: Values,
     url: string
   ): Values {
-    if (url.includes('organization') && this.filterLogsConfig.filterOrganizationNames) {
+    if (url.includes('organizations') && this.filterLogsConfig.allowOrganizationNames !== true) {
       responseData.organizations?.forEach((org: Values) => { org.name = '***' })
     }
     return responseData

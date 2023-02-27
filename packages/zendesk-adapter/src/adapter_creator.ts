@@ -149,7 +149,7 @@ export const adapter: Adapter = {
           credentials,
           config: config[CLIENT_CONFIG],
         },
-        { filterOrganizationNames: !config[FETCH_CONFIG].resolveOrganizationIDs }
+        { allowOrganizationNames: config[FETCH_CONFIG].resolveOrganizationIDs }
       ),
       credentials,
       config,

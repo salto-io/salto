@@ -14,10 +14,12 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
+
+const FIELD_CONFIGURATION_ITEMS_FOLDER_NAME = 'Field Configuration Items'
 
 const createFieldItemInstance = (
   instance: InstanceElement,
@@ -27,7 +29,7 @@ const createFieldItemInstance = (
   naclCase(`${instance.elemID.name}_${fieldItemValues.id.elemID.name}`),
   fieldItemType,
   fieldItemValues,
-  instance.path,
+  instance.path && [...instance.path, FIELD_CONFIGURATION_ITEMS_FOLDER_NAME, pathNaclCase(fieldItemValues.id.elemID.name)],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, instance)],
   }
@@ -61,7 +63,14 @@ const filter: FilterCreator = () => ({
 
         return item
       }))
-
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+      .forEach(instance => {
+        if (instance.path !== undefined) {
+          instance.path = [...instance.path, instance.path[instance.path.length - 1]]
+        }
+      })
     fieldItems.forEach(item => elements.push(item))
   },
 })

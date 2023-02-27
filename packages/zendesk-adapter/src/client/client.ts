@@ -30,6 +30,8 @@ const {
 } = clientUtils
 const log = logger(module)
 
+const ORG_ENDPOINTS_TO_FILTER = ['organizations/show_many', 'organizations/autocomplete']
+
 type FilterLogsConfig = {
   allowOrganizationNames?: boolean
 }
@@ -84,7 +86,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
-    this.filterLogsConfig = filterLogsConfig ?? DEFAULT_FILTER_LOGS_CONFIG
+    this.filterLogsConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, ...filterLogsConfig }
   }
 
   public getUrl(): URL {
@@ -163,7 +165,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     responseData: Values,
     url: string
   ): Values {
-    if (url.includes('organizations') && this.filterLogsConfig.allowOrganizationNames !== true) {
+    if (this.filterLogsConfig.allowOrganizationNames !== true && ORG_ENDPOINTS_TO_FILTER.some(ep => url.includes(ep))) {
       responseData.organizations?.forEach((org: Values) => { org.name = '***' })
     }
     return responseData

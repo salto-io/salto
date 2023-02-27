@@ -47,7 +47,9 @@ describe('client', () => {
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => { throw new Error('Err') })
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => {
+        throw new Error('Err')
+      })
       await expect(
         client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
@@ -65,6 +67,27 @@ describe('client', () => {
         .replyOnce(200)
       await client.post({ url: '/api/v2/routing/attributes', data: {} })
       expect(mockAxios.history.post.length).toEqual(4)
+    })
+
+    it('should filter out responses data by config', async () => {
+      const orgsResponse = { organizations: [{ id: 1, name: 'org1' }, { id: 2, name: 'org2' }] }
+      const filteredOrgsResponse = { organizations: [{ id: 1, name: '***' }, { id: 2, name: '***' }] }
+      mockAxios.onGet().replyOnce(200).onGet().reply(() => [200, orgsResponse])
+      const notFilteringClient = new ZendeskClient(
+        { credentials: { username: 'a', password: 'b', subdomain: 'ignore' } },
+        { allowOrganizationNames: true }
+      )
+      const notFilteredResults = [
+        await notFilteringClient.getSinglePage({ url: 'organizations/show_many' }),
+        await notFilteringClient.getSinglePage({ url: 'organizations/autocomplete' }),
+      ]
+      const filteredResults = [
+        await client.getSinglePage({ url: 'organizations/show_many' }),
+        await client.getSinglePage({ url: 'organizations/autocomplete' }),
+      ]
+
+      expect(notFilteredResults.map(res => res.data)).toMatchObject([orgsResponse, orgsResponse])
+      expect(filteredResults.map(res => res.data)).toMatchObject([filteredOrgsResponse, filteredOrgsResponse])
     })
   })
 })

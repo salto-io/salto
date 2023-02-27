@@ -45,7 +45,7 @@ const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'lastUpdatedBy' },
 ]
 
-// Policy type is splitted to different kinds of policies
+// Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
 // https://developer.okta.com/docs/reference/api/policy/#policy-types
 type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorEnrollmentPolicy' | 'OktaSignOnPolicy' | 'PasswordPolicy' | 'ProfileEnrollmentPolicy'
@@ -675,13 +675,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
-  url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/5c352e8236fdced0ccd2caed13bf26b608c8ab03/okta/management-swagger-v3.yaml',
+  url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml',
   additionalTypes: [
     ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
     ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
-    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have its own 'rule' type
+    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
     // TODO SALTO-2735 this is not the right type to clone from
@@ -716,13 +716,9 @@ export const SUPPORTED_TYPES = {
   UserSchema: ['UserSchema'],
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
-  Policy: Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => getPolicyItemsName(typeName)),
-  PasswordPolicy: ['api__v1__policies'],
-  OktaSignOnPolicy: ['api__v1__policies'],
-  IdentityProviderPolicy: ['api__v1__policies'],
-  AccessPolicy: ['api__v1__policies'],
-  MultifactorEnrollmentPolicy: ['api__v1__policies'],
-  ProfileEnrollmentPolicy: ['api__v1__policies'],
+  ...Object.fromEntries(
+    Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => ([typeName, getPolicyItemsName(typeName)]))
+  ),
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],

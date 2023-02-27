@@ -19,7 +19,6 @@ import { mockClient } from '../utils'
 import { getDefaultConfig } from '../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../src/constants'
 import { wrongUserPermissionSchemeValidator } from '../../src/change_validators/wrong_user_permission_scheme'
-import { MissingUsersPermissionError } from '../../src/users'
 
 describe('wrongUsersPermissionSchemeValidator', () => {
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
@@ -124,15 +123,9 @@ Check ${url} to see valid users and account IDs.`,
       changes
     )).toEqual([])
   })
-  it('should not fail on missing permission error', async () => {
-    const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new MissingUsersPermissionError('Missing permission'))
+  it('should not fail when users map func returns undefined', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
     const validator2 = wrongUserPermissionSchemeValidator(client, config, mockedGetUserMapFunc)
     await expect(validator2(changes)).resolves.not.toThrow()
-  })
-
-  it('should fail on other errors', async () => {
-    const mockedGetUserMapFunc = jest.fn().mockRejectedValue(new Error('Missing permission'))
-    const validator2 = wrongUserPermissionSchemeValidator(client, config, mockedGetUserMapFunc)
-    await expect(validator2(changes)).rejects.toThrow()
   })
 })

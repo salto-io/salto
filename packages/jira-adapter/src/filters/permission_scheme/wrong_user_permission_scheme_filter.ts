@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
-import { getUsersMapByVisibleId, MissingUsersPermissionError, UserMap } from '../../users'
+import { getUsersMapByVisibleId, UserMap } from '../../users'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
@@ -39,18 +39,14 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
   return ({
     name: 'wrongUserPermissionSchemeFilter',
     preDeploy: async (changes: Change<ChangeDataType>[]) => {
-      let userMap: UserMap
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      try {
-        userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
-      } catch (e) {
-        if (e instanceof MissingUsersPermissionError) {
-          return
-        }
-        throw e
+      const rawUserMap = await getUserMapFunc()
+      if (rawUserMap === undefined) {
+        return
       }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       erroneousPermissionSchemes = omitChanges(
         changes,

@@ -139,7 +139,7 @@ describe('Formula dependencies', () => {
   })
 
   describe('When the formula has a reference', () => {
-    it('Should return the reference as a dependency', async () => {
+    it('Should return a field reference as a dependency', async () => {
       const elements = [typeWithFormula.clone()]
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
@@ -147,6 +147,27 @@ describe('Formula dependencies', () => {
       expect(deps).toBeDefined()
       expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
       expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField__c'))
+    })
+    it('Should return a Metadata Type Record field reference as a dependency', async () => {
+      const elements = [typeWithFormula.clone()]
+      elements[0].fields.someFormulaField__c.annotations[FORMULA] = '$CustomMetadata.SomeCustomMetadataType__mdt.SomeCustomMetadataTypeRecord.SomeTextField__c'
+      await filter.onFetch(elements)
+      // eslint-disable-next-line no-underscore-dangle
+      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps).toBeDefined()
+
+      const expectedRefs = [
+        {
+          reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt')),
+        },
+        {
+          reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt', 'field', 'SomeTextField__c')),
+        },
+        {
+          reference: new ReferenceExpression(new ElemID(SALESFORCE, 'SomeCustomMetadataType__mdt', 'instance', 'SomeCustomMetadataType_SomeCustomMetadataTypeRecord@v')),
+        },
+      ]
+      expect(deps).toEqual(expectedRefs)
     })
   })
 
@@ -185,9 +206,9 @@ describe('Formula dependencies', () => {
       'salesforce.Account.field.OpportunityId', 'salesforce.Account.field.Opportunity__c',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.ParentId', 'salesforce.Center__c',
       'salesforce.Center__c.field.My_text_field__c', 'salesforce.Contact', 'salesforce.Contact.field.AssistantName',
-      'salesforce.Contact.field.CreatedById', 'salesforce.Customer_Support_Setting__c',
-      'salesforce.Customer_Support_Setting__c.field.Email_Address__c', 'salesforce.Details', 'salesforce.Opportunity',
-      'salesforce.Opportunity.field.AccountId', 'salesforce.Opportunity__r',
+      'salesforce.Contact.field.CreatedById', 'salesforce.CustomLabel.instance.Details',
+      'salesforce.Customer_Support_Setting__c', 'salesforce.Customer_Support_Setting__c.field.Email_Address__c',
+      'salesforce.Opportunity', 'salesforce.Opportunity.field.AccountId', 'salesforce.Opportunity__r',
       'salesforce.Opportunity__r.field.Related_Asset__c', 'salesforce.Organization',
       'salesforce.Organization.field.UiSkin', 'salesforce.Profile', 'salesforce.Profile.field.Id',
       'salesforce.Related_Asset__r', 'salesforce.Related_Asset__r.field.Name',
@@ -195,15 +216,16 @@ describe('Formula dependencies', () => {
       'salesforce.SRM_API_Metadata_Client_Setting__mdt.field.CreatedDate', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.DeveloperName',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Insert__c',
-      'salesforce.Trigger_Context_Status__mdt.field.by_class',
-      'salesforce.Trigger_Context_Status__mdt.field.by_handler', 'salesforce.User', 'salesforce.User.field.CompanyName',
-      'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId', 'salesforce.User.field.ProfileId']
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class@uuvu',
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_handler@uuvu', 'salesforce.User',
+      'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
+      'salesforce.User.field.ProfileId']
     const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
       'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
-      'salesforce.Trigger_Context_Status__mdt.field.by_class', 'salesforce.User', 'salesforce.User.field.ContactId',
-      'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
+      'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_class@uuvu', 'salesforce.User',
+      'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
       'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {
       const elements = [typeWithFormula.clone(), ...referredTypes]

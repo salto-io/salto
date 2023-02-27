@@ -34,7 +34,7 @@ import {
 } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
 import { isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
-import { FIELD_HISTORY_TRACKING_ENABLED, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../constants'
+import { FIELD_ANNOTATIONS, HISTORY_TRACKED_FIELDS, OBJECT_HISTORY_TRACKING_ENABLED } from '../constants'
 
 const log = logger(module)
 
@@ -51,11 +51,11 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void =>
   }
 
   customObject.annotations[HISTORY_TRACKED_FIELDS] = Object.values(customObject.fields)
-    .filter(field => (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true))
+    .filter(field => (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true))
     .map(field => new ReferenceExpression(field.elemID))
     .sort()
 
-  Object.values(customObject.fields).forEach(field => delete field.annotations[FIELD_HISTORY_TRACKING_ENABLED])
+  Object.values(customObject.fields).forEach(field => delete field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY])
   delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
 }
 
@@ -82,8 +82,8 @@ const createFieldChanges = (typeBefore: ObjectType,
       return undefined
     }
 
-    before.annotations[FIELD_HISTORY_TRACKING_ENABLED] = false
-    after.annotations[FIELD_HISTORY_TRACKING_ENABLED] = true
+    before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
+    after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = true
     return toChange({ before, after })
   }
 
@@ -92,13 +92,13 @@ const createFieldChanges = (typeBefore: ObjectType,
     const after = fieldByName(typeAfter, fieldName)?.clone()
     if (before !== undefined) {
       log.warn('The field %o was removed from %o\'s history tracking, but did not exist', fieldName, typeAfter.elemID.getFullName())
-      before.annotations[FIELD_HISTORY_TRACKING_ENABLED] = true
+      before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = true
     }
     if (after === undefined) {
       // the field was removed from the object, no need to add a change beyond the RemovalChange that already exists
       return undefined
     }
-    after.annotations[FIELD_HISTORY_TRACKING_ENABLED] = false
+    after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
     return toChange({ before, after })
   }
 
@@ -133,7 +133,7 @@ const filter: LocalFilterCreator = () => ({
     )
 
     const isHistoryTrackedField = (field: Field): boolean => (
-      (field.annotations[FIELD_HISTORY_TRACKING_ENABLED] === true)
+      (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true)
       || trackedFields(field.parent).includes(field.elemID.getFullName())
     )
     const changedTrackedFields = (change: ModificationChange<ObjectType>):
@@ -171,7 +171,7 @@ const filter: LocalFilterCreator = () => ({
     // 2. For all changed fields, make sure they have the expected 'trackHistory' value
     changedCustomObjectFields
       .forEach(field => {
-        field.annotations[FIELD_HISTORY_TRACKING_ENABLED] = isHistoryTrackedField(field)
+        field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = isHistoryTrackedField(field)
       })
 
     // 3. If an object's historyTrackedFields changed:
@@ -215,7 +215,7 @@ const filter: LocalFilterCreator = () => ({
       .filter(isFieldChange)
       .filter(change => isFieldOfCustomObject(getChangeData(change)))
       .forEach(change => {
-        delete change.data.after.annotations[FIELD_HISTORY_TRACKING_ENABLED]
+        delete change.data.after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
       })
 
     changes
@@ -223,7 +223,7 @@ const filter: LocalFilterCreator = () => ({
       .filter(isFieldChange)
       .filter(change => isFieldOfCustomObject(getChangeData(change)))
       .forEach(change => {
-        delete change.data.before.annotations[FIELD_HISTORY_TRACKING_ENABLED]
+        delete change.data.before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
       })
 
     _.remove(changes, change => (

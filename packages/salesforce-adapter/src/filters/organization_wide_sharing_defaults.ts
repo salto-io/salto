@@ -23,7 +23,7 @@ import { apiName, getSObjectFieldElement, getTypePath } from '../transformers/tr
 import {
   API_NAME,
   CUSTOM_OBJECT,
-  METADATA_TYPE,
+  METADATA_TYPE, ORGANIZATION_SETTINGS,
   RECORDS_PATH,
   SALESFORCE,
 } from '../constants'
@@ -31,7 +31,6 @@ import SalesforceClient from '../client/client'
 
 const log = logger(module)
 
-const ORGANIZATION_SETTINGS_TYPE = 'Organization'
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 
 const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
@@ -39,7 +38,7 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
   const describeSObjectsResult = await client.describeSObjects([typeApiName])
   if (describeSObjectsResult.errors.length !== 0 || describeSObjectsResult.result.length !== 1) {
     log.warn('describeSObject on %o failed with errors: %o and %o results',
-      apiName,
+      typeApiName,
       describeSObjectsResult.errors,
       describeSObjectsResult.result.length)
     return
@@ -58,12 +57,15 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
   const fields = topLevelFields
     .map(field => getSObjectFieldElement(type, field, { [API_NAME]: typeApiName }, objCompoundFieldNames))
 
-  type.fields = { ...type.fields, ..._.keyBy(fields, field => _.camelCase(field.name)) }
+  type.fields = {
+    ...type.fields,
+    ..._.keyBy(fields, field => field.name),
+  }
 }
 
 const createOrganizationType = (): ObjectType => (
   new ObjectType({
-    elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS_TYPE),
+    elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
     fields: {
     },
     annotations: {
@@ -71,10 +73,10 @@ const createOrganizationType = (): ObjectType => (
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.DELETABLE]: false,
       [METADATA_TYPE]: CUSTOM_OBJECT,
-      [API_NAME]: ORGANIZATION_SETTINGS_TYPE,
+      [API_NAME]: ORGANIZATION_SETTINGS,
     },
     isSettings: true,
-    path: getTypePath(ORGANIZATION_SETTINGS_TYPE),
+    path: getTypePath(ORGANIZATION_SETTINGS),
   })
 )
 
@@ -85,7 +87,7 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
     {
       ..._.pick(fieldValues, Object.keys(objectType.fields)),
     },
-    [SALESFORCE, RECORDS_PATH, ORGANIZATION_SETTINGS_TYPE, ORGANIZATION_SETTINGS_INSTANCE_NAME],
+    [SALESFORCE, RECORDS_PATH, ORGANIZATION_SETTINGS, ORGANIZATION_SETTINGS_INSTANCE_NAME],
     {
     },
   )
@@ -103,9 +105,7 @@ const filterCreator = ({ client }: { client: SalesforceClient}): FilterWith<'onF
       return
     }
 
-    const fieldsFromQuery = _.mapKeys(queryResult[0], (_value, key) => _.camelCase(key))
-
-    const organizationInstance = createOrganizationInstance(objectType, fieldsFromQuery)
+    const organizationInstance = createOrganizationInstance(objectType, queryResult[0])
 
     elements.push(objectType, organizationInstance)
   },

@@ -17,7 +17,14 @@ import { CORE_ANNOTATIONS, Element, ElemID } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/organization_wide_sharing_defaults'
 import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
-import { API_NAME, CUSTOM_OBJECT_ID_FIELD, METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  METADATA_TYPE,
+  ORGANIZATION_SETTINGS,
+  SALESFORCE,
+} from '../../src/constants'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -110,22 +117,22 @@ describe('organization-wide defaults filter', () => {
         SomeIrrelevantField: 'SomeIrrelevantValue',
       }])
       const fieldsOfInterest = [
-        'defaultAccountAccess',
-        'defaultCalendarAccess',
-        'defaultCampaignAccess',
-        'defaultCaseAccess',
-        'defaultContactAccess',
-        'defaultLeadAccess',
-        'defaultOpportunityAccess',
+        'DefaultAccountAccess',
+        'DefaultCalendarAccess',
+        'DefaultCampaignAccess',
+        'DefaultCaseAccess',
+        'DefaultContactAccess',
+        'DefaultLeadAccess',
+        'DefaultOpportunityAccess',
       ]
       connection.soap.describeSObjects.mockResolvedValue([
         {
           ...objectDefaults,
-          name: 'Organization',
+          name: ORGANIZATION_SETTINGS,
           fields: [
             {
               ...fieldDefaults,
-              name: 'name',
+              name: 'Name',
               nameField: true,
             },
             ...fieldsOfInterest.map(fieldName => ({ name: fieldName, ...fieldDefaults })),
@@ -139,25 +146,25 @@ describe('organization-wide defaults filter', () => {
       await filter.onFetch(elements)
       expect(elements).toIncludeAllPartialMembers([
         {
-          elemID: new ElemID(SALESFORCE, 'Organization'),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),
           annotations: {
             [CORE_ANNOTATIONS.CREATABLE]: false,
             [CORE_ANNOTATIONS.DELETABLE]: false,
             [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [API_NAME]: 'Organization',
-            [METADATA_TYPE]: 'CustomObject',
+            [API_NAME]: ORGANIZATION_SETTINGS,
+            [METADATA_TYPE]: CUSTOM_OBJECT,
           },
         },
         {
-          elemID: new ElemID(SALESFORCE, 'Organization', 'instance', '_config'),
+          elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance', '_config'),
           value: {
-            defaultAccountAccess: 'Edit',
-            defaultCalendarAccess: 'HideDetailsInsert',
-            defaultCampaignAccess: 'All',
-            defaultCaseAccess: 'None',
-            defaultContactAccess: 'ControlledByParent',
-            defaultLeadAccess: 'ReadEditTransfer',
-            defaultOpportunityAccess: 'None',
+            DefaultAccountAccess: 'Edit',
+            DefaultCalendarAccess: 'HideDetailsInsert',
+            DefaultCampaignAccess: 'All',
+            DefaultCaseAccess: 'None',
+            DefaultContactAccess: 'ControlledByParent',
+            DefaultLeadAccess: 'ReadEditTransfer',
+            DefaultOpportunityAccess: 'None',
           },
         },
       ])

@@ -18,6 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
@@ -40,6 +41,10 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
+type FilterLogsConfig = {
+  filterOrganizationNames: boolean | undefined
+}
+
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
   > {
@@ -49,8 +54,11 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
 
+  private filterLogsConfig: FilterLogsConfig
+
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
+    filterLogsConfig?: FilterLogsConfig,
   ) {
     super(
       ZENDESK,
@@ -70,6 +78,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
+    this.filterLogsConfig = filterLogsConfig ?? { filterOrganizationNames: false }
   }
 
   public getUrl(): URL {
@@ -142,5 +151,15 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  protected clearValuesFromResponseData(
+    responseData: Values,
+    url: string
+  ): Values {
+    if (url.includes('organization') && this.filterLogsConfig.filterOrganizationNames) {
+      responseData.organizations?.forEach((org: Values) => { org.name = '***' })
+    }
+    return responseData
   }
 }

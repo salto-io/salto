@@ -33,13 +33,7 @@ export type UserInfo = {
   username?: string
 }
 export type UserMap = Record<string, UserInfo>
-export type GetUserMapFunc = () => Promise<UserMap>
-
-export class MissingUsersPermissionError extends Error {
-  constructor(message: string) {
-    super(message)
-  }
-}
+export type GetUserMapFunc = () => Promise<UserMap | undefined>
 
 const isMissingUserPermissionError = (err: Error): boolean =>
   err instanceof clientUtils.HTTPError && err.response.status === 403
@@ -123,7 +117,7 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
     : GetUserMapFunc => {
   let idMap: UserMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
-  return async (): Promise<UserMap> => {
+  return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
         usersCallPromise = log.time(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
@@ -137,7 +131,7 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
       } catch (e) {
         if (isMissingUserPermissionError(e)) {
           log.error('Failed to get users map due to missing permissions.')
-          throw new MissingUsersPermissionError(e)
+          return undefined
         }
         throw e
       }

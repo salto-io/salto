@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
-import { MissingUsersPermissionError, UserMap } from '../../users'
+import { UserMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -56,46 +56,36 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
 const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
   name: 'userIdFilter',
   onFetch: async elements => {
-    let fetchUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true)) {
       return
     }
-    try {
-      fetchUserMap = await getUserMapFunc()
-    } catch (e) {
-      if (e instanceof MissingUsersPermissionError) {
-        return
-      }
-      throw e
+    const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
     }
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
         if (client.isDataCenter) {
-          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(fetchUserMap)) })
+          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) })
         } else {
-          walkOnElement({ element, func: walkOnUsers(addDisplayName(fetchUserMap,)) })
+          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap,)) })
         }
       })
   },
   preDeploy: async changes => {
-    let preDeployUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true) || !client.isDataCenter) {
       return
     }
 
-    try {
-      preDeployUserMap = _.keyBy(
-        Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
-        userInfo => userInfo.username as string
-      )
-    } catch (e) {
-      if (e instanceof MissingUsersPermissionError) {
-        return
-      }
-      throw e
+    const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
     }
-
+    const preDeployUserMap = _.keyBy(
+      Object.values(userMap).filter(userInfo => _.isString(userInfo.username)),
+      userInfo => userInfo.username as string
+    )
 
     changes
       .filter(isInstanceChange)
@@ -106,18 +96,13 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
         walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap)) }))
   },
   onDeploy: async changes => {
-    let deployUserMap: UserMap
     if (!(config.fetch.convertUsersIds ?? true)
        || !client.isDataCenter) {
       return
     }
-    try {
-      deployUserMap = await getUserMapFunc()
-    } catch (e) {
-      if (e instanceof MissingUsersPermissionError) {
-        return
-      }
-      throw e
+    const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
     }
     changes
       .filter(isInstanceChange)
@@ -125,7 +110,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(deployUserMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) }))
   },
 })
 

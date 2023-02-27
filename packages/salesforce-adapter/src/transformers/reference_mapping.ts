@@ -155,6 +155,18 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Flow' },
   },
   {
+    src: { field: 'flowDefinition', parentTypes: ['QuickAction'] },
+    target: { type: 'Flow' },
+  },
+  {
+    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
+    target: { type: 'AuraDefinitionBundle' },
+  },
+  {
+    src: { field: 'lightningComponent', parentTypes: ['QuickAction'] },
+    target: { type: 'ApexPage' },
+  },
+  {
     src: { field: 'letterhead', parentTypes: ['EmailTemplate'] },
     target: { type: 'Letterhead' },
   },
@@ -282,6 +294,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'quickActionName', parentTypes: ['QuickActionListItem'] },
     target: { type: 'QuickAction' },
+  },
+  {
+    src: { field: 'content', parentTypes: ['AppActionOverride', 'ActionOverride'] },
+    target: { type: 'LightningPage' },
   },
   {
     src: { field: 'name', parentTypes: ['AppMenuItem'] },
@@ -483,6 +499,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'page', parentTypes: ['WebLink'] },
     target: { type: 'ApexPage' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['ComponentInstanceProperty'] },
+    target: { type: 'Flow' },
   },
   {
     src: { field: CPQ_LOOKUP_PRODUCT_FIELD, parentTypes: [CPQ_PRODUCT_RULE, CPQ_PRICE_RULE] },

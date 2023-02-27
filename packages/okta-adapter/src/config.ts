@@ -94,7 +94,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
         fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       },
     }
-    if (['IdentityProviderPolicy', 'MultifactorEnrollmentPolicy'].includes(typeName)) {
+    if ([IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME].includes(typeName)) {
       _.set(
         policyRuleConfig.transformation,
         'fieldTypeOverrides',
@@ -250,7 +250,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
-        { fieldName: 'credentials', fieldType: 'unknown' },
+        { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
@@ -287,6 +287,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
           applicationId: 'id',
         },
       },
+    },
+  },
+  ApplicationCredentials: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'oauthClient', fieldType: 'ApplicationCredentialsOAuthClient' },
+        { fieldName: 'password', fieldType: 'PasswordCredential' },
+        { fieldName: 'revealPassword', fieldType: 'boolean' },
+        { fieldName: 'scheme', fieldType: 'string' },
+        { fieldName: 'userName', fieldType: 'string' },
+      ],
     },
   },
   api__v1__meta__types__user: {

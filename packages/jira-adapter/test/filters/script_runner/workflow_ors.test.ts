@@ -17,7 +17,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
-import orFilter from '../../../src/filters/script_runner/workflow_ors'
+import orFilter, { OR_FIELDS } from '../../../src/filters/script_runner/workflow_ors'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
@@ -76,56 +76,62 @@ describe('ScriptRunner ors in DC', () => {
     )
   })
   describe('fetch', () => {
-    it('should replace ors to arrays', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter|||assignee'
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a2 = 'reporter|||assignee'
-      instance.value.transitions[0].rules.conditions[0].configuration.b = 'reporter|||assignee'
-      instance.value.transitions[0].rules.validators[0].configuration.c = 'reporter|||assignee'
+    it('should replace all field ors to arrays', async () => {
+      OR_FIELDS.forEach(field => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'reporter|||assignee'
+      })
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual(['reporter', 'assignee'])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a2).toEqual(['reporter', 'assignee'])
-      expect(instance.value.transitions[0].rules.conditions[0].configuration.b).toEqual(['reporter', 'assignee'])
-      expect(instance.value.transitions[0].rules.validators[0].configuration.c).toEqual(['reporter', 'assignee'])
+      OR_FIELDS.forEach(field => {
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual(['reporter', 'assignee'])
+      })
+    })
+    it('should insert single value to array', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter'
+      await filter.onFetch([instance])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual(['reporter'])
+    })
+    it('should not replace ors on non Or fields', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter|||assignee'
+      await filter.onFetch([instance])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter|||assignee')
     })
     it('should not decode if script runner not supported', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter|||assignee'
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filterOff.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter|||assignee')
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual('reporter|||assignee')
     })
     it('should not decode if not data center', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter|||assignee'
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filterCloud.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter|||assignee')
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual('reporter|||assignee')
     })
     it('should not decode if wrong type', async () => {
       instance.value.transitions[0].rules.postFunctions[1] = {
         type: 'other',
         configuration: {
-          a: 'reporter|||assignee',
+          FIELD_SELECTED_FIELDS: 'reporter|||assignee',
         },
       }
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[1].configuration.a).toEqual('reporter|||assignee')
+      expect(instance.value.transitions[0].rules.postFunctions[1].configuration.FIELD_SELECTED_FIELDS).toEqual('reporter|||assignee')
     })
   })
   describe('pre deploy', () => {
     it('should replace arrays to ors', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = ['reporter', 'assignee']
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a2 = ['reporter', 'assignee']
-      instance.value.transitions[0].rules.conditions[0].configuration.b = ['reporter', 'assignee']
-      instance.value.transitions[0].rules.validators[0].configuration.c = ['reporter', 'assignee']
+      OR_FIELDS.forEach(field => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = ['reporter', 'assignee']
+      })
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter|||assignee')
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a2).toEqual('reporter|||assignee')
-      expect(instance.value.transitions[0].rules.conditions[0].configuration.b).toEqual('reporter|||assignee')
-      expect(instance.value.transitions[0].rules.validators[0].configuration.c).toEqual('reporter|||assignee')
+      OR_FIELDS.forEach(field => {
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual('reporter|||assignee')
+      })
     })
   })
   describe('on deploy', () => {
     it('should replace ors to arrays', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.a = 'reporter|||assignee'
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual(['reporter', 'assignee'])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual(['reporter', 'assignee'])
     })
   })
 })

@@ -22,10 +22,24 @@ import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
 
 const SCRIPT_RUNNER_OR = '|||'
+export const OR_FIELDS = [
+  'FIELD_TRANSITION_OPTIONS',
+  'FIELD_SELECTED_FIELDS',
+  'FIELD_LINK_DIRECTION',
+  'FIELD_FIELD_IDS',
+  'FIELD_REQUIRED_FIELDS',
+  'FIELD_USER_IN_FIELDS',
+  'FIELD_GROUP_NAMES',
+  'FIELD_LINKED_ISSUE_RESOLUTION',
+  'FIELD_PROJECT_ROLE_IDS',
+  'FIELD_USER_IDS',
+  'FIELD_LINKED_ISSUE_STATUS',
+]
 
 const returnOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
   if (typeof value === 'object' && value !== null) {
     Object.entries(value)
+      .filter(([key]) => OR_FIELDS.includes(key))
       .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]))
       .forEach(([key, val]) => {
         value[key] = val.join(SCRIPT_RUNNER_OR)
@@ -37,7 +51,8 @@ const returnOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
 const replaceOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
-      .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].includes(SCRIPT_RUNNER_OR))
+      .filter(([key]) => OR_FIELDS.includes(key))
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
       .forEach(([key, val]) => {
         value[key] = val.split(SCRIPT_RUNNER_OR)
       })

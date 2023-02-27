@@ -20,7 +20,7 @@ import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
-import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, MissingUsersPermissionError, UserMap } from '../users'
+import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, UserMap } from '../users'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
@@ -246,19 +246,15 @@ export const accountIdValidator: (
 ) =>
   ChangeValidator = (client, config, getUserMapFunc) => async changes =>
     log.time(async () => {
-      let userMap: UserMap
       if (!(config.fetch.convertUsersIds ?? true)) {
         return []
       }
       const { baseUrl, isDataCenter } = client
-      try {
-        userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
-      } catch (e) {
-        if (e instanceof MissingUsersPermissionError) {
-          return []
-        }
-        throw e
+      const rawUserMap = await getUserMapFunc()
+      if (rawUserMap === undefined) {
+        return []
       }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
       return changes

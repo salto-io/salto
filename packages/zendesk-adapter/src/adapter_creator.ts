@@ -144,13 +144,11 @@ export const adapter: Adapter = {
     const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const adapterOperations = new ZendeskAdapter({
-      client: new ZendeskClient(
-        {
-          credentials,
-          config: config[CLIENT_CONFIG],
-        },
-        { allowOrganizationNames: config[FETCH_CONFIG].resolveOrganizationIDs }
-      ),
+      client: new ZendeskClient({
+        credentials,
+        config: config[CLIENT_CONFIG],
+        allowOrganizationNames: config[FETCH_CONFIG].resolveOrganizationIDs,
+      }),
       credentials,
       config,
       getElemIdFunc: context.getElemIdFunc,

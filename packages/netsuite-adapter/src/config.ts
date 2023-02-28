@@ -85,7 +85,7 @@ export type NetsuiteConfig = {
   fetch?: FetchParams
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
-  useChangesDetection?: boolean // TODO remove this from config SALTO-3676
+  useChangesDetection?: boolean
   deployReferencedElements?: boolean
 }
 

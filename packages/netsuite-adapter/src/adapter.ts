@@ -123,7 +123,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly useChangesDetection: boolean
   private elementsSourceIndex: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
-    isPartial: boolean
+    isPartial?: boolean
     changesGroupId?: string
   }) => Required<Filter>
 
@@ -211,7 +211,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       },
     }
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = ({ isPartial, changesGroupId }) => filter.filtersRunner(
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: this.elementsSourceIndex,
@@ -223,8 +223,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filtersCreators,
     )
   }
-
-  private isPartialFetch(): boolean { return this.fetchTarget !== undefined }
 
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
@@ -239,6 +237,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
+      isPartial,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -248,7 +247,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(
         serverTime,
         this.elementsSource,
-        this.isPartialFetch(),
+        isPartial,
       )
       : undefined
 
@@ -345,7 +344,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
 
-  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+  public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
       .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
@@ -361,14 +360,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = this.isPartialFetch()
+    const isPartial = withChangesDetection || this.fetchTarget !== undefined
 
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypes,
       elements,
-    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection, isPartial)
+    } = await this.fetchByQuery(
+      fetchQuery,
+      progressReporter,
+      (this.useChangesDetection || withChangesDetection),
+      isPartial,
+    )
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
@@ -383,6 +387,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
+    isPartial: boolean,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -394,7 +399,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return {}
     }
 
-    if (!this.isPartialFetch()) {
+    if (!isPartial) {
       return {
         serverTime: sysInfo.time,
       }
@@ -427,7 +432,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
     const filtersRunner = this.createFiltersRunner({
-      isPartial: this.isPartialFetch(),
       changesGroupId: groupID,
     })
     await filtersRunner.preDeploy(changesToDeploy)
@@ -467,7 +471,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: changesGroupId => this.createFiltersRunner({
-          isPartial: this.isPartialFetch(),
           changesGroupId,
         }),
         elementsSourceIndex: this.elementsSourceIndex,

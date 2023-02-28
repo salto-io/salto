@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Change,
   Field,
@@ -80,7 +81,9 @@ describe(filter.name, () => {
         await filter.onFetch(elements)
         const trackedFieldNames = elements[0].annotations[HISTORY_TRACKED_FIELDS]
         expect(trackedFieldNames).toBeDefined()
-        expect(trackedFieldNames).toEqual([referenceForField('fieldWithHistoryTracking')])
+        expect(trackedFieldNames).toEqual({
+          fieldWithHistoryTracking: referenceForField('fieldWithHistoryTracking'),
+        })
         expect(elements[0].fields.fieldWithHistoryTracking.annotations)
           .not
           .toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY)
@@ -287,8 +290,10 @@ describe(filter.name, () => {
     })
   })
   describe('End to end', () => {
-    const resolveRefs = (refs: ReferenceExpression[]): string[] => (
-      refs.map(ref => `${ref.elemID.typeName}.${ref.elemID.name}`)
+    const resolveRefs = (refs: Record<string, ReferenceExpression>): Record<string, string> => (
+      _(refs)
+        .mapValues(ref => `${ref.elemID.typeName}.${ref.elemID.name}`)
+        .value()
     )
     const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
       annotations: {
@@ -298,14 +303,14 @@ describe(filter.name, () => {
         fieldWithHistoryTracking: {
           refType: Types.primitiveDataTypes.Text,
           annotations: {
-            apiName: 'FieldWithHistoryTracking',
+            [API_NAME]: 'TypeWithHistoryTracking.FieldWithHistoryTracking',
             [FIELD_ANNOTATIONS.TRACK_HISTORY]: true,
           },
         },
         fieldWithoutHistoryTracking: {
           refType: Types.primitiveDataTypes.Text,
           annotations: {
-            apiName: 'FieldWithoutHistoryTracking',
+            [API_NAME]: 'TypeWithHistoryTracking.FieldWithoutHistoryTracking',
             [FIELD_ANNOTATIONS.TRACK_HISTORY]: false,
           },
         },
@@ -318,6 +323,7 @@ describe(filter.name, () => {
       const changes = [toChange({ after: elements[0] })]
       getChangeData(changes[0]).annotations[HISTORY_TRACKED_FIELDS] = resolveRefs(getChangeData(changes[0])
         .annotations[HISTORY_TRACKED_FIELDS])
+
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       expect(changes).toHaveLength(1)
@@ -328,9 +334,8 @@ describe(filter.name, () => {
       await filter.onFetch(elements)
 
       const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS].push(...resolveRefs(
-        [new ReferenceExpression(typeWithHistoryTrackedFields.fields.fieldWithoutHistoryTracking.elemID)]
-      ))
+      const fieldApiName = after.fields.fieldWithoutHistoryTracking.annotations[API_NAME]
+      after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = fieldApiName
       const changes = [toChange({ before: elements[0], after })]
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)

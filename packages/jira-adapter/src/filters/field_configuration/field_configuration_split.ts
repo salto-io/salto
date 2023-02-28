@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
@@ -29,7 +30,11 @@ const createFieldItemInstance = (
   naclCase(`${instance.elemID.name}_${fieldItemValues.id.elemID.name}`),
   fieldItemType,
   fieldItemValues,
-  instance.path && [...instance.path, FIELD_CONFIGURATION_ITEMS_FOLDER_NAME, pathNaclCase(fieldItemValues.id.elemID.name)],
+  instance.path && [
+    ...instance.path,
+    FIELD_CONFIGURATION_ITEMS_FOLDER_NAME,
+    pathNaclCase(fieldItemValues.id.elemID.name),
+  ],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, instance)],
   }

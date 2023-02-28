@@ -73,13 +73,10 @@ const aliasMap: AliasMap = {
   },
   dynamic_content_item__variants: {
     aliasFields: ['_parent.0._alias', 'locale_id.value.value.locale'], // in the notion its content
+    separator: ' - ',
   },
   group: {
     aliasFields: ['name'],
-  },
-  // what is guide_local??
-  guide_language_settings: {
-    aliasFields: ['locale'],
   },
   locale: {
     aliasFields: ['presentation_name'],
@@ -94,10 +91,10 @@ const aliasMap: AliasMap = {
     aliasFields: ['name'],
   },
   organization_field: {
-    aliasFields: ['raw_title'],
+    aliasFields: ['title'],
   },
   organization_field__custom_field_options: {
-    aliasFields: ['raw_name'],
+    aliasFields: ['name'],
   },
   routing_attribute: {
     aliasFields: ['name'],
@@ -118,12 +115,14 @@ const aliasMap: AliasMap = {
     aliasFields: ['title'],
   },
   ticket_field: {
-    aliasFields: ['raw_title'],
+    aliasFields: ['title'],
+  },
+  ticket_field__custom_field_options: {
+    aliasFields: ['name'],
   },
   ticket_form: {
-    aliasFields: ['raw_name'],
+    aliasFields: ['name'],
   },
-  // ticket_field__custom_field_options
   trigger: {
     aliasFields: ['title'],
   },
@@ -131,7 +130,7 @@ const aliasMap: AliasMap = {
     aliasFields: ['name'],
   },
   user_field: {
-    aliasFields: ['raw_title'],
+    aliasFields: ['title'],
   },
   user_field__custom_field_options: {
     aliasFields: ['name'],
@@ -145,6 +144,46 @@ const aliasMap: AliasMap = {
   workspace: {
     aliasFields: ['title'],
   },
+  category: {
+    aliasFields: ['name'], // in notion default language title (if the name is removed from the instance)
+  },
+  category_translation: {
+    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+    separator: ' - ',
+  },
+  category_order: {
+    aliasFields: ['_parent.0._alias', '$Category Order$'],
+  },
+  section: {
+    aliasFields: ['name'], // in notion default language title (if the name is removed from the instance)
+  },
+  section_translation: {
+    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+    separator: ' - ',
+  },
+  section_order: {
+    aliasFields: ['_parent.0._alias', '$Section Order$'],
+  },
+  article: {
+    aliasFields: ['title'],
+  },
+  article_translation: {
+    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+    separator: ' - ',
+  },
+  article_order: {
+    aliasFields: ['_parent.0._alias', '$Article Order$'],
+  },
+  // article attachment
+  guide_language_settings: {
+    aliasFields: ['brand.value.value.name', 'locale', '$language settings$'],
+  },
+  permission_group: {
+    aliasFields: ['name'],
+  },
+  user_segment: {
+    aliasFields: ['name'],
+  },
 }
 
 const calculateAlias = (
@@ -155,6 +194,9 @@ const calculateAlias = (
   const separator = aliasMap[currentType].separator ?? ' '
   const aliasParts = aliasFields
     .map(field => {
+      if (field.startsWith('$') && field.endsWith('$')) {
+        return field.slice(1, -1)
+      }
       if (field.startsWith('_parent')) {
         const route = field.split('.')
         const parentNum = Number(route[1])

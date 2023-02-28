@@ -720,11 +720,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       sourceTypeName: 'ticket_forms__ticket_forms',
       fieldsToHide: FIELDS_TO_HIDE.concat([
         { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'name', fieldType: 'string' },
       ]),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'display_name', fieldType: 'string' },
-        { fieldName: 'name', fieldType: 'string' }
       ),
       serviceUrl: '/admin/objects-rules/tickets/ticket-forms/edit/{id}',
     },
@@ -800,10 +800,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['raw_title', 'type'],
       fileNameFields: ['raw_title', 'type'],
       standaloneFields: [{ fieldName: 'custom_field_options' }],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'title', fieldType: 'string' },
+      ),
       fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'position', fieldType: 'number' },
-        { fieldName: 'title', fieldType: 'string' },
         { fieldName: 'description', fieldType: 'string' },
         { fieldName: 'title_in_portal', fieldType: 'string' },
         // TODO may want to add back as part of SALTO-2895
@@ -897,9 +899,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
         { fieldName: 'id', fieldType: 'number' },
       ],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
+      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'description', fieldType: 'string' }
       ),
       serviceUrl: '/agent/admin/user_fields/{id}',
@@ -988,9 +992,11 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         },
         { fieldName: 'id', fieldType: 'number' },
       ],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
-      fieldsToOmit: FIELDS_TO_OMIT.concat(
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
         { fieldName: 'title', fieldType: 'string' },
+      ),
+      fieldsToOmit: FIELDS_TO_OMIT.concat(
         { fieldName: 'description', fieldType: 'string' }
       ),
       serviceUrl: '/agent/admin/organization_fields/{id}',
@@ -1022,9 +1028,12 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   organization_field__custom_field_options: {
     transformation: {
       idFields: ['value'],
-      fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
+      fieldsToHide: FIELDS_TO_HIDE.concat(
+        { fieldName: 'id', fieldType: 'number' },
+        { fieldName: 'name', fieldType: 'string' },
+      ),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
-      fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'name', fieldType: 'string' }),
+      fieldsToOmit: FIELDS_TO_OMIT,
     },
   },
   organization_field_order: {

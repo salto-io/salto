@@ -110,7 +110,6 @@ export type AdapterOperations = {
   fetch: (opts: FetchOptions) => Promise<FetchResult>
   deploy: (opts: DeployOptions) => Promise<DeployResult>
   validate?: (opts: DeployOptions) => Promise<DeployResult>
-  fetchWithChangeDetection?: (opts: FetchOptions) => Promise<FetchResult>
   postFetch?: (opts: PostFetchOptions) => Promise<void>
   deployModifiers?: DeployModifiers
   validationModifiers?: ValidationModifiers

@@ -47,9 +47,7 @@ describe('client', () => {
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => {
-        throw new Error('Err')
-      })
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => { throw new Error('Err') })
       await expect(
         client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()
@@ -74,8 +72,7 @@ describe('client', () => {
       const filteredOrgsResponse = { organizations: [{ id: 1, name: '***' }, { id: 2, name: '***' }] }
       mockAxios.onGet().replyOnce(200).onGet().reply(() => [200, orgsResponse])
       const notFilteringClient = new ZendeskClient(
-        { credentials: { username: 'a', password: 'b', subdomain: 'ignore' } },
-        { allowOrganizationNames: true }
+        { credentials: { username: 'a', password: 'b', subdomain: 'ignore' }, allowOrganizationNames: true }
       )
       const notFilteredResults = [
         await notFilteringClient.getSinglePage({ url: 'organizations/show_many' }),

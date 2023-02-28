@@ -65,8 +65,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   private filterLogsConfig: FilterLogsConfig
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
-    filterLogsConfig?: FilterLogsConfig,
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & FilterLogsConfig,
   ) {
     super(
       ZENDESK,
@@ -86,7 +85,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
-    this.filterLogsConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, ...filterLogsConfig }
+    this.filterLogsConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, allowOrganizationNames: clientOpts.allowOrganizationNames }
   }
 
   public getUrl(): URL {

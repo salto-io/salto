@@ -62,7 +62,7 @@ const filter: FilterCreator = ({ client }) => ({
         return {
           errors: [
             {
-              message: `Your Jira instance is running an old version ${response.data.version} of Salto Configuration Manager for Jira Data Center. Please update the app by setting up automatic updates, or visit https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira to download the latest version.`,
+              message: `Your Jira instance is running an old version ${response.data.version} of Salto Configuration Manager for Jira Data Center. Please update the app to the latest version from https://marketplace.atlassian.com/apps/1225356/salto-configuration-manager-for-jira.`,
               severity: 'Warning',
             },
           ],

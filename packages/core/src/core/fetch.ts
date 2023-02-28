@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement, FetchOptions,
+  isAdditionOrModificationChange, Value, StaticFile, isElement,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -377,6 +377,7 @@ const fetchAndProcessMergeErrors = async (
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangesDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -444,6 +445,7 @@ const fetchAndProcessMergeErrors = async (
         .map(async ([accountName, adapter]) => {
           const fetchResult = await adapter.fetch({
             progressReporter: progressReporters[accountName],
+            withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (
@@ -714,7 +716,8 @@ export const fetchChanges = async (
   // As part of SALTO-1661, parameters here should be replaced with named parameters
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
-  progressEmitter?: EventEmitter<FetchProgressEvents>
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangesDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -728,7 +731,8 @@ export const fetchChanges = async (
     stateElements,
     accountToServiceNameMap,
     getChangesEmitter,
-    progressEmitter
+    progressEmitter,
+    withChangesDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

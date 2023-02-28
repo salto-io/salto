@@ -19,9 +19,7 @@ import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
 import {
   API_NAME,
-  CUSTOM_OBJECT,
   CUSTOM_OBJECT_ID_FIELD,
-  METADATA_TYPE,
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
@@ -152,7 +150,6 @@ describe('organization-wide defaults filter', () => {
             [CORE_ANNOTATIONS.DELETABLE]: false,
             [CORE_ANNOTATIONS.UPDATABLE]: false,
             [API_NAME]: ORGANIZATION_SETTINGS,
-            [METADATA_TYPE]: CUSTOM_OBJECT,
           },
         },
         {

@@ -22,10 +22,9 @@ import { queryClient } from './utils'
 import { apiName, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
   API_NAME,
-  CUSTOM_OBJECT,
-  METADATA_TYPE, ORGANIZATION_SETTINGS,
+  ORGANIZATION_SETTINGS,
   RECORDS_PATH,
-  SALESFORCE,
+  SALESFORCE, SETTINGS_PATH,
 } from '../constants'
 import SalesforceClient from '../client/client'
 
@@ -72,7 +71,6 @@ const createOrganizationType = (): ObjectType => (
       [CORE_ANNOTATIONS.UPDATABLE]: false,
       [CORE_ANNOTATIONS.CREATABLE]: false,
       [CORE_ANNOTATIONS.DELETABLE]: false,
-      [METADATA_TYPE]: CUSTOM_OBJECT,
       [API_NAME]: ORGANIZATION_SETTINGS,
     },
     isSettings: true,
@@ -87,14 +85,14 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
     {
       ..._.pick(fieldValues, Object.keys(objectType.fields)),
     },
-    [SALESFORCE, RECORDS_PATH, ORGANIZATION_SETTINGS, ORGANIZATION_SETTINGS_INSTANCE_NAME],
+    [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, ORGANIZATION_SETTINGS_INSTANCE_NAME],
     {
     },
   )
 )
 
 const filterCreator = ({ client }: { client: SalesforceClient}): FilterWith<'onFetch'> => ({
-  name: 'organization_wide_sharing_defaults',
+  name: 'organizationWideSharingDefaultsFilter',
   onFetch: async elements => {
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)

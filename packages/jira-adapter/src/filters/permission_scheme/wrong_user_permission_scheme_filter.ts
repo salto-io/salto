@@ -42,7 +42,11 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      const rawUserMap = await getUserMapFunc()
+      if (rawUserMap === undefined) {
+        return
+      }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       erroneousPermissionSchemes = omitChanges(
         changes,

@@ -58,8 +58,11 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
       if (config.deploy.defaultMissingUserFallback === undefined) {
         return
       }
-
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      const rawUserMap = await getUserMapFunc()
+      if (rawUserMap === undefined) {
+        return
+      }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       const fallbackUser = await getFallbackUser(client, config.deploy.defaultMissingUserFallback, userMap)
       if (fallbackUser === undefined) {

@@ -51,10 +51,11 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void =>
     return
   }
 
-  customObject.annotations[HISTORY_TRACKED_FIELDS] = Object.values(customObject.fields)
-    .filter(field => (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true))
-    .map(field => new ReferenceExpression(field.elemID))
-    .sort()
+  customObject.annotations[HISTORY_TRACKED_FIELDS] = _(customObject.fields)
+    .pickBy(field => (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true))
+    .mapValues(field => (field !== undefined ? new ReferenceExpression(field.elemID) : undefined))
+    .value()
+
 
   Object.values(customObject.fields).forEach(field => delete field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY])
   delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
@@ -133,7 +134,8 @@ const filter: LocalFilterCreator = () => ({
   preDeploy: async changes => {
     const trackedFields = (type: ObjectType): string[] => (
       // by the time preDeploy is called references are already resolved, so they won't be ref expressions anymore.
-      type.annotations[HISTORY_TRACKED_FIELDS] ?? []
+      type.annotations[HISTORY_TRACKED_FIELDS] !== undefined
+        ? Object.values(type.annotations[HISTORY_TRACKED_FIELDS]) : []
     )
 
     const isHistoryTrackedField = async (field: Field): Promise<boolean> => (

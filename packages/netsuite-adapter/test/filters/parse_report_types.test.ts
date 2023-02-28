@@ -65,7 +65,7 @@ describe('parse_report_types filter', () => {
     sourceSavedSearchInstance = new InstanceElement(
       'someSearch',
       savedsearch,
-      {}
+      { definition: `source@${emptyDefinition}` }
     )
 
     financialLayoutInstance = new InstanceElement(
@@ -76,7 +76,7 @@ describe('parse_report_types filter', () => {
     sourceFinancialLayoutInstance = new InstanceElement(
       'layout1',
       financiallayout,
-      {}
+      { layout: `source@${layoutDefinition}` }
     )
     reportDefinitionInstance = new InstanceElement(
       'report1',
@@ -86,12 +86,8 @@ describe('parse_report_types filter', () => {
     sourceReportDefinitionInstance = new InstanceElement(
       'report1',
       reportdefinition,
-      {}
+      { definition: `source@${simpleReportDefinition}` }
     )
-
-    sourceSavedSearchInstance.value.definition = emptyDefinition
-    sourceFinancialLayoutInstance.value.layout = layoutDefinition
-    sourceReportDefinitionInstance.value.definition = simpleReportDefinition
   })
   describe('onFetch', () => {
     it('should removes old object type and adds new type', async () => {
@@ -123,23 +119,25 @@ describe('parse_report_types filter', () => {
       expect(financialLayoutInstance.value).toEqual({ layout: layoutDefinition, ...layoutDefinitionResult })
     })
     it('should keeps old definition', async () => {
+      const sourceElements = [
+        sourceSavedSearchInstance,
+        sourceFinancialLayoutInstance,
+        sourceReportDefinitionInstance,
+      ]
+      await filterCreator(fetchOpts).onFetch?.(sourceElements)
       fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
-        elementsSource: buildElementsSourceFromElements([
-          sourceSavedSearchInstance,
-          sourceFinancialLayoutInstance,
-          sourceReportDefinitionInstance,
-        ]),
+        elementsSource: buildElementsSourceFromElements(sourceElements),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
       }
-      await filterCreator(fetchOpts).onFetch?.([savedSearchInstance])
-      expect(savedSearchInstance.value.definition).toEqual(emptyDefinition)
-      expect(reportDefinitionInstance.value.definition).toEqual(simpleReportDefinition)
-      expect(financialLayoutInstance.value.layout).toEqual(layoutDefinition)
+      await filterCreator(fetchOpts).onFetch?.([savedSearchInstance, reportDefinitionInstance, financialLayoutInstance])
+      expect(savedSearchInstance.value.definition).toEqual(`source@${emptyDefinition}`)
+      expect(reportDefinitionInstance.value.definition).toEqual(`source@${simpleReportDefinition}`)
+      expect(financialLayoutInstance.value.layout).toEqual(`source@${layoutDefinition}`)
     })
     it('should make list', async () => {
       savedSearchInstance.value.dependencies = { dependency: 'some_dependency' }

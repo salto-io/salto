@@ -46,6 +46,7 @@ import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } fr
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
 import { resolve } from '../expressions'
+import { updateAliasIndex } from './alias_index'
 
 const log = logger(module)
 
@@ -267,6 +268,7 @@ type SingleState = {
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
   changedAt: RemoteMap<ElemID[]>
+  alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
@@ -388,6 +390,12 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('changedAt', envName),
             serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          alias: await remoteMapCreator<string>({
+            namespace: getRemoteMapNamespace('alias', envName),
+            serialize: async val => safeJsonStringify(val),
+            deserialize: data => JSON.parse(data),
             persistent,
           }),
           referencedStaticFiles: await remoteMapCreator<string[]>({
@@ -630,6 +638,13 @@ export const loadWorkspace = async (
       await updateChangedAtIndex(
         changes,
         stateToBuild.states[envName].changedAt,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+      await updateAliasIndex(
+        changes,
+        stateToBuild.states[envName].alias,
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,

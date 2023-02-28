@@ -250,7 +250,11 @@ export const accountIdValidator: (
         return []
       }
       const { baseUrl, isDataCenter } = client
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      const rawUserMap = await getUserMapFunc()
+      if (rawUserMap === undefined) {
+        return []
+      }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
       return changes

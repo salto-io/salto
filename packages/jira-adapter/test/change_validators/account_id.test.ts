@@ -192,6 +192,12 @@ Go to ${url} to see valid users and account IDs.`,
     expect(connection.get).toHaveBeenCalledOnce()
   })
 
+  it('should not fail on when user map func returned undefined', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
+    const validator2 = accountIdValidator(client, config, mockedGetUserMapFunc)
+    await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
+  })
+
   it('should return an info when there is no display name', async () => {
     const field = 'accountId'
     delete instances[0].value[field].displayName
@@ -438,6 +444,11 @@ Go to ${url} to see valid users and account IDs.`,
         }),
       ])
       expect(changeErrors).toEqual([])
+    })
+    it('should not fail when user map func returns undefined', async () => {
+      const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
+      const validator2 = accountIdValidator(clientDC, configDC, mockedGetUserMapFunc)
+      await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
     })
     it('should raise an error when accountId does not exist in the target environment', async () => {
       const changeErrors = await validatorDC([

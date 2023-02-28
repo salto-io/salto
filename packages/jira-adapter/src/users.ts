@@ -33,7 +33,11 @@ export type UserInfo = {
   username?: string
 }
 export type UserMap = Record<string, UserInfo>
-export type GetUserMapFunc = () => Promise<UserMap>
+export type GetUserMapFunc = () => Promise<UserMap | undefined>
+
+const isMissingUserPermissionError = (err: Error): boolean =>
+  err instanceof clientUtils.HTTPError && err.response.status === 403
+
 
 const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
   : Promise<clientUtils.ResponseValue[][]> => {
@@ -113,16 +117,24 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
     : GetUserMapFunc => {
   let idMap: UserMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
-  return async (): Promise<UserMap> => {
+  return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
         usersCallPromise = log.time(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
       }
-      idMap = Object.fromEntries((await usersCallPromise)
-        .flat()
-        .filter(isUserResponse)
-        .map(parseUserResponse)
-        .map(userInfo => [userInfo.userId, userInfo]))
+      try {
+        idMap = Object.fromEntries((await usersCallPromise)
+          .flat()
+          .filter(isUserResponse)
+          .map(parseUserResponse)
+          .map(userInfo => [userInfo.userId, userInfo]))
+      } catch (e) {
+        if (isMissingUserPermissionError(e)) {
+          log.error('Failed to get users map due to missing permissions.')
+          return undefined
+        }
+        throw e
+      }
     }
     return idMap
   }

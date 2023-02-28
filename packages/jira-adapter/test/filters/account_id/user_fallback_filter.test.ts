@@ -196,6 +196,17 @@ describe('user_fallback_filter', () => {
         }
       })
     })
+    it('should not raise on missing user permission error', async () => {
+      config.deploy.defaultMissingUserFallback = 'name2'
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.preDeploy([toChange({ after: instance })])).resolves.not.toThrow()
+    })
+
+    it('should raise on any other error', async () => {
+      config.deploy.defaultMissingUserFallback = 'name2'
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.preDeploy([toChange({ after: instance })])).rejects.toThrow()
+    })
 
     it('should replace the account id with the default id if it does not exist', async () => {
       config.deploy.defaultMissingUserFallback = 'name2'

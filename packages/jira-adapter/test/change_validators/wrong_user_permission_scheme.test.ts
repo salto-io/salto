@@ -123,4 +123,9 @@ Check ${url} to see valid users and account IDs.`,
       changes
     )).toEqual([])
   })
+  it('should not fail when users map func returns undefined', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
+    const validator2 = wrongUserPermissionSchemeValidator(client, config, mockedGetUserMapFunc)
+    await expect(validator2(changes)).resolves.not.toThrow()
+  })
 })

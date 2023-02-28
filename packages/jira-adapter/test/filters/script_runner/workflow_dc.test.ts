@@ -28,7 +28,7 @@ const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
 }
 
 
-describe('DC Workflow post functions', () => {
+describe('Scriptrunner DC Workflow', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
@@ -40,8 +40,8 @@ describe('DC Workflow post functions', () => {
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
-  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_ADDITIONAL_SCRIPT']
-  const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
+  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_MESSAGE', 'FIELD_INCLUDE_ATTACHMENTS_CALLBACK', 'FIELD_EMAIL_TEMPLATE', 'FIELD_EMAIL_SUBJECT_TEMPLATE']
+  const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
 
 
   beforeEach(() => {
@@ -157,6 +157,14 @@ describe('DC Workflow post functions', () => {
         instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION = goodBase64
         await filter.onFetch([instance])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual(goodBase64)
+      })
+      it('should delete empty fields', async () => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = ''
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = ''
+        await filter.onFetch([instance])
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES).toBeUndefined()
+        expect(instance.value.transitions[0].rules.postFunctions[0]
+          .configuration.FIELD_SCRIPT_FILE_OR_SCRIPT).toBeUndefined()
       })
     })
     describe('pre deploy', () => {

@@ -423,6 +423,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
+      standaloneFields: [{ fieldName: 'policies' }],
     },
   },
   AuthorizationServerPolicy: {
@@ -431,6 +432,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'policyRules', fieldType: 'list<AuthorizationServerPolicyRule>' },
       ],
       serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      standaloneFields: [{ fieldName: 'policyRules' }],
+    },
+  },
+  AuthorizationServerPolicyRule: {
+    transformation: {
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
@@ -656,14 +667,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  AuthorizationServerPolicyRule: {
-    transformation: {
-      fieldTypeOverrides: [
-        { fieldName: '_links', fieldType: 'map<unknown>' },
-      ],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-    },
-  },
   ProfileMapping: {
     transformation: {
       idFields: ['source.name', 'target.name'],
@@ -709,6 +712,7 @@ export const SUPPORTED_TYPES = {
   ],
   Authenticator: ['api__v1__authenticators'],
   AuthorizationServer: ['api__v1__authorizationServers'],
+  AuthorizationServerPolicy: ['api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu'],
   Brand: ['api__v1__brands'],
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],

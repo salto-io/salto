@@ -32,7 +32,7 @@ const log = logger(module)
 
 const OMIT_REPLACEMENT = '<OMITTED>'
 
-type FilterLogsConfig = {
+type LogsFilterConfig = {
   allowOrganizationNames?: boolean
 }
 
@@ -48,7 +48,7 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
-const DEFAULT_FILTER_LOGS_CONFIG: FilterLogsConfig = {
+const DEFAULT_FILTER_LOGS_CONFIG: LogsFilterConfig = {
   // It is safer to default filter out organization names
   allowOrganizationNames: false,
 }
@@ -62,10 +62,10 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
-  private logsFilterConfig: FilterLogsConfig
+  private logsFilterConfig: LogsFilterConfig
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & FilterLogsConfig,
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & LogsFilterConfig,
   ) {
     super(
       ZENDESK,

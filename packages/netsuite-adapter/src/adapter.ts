@@ -120,7 +120,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean
+  private readonly useChangesDetection: boolean // TODO remove this from config SALTO-3676
   private elementsSourceIndex: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
     isPartial?: boolean

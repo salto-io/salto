@@ -139,10 +139,11 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
 }): Promise<void> => {
-  await awu(attachments).forEach(async attachment => {
+  log.debug(`there are ${attachments.length} attachments, going to get their content`)
+  await Promise.all(attachments.map(async attachment => {
     const article = articleById[getParent(attachment).value.id]
     await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
-  })
+  }))
 }
 
 export const createUnassociatedAttachment = async (

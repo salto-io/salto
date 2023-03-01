@@ -62,6 +62,9 @@ const replaceOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
 
 const findScriptRunnerDC = (func: Value): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
+    if (value === undefined) {
+      return WALK_NEXT_STEP.SKIP
+    }
     if (SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined) {
       walkOnValue({ elemId: path.createNestedID('configuration'),
         value: value.configuration,

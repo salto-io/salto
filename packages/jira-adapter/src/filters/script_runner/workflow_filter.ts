@@ -14,66 +14,100 @@
 * limitations under the License.
 */
 
-import { walkOnValue } from '@salto-io/adapter-utils'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
+import { resolveChangeElement, restoreChangeElement, restoreValues, walkOnValue } from '@salto-io/adapter-utils'
+import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Change, InstanceElement } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { decodeDcFields, encodeDcFields } from './workflow_dc'
 import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
+import { getLookUpName } from '../../reference_mapping'
+
+const { awu } = collections.asynciterable
 
 // This filter is used to encode/decode the fields of the workflow transitions for scriptRunner
 // There are different decodings for cloud and dc, and the filter encodes back before deploy
-const filter: FilterCreator = ({ client, config }) => ({
-  name: 'scriptRunnerWorkflowDcFilter',
-  onFetch: async (elements: Element[]) => {
-    if (!config.fetch.enableScriptRunnerAddon) {
-      return
-    }
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: client.isDataCenter
-            ? decodeDcFields
-            : decodeCloudFields })
-      })
-  },
-  preDeploy: async changes => {
-    if (!config.fetch.enableScriptRunnerAddon) {
-      return
-    }
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: client.isDataCenter
-            ? encodeDcFields
-            : encodeCloudFields })
-      })
-  },
-  onDeploy: async changes => {
-    if (!config.fetch.enableScriptRunnerAddon) {
-      return
-    }
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .forEach(instance => {
-        walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
-          value: instance.value.transitions,
-          func: client.isDataCenter
-            ? decodeDcFields
-            : decodeCloudFields })
-      })
-  },
-})
+const filter: FilterCreator = ({ client, config }) => {
+  const originalChanges: Record<string, Change<InstanceElement>> = {}
+  return {
+    name: 'scriptRunnerWorkflowDcFilter',
+    onFetch: async (elements: Element[]) => {
+      if (!config.fetch.enableScriptRunnerAddon) {
+        return
+      }
+      elements
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+        .forEach(instance => {
+          walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+            value: instance.value.transitions,
+            func: client.isDataCenter
+              ? decodeDcFields
+              : decodeCloudFields })
+        })
+    },
+    preDeploy: async changes => {
+      if (!config.fetch.enableScriptRunnerAddon) {
+        return
+      }
+      await awu(changes)
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
+        .map(async change => {
+          const instance = getChangeData(change)
+          originalChanges[instance.elemID.getFullName()] = _.cloneDeep(change)
+          instance.value.transitions = getChangeData(
+            await resolveChangeElement(change, getLookUpName)
+          ).value.transitions
+          return instance
+        })
+        .forEach(instance => {
+          walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+            value: instance.value.transitions,
+            func: client.isDataCenter
+              ? encodeDcFields
+              : encodeCloudFields })
+        })
+    },
+    onDeploy: async changes => {
+      if (!config.fetch.enableScriptRunnerAddon) {
+        return
+      }
+      changes
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
+        .map(getChangeData)
+        .forEach(instance => {
+          walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
+            value: instance.value.transitions,
+            func: client.isDataCenter
+              ? decodeDcFields
+              : decodeCloudFields })
+        })
+      await awu(changes)
+        .filter(isAdditionOrModificationChange)
+        .filter(isInstanceChange)
+        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
+        .forEach(async change => {
+          const instance = getChangeData(change)
+          instance.value.transitions = (getChangeData(
+            await restoreChangeElement(
+              change,
+              originalChanges,
+              getLookUpName,
+              (source, targetElement, lookUpNameFunc) => restoreValues(
+                source,
+                targetElement,
+                lookUpNameFunc,
+              )
+            )
+          ) as InstanceElement).value.transitions
+        })
+    },
+  }
+}
 
 export default filter

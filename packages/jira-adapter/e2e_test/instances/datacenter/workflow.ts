@@ -140,8 +140,6 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               'canned-script': 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
               FIELD_CONDITION: {
                 script: 'issue.projectObject.key == XYZ17',
-                parameters: {
-                },
               },
             },
           },

@@ -200,6 +200,9 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
+  scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowOrFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
@@ -229,9 +232,7 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-  scriptRunnerWorkflowFilter,
-  // must run after scriptRunnerWorkflowFilter
-  scriptRunnerWorkflowOrFilter,
+
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

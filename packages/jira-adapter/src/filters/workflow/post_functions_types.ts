@@ -16,7 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { JIRA } from '../../constants'
+import { JIRA, SCRIPT_RUNNER } from '../../constants'
 import { PostFunction } from './types'
 
 const postFunctionEventType = new ObjectType({
@@ -51,6 +51,19 @@ const webhookConfigType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'WebhookConfig'],
 })
 
+const ScriptRunnerObjectType = new ObjectType({
+  elemID: new ElemID(JIRA, SCRIPT_RUNNER),
+  fields: {
+    issueTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    projectId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    groupName: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    roleId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    boardId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    linkTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+  },
+  path: [JIRA, elements.SUBTYPES_PATH, SCRIPT_RUNNER],
+})
+
 const postFunctionConfigurationType = new ObjectType({
   elemID: new ElemID(JIRA, 'PostFunctionConfiguration'),
   fields: {
@@ -79,7 +92,8 @@ const postFunctionConfigurationType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },
-    value: { refType: BuiltinTypes.UNKNOWN, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    value: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    scriptRunner: { refType: ScriptRunnerObjectType, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, 'PostFunctionConfiguration'],
 })
@@ -98,6 +112,7 @@ export const types = [
   projectRoleConfigType,
   issueSecurityLevelType,
   webhookConfigType,
+  ScriptRunnerObjectType,
   postFunctionConfigurationType,
   postFunctionType,
 ]

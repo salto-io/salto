@@ -19,11 +19,15 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { Value } from '@salto-io/adapter-api'
+import { renameKey } from '../../utils'
 
 const log = logger(module)
 const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
 const SCRIPT_RUNNER_VALIDATOR_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators'
 const SCRIPT_RUNNER_CONDITION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions'
+const SCRIPT_RUNNER_SEND_NOTIFICATIONS = 'com.adaptavist.sr.cloud.workflow.SendNotification'
+const SCRIPT_RUNNER_FIELD = 'scriptRunner'
+const VALUE = 'value'
 
 type CompressedObject = {
   compressed: number[]
@@ -35,10 +39,7 @@ const COMPRESSED_OBJECT_SCHEME = Joi.object({
 
 export const isCompressedObject = createSchemeGuard<CompressedObject>(COMPRESSED_OBJECT_SCHEME, 'ScriptRunner object not as expected')
 
-const decodeScriptRunner = (scriptRunnerString: string | undefined): unknown => {
-  if (scriptRunnerString === undefined) {
-    return undefined
-  }
+const decodeScriptRunner = (scriptRunnerString: string): unknown => {
   try {
     const compressedObject = JSON.parse(Buffer.from(scriptRunnerString, 'base64').toString('utf8'))
     if (!isCompressedObject(compressedObject)) {
@@ -57,9 +58,6 @@ const decodeScriptRunner = (scriptRunnerString: string | undefined): unknown => 
 }
 
 const encodeScriptRunner = (object: Value): Value => {
-  if (object === undefined) {
-    return undefined
-  }
   try {
     const dataString = safeJsonStringify(object)
     const zipBuffer = Buffer.from(gzip(dataString))
@@ -88,35 +86,74 @@ const fallBackJsonParse = (scriptRunnerString: string): Value => {
   }
 }
 
-const fallBackJsonStringify = (object: Value): Value => {
-  if (object === undefined) {
-    return undefined
+const transformAndEncode = (object: Value): void => {
+  if (object[SCRIPT_RUNNER_FIELD] === undefined) {
+    return
   }
-  return safeJsonStringify(object)
+  renameKey(object, { from: SCRIPT_RUNNER_FIELD, to: VALUE })
+  if (object[VALUE].accountIds !== undefined) {
+    object[VALUE].accountIds = object[VALUE].accountIds.join(',')
+  }
+  if (object[VALUE].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS
+    && object[VALUE].groupName !== undefined) {
+    object[VALUE].groupName = object[VALUE].groupName.join(',')
+  }
+  object[VALUE] = encodeScriptRunner(object[VALUE])
+}
+
+const transformAndDecode = (object: Value): void => {
+  if (object.value === undefined) {
+    return
+  }
+  renameKey(object, { from: VALUE, to: SCRIPT_RUNNER_FIELD })
+  object[SCRIPT_RUNNER_FIELD] = decodeScriptRunner(object[SCRIPT_RUNNER_FIELD])
+  if (object[SCRIPT_RUNNER_FIELD].accountIds !== undefined) {
+    object[SCRIPT_RUNNER_FIELD].accountIds = object[SCRIPT_RUNNER_FIELD].accountIds.split(',')
+  }
+  if (object[SCRIPT_RUNNER_FIELD].className === SCRIPT_RUNNER_SEND_NOTIFICATIONS
+    && object[SCRIPT_RUNNER_FIELD].groupName !== undefined) {
+    object[SCRIPT_RUNNER_FIELD].groupName = object[SCRIPT_RUNNER_FIELD].groupName.split(',')
+  }
+}
+
+const transformAndStringify = (object: Value): void => {
+  if (object[SCRIPT_RUNNER_FIELD] === undefined) {
+    return
+  }
+  renameKey(object, { from: SCRIPT_RUNNER_FIELD, to: VALUE })
+  object[VALUE] = safeJsonStringify(object[VALUE])
+}
+
+const transformAndObjectify = (object: Value): void => {
+  if (object.value === undefined) {
+    return
+  }
+  renameKey(object, { from: VALUE, to: SCRIPT_RUNNER_FIELD })
+  object[SCRIPT_RUNNER_FIELD] = fallBackJsonParse(object[SCRIPT_RUNNER_FIELD])
 }
 
 type TypeToCodeFuncMap = Map<string, Value>
 
 const typeToEncodeFuncMap: TypeToCodeFuncMap = new Map([
-  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, encodeScriptRunner],
-  [SCRIPT_RUNNER_VALIDATOR_TYPE, fallBackJsonStringify],
-  [SCRIPT_RUNNER_CONDITION_TYPE, fallBackJsonStringify],
+  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, transformAndEncode],
+  [SCRIPT_RUNNER_VALIDATOR_TYPE, transformAndStringify],
+  [SCRIPT_RUNNER_CONDITION_TYPE, transformAndStringify],
 ])
 
 const typeToDecodeFuncMap: TypeToCodeFuncMap = new Map([
-  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, decodeScriptRunner],
-  [SCRIPT_RUNNER_VALIDATOR_TYPE, fallBackJsonParse],
-  [SCRIPT_RUNNER_CONDITION_TYPE, fallBackJsonParse],
+  [SCRIPT_RUNNER_POST_FUNCTION_TYPE, transformAndDecode],
+  [SCRIPT_RUNNER_VALIDATOR_TYPE, transformAndObjectify],
+  [SCRIPT_RUNNER_CONDITION_TYPE, transformAndObjectify],
 ])
 
-const transfromConfigValue = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
+const transformConfigValue = (typeMap: TypeToCodeFuncMap): WalkOnFunc => (
   ({ value }): WALK_NEXT_STEP => {
-    if (typeMap.has(value.type) && value.configuration !== undefined) {
-      value.configuration.value = typeMap.get(value.type)(value.configuration.value)
+    if (value !== undefined && typeMap.has(value.type) && value.configuration !== undefined) {
+      typeMap.get(value.type)(value.configuration)
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
   })
 
-export const decodeCloudFields = transfromConfigValue(typeToDecodeFuncMap)
-export const encodeCloudFields = transfromConfigValue(typeToEncodeFuncMap)
+export const decodeCloudFields = transformConfigValue(typeToDecodeFuncMap)
+export const encodeCloudFields = transformConfigValue(typeToEncodeFuncMap)

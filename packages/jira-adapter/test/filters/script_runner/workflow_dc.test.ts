@@ -27,7 +27,6 @@ const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
   expect(toObject(obj1)).toEqual(toObject(obj2))
 }
 
-
 describe('Scriptrunner DC Workflow', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -191,7 +190,8 @@ describe('Scriptrunner DC Workflow', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = goodBase64
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = 'demo string'
+        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
@@ -251,12 +251,14 @@ describe('Scriptrunner DC Workflow', () => {
       it('should not fail if undefined', async () => {
         instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = undefined
         await filter.preDeploy([toChange({ after: instance })])
-        expect(instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES).toBeUndefined()
+        // resolveChangeData deletes empty fields
+        expect(instance.value.transitions[0].rules.validators[0].configuration).toBeUndefined()
       })
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
         instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = 'demo string'
+        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
@@ -292,6 +294,8 @@ describe('Scriptrunner DC Workflow', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
+        instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES = 'demo string'
+        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })

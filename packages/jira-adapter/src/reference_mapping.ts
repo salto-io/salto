@@ -21,7 +21,7 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 
@@ -114,7 +114,7 @@ ReferenceContextStrategyName
 
 export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
+    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER] },
     serializationStrategy: 'id',
     target: { type: ISSUE_TYPE_NAME },
   },
@@ -284,7 +284,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: 'Field' },
   },
   {
-    src: { field: 'projectId', parentTypes: ['Board_location'] },
+    src: { field: 'projectId', parentTypes: ['Board_location', SCRIPT_RUNNER] },
     serializationStrategy: 'id',
     target: { type: 'Project' },
   },
@@ -434,7 +434,12 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    src: { field: 'groupName', parentTypes: [SCRIPT_RUNNER] },
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE, SCRIPT_RUNNER] },
     serializationStrategy: 'id',
     target: { type: 'Board' },
   },
@@ -445,6 +450,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'linkType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: 'IssueLinkType' },
+  },
+  {
+    src: { field: 'linkTypeId', parentTypes: [SCRIPT_RUNNER] },
     serializationStrategy: 'id',
     target: { type: 'IssueLinkType' },
   },
@@ -579,6 +589,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   },
   {
     src: { field: 'roleIds', parentTypes: ['UserFilter'] },
+    serializationStrategy: 'id',
+    target: { type: 'ProjectRole' },
+  },
+  {
+    src: { field: 'roleId', parentTypes: [SCRIPT_RUNNER] },
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },
   },

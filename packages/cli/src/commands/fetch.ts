@@ -60,6 +60,7 @@ export type FetchCommandArgs = {
   stateOnly: boolean
   accounts: string[]
   regenerateSaltoIds: boolean
+  withChangeDetection?: boolean
 }
 
 const createFetchFromWorkspaceCommand = (
@@ -92,7 +93,7 @@ export const fetchCommand = async (
     workspace, force, mode,
     getApprovedChanges, shouldUpdateConfig, accounts,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
-    stateOnly, regenerateSaltoIds,
+    stateOnly, regenerateSaltoIds, withChangeDetection,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
@@ -156,6 +157,7 @@ export const fetchCommand = async (
     fetchProgress,
     accounts,
     regenerateSaltoIds,
+    withChangeDetection,
   )
 
   // A few merge errors might have occurred,
@@ -255,6 +257,7 @@ type FetchArgs = {
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
+  withChangeDetection?: boolean
 } & AccountsArg & EnvArg & UpdateModeArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -266,7 +269,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const {
-    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState,
+    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState, withChangeDetection,
   } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
@@ -323,6 +326,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     mode: useAlignMode ? 'align' : mode,
     shouldCalcTotalSize,
     stateOnly,
+    withChangeDetection,
     regenerateSaltoIds,
   })
 }
@@ -375,6 +379,14 @@ const fetchDef = createWorkspaceCommand({
         alias: 'ws',
         required: false,
         description: 'Fetch the data from another workspace from the state',
+        type: 'boolean',
+        default: false,
+      },
+      {
+        name: 'withChangeDetection',
+        alias: 'cd',
+        required: false,
+        description: 'Detect changes before running full fetch',
         type: 'boolean',
         default: false,
       },

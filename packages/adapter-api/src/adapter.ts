@@ -57,7 +57,7 @@ export type ProgressReporter = {
 
 export type FetchOptions = {
   progressReporter: ProgressReporter
-  withChangesDetection?: boolean
+  withChangeDetection?: boolean
 }
 
 export type DeployOptions = {

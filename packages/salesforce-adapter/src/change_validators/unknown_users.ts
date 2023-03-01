@@ -70,6 +70,9 @@ const userFieldValue = (expectedFieldName: string): GetUserField => (
       log.error(`Unexpected field name: ${fieldName} !== ${expectedFieldName}`)
       return []
     }
+    if (instance.value[fieldName] === undefined) {
+      return []
+    }
     return [instance.value[fieldName]]
   }
 )

@@ -24,6 +24,15 @@ import ZendeskClient from '../../src/client/client'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { getOrganizationsByIds } from '../../src/filters/organizations'
 
+const logTrace = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
+  return {
+    ...actual,
+    logger: () => ({ ...actual.logger('test'), trace: (...args: unknown[]) => logTrace(args) }),
+  }
+})
+
 describe('OrganizationExistence', () => {
   const slaType = new ObjectType({ elemID: new ElemID(ZENDESK, SLA_POLICY_TYPE_NAME) })
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
@@ -158,10 +167,15 @@ describe('OrganizationExistence', () => {
     const errors = await validator(changes)
     expect(errors.length).toBe(0)
   })
-  it('should filter organization names with unresolved Ids', async () => {
+  it('should filter organization names from the logs with unresolved Ids', async () => {
     mockAxios.onGet().reply(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
-    const organizations = await getOrganizationsByIds(['1', '2'], client)
+    await getOrganizationsByIds(['1', '2'], client)
 
-    expect(organizations).toMatchObject([{ id: 1, name: '***' }, { id: 2, name: '***' }])
+    expect(logTrace).toHaveBeenCalledWith([
+      'Full HTTP response for %s on %s: %s',
+      'GET',
+      '/api/v2/organizations/show_many?ids=1,2',
+      '{"url":"/api/v2/organizations/show_many?ids=1,2","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+    ])
   })
 })

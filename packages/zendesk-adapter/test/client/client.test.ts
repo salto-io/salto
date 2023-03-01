@@ -17,6 +17,15 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import ZendeskClient from '../../src/client/client'
 
+const logTrace = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
+  return {
+    ...actual,
+    logger: () => ({ ...actual.logger('test'), trace: (...args: unknown[]) => logTrace(args) }),
+  }
+})
+
 describe('client', () => {
   describe('getSinglePage', () => {
     let mockAxios: MockAdapter
@@ -69,22 +78,44 @@ describe('client', () => {
 
     it('should filter out responses data by config', async () => {
       const orgsResponse = { organizations: [{ id: 1, name: 'org1' }, { id: 2, name: 'org2' }] }
-      const filteredOrgsResponse = { organizations: [{ id: 1, name: '***' }, { id: 2, name: '***' }] }
+
       mockAxios.onGet().replyOnce(200).onGet().reply(() => [200, orgsResponse])
       const notFilteringClient = new ZendeskClient(
         { credentials: { username: 'a', password: 'b', subdomain: 'ignore' }, allowOrganizationNames: true }
       )
-      const notFilteredResults = [
-        await notFilteringClient.getSinglePage({ url: 'organizations/show_many' }),
-        await notFilteringClient.getSinglePage({ url: 'organizations/autocomplete' }),
-      ]
-      const filteredResults = [
-        await client.getSinglePage({ url: 'organizations/show_many' }),
-        await client.getSinglePage({ url: 'organizations/autocomplete' }),
-      ]
+      await notFilteringClient.getSinglePage({ url: 'organizations/show_many' })
+      await notFilteringClient.getSinglePage({ url: 'organizations/autocomplete' })
 
-      expect(notFilteredResults.map(res => res.data)).toMatchObject([orgsResponse, orgsResponse])
-      expect(filteredResults.map(res => res.data)).toMatchObject([filteredOrgsResponse, filteredOrgsResponse])
+      await client.getSinglePage({ url: 'organizations/show_many' })
+      await client.getSinglePage({ url: 'organizations/autocomplete' })
+
+      expect(logTrace).toHaveBeenNthCalledWith(2, [
+        'Full HTTP response for %s on %s: %s',
+        'GET',
+        'organizations/show_many',
+        '{"url":"organizations/show_many","response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"method":"GET"}',
+      ])
+
+      expect(logTrace).toHaveBeenNthCalledWith(3, [
+        'Full HTTP response for %s on %s: %s',
+        'GET',
+        'organizations/autocomplete',
+        '{"url":"organizations/autocomplete","response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"method":"GET"}',
+      ])
+
+      expect(logTrace).toHaveBeenNthCalledWith(4, [
+        'Full HTTP response for %s on %s: %s',
+        'GET',
+        'organizations/show_many',
+        '{"url":"organizations/show_many","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+      ])
+
+      expect(logTrace).toHaveBeenNthCalledWith(5, [
+        'Full HTTP response for %s on %s: %s',
+        'GET',
+        'organizations/autocomplete',
+        '{"url":"organizations/autocomplete","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+      ])
     })
   })
 })

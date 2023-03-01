@@ -30,7 +30,7 @@ const {
 } = clientUtils
 const log = logger(module)
 
-const ORG_ENDPOINTS_TO_FILTER = ['organizations/show_many', 'organizations/autocomplete']
+const OMIT_REPLACEMENT = '<OMITTED>'
 
 type FilterLogsConfig = {
   allowOrganizationNames?: boolean
@@ -62,7 +62,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
-  private filterLogsConfig: FilterLogsConfig
+  private logsFilterConfig: FilterLogsConfig
 
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & FilterLogsConfig,
@@ -85,7 +85,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
-    this.filterLogsConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, allowOrganizationNames: clientOpts.allowOrganizationNames }
+    this.logsFilterConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, allowOrganizationNames: clientOpts.allowOrganizationNames }
   }
 
   public getUrl(): URL {
@@ -164,9 +164,10 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     responseData: Values,
     url: string
   ): Values {
-    if (this.filterLogsConfig.allowOrganizationNames !== true && ORG_ENDPOINTS_TO_FILTER.some(ep => url.includes(ep))) {
-      responseData.organizations?.forEach((org: Values) => { org.name = '***' })
+    const cloneResponseData = _.cloneDeep(responseData)
+    if (!this.logsFilterConfig.allowOrganizationNames && url.includes('organization')) {
+      cloneResponseData.organizations?.forEach((org: Values) => { org.name = OMIT_REPLACEMENT })
     }
-    return responseData
+    return cloneResponseData
   }
 }

@@ -27,6 +27,13 @@ import { FilterCreator } from '../filter'
 const { isDefined } = lowerdashValues
 const log = logger(module)
 
+const STRING_SIGN = '$'
+const CATEGORY_ORDER = `${STRING_SIGN}Category Order${STRING_SIGN}`
+const SECTION_ORDER = `${STRING_SIGN}Section Order${STRING_SIGN}`
+const ARTICLE_ORDER = `${STRING_SIGN}Article Order${STRING_SIGN}`
+const LANGUAGE_SETTINGS = `${STRING_SIGN}language settings${STRING_SIGN}`
+const SETTINGS = `${STRING_SIGN}Settings${STRING_SIGN}`
+
 
 type AliasData = {
   aliasFields: string[]
@@ -35,7 +42,16 @@ type AliasData = {
 
 type AliasMap = Record<string, AliasData>
 
-const SECOND_ITERATION_TYPES = ['dynamic_content_item__variants']
+const SECOND_ITERATION_TYPES = [
+  'dynamic_content_item__variants',
+  'category_order',
+  'category_translation',
+  'section_translation',
+  'section_order',
+  'article_translation',
+  'article_order',
+  'article_attachment',
+]
 
 const aliasMap: AliasMap = {
   app_installation: {
@@ -60,19 +76,19 @@ const aliasMap: AliasMap = {
     aliasFields: ['name'],
   },
   channel: {
-    aliasFields: ['name'], // it is in nacl case do we really want it like that?
+    aliasFields: ['name'],
   },
   custom_role: {
     aliasFields: ['name'],
   },
   custom_status: {
-    aliasFields: ['agent_label'], // in the notion its raw_agent_label
+    aliasFields: ['agent_label'],
   },
   dynamic_content_item: {
     aliasFields: ['name'],
   },
   dynamic_content_item__variants: {
-    aliasFields: ['_parent.0._alias', 'locale_id.value.value.locale'], // in the notion its content
+    aliasFields: ['_parent.0._alias', 'locale_id.value.value.locale'],
     separator: ' - ',
   },
   group: {
@@ -152,7 +168,7 @@ const aliasMap: AliasMap = {
     separator: ' - ',
   },
   category_order: {
-    aliasFields: ['_parent.0._alias', '$Category Order$'],
+    aliasFields: ['_parent.0._alias', CATEGORY_ORDER],
   },
   section: {
     aliasFields: ['name'], // in notion default language title (if the name is removed from the instance)
@@ -162,7 +178,7 @@ const aliasMap: AliasMap = {
     separator: ' - ',
   },
   section_order: {
-    aliasFields: ['_parent.0._alias', '$Section Order$'],
+    aliasFields: ['_parent.0._alias', SECTION_ORDER],
   },
   article: {
     aliasFields: ['title'],
@@ -172,11 +188,17 @@ const aliasMap: AliasMap = {
     separator: ' - ',
   },
   article_order: {
-    aliasFields: ['_parent.0._alias', '$Article Order$'],
+    aliasFields: ['_parent.0._alias', ARTICLE_ORDER],
   },
-  // article attachment
+  article_attachment: {
+    aliasFields: ['file_name', '_parent.0._alias'],
+    separator: ' - ',
+  },
   guide_language_settings: {
-    aliasFields: ['brand.value.value.name', 'locale', '$language settings$'],
+    aliasFields: ['brand.value.value.name', 'locale', LANGUAGE_SETTINGS],
+  },
+  guide_settings: {
+    aliasFields: ['brand.value.value.name', SETTINGS],
   },
   permission_group: {
     aliasFields: ['name'],
@@ -194,10 +216,10 @@ const calculateAlias = (
   const separator = aliasMap[currentType].separator ?? ' '
   const aliasParts = aliasFields
     .map(field => {
-      if (field.startsWith('$') && field.endsWith('$')) {
+      if (field.startsWith(STRING_SIGN) && field.endsWith(STRING_SIGN)) {
         return field.slice(1, -1)
       }
-      if (field.startsWith('_parent')) {
+      if (field.startsWith(CORE_ANNOTATIONS.PARENT)) {
         const route = field.split('.')
         const parentNum = Number(route[1])
         if (parentNum === undefined) {
@@ -211,7 +233,7 @@ const calculateAlias = (
           return undefined
         }
         const parentRoute = route.slice(2).join('.')
-        if (parentRoute.startsWith('_alias')) {
+        if (parentRoute.startsWith(CORE_ANNOTATIONS.ALIAS)) {
           return parentInstance.annotations[CORE_ANNOTATIONS.ALIAS]
         }
         return _.get(parentInstance.value, parentRoute)

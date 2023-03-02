@@ -151,6 +151,38 @@ File: ~/Objects/customrecord1.xml`
       severity: 'Error',
     })
   })
+  it('should have SDF Objects Validation Error - in other language', async () => {
+    const detailedMessage = `Une erreur s'est produite lors de la validation de l'objet personnalis.. (object_name)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/object_name.xml`
+    const fullErrorMessage = `
+*** ERREUR ***
+La validation a .chou..
+
+${detailedMessage}`
+
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(changes[0]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Error',
+    })
+  })
   it('should have SDF Manifest Validation Error and remove the element causing it', async () => {
     const detailedMessage = `Validation of account settings failed.
     

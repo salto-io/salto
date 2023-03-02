@@ -51,7 +51,7 @@ const createValidType = (
   return new ObjectType({
     elemID: typeToClone.elemID,
     fields: fieldsForAfter,
-    annotationRefsOrTypes: _.mapValues(typeToClone.annotationRefTypes, type => type.clone()),
+    annotationRefsOrTypes: _.clone(typeToClone.annotationRefTypes),
     annotations: cloneDeepWithoutRefs(typeToClone.annotations),
     isSettings: typeToClone.isSettings,
   })

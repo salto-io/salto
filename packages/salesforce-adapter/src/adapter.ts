@@ -79,6 +79,7 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import formulaDepsFilter from './filters/formula_deps'
+import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -167,6 +168,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
+  { creator: removeUnixTimeZeroFilter },
 ]
 
 // By default we run all filters and provide a client

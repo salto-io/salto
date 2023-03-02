@@ -30,6 +30,7 @@ const {
 } = clientUtils
 const log = logger(module)
 
+const ORG_ENDPOINTS_TO_FILTER = ['/organizations/show_many', '/organizations/autocomplete', '/organizations']
 const OMIT_REPLACEMENT = '<OMITTED>'
 
 type LogsFilterConfig = {
@@ -165,7 +166,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
     url: string
   ): Values {
     const cloneResponseData = _.cloneDeep(responseData)
-    if (!this.logsFilterConfig.allowOrganizationNames && url.includes('organization')) {
+    if (!this.logsFilterConfig.allowOrganizationNames && ORG_ENDPOINTS_TO_FILTER.some(ep => url.includes(ep))) {
       cloneResponseData.organizations?.forEach((org: Values) => { org.name = OMIT_REPLACEMENT })
     }
     return cloneResponseData

@@ -18,7 +18,7 @@ import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
 import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType } from './transformation'
-import { createRequestConfigs, validateRequestConfig } from './request'
+import { validateRequestConfig } from './request'
 
 const { isDefined } = lowerDashValues
 
@@ -49,7 +49,6 @@ export const createDucktypeAdapterApiConfigType = ({
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalTransformationFields?: Record<string, FieldDefinition>
 }): ObjectType => {
-  const requestTypes = createRequestConfigs(adapter, additionalRequestFields)
   const transformationTypes = createTransformationConfigTypes(adapter, {
     hasDynamicFields: { refType: BuiltinTypes.BOOLEAN },
     sourceTypeName: { refType: BuiltinTypes.STRING },
@@ -57,7 +56,7 @@ export const createDucktypeAdapterApiConfigType = ({
   })
   return createAdapterApiConfigType({
     adapter,
-    requestTypes,
+    additionalRequestFields,
     transformationTypes,
     additionalFields,
   })

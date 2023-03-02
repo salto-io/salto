@@ -66,7 +66,7 @@ beforeEach(() => {
   ]
 })
 
-describe('on fetch', () => {
+describe('removeUnixTimeZero', () => {
     type FilterType = FilterWith<'onFetch'>
     let filter: FilterType
     beforeEach(async () => {
@@ -74,27 +74,29 @@ describe('on fetch', () => {
       await filter.onFetch(testElements)
     })
 
-    it('should remove invalid unix time 0 annotations', () => {
-      const testValueBothInvalidFields = testElements[0] as ObjectType
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
-      expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+    describe('on fetch', () => {
+      it('should remove invalid unix time 0 annotations', () => {
+        const testValueBothInvalidFields = testElements[0] as ObjectType
+        expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+        expect(testValueBothInvalidFields.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
-      const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+        const testValueInvalidCreatedAt = testElements[1] as ObjectType
+        expect(testValueInvalidCreatedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
 
-      const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
-    })
+        const testValueInvalidChangedAt = testElements[2] as ObjectType
+        expect(testValueInvalidChangedAt.annotations).not.toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+      })
 
-    it('should not remove annotations with valid time', () => {
-      const testValueBothValidFields = testElements[3] as ObjectType
-      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
-      expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+      it('should not remove annotations with valid time', () => {
+        const testValueBothValidFields = testElements[3] as ObjectType
+        expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+        expect(testValueBothValidFields.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
-      const testValueInvalidCreatedAt = testElements[1] as ObjectType
-      expect(testValueInvalidCreatedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
+        const testValueInvalidCreatedAt = testElements[1] as ObjectType
+        expect(testValueInvalidCreatedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CHANGED_AT)
 
-      const testValueInvalidChangedAt = testElements[2] as ObjectType
-      expect(testValueInvalidChangedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+        const testValueInvalidChangedAt = testElements[2] as ObjectType
+        expect(testValueInvalidChangedAt.annotations).toHaveProperty(CORE_ANNOTATIONS.CREATED_AT)
+      })
     })
 })

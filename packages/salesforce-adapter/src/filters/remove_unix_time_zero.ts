@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
@@ -31,17 +31,13 @@ const removeUnixTimeZero = async (
   await awu(elements)
     .filter(isElement)
     .forEach(async e => {
-      // eslint-disable-next-line no-underscore-dangle
-      if (e.annotations._changed_at === UNIX_TIME_ZERO_STRING) {
-        // eslint-disable-next-line no-underscore-dangle
-        delete e.annotations._changed_at
-        log.debug(`Removed unix time 0 last modified of ${await apiName(e)}`)
+      if (e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === UNIX_TIME_ZERO_STRING) {
+        delete e.annotations[CORE_ANNOTATIONS.CHANGED_AT]
+        log.trace('Removed unix time 0 last modified of %s', await apiName(e))
       }
-      // eslint-disable-next-line no-underscore-dangle
-      if (e.annotations._created_at === UNIX_TIME_ZERO_STRING) {
-        // eslint-disable-next-line no-underscore-dangle
-        delete e.annotations._created_at
-        log.debug(`Removed unix time 0 create time of ${await apiName(e)}`)
+      if (e.annotations[CORE_ANNOTATIONS.CREATED_AT] === UNIX_TIME_ZERO_STRING) {
+        delete e.annotations[CORE_ANNOTATIONS.CREATED_AT]
+        log.trace('Removed unix time 0 create time of %s', await apiName(e))
       }
     })
 }

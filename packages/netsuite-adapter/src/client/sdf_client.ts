@@ -54,6 +54,7 @@ import {
   mergeTypeToInstances,
 } from './utils'
 import { fixManifest } from './manifest_utils'
+import { detectLanguage, FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -102,18 +103,6 @@ const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
 const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
 const FEATURES_XML = 'features.xml'
 const FEATURES_TAG = 'features'
-const FEATURE_ID = 'featureId'
-const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
-
-export const OBJECT_ID = 'objectId'
-const FEATURE_NAME = 'featureName'
-const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
-const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
-const objectValidationFeatureErrorRegex = RegExp(`Details: You must specify the (?<${FEATURE_NAME}>[A-Z_]+)\\(.*?\\) feature in the project manifest`, 'gm')
-const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
-const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
 
 // e.g. *** ERREUR ***
 const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
@@ -316,13 +305,15 @@ export default class SdfClient {
     }
 
     const dataLines = data.map(line => String(line))
+    const errorString = dataLines.join(os.EOL)
 
     if (dataLines.some(line => fatalErrorMessageRegex.test(line))) {
-      const errorMessage = dataLines.join(os.EOL)
-      log.error('non-thrown sdf error was detected: %o', errorMessage)
-      throw new Error(errorMessage)
+      log.error('non-thrown sdf error was detected: %o', errorString)
+      throw new Error(errorString)
     }
 
+    const detectedLanguage = detectLanguage(errorString)
+    const { configureFeatureFailRegex } = multiLanguageErrorDetectors[detectedLanguage]
     const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))
     if (featureDeployFailes.length === 0) return
 
@@ -330,7 +321,7 @@ export default class SdfClient {
     const errorIds = featureDeployFailes
       .map(line => line.match(configureFeatureFailRegex)?.groups)
       .filter(isDefined)
-      .map(groups => groups[FEATURE_ID])
+      .map(groups => groups[FEATURE_NAME])
 
     const errorMessage = dataLines
       .filter(line => errorIds.some(id => (new RegExp(`\\b${id}\\b`)).test(line)))
@@ -928,6 +919,16 @@ export default class SdfClient {
     }
 
     const errorMessage = error.message
+    const sdfLanguage = detectLanguage(errorMessage)
+    const {
+      settingsValidationErrorRegex,
+      manifestErrorDetailsRegex,
+      deployStartMessageRegex,
+      objectValidationErrorRegex,
+      objectValidationFeatureErrorRegex,
+      deployedObjectRegex,
+      errorObjectRegex,
+    } = multiLanguageErrorDetectors[sdfLanguage]
     if (settingsValidationErrorRegex.test(errorMessage)) {
       const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
       if (manifestErrorScriptids.length > 0) {

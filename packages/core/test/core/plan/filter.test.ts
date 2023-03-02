@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError } from '@salto-io/adapter-api'
+import { getChangeData, ChangeValidator, ObjectType, ElemID, InstanceElement, Field, BuiltinTypes, ChangeDataType, Change, createRefToElmWithValue, isDependencyError, isField } from '@salto-io/adapter-api'
 import wu, { WuIterable } from 'wu'
 import { mockFunction } from '@salto-io/test-utils'
 import * as mock from '../../common/elements'
@@ -185,7 +185,31 @@ describe('filterInvalidChanges', () => {
     expect(planItem.items.size).toBe(1)
     const [change] = planItem.changes()
     expect(change.action).toEqual('add')
-    expect(getChangeData(change)).toEqual(afterInvalidObj.fields.valid)
+    const afterValidObj = beforeInvalidObj.clone()
+    afterValidObj.fields.valid = new Field(afterValidObj, 'valid', BuiltinTypes.STRING)
+    const changeData = getChangeData(change)
+    expect(isField(changeData) && changeData.parent.isEqual(afterValidObj)).toBeTruthy()
+  })
+
+  it('should have onUpdate change errors when only some elements are invalid', async () => {
+    const afterElements = mock.getAllElements()
+    const saltoAddr = afterElements[1]
+    saltoAddr.annotate({ valid: true })
+    const saltoOffice = afterElements[2]
+    saltoOffice.fields.invalid = new Field(saltoOffice, 'invalid', BuiltinTypes.STRING)
+    const saltoEmployeeInstance = afterElements[4]
+    saltoEmployeeInstance.value.valid = true
+    const planResult = await getPlan({
+      before: createElementSource(allElements),
+      after: createElementSource(afterElements),
+      changeValidators: { salto: mockChangeValidator },
+    })
+    expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(1)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(0)
+    expect(planResult.changeErrors[0].severity).toEqual('Error')
+    expect(planResult.changeErrors[0].elemID.isEqual(saltoOffice.fields.invalid.elemID))
+      .toBeTruthy()
+    expect(planResult.size).toBe(2)
   })
 
   it('should have onUpdate change errors when only some field removals are invalid', async () => {

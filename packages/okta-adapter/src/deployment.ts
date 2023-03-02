@@ -21,7 +21,8 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
-import { ACTIVE_STATUS, APPLICATION_TYPE_NAME, GROUP_RULE_TYPE_NAME, INACTIVE_STATUS } from './constants'
+import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
+import { OktaActionName, OktaApiConfig } from './config'
 
 const log = logger(module)
 
@@ -32,44 +33,6 @@ const { isDefined } = values
 const isStringArray = (
   value: unknown,
 ): value is string[] => _.isArray(value) && value.every(_.isString)
-
-type ActivationStauts = 'activate' | 'deactivate'
-type DeployConfigByStatus = Record<ActivationStauts, configUtils.DeployRequestConfig>
-
-const TYPE_TO_STATUS_CONFIG: Record<string, DeployConfigByStatus> = {
-  [GROUP_RULE_TYPE_NAME]: {
-    activate: {
-      url: '/api/v1/groups/rules/{ruleId}/lifecycle/activate',
-      method: 'post',
-      urlParamsToFields: {
-        ruleId: 'id',
-      },
-    },
-    deactivate: {
-      url: '/api/v1/groups/rules/{ruleId}/lifecycle/deactivate',
-      method: 'post',
-      urlParamsToFields: {
-        ruleId: 'id',
-      },
-    },
-  },
-  [APPLICATION_TYPE_NAME]: {
-    activate: {
-      url: '/api/v1/apps/{applicationId}/lifecycle/activate',
-      method: 'post',
-      urlParamsToFields: {
-        applicationId: 'id',
-      },
-    },
-    deactivate: {
-      url: '/api/v1/apps/{applicationId}/lifecycle/deactivate',
-      method: 'post',
-      urlParamsToFields: {
-        applicationId: 'id',
-      },
-    },
-  },
-}
 
 type OktaError = {
   errorSummary: string
@@ -118,12 +81,15 @@ const isDeactivationChange = (change: ModificationChange<InstanceElement>): bool
 const deployStatusChange = async (
   change: ModificationChange<InstanceElement>,
   client: OktaClient,
+  deployRequests?: Partial<Record<OktaActionName, configUtils.DeployRequestConfig>>
 ): Promise<void> => {
   const instance = getChangeData(change)
-  const { typeName } = instance.elemID
   const endpoint = isActivationChange(change)
-    ? TYPE_TO_STATUS_CONFIG[typeName].activate
-    : TYPE_TO_STATUS_CONFIG[typeName].deactivate
+    ? deployRequests?.activate
+    : deployRequests?.deactivate
+  if (endpoint === undefined) {
+    return
+  }
   const url = createUrl({
     instance,
     baseUrl: endpoint.url,
@@ -143,7 +109,7 @@ const deployStatusChange = async (
 export const defaultDeployChange = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: configUtils.AdapterApiConfig,
+  apiDefinitions: OktaApiConfig,
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
@@ -173,7 +139,7 @@ export const defaultDeployChange = async (
     // If the instance is deactivated,
     // we should first change the status as some instances can not be changed in status 'ACTIVE'
     if (isModificationChange(change) && isDeactivationChange(change)) {
-      await deployStatusChange(change, client)
+      await deployStatusChange(change, client, deployRequests)
     }
 
     const response = await deployment.deployChange({
@@ -186,7 +152,7 @@ export const defaultDeployChange = async (
 
     // If the instance is activated, we should first make the changes and then change the status
     if (isModificationChange(change) && isActivationChange(change)) {
-      await deployStatusChange(change, client)
+      await deployStatusChange(change, client, deployRequests)
     }
 
     if (isAdditionChange(change)) {

@@ -39,7 +39,7 @@ const VALUE_FIELD = 'value'
 const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
-const ACCOUNT_IDS = 'accountIds'
+const ACCOUNT_IDS_FIELDS = ['accountIds', 'FIELD_USER_IDS']
 const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
   'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
@@ -105,10 +105,12 @@ const accountIdsScenarios = (
     }
   })
   // main scenario, sub branch of multiple account ids
-  makeArray(value[ACCOUNT_IDS])
-    .forEach((_value, index) => {
-      callback({ value: value[ACCOUNT_IDS], path: path.createNestedID(ACCOUNT_IDS), fieldName: index.toString() })
-    })
+  ACCOUNT_IDS_FIELDS.forEach(accountIds => {
+    makeArray(value[accountIds])
+      .forEach((_value, index) => {
+        callback({ value: value[accountIds], path: path.createNestedID(accountIds), fieldName: index.toString() })
+      })
+  })
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
     callback({ value, path, fieldName: VALUE_FIELD })

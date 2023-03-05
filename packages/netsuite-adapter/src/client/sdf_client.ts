@@ -941,7 +941,7 @@ export default class SdfClient {
       // in this case we're looking for validation error message lines.
       const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
       if (missingFeatureNames.length > 0) {
-        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
+        return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
       }
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID

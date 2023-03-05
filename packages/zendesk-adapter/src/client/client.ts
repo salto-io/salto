@@ -18,6 +18,7 @@ import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import { createConnection, createResourceConnection, instanceUrl } from './connection'
 import { ZENDESK } from '../constants'
 import { Credentials } from '../auth'
@@ -28,6 +29,14 @@ const {
   throttle, logDecorator, requiresLogin,
 } = clientUtils
 const log = logger(module)
+
+const ORG_ENDPOINT_TO_FILTER = 'organizations/'
+const OMIT_REPLACEMENT = '<OMITTED>'
+
+type LogsFilterConfig = {
+  allowOrganizationNames?: boolean
+}
+
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -40,6 +49,12 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: PAGE_SIZE,
 }
 
+const DEFAULT_FILTER_LOGS_CONFIG: LogsFilterConfig = {
+  // It is safer to default filter out organization names
+  allowOrganizationNames: false,
+}
+
+
 export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
   > {
@@ -48,9 +63,10 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
   protected isResourceApiLoggedIn = false
   protected resourceLoginPromise?: Promise<clientUtils.APIConnection>
   protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
+  private logsFilterConfig: LogsFilterConfig
 
   constructor(
-    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>,
+    clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig> & LogsFilterConfig,
   ) {
     super(
       ZENDESK,
@@ -70,6 +86,7 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       ),
       createConnection: createResourceConnection,
     })
+    this.logsFilterConfig = { ...DEFAULT_FILTER_LOGS_CONFIG, allowOrganizationNames: clientOpts.allowOrganizationNames }
   }
 
   public getUrl(): URL {
@@ -142,5 +159,16 @@ export default class ZendeskClient extends clientUtils.AdapterHTTPClient<
       }
       throw e
     }
+  }
+
+  protected clearValuesFromResponseData(
+    responseData: Values,
+    url: string
+  ): Values {
+    const cloneResponseData = _.cloneDeep(responseData)
+    if (!this.logsFilterConfig.allowOrganizationNames && url.includes(ORG_ENDPOINT_TO_FILTER)) {
+      cloneResponseData.organizations?.forEach((org: Values) => { org.name = OMIT_REPLACEMENT })
+    }
+    return cloneResponseData
   }
 }

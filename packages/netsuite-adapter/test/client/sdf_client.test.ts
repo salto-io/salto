@@ -34,9 +34,12 @@ import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesEr
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
   undefined,
   {
-    additionalDependencies: {
-      include: { features: [], objects: [] },
-      exclude: { features: [], objects: [] },
+    manifestDependencies: {
+      optionalFeatures: [],
+      requiredFeatures: [],
+      excludedFeatures: [],
+      includedObjects: [],
+      excludedObjects: [],
     },
   },
 ]

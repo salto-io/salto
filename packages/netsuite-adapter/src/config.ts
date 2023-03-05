@@ -25,7 +25,7 @@ import {
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
@@ -36,6 +36,16 @@ export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
+
+type AdditionalSdfDeployDependencies = {
+  features: string[]
+  objects: string[]
+}
+
+export type AdditionalDependencies = {
+  include: AdditionalSdfDeployDependencies
+  exclude: AdditionalSdfDeployDependencies
+}
 
 export type DeployParams = {
   warnOnStaleWorkspaceData?: boolean
@@ -382,27 +392,45 @@ const additionalDependenciesConfigPath: string[] = [
 ]
 
 const validateAdditionalSdfDeployDependencies = (
-  { features, objects }: Record<keyof AdditionalSdfDeployDependencies, unknown>,
+  input: Partial<Record<keyof AdditionalSdfDeployDependencies, unknown>>,
   configName: string
-): void => {
+): input is Partial<AdditionalSdfDeployDependencies> => {
+  const { features, objects } = input
   if (features !== undefined) {
     validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
   if (objects !== undefined) {
     validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
   }
+  return true
 }
 
 const validateAdditionalDependencies = (
-  { include, exclude }: Record<keyof AdditionalDependencies, unknown>
+  { include, exclude }: Partial<Record<keyof AdditionalDependencies, unknown>>
 ): void => {
+  let validatedInclude: Partial<AdditionalSdfDeployDependencies> = {}
   if (include !== undefined) {
     validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
     validateAdditionalSdfDeployDependencies(include, 'include')
+    validatedInclude = include
   }
+  let validatedExclude: Partial<AdditionalSdfDeployDependencies> = {}
   if (exclude !== undefined) {
     validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
+    validatedExclude = exclude
+  }
+  if (validatedInclude.features && validatedExclude.features) {
+    const conflictedFeatures = _.intersection(validatedInclude.features, validatedExclude.features)
+    if (conflictedFeatures.length > 0) {
+      throw new Error(`Additional features cannot be both included and excluded. The following features are conflicted: ${conflictedFeatures.join(', ')}`)
+    }
+  }
+  if (validatedInclude.objects && validatedExclude.objects) {
+    const conflictedObjects = _.intersection(validatedInclude.objects, validatedExclude.objects)
+    if (conflictedObjects.length > 0) {
+      throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedObjects.join(', ')}`)
+    }
   }
 }
 

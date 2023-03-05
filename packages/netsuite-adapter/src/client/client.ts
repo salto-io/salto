@@ -27,7 +27,7 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { AdditionalDependencies, CustomizationInfo, GetCustomObjectsResult, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult } from './types'
+import { CustomizationInfo, FeaturesMap, GetCustomObjectsResult, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations } from '../types'
@@ -36,6 +36,7 @@ import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
+import { AdditionalDependencies } from '../config'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -58,9 +59,6 @@ const getScriptIdFromElement = (changeData: ChangeDataType): string => {
 
 const getChangeType = (change: Change): 'addition' | 'modification' =>
   (isAdditionChange(change) ? 'addition' : 'modification')
-
-const isSubsetOfArray = (subsetArray: unknown[], setArray: unknown[]):boolean =>
-  subsetArray.length === _.intersection(subsetArray, setArray).length
 
 type SDFObjectNode = {
   elemIdFullName: string
@@ -217,6 +215,63 @@ export default class NetsuiteClient {
       .map(node => node.value.elemIdFullName))
   }
 
+  private static toManifestDependencies(
+    additionalDependencies: AdditionalDependencies,
+    featuresMap: FeaturesMap,
+  ): ManifestDependencies {
+    const { optional = [], required = [], excluded = [] } = _.groupBy(
+      Object.entries(featuresMap).map(([name, { status }]) => ({ name, status })),
+      feature => feature.status
+    )
+    return {
+      optionalFeatures: optional.map(feature => feature.name),
+      requiredFeatures: required.map(feature => feature.name),
+      excludedFeatures: excluded.map(feature => feature.name),
+      includedObjects: additionalDependencies.include.objects,
+      excludedObjects: additionalDependencies.exclude.objects,
+    }
+  }
+
+  private static createFeaturesMap(
+    additionalDependencies: AdditionalDependencies
+  ): FeaturesMap {
+    return Object.fromEntries([
+      ...additionalDependencies.include.features
+        .map(featureName => [featureName, { status: 'optional', canBeRequired: true }]),
+      ...additionalDependencies.exclude.features
+        .map(featureName => [featureName, { status: 'excluded' }]),
+    ])
+  }
+
+  private static updateFeaturesMap(
+    featuresMap: FeaturesMap,
+    missingFeaturesError: MissingManifestFeaturesError
+  ): { failToUpdate: boolean; error?: Error } {
+    const missingExcludedFeatures = new Set<string>()
+    let failToUpdate = false
+    missingFeaturesError.missingFeatures.forEach(featureName => {
+      const feature = featuresMap[featureName]
+      if (feature === undefined) {
+        featuresMap[featureName] = { status: 'optional', canBeRequired: true }
+      } else if (feature.status === 'excluded') {
+        featuresMap[featureName] = { status: 'optional', canBeRequired: false }
+      } else if (feature.status === 'required') {
+        log.error('The %s feature is already required, but sdf returned an error: %o', featureName, missingFeaturesError)
+        failToUpdate = true
+      } else if (feature.status === 'optional' && feature.canBeRequired) {
+        featuresMap[featureName] = { status: 'required' }
+      } else if (feature.status === 'optional' && !feature.canBeRequired) {
+        log.warn('The %s feature is required but it is excluded', featureName)
+        missingExcludedFeatures.add(featureName)
+      }
+    })
+    if (missingExcludedFeatures.size > 0) {
+      const error = new Error(`The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`)
+      return { failToUpdate: true, error }
+    }
+    return { failToUpdate }
+  }
+
   private async sdfDeploy({
     changes,
     additionalDependencies,
@@ -239,6 +294,7 @@ export default class NetsuiteClient {
 
     const errors: Error[] = []
     const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(changesToDeploy)
+    const featuresMap = NetsuiteClient.createFeaturesMap(additionalDependencies)
 
     while (changesToDeploy.length > 0) {
       // eslint-disable-next-line no-await-in-loop
@@ -247,6 +303,7 @@ export default class NetsuiteClient {
         change,
         ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
       ])
+      const manifestDependencies = NetsuiteClient.toManifestDependencies(additionalDependencies, featuresMap)
 
       try {
         log.debug('deploying %d changes', changesToDeploy.length)
@@ -255,7 +312,7 @@ export default class NetsuiteClient {
           () => this.sdfClient.deploy(
             customizationInfos,
             suiteAppId,
-            { additionalDependencies, validateOnly }
+            { manifestDependencies, validateOnly }
           ),
           'sdfDeploy'
         )
@@ -269,11 +326,13 @@ export default class NetsuiteClient {
           }
         }
         if (error instanceof MissingManifestFeaturesError) {
-          if (_.isEmpty(error.missingFeatures)
-          || isSubsetOfArray(error.missingFeatures, additionalDependencies.include.features)) {
+          if (_.isEmpty(error.missingFeatures)) {
             return { errors, appliedChanges: [] }
           }
-          additionalDependencies.include.features.push(...error.missingFeatures)
+          const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)
+          if (res.failToUpdate) {
+            return { errors: errors.concat(res.error ?? []), appliedChanges: [] }
+          }
           // remove error because if the deploy succeeds there shouldn't be a change error
           errors.pop()
           // eslint-disable-next-line no-continue

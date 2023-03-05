@@ -25,7 +25,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } fro
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
-import { AdditionalDependencies } from '../../src/client/types'
+import { AdditionalDependencies } from '../../src/config'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -251,28 +251,145 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
-      it('should try to deploy again MissingManifestFeaturesError', async () => {
+      it('should try to deploy again MissingManifestFeaturesError and fail on excluded feature', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
 Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
 File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
-        mockSdfDeploy.mockRejectedValueOnce(missingManifestFeaturesError)
+        mockSdfDeploy.mockRejectedValue(missingManifestFeaturesError)
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: ['SUBSCRIPTIONBILLING'],
+              objects: [],
+            },
+          },
+          mockElementsSourceIndex
         )).toEqual({
-          errors: [],
-          appliedChanges: [change],
+          errors: [
+            missingManifestFeaturesError,
+            new Error('The following features are required but they are excluded: SUBSCRIPTIONBILLING.'),
+          ],
+          appliedChanges: [],
         })
-        expect(deployParams[0].include.features).toContain('SUBSCRIPTIONBILLING')
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: { scriptid: 'someObject' },
+          }],
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: ['SUBSCRIPTIONBILLING'],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          })
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: { scriptid: 'someObject' },
+          }],
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['SUBSCRIPTIONBILLING'],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          })
       })
 
+      it('should try to deploy again MissingManifestFeaturesError and fail on required feature', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
+Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
+File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
+        mockSdfDeploy.mockRejectedValue(missingManifestFeaturesError)
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        expect(await client.deploy(
+          [change],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          ...deployParams,
+        )).toEqual({
+          errors: [missingManifestFeaturesError],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: { scriptid: 'someObject' },
+          }],
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          })
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: { scriptid: 'someObject' },
+          }],
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['SUBSCRIPTIONBILLING'],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          })
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(3,
+          [{
+            scriptId: 'someObject',
+            typeName: 'type',
+            values: { scriptid: 'someObject' },
+          }],
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: ['SUBSCRIPTIONBILLING'],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          })
+      })
 
       describe('custom record types', () => {
         it('should transform type to customrecordtype instance', async () => {
@@ -301,8 +418,12 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             }],
             undefined,
             {
-              additionalDependencies: {
-                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
+              manifestDependencies: {
+                optionalFeatures: [],
+                requiredFeatures: [],
+                excludedFeatures: [],
+                includedObjects: [],
+                excludedObjects: [],
               },
               validateOnly: false,
             },
@@ -435,7 +556,16 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             values: { scriptid: 'someObject' },
           }],
           undefined,
-          { additionalDependencies: deployParams[0], validateOnly: true }
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: true,
+          }
         )
       })
       it('should skip validation', async () => {

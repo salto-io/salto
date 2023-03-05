@@ -43,15 +43,12 @@ import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
-  additionalDependencies: {
-    include: {
-      features: [],
-      objects: [],
-    },
-    exclude: {
-      features: [],
-      objects: [],
-    },
+  manifestDependencies: {
+    optionalFeatures: [],
+    requiredFeatures: [],
+    excludedFeatures: [],
+    includedObjects: [],
+    excludedObjects: [],
   },
   validateOnly: false,
 }
@@ -838,12 +835,10 @@ describe('Adapter', () => {
           undefined,
           {
             ...DEFAULT_SDF_DEPLOY_PARAMS,
-            additionalDependencies: {
-              ...DEFAULT_SDF_DEPLOY_PARAMS.additionalDependencies,
-              include: {
-                objects: ['addedObject'],
-                features: ['addedFeature'],
-              },
+            manifestDependencies: {
+              ...DEFAULT_SDF_DEPLOY_PARAMS.manifestDependencies,
+              includedObjects: ['addedObject'],
+              optionalFeatures: ['addedFeature'],
             },
           }
         )

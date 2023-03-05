@@ -30,6 +30,7 @@ import {
   isInstanceElement,
   isReferenceExpression,
   ReadOnlyElementsSource,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
@@ -128,6 +129,7 @@ import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
+import { isCurrentUserResponse } from './user_utils'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -561,6 +563,25 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
   }
 
+  private async isLocaleEnUs(): Promise<SaltoError | undefined> {
+    try {
+      const res = (await this.client.getSinglePage({
+        url: '/api/v2/users/me',
+      })).data
+      if (isCurrentUserResponse(res) && res.user.locale !== 'en-US') {
+        return {
+          message: `the user locale is set to ${res.user.locale} please change it to en-US`,
+          severity: 'Warning', // maybe we want it to be an error?
+        }
+      }
+      log.error('could not verify fetching users locale is set to en-US. received invalid response ') // maybe we want to return a warning?
+      return undefined
+    } catch (e) {
+      log.error(`could not verify fetching user's locale is set to en-US'. error: ${e}`)
+      return undefined
+    }
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -569,8 +590,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
-
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const brandsWithHelpCenter = elements
@@ -590,7 +611,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 
-    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
+    const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     return { elements, errors: fetchErrors, updatedConfig }
   }
 

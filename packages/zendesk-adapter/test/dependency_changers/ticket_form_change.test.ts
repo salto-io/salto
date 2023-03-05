@@ -14,7 +14,14 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import {
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  ReferenceExpression,
+  toChange,
+  UnresolvedReference,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { TICKET_FORM_ORDER_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { ticketFormDependencyChanger } from '../../src/dependency_changers/ticket_form_change'
@@ -30,7 +37,11 @@ describe('ticketFormDependencyChanger', () => {
     new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_ORDER_TYPE_NAME) }),
     {
       active: [new ReferenceExpression(addTicketFormIncluded.elemID, addTicketFormIncluded)],
-      inactive: [new ReferenceExpression(removeTicketFormIncluded.elemID, removeTicketFormIncluded)],
+      inactive: [
+        new ReferenceExpression(removeTicketFormIncluded.elemID, removeTicketFormIncluded),
+        // Should be filtered
+        new ReferenceExpression(removeTicketFormIncluded.elemID, new UnresolvedReference(addTicketFormExcluded.elemID)),
+      ],
     }
   )
 

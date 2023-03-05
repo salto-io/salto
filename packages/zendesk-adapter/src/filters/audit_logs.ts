@@ -274,10 +274,6 @@ const addNewChangedBy = async ({
 const filterCreator: FilterCreator = ({ elementsSource, client, paginator, config }) => ({
   name: 'changeByAndChangedAt',
   onFetch: async (elements: Element[]): Promise<void> => {
-    if (config[FETCH_CONFIG].includeAuditDetails === false) { // temporary
-      log.info('not running changeByAndChangedAt filter as includeAuditDetails in the config is false')
-      return
-    }
     if (elementsSource === undefined) {
       log.error('Failed to run changeByAndChangedAt filter because no element source was provided')
       return
@@ -296,6 +292,11 @@ const filterCreator: FilterCreator = ({ elementsSource, client, paginator, confi
     }
     const newTimeElements = await createTimeElements(newLastAuditTime)
     elements.push(...newTimeElements)
+
+    if (config[FETCH_CONFIG].includeAuditDetails === false) {
+      log.info('not running changeByAndChangedAt filter as includeAuditDetails in the config is false')
+      return
+    }
 
     // if this is a second fetch the elementSource should have the time instance already
     const auditTimeInstance = await elementsSource.get(AUDIT_TIME_INSTANCE_ID)

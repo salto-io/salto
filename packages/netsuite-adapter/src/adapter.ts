@@ -345,6 +345,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    const isFirstFetch = async () : Promise<boolean> =>
+      !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    if (this.fetchTarget !== undefined && await isFirstFetch()) {
+      throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
+    }
+
     const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
       .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
@@ -360,7 +366,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = withChangesDetection || this.fetchTarget !== undefined
+    const isPartial = (withChangesDetection || this.fetchTarget !== undefined) && !(await isFirstFetch())
 
     const {
       failedToFetchAllAtOnce,

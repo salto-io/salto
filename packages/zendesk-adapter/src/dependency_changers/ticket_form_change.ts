@@ -54,6 +54,7 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
 
   const ticketFormOrderValue = getChangeData(ticketFormOrderChange.change).value
   const orderTicketForms = new Set((ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
+  // Filter out referenceExpressions that are unresolved (which means they don't have a value)
     .filter(isReferenceExpression).filter((ref: ReferenceExpression) => isInstanceElement(ref.value))
     .map((ref: ReferenceExpression) => ref.value.elemID.getFullName())
     .flat())

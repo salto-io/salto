@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, TypeReference } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
@@ -147,16 +147,15 @@ const createRecordIdsMap = async (
   )
 
 
-const getSupportedInstances = (elements: Element[]): InstanceElement[] =>
-  elements
-    .filter(isInstanceElement)
-    .filter(elem => getTableName(elem) in TABLE_NAME_TO_ID_PARAMETER_MAP)
-
+export const isSupportedInstance = (instance: InstanceElement): boolean =>
+  getTableName(instance) in TABLE_NAME_TO_ID_PARAMETER_MAP
 
 const getAdditionInstances = (changes: Change[]): InstanceElement[] =>
-  getSupportedInstances(changes
+  changes
     .filter(isAdditionChange)
-    .map(getChangeData))
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(isSupportedInstance)
 
 const addInternalIdToInstances = async (
   client: NetsuiteClient,
@@ -229,7 +228,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     addInternalIdFieldToSupportedType(elements)
     addInternalIdAnnotationToCustomRecordTypes(elements)
 
-    const instances = getSupportedInstances(elements)
+    const instances = elements.filter(isInstanceElement).filter(isSupportedInstance)
     await addInternalIdToInstances(client, instances)
     await addInternalIdToCustomRecordTypes(client, elements)
     await addInternalIdToCustomListValues(client, elements)
@@ -243,7 +242,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-    getSupportedInstances(changesData).forEach(inst => {
+    changesData.filter(isInstanceElement).filter(isSupportedInstance).forEach(inst => {
       delete inst.value[INTERNAL_ID]
     })
     changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {

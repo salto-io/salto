@@ -73,8 +73,8 @@ describe('dashboardGadgetsValidator', () => {
         {
           elemID: instance2.elemID,
           severity: 'Error',
-          message: 'Two gadgets of the same dashboard cannot have the same position',
-          detailedMessage: 'The position of the gadget jira.DashboardGadget.instance.instance2 is already taken by other gadgets in the same dashboard: jira.DashboardGadget.instance.instance',
+          message: 'Gadget position overlaps with existing gadgets',
+          detailedMessage: 'This gadget’s position clashes with other gadgets’ position: jira.DashboardGadget.instance.instance. Change its position, or other gadgets’ position, and try again.',
         },
       ])
   })

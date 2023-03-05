@@ -60,6 +60,9 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       return
     }
     const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
+    }
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
@@ -75,8 +78,12 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       return
     }
 
-    const userMap = _.keyBy(
-      Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
+    const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
+    }
+    const preDeployUserMap = _.keyBy(
+      Object.values(userMap).filter(userInfo => _.isString(userInfo.username)),
       userInfo => userInfo.username as string
     )
 
@@ -86,7 +93,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap)) }))
   },
   onDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true)
@@ -94,6 +101,9 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       return
     }
     const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
+    }
     changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)

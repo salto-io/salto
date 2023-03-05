@@ -38,7 +38,6 @@ describe('withTimeout', () => {
   }
 
   const theResult = { isTheResult: true }
-  let p: Promise<typeof theResult | Error>
   const myError = new Error('rejected in test')
 
   // Workaround for jest bug/misfeature which causes tests to fail
@@ -50,66 +49,50 @@ describe('withTimeout', () => {
   ): Promise<T | Error> => promise.catch(e => e)
 
   describe('when the promise is already resolved', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(Promise.resolve(theResult), 0))
-      await wait(1)
-    })
     it('should return it', async () => {
+      const p = wrapPromiseRejection(withTimeout(Promise.resolve(theResult), 0))
+      await wait(1)
       expect(await p).toBe(theResult)
     })
   })
 
   describe('when the promise is already rejected', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(Promise.reject(myError), 0))
-      await wait(1)
-    })
     it('should reject it with the error', async () => {
+      const p = wrapPromiseRejection(withTimeout(Promise.reject(myError), 0))
+      await wait(1)
       expect(await p).toBe(myError)
     })
   })
 
   describe('when the promise is resolved before the timeout', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(waitAndReturn(1, theResult), 3))
-      await wait(3)
-    })
-
     it('should return it', async () => {
+      const p = wrapPromiseRejection(withTimeout(waitAndReturn(1, theResult), 30))
+      await wait(30)
       expect(await p).toBe(theResult)
     })
   })
 
   describe('when the promise is resolved after the timeout', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(waitAndReturn(3, theResult), 1))
-      await wait(3)
-    })
-
     it('should reject with a PromiseTimedOutError', async () => {
+      const p = wrapPromiseRejection(withTimeout(waitAndReturn(30, theResult), 1))
+      await wait(30)
       expect(await p).toBeInstanceOf(PromiseTimedOutError)
       expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
     })
   })
 
   describe('when the promise is rejected before the timeout', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(waitAndReject(1, myError), 3))
-      await wait(3)
-    })
-
     it('should reject with the error', async () => {
+      const p = wrapPromiseRejection(withTimeout(waitAndReject(1, myError), 30))
+      await wait(30)
       expect(await p).toBe(myError)
     })
   })
 
   describe('when the promise is rejected after the timeout', () => {
-    beforeEach(async () => {
-      p = wrapPromiseRejection(withTimeout(waitAndReject(3, myError), 1))
-      await wait(3)
-    })
-
     it('should reject with the PromiseTimedOutError', async () => {
+      const p = wrapPromiseRejection(withTimeout(waitAndReject(30, myError), 1))
+      await wait(30)
       expect(await p).toBeInstanceOf(PromiseTimedOutError)
       expect(await p).toMatchObject({ message: 'Promise timed out after 1 ms' })
     })

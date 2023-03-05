@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   isInstanceElement, isPrimitiveType, ElemID, getFieldType,
-  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType,
+  isReferenceExpression, Value, isServiceId, isObjectType, ChangeDataType, ObjectType, InstanceElement,
 } from '@salto-io/adapter-api'
 import { transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
@@ -30,14 +30,18 @@ const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
+type TopLevelElement = ObjectType | InstanceElement
+const isTopLevelElement = (value: unknown): value is TopLevelElement =>
+  isObjectType(value) || isInstanceElement(value)
+
 const elementFullName = (element: ChangeDataType): string => element.elemID.getFullName()
 
 export const findDependingElementsFromRefs = async (
   element: ChangeDataType
-): Promise<ChangeDataType[]> => {
-  const visitedIdToElement = new Map<string, ChangeDataType>()
+): Promise<TopLevelElement[]> => {
+  const visitedIdToElement = new Map<string, TopLevelElement>()
   const isRefToServiceId = async (
-    topLevelParent: ChangeDataType,
+    topLevelParent: TopLevelElement,
     elemId: ElemID
   ): Promise<boolean> => {
     if (isInstanceElement(topLevelParent)) {
@@ -53,7 +57,7 @@ export const findDependingElementsFromRefs = async (
   const createDependingElementsCallback: TransformFunc = async ({ value }) => {
     if (isReferenceExpression(value)) {
       const { topLevelParent, elemID } = value
-      if ((isObjectType(topLevelParent) || isInstanceElement((topLevelParent)))
+      if (isTopLevelElement(topLevelParent)
         && !visitedIdToElement.has(elementFullName(topLevelParent))
         && elemID.adapter === NETSUITE
         && await isRefToServiceId(topLevelParent, elemID)) {
@@ -74,15 +78,15 @@ export const findDependingElementsFromRefs = async (
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add automatically all of the referenced elements (recursively) including the source elements.
+ * Here we add automatically all of the referenced elements (recursively).
  */
 const getAllReferencedElements = async (
   sourceElements: ReadonlyArray<ChangeDataType>
-): Promise<ReadonlyArray<ChangeDataType>> => {
+): Promise<ReadonlyArray<TopLevelElement>> => {
   const visited = new Set<string>(sourceElements.map(elementFullName))
   const getNewReferencedElement = async (
     element: ChangeDataType
-  ): Promise<ChangeDataType[]> => {
+  ): Promise<TopLevelElement[]> => {
     const newElements = (await findDependingElementsFromRefs(element))
       .filter(elem => !visited.has(elementFullName(elem)))
     newElements.forEach(elem => {
@@ -94,26 +98,23 @@ const getAllReferencedElements = async (
       ...await awu(newElements).flatMap(getNewReferencedElement).toArray(),
     ]
   }
-  return [
-    ...sourceElements,
-    ...await awu(sourceElements).flatMap(getNewReferencedElement).toArray(),
-  ]
+  return awu(sourceElements).flatMap(getNewReferencedElement).toArray()
 }
 
 /*
  * Due to SDF bugs, sometimes referenced objects are required to be as part of the project as part
  * of deploy and writing them in the manifest.xml doesn't suffice.
- * Here we add manually all of the quirks we identified including the source elements.
+ * Here we add manually all of the quirks we identified.
  */
 export const getRequiredReferencedElements = async (
   sourceElements: ReadonlyArray<ChangeDataType>
-): Promise<ReadonlyArray<ChangeDataType>> => {
+): Promise<ReadonlyArray<TopLevelElement>> => {
   const getReferencedElement = (
     value: Value,
-    predicate: (element: ChangeDataType) => boolean
-  ): ChangeDataType | undefined => (
+    predicate: (element: TopLevelElement) => boolean
+  ): TopLevelElement | undefined => (
     (isReferenceExpression(value)
-      && (isObjectType(value.topLevelParent) || isInstanceElement(value.topLevelParent))
+      && isTopLevelElement(value.topLevelParent)
       && predicate(value.topLevelParent))
       ? value.topLevelParent
       : undefined
@@ -121,7 +122,7 @@ export const getRequiredReferencedElements = async (
 
   const getRequiredDependency = (
     element: ChangeDataType
-  ): ChangeDataType | undefined => {
+  ): TopLevelElement | undefined => {
     if (isObjectType(element) && isCustomRecordType(element)) {
       return getReferencedElement(
         element.annotations.customsegment,
@@ -146,11 +147,16 @@ export const getRequiredReferencedElements = async (
     }
     return undefined
   }
-  const requiredReferencedElements = sourceElements
-    .map(getRequiredDependency)
-    .filter(isDefined)
 
-  const elements = _.uniqBy(sourceElements.concat(requiredReferencedElements), elementFullName)
+  const sourceElementsSet = new Set(sourceElements.map(elementFullName))
+  const requiredReferencedElements = _.uniqBy(
+    sourceElements
+      .map(getRequiredDependency)
+      .filter(isDefined)
+      .filter(elem => !sourceElementsSet.has(elementFullName(elem))),
+    elementFullName
+  )
+  const elements = sourceElements.concat(requiredReferencedElements)
   const elementsSet = new Set(elements.map(elementFullName))
   // SALTO-2974 Due to SDF bug, it seems like referenced translation collection instances
   // must be included in the SDF project.
@@ -170,13 +176,13 @@ export const getRequiredReferencedElements = async (
       .map(elementFullName)
       .join(os.EOL)
   }`)
-  return elements.concat(referencedTranslationCollectionInstances)
+  return requiredReferencedElements.concat(referencedTranslationCollectionInstances)
 }
 
 export const getReferencedElements = async (
   elements: ReadonlyArray<ChangeDataType>,
   deployAllReferencedElements: boolean
-): Promise<ReadonlyArray<ChangeDataType>> => (
+): Promise<ReadonlyArray<TopLevelElement>> => (
   deployAllReferencedElements
     ? getAllReferencedElements(elements)
     : getRequiredReferencedElements(elements)

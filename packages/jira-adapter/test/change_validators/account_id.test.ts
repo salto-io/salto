@@ -129,6 +129,26 @@ describe('accountIdValidator', () => {
       displayName: 'disp1list2',
       locale: 'en_US',
       emailAddress: 'email1list2',
+    }, {
+      accountId: '0Ids1',
+      displayName: 'disp0Ids1',
+      locale: 'en_US',
+      emailAddress: 'email0Ids1',
+    }, {
+      accountId: '0Ids2',
+      displayName: 'disp0Ids2',
+      locale: 'en_US',
+      emailAddress: 'email0Ids2',
+    }, {
+      accountId: '1Ids1',
+      displayName: 'disp1Ids1',
+      locale: 'en_US',
+      emailAddress: 'email1Ids1',
+    }, {
+      accountId: '1Ids2',
+      displayName: 'disp1Ids2',
+      locale: 'en_US',
+      emailAddress: 'email1Ids2',
     }],
   })
 
@@ -170,6 +190,12 @@ Go to ${url} to see valid users and account IDs.`,
     const validator2 = accountIdValidator(client, config, getUserMapFunc)
     await validator2([toChange({ after: instances[1] })])
     expect(connection.get).toHaveBeenCalledOnce()
+  })
+
+  it('should not fail on when user map func returned undefined', async () => {
+    const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
+    const validator2 = accountIdValidator(client, config, mockedGetUserMapFunc)
+    await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
   })
 
   it('should return an info when there is no display name', async () => {
@@ -418,6 +444,11 @@ Go to ${url} to see valid users and account IDs.`,
         }),
       ])
       expect(changeErrors).toEqual([])
+    })
+    it('should not fail when user map func returns undefined', async () => {
+      const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
+      const validator2 = accountIdValidator(clientDC, configDC, mockedGetUserMapFunc)
+      await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
     })
     it('should raise an error when accountId does not exist in the target environment', async () => {
       const changeErrors = await validatorDC([

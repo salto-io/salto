@@ -15,23 +15,30 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange, Change, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { MockInterface } from '@salto-io/test-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import wrongUserPermissionSchemeFilter from '../../../src/filters/permission_scheme/wrong_user_permission_scheme_filter'
 import { getDefaultConfig } from '../../../src/config/config'
 import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
+import { GetUserMapFunc } from '../../../src/users'
 
 describe('wrongUsersPermissionSchemeFilter', () => {
   let instances: InstanceElement[]
   let changes: Change[]
-  const { getUserMapFunc, connection } = mockClient()
+  let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+  let mockConnection: MockInterface<clientUtils.APIConnection>
+  let mockUserMapFunc: GetUserMapFunc
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const filter = wrongUserPermissionSchemeFilter(getFilterParams({
-    getUserMapFunc,
-    config,
-  })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-
   beforeEach(async () => {
+    jest.clearAllMocks()
+    const { getUserMapFunc, connection } = mockClient()
+    mockConnection = connection
+    mockUserMapFunc = getUserMapFunc
+    filter = wrongUserPermissionSchemeFilter(getFilterParams({
+      getUserMapFunc: mockUserMapFunc,
+      config,
+    })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     const type = new ObjectType({
       elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
     })
@@ -92,11 +99,19 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     expect(instances[0].value.permissions[1].holder.parameter.id).toEqual('id4')
     expect(instances[0].value.permissions[2].holder.parameter.id).toEqual('id5')
     expect(instances[0].value.permissions[3].wrong.anotherWrong).toEqual('anotherWrong')
-    expect(connection.get).toHaveBeenCalledOnce()
+    expect(mockConnection.get).toHaveBeenCalledOnce()
     expect(instances[1].value.permissions.length).toEqual(3)
     expect(instances[1].value.permissions[2].holder.parameter.id).toEqual('id1')
     expect(instances[1].value.permissions[1].holder.parameter.id).toEqual('id4')
     expect(instances[1].value.permissions[0].holder.parameter.id).toEqual('id5')
+  })
+  it('should not raise error on missing user permission', async () => {
+    mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+    await expect(filter.preDeploy(changes)).resolves.not.toThrow()
+  })
+  it('should raise error on any other error', async () => {
+    mockConnection.get.mockRejectedValue(new Error('failed'))
+    await expect(filter.preDeploy(changes)).rejects.toThrow()
   })
   it('should return removed permissions in the right order', async () => {
     await filter.preDeploy(changes)

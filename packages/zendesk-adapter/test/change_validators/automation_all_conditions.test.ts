@@ -165,11 +165,8 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomation.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-            + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${notValidAutomation.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
+      detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
   it('should return an error when automation does not contain necessary field condition of several conditions', async () => {
@@ -179,11 +176,8 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: notValidAutomationSeveralConditions.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-            + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${notValidAutomationSeveralConditions.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
+      detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
   it('should not return an error when automation contains necessary field condition', async () => {
@@ -211,11 +205,8 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noConditionInAutomation.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-            + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${noConditionInAutomation.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
+      detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
   it('should return error when there are no All conditions', async () => {
@@ -225,11 +216,8 @@ describe('automationAllConditionsValidator', () => {
     expect(errors).toEqual([{
       elemID: noAllInConditionAutomation.elemID,
       severity: 'Error',
-      message: 'Automation must test for at least one of the following ticket properties in the ALL '
-            + 'conditions section: Status, Type, Group, Assignee, Requester',
-      detailedMessage: `Automation ${noAllInConditionAutomation.elemID.getFullName()} must test for at least one of 
-      the following ticket properties in the ALL conditions section: Status, Type, Group, Assignee, 
-      Requester`,
+      message: 'Cannot make this change due to an invalid automation conditions configuration',
+      detailedMessage: 'The ‘ALL’ conditions section must include a condition for at least one of the following properties: Status, Type, Group, Assignee, Requester',
     }])
   })
   it('should not return error for reference expression', async () => {

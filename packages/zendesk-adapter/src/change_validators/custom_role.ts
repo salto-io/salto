@@ -59,8 +59,8 @@ export const customRoleNameValidator: ChangeValidator = async (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Can not change custom_role because the name is reserved for a system role',
-          detailedMessage: `Can not change ${instance.elemID.getFullName()} because the name (${instance.value.name}) is reserved for a system role`,
+          message: 'Cannot change this custom_role since its name is reserved for a system role',
+          detailedMessage: `The name (${instance.value.name}) is reserved for a system role, please use another name`,
         }]
       }
       const otherCustomRoleWithTheSameName = allCustomRoles
@@ -73,9 +73,9 @@ export const customRoleNameValidator: ChangeValidator = async (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: 'Can not change custom_role because the name is already in use',
-        detailedMessage: `Can not change ${instance.elemID.getFullName()} because the name is already in use by ${
-          otherCustomRoleWithTheSameName.map(customRole => customRole.elemID.getFullName()).join(', ')}`,
+        message: 'Cannot change this custom_role since its name is already in use',
+        detailedMessage: `This name is already in use by ${otherCustomRoleWithTheSameName.map(customRole => customRole.elemID.getFullName()).join(', ')}.
+Please use another name`,
       }]
     })
 }

@@ -19,9 +19,8 @@ import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../sr
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/client/types'
-import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
-import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 
 describe('client validation', () => {
   let changes: Change[]
@@ -32,14 +31,10 @@ describe('client validation', () => {
     validate: mockValidate,
   } as unknown as NetsuiteClient
 
-  const mockFiltersRunner = {
+  const mockFiltersRunner: () => Required<Filter> = () => ({
     onFetch: jest.fn(),
     preDeploy: jest.fn(),
-  } as unknown as Required<Filter>
-
-  const mockElementsSourceIndex = {
-    getIndexes: () => ({ mapKeyFieldsIndex: {} }),
-  } as unknown as LazyElementsSourceIndexes
+  }) as unknown as Required<Filter>
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -69,7 +64,6 @@ describe('client validation', () => {
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(0)
   })
@@ -91,7 +85,6 @@ File: ~/Objects/object_name.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -119,7 +112,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -150,12 +142,43 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(fieldChanges[0]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Error',
+    })
+  })
+  it('should have SDF Objects Validation Error - in other language', async () => {
+    const detailedMessage = `Une erreur s'est produite lors de la validation de l'objet personnalis.. (object_name)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/object_name.xml`
+    const fullErrorMessage = `
+*** ERREUR ***
+La validation a .chou..
+
+${detailedMessage}`
+
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(changes[0]).elemID,
       message: 'SDF Objects Validation Error',
       severity: 'Error',
     })
@@ -171,11 +194,12 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
-      detailedMessage: 'This element depends on the following missing elements: some_scriptid. Please make sure that all the bundles from the source account are installed and updated in the target account.',
+      detailedMessage: `This element depends on the following missing elements: (some_scriptid).
+The missing dependencies might be locked elements in the source environment which do not exist in the target environment. Moreover, the dependencies might be part of a 3rd party bundle or SuiteApp.
+If so, please make sure that all the bundles from the source account are installed and updated in the target account.`,
       elemID: getChangeData(changes[0]).elemID,
       message: 'This element depends on missing elements',
       severity: 'Error',
@@ -199,7 +223,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors.map(changeErr => changeErr.elemID.getFullName())).toEqual([
@@ -215,7 +238,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors[0]).toEqual({
@@ -234,7 +256,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
@@ -252,7 +273,6 @@ File: ~/Objects/customrecord1.xml`
       client,
       {} as unknown as AdditionalDependencies,
       mockFiltersRunner,
-      mockElementsSourceIndex
     )
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual(changes.map(change => ({

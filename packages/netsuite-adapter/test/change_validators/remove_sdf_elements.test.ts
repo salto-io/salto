@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, Field, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import removeSdfElementsValidator from '../../src/change_validators/remove_sdf_elements'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../../src/constants'
@@ -31,6 +32,18 @@ describe('remove sdf object change validator', () => {
   }
 
   describe('remove instance of standard type', () => {
+    it('should have change error when removing an instance of an unsupported standard type', async () => {
+      const standardInstanceNoInternalId = new InstanceElement('test', workflowType().type)
+
+      const changeErrors = await removeSdfElementsValidator([
+        toChange({ before: standardInstanceNoInternalId }),
+      ], undefined, elementsSourceIndex)
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].elemID).toEqual(standardInstanceNoInternalId.elemID)
+      expect(changeErrors[0].message).toEqual('Can\'t remove instances of type workflow')
+    })
+
     it('should have change error when removing an instance of standard type with no internal id', async () => {
       const standardInstanceNoInternalId = new InstanceElement('test', entitycustomfieldType().type)
 
@@ -40,6 +53,7 @@ describe('remove sdf object change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(standardInstanceNoInternalId.elemID)
+      expect(changeErrors[0].message).toEqual('Can\'t remove instance of type entitycustomfield')
     })
 
     it('should not have change error when removing an instance of standard type with internal id', async () => {

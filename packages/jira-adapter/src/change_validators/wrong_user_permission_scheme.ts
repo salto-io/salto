@@ -51,7 +51,11 @@ export const wrongUserPermissionSchemeValidator: (
       return []
     }
     const { baseUrl } = client
-    const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+    const rawUserMap = await getUserMapFunc()
+    if (rawUserMap === undefined) {
+      return []
+    }
+    const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
     const wrongUserPermissionSchemePredicate = wrongUserPermissionSchemePredicateCreator(userMap)
     return changes

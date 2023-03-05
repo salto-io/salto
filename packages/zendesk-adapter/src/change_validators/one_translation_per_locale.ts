@@ -16,18 +16,25 @@
 
 import _ from 'lodash'
 import {
-  ChangeValidator, getChangeData, InstanceElement, ReadOnlyElementsSource, ChangeError,
-  isAdditionOrModificationChange, isInstanceElement, ReferenceExpression, isReferenceExpression,
+  ChangeValidator,
+  getChangeData,
+  InstanceElement,
+  ReadOnlyElementsSource,
+  ChangeError,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  ReferenceExpression,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { createSchemeGuardForInstance, getParents } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 
 const log = logger(module)
 const { findDuplicates } = collections.array
 const { awu } = collections.asynciterable
-
+const { isDefined } = lowerdashValues
 
 const ARTICLE_TRANSLATION_TYPE_NAME = 'article_translation'
 const CATEGORY_TRANSLATION_TYPE_NAME = 'category_translation'
@@ -70,50 +77,57 @@ const findDuplicateTranslations = async (
     return []
   }
   const locales = await awu(parent.value.translations)
-    .map(referenceExpression => referenceExpression.value)
+    .map(referenceExpression => (isReferenceExpression(referenceExpression)
+      ? referenceExpression.getResolvedValue(elementSource)
+      : referenceExpression))
     .filter(isTranslation)
     .map(translation => translation.value.locale)
     .map(async locale => (isReferenceExpression(locale) && locale.elemID.idType === 'instance'
-      ? (await elementSource.get(locale.elemID)).value.locale ?? ''
+      ? (await elementSource.get(locale.elemID))?.value.locale ?? ''
       : locale))
     .toArray()
   return findDuplicates(locales)
 }
 
-export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes, elementSource) => {
-  const relevantInstances = changes
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(isInstanceElement)
-    .filter(instance =>
-      [ARTICLE_TRANSLATION_TYPE_NAME,
-        CATEGORY_TRANSLATION_TYPE_NAME,
-        SECTION_TRANSLATION_TYPE_NAME].includes(instance.elemID.typeName))
+export const oneTranslationPerLocaleValidator: ChangeValidator = async (changes, elementSource) =>
+  log.time(async () => {
+    if (elementSource === undefined) {
+      log.error('Failed to run oneTranslationPerLocale because no element source was provided')
+      return []
+    }
+    const relevantInstances = changes
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance =>
+        [ARTICLE_TRANSLATION_TYPE_NAME,
+          CATEGORY_TRANSLATION_TYPE_NAME,
+          SECTION_TRANSLATION_TYPE_NAME].includes(instance.elemID.typeName))
 
-  // it is a set to avoid duplicate of parents from translations which have the same parent
-  const parentInstances = relevantInstances
-    .filter(instance => isTranslation(instance))
-    .flatMap(getParents)
-    .map(translationParentInstance => translationParentInstance.value)
+    const parentInstanceIds = _.uniqBy(relevantInstances
+      .filter(instance => isTranslation(instance))
+      .flatMap(getParents)
+      .flatMap(parent => (isReferenceExpression(parent) ? parent.elemID : undefined))
+      .filter(isDefined), id => id.getFullName())
 
-  const parentInstancesObj = _.keyBy(parentInstances, instance => instance.elemID.getFullName())
+    const parentInstances = await awu(parentInstanceIds)
+      .map(async id => elementSource.get(id))
+      .filter(isInstanceElement)
+      .toArray()
 
-  if (elementSource === undefined) {
-    log.error('Failed to run findDuplicateTranslations because no element source was provided')
-    return []
-  }
+    // it is a record to avoid duplicate of parents from translations which have the same parent
 
-  return awu(Object.values(parentInstancesObj))
-    .map(async parentInstance => ({
-      elemID: parentInstance.elemID,
-      duplicatedLocales: await findDuplicateTranslations(parentInstance, elementSource),
-    }))
-    .filter(instance => !_.isEmpty(instance.duplicatedLocales))
-    .map(({ elemID, duplicatedLocales }): ChangeError => ({
-      elemID,
-      severity: 'Error',
-      message: `Multiple translations with the same locale found in ${elemID.typeName} instance. Only one translation per locale is supported.`,
-      detailedMessage: `Instance ${elemID.getFullName()} has multiple translations for locales: ${duplicatedLocales}. Only one translation per locale is supported.`,
-    }))
-    .toArray()
-}
+    return awu(parentInstances)
+      .map(async parentInstance => ({
+        elemID: parentInstance.elemID,
+        duplicatedLocales: await findDuplicateTranslations(parentInstance, elementSource),
+      }))
+      .filter(instance => !_.isEmpty(instance.duplicatedLocales))
+      .map(({ elemID, duplicatedLocales }): ChangeError => ({
+        elemID,
+        severity: 'Error',
+        message: 'Cannot make this change since there are too many translations per locale',
+        detailedMessage: `More than one translation found for locales ${duplicatedLocales}. Only one translation per locale is supported.`,
+      }))
+      .toArray()
+  }, 'one translation per locale validator')

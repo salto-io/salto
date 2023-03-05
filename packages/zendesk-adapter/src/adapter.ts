@@ -115,6 +115,8 @@ import ticketFormDeploy from './filters/ticket_form'
 import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
+import hideAccountFeatures from './filters/hide_account_features'
+import auditTimeFilter from './filters/audit_logs'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -153,11 +155,13 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  auditTimeFilter, // needs to be before userFilter as it uses the ids of the users
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
@@ -202,6 +206,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
+  hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
@@ -695,6 +700,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter

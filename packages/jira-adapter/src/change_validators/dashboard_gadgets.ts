@@ -61,8 +61,8 @@ export const dashboardGadgetsValidator: ChangeValidator = async (changes, elemen
     .map(async instance => ({
       elemID: instance.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Two gadgets of the same dashboard cannot have the same position',
-      detailedMessage: `The position of the gadget ${instance.elemID.getFullName()} is already taken by other gadgets in the same dashboard: ${gadgetsMap[getGadgetInstanceKey(instance)].filter(gadget => !gadget.elemID.isEqual(instance.elemID)).map(gadget => gadget.elemID.getFullName()).join(', ')}`,
+      message: 'Gadget position overlaps with existing gadgets',
+      detailedMessage: `This gadget’s position clashes with other gadgets’ position: ${gadgetsMap[getGadgetInstanceKey(instance)].filter(gadget => !gadget.elemID.isEqual(instance.elemID)).map(gadget => gadget.elemID.getFullName()).join(', ')}. Change its position, or other gadgets’ position, and try again.`,
     }))
     .toArray()
 }

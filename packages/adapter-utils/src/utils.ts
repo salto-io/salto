@@ -647,7 +647,13 @@ export const getPath = (
   rootElement: Element,
   fullElemID: ElemID,
 ): string[] | undefined => {
-  const { parent, path } = fullElemID.createTopLevelParentID()
+  // If rootElement is an objectType or an instance (i.e., a top level element),
+  // we want to compare the top level id of fullElemID.
+  // If it is a field we want to compare the base id.
+  const { parent, path } = rootElement.elemID.isTopLevel()
+    ? fullElemID.createTopLevelParentID()
+    : fullElemID.createBaseID()
+
   if (!parent.isEqual(rootElement.elemID)) return undefined
   if (_.isEmpty(path)) return []
   if (fullElemID.isAttrID()) {
@@ -657,11 +663,12 @@ export const getPath = (
     return ['value', ...path]
   }
 
-  if (isObjectType(rootElement) && fullElemID.idType === 'field') {
-    const fieldName = path[0]
-    const fieldAnnoPath = path.slice(1)
-    if (_.isEmpty(fieldAnnoPath)) return ['fields', fieldName]
-    return ['fields', fieldName, 'annotations', ...fieldAnnoPath]
+  if (fullElemID.idType === 'field') {
+    const fieldAnnotations = isObjectType(rootElement) ? path.slice(1) : path
+    const fieldAnnotationsPart = ['annotations', ...fieldAnnotations]
+    const objectPart = isObjectType(rootElement) ? ['fields', path[0]] : []
+
+    return _.isEmpty(fieldAnnotations) ? objectPart : [...objectPart, ...fieldAnnotationsPart]
   }
 
   if (isType(rootElement) && fullElemID.isAnnotationTypeID()) {

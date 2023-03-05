@@ -221,6 +221,7 @@ export type FetchFunc = (
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
+  withChangeDetection?: boolean
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {
@@ -256,6 +257,7 @@ export const fetch: FetchFunc = async (
   progressEmitter?,
   accounts?,
   ignoreStateElemIdMapping?,
+  withChangeDetection?,
 ) => {
   log.debug('fetch starting..')
   const fetchAccounts = accounts ?? workspace.accounts()
@@ -285,6 +287,7 @@ export const fetch: FetchFunc = async (
       accountToServiceNameMap,
       currentConfigs,
       progressEmitter,
+      withChangeDetection,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)

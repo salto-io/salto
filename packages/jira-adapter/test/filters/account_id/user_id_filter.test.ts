@@ -153,6 +153,14 @@ describe('add_display_name_filter', () => {
         accountId: '2users2',
         displayName: 'disp2users2',
         locale: 'en_US',
+      }, {
+        accountId: '2Ids1',
+        displayName: 'disp2Ids1',
+        locale: 'en_US',
+      }, {
+        accountId: '2Ids2',
+        displayName: 'disp2Ids2',
+        locale: 'en_US',
       }],
     })
   })
@@ -486,6 +494,34 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
       await filter.onDeploy([toChange({ after: instance })])
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
+    })
+    it('should not raise error when user permission is missing', async () => {
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.onFetch([])).resolves.not.toThrow()
+    })
+    it('should raise error on any other error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.onFetch([])).rejects.toThrow()
+    })
+  })
+  describe('pre deploy', () => {
+    it('should not raise error when user permission is missing', async () => {
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.preDeploy([])).resolves.not.toThrow()
+    })
+    it('should raise error on any other error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.preDeploy([])).rejects.toThrow()
+    })
+  })
+  describe('deploy', () => {
+    it('should not raise error when user permission is missing', async () => {
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.onDeploy([])).resolves.not.toThrow()
+    })
+    it('should raise error on any other error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.onDeploy([])).rejects.toThrow()
     })
   })
 })

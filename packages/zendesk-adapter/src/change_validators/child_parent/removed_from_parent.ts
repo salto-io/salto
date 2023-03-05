@@ -55,8 +55,9 @@ export const removedFromParentValidatorCreator = (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Cannot remove ${relation.fieldName} from ${typeName} without removing the related instances`,
-        detailedMessage: `The following ${relation.fieldName} are no longer referenced from ${typeName} "${instance.elemID.name}", but the instances still exist:\n${nonFullyRemovedChildren.map(id => `- ${id.name}`).join('\n')}\n\nPlease remove these options first and deploy again.`,
+        message: 'Cannot remove this element since it is referenced by its children',
+        detailedMessage: `Cannot remove this element since it is referred to by the following children: ${nonFullyRemovedChildren.map(e => e.getFullName()).join(', ')}
+Please make sure to remove these references in order to remove the element`,
       }]
     })
   })

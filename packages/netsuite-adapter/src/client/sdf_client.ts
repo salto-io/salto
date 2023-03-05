@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils, strings } from '@salto-io/lowerdash'
-import { Values, AccountId, Value } from '@salto-io/adapter-api'
+import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -41,7 +41,7 @@ import {
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../errors'
+import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
 import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
@@ -54,6 +54,7 @@ import {
   mergeTypeToInstances,
 } from './utils'
 import { fixManifest } from './manifest_utils'
+import { detectLanguage, FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -102,16 +103,9 @@ const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
 const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
 const FEATURES_XML = 'features.xml'
 const FEATURES_TAG = 'features'
-const FEATURE_ID = 'featureId'
-const configureFeatureFailRegex = RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_ID}>\\w+)\\(.*?\\) feature has FAILED`)
 
-export const OBJECT_ID = 'objectId'
-const deployStartMessageRegex = RegExp('^Begin deployment$', 'm')
-const settingsValidationErrorRegex = RegExp('^Validation of account settings failed.$', 'm')
-export const objectValidationErrorRegex = RegExp(`^An error occurred during custom object validation. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm')
-const deployedObjectRegex = RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm')
-const errorObjectRegex = RegExp(`^An unexpected error has occurred. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm')
-const manifestErrorDetailsRegex = RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm')
+// e.g. *** ERREUR ***
+const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
@@ -127,7 +121,7 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
 
 const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
 
-const safeQuoteArgument = (argument: Value): Value => {
+const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {
     return shellQuote.quote([argument])
   }
@@ -304,26 +298,32 @@ export default class SdfClient {
     }
   }
 
-  private static verifySuccessfulDeploy(data: Value): void {
+  private static verifySuccessfulDeploy(data: unknown): void {
     if (!_.isArray(data)) {
       log.warn('suitecloud deploy returned unexpected value: %o', data)
       return
     }
 
-    const featureDeployFailes = data
-      .filter(_.isString)
-      .filter(line => configureFeatureFailRegex.test(line))
+    const dataLines = data.map(line => String(line))
+    const errorString = dataLines.join(os.EOL)
 
+    if (dataLines.some(line => fatalErrorMessageRegex.test(line))) {
+      log.error('non-thrown sdf error was detected: %o', errorString)
+      throw new Error(errorString)
+    }
+
+    const detectedLanguage = detectLanguage(errorString)
+    const { configureFeatureFailRegex } = multiLanguageErrorDetectors[detectedLanguage]
+    const featureDeployFailes = dataLines.filter(line => configureFeatureFailRegex.test(line))
     if (featureDeployFailes.length === 0) return
 
     log.warn('suitecloud deploy failed to configure the following features: %o', featureDeployFailes)
     const errorIds = featureDeployFailes
       .map(line => line.match(configureFeatureFailRegex)?.groups)
       .filter(isDefined)
-      .map(groups => groups[FEATURE_ID])
+      .map(groups => groups[FEATURE_NAME])
 
-    const errorMessage = data
-      .filter(_.isString)
+    const errorMessage = dataLines
       .filter(line => errorIds.some(id => (new RegExp(`\\b${id}\\b`)).test(line)))
       .join(os.EOL)
 
@@ -336,7 +336,10 @@ export default class SdfClient {
       log.error(`SDF command ${commandName} has failed.`)
       throw Error(ActionResultUtils.getErrorMessagesString(actionResult))
     }
-    if (commandName === COMMANDS.DEPLOY_PROJECT) {
+    if ([
+      COMMANDS.DEPLOY_PROJECT,
+      COMMANDS.VALIDATE_PROJECT,
+    ].includes(commandName)) {
       SdfClient.verifySuccessfulDeploy(actionResult.data)
     }
   }
@@ -911,7 +914,21 @@ export default class SdfClient {
   }
 
   private static customizeDeployError(error: Error): Error {
+    if (error instanceof FeaturesDeployError) {
+      return error
+    }
+
     const errorMessage = error.message
+    const sdfLanguage = detectLanguage(errorMessage)
+    const {
+      settingsValidationErrorRegex,
+      manifestErrorDetailsRegex,
+      deployStartMessageRegex,
+      objectValidationErrorRegex,
+      objectValidationFeatureErrorRegex,
+      deployedObjectRegex,
+      errorObjectRegex,
+    } = multiLanguageErrorDetectors[sdfLanguage]
     if (settingsValidationErrorRegex.test(errorMessage)) {
       const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
       if (manifestErrorScriptids.length > 0) {
@@ -922,6 +939,10 @@ export default class SdfClient {
     if (!deployStartMessageRegex.test(errorMessage)) {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
+      const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
+      if (missingFeatureNames.length > 0) {
+        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
+      }
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID
       )

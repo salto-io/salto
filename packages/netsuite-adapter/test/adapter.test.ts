@@ -26,6 +26,7 @@ import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANS
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { FilterCreator } from '../src/filter'
+import resolveValuesFilter from '../src/filters/element_references'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
@@ -114,7 +115,7 @@ describe('Adapter', () => {
   const netsuiteAdapter = new NetsuiteAdapter({
     client: new NetsuiteClient(client),
     elementsSource: buildElementsSourceFromElements([]),
-    filtersCreators: [firstDummyFilter, secondDummyFilter],
+    filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
     config,
     getElemIdFunc: mockGetElemIdFunc,
   })
@@ -772,7 +773,7 @@ describe('Adapter', () => {
         const netsuiteAdapterWithAdditionalSdfDependencies = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
           elementsSource: buildElementsSourceFromElements([]),
-          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          filtersCreators: [firstDummyFilter, secondDummyFilter, resolveValuesFilter],
           config: configWithAdditionalSdfDependencies,
           getElemIdFunc: mockGetElemIdFunc,
         })

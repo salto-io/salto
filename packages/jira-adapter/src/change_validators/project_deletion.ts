@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const doesProjectHaveIssues = async (
+export const doesProjectHaveIssues = async (
   instance: InstanceElement,
   client: JiraClient
 ): Promise<boolean> => {
@@ -69,8 +69,8 @@ export const projectDeletionValidator: (client: JiraClient, config: JiraConfig) 
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Error' as SeverityLevel,
-        message: 'Project has issues assigned to it.',
-        detailedMessage: `The project ${instance.elemID.getFullName()} has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. If you are sure you want to delete the project use the "forceDelete" deploy option.`,
+        message: 'Can’t delete Project with existing issues',
+        detailedMessage: 'This project has issues assigned to it. Deleting the project will also delete all its issues and Salto will not be able to restore the issues. To delete this project anyway, and delete all its issues, add a "forceDelete=true" deploy option to your deploy configuration.',
       }))
       .toArray()
   }

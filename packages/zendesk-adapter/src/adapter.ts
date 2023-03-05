@@ -423,12 +423,11 @@ export default class ZendeskAdapter implements AdapterOperations {
         // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
         Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
       }
-      return new ZendeskClient(
-        {
-          credentials: { ...credentials, subdomain },
-          config: clientConfig,
-        },
-      )
+      return new ZendeskClient({
+        credentials: { ...credentials, subdomain },
+        config: clientConfig,
+        allowOrganizationNames: this.userConfig[FETCH_CONFIG].resolveOrganizationIDs,
+      })
     }
 
     const clientsBySubdomain: Record<string, ZendeskClient> = {}

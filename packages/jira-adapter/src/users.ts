@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -20,6 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from './client/client'
+import { JIRA, USERS_INSTANCE_NAME, USERS_TYPE_NAME } from './constants'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -138,6 +140,18 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
     }
     return idMap
   }
+}
+
+export const getUsersMap = async (
+  elementSource: ReadOnlyElementsSource | undefined,
+): Promise<UserMap | undefined> => {
+  const map = elementSource === undefined
+    ? undefined
+    : (await elementSource.get(new ElemID(JIRA, USERS_TYPE_NAME, 'instance', USERS_INSTANCE_NAME)))?.value?.users as (UserMap | undefined)
+  if (map === undefined) {
+    log.warn('Failed to get users map from the source file.')
+  }
+  return map
 }
 
 export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo | undefined> => {

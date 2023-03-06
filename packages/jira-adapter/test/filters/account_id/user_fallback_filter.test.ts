@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils, config as configUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -27,6 +28,7 @@ describe('user_fallback_filter', () => {
   let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let config: JiraConfig
   let instance: InstanceElement
+  let elementsSource: ReadOnlyElementsSource
 
   beforeEach(() => {
     const projectType = new ObjectType({
@@ -42,57 +44,62 @@ describe('user_fallback_filter', () => {
         },
       },
     )
+    const usersType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Users'),
+    })
+    const usersElements = new InstanceElement(
+      'users',
+      usersType,
+      {
+        users: {
+          1: {
+            userId: '1',
+            username: 'name1',
+            displayName: 'disp1',
+            locale: 'en_US',
+            email: 'email1',
+          },
+          2: {
+            userId: '2',
+            username: 'name2',
+            displayName: 'disp2',
+            locale: 'en_US',
+            email: 'email2',
+          },
+          3: {
+            userId: '3',
+            username: 'name3',
+            displayName: 'disp3',
+            locale: 'en_US',
+            email: 'email3',
+          },
+        },
+      }
+    )
+    elementsSource = buildElementsSourceFromElements([usersElements])
   })
 
   describe('cloud', () => {
     beforeEach(() => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-      const { client, paginator, connection, getUserMapFunc } = mockClient()
+      const { client, paginator, connection } = mockClient()
       mockConnection = connection
       filter = userFallbackFilter(getFilterParams({
         client,
         paginator,
         config,
-        getUserMapFunc,
+        elementsSource,
       })) as typeof filter
 
-      mockConnection.get.mockImplementation(async url => {
-        if (url === '/rest/api/3/myself') {
-          return {
-            status: 200,
-            data: {
-              accountId: '3',
-              displayName: 'disp3',
-              locale: 'en_US',
-              emailAddress: 'email3',
-            },
-          }
-        }
-
-        return {
-          status: 200,
-          data: [
-            {
-              accountId: '1',
-              displayName: 'disp1',
-              locale: 'en_US',
-              emailAddress: 'email1',
-            },
-            {
-              accountId: '2',
-              displayName: 'disp2',
-              locale: 'en_US',
-              emailAddress: 'email2',
-            },
-            {
-              accountId: '3',
-              displayName: 'disp3',
-              locale: 'en_US',
-              emailAddress: 'email3',
-            },
-          ],
-        }
-      })
+      mockConnection.get.mockImplementation(async _url => ({
+        status: 200,
+        data: {
+          accountId: '3',
+          displayName: 'disp3',
+          locale: 'en_US',
+          emailAddress: 'email3',
+        },
+      }))
     })
 
     it('should replace the account id with the default id if it does not exist', async () => {
@@ -145,69 +152,31 @@ describe('user_fallback_filter', () => {
   describe('datacenter', () => {
     beforeEach(() => {
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
-      const { client, paginator, connection, getUserMapFunc } = mockClient(true)
+      const { client, paginator, connection } = mockClient(true)
       mockConnection = connection
       filter = userFallbackFilter(getFilterParams({
         client,
         paginator,
         config,
-        getUserMapFunc,
+        elementsSource,
       })) as typeof filter
 
-      mockConnection.get.mockImplementation(async url => {
-        if (url === '/rest/api/2/myself') {
-          return {
-            status: 200,
-            data: {
-              key: '3',
-              name: 'name3',
-              displayName: 'disp3',
-              locale: 'en_US',
-              emailAddress: 'email3',
-            },
-          }
-        }
-
-        return {
-          status: 200,
-          data: [
-            {
-              key: '1',
-              name: 'name1',
-              displayName: 'disp1',
-              locale: 'en_US',
-              emailAddress: 'email1',
-            },
-            {
-              key: '2',
-              name: 'name2',
-              displayName: 'disp2',
-              locale: 'en_US',
-              emailAddress: 'email2',
-            },
-            {
-              key: '3',
-              name: 'name3',
-              displayName: 'disp3',
-              locale: 'en_US',
-              emailAddress: 'email3',
-            },
-          ],
-        }
-      })
+      mockConnection.get.mockImplementation(async _url => ({
+        status: 200,
+        data: {
+          key: '3',
+          name: 'name3',
+          displayName: 'disp3',
+          locale: 'en_US',
+          emailAddress: 'email3',
+        },
+      }))
     })
     it('should not raise on missing user permission error', async () => {
       config.deploy.defaultMissingUserFallback = 'name2'
       mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
       await expect(filter.preDeploy([toChange({ after: instance })])).resolves.not.toThrow()
     })
-
-    it('should raise on any other error', async () => {
-      config.deploy.defaultMissingUserFallback = 'name2'
-      mockConnection.get.mockRejectedValue(new Error('failed'))
-      await expect(filter.preDeploy([toChange({ after: instance })])).rejects.toThrow()
-    })
-
     it('should replace the account id with the default id if it does not exist', async () => {
       config.deploy.defaultMissingUserFallback = 'name2'
       const change = toChange({ after: instance })

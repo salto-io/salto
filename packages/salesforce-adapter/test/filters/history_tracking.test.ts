@@ -161,6 +161,13 @@ describe(filter.name, () => {
         expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
         expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
+      it('should ignore unknown field names in the annotation', async () => {
+        const changes = [toChange({ before: typeForPreDeploy(), after: typeForPreDeploy(['Garbage']) })]
+        await filter.preDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
     })
 
     describe('when fields belong to an object that has history tracking disabled', () => {

@@ -80,6 +80,7 @@ import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_objec
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
+import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -108,6 +109,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: organizationWideDefaults, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },

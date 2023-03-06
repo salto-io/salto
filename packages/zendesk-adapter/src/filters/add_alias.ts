@@ -16,263 +16,478 @@
 import {
   CORE_ANNOTATIONS,
   Element, InstanceElement,
-  isInstanceElement,
+  isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
-import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
+import {
+  APP_OWNED_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME, ARTICLE_TYPE_NAME,
+  AUTOMATION_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME, CATEGORY_TYPE_NAME,
+  CUSTOM_ROLE_TYPE_NAME,
+  CUSTOM_STATUS_TYPE_NAME,
+  GROUP_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, GUIDE_SETTINGS_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME,
+  ROUTING_ATTRIBUTE_VALUE_TYPE,
+  SECTION_ORDER_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME, SECTION_TYPE_NAME,
+  SUPPORT_ADDRESS_TYPE_NAME,
+  TARGET_TYPE_NAME,
+  TICKET_FIELD_CUSTOM_FIELD_OPTION,
+  TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, USER_FIELD_TYPE_NAME, USER_SEGMENT_TYPE_NAME, WEBHOOK_TYPE_NAME,
+} from '../constants'
+import { FETCH_CONFIG } from '../config'
 
-const { isDefined } = lowerdashValues
 const log = logger(module)
 
-const STRING_SIGN = '$'
-const CATEGORY_ORDER = `${STRING_SIGN}Category Order${STRING_SIGN}`
-const SECTION_ORDER = `${STRING_SIGN}Section Order${STRING_SIGN}`
-const ARTICLE_ORDER = `${STRING_SIGN}Article Order${STRING_SIGN}`
-const LANGUAGE_SETTINGS = `${STRING_SIGN}language settings${STRING_SIGN}`
-const SETTINGS = `${STRING_SIGN}Settings${STRING_SIGN}`
+const CATEGORY_ORDER = 'Category Order'
+const SECTION_ORDER = 'Section Order'
+const ARTICLE_ORDER = 'Article Order'
+const LANGUAGE_SETTINGS = 'language settings'
+const SETTINGS = 'Settings'
 
+type AliasComponent = {
+  fieldName: string
+  referenceFieldName?: string
+}
+
+type ConstantComponent = {
+  constant: string
+}
 
 type AliasData = {
-  aliasFields: string[]
+  aliasComponents: (AliasComponent | ConstantComponent)[]
   separator?: string
 }
 
-type AliasMap = Record<string, AliasData>
-
 const SECOND_ITERATION_TYPES = [
-  'dynamic_content_item__variants',
-  'category_order',
-  'category_translation',
-  'section_translation',
-  'section_order',
-  'article_translation',
-  'article_order',
-  'article_attachment',
+  DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
+  CATEGORY_ORDER_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
-const aliasMap: AliasMap = {
+const aliasMap: Record<string, AliasData> = {
   app_installation: {
-    aliasFields: ['settings.name'],
+    aliasComponents: [{
+      fieldName: 'settings.name',
+    }],
   },
-  app_owned: {
-    aliasFields: ['name'],
+  [APP_OWNED_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  automation: {
-    aliasFields: ['title'],
+  [AUTOMATION_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  brand: {
-    aliasFields: ['name'],
+  [BRAND_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  brand_logo: {
-    aliasFields: ['filename'],
+  [BRAND_LOGO_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'filename',
+    }],
   },
   business_hours_schedule: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   business_hours_schedule_holiday: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   channel: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  custom_role: {
-    aliasFields: ['name'],
+  [CUSTOM_ROLE_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  custom_status: {
-    aliasFields: ['agent_label'],
+  [CUSTOM_STATUS_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'agent_label',
+    }],
   },
   dynamic_content_item: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   dynamic_content_item__variants: {
-    aliasFields: ['_parent.0._alias', 'locale_id.value.value.locale'],
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        fieldName: 'locale_id',
+        referenceFieldName: 'locale',
+      },
+    ],
     separator: ' - ',
   },
-  group: {
-    aliasFields: ['name'],
+  [GROUP_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   locale: {
-    aliasFields: ['presentation_name'],
+    aliasComponents: [{
+      fieldName: 'presentation_name',
+    }],
   },
-  macro: {
-    aliasFields: ['title'],
+  [MACRO_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
   macro_attachment: {
-    aliasFields: ['filename'],
+    aliasComponents: [{
+      fieldName: 'filename',
+    }],
   },
   oauth_client: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  organization_field: {
-    aliasFields: ['title'],
+  [ORG_FIELD_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
   organization_field__custom_field_options: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   routing_attribute: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  routing_attribute_value: {
-    aliasFields: ['name'],
+  [ROUTING_ATTRIBUTE_VALUE_TYPE]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   sla_policy: {
-    aliasFields: ['title'],
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  support_address: {
-    aliasFields: ['name'],
+  [SUPPORT_ADDRESS_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   tag: { // should we add alias? there is only id
-    aliasFields: ['id'],
+    aliasComponents: [{
+      fieldName: 'id',
+    }],
   },
-  target: {
-    aliasFields: ['title'],
+  [TARGET_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  ticket_field: {
-    aliasFields: ['title'],
+  [TICKET_FIELD_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  ticket_field__custom_field_options: {
-    aliasFields: ['name'],
+  [TICKET_FIELD_CUSTOM_FIELD_OPTION]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  ticket_form: {
-    aliasFields: ['name'],
+  [TICKET_FORM_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   trigger: {
-    aliasFields: ['title'],
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
   trigger_category: { // should we add alias? there is only name
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  user_field: {
-    aliasFields: ['title'],
+  [USER_FIELD_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
   user_field__custom_field_options: {
-    aliasFields: ['name'],
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   view: {
-    aliasFields: ['title'],
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  webhook: {
-    aliasFields: ['name'],
+  [WEBHOOK_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
   workspace: {
-    aliasFields: ['title'],
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  category: {
-    aliasFields: ['name'], // in notion default language title (if the name is removed from the instance)
+  [CATEGORY_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  category_translation: {
-    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+  [CATEGORY_TRANSLATION_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'locale',
+        referenceFieldName: 'locale',
+      },
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+    ],
     separator: ' - ',
   },
-  category_order: {
-    aliasFields: ['_parent.0._alias', CATEGORY_ORDER],
+  [CATEGORY_ORDER_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: CATEGORY_ORDER,
+      },
+    ],
   },
-  section: {
-    aliasFields: ['name'], // in notion default language title (if the name is removed from the instance)
+  [SECTION_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  section_translation: {
-    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+  [SECTION_TRANSLATION_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'locale',
+        referenceFieldName: 'locale',
+      },
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+    ],
     separator: ' - ',
   },
-  section_order: {
-    aliasFields: ['_parent.0._alias', SECTION_ORDER],
+  [SECTION_ORDER_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: SECTION_ORDER,
+      },
+    ],
   },
-  article: {
-    aliasFields: ['title'],
+  [ARTICLE_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'title',
+    }],
   },
-  article_translation: {
-    aliasFields: ['locale.value.value.locale', '_parent.0._alias'], // in notion default language title (if the name is removed from the instance)
+  [ARTICLE_TRANSLATION_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'locale',
+        referenceFieldName: 'locale',
+      },
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+    ],
     separator: ' - ',
   },
-  article_order: {
-    aliasFields: ['_parent.0._alias', ARTICLE_ORDER],
+  [ARTICLE_ORDER_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: ARTICLE_ORDER,
+      },
+    ],
   },
-  article_attachment: {
-    aliasFields: ['file_name', '_parent.0._alias'],
+  [ARTICLE_ATTACHMENT_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'file_name',
+      },
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+    ],
     separator: ' - ',
   },
-  guide_language_settings: {
-    aliasFields: ['brand.value.value.name', 'locale', LANGUAGE_SETTINGS],
+  [GUIDE_LANGUAGE_SETTINGS_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'brand',
+        referenceFieldName: '_alias',
+      },
+      {
+        fieldName: 'locale',
+      },
+      {
+        constant: LANGUAGE_SETTINGS,
+      },
+    ],
   },
-  guide_settings: {
-    aliasFields: ['brand.value.value.name', SETTINGS],
+  [GUIDE_SETTINGS_TYPE_NAME]: {
+    aliasComponents: [
+      {
+        fieldName: 'brand',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: SETTINGS,
+      },
+    ],
   },
-  permission_group: {
-    aliasFields: ['name'],
+  [PERMISSION_GROUP_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
-  user_segment: {
-    aliasFields: ['name'],
+  [USER_SEGMENT_TYPE_NAME]: {
+    aliasComponents: [{
+      fieldName: 'name',
+    }],
   },
+}
+
+const isAnnotation = (field: string): boolean => Object.values(CORE_ANNOTATIONS).includes(field?.split('.')[0])
+
+const isValidAlias = (aliasParts: (string|undefined)[], instance: InstanceElement): boolean =>
+  aliasParts.every((val, index) => {
+    if (val === undefined) {
+      log.debug(`for instance ${instance.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
+      return false
+    }
+    return true
+  })
+
+const getFieldVal = ({ instance, component, field, instById }:{
+  instance: InstanceElement
+  component: AliasComponent
+  field: 'value'|'annotations'
+  instById: Record<string, InstanceElement>
+}): string | undefined => {
+  const potentialRef = _.get(instance[field], component.fieldName)
+  if (component.referenceFieldName === undefined) {
+    return potentialRef
+  }
+  if (!isReferenceExpression(potentialRef)) {
+    log.error(`${component.fieldName} is treated as a reference expression but it is not`)
+    return undefined
+  }
+  const referencedInstance = instById[potentialRef.elemID.getFullName()]
+  if (referencedInstance === undefined) {
+    log.error(`could not find ${potentialRef.elemID.getFullName()} in instById`)
+    return undefined
+  }
+  return isAnnotation(component.referenceFieldName)
+    ? _.get(referencedInstance.annotations, component.referenceFieldName)
+    : _.get(referencedInstance.value, component.referenceFieldName)
 }
 
 const calculateAlias = (
   instance: InstanceElement, instById: Record<string, InstanceElement>,
 ): string | undefined => {
   const currentType = instance.elemID.typeName
-  const { aliasFields } = aliasMap[currentType]
+  const { aliasComponents } = aliasMap[currentType]
   const separator = aliasMap[currentType].separator ?? ' '
-  const aliasParts = aliasFields
-    .map(field => {
-      if (field.startsWith(STRING_SIGN) && field.endsWith(STRING_SIGN)) {
-        return field.slice(1, -1)
+  const aliasParts = aliasComponents
+    .map(component => {
+      if ('constant' in component) {
+        return component.constant
       }
-      if (field.startsWith(CORE_ANNOTATIONS.PARENT)) {
-        const route = field.split('.')
-        const parentNum = Number(route[1])
-        if (parentNum === undefined) {
-          log.error('a parent number was not given in the aliasFields')
-          return undefined
-        }
-        const parentId = getParents(instance)[parentNum]?.elemID.getFullName()
-        const parentInstance = instById[parentId]
-        if (parentInstance === undefined) {
-          log.error(`the parent of ${instance.elemID.getFullName()} was not found `)
-          return undefined
-        }
-        const parentRoute = route.slice(2).join('.')
-        if (parentRoute.startsWith(CORE_ANNOTATIONS.ALIAS)) {
-          return parentInstance.annotations[CORE_ANNOTATIONS.ALIAS]
-        }
-        return _.get(parentInstance.value, parentRoute)
+      if (('fieldName' in component) && isAnnotation(component.fieldName)) {
+        return getFieldVal({ instance, component, field: 'annotations', instById })
       }
-      return _.get(instance.value, field)
+      return getFieldVal({ instance, component, field: 'value', instById })
     })
-  if (!aliasParts.every(isDefined)) {
+  if (!isValidAlias(aliasParts, instance)) {
     return undefined
   }
   return aliasParts.join(separator)
 }
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
+    if (config[FETCH_CONFIG].addAlias === false) {
+      log.info('not running addAlias filter as addAlias in the config is false')
+      return
+    }
     const instances = elements.filter(isInstanceElement)
     const elementById = _.keyBy(instances, elem => elem.elemID.getFullName())
-    const relevantInstancesByType = _.groupBy(instances
-      .filter(inst => Object.keys(aliasMap).includes(inst.elemID.typeName)),
-    inst => inst.elemID.typeName)
+    const relevantInstancesByType = _.groupBy(
+      instances.filter(inst => aliasMap[inst.elemID.typeName] !== undefined),
+      inst => inst.elemID.typeName
+    )
 
-    const addAlias = (key: string): void => {
-      relevantInstancesByType[key].forEach(inst => {
+    const addAlias = (typeName: string): void => {
+      relevantInstancesByType[typeName].forEach(inst => {
         const alias = calculateAlias(inst, elementById)
         if (alias !== undefined) {
           inst.annotations[CORE_ANNOTATIONS.ALIAS] = alias
         }
       })
     }
+    const [firstIterationTypes, secondIterationTypes] = _.partition(
+      Object.keys(relevantInstancesByType),
+      typeName => !SECOND_ITERATION_TYPES.includes(typeName)
+    )
     // first iteration
-    Object.keys(relevantInstancesByType)
-      .filter(typeName => Object.keys(aliasMap).includes(typeName))
-      .filter(typeName => !SECOND_ITERATION_TYPES.includes(typeName))
-      .forEach(addAlias)
+    firstIterationTypes.forEach(addAlias)
 
     // second iteration
-    Object.keys(relevantInstancesByType)
-      .filter(typeName => SECOND_ITERATION_TYPES.includes(typeName))
-      .forEach(addAlias)
+    secondIterationTypes.forEach(addAlias)
   },
 })
 

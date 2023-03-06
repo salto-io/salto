@@ -77,6 +77,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
   enableMissingReferences?: boolean
   includeAuditDetails?: boolean
+  addAlias?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
@@ -2538,6 +2539,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
     includeAuditDetails: false,
+    addAlias: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2611,6 +2613,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
+          addAlias: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2634,6 +2637,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.guide`,
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
       `${FETCH_CONFIG}.includeAuditDetails`,
+      `${FETCH_CONFIG}.addAlias`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

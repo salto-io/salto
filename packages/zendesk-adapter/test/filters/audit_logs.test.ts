@@ -152,7 +152,7 @@ describe('audit_logs filter', () => {
     })
   })
   describe('onFetch', () => {
-    it('should do nothing when flag is false', async () => {
+    it('should only add changed_at correctly when flag is false', async () => {
       filter = filterCreator(createFilterCreatorParams({
         client,
         config: {
@@ -171,19 +171,6 @@ describe('audit_logs filter', () => {
         paginator: mockPaginator,
         elementsSource: buildElementsSourceFromElements([]),
       })) as FilterType
-      const elements = [
-        automationInstance,
-        ticketFieldInstance,
-        ticketFieldCustomOptionInstance,
-        articleTranslationInstance,
-      ].map(e => e.clone())
-      await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(0)
-      expect(elements).toHaveLength(4)
-      expect(elements
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === undefined)).toHaveLength(4)
-    })
-    it('should only add changed_at correctly', async () => {
       const elements = [
         automationInstance,
         ticketFieldInstance,

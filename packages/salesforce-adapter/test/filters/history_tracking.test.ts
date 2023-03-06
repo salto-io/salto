@@ -103,19 +103,17 @@ describe(filter.name, () => {
       })
     )
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
-      const referenceToField = (objectType: ObjectType, fieldName: string): string => {
-        const elemId = objectType.elemID.createNestedID('field', fieldName)
-        return `${elemId.typeName}.${elemId.name}`
-      }
-      const objectType = createCustomObjectType('SomeType', {
+      const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
+      const typeName = 'SomeType'
+      const objectType = createCustomObjectType(typeName, {
         fields: Object.fromEntries(fields.map(fieldName => [fieldName, {
           refType: Types.primitiveDataTypes.Text,
-          annotations: { apiName: fieldName },
+          annotations: { apiName: fieldApiName(typeName, fieldName) },
         }])),
       })
       if (trackedFields !== undefined) {
         objectType.annotations[HISTORY_TRACKED_FIELDS] = trackedFields
-          .map(fieldName => referenceToField(objectType, fieldName))
+          .map(fieldName => fieldApiName(typeName, fieldName))
       }
       return objectType
     }
@@ -246,9 +244,9 @@ describe(filter.name, () => {
         it('should not create new changes for newly tracked fields that are created', async () => {
           const before = typeForPreDeploy([], [])
           const after = typeForPreDeploy(['SomeField'], ['SomeField'])
-          const changes = [toChange({ before, after })]
+          const changes = [toChange({ before, after }), toChange({ after: after.fields.SomeField })]
           await filter.preDeploy(changes)
-          expect(changes).toHaveLength(1)
+          expect(changes).toHaveLength(2)
         })
         it('should create changes if the object\'s history tracking is enabled', async () => {
           const before = typeForPreDeploy(undefined, ['SomeField'])

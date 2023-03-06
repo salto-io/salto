@@ -46,7 +46,7 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
   const [typeDescription] = describeSObjectsResult.result
 
   const [topLevelFields, nestedFields] = _.partition(typeDescription.fields,
-    field => field.compoundFieldName === undefined)
+    field => _.isNil(field.compoundFieldName))
 
   const objCompoundFieldNames = _.mapValues(
     _.groupBy(nestedFields, field => field.compoundFieldName),
@@ -82,12 +82,8 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   new InstanceElement(
     ElemID.CONFIG_NAME,
     objectType,
-    {
-      ..._.pick(fieldValues, Object.keys(objectType.fields)),
-    },
+    _.pick(fieldValues, Object.keys(objectType.fields)),
     [SALESFORCE, RECORDS_PATH, SETTINGS_PATH, ORGANIZATION_SETTINGS_INSTANCE_NAME],
-    {
-    },
   )
 )
 

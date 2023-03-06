@@ -149,11 +149,10 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   config: ZendeskConfig
 }): Promise<void> => {
   const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
-  log.debug(`there are ${attachments.length} attachments, going to get their content. in chunks of ${rateLimit}`)
-  const numberOfChunks = attachments.length / rateLimit
+  log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)
   const attachChunk = _.chunk(attachments, rateLimit)
   await awu(attachChunk).map(async (attach: Attachment[], index: number) => {
-    log.debug(`starting article attachment chunk ${index}/${numberOfChunks}`)
+    log.debug(`starting article attachment chunk ${index + 1}/${attachChunk.length}`)
     await Promise.all(attach.map(async attachment => {
       const article = articleById[getParent(attachment).value.id]
       await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })

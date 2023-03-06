@@ -107,7 +107,7 @@ const createInstanceNameAndFilePath = (
   const { idFields, nameMapping } = idConfig
   const newNameParts = createInstanceReferencedNameParts(instance, idFields)
   const newName = joinInstanceNameParts(newNameParts) ?? instance.elemID.name
-  const parentName = getFirstParentElemId(instance)?.name
+  const parentName = idConfig.extendsParentId ? getFirstParentElemId(instance)?.name : undefined
   const { typeName, adapter } = instance.elemID
   const { fileNameFields, serviceIdField } = configByType[typeName]
 

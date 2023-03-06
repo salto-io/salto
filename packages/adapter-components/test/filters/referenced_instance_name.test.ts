@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
+import _ from 'lodash'
 import {
   ElemID,
   InstanceElement,
@@ -221,7 +221,7 @@ describe('referenced instances', () => {
         }
       ),
     ]
-    const noIdFieldsParent = new InstanceElement('no_idFieldsParent', noIdFieldsType)
+    const noIdFieldsParent = new InstanceElement('no_idFieldsParent', bookType)
     const noIdFieldsWithParent = new InstanceElement(
       'no_idFieldsWithParent',
       noIdFieldsType,
@@ -231,7 +231,8 @@ describe('referenced instances', () => {
     )
     return [recipeType, bookType, ...recipes, anotherBook, rootBook,
       sameRecipeOne, sameRecipeTwo, lastRecipe, groupType, ...groups,
-      folderType, folderOne, folderTwo, statusType, status, ...emailsWithTemplates, noIdFieldsWithParent]
+      folderType, folderOne, folderTwo, statusType, status, ...emailsWithTemplates,
+      noIdFieldsParent, noIdFieldsWithParent]
   }
   const lowercaseName : NameMappingOptions = 'lowercase'
   const config = {
@@ -307,15 +308,16 @@ describe('referenced instances', () => {
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.book.instance.no_idFieldsParent',
           'myAdapter.email.instance.aaa_username_group1@um',
           'myAdapter.email.instance.aaa_username_group1_x_y@umvv',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
           'myAdapter.noIdFields.instance.no_idFieldsParent',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
@@ -343,17 +345,18 @@ describe('referenced instances', () => {
       const sortedResult = result
         .filter(isInstanceElement)
         .map(i => i.elemID.getFullName()).sort()
-      expect(result.length).toEqual(14)
+      expect(result.length).toEqual(15)
       expect(sortedResult)
         .toEqual(['myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.book.instance.no_idFieldsParent',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
           'myAdapter.group.instance.group1',
           'myAdapter.group.instance.group2',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
         ])
     })
@@ -386,19 +389,20 @@ describe('referenced instances', () => {
         transformationConfigByType,
         transformationDefaultConfig
       )
-      expect(result.length).toEqual(13)
+      expect(result.length).toEqual(14)
       expect(result
         .map(e => e.elemID.getFullName()).sort())
         .toEqual(['myAdapter.book',
           'myAdapter.book.instance.123_ROOT',
           'myAdapter.book.instance.456_123_ROOT',
+          'myAdapter.book.instance.no_idFieldsParent',
           'myAdapter.folder',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Desktop',
-          'myAdapter.folder.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT__Documents',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Desktop',
+          'myAdapter.folder.instance.lastRecipe_456_123_ROOT__Documents',
           'myAdapter.noIdFields.instance.no_idFieldsWithParent',
           'myAdapter.recipe',
+          'myAdapter.recipe.instance.lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe123_123_ROOT',
-          'myAdapter.recipe.instance.recipe123_123_ROOT__lastRecipe_456_123_ROOT',
           'myAdapter.recipe.instance.recipe456_456_123_ROOT',
           'myAdapter.recipe.instance.sameRecipe',
           'myAdapter.recipe.instance.sameRecipe',
@@ -411,15 +415,14 @@ describe('referenced instances', () => {
         .map(i => i.elemID.getFullName())
       const allIns = elements.filter(isInstanceElement)
       const res = createReferenceIndex(allIns, new Set(bookOrRecipeIns))
-      expect(Object.keys(res)).toEqual([
-        'myAdapter.book.instance.rootBook',
-        'myAdapter.book.instance.book',
-        'myAdapter.recipe.instance.recipe123',
-        'myAdapter.recipe.instance.last',
-        'myAdapter.recipe.instance.recipe456',
-      ])
-      expect(Object.values(res).map(n => n.length))
-        .toEqual([4, 3, 6, 2, 1])
+      expect(_.mapValues(res, val => val.length)).toEqual({
+        'myAdapter.book.instance.rootBook': 4,
+        'myAdapter.book.instance.book': 3,
+        'myAdapter.book.instance.no_idFieldsParent': 1,
+        'myAdapter.recipe.instance.recipe123': 6,
+        'myAdapter.recipe.instance.last': 2,
+        'myAdapter.recipe.instance.recipe456': 1,
+      })
     })
     it('should not have different results on the second fetch', async () => {
       elements = generateElements()

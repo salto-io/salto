@@ -13,144 +13,172 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, InstanceElement, ElemID, ChangeError } from '@salto-io/adapter-api'
+import { toChange, InstanceElement, ElemID, ChangeError, ObjectType } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import { accountIdValidator } from '../../src/change_validators/account_id'
 import * as common from '../filters/account_id/account_id_common'
 import { getDefaultConfig } from '../../src/config/config'
+import { JIRA } from '../../src/constants'
 
 describe('accountIdValidator', () => {
-  const { client, connection, getUserMapFunc } = mockClient()
+  const usersType = new ObjectType({
+    elemID: new ElemID(JIRA, 'Users'),
+  })
+  const usersElements = new InstanceElement(
+    'users',
+    usersType,
+    {
+      users: {
+        0: {
+          userId: '0',
+          displayName: 'disp0',
+          locale: 'en_US',
+          email: 'email0',
+        },
+        '0n': {
+          userId: '0n',
+          displayName: 'disp0n',
+          locale: 'en_US',
+          email: 'email0n',
+        },
+        '00': {
+          userId: '00',
+          displayName: 'disp00',
+          locale: 'en_US',
+          email: 'email00',
+        },
+        '00n': {
+          userId: '00n',
+          displayName: 'disp00n',
+          locale: 'en_US',
+          email: 'email00n',
+        },
+        '0l': {
+          userId: '0l',
+          displayName: 'disp0l',
+          locale: 'en_US',
+          email: 'email0l',
+        },
+        '0an': {
+          userId: '0an',
+          displayName: 'disp0an',
+          locale: 'en_US',
+          email: 'email0an',
+        },
+        '0h': {
+          userId: '0h',
+          displayName: 'disp0h',
+          locale: 'en_US',
+          email: 'email0h',
+        },
+        '0list1': {
+          userId: '0list1',
+          displayName: 'disp0list1',
+          locale: 'en_US',
+          email: 'email0list1',
+        },
+        '0list2': {
+          userId: '0list2',
+          displayName: 'disp0list2',
+          locale: 'en_US',
+          email: 'email0list2',
+        },
+        1: {
+          userId: '1',
+          displayName: 'disp1',
+          locale: 'en_US',
+          email: 'email1',
+        },
+        '1n': {
+          userId: '1n',
+          displayName: 'disp1n',
+          locale: 'en_US',
+          email: 'email1n',
+        },
+        11: {
+          userId: '11',
+          displayName: 'disp11',
+          locale: 'en_US',
+          email: 'email11',
+        },
+        '11n': {
+          userId: '11n',
+          displayName: 'disp11n',
+          locale: 'en_US',
+          email: 'email11n',
+        },
+        '1l': {
+          userId: '1l',
+          displayName: 'disp1l',
+          locale: 'en_US',
+          email: 'email1l',
+        },
+        '1an': {
+          userId: '1an',
+          displayName: 'disp1an',
+          locale: 'en_US',
+          email: 'email1an',
+        },
+        '1h': {
+          userId: '1h',
+          displayName: 'disp1h',
+          locale: 'en_US',
+          email: 'email1h',
+        },
+        '1list1': {
+          userId: '1list1',
+          displayName: 'disp1list1',
+          locale: 'en_US',
+          email: 'email1list1',
+        },
+        '1list2': {
+          userId: '1list2',
+          displayName: 'disp1list2',
+          locale: 'en_US',
+          email: 'email1list2',
+        },
+        '0owner': {
+          userId: '0owner',
+          displayName: 'disp0owner',
+          locale: 'en_US',
+          email: 'email0owner',
+        },
+        '0Ids1': {
+          userId: '0Ids1',
+          displayName: 'disp0Ids1',
+          locale: 'en_US',
+          email: 'email0Ids1',
+        },
+        '0Ids2': {
+          userId: '0Ids2',
+          displayName: 'disp0Ids2',
+          locale: 'en_US',
+          email: 'email0Ids2',
+        },
+        '1Ids1': {
+          userId: '1Ids1',
+          displayName: 'disp1Ids1',
+          locale: 'en_US',
+          email: 'email1Ids1',
+        },
+        '1Ids2': {
+          userId: '1Ids2',
+          displayName: 'disp1Ids2',
+          locale: 'en_US',
+          email: 'email1Ids2',
+        },
+      },
+    }
+  )
+  const elementsSource = buildElementsSourceFromElements([usersElements])
+  const { client } = mockClient()
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const validator = accountIdValidator(client, config, getUserMapFunc)
+  const validator = accountIdValidator(client, config, elementsSource)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[] = []
-  connection.get.mockResolvedValue({
-    status: 200,
-    data: [{
-      accountId: '0',
-      displayName: 'disp0',
-      locale: 'en_US',
-      emailAddress: 'email0',
-    }, {
-      accountId: '0n',
-      displayName: 'disp0n',
-      locale: 'en_US',
-      emailAddress: 'email0n',
-    }, {
-      accountId: '00',
-      displayName: 'disp00',
-      locale: 'en_US',
-      emailAddress: 'email00',
-    }, {
-      accountId: '00n',
-      displayName: 'disp00n',
-      locale: 'en_US',
-      emailAddress: 'email00n',
-    }, {
-      accountId: '0l',
-      displayName: 'disp0l',
-      locale: 'en_US',
-      emailAddress: 'email0l',
-    }, {
-      accountId: '0an',
-      displayName: 'disp0an',
-      locale: 'en_US',
-      emailAddress: 'email0an',
-    }, {
-      accountId: '0h',
-      displayName: 'disp0h',
-      locale: 'en_US',
-      emailAddress: 'email0h',
-    }, {
-      accountId: '0list1',
-      displayName: 'disp0list1',
-      locale: 'en_US',
-      emailAddress: 'email0list1',
-    }, {
-      accountId: '0list2',
-      displayName: 'disp0list2',
-      locale: 'en_US',
-      emailAddress: 'email0list2',
-    }, {
-      accountId: '1',
-      displayName: 'disp1',
-      locale: 'en_US',
-      emailAddress: 'email1',
-    }, {
-      accountId: '1n',
-      displayName: 'disp1n',
-      locale: 'en_US',
-      emailAddress: 'email1n',
-    }, {
-      accountId: '11',
-      displayName: 'disp11',
-      locale: 'en_US',
-      emailAddress: 'email11',
-    }, {
-      accountId: '11n',
-      displayName: 'disp11n',
-      locale: 'en_US',
-      emailAddress: 'email11n',
-    }, {
-      accountId: '1l',
-      displayName: 'disp1l',
-      locale: 'en_US',
-      emailAddress: 'email1l',
-    }, {
-      accountId: '1an',
-      displayName: 'disp1an',
-      locale: 'en_US',
-      emailAddress: 'email1an',
-    }, {
-      accountId: '1h',
-      displayName: 'disp1h',
-      locale: 'en_US',
-      emailAddress: 'email1h',
-    }, {
-      accountId: '1list1',
-      displayName: 'disp1list1',
-      locale: 'en_US',
-      emailAddress: 'email1list1',
-    }, {
-      accountId: '1list2',
-      displayName: 'disp1list2',
-      locale: 'en_US',
-      emailAddress: 'email1list2',
-    }, {
-      accountId: '0owner',
-      displayName: 'disp0owner',
-      locale: 'en_US',
-      emailAddress: 'email0owner',
-    }, {
-      accountId: '1list2',
-      displayName: 'disp1list2',
-      locale: 'en_US',
-      emailAddress: 'email1list2',
-    }, {
-      accountId: '0Ids1',
-      displayName: 'disp0Ids1',
-      locale: 'en_US',
-      emailAddress: 'email0Ids1',
-    }, {
-      accountId: '0Ids2',
-      displayName: 'disp0Ids2',
-      locale: 'en_US',
-      emailAddress: 'email0Ids2',
-    }, {
-      accountId: '1Ids1',
-      displayName: 'disp1Ids1',
-      locale: 'en_US',
-      emailAddress: 'email1Ids1',
-    }, {
-      accountId: '1Ids2',
-      displayName: 'disp1Ids2',
-      locale: 'en_US',
-      emailAddress: 'email1Ids2',
-    }],
-  })
 
   const createInfo = (elemId: ElemID):ChangeError => ({
     elemID: elemId,
@@ -185,16 +213,9 @@ Go to ${url} to see valid users and account IDs.`,
     instances = common.createInstanceElementArrayWithDisplayNames(2, objectType)
   })
 
-  it('should only call outside once', async () => {
-    await validator([toChange({ after: instances[0] })])
-    const validator2 = accountIdValidator(client, config, getUserMapFunc)
-    await validator2([toChange({ after: instances[1] })])
-    expect(connection.get).toHaveBeenCalledOnce()
-  })
-
-  it('should not fail on when user map func returned undefined', async () => {
-    const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
-    const validator2 = accountIdValidator(client, config, mockedGetUserMapFunc)
+  it('should not fail on when user map func does not exist', async () => {
+    const emptyElementsSource = buildElementsSourceFromElements([])
+    const validator2 = accountIdValidator(client, config, emptyElementsSource)
     await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
   })
 
@@ -349,7 +370,7 @@ Go to ${url} to see valid users and account IDs.`,
     const validatorOff = accountIdValidator(
       client,
       configOff,
-      getUserMapFunc
+      elementsSource
     )
     const field1 = 'parameter'
     delete instances[0].value.holder[field1].displayName
@@ -382,20 +403,25 @@ Go to ${url} to see valid users and account IDs.`,
   })
 
   describe('Using Jira DC', () => {
-    const { client: clientDC, connection: connectionDC, getUserMapFunc: getUserMapFuncDC } = mockClient(true)
+    const { client: clientDC } = mockClient(true)
     const configDC = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
-    const validatorDC = accountIdValidator(clientDC, configDC, getUserMapFuncDC)
+    const dcUsersInstance = new InstanceElement(
+      'users',
+      usersType,
+      {
+        users: {
+          JIRAUSER10000: {
+            userId: 'JIRAUSER10000',
+            username: 'firstAccount',
+            displayName: 'firstAccountDisplayName',
+          },
+        },
+      },
+    )
+    const validatorDC = accountIdValidator(clientDC, configDC, buildElementsSourceFromElements([dcUsersInstance]))
     let validUserInstance: InstanceElement
     let invalidUserInstance: InstanceElement
     const objectType = common.createObjectedType('NotificationScheme') // passes all conditions
-    connectionDC.get.mockResolvedValue({
-      status: 200,
-      data: [{
-        key: 'JIRAUSER10000',
-        name: 'firstAccount',
-        displayName: 'firstAccountDisplayName',
-      }],
-    })
 
     beforeEach(() => {
       validUserInstance = new InstanceElement(
@@ -446,8 +472,7 @@ Go to ${url} to see valid users and account IDs.`,
       expect(changeErrors).toEqual([])
     })
     it('should not fail when user map func returns undefined', async () => {
-      const mockedGetUserMapFunc = jest.fn().mockResolvedValue(undefined)
-      const validator2 = accountIdValidator(clientDC, configDC, mockedGetUserMapFunc)
+      const validator2 = accountIdValidator(clientDC, configDC, buildElementsSourceFromElements([]))
       await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
     })
     it('should raise an error when accountId does not exist in the target environment', async () => {

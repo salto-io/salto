@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { ChangeValidator, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
@@ -36,7 +36,6 @@ import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflows/workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
-import { GetUserMapFunc } from '../users'
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
@@ -60,7 +59,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig, getUserMapFunc: GetUserMapFunc, paginator: clientUtils.Paginator
+  client: JiraClient, config: JiraConfig, elementsSource: ReadOnlyElementsSource, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
@@ -96,8 +95,8 @@ export default (
     workflowPropertiesValidator,
     permissionSchemeValidator,
     screenSchemeDefaultValidator,
-    wrongUserPermissionSchemeValidator(client, config, getUserMapFunc),
-    accountIdValidator(client, config, getUserMapFunc),
+    wrongUserPermissionSchemeValidator(client, config, elementsSource),
+    accountIdValidator(client, config, elementsSource),
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
   ]

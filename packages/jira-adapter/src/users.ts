@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -138,6 +139,13 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
     }
     return idMap
   }
+}
+
+export const getUserMapFunc = async (
+  elementSource: ReadOnlyElementsSource
+): Promise<UserMap | undefined> => {
+  const usersElement = await elementSource.get(new ElemID('jira', 'Users', 'instance', 'users'))
+  return usersElement?.value?.users as (UserMap | undefined)
 }
 
 export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo | undefined> => {

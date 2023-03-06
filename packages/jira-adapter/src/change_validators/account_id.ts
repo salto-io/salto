@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
-import { getUserIdFromEmail, GetUserMapFunc, getUsersMapByVisibleId, UserMap } from '../users'
+import { getUserIdFromEmail, getUserMapFunc, getUsersMapByVisibleId, UserMap } from '../users'
 import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
@@ -242,15 +242,15 @@ const createChangeErrorsForAccountIdIssues = (
 export const accountIdValidator: (
   client: JiraClient,
   config: JiraConfig,
-  getUserMapFunc: GetUserMapFunc
+  elementsSource: ReadOnlyElementsSource,
 ) =>
-  ChangeValidator = (client, config, getUserMapFunc) => async changes =>
+  ChangeValidator = (client, config, elementsSource) => async changes =>
     log.time(async () => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return []
       }
       const { baseUrl, isDataCenter } = client
-      const rawUserMap = await getUserMapFunc()
+      const rawUserMap = await getUserMapFunc(elementsSource)
       if (rawUserMap === undefined) {
         return []
       }

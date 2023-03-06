@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
-import { UserMap } from '../../users'
+import { UserMap, getUsersMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -53,7 +53,7 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
  * A filter to add display names beside account ids. The source is a JIRA query.
  * While using Jira DC the filter convert user id to user key
  */
-const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
+const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource }) => ({
   name: 'userIdFilter',
   onFetch: async elements => {
     if (!(config.fetch.convertUsersIds ?? true)) {
@@ -78,7 +78,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       return
     }
 
-    const userMap = await getUserMapFunc()
+    const userMap = await getUsersMap(elementsSource)
     if (userMap === undefined) {
       return
     }
@@ -100,7 +100,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
        || !client.isDataCenter) {
       return
     }
-    const userMap = await getUserMapFunc()
+    const userMap = await getUsersMap(elementsSource)
     if (userMap === undefined) {
       return
     }

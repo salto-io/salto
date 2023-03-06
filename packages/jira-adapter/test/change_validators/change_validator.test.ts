@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockClient } from '../utils'
 import changeValidator from '../../src/change_validators'
 import { JIRA } from '../../src/constants'
@@ -23,19 +22,18 @@ import { getDefaultConfig } from '../../src/config/config'
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {
     const { client, paginator } = mockClient()
-    const elementsSource = buildElementsSourceFromElements([])
 
     it('should not fail if there are no deploy changes', async () => {
       expect(
         await changeValidator(
-          client, getDefaultConfig({ isDataCenter: false }), elementsSource, paginator
+          client, getDefaultConfig({ isDataCenter: false }), paginator
         )([])
       ).toEqual([])
     })
 
     it('should fail each change individually', async () => {
       expect(await changeValidator(
-        client, getDefaultConfig({ isDataCenter: false }), elementsSource, paginator
+        client, getDefaultConfig({ isDataCenter: false }), paginator
       )([
         toChange({ after: new ObjectType({ elemID: new ElemID(JIRA, 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID(JIRA, 'obj2') }) }),

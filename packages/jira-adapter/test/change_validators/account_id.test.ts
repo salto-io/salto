@@ -176,7 +176,7 @@ describe('accountIdValidator', () => {
   const elementsSource = buildElementsSourceFromElements([usersElements])
   const { client } = mockClient()
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const validator = accountIdValidator(client, config, elementsSource)
+  const validator = accountIdValidator(client, config)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[] = []
 
@@ -215,8 +215,8 @@ Go to ${url} to see valid users and account IDs.`,
 
   it('should not fail on when user map func does not exist', async () => {
     const emptyElementsSource = buildElementsSourceFromElements([])
-    const validator2 = accountIdValidator(client, config, emptyElementsSource)
-    await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
+    const validator2 = accountIdValidator(client, config)
+    await expect(validator2([toChange({ after: instances[1] })], emptyElementsSource)).resolves.not.toThrow()
   })
 
   it('should return an info when there is no display name', async () => {
@@ -227,7 +227,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([
+    ], elementsSource),).toEqual([
       createInfo(elemId),
     ])
   })
@@ -238,7 +238,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([{
+    ], elementsSource),).toEqual([{
       elemID: instances[0].elemID,
       severity: 'Error',
       message: 'Element references users which don’t exist in target environment',
@@ -253,7 +253,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([{
+    ], elementsSource),).toEqual([{
       elemID: instances[0].elemID,
       severity: 'Warning',
       message: '1 usernames will be overridden to email1list2',
@@ -268,7 +268,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([{
+    ], elementsSource),).toEqual([{
       elemID: instances[0].elemID,
       severity: 'Warning',
       message: '1 usernames will be overridden to the deployer\'s user',
@@ -283,7 +283,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([{
+    ], elementsSource),).toEqual([{
       elemID: instances[0].elemID,
       severity: 'Error',
       message: 'Element references users which don’t exist in target environment',
@@ -302,7 +302,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[0],
       }),
-    ])).toEqual([
+    ], elementsSource),).toEqual([
       createWarning({ elemId, parent, accountId, realDisplayName, currentDisplayName: 'wrong' }),
     ])
   })
@@ -317,7 +317,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: permissionSchemeInstances[0],
       }),
-    ])).toEqual([])
+    ], elementsSource)).toEqual([])
   })
   it('should not return errors when data is ok', async () => {
     expect(await validator([
@@ -327,7 +327,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[1],
       }),
-    ])).toEqual([])
+    ], elementsSource)).toEqual([])
   })
   it('should issue multiple errors correctly', async () => {
     // two same errors on a single element
@@ -349,7 +349,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[1],
       }),
-    ])
+    ], elementsSource)
     expect(changeErrors.length).toEqual(4)
     // this could be done not order specific using:
     // expect(changeErrors).toEqual(expect.arrayContaining([createInfo(elemId1)]))
@@ -370,7 +370,6 @@ Go to ${url} to see valid users and account IDs.`,
     const validatorOff = accountIdValidator(
       client,
       configOff,
-      elementsSource
     )
     const field1 = 'parameter'
     delete instances[0].value.holder[field1].displayName
@@ -386,7 +385,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[1],
       }),
-    ])).toEqual([])
+    ], elementsSource)).toEqual([])
   })
   it('should not raise errors when the type is not deployable', async () => {
     const objectType = common.createObjectedType('Board')
@@ -398,7 +397,7 @@ Go to ${url} to see valid users and account IDs.`,
       toChange({
         after: instances[1],
       }),
-    ])
+    ], elementsSource)
     expect(changeErrors).toEqual([])
   })
 
@@ -418,7 +417,8 @@ Go to ${url} to see valid users and account IDs.`,
         },
       },
     )
-    const validatorDC = accountIdValidator(clientDC, configDC, buildElementsSourceFromElements([dcUsersInstance]))
+    const dcElementsSource = buildElementsSourceFromElements([dcUsersInstance])
+    const validatorDC = accountIdValidator(clientDC, configDC)
     let validUserInstance: InstanceElement
     let invalidUserInstance: InstanceElement
     const objectType = common.createObjectedType('NotificationScheme') // passes all conditions
@@ -468,19 +468,22 @@ Go to ${url} to see valid users and account IDs.`,
         toChange({
           after: validUserInstance,
         }),
-      ])
+      ], dcElementsSource)
       expect(changeErrors).toEqual([])
     })
     it('should not fail when user map func returns undefined', async () => {
-      const validator2 = accountIdValidator(clientDC, configDC, buildElementsSourceFromElements([]))
-      await expect(validator2([toChange({ after: instances[1] })])).resolves.not.toThrow()
+      const validator2 = accountIdValidator(clientDC, configDC)
+      await expect(validator2(
+        [toChange({ after: instances[1] })],
+        buildElementsSourceFromElements([])
+      )).resolves.not.toThrow()
     })
     it('should raise an error when accountId does not exist in the target environment', async () => {
       const changeErrors = await validatorDC([
         toChange({
           after: invalidUserInstance,
         }),
-      ])
+      ], dcElementsSource)
       expect(changeErrors).toEqual([{
         elemID: invalidUserInstance.elemID,
         severity: 'Error',
@@ -495,7 +498,7 @@ Go to ${url} to see valid users and account IDs.`,
         toChange({
           after: invalidUserInstance,
         }),
-      ])).toEqual([{
+      ], dcElementsSource)).toEqual([{
         elemID: invalidUserInstance.elemID,
         severity: 'Warning',
         message: '1 usernames will be overridden to firstAccount',
@@ -509,7 +512,7 @@ Go to ${url} to see valid users and account IDs.`,
         toChange({
           after: invalidUserInstance,
         }),
-      ])).toEqual([{
+      ], dcElementsSource)).toEqual([{
         elemID: invalidUserInstance.elemID,
         severity: 'Warning',
         message: '1 usernames will be overridden to the deployer\'s user',
@@ -523,7 +526,7 @@ Go to ${url} to see valid users and account IDs.`,
         toChange({
           after: invalidUserInstance,
         }),
-      ])).toEqual([{
+      ], dcElementsSource)).toEqual([{
         elemID: invalidUserInstance.elemID,
         severity: 'Error',
         message: 'Element references users which don’t exist in target environment',

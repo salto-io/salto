@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
@@ -59,7 +59,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig, elementsSource: ReadOnlyElementsSource, paginator: clientUtils.Paginator
+  client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
@@ -95,8 +95,8 @@ export default (
     workflowPropertiesValidator,
     permissionSchemeValidator,
     screenSchemeDefaultValidator,
-    wrongUserPermissionSchemeValidator(client, config, elementsSource),
-    accountIdValidator(client, config, elementsSource),
+    wrongUserPermissionSchemeValidator(client, config),
+    accountIdValidator(client, config),
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
   ]

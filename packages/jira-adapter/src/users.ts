@@ -21,6 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from './client/client'
+import { JIRA, USERS_INSTANCE_NAME, USERS_TYPE_NAME } from './constants'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -141,11 +142,16 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
   }
 }
 
-export const getUserMapFunc = async (
-  elementSource: ReadOnlyElementsSource
+export const getUsersMap = async (
+  elementSource: ReadOnlyElementsSource | undefined,
 ): Promise<UserMap | undefined> => {
-  const usersElement = await elementSource.get(new ElemID('jira', 'Users', 'instance', 'users'))
-  return usersElement?.value?.users as (UserMap | undefined)
+  const map = elementSource === undefined
+    ? undefined
+    : (await elementSource.get(new ElemID(JIRA, USERS_TYPE_NAME, 'instance', USERS_INSTANCE_NAME)))?.value?.users as (UserMap | undefined)
+  if (map === undefined) {
+    log.warn('Failed to get users map from the source file.')
+  }
+  return map
 }
 
 export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo | undefined> => {

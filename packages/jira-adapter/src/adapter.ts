@@ -265,7 +265,6 @@ export default class JiraAdapter implements AdapterOperations {
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
   private getUserMapFunc: GetUserMapFunc
-  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -290,7 +289,6 @@ export default class JiraAdapter implements AdapterOperations {
 
     this.paginator = paginator
     this.getUserMapFunc = getUserMapFuncCreator(paginator, client.isDataCenter)
-    this.elementsSource = elementsSource
 
     const filterContext = {}
     this.createFiltersRunner = () => (
@@ -424,7 +422,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.elementsSource, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

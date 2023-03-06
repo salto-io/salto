@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { isPermissionSchemeStructure, PermissionHolder } from '../filters/permission_scheme/omit_permissions_common'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
 import { wrongUserPermissionSchemePredicateCreator } from '../filters/permission_scheme/wrong_user_permission_scheme_filter'
-import { getUserMapFunc, getUsersMapByVisibleId } from '../users'
+import { getUsersMap, getUsersMapByVisibleId } from '../users'
 
 
 const createChangeError = (
@@ -45,13 +45,12 @@ Check ${new URL(JIRA_USERS_PAGE, url).href} to see valid users and account IDs.`
 export const wrongUserPermissionSchemeValidator: (
   client: JiraClient,
   config: JiraConfig,
-  elementsSource: ReadOnlyElementsSource,
-  ) => ChangeValidator = (client, config, elementsSource) => async changes => {
+  ) => ChangeValidator = (client, config) => async (changes, elementsSource) => {
     if (!(config.fetch.convertUsersIds ?? true)) {
       return []
     }
     const { baseUrl } = client
-    const rawUserMap = await getUserMapFunc(elementsSource)
+    const rawUserMap = await getUsersMap(elementsSource)
     if (rawUserMap === undefined) {
       return []
     }

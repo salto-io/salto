@@ -61,7 +61,7 @@ describe('wrongUsersPermissionSchemeValidator', () => {
   const elementsSource = buildElementsSourceFromElements([usersElements])
   const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
   const { client } = mockClient()
-  const validator = wrongUserPermissionSchemeValidator(client, config, elementsSource)
+  const validator = wrongUserPermissionSchemeValidator(client, config)
   const url = `${client.baseUrl}jira/people/search`
   let instances: InstanceElement[]
   let changes: Change[]
@@ -117,7 +117,8 @@ Check ${url} to see valid users and account IDs.`,
 
   it('should return a warning when there is a wrong account id', async () => {
     expect(await validator(
-      changes
+      changes,
+      elementsSource
     )).toEqual([
       createWarning(instances[0], 'instance'),
       createWarning(instances[1], 'instance2'),
@@ -127,19 +128,21 @@ Check ${url} to see valid users and account IDs.`,
     delete instances[0].value.permissions[1]
     delete instances[1].value.permissions[4]
     expect(await validator(
-      changes
+      changes,
+      elementsSource
     )).toEqual([])
   })
   it('should not return a warning when the flag is off', async () => {
     const configOff = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
     configOff.fetch.convertUsersIds = false
-    const validatorOff = wrongUserPermissionSchemeValidator(client, configOff, elementsSource)
+    const validatorOff = wrongUserPermissionSchemeValidator(client, configOff)
     expect(await validatorOff(
-      changes
+      changes,
+      elementsSource
     )).toEqual([])
   })
   it('should not fail when users map func returns empty', async () => {
-    const validator2 = wrongUserPermissionSchemeValidator(client, config, buildElementsSourceFromElements([]))
-    await expect(validator2(changes)).resolves.not.toThrow()
+    const validator2 = wrongUserPermissionSchemeValidator(client, config)
+    await expect(validator2(changes, buildElementsSourceFromElements([]))).resolves.not.toThrow()
   })
 })

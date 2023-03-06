@@ -54,7 +54,7 @@ import {
   mergeTypeToInstances,
 } from './utils'
 import { fixManifest } from './manifest_utils'
-import { detectLanguage, FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
+import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -700,7 +700,7 @@ export default class SdfClient {
 
     const unexpectedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
-        if (failedImport.customObject.result.message.includes('unexpected error')) {
+        if (fetchUnexpectedErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
             SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true
@@ -710,7 +710,7 @@ export default class SdfClient {
 
     const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
-        if (failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')) {
+        if (fetchLockedObjectErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
             SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true

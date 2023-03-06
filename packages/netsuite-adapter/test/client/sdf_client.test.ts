@@ -763,7 +763,7 @@ describe('sdf client', () => {
                   type: 'csvimport',
                   result: {
                     code: 'FAILED',
-                    message: 'An unexpected error has occurred',
+                    message: 'Une erreur inattendue s\'est produite.',
                   },
                 },
               },

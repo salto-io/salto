@@ -100,8 +100,7 @@ const filter: LocalFilterCreator = () => ({
   preDeploy: async changes => {
     const trackedFields = (type: ObjectType): string[] => (
       // by the time preDeploy is called references are already resolved, so they won't be ref expressions anymore.
-      type.annotations[HISTORY_TRACKED_FIELDS] !== undefined
-        ? Object.values(type.annotations[HISTORY_TRACKED_FIELDS]) : []
+      Object.values(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
     )
 
     const isHistoryTrackedField = async (field: Field): Promise<boolean> => (
@@ -115,20 +114,23 @@ const filter: LocalFilterCreator = () => ({
       .filter(isField)
       .filter(isFieldOfCustomObject)
 
-    const objectTypeChanges = changes
+    const objectTypeChanges = await awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isObjectTypeChange)
+      .filter(change => isCustomObject(getChangeData(change)))
+      .toArray()
 
     // 1. For all CustomObjects, set the correct 'enableHistory' value
     await awu(objectTypeChanges)
       .map(getChangeData)
-      .forEach(objType => {
+      .forEach(async objType => {
         objType.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = isHistoryTrackingEnabled(objType)
-        _.forOwn(objType.fields, async field => {
-          if (await isHistoryTrackedField(field)) {
-            field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = true
-          }
-        })
+        await awu(Object.values(objType.fields))
+          .forEach(async field => {
+            if (await isHistoryTrackedField(field)) {
+              field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = true
+            }
+          })
       })
 
     // 2. For all changed fields, make sure they have the expected 'trackHistory' value

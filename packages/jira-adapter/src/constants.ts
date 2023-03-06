@@ -78,3 +78,5 @@ export const LICENSE_TYPE = 'License'
 export const LICENSED_APPLICATION_TYPE = 'LicensedApplication'
 export const ACCOUNT_INFO_ELEM_ID = new ElemID(JIRA, ACCOUNT_INFO_TYPE, 'instance', ElemID.CONFIG_NAME)
 export const JIRA_FREE_PLAN = 'FREE'
+export const USERS_TYPE_NAME = 'Users'
+export const USERS_INSTANCE_NAME = 'users'

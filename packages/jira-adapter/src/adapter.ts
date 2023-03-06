@@ -120,6 +120,7 @@ import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 import scriptRunnerWorkflowOrFilter from './filters/script_runner/workflow_ors'
+import storeUsersFilter from './filters/store_users'
 
 const {
   generateTypes,
@@ -132,6 +133,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
+  storeUsersFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -420,7 +422,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.getUserMapFunc, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

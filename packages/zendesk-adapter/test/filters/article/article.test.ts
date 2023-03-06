@@ -29,8 +29,6 @@ import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../../src/filters/everyone_user_segment'
 import * as articleUtils from '../../../src/filters/article/utils'
 
-jest.useFakeTimers()
-
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')

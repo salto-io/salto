@@ -18,23 +18,31 @@ import Joi from 'joi'
 import FormData from 'form-data'
 import { logger } from '@salto-io/logging'
 import {
+  elementExpressionStringifyReplacer,
+  getParent,
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  elementExpressionStringifyReplacer,
-  getParent,
 } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import {
-  InstanceElement, isReferenceExpression, isStaticFile,
-  isTemplateExpression, ObjectType, ReferenceExpression, StaticFile, Values,
+  InstanceElement,
+  isReferenceExpression,
+  isStaticFile,
+  isTemplateExpression,
+  ObjectType,
+  ReferenceExpression,
+  StaticFile,
+  Values,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../client/client'
 import { ZENDESK } from '../../constants'
 import { getZendeskError } from '../../errors'
-import { ZendeskApiConfig } from '../../config'
+import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
 import { prepRef } from './article_body'
 
+
+const { sleep } = promises.timeout
 const log = logger(module)
 const { awu } = collections.asynciterable
 
@@ -132,18 +140,25 @@ const getAttachmentContent = async ({
   })
 }
 
-export const getArticleAttachments = async ({ brandIdToClient, articleById, attachmentType, attachments }: {
+export const getArticleAttachments = async ({ brandIdToClient, articleById, attachmentType, attachments, config }: {
   brandIdToClient: Record<string, ZendeskClient>
   articleById: Record<string, InstanceElement>
   attachmentType: ObjectType
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
+  config: ZendeskConfig
 }): Promise<void> => {
-  log.debug(`there are ${attachments.length} attachments, going to get their content`)
-  await Promise.all(attachments.map(async attachment => {
-    const article = articleById[getParent(attachment).value.id]
-    await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
-  }))
+  const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
+  log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)
+  const attachChunk = _.chunk(attachments, rateLimit)
+  await awu(attachChunk).map(async (attach: Attachment[], index: number) => {
+    log.debug(`starting article attachment chunk ${index + 1}/${attachChunk.length}`)
+    await Promise.all(attach.map(async attachment => {
+      const article = articleById[getParent(attachment).value.id]
+      await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
+    }))
+    await sleep(1000)
+  }).toArray()
 }
 
 export const createUnassociatedAttachment = async (

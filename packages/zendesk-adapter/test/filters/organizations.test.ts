@@ -14,15 +14,19 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
-import filterCreator from '../../src/filters/organizations'
+import filterCreator, { getOrganizationsByIds, getOrganizationsByNames } from '../../src/filters/organizations'
 import { createFilterCreatorParams } from '../utils'
 import ZendeskClient from '../../src/client/client'
 import { FETCH_CONFIG, DEFAULT_CONFIG } from '../../src/config'
+import { paginate } from '../../src/client/pagination'
+
 
 describe('organizations filter', () => {
-  let client: ZendeskClient
+  const client = new ZendeskClient({
+    credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+  })
   let mockGet: jest.SpyInstance
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger') })
@@ -61,9 +65,6 @@ describe('organizations filter', () => {
     let filter: FilterType
     beforeEach(async () => {
       jest.clearAllMocks()
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-      })
       mockGet = jest.spyOn(client, 'getSinglePage')
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].resolveOrganizationIDs = true
@@ -201,9 +202,6 @@ describe('organizations filter', () => {
     let filter: FilterType
     beforeEach(async () => {
       jest.clearAllMocks()
-      client = new ZendeskClient({
-        credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
-      })
       mockGet = jest.spyOn(client, 'getSinglePage')
       const config = { ...DEFAULT_CONFIG }
       config[FETCH_CONFIG].resolveOrganizationIDs = false
@@ -277,6 +275,89 @@ describe('organizations filter', () => {
           organization_ids: [1, 2],
         })
       })
+    })
+  })
+  describe('API calls', () => {
+    const paginator = clientUtils.createPaginator({ client, paginationFuncCreator: paginate })
+
+    beforeEach(() => {
+      jest.clearAllMocks()
+      mockGet = jest.spyOn(client, 'getSinglePage')
+    })
+
+    it('getOrganizationsByNames', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 1, name: 'org1' },
+            { id: 2, name: 'org11' },
+            { id: 3, name: 'org1111' },
+          ],
+        },
+      }).mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 2, name: 'org11' },
+            { id: 3, name: 'org1111' },
+          ],
+        },
+      })
+
+      const goodResult = await getOrganizationsByNames(['org1', 'org11'], paginator)
+      expect(goodResult).toEqual([
+        { id: 1, name: 'org1' },
+        { id: 2, name: 'org11' },
+      ])
+
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 2, name: 'org11' },
+          ],
+        },
+      }).mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 2, name: 'org11' },
+            { id: 3 }, // Bad structure
+          ],
+        },
+      })
+      const badResult = await getOrganizationsByNames(['org1', 'org11'], paginator)
+      expect(badResult).toEqual([])
+    })
+    it('getOrganizationsByIds', async () => {
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 1, name: 'org1' },
+            { id: 2, name: 'org11' },
+          ],
+        },
+      })
+
+      const goodResult = await getOrganizationsByIds(['1', '2'], client)
+      expect(goodResult).toEqual([
+        { id: 1, name: 'org1' },
+        { id: 2, name: 'org11' },
+      ])
+
+      mockGet.mockResolvedValueOnce({
+        status: 200,
+        data: {
+          organizations: [
+            { id: 1, name: 'org11' },
+            { id: 2 }, // Bad structure
+          ],
+        },
+      })
+      const badResult = await getOrganizationsByIds(['1', '2'], client)
+      expect(badResult).toEqual([])
     })
   })
 })

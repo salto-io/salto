@@ -889,6 +889,14 @@ export class Types {
   }
 }
 
+export const isFormulaField = (element: Element): element is Field => {
+  if (!isField(element)) {
+    return false
+  }
+  const formulaTypes = Object.values(Types.formulaDataTypes)
+  return formulaTypes.some(type => element.refType.elemID.isEqual(type.elemID))
+}
+
 export const isNameField = async (field: Field): Promise<boolean> =>
   (isObjectType(await field.getType())
     && (field.refType.elemID.isEqual(Types.compoundDataTypes.Name.elemID)

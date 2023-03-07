@@ -374,6 +374,9 @@ export const ACTIVATE_RSS = 'activateRSS'
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 
+// Standard Object Types
+export const ORGANIZATION_SETTINGS = 'Organization'
+
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
 export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'

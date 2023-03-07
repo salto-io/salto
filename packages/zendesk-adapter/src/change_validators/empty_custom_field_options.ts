@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { CUSTOM_FIELD_OPTIONS_FIELD_NAME } from '../filters/custom_field_options/creator'
-import { createEmptyFieldErrorMessage } from './utils'
 import { FIELD_TYPE_NAMES } from '../constants'
 
 const RELEVANT_FIELD_TYPES = ['dropdown', 'tagger', 'multiselect']
@@ -36,12 +35,8 @@ export const emptyCustomFieldOptionsValidator: ChangeValidator = async changes =
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: createEmptyFieldErrorMessage(
-            instance.elemID.getFullName(), CUSTOM_FIELD_OPTIONS_FIELD_NAME
-          ),
-          detailedMessage: createEmptyFieldErrorMessage(
-            instance.elemID.getFullName(), CUSTOM_FIELD_OPTIONS_FIELD_NAME
-          ),
+          message: 'Cannot make this change since dropdown, tagger and multi-select fields can’t to be empty',
+          detailedMessage: 'Custom field options are required for dropdown, tagger and multi select fields',
         }]
       }
       return []

@@ -56,9 +56,8 @@ export const onlyOneTicketFormDefaultValidator: ChangeValidator = async (
       return [{
         elemID: instance.elemID,
         severity: 'Error',
-        message: `Can not change ${instance.elemID.getFullName()} to be default because there are others default ${TICKET_FORM_TYPE_NAME}`,
-        detailedMessage: `Can not change ${instance.elemID.getFullName()} to be default because there are others default ${TICKET_FORM_TYPE_NAME
-        }: ${otherDefaultTicketForms.map(ticketForm => ticketForm.elemID.getFullName()).join(', ')}`,
+        message: 'Cannot set this as the default ticket form since another one is already defined as the default',
+        detailedMessage: `The following ticket forms are also marked as default: ${otherDefaultTicketForms.map(ticketForm => ticketForm.elemID.getFullName()).join(', ')}`,
       }]
     })
 }

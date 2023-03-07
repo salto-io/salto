@@ -15,34 +15,45 @@
 */
 import _, { isString } from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
-  DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
-  isInstanceElement, Element,
-  ReadOnlyElementsSource, isReferenceExpression,
+  AdapterOperations,
+  Change,
+  DeployModifiers,
+  DeployOptions,
+  DeployResult,
+  Element,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import {
-  client as clientUtils,
-  config as configUtils,
-  elements as elementUtils,
-} from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
+import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
-  FETCH_CONFIG,
-  ZendeskConfig,
   CLIENT_CONFIG,
+  DEPLOY_CONFIG,
+  FETCH_CONFIG,
+  GUIDE_BRAND_SPECIFIC_TYPES,
+  GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled, DEPLOY_CONFIG,
+  isGuideEnabled,
+  ZendeskConfig,
 } from './config'
 import {
-  ZENDESK,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -116,6 +127,7 @@ import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
+import auditTimeFilter from './filters/audit_logs'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -154,6 +166,7 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  auditTimeFilter, // needs to be before userFilter as it uses the ids of the users
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
@@ -421,12 +434,11 @@ export default class ZendeskAdapter implements AdapterOperations {
         // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
         Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
       }
-      return new ZendeskClient(
-        {
-          credentials: { ...credentials, subdomain },
-          config: clientConfig,
-        },
-      )
+      return new ZendeskClient({
+        credentials: { ...credentials, subdomain },
+        config: clientConfig,
+        allowOrganizationNames: this.userConfig[FETCH_CONFIG].resolveOrganizationIDs,
+      })
     }
 
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
@@ -453,11 +465,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
-          config: {
-            fetch: config.fetch,
-            deploy: config.deploy,
-            apiDefinitions: config.apiDefinitions,
-          },
+          config,
           getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
@@ -698,6 +706,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        fetchConfig: this.userConfig[FETCH_CONFIG],
         deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter

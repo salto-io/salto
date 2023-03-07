@@ -18,6 +18,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType, hasInternalId } from '../types'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { NetsuiteChangeValidator } from './types'
+import { isSupportedInstance } from '../filters/internal_ids/sdf_internal_ids'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -28,12 +29,20 @@ const validateRemovableChange = async (
   elementsSourceIndex?: LazyElementsSourceIndexes
 ): Promise<ChangeError | undefined> => {
   if (isInstanceElement(element) && isStandardType(element.refType)) {
-    if (!hasInternalId(element)) {
+    if (!isSupportedInstance(element)) {
       return {
         elemID: element.elemID,
         severity: 'Error',
         message: `Can't remove instances of type ${element.elemID.typeName}`,
-        detailedMessage: `Can't remove instance ${element.elemID.name} of type ${element.elemID.typeName}. NetSuite supports the removal of these instances only from their UI`,
+        detailedMessage: `Can't remove this ${element.elemID.typeName}. Remove it in NetSuite UI`,
+      }
+    }
+    if (!hasInternalId(element)) {
+      return {
+        elemID: element.elemID,
+        severity: 'Error',
+        message: `Can't remove instance of type ${element.elemID.typeName}`,
+        detailedMessage: `Can't remove this ${element.elemID.typeName}. Try fetching and deploying again, or remove it in Netsuite UI`,
       }
     }
   } else if (isObjectType(element) && isCustomRecordType(element)) {
@@ -41,8 +50,8 @@ const validateRemovableChange = async (
       return {
         elemID: element.elemID,
         severity: 'Error',
-        message: 'Removal of Custom Record Type failed. ID is missing',
-        detailedMessage: `Can't remove this Custom Record Type ${element.elemID.name}. The ID is missing, please try to refetch`,
+        message: 'Can\'t remove Custom Record Type',
+        detailedMessage: 'Can\'t remove this Custom Record Type. Try fetching and deploying again, or remove it in Netsuite UI',
       }
     }
     // will be redundant once SALTO-3534 introduced
@@ -53,16 +62,16 @@ const validateRemovableChange = async (
         return {
           elemID: element.elemID,
           severity: 'Error',
-          message: 'Can\'t remove Custom Record Type with existing instances',
-          detailedMessage: `Can't remove Custom Record Type ${element.elemID.name} with existing instances. Please delete those instances first`,
+          message: 'Can\'t remove Custom Record Types that are currently in use',
+          detailedMessage: 'Can\'t remove this Custom Record Type. Remove its instances and try again',
         }
       }
     }
     return {
       elemID: element.elemID,
       severity: 'Warning',
-      message: 'Removal of Custom Record Type will delete all existing instances',
-      detailedMessage: `Removal of Custom Record Type ${element.elemID.name} will delete all instances if such exist`,
+      message: 'Instances of Custom Record Type might be removed',
+      detailedMessage: 'If there are instances of this Custom Record Type in your Netsuite account - they will be removed',
     }
   } else if (isField(element) && isCustomRecordType(element.parent)) {
     if (!changes
@@ -74,7 +83,7 @@ const validateRemovableChange = async (
         elemID: element.elemID,
         severity: 'Error',
         message: 'Can\'t remove fields of Custom Record Types',
-        detailedMessage: `Can't remove field ${element.elemID.name} of Custom Record Type ${element.elemID.typeName}. NetSuite supports the removal of fields of Custom Record Types only from their UI`,
+        detailedMessage: `Can't remove field ${element.elemID.name} of this Custom Record Type. Remove it in NetSuite UI`,
       }
     }
   }

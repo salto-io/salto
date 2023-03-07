@@ -120,10 +120,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean // TODO remove this from configuration SALTO-3676
+  private readonly useChangesDetection: boolean // TODO remove this from config SALTO-3676
   private elementsSourceIndex: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
-    isPartial: boolean
+    isPartial?: boolean
     changesGroupId?: string
   }) => Required<Filter>
 
@@ -211,7 +211,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       },
     }
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = ({ isPartial, changesGroupId }) => filter.filtersRunner(
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: this.elementsSourceIndex,
@@ -223,8 +223,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       filtersCreators,
     )
   }
-
-  private isPartialFetch(): boolean { return this.fetchTarget !== undefined }
 
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
@@ -341,19 +339,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
-  private async innerFetch(
-    {
-      fetchOptions,
-      useChangesDetection,
-      isPartial,
-    }:
-    {
-      fetchOptions: FetchOptions
-      useChangesDetection: boolean
-      isPartial: boolean
+  /**
+   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
+   * Account credentials were given in the constructor.
+   */
+
+  public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    const isFirstFetch = async () : Promise<boolean> =>
+      !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    if (this.fetchTarget !== undefined && await isFirstFetch()) {
+      throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
     }
-  ): Promise<FetchResult> {
-    const { progressReporter } = fetchOptions
+
     const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
       .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
@@ -369,13 +366,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
+    const isPartial = (withChangesDetection || this.fetchTarget !== undefined) && !(await isFirstFetch())
 
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypes,
       elements,
-    } = await this.fetchByQuery(fetchQuery, progressReporter, useChangesDetection, isPartial)
+    } = await this.fetchByQuery(
+      fetchQuery,
+      progressReporter,
+      (this.useChangesDetection || withChangesDetection),
+      isPartial,
+    )
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
@@ -385,27 +388,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return { elements, isPartial }
     }
     return { elements, updatedConfig, isPartial }
-  }
-
-  /**
-   * Fetch configuration elements: objects, types and instances for the given Netsuite account.
-   * Account credentials were given in the constructor.
-   */
-
-  public async fetch(fetchOptions: FetchOptions): Promise<FetchResult> {
-    return this.innerFetch({
-      fetchOptions,
-      useChangesDetection: this.useChangesDetection,
-      isPartial: this.isPartialFetch(),
-    })
-  }
-
-  public async fetchWithChangeDetection(fetchOptions: FetchOptions): Promise<FetchResult> {
-    return this.innerFetch({
-      fetchOptions,
-      useChangesDetection: true,
-      isPartial: true,
-    })
   }
 
   private async runSuiteAppOperations(
@@ -456,7 +438,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
     const filtersRunner = this.createFiltersRunner({
-      isPartial: this.isPartialFetch(),
       changesGroupId: groupID,
     })
     await filtersRunner.preDeploy(changesToDeploy)
@@ -496,7 +477,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: changesGroupId => this.createFiltersRunner({
-          isPartial: this.isPartialFetch(),
           changesGroupId,
         }),
         elementsSourceIndex: this.elementsSourceIndex,

@@ -53,15 +53,17 @@ import {
   macroActionsTicketFieldDeactivationValidator,
   sideConversationsValidator,
   externalSourceWebhook,
-  missingUsersValidator,
+  usersValidator,
   customStatusUniqueAgentLabelValidator,
   customStatusCategoryChangeValidator,
   customStatusCategoryValidator,
   defaultCustomStatusesValidator,
-  customStatusActiveDefaultValidator, defaultGroupChangeValidator,
+  customStatusActiveDefaultValidator,
+  defaultGroupChangeValidator,
+  organizationExistenceValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ZedneskDeployConfig } from './config'
+import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -73,12 +75,14 @@ const {
 export default ({
   client,
   apiConfig,
+  fetchConfig,
   deployConfig,
   typesDeployedViaParent,
   typesWithNoDeploy,
 }: {
   client: ZendeskClient
   apiConfig: configUtils.AdapterDuckTypeApiConfig
+  fetchConfig: ZendeskFetchConfig
   deployConfig?: ZedneskDeployConfig
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
@@ -116,7 +120,7 @@ export default ({
     defaultCustomStatusesValidator,
     customRoleRemovalValidator(client),
     sideConversationsValidator,
-    missingUsersValidator(client, deployConfig),
+    usersValidator(client, deployConfig),
     requiredAppOwnedParametersValidator,
     oneTranslationPerLocaleValidator,
     articleRemovalValidator,
@@ -129,6 +133,7 @@ export default ({
     helpCenterCreationOrRemovalValidator(client, apiConfig),
     externalSourceWebhook,
     defaultGroupChangeValidator,
+    organizationExistenceValidator(client, fetchConfig),
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

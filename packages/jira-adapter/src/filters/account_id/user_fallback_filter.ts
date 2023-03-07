@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
-import { getCurrentUserInfo, getUserIdFromEmail, getUsersMapByVisibleId, UserMap } from '../../users'
+import { getCurrentUserInfo, getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from '../../users'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -49,7 +49,7 @@ const getFallbackUser = async (
     : currentUserInfo?.userId
 }
 
-const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
+const filter: FilterCreator = ({ client, config, elementsSource }) => {
   const fallbackPathToUser: Record<string, string> = {}
 
   return {
@@ -58,8 +58,11 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => {
       if (config.deploy.defaultMissingUserFallback === undefined) {
         return
       }
-
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      const rawUserMap = await getUsersMap(elementsSource)
+      if (rawUserMap === undefined) {
+        return
+      }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       const fallbackUser = await getFallbackUser(client, config.deploy.defaultMissingUserFallback, userMap)
       if (fallbackUser === undefined) {

@@ -18,9 +18,6 @@ import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../constants'
 
-export const createEmptyFieldErrorMessage = (fullName: string, fieldName: string): string =>
-  `Can not change ${fullName}' ${fieldName} to be empty`
-
 type ArticlesOrderType = InstanceElement & { value: { articles: ReferenceExpression[] } }
 type SectionsOrderType = InstanceElement & { value: { sections: ReferenceExpression[] } }
 type CategoriesOrderType = InstanceElement & { value: { categories: ReferenceExpression[] } }

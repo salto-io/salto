@@ -24,7 +24,7 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
   elemID: instanceElemId,
   severity: 'Info',
   message: 'Webhook authentication change detected',
-  detailedMessage: '',
+  detailedMessage: 'Webhook authentication change detected',
   deployActions: {
     preAction: {
       title: 'Webhook\'s authentication credentials will not be set',

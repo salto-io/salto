@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
@@ -38,6 +38,7 @@ const getFieldContexts = async (
       return true
     })
     .map((ref: ReferenceExpression) => ref.getResolvedValue(elementSource))
+    .filter(isInstanceElement)
     .toArray()
 
 /**

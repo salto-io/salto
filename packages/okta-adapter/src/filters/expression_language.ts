@@ -18,7 +18,7 @@ import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isT
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -44,8 +44,8 @@ const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
     patterns: [ID_REGEX, USER_SCHEMA_REGEX],
     isIdentityEngine: false,
   },
-  [POLICY_RULE_TYPE_NAME]: {
-    pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
+  [ACCESS_POLICY_RULE_TYPE_NAME]: {
+    pathToContainer: ['conditions', 'elCondition'],
     fieldName: 'condition',
     patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
     isIdentityEngine: true,

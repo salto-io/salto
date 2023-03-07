@@ -16,7 +16,6 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { ZENDESK } from '../../src/constants'
 import { accountSettingsValidator } from '../../src/change_validators/account_settings'
-import { ACCOUNT_SETTING_TYPE_NAME } from '../../src/filters/account_settings'
 
 describe('accountSettingsValidator', () => {
   const accountSettings = new InstanceElement(
@@ -46,8 +45,8 @@ describe('accountSettingsValidator', () => {
     expect(errors).toEqual([{
       elemID: accountSettings.elemID,
       severity: 'Error',
-      message: `Can not change ${ACCOUNT_SETTING_TYPE_NAME}' routing.autorouting_tag to be empty`,
-      detailedMessage: `Can not change ${ACCOUNT_SETTING_TYPE_NAME}' routing.autorouting_tag to be empty`,
+      message: 'Cannot change an auto-routing tag to an empty value',
+      detailedMessage: 'routing.autorouting_tag cannot be empty',
     }])
   })
   it('should not return an error when we change autorouting_tag to not be empty', async () => {

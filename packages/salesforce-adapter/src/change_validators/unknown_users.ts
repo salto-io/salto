@@ -13,24 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
-  InstanceElement, getChangeData,
+  InstanceElement, getChangeData, Values,
 } from '@salto-io/adapter-api'
 import { apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/utils'
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
-const { isDefined } = values
 const log = logger(module)
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
 
-type GetUserField = (instance: InstanceElement, fieldName: string) => string | undefined
+type GetUserField = (instance: InstanceElement, fieldName: string) => string[]
 
 type UserFieldGetter = {
   field: string
@@ -41,6 +40,7 @@ type UserFieldGetter = {
 const TYPES_WITH_USER_FIELDS = [
   'CaseSettings',
   'FolderShare',
+  'WorkflowAlert',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -52,38 +52,51 @@ type MissingUser = {
   userName: string
 }
 
-const getCaseSettingsOwner = (instance: InstanceElement, fieldName: string): string | undefined => {
+const getCaseSettingsOwner: GetUserField = (instance, fieldName) => {
   if (fieldName !== 'defaultCaseOwner') {
     log.error(`Unexpected field name: ${fieldName}.`)
-    return undefined
+    return []
   }
   if (instance.value.defaultCaseOwnerType !== 'User') {
     log.debug('defaultCaseOwnerType is not User. Skipping.')
-    return undefined
+    return []
   }
-  return instance.value.defaultCaseOwner
+  return [instance.value.defaultCaseOwner]
 }
 
 const userFieldValue = (expectedFieldName: string): GetUserField => (
   (instance, fieldName) => {
     if (fieldName !== expectedFieldName) {
       log.error(`Unexpected field name: ${fieldName} !== ${expectedFieldName}`)
-      return undefined
+      return []
     }
-    return instance.value[fieldName]
+    if (instance.value[fieldName] === undefined) {
+      return []
+    }
+    return [instance.value[fieldName]]
   }
 )
 
-const getFolderShareUser = (instance: InstanceElement, fieldName: string): string | undefined => {
+const getFolderShareUser: GetUserField = (instance, fieldName) => {
   if (fieldName !== 'sharedTo') {
     log.error(`Unexpected field name: ${fieldName}.`)
-    return undefined
+    return []
   }
   if (instance.value.sharedToType !== 'User') {
     log.debug('sharedToType is not User. Skipping.')
-    return undefined
+    return []
   }
-  return instance.value.sharedTo
+  return [instance.value.sharedTo]
+}
+
+const getEmailRecepients: GetUserField = (instance, fieldName) => {
+  if (fieldName !== 'recipients') {
+    log.error(`Unexpected field name: ${fieldName}.`)
+    return []
+  }
+  return instance.value.recipients
+    .filter((recipient: Values) => recipient.type === 'user')
+    .map((recipient: Values) => recipient.recipient)
 }
 
 const USER_GETTERS: TypesWithUserFields = {
@@ -103,6 +116,12 @@ const USER_GETTERS: TypesWithUserFields = {
       getter: getFolderShareUser,
     },
   ],
+  WorkflowAlert: [
+    {
+      field: 'recipients',
+      getter: getEmailRecepients,
+    },
+  ],
 }
 
 const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, instance: InstanceElement)
@@ -116,10 +135,8 @@ const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, inst
   return instanceType ? defMapping[instanceType] : []
 }
 
-const isValidUser = (user: string|undefined): user is string => !!user
-
 const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
-  getterDefs.map(getterDef => getterDef.getter(instance, getterDef.field)).filter(isValidUser)
+  getterDefs.flatMap(getterDef => getterDef.getter(instance, getterDef.field))
 )
 
 const getUsersFromInstances = async (
@@ -146,23 +163,20 @@ const getUnknownUsers = async (
   instanceElement: InstanceElement,
   knownUsers: string[],
 ): Promise<MissingUser[]> => {
-  const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser | undefined => {
-    const userName = userFieldGetter.getter(instance, userFieldGetter.field)
-    if (!isValidUser(userName)) {
-      return undefined
-    }
-    return {
+  const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser[] => {
+    const userNames = userFieldGetter.getter(instance, userFieldGetter.field)
+
+    return userNames.map(userName => ({
       instance,
       field: userFieldGetter.field,
       userName,
-    }
+    }))
   }
 
   const getterDefs = await userFieldGettersForInstance(defMapping, instanceElement)
 
   return (getterDefs
-    .map(getterDef => extractUserInfo(instanceElement, getterDef))
-    .filter(isDefined)
+    .flatMap(getterDef => extractUserInfo(instanceElement, getterDef))
     .filter(missingUserInfo => !knownUsers.includes(missingUserInfo.userName)))
 }
 

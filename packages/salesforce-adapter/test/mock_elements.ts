@@ -397,6 +397,28 @@ export const mockTypes = {
       },
     }
   ),
+  WorkflowAlert: createMetadataObjectType({
+    annotations: {
+      [METADATA_TYPE]: 'WorkflowAlert',
+    },
+    fields: {
+      recipients: {
+        refType: new ListType(createMetadataObjectType({
+          annotations: {
+            [METADATA_TYPE]: 'WorkflowEmailRecipient',
+          },
+          fields: {
+            recipient: {
+              refType: BuiltinTypes.STRING,
+            },
+            type: {
+              refType: BuiltinTypes.STRING,
+            },
+          },
+        })),
+      },
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"

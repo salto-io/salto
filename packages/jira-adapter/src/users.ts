@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -20,6 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from './client/client'
+import { JIRA, USERS_INSTANCE_NAME, USERS_TYPE_NAME } from './constants'
 
 const { makeArray } = collections.array
 const { toArrayAsync } = collections.asynciterable
@@ -33,7 +35,11 @@ export type UserInfo = {
   username?: string
 }
 export type UserMap = Record<string, UserInfo>
-export type GetUserMapFunc = () => Promise<UserMap>
+export type GetUserMapFunc = () => Promise<UserMap | undefined>
+
+const isMissingUserPermissionError = (err: Error): boolean =>
+  err instanceof clientUtils.HTTPError && err.response.status === 403
+
 
 const paginateUsers = async (paginator: clientUtils.Paginator, isDataCenter: boolean)
   : Promise<clientUtils.ResponseValue[][]> => {
@@ -113,19 +119,39 @@ export const getUserMapFuncCreator = (paginator: clientUtils.Paginator, isDataCe
     : GetUserMapFunc => {
   let idMap: UserMap
   let usersCallPromise: Promise<clientUtils.ResponseValue[][]>
-  return async (): Promise<UserMap> => {
+  return async (): Promise<UserMap | undefined> => {
     if (idMap === undefined) {
       if (usersCallPromise === undefined) {
         usersCallPromise = log.time(async () => paginateUsers(paginator, isDataCenter), 'users pagination')
       }
-      idMap = Object.fromEntries((await usersCallPromise)
-        .flat()
-        .filter(isUserResponse)
-        .map(parseUserResponse)
-        .map(userInfo => [userInfo.userId, userInfo]))
+      try {
+        idMap = Object.fromEntries((await usersCallPromise)
+          .flat()
+          .filter(isUserResponse)
+          .map(parseUserResponse)
+          .map(userInfo => [userInfo.userId, userInfo]))
+      } catch (e) {
+        if (isMissingUserPermissionError(e)) {
+          log.error('Failed to get users map due to missing permissions.')
+          return undefined
+        }
+        throw e
+      }
     }
     return idMap
   }
+}
+
+export const getUsersMap = async (
+  elementSource: ReadOnlyElementsSource | undefined,
+): Promise<UserMap | undefined> => {
+  const map = elementSource === undefined
+    ? undefined
+    : (await elementSource.get(new ElemID(JIRA, USERS_TYPE_NAME, 'instance', USERS_INSTANCE_NAME)))?.value?.users as (UserMap | undefined)
+  if (map === undefined) {
+    log.warn('Failed to get users map from the source file.')
+  }
+  return map
 }
 
 export const getCurrentUserInfo = async (client: JiraClient): Promise<UserInfo | undefined> => {

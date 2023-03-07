@@ -79,6 +79,9 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import fetchToolingTypesFilter from './filters/tooling/fetch_tooling_types'
 import subscriberPackageInstancesFilter from './filters/tooling/fetch_subscriber_package_instances'
+import formulaDepsFilter from './filters/formula_deps'
+import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
+import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -106,6 +109,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: organizationWideDefaults, addsNewInformation: true },
   { creator: fetchToolingTypesFilter, addsNewInformation: true },
   { creator: subscriberPackageInstancesFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
@@ -150,6 +154,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: splitCustomLabels },
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
+  { creator: formulaDepsFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -167,6 +172,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
+  // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
+  { creator: removeUnixTimeZeroFilter },
 ]
 
 // By default we run all filters and provide a client

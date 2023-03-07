@@ -77,7 +77,7 @@ export const createConditionConfigurationTypes = (): {
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       value: {
-        refType: BuiltinTypes.STRING,
+        refType: BuiltinTypes.UNKNOWN,
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       toStatus: {

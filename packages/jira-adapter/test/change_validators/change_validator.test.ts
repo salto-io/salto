@@ -21,19 +21,19 @@ import { getDefaultConfig } from '../../src/config/config'
 
 describe('change validator creator', () => {
   describe('checkDeploymentAnnotationsValidator', () => {
-    const { client, getUserMapFunc, paginator } = mockClient()
+    const { client, paginator } = mockClient()
 
     it('should not fail if there are no deploy changes', async () => {
       expect(
         await changeValidator(
-          client, getDefaultConfig({ isDataCenter: false }), getUserMapFunc, paginator
+          client, getDefaultConfig({ isDataCenter: false }), paginator
         )([])
       ).toEqual([])
     })
 
     it('should fail each change individually', async () => {
       expect(await changeValidator(
-        client, getDefaultConfig({ isDataCenter: false }), getUserMapFunc, paginator
+        client, getDefaultConfig({ isDataCenter: false }), paginator
       )([
         toChange({ after: new ObjectType({ elemID: new ElemID(JIRA, 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID(JIRA, 'obj2') }) }),

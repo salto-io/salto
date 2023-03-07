@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, InstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator, { TRIGGER_DEFINITION_TYPE_NAME, CHANNEL_TYPE_NAME } from '../../src/filters/hardcoded_channel'
@@ -71,6 +71,9 @@ describe('hardcoded channel filter', () => {
           'zendesk.trigger_definition',
           'zendesk.trigger_definition.instance',
         ])
+      const webFormChannel = elements.filter(isInstanceElement).find(e => e.elemID.getFullName() === 'zendesk.channel.instance.Web_form@s')
+      expect(webFormChannel).toBeDefined()
+      expect(webFormChannel?.value?.name).toEqual('Web form')
       const channelType = elements
         .filter(isObjectType)
         .find(e => e.elemID.typeName === CHANNEL_TYPE_NAME)

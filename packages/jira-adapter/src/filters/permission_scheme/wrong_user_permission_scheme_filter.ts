@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType } from '@salto-io/adapter-api'
-import { getUsersMapByVisibleId, UserMap } from '../../users'
+import { getUsersMap, getUsersMapByVisibleId, UserMap } from '../../users'
 import { FilterCreator } from '../../filter'
 import { omitChanges, OmitChangesPredicate, addBackPermissions, PermissionHolder } from './omit_permissions_common'
 
@@ -34,7 +34,7 @@ export const wrongUserPermissionSchemePredicateCreator = (userMap: UserMap): Omi
  * pre deploy removes permissions within a permission scheme that contain a wrong account id.
  * on deploy adds those permissions back
  */
-const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
+const filter: FilterCreator = ({ config, client, elementsSource }) => {
   let erroneousPermissionSchemes: Record<string, PermissionHolder[]> = {}
   return ({
     name: 'wrongUserPermissionSchemeFilter',
@@ -42,7 +42,11 @@ const filter: FilterCreator = ({ config, client, getUserMapFunc }) => {
       if (!(config.fetch.convertUsersIds ?? true)) {
         return
       }
-      const userMap = getUsersMapByVisibleId(await getUserMapFunc(), client.isDataCenter)
+      const rawUserMap = await getUsersMap(elementsSource)
+      if (rawUserMap === undefined) {
+        return
+      }
+      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
       erroneousPermissionSchemes = omitChanges(
         changes,

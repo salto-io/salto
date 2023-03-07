@@ -1334,6 +1334,27 @@ describe('sdf client', () => {
         await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
+      it('should throw error when sdf result contain error in other language', async () => {
+        const sdfResult = [
+          'Starting deploy',
+          '*** ERREUR ***',
+          'some error',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
+        const customTypeInfo = {
+          typeName: 'typeName',
+          values: {
+            key: 'val',
+          },
+          scriptId: 'some_id',
+        } as CustomTypeInfo
+        await expect(client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+          .toThrow(new Error(
+            'Starting deploy\n'
+            + '*** ERREUR ***\n'
+            + 'some error'
+          ))
+      })
       it('should throw ObjectsDeployError when deploy failed on object validation', async () => {
         const errorMessage = `
 The deployment process has encountered an error.
@@ -1365,6 +1386,49 @@ File: ~/Objects/custform_114_t1441298_782.xml
           }
           return { isSuccess: () => true }
         })
+        let isRejected: boolean
+        try {
+          await client.deploy([{
+            typeName: 'typeName',
+            values: {
+              key: 'val',
+            },
+            scriptId: 'scriptId',
+          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          isRejected = false
+        } catch (e) {
+          isRejected = true
+          expect(e instanceof ObjectsDeployError).toBeTruthy()
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+        }
+        expect(isRejected).toBe(true)
+      })
+      it('should throw ObjectsDeployError when deploy failed on object validation - in other language', async () => {
+        const errorMessage = `
+The deployment process has encountered an error.
+Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
+2022-03-31 05:36:02 (PST) Installation started
+Info -- Account [(PRODUCTION) Salto Extended Dev]
+Info -- Account Customization Project [TempSdfProject-5492f41d-307d-4fc9-bc78-ef0834e9a197]
+Info -- Framework Version [1.0]
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Failed
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+*** ERREUR ***
+La validation a .chou..
+
+Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessage.split('\n') })
         let isRejected: boolean
         try {
           await client.deploy([{
@@ -1757,6 +1821,16 @@ File: ~/AccountConfiguration/features.xml`
         await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
       })
+
+      it('should throw FeaturesDeployError on failed features deploy - in other language', async () => {
+        const errorMessages = [
+          'Commencer le d.ploiement',
+          'Configurer la fonction -- La d.sactivation de la fonction SUITEAPPCONTROLCENTER(SuiteApp Control Center) a .chou.',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessages })
+        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
+          .rejects.toThrow(new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']))
+      })
     })
 
     it('should deploy multiple CustomizationInfos in a single project', async () => {
@@ -1878,6 +1952,20 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         })
         await expect(client.deploy(...deployParams)).rejects.toThrow(errorMessage)
         expect(mockExecuteAction).toHaveBeenCalledWith(validateProjectCommandMatcher)
+      })
+      it('should throw error when sdf result contain error in other language', async () => {
+        const sdfResult = [
+          'Starting validation',
+          '*** ERREUR ***',
+          'some error',
+        ]
+        mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
+        await expect(client.deploy(...deployParams)).rejects
+          .toThrow(new Error(
+            'Starting validation\n'
+            + '*** ERREUR ***\n'
+            + 'some error'
+          ))
       })
     })
   })

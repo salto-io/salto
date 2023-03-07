@@ -31,8 +31,9 @@ const MISSING_DEPLOY_CONFIG_USER = 'User provided in defaultMissingUserFallback 
 // system options that do not contain a specific user value
 export const VALID_USER_VALUES = ['current_user', 'all_agents', 'requester_id', 'assignee_id', 'requester_and_ccs', 'agent', 'end_user', '']
 
-type User = {
+export type User = {
   id: number
+  name: string
   email: string
   role: string
   // eslint-disable-next-line camelcase
@@ -45,6 +46,7 @@ type CurrentUserResponse = {
 
 const EXPECTED_USER_SCHEMA = Joi.object({
   id: Joi.number().required(),
+  name: Joi.string().required(),
   email: Joi.string().required(),
   role: Joi.string(),
   custom_role_id: Joi.number(),
@@ -197,7 +199,7 @@ export const getUserFallbackValue = async (
   defaultMissingUserFallback: string,
   existingUsers: Set<string>,
   client: ZendeskClient
-): Promise<string> => {
+): Promise<string | undefined> => {
   if (defaultMissingUserFallback === configUtils.DEPLOYER_FALLBACK_VALUE) {
     try {
       const response = (await client.getSinglePage({
@@ -207,15 +209,58 @@ export const getUserFallbackValue = async (
         return response.user.email
       }
       log.error('Received invalid response from endpoint \'/api/v2/users/me\'')
-      throw new Error('Received invalid user response')
     } catch (e) {
       log.error('Attempt to get current user details has failed with error: %o', e)
-      throw new Error('Failed to get current user from endpoint \'/api/v2/users/me\'')
     }
+    return undefined
   }
   if (!existingUsers.has(defaultMissingUserFallback)) {
     log.error(MISSING_DEPLOY_CONFIG_USER)
-    throw new Error(MISSING_DEPLOY_CONFIG_USER)
+    return undefined
   }
   return defaultMissingUserFallback
 }
+
+const getIdByEmailFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+  let idToEmail: Record<string, string>
+
+  const getIdByEmail = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+    if (idToEmail !== undefined) {
+      return idToEmail
+    }
+    const users = await getUsers(paginator)
+    if (_.isEmpty(users)) {
+      idToEmail = {}
+      return {}
+    }
+    idToEmail = Object.fromEntries(
+      users.map(user => [user.id.toString(), user.email])
+    ) as Record<string, string>
+    return idToEmail
+  }
+  return getIdByEmail
+}
+
+export const getIdByEmail = getIdByEmailFunc()
+
+const getIdByNameFunc = ():(paginator: clientUtils.Paginator) => Promise<Record<string, string>> => {
+  let idToName: Record<string, string>
+
+  const getIdByName = async (paginator: clientUtils.Paginator): Promise<Record<string, string>> => {
+    if (idToName !== undefined) {
+      return idToName
+    }
+    const users = await getUsers(paginator)
+    if (_.isEmpty(users)) {
+      idToName = {}
+      return {}
+    }
+    idToName = Object.fromEntries(
+      users.map(user => [user.id.toString(), user.name])
+    ) as Record<string, string>
+    return idToName
+  }
+  return getIdByName
+}
+
+export const getIdByName = getIdByNameFunc()

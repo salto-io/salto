@@ -42,6 +42,14 @@ export default class DummyAdapter implements AdapterOperations {
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  public async validate({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    return {
+      appliedChanges: changeGroup.changes,
+      errors: [],
+    }
+  }
+
 
   public deployModifiers: DeployModifiers =
   {

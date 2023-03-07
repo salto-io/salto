@@ -20,6 +20,9 @@ const log = logger(module)
 export const OBJECT_ID = 'objectId'
 export const FEATURE_NAME = 'featureName'
 
+export const fetchUnexpectedErrorRegex = new RegExp('(unexpected error|erreur inattendue)')
+export const fetchLockedObjectErrorRegex = new RegExp('You cannot download the XML file for this object because it is locked')
+
 type SupportedLanguage = 'english' | 'french'
 
 type ErrorDetectors = {

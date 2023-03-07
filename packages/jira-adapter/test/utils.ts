@@ -116,3 +116,7 @@ export const getAccountInfoInstance = (isFree: boolean): InstanceElement => (
 
 export const getLicenseElementSource = (isFree: boolean): ReadOnlyElementsSource =>
   buildElementsSourceFromElements([getAccountInfoInstance(isFree)])
+
+export const createEmptyType = (type: string): ObjectType => new ObjectType({
+  elemID: new ElemID(JIRA, type),
+})

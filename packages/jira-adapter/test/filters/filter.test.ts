@@ -14,10 +14,9 @@
 * limitations under the License.
 */
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { getFilterParams } from '../utils'
+import { createEmptyType, getFilterParams } from '../utils'
 import filtersFilter from '../../src/filters/filter'
 import { Filter } from '../../src/filter'
-import { createEmptyType } from './account_id/account_id_common'
 
 describe('filtersFilter', () => {
   let filter: Filter

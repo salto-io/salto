@@ -15,9 +15,8 @@
 */
 
 import { resolveChangeElement, restoreChangeElement, restoreValues, walkOnValue } from '@salto-io/adapter-utils'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Change, InstanceElement } from '@salto-io/adapter-api'
+import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Change, InstanceElement, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { decodeDcFields, encodeDcFields } from './workflow_dc'
@@ -25,6 +24,17 @@ import { decodeCloudFields, encodeCloudFields } from './workflow_cloud'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
+
+const safeChangeClone = (change: Change<InstanceElement>): Change<InstanceElement> => {
+  const result = { action: change.action, data: {} }
+  if (!isAdditionChange(change)) {
+    result.data = { before: change.data.before.clone() }
+  }
+  if (!isRemovalChange(change)) {
+    result.data = { ...result.data, after: change.data.after.clone() }
+  }
+  return result as Change<InstanceElement>
+}
 
 // This filter is used to encode/decode the fields of the workflow transitions for scriptRunner
 // There are different decodings for cloud and dc, and the filter encodes back before deploy
@@ -57,7 +67,7 @@ const filter: FilterCreator = ({ client, config }) => {
         .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
         .map(async change => {
           const instance = getChangeData(change)
-          originalChanges[instance.elemID.getFullName()] = _.cloneDeep(change)
+          originalChanges[instance.elemID.getFullName()] = safeChangeClone(change)
           instance.value.transitions = getChangeData(
             await resolveChangeElement(change, getLookUpName)
           ).value.transitions

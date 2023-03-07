@@ -135,6 +135,14 @@ export abstract class AdapterHTTPClient<
   }
 
   /**
+   * Extract headers needed by the adapter
+   */
+  // eslint-disable-next-line class-methods-use-this
+  protected extractHeaders(_headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    return undefined
+  }
+
+  /**
    * Get a single response
    */
   @throttle<TRateLimitConfig>({ bucketName: 'get', keys: ['url', 'queryParams'] })
@@ -207,14 +215,15 @@ export abstract class AdapterHTTPClient<
           requestConfig,
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
+      const responseHeaders = this.extractHeaders(res.headers)
       log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
         url,
         queryParams,
-        response: this.clearValuesFromResponseData(res.data, url),
-        headers: res.headers,
+        response: Buffer.isBuffer(res.data) ? `<omitted buffer of length ${res.data.length}>` : this.clearValuesFromResponseData(res.data, url),
+        headers: responseHeaders,
         method: method.toUpperCase(),
       }))
-      const { data, status, headers: responseHeaders } = res
+      const { data, status } = res
       return {
         data,
         status,

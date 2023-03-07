@@ -63,6 +63,10 @@ describe('client_http_client', () => {
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const clearValuesFromResponseDataFunc = jest.spyOn(MyCustomClient.prototype as any, 'clearValuesFromResponseData')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const extractHeadersFunc = jest.spyOn(MyCustomClient.prototype as any, 'extractHeaders')
+        .mockImplementationOnce(() => ({ a: 'b' }))
+        .mockImplementationOnce(x => x)
       expect(mockCreateConnection).toHaveBeenCalledTimes(1)
 
       mockAxiosAdapter.onGet('/users/me').reply(200, {
@@ -73,11 +77,14 @@ describe('client_http_client', () => {
 
       const getRes = await client.getSinglePage({ url: '/ep' })
       const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
-      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { h: '123' } })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { a: 'b' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: { hh: 'header' } })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { hh: 'header' })
     })
 
     it('should throw Unauthorized on login 401', async () => {

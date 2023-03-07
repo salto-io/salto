@@ -23,6 +23,8 @@ describe('client', () => {
   let mockAxios: MockAdapter
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const clearValuesFromResponseDataFunc = jest.spyOn(OktaClient.prototype as any, 'clearValuesFromResponseData')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const extractHeadersFunc = jest.spyOn(OktaClient.prototype as any, 'extractHeaders')
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new OktaClient({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' } })
@@ -96,6 +98,26 @@ describe('client', () => {
           { id: 'a', type: 'google', methods: [{ google: { secretKey: '<SECRET>' } }, { sso: { secretKey: '<SECRET>' } }] },
           { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<SECRET>' },
         ])
+    })
+  })
+
+  describe('extractHeaders', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios
+        .onGet('/api/v1/org').replyOnce(200, { id: 1 })
+        .onGet('/api/v1/idps').replyOnce(200, { a: 'b' }, { h1: '123', h2: '456', link: 'aaa' })
+    })
+    it('should return only the relevant headers', async () => {
+      const idpsRes = await client.getSinglePage({ url: '/api/v1/idps' })
+      expect(idpsRes).toEqual({ status: 200, data: { a: 'b' }, headers: { link: 'aaa' })
+      const orgRes = await client.getSinglePage({ url: '/api/v1/org' })
+      expect(orgRes).toEqual({ status: 200, data: { id: 1} })
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
+      expect(extractHeadersFunc).toHaveNthReturnedWith(1,
+        { link: 'aaa' })
+      expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2, undefined)
     })
   })
 })

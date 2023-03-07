@@ -19,6 +19,7 @@ import { Values } from '@salto-io/adapter-api'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
+import { LINK_HEADER_NAME } from './pagination'
 
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
@@ -79,5 +80,13 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         : undefined
     ))
     return res
+  }
+
+  /**
+   * Extract the pagination header
+   */
+  // eslint-disable-next-line class-methods-use-this
+  protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    return headers !== undefined ? _.pick(headers, LINK_HEADER_NAME) : undefined
   }
 }

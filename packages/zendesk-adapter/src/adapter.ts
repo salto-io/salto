@@ -136,7 +136,7 @@ const { findDataField, computeGetArgs } = elementUtils
 const {
   getAllElements,
   replaceInstanceTypeForDeploy,
-  restoreInstanceTypeFromDeploy,
+  // restoreInstanceTypeFromDeploy,
   getEntriesResponseValues,
   addRemainingTypes,
 } = elementUtils.ducktype
@@ -690,12 +690,12 @@ export default class ZendeskAdapter implements AdapterOperations {
         lookupFunc,
       ))
       .toArray()
-    const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
-      appliedChanges,
-      originalInstanceChanges: instanceChanges,
-    })
+    // const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
+    //   appliedChanges,
+    //   originalInstanceChanges: instanceChanges,
+    // })
     return {
-      appliedChanges: restoredAppliedChanges,
+      appliedChanges,
       errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)),
     }
   }

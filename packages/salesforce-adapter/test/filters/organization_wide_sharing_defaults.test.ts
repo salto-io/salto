@@ -19,7 +19,7 @@ import mockAdapter from '../adapter'
 import * as filterUtilsModule from '../../src/filters/utils'
 import {
   API_NAME,
-  CUSTOM_OBJECT_ID_FIELD,
+  SALESFORCE_OBJECT_ID_FIELD,
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
@@ -103,7 +103,7 @@ describe('organization-wide defaults filter', () => {
 
     beforeEach(() => {
       mockedFilterUtils.queryClient.mockResolvedValue([{
-        [CUSTOM_OBJECT_ID_FIELD]: 'SomeId',
+        [SALESFORCE_OBJECT_ID_FIELD]: 'SomeId',
         DefaultAccountAccess: 'Edit',
         DefaultContactAccess: 'ControlledByParent',
         DefaultOpportunityAccess: 'None',

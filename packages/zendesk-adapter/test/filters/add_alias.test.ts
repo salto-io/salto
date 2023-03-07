@@ -28,10 +28,13 @@ import {
   ZENDESK,
 } from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import ZendeskClient from '../../src/client/client'
 
 describe('add alias filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
+  let client: ZendeskClient
 
   const appInstallationTypeName = 'app_installation'
   const dynamicContentItemTypeName = 'dynamic_content_item'
@@ -53,7 +56,25 @@ describe('add alias filter', () => {
 
 
   beforeEach(async () => {
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    client = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+    })
+    filter = filterCreator(createFilterCreatorParams({
+      client,
+      config: {
+        ...DEFAULT_CONFIG,
+        [FETCH_CONFIG]: {
+          include: [{
+            type: '.*',
+          }],
+          exclude: [],
+          guide: {
+            brands: ['.*'],
+          },
+          addAlias: true,
+        },
+      },
+    })) as FilterType
   })
 
   describe('onFetch', () => {

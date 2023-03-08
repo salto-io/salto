@@ -141,7 +141,7 @@ export abstract class AdapterHTTPClient<
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       // include headers related to rate limits
-      ? _.pickBy(headers, (_val, key) => key.toLowerCase().includes('rate-'))
+      ? _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith('rate-') || key.toLowerCase().startsWith('x-rate-'))
       : undefined
   }
 

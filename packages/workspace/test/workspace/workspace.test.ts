@@ -133,6 +133,7 @@ const createState = (
 ): State => buildInMemState(async () => ({
   elements: createInMemoryElementSource(elements),
   pathIndex: new InMemoryRemoteMap<Path[]>(),
+  topLevelPathIndex: new InMemoryRemoteMap<Path[]>(),
   referenceSources: new InMemoryRemoteMap(),
   accountsUpdateDate: new InMemoryRemoteMap(),
   changedBy: new InMemoryRemoteMap([{ key: 'name@@account', value: ['elemId'] }]),

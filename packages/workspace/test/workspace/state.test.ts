@@ -51,6 +51,7 @@ describe('state', () => {
       elements: createInMemoryElementSource([elem]),
       accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
       pathIndex,
+      topLevelPathIndex: pathIndex,
       saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
       staticFilesSource: stateStaticFilesSource,
     })

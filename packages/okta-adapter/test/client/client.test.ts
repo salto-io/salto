@@ -51,7 +51,7 @@ describe('client', () => {
     })
   })
 
-  describe('clearValuesFromResponseData', () => {
+  describe('clearValuesFromResponseData + extractHeaders', () => {
     const idpsResponse = {
       id: '123',
       protocol: {
@@ -76,13 +76,13 @@ describe('client', () => {
         .onGet('/api/v1/org').replyOnce(200, { id: 1 })
         .onGet('/api/v1/idps').replyOnce(200, idpsResponse, { h: '123' })
         .onGet('/api/v1/authenticators')
-        .replyOnce(200, autheticatorsRes, { h: '123' })
+        .replyOnce(200, autheticatorsRes, { h: '123', link: 'aaa' })
     })
-    it('should return response data with no secrets', async () => {
+    it('should return response data with no secrets and only the relevant headers', async () => {
       const firstRes = await client.getSinglePage({ url: '/api/v1/idps' })
-      expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { h: '123' } })
+      expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { } })
       const secondRes = await client.getSinglePage({ url: '/api/v1/authenticators' })
-      expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { h: '123' } })
+      expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { link: 'aaa' } })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(1,
         {
@@ -98,26 +98,9 @@ describe('client', () => {
           { id: 'a', type: 'google', methods: [{ google: { secretKey: '<SECRET>' } }, { sso: { secretKey: '<SECRET>' } }] },
           { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<SECRET>' },
         ])
-    })
-  })
-
-  describe('extractHeaders', () => {
-    beforeEach(async () => {
-      jest.clearAllMocks()
-      // The first replyOnce with 200 is for the client authentication
-      mockAxios
-        .onGet('/api/v1/org').replyOnce(200, { id: 1 })
-        .onGet('/api/v1/idps').replyOnce(200, { a: 'b' }, { h1: '123', h2: '456', link: 'aaa' })
-    })
-    it('should return only the relevant headers', async () => {
-      const idpsRes = await client.getSinglePage({ url: '/api/v1/idps' })
-      expect(idpsRes).toEqual({ status: 200, data: { a: 'b' }, headers: { link: 'aaa' })
-      const orgRes = await client.getSinglePage({ url: '/api/v1/org' })
-      expect(orgRes).toEqual({ status: 200, data: { id: 1} })
       expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
-      expect(extractHeadersFunc).toHaveNthReturnedWith(1,
-        { link: 'aaa' })
-      expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(2, undefined)
+      expect(extractHeadersFunc).toHaveNthReturnedWith(1, {})
+      expect(extractHeadersFunc).toHaveNthReturnedWith(2, { link: 'aaa' })
     })
   })
 })

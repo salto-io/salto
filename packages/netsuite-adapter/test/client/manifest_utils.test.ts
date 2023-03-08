@@ -18,8 +18,11 @@ import { fixManifest } from '../../src/client/manifest_utils'
 import { CustomizationInfo } from '../../src/client/types'
 
 const DEFAULT_ADDITIONAL_DEPS = {
-  include: { features: [], objects: [] },
-  exclude: { features: [], objects: [] },
+  optionalFeatures: [],
+  requiredFeatures: [],
+  excludedFeatures: [],
+  includedObjects: [],
+  excludedObjects: [],
 }
 
 describe('manifest.xml utils', () => {
@@ -251,6 +254,7 @@ describe('manifest.xml utils', () => {
       <feature required="true">ADDRESSCUSTOMIZATION</feature>
       <feature required="true">SUBSIDIARIES</feature>
       <feature required="true">addedFeature</feature>
+      <feature required="false">EXPREPORTS</feature>
     </features>
     <objects>
       <object>custentity13</object>
@@ -267,15 +271,12 @@ describe('manifest.xml utils', () => {
   </dependencies>
 </manifest>
 `
-    expect(fixManifest(manifest, [], {
-      include: {
-        objects: ['addedObject'],
-        features: ['addedFeature'],
-      },
-      exclude: {
-        objects: ['custentity2edited'],
-        features: ['RECEIVABLES'],
-      },
+    expect(fixManifest(manifest, custInfos, {
+      optionalFeatures: ['EXPREPORTS'],
+      requiredFeatures: ['addedFeature'],
+      excludedFeatures: ['RECEIVABLES'],
+      includedObjects: ['addedObject'],
+      excludedObjects: ['custentity2edited', 'somescriptid', 'secondscriptid'],
     }))
       .toEqual(fixedManifest)
   })

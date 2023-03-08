@@ -61,7 +61,6 @@ export interface State extends ElementsSource {
   existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
-  updateTopLevelIndex(elements: Element[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>

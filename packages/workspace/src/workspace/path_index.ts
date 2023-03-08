@@ -178,6 +178,16 @@ export const overridePathIndex = async (
   await current.setAll(entries)
 }
 
+export const overrideTopLevelPathIndex = async (
+  current: PathIndex,
+  unmergedElements: Element[],
+): Promise<void> => {
+  const entries = getElementsPathHints(unmergedElements)
+    .filter(e => ElemID.fromFullName(e.key).isTopLevel())
+  await current.clear()
+  await current.setAll(entries)
+}
+
 export const updatePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],

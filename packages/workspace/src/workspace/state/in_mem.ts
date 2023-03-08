@@ -106,6 +106,7 @@ export const buildInMemState = (
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       const currentStateData = await stateData()
       await overridePathIndex(currentStateData.pathIndex, unmergedElements)
+      await overridePathIndex(currentStateData.topLevelPathIndex, unmergedElements)
     },
     updatePathIndex: async (
       unmergedElements: Element[],
@@ -115,13 +116,19 @@ export const buildInMemState = (
       await updatePathIndex(
         currentStateData.pathIndex, unmergedElements, servicesNotToChange
       )
+      await updatePathIndex(
+        currentStateData.topLevelPathIndex, unmergedElements, servicesNotToChange
+      )
     },
     getPathIndex: async (): Promise<PathIndex> =>
       (await stateData()).pathIndex,
+    getTopLevelPathIndex: async (): Promise<PathIndex> =>
+      (await stateData()).topLevelPathIndex,
     clear: async () => {
       const currentStateData = await stateData()
       await currentStateData.elements.clear()
       await currentStateData.pathIndex.clear()
+      await currentStateData.topLevelPathIndex.clear()
       await getUpdateDate(currentStateData).clear()
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
@@ -133,6 +140,7 @@ export const buildInMemState = (
       const currentStateData = await stateData()
       await currentStateData.elements.flush()
       await currentStateData.pathIndex.flush()
+      await currentStateData.topLevelPathIndex.flush()
       await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()

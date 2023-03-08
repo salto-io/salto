@@ -190,8 +190,7 @@ describe('Scriptrunner DC Workflow', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = 'demo string'
-        await filter.preDeploy([toChange({ after: instance })])
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = goodBase64
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
@@ -251,14 +250,12 @@ describe('Scriptrunner DC Workflow', () => {
       it('should not fail if undefined', async () => {
         instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = undefined
         await filter.preDeploy([toChange({ after: instance })])
-        // resolveChangeData deletes empty fields
-        expect(instance.value.transitions[0].rules.validators[0].configuration).toBeUndefined()
+        expect(instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES).toBeUndefined()
       })
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
-        instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = 'demo string'
-        await filter.preDeploy([toChange({ after: instance })])
+        instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = goodBase64
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
@@ -294,8 +291,7 @@ describe('Scriptrunner DC Workflow', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
-        instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES = 'demo string'
-        await filter.preDeploy([toChange({ after: instance })])
+        instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES = goodBase64
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })

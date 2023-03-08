@@ -22,6 +22,7 @@ import { postFunctionType, types as postFunctionTypes } from './post_functions_t
 import { createConditionConfigurationTypes } from './conditions_types'
 import { Condition, isWorkflowInstance, Rules, Status, Transition, Validator, Workflow } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
+import { types as sharedWorkflowTypes } from './shared_workflow_types'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
@@ -190,6 +191,7 @@ const filter: FilterCreator = ({ config }) => ({
       worfkflowConditionType.fields.configuration = new Field(worfkflowConditionType, 'configuration', conditionConfigurationTypes.type)
     }
 
+    elements.push(...sharedWorkflowTypes)
     elements.push(...postFunctionTypes)
     elements.push(...validatorTypes)
     elements.push(conditionConfigurationTypes.type, ...conditionConfigurationTypes.subTypes)

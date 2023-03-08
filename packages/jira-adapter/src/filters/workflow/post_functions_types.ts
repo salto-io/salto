@@ -17,6 +17,7 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@s
 import { elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { JIRA, POST_FUNCTION_CONFIGURATION, SCRIPT_RUNNER_TYPE } from '../../constants'
+import { linkDirectionType } from './shared_workflow_types'
 import { PostFunction } from './types'
 
 const postFunctionEventType = new ObjectType({
@@ -51,7 +52,7 @@ const webhookConfigType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'WebhookConfig'],
 })
 
-const ScriptRunnerObjectType = new ObjectType({
+const scriptRunnerObjectType = new ObjectType({
   elemID: new ElemID(JIRA, SCRIPT_RUNNER_TYPE),
   fields: {
     issueTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
@@ -93,7 +94,7 @@ const postFunctionConfigurationType = new ObjectType({
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },
     value: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-    scriptRunner: { refType: ScriptRunnerObjectType, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    scriptRunner: { refType: scriptRunnerObjectType, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_ROLE_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_RESOLUTION_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_EVENT_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
@@ -104,6 +105,8 @@ const postFunctionConfigurationType = new ObjectType({
     FIELD_SECURITY_LEVEL_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_BOARD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_SELECTED_FIELDS: { refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_LINK_DIRECTION: { refType: new ListType(linkDirectionType),
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, POST_FUNCTION_CONFIGURATION],
@@ -123,7 +126,7 @@ export const types = [
   projectRoleConfigType,
   issueSecurityLevelType,
   webhookConfigType,
-  ScriptRunnerObjectType,
+  scriptRunnerObjectType,
   postFunctionConfigurationType,
   postFunctionType,
 ]

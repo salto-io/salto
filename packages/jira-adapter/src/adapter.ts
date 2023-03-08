@@ -121,6 +121,7 @@ import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_per
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
 import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
+import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
 import storeUsersFilter from './filters/store_users'
 
 const {
@@ -203,6 +204,8 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
+  // must run after scriptRunnerWorkflowListsFilter
+  scriptRunnerWorkflowReferencesFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,

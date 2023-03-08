@@ -189,8 +189,7 @@ describe('ScriptRunner cloud Workflow', () => {
       it('should not decode if undefined', async () => {
         instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner = undefined
         await filter.preDeploy([toChange({ after: instance })])
-        // resolveChangeData deletes empty fields
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration).toBeUndefined()
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toBeUndefined()
       })
       it('should not encode if script runner not supported', async () => {
         renameKey(instance.value.transitions[0].rules.postFunctions[0].configuration, { from: 'scriptRunner', to: 'value' })
@@ -201,20 +200,17 @@ describe('ScriptRunner cloud Workflow', () => {
     })
     describe('on deploy', () => {
       it('should change field name to scriptRunner', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner).toBeDefined()
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.value).toBeUndefined()
       })
       it('should make array of accountIds and groups', async () => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner = accountAndGroupArrayed
-        await filter.preDeploy([toChange({ after: instance })])
+        instance.value.transitions[0].rules.postFunctions[0].configuration.value = accountAndGroupArrayed
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual(['1', '2', '3'])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.groupName).toEqual(['4', '5', '6'])
       })
       it('should decode properly', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner).toEqual({ a: 1 })
       })
@@ -288,19 +284,16 @@ describe('ScriptRunner cloud Workflow', () => {
       it('should not fail if undefined', async () => {
         instance.value.transitions[0].rules.validators[0].configuration.scriptRunner = undefined
         await filter.preDeploy([toChange({ after: instance })])
-        // resolveChangeData deletes empty fields
-        expect(instance.value.transitions[0].rules.validators[0].configuration).toBeUndefined()
+        expect(instance.value.transitions[0].rules.validators[0].configuration.value).toBeUndefined()
       })
     })
     describe('on deploy', () => {
       it('should rename field name to scriptRunner', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.validators[0].configuration.scriptRunner).toBeDefined()
         expect(instance.value.transitions[0].rules.validators[0].configuration.value).toBeUndefined()
       })
       it('should objectify properly', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.validators[0].configuration.scriptRunner).toEqual({ a: 1 })
       })
@@ -370,13 +363,11 @@ describe('ScriptRunner cloud Workflow', () => {
     })
     describe('on deploy', () => {
       it('should rename field name to scriptRunner', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.scriptRunner).toBeDefined()
         expect(instance.value.transitions[0].rules.conditions[0].configuration.value).toBeUndefined()
       })
       it('should objectify properly', async () => {
-        await filter.preDeploy([toChange({ after: instance })])
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.scriptRunner).toEqual({ b: 1 })
       })

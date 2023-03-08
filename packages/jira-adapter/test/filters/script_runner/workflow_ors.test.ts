@@ -21,7 +21,7 @@ import orFilter, { OR_FIELDS } from '../../../src/filters/script_runner/workflow
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
-
+const REDUCED_OR_FIELDS = OR_FIELDS.filter(field => field !== 'FIELD_LINK_DIRECTION')
 describe('ScriptRunner ors in DC', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -75,11 +75,11 @@ describe('ScriptRunner ors in DC', () => {
   })
   describe('fetch', () => {
     it('should replace all field ors to arrays', async () => {
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'assignee|||reporter'
       })
       await filter.onFetch([instance])
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual(['assignee', 'reporter'])
       })
     })
@@ -121,11 +121,11 @@ describe('ScriptRunner ors in DC', () => {
   })
   describe('pre deploy', () => {
     it('should replace arrays to ors', async () => {
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         instance.value.transitions[0].rules.postFunctions[0].configuration[field] = ['reporter', 'assignee']
       })
       await filter.preDeploy([toChange({ after: instance })])
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual('reporter|||assignee')
       })
     })

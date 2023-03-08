@@ -15,7 +15,7 @@
 */
 
 import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
+import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
@@ -45,6 +45,33 @@ export const MAIL_LISTS_FIELDS = [
 const GROUP_PREFIX = 'group:'
 const ROLE_PREFIX = 'role:'
 const SPACE = ' '
+const FIELD_LINK_DIRECTION = 'FIELD_LINK_DIRECTION'
+
+const stringifyDirectionFields = (value: Value): void => {
+  if (_.isPlainObject(value)) {
+    Object.entries(value)
+      .filter(([key]) => key === FIELD_LINK_DIRECTION)
+      .filter((entry): entry is [string, { linkType: string; direction: string }[]] => Array.isArray(entry[1]))
+      .forEach(([key, val]) => {
+        value[key] = val.map((directionObj: { linkType: string; direction: string }) => `${directionObj.linkType}-${directionObj.direction}`)
+      })
+  }
+}
+
+const objectifyDirectionFields = (value: Value): void => {
+  if (_.isPlainObject(value)) {
+    Object.entries(value)
+      .filter(([key]) => key === FIELD_LINK_DIRECTION)
+      .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]))
+      .forEach(([key, val]) => {
+        value[key] = val.map((directionString: string) => {
+          const [id, direction] = directionString.split('-')
+          return { linkType: id, direction }
+        }).sort() // sort to make sure the order is consistent
+      })
+  }
+}
+
 
 // splits a string by spaces that are not in quotes
 // for example:
@@ -82,7 +109,7 @@ const joinWithPrefixes = (object: MailListObject | undefined): string => {
   return [prefixedGroup, prefixedRole, plainField].filter(Boolean).join(SPACE)
 }
 
-const returnMailLists: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const returnMailLists = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => MAIL_LISTS_FIELDS.includes(key))
@@ -90,7 +117,6 @@ const returnMailLists: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
         value[key] = joinWithPrefixes(val as MailListObject)
       })
   }
-  return WALK_NEXT_STEP.RECURSE
 }
 
 // creates an object with the 3 types of items (group, role, field) by the prefixes
@@ -116,7 +142,7 @@ const createEmailObject = (values: string[]): MailListObject => {
 // mail lists are space separated, but we want to keep the spaces inside quotes
 // they can contain 3 types of items- fields, groups and roles. groups and roles have prefixes
 // and example: assignee watchers group:jira-software-users role:Administrators group:\"spaces spaces\"
-const replaceMailLists: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const replaceMailLists = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => MAIL_LISTS_FIELDS.includes(key))
@@ -127,10 +153,9 @@ const replaceMailLists: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
         value[key] = createEmailObject(valuesArr)
       })
   }
-  return WALK_NEXT_STEP.RECURSE
 }
 
-const returnOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const returnOr = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => OR_FIELDS.includes(key))
@@ -139,10 +164,9 @@ const returnOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
         value[key] = val.join(SCRIPT_RUNNER_OR)
       })
   }
-  return WALK_NEXT_STEP.RECURSE
 }
 
-const replaceOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const replaceOr = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => OR_FIELDS.includes(key))
@@ -151,19 +175,15 @@ const replaceOr: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
         value[key] = val.split(SCRIPT_RUNNER_OR).sort() // sort to make sure the order is always the same
       })
   }
-  return WALK_NEXT_STEP.RECURSE
 }
 
-const findScriptRunnerDC = (funcs: WalkOnFunc[]): WalkOnFunc => (
-  ({ value, path }): WALK_NEXT_STEP => {
+const findScriptRunnerDC = (funcs: Value[]): WalkOnFunc => (
+  ({ value }): WALK_NEXT_STEP => {
     if (value === undefined) {
       return WALK_NEXT_STEP.SKIP
     }
     if (SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined) {
-      funcs.forEach(func =>
-        walkOnValue({ elemId: path.createNestedID('configuration'),
-          value: value.configuration,
-          func }))
+      funcs.forEach(func => func(value.configuration))
       return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
@@ -175,7 +195,7 @@ const findScriptRunnerDC = (funcs: WalkOnFunc[]): WalkOnFunc => (
 // FIELD_TRANSITION_OPTIONS = "FIELD_SKIP_PERMISSIONS|||FIELD_SKIP_VALIDATORS|||FIELD_SKIP_CONDITIONS"
 // The other is mail lists that are split by spaces
 const filter: FilterCreator = ({ client, config }) => ({
-  name: 'scriptRunnerWorkflowOrFilter',
+  name: 'scriptRunnerWorkflowListsFilter',
   onFetch: async (elements: Element[]) => {
     if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
       return
@@ -186,7 +206,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, replaceMailLists]) })
+          func: findScriptRunnerDC([replaceOr, replaceMailLists, objectifyDirectionFields]) })
       })
   },
   preDeploy: async changes => {
@@ -201,7 +221,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([returnOr, returnMailLists]) })
+          func: findScriptRunnerDC([stringifyDirectionFields, returnOr, returnMailLists]) })
       })
   },
   onDeploy: async changes => {
@@ -216,7 +236,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, replaceMailLists]) })
+          func: findScriptRunnerDC([replaceOr, replaceMailLists, objectifyDirectionFields]) })
       })
   },
 })

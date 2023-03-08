@@ -16,6 +16,7 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { CONDITION_CONFIGURATION, JIRA } from '../../constants'
+import { linkDirectionType } from './shared_workflow_types'
 
 export const createConditionConfigurationTypes = (): {
   type: ObjectType
@@ -150,6 +151,10 @@ export const createConditionConfigurationTypes = (): {
       },
       FIELD_LINKED_ISSUE_STATUS: {
         refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_LINK_DIRECTION: {
+        refType: new ListType(linkDirectionType),
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
     },

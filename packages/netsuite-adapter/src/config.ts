@@ -36,7 +36,6 @@ export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_USE_CHANGES_DETECTION = true
 
 export type DeployParams = {
   warnOnStaleWorkspaceData?: boolean

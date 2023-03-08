@@ -1125,6 +1125,22 @@ describe('Adapter', () => {
         await adapter.fetch(mockFetchOpts)
         expect(getChangedObjectsMock).not.toHaveBeenCalled()
       })
+
+      it('should call getChangedObjects even if fetchTarget is not defined', async () => {
+        adapter = new NetsuiteAdapter({
+          client: new NetsuiteClient(client, suiteAppClient),
+          elementsSource,
+          filtersCreators: [firstDummyFilter, secondDummyFilter],
+          config: {
+            ...config,
+            useChangesDetection: true,
+          },
+          getElemIdFunc: mockGetElemIdFunc,
+        })
+
+        await adapter.fetch(mockFetchOpts)
+        expect(getChangedObjectsMock).toHaveBeenCalled()
+      })
     })
   })
 })

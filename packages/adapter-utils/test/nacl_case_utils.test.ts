@@ -207,6 +207,12 @@ describe('naclCase utils', () => {
     it('should return if there is a space', () => {
       expect(prettifyName('prettify_camelCase_text@su')).toEqual('prettify camelCase_text')
     })
+    it('should handle only numbers correctly', () => {
+      expect(prettifyName('1222@')).toEqual('1222')
+    })
+    it('should handle numbers and letters correctly', () => {
+      expect(prettifyName('126_bla22bla__as2@szcs')).toEqual('126 bla22bla$ as2')
+    })
     it('should split by space camelCase', () => {
       expect(prettifyName('camelCase')).toEqual('Camel Case')
     })

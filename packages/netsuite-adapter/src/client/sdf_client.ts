@@ -46,7 +46,7 @@ import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, AdditionalDependencies, SdfDeployParams,
+  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -874,7 +874,7 @@ export default class SdfClient {
   async deploy(
     customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
-    { additionalDependencies, validateOnly = false }: SdfDeployParams
+    { manifestDependencies, validateOnly = false }: SdfDeployParams
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
     const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
@@ -896,20 +896,20 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, additionalDependencies, validateOnly)
+    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
   private static async fixManifest(
     projectName: string,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalDependencies
+    manifestDependencies: ManifestDependencies
   ): Promise<void> {
     const manifestPath = SdfClient.getManifestFilePath(projectName)
     const manifestContent = (await readFile(manifestPath)).toString()
     await writeFile(
       manifestPath,
-      fixManifest(manifestContent, customizationInfos, additionalDependencies)
+      fixManifest(manifestContent, customizationInfos, manifestDependencies)
     )
   }
 
@@ -941,7 +941,7 @@ export default class SdfClient {
       // in this case we're looking for validation error message lines.
       const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
       if (missingFeatureNames.length > 0) {
-        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
+        return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
       }
       const validationErrorObjects = getGroupItemFromRegex(
         errorMessage, objectValidationErrorRegex, OBJECT_ID
@@ -972,11 +972,11 @@ export default class SdfClient {
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalDependencies,
+    manifestDependencies: ManifestDependencies,
     validateOnly: boolean
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
+    await SdfClient.fixManifest(projectName, customizationInfos, manifestDependencies)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),

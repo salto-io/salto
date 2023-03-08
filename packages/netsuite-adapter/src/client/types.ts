@@ -80,18 +80,22 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
-export type AdditionalSdfDeployDependencies = {
-  features: string[]
-  objects: string[]
-}
+type OptionalFeature = { status: 'optional'; canBeRequired: boolean }
+type RequiredFeature = { status: 'required' }
+type ExcludedFeature = { status: 'excluded' }
+type FeatureStatus = OptionalFeature | RequiredFeature | ExcludedFeature
+export type FeaturesMap = Record<string, FeatureStatus>
 
-export type AdditionalDependencies = {
-  include: AdditionalSdfDeployDependencies
-  exclude: AdditionalSdfDeployDependencies
+export type ManifestDependencies = {
+  optionalFeatures: string[]
+  requiredFeatures: string[]
+  excludedFeatures: string[]
+  includedObjects: string[]
+  excludedObjects: string[]
 }
 
 export type SdfDeployParams = {
-  additionalDependencies: AdditionalDependencies
+  manifestDependencies: ManifestDependencies
   validateOnly?: boolean
 }
 

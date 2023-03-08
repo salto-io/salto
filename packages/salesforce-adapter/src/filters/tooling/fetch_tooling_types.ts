@@ -39,10 +39,10 @@ const createToolingObjectTypeFromDescribe = async (
   client: SalesforceClient,
   objectName: SupportedToolingObjectName,
 ): Promise<ToolingObjectType | undefined> => {
-  const typeDescription = await client.describeToolingObject(objectName)
+  const { fields } = await client.describeToolingObject(objectName)
 
   const [topLevelFields, nestedFields] = _.partition(
-    typeDescription.fields,
+    fields,
     field => _.isNil(field.compoundFieldName)
   )
 

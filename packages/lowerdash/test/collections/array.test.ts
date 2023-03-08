@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { keyBy } from 'lodash'
 import { collections } from '../../src'
 
 const { makeArray, arrayOf, findDuplicates } = collections.array
@@ -91,6 +91,16 @@ describe('array', () => {
 
     it('should return sorted array with each duplicate appearing once when duplicates are found', () => {
       expect(findDuplicates(['def', 'abc', 'def', 'abd', 'aaa', 'def', 'abc'])).toEqual(['abc', 'def'])
+    })
+  })
+  describe('keyBy', () => {
+    it('should return Record with correct keys', () => {
+      expect(keyBy([5, 12, 13, 14], value => value)).toEqual({
+        5: 5,
+        12: 12,
+        13: 13,
+        14: 14,
+      })
     })
   })
 })

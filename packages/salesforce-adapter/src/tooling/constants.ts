@@ -29,8 +29,11 @@ export const ToolingObjectAnnotation = {
 export const ToolingObjectInfo = {
   SubscriberPackage: {
     Field: {
+      Id: 'Id',
       Name: 'Name',
       NamespacePrefix: 'NamespacePrefix',
+      Description: 'Description',
+      IsPackageValid: 'IsPackageValid',
     },
   },
 } as const

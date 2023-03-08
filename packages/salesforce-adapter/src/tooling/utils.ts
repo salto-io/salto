@@ -41,15 +41,13 @@ export const createToolingObject = (
   Object.assign(
     new ObjectType({
       elemID: new ElemID(SALESFORCE, objectName),
-      annotations: {
-        [CORE_ANNOTATIONS.CREATABLE]: false,
-        [CORE_ANNOTATIONS.UPDATABLE]: false,
-        [CORE_ANNOTATIONS.DELETABLE]: false,
-      },
     }),
     {
       path: [...TOOLING_PATH, objectName] as const,
       annotations: {
+        [CORE_ANNOTATIONS.CREATABLE]: false,
+        [CORE_ANNOTATIONS.UPDATABLE]: false,
+        [CORE_ANNOTATIONS.DELETABLE]: false,
         [API_NAME]: objectName,
         [ToolingObjectAnnotation.isToolingObject]: true as const,
       },

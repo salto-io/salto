@@ -182,8 +182,16 @@ export const overrideTopLevelPathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
 ): Promise<void> => {
-  const entries = getElementsPathHints(unmergedElements)
-    .filter(e => ElemID.fromFullName(e.key).isTopLevel())
+  const topLevelElementsWithPath = unmergedElements
+    .filter(e => e.path !== undefined)
+    .filter(e => e.elemID.isTopLevel())
+  const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())
+  const entries = Object.entries(elementsByID)
+    .filter(([_key, value]) => value.length > 0)
+    .map(([key, value]) => ({
+      key,
+      value: value.map(e => e.path as Path),
+    }))
   await current.clear()
   await current.setAll(entries)
 }

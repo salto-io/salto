@@ -106,7 +106,7 @@ export const buildInMemState = (
     overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
       const currentStateData = await stateData()
       await overridePathIndex(currentStateData.pathIndex, unmergedElements)
-      await overridePathIndex(currentStateData.topLevelPathIndex, unmergedElements)
+      await overrideTopLevelPathIndex(currentStateData.topLevelPathIndex, unmergedElements)
     },
     updatePathIndex: async (
       unmergedElements: Element[],

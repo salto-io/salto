@@ -32,6 +32,7 @@ type OldStateData = {
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
+  topLevelPathIndex: PathIndex
 }
 
 // This distinction is temporary for the transition to multiple services.
@@ -43,6 +44,7 @@ type NewStateData = {
   pathIndex: PathIndex
   saltoMetadata: RemoteMap<string, StateMetadataKey>
   staticFilesSource: StateStaticFilesSource
+  topLevelPathIndex: PathIndex
 }
 
 export type StateData = OldStateData | NewStateData
@@ -59,7 +61,9 @@ export interface State extends ElementsSource {
   existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
   updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
+  updateElementsIndex(elements: Element[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
+  getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
@@ -96,6 +100,12 @@ Promise<StateData> => ({
   })),
   pathIndex: await remoteMapCreator<Path[]>({
     namespace: createStateNamespace(envName, 'path_index'),
+    serialize: async paths => safeJsonStringify(paths),
+    deserialize: async data => JSON.parse(data),
+    persistent,
+  }),
+  topLevelPathIndex: await remoteMapCreator<Path[]>({
+    namespace: createStateNamespace(envName, 'top_level_path_index'),
     serialize: async paths => safeJsonStringify(paths),
     deserialize: async data => JSON.parse(data),
     persistent,

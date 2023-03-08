@@ -15,17 +15,17 @@
 */
 import _ from 'lodash'
 import {
-  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field, CORE_ANNOTATIONS,
+  ElemID, ObjectType, BuiltinTypes, FieldDefinition, ListType, MapType, Field, CORE_ANNOTATIONS, ActionName,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
-import { DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
+import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
-export type TypeConfig<T extends TransformationConfig = TransformationConfig> = {
+export type TypeConfig<T extends TransformationConfig = TransformationConfig, A extends string = ActionName> = {
   request?: FetchRequestConfig
-  deployRequests?: DeploymentRequestsByAction
+  deployRequests?: DeploymentRequestsByAction<A>
   transformation?: T
 }
 
@@ -39,10 +39,11 @@ export type TypeDefaultsConfig<
 export type AdapterApiConfig<
   T extends TransformationConfig = TransformationConfig,
   TD extends TransformationDefaultConfig = TransformationDefaultConfig,
+  A extends string = ActionName,
 > = {
   apiVersion?: string
   typeDefaults: TypeDefaultsConfig<TD>
-  types: Record<string, TypeConfig<T>>
+  types: Record<string, TypeConfig<T, A>>
   supportedTypes: Record<string, string[]>
 }
 
@@ -66,21 +67,18 @@ export const createAdapterApiConfigType = ({
   adapter,
   additionalFields,
   additionalTypeFields,
-  requestTypes,
   transformationTypes,
+  additionalRequestFields,
+  additionalActions,
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
   additionalTypeFields?: Record<string, FieldDefinition>
-  requestTypes: {
-    fetch: {
-      request: ObjectType
-      requestDefault: ObjectType
-    }
-    deployRequests: ObjectType
-  }
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
+  additionalRequestFields?: Record<string, FieldDefinition>
+  additionalActions?: string[]
 }): ObjectType => {
+  const requestTypes = createRequestConfigs(adapter, additionalRequestFields, additionalActions)
   const typeDefaultsConfigType = createMatchingObjectType<Partial<TypeDefaultsConfig>>({
     elemID: new ElemID(adapter, 'typeDefaultsConfig'),
     fields: {

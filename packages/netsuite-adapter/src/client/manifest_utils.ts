@@ -137,9 +137,6 @@ const fixDependenciesObject = (dependencies: Value): void => {
   dependencies.objects.object = dependencies.objects.object ?? []
 }
 
-const getTagText = (item: string | Record<string, string>): string =>
-  (_.isString(item) ? item : item[TEXT_ATTRIBUTE])
-
 const addRequiredDependencies = (
   dependencies: Value,
   customizationInfos: CustomizationInfo[],
@@ -151,15 +148,18 @@ const addRequiredDependencies = (
     .difference(additionalDependencies.optionalFeatures)
     .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
     .value()
-  const additionalFeatures = [...requiredFeatures, ...additionalDependencies.optionalFeatures]
+  const optionalFeatures = _(additionalDependencies.optionalFeatures)
+    .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'false', [TEXT_ATTRIBUTE]: feature }))
+    .value()
+  const additionalFeatures = [...requiredFeatures, ...optionalFeatures]
 
   const { features, objects } = dependencies
   features.feature = _(makeArray(features.feature))
     // remove all additional features
-    .differenceBy(additionalFeatures, getTagText)
+    .differenceBy(additionalFeatures, item => item[TEXT_ATTRIBUTE])
     // re-add all additional features with the desired "required" value for each feature
-    .unionBy(additionalFeatures, getTagText)
-    .filter(item => !additionalDependencies.excludedFeatures.includes(getTagText(item)))
+    .unionBy(additionalFeatures, item => item[TEXT_ATTRIBUTE])
+    .filter(item => !additionalDependencies.excludedFeatures.includes(item[TEXT_ATTRIBUTE]))
     .value()
 
   objects.object = _(makeArray(objects.object))

@@ -254,7 +254,7 @@ describe('manifest.xml utils', () => {
       <feature required="true">ADDRESSCUSTOMIZATION</feature>
       <feature required="true">SUBSIDIARIES</feature>
       <feature required="true">addedFeature</feature>
-      <feature>EXPREPORTS</feature>
+      <feature required="false">EXPREPORTS</feature>
     </features>
     <objects>
       <object>custentity13</object>

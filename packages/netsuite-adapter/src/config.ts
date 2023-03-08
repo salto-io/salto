@@ -391,10 +391,10 @@ const additionalDependenciesConfigPath: string[] = [
   DEPLOY_PARAMS.additionalDependencies,
 ]
 
-const validateAdditionalSdfDeployDependencies = (
+function validateAdditionalSdfDeployDependencies(
   input: Partial<Record<keyof AdditionalSdfDeployDependencies, unknown>>,
   configName: string
-): input is Partial<AdditionalSdfDeployDependencies> => {
+): asserts input is Partial<AdditionalSdfDeployDependencies> {
   const { features, objects } = input
   if (features !== undefined) {
     validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
@@ -402,32 +402,27 @@ const validateAdditionalSdfDeployDependencies = (
   if (objects !== undefined) {
     validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
   }
-  return true
 }
 
 const validateAdditionalDependencies = (
   { include, exclude }: Partial<Record<keyof AdditionalDependencies, unknown>>
 ): void => {
-  let validatedInclude: Partial<AdditionalSdfDeployDependencies> = {}
   if (include !== undefined) {
     validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
     validateAdditionalSdfDeployDependencies(include, 'include')
-    validatedInclude = include
   }
-  let validatedExclude: Partial<AdditionalSdfDeployDependencies> = {}
   if (exclude !== undefined) {
     validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
-    validatedExclude = exclude
   }
-  if (validatedInclude.features && validatedExclude.features) {
-    const conflictedFeatures = _.intersection(validatedInclude.features, validatedExclude.features)
+  if (include?.features && exclude?.features) {
+    const conflictedFeatures = _.intersection(include.features, exclude.features)
     if (conflictedFeatures.length > 0) {
       throw new Error(`Additional features cannot be both included and excluded. The following features are conflicted: ${conflictedFeatures.join(', ')}`)
     }
   }
-  if (validatedInclude.objects && validatedExclude.objects) {
-    const conflictedObjects = _.intersection(validatedInclude.objects, validatedExclude.objects)
+  if (include?.objects && exclude?.objects) {
+    const conflictedObjects = _.intersection(include.objects, exclude.objects)
     if (conflictedObjects.length > 0) {
       throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedObjects.join(', ')}`)
     }

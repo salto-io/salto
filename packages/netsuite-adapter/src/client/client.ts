@@ -246,9 +246,9 @@ export default class NetsuiteClient {
   private static updateFeaturesMap(
     featuresMap: FeaturesMap,
     missingFeaturesError: MissingManifestFeaturesError
-  ): { failToUpdate: boolean; error?: Error } {
+  ): { failedToUpdate: boolean; error?: Error } {
     const missingExcludedFeatures = new Set<string>()
-    let failToUpdate = false
+    let failedToUpdate = false
     missingFeaturesError.missingFeatures.forEach(featureName => {
       const feature = featuresMap[featureName]
       if (feature === undefined) {
@@ -257,7 +257,7 @@ export default class NetsuiteClient {
         featuresMap[featureName] = { status: 'optional', canBeRequired: false }
       } else if (feature.status === 'required') {
         log.error('The %s feature is already required, but sdf returned an error: %o', featureName, missingFeaturesError)
-        failToUpdate = true
+        failedToUpdate = true
       } else if (feature.status === 'optional' && feature.canBeRequired) {
         featuresMap[featureName] = { status: 'required' }
       } else if (feature.status === 'optional' && !feature.canBeRequired) {
@@ -267,9 +267,9 @@ export default class NetsuiteClient {
     })
     if (missingExcludedFeatures.size > 0) {
       const error = new Error(`The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`)
-      return { failToUpdate: true, error }
+      return { failedToUpdate: true, error }
     }
-    return { failToUpdate }
+    return { failedToUpdate }
   }
 
   private async sdfDeploy({
@@ -330,7 +330,7 @@ export default class NetsuiteClient {
             return { errors, appliedChanges: [] }
           }
           const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)
-          if (res.failToUpdate) {
+          if (res.failedToUpdate) {
             return { errors: errors.concat(res.error ?? []), appliedChanges: [] }
           }
           // remove error because if the deploy succeeds there shouldn't be a change error

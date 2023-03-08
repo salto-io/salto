@@ -37,6 +37,12 @@ export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 
+const REQUIRED_FEATURE_SUFFIX = ':required'
+export const isRequiredFeature = (featureName: string): boolean =>
+  featureName.toLowerCase().endsWith(REQUIRED_FEATURE_SUFFIX)
+export const removeRequiredFeatureSuffix = (featureName: string): string =>
+  featureName.slice(0, featureName.length - REQUIRED_FEATURE_SUFFIX.length)
+
 type AdditionalSdfDeployDependencies = {
   features: string[]
   objects: string[]

@@ -251,6 +251,49 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
+      it('should pass features to sdf_client deploy', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        await client.deploy(
+          [change],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          {
+            include: {
+              features: [
+                'optional',
+                'required:required',
+              ],
+              objects: [],
+            },
+            exclude: {
+              features: [
+                'excluded',
+              ],
+              objects: [],
+            },
+          },
+          mockElementsSourceIndex
+        )
+        expect(mockSdfDeploy).toHaveBeenCalledWith([{
+          scriptId: 'someObject',
+          typeName: 'type',
+          values: { scriptid: 'someObject' },
+        }],
+        undefined,
+        {
+          manifestDependencies: {
+            optionalFeatures: ['optional'],
+            requiredFeatures: ['required'],
+            excludedFeatures: ['excluded'],
+            includedObjects: [],
+            excludedObjects: [],
+          },
+          validateOnly: false,
+        })
+      })
+
       it('should try to deploy again MissingManifestFeaturesError and fail on excluded feature', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)

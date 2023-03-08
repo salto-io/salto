@@ -36,7 +36,7 @@ import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
-import { AdditionalDependencies } from '../config'
+import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
@@ -235,9 +235,16 @@ export default class NetsuiteClient {
   private static createFeaturesMap(
     additionalDependencies: AdditionalDependencies
   ): FeaturesMap {
+    const [requiredFeatures, optionalFeatures] = _.partition(
+      additionalDependencies.include.features,
+      isRequiredFeature
+    )
     return Object.fromEntries([
-      ...additionalDependencies.include.features
+      ...optionalFeatures
         .map(featureName => [featureName, { status: 'optional', canBeRequired: true }]),
+      ...requiredFeatures
+        .map(removeRequiredFeatureSuffix)
+        .map(featureName => [featureName, { status: 'required' }]),
       ...additionalDependencies.exclude.features
         .map(featureName => [featureName, { status: 'excluded' }]),
     ])

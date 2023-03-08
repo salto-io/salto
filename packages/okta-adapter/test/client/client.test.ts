@@ -76,13 +76,13 @@ describe('client', () => {
         .onGet('/api/v1/org').replyOnce(200, { id: 1 })
         .onGet('/api/v1/idps').replyOnce(200, idpsResponse, { h: '123' })
         .onGet('/api/v1/authenticators')
-        .replyOnce(200, autheticatorsRes, { h: '123', link: 'aaa' })
+        .replyOnce(200, autheticatorsRes, { h: '123', link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
     })
     it('should return response data with no secrets and only the relevant headers', async () => {
       const firstRes = await client.getSinglePage({ url: '/api/v1/idps' })
       expect(firstRes).toEqual({ status: 200, data: idpsResponse, headers: { } })
       const secondRes = await client.getSinglePage({ url: '/api/v1/authenticators' })
-      expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { link: 'aaa' } })
+      expect(secondRes).toEqual({ status: 200, data: autheticatorsRes, headers: { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' } })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveNthReturnedWith(1,
         {
@@ -100,7 +100,7 @@ describe('client', () => {
         ])
       expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
       expect(extractHeadersFunc).toHaveNthReturnedWith(1, {})
-      expect(extractHeadersFunc).toHaveNthReturnedWith(2, { link: 'aaa' })
+      expect(extractHeadersFunc).toHaveNthReturnedWith(2, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
     })
   })
 })

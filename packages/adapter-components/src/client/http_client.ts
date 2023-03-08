@@ -138,8 +138,11 @@ export abstract class AdapterHTTPClient<
    * Extract headers needed by the adapter
    */
   // eslint-disable-next-line class-methods-use-this
-  protected extractHeaders(_headers: Record<string, string> | undefined): Record<string, string> | undefined {
-    return undefined
+  protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    return headers !== undefined
+      // include headers related to rate limits
+      ? _.pickBy(headers, (_val, key) => key.toLowerCase().includes('rate-'))
+      : undefined
   }
 
   /**

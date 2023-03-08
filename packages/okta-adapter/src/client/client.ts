@@ -87,6 +87,11 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
    */
   // eslint-disable-next-line class-methods-use-this
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
-    return headers !== undefined ? _.pick(headers, LINK_HEADER_NAME) : undefined
+    return headers !== undefined
+      ? {
+        ...super.extractHeaders(headers),
+        ..._.pickBy(headers, (_val, key) => key.toLowerCase() === LINK_HEADER_NAME),
+      }
+      : undefined
   }
 }

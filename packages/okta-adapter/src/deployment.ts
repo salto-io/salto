@@ -98,7 +98,7 @@ const deployStatusChange = async (
   try {
     await client[endpoint.method]({ url, data: {} })
   } catch (err) {
-    log.error(`Status could not be updated in instance: ${getChangeData(change).elemID.getFullName()}`)
+    log.error(`Status could not be updated in instance: ${getChangeData(change).elemID.getFullName()}`, err)
     throw err
   }
 }

@@ -62,12 +62,12 @@ const restoredInstance = new InstanceElement(
   }
 )
 
-const resolveChangeElementMock = jest.fn().mockReturnValue(toChange({ after: resolvedInstance }))
-const restoreChangeElementMock = jest.fn().mockReturnValue(toChange({ after: restoredInstance }))
+const resolveValuesMock = jest.fn().mockReturnValue(resolvedInstance)
+const restoreValuesMock = jest.fn().mockReturnValue(restoredInstance)
 jest.mock('@salto-io/adapter-utils', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-utils'),
-  resolveChangeElement: jest.fn().mockImplementation((...args) => resolveChangeElementMock(args)),
-  restoreChangeElement: jest.fn().mockImplementation((...args) => restoreChangeElementMock(args)),
+  resolveValues: jest.fn().mockImplementation((...args) => resolveValuesMock(args)),
+  restoreValues: jest.fn().mockImplementation((...args) => restoreValuesMock(args)),
 }))
 
 describe('Scriptrunner references', () => {

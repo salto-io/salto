@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 
-import { resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
-import { isInstanceChange, isAdditionOrModificationChange, getChangeData, Change, InstanceElement, AdditionChange, ModificationChange, isModificationChange, Value } from '@salto-io/adapter-api'
+import { resolveValues, restoreValues } from '@salto-io/adapter-utils'
+import { isInstanceChange, isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
@@ -23,21 +23,11 @@ import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
 
-const safeChangeClone = (
-  change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
-): Change<InstanceElement> => {
-  const result: Value = { action: change.action, data: { after: change.data.after.clone() } }
-  if (isModificationChange(change)) {
-    result.data = { ...result.data, before: change.data.before.clone() }
-  }
-  return result
-}
-
 
 // This filter is used to remove and return references in script runner workflows
 // As the references are encoded we cannot wait for the references filter to resolve them
 const filter: FilterCreator = ({ client, config }) => {
-  const originalChanges: Record<string, Change<InstanceElement>> = {}
+  const originalInstances: Record<string, InstanceElement> = {}
   return {
     name: 'scriptRunnerWorkflowReferencesFilter',
     preDeploy: async changes => {
@@ -46,13 +36,13 @@ const filter: FilterCreator = ({ client, config }) => {
       }
       await awu(changes)
         .filter(isAdditionOrModificationChange)
-        .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
-        .forEach(async change => {
-          const instance = getChangeData(change)
-          originalChanges[instance.elemID.getFullName()] = safeChangeClone(change)
-          instance.value.transitions = getChangeData(
-            await resolveChangeElement(change, getLookUpName)
+        .map(getChangeData)
+        .filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+        .forEach(async instance => {
+          originalInstances[instance.elemID.getFullName()] = instance.clone()
+          instance.value.transitions = (
+            await resolveValues(instance, getLookUpName)
           ).value.transitions
         })
     },
@@ -63,16 +53,14 @@ const filter: FilterCreator = ({ client, config }) => {
       await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME)
-        .forEach(async change => {
-          const instance = getChangeData(change)
-          instance.value.transitions = (getChangeData(
-            await restoreChangeElement(
-              change,
-              originalChanges,
-              getLookUpName,
-            )
-          ) as InstanceElement).value.transitions
+        .map(getChangeData)
+        .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
+        .forEach(async instance => {
+          instance.value.transitions = (await restoreValues(
+            instance,
+            originalInstances[instance.elemID.getFullName()],
+            getLookUpName,
+          )).value.transitions
         })
     },
   }

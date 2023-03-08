@@ -14,13 +14,16 @@
 * limitations under the License.
 */
 
-import { WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { createSchemeGuard, WalkOnFunc, walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationChange, getChangeData, Value } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
 
+const log = logger(module)
 
 const SCRIPT_RUNNER_OR = '|||'
 export const OR_FIELDS = [
@@ -78,15 +81,19 @@ const objectifyDirectionFields = (value: Value): void => {
 // group:"spaces spaces" assignee watchers group:jira-software-users
 // will be split to:
 // ['group:"spaces spaces"', 'assignee', 'watchers', 'group:jira-software-users']
-const splitBySpaceNotInQuotes = (input: string): string[] =>
-// regex breakdown: the logic is to match a space that is followed by an even number of quotes
-// (?= is called Positive Lookahead, meaning what follows should be there but is not part of the match
-// (?: is called Non-capturing group, meaning it is a group but it is not captured
-// [^"]*" is any number of characters that arw not a quote, followed by a quote
-// {2} means that the previous group should be repeated 2 times
-// )* means that the previous group should be repeated any number of times
-// [^"]*$ means that the string should end with any number of characters that are not a quote
-  input.split(/ (?=(?:(?:[^"]*"){2})*[^"]*$)/)
+const splitBySpaceNotInQuotes = (input: string): string[] => {
+  if ((input.match(/"/g) || []).length % 2 !== 0) {
+    log.error('Invalid input to splitBySpaceNotInQuotes: %s', input)
+  }
+  // regex breakdown: the logic is to match a space that is followed by an even number of quotes
+  // (?= is called Positive Lookahead, meaning what follows should be there but is not part of the match
+  // (?: is called Non-capturing group, meaning it is a group but it is not captured
+  // [^"]*" is any number of characters that are not a quote, followed by a quote
+  // {2} means that the previous group should be repeated 2 times
+  // )* means that the previous group should be repeated any number of times
+  // [^"]*$ means that the string should end with any number of characters that are not a quote
+  return input.split(/ (?=(?:(?:[^"]*"){2})*[^"]*$)/)
+}
 
 const quoteIfSpaces = (str: string): string => (str.includes(SPACE) ? `"${str}"` : str)
 
@@ -95,6 +102,14 @@ type MailListObject = {
   role?: string[]
   field?: string[]
 }
+
+const MAIL_LIST_SCHEME = Joi.object({
+  group: Joi.array().items(Joi.string()),
+  role: Joi.array().items(Joi.string()),
+  field: Joi.array().items(Joi.string()),
+})
+
+const isMailListObject = createSchemeGuard<MailListObject>(MAIL_LIST_SCHEME, 'Mail list object does not fit the scheme')
 
 const joinWithPrefixes = (object: MailListObject | undefined): string => {
   if (object === undefined) {
@@ -106,43 +121,40 @@ const joinWithPrefixes = (object: MailListObject | undefined): string => {
   const prefixedRole = role.map((roleItem: string) => ROLE_PREFIX + quoteIfSpaces(roleItem))
     .join(SPACE)
   const plainField = field.join(SPACE)
-  return [prefixedGroup, prefixedRole, plainField].filter(Boolean).join(SPACE)
+  return [prefixedGroup, prefixedRole, plainField].filter(item => item !== '').join(SPACE)
 }
 
-const returnMailLists = (value: Value): void => {
+const convertMailObjectToString = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => MAIL_LISTS_FIELDS.includes(key))
+      .filter((entry): entry is [string, MailListObject] => isMailListObject(entry[1]))
       .forEach(([key, val]) => {
-        value[key] = joinWithPrefixes(val as MailListObject)
+        value[key] = joinWithPrefixes(val)
       })
   }
 }
 
 // creates an object with the 3 types of items (group, role, field) by the prefixes
-const createEmailObject = (values: string[]): MailListObject => {
-  const emailObject: MailListObject = values.reduce((result:
-    MailListObject, str: string) => {
-    if (str.startsWith(GROUP_PREFIX)) {
-      return { ...result, group: [...result.group as string[], str.slice(GROUP_PREFIX.length)] }
-    }
-    if (str.startsWith(ROLE_PREFIX)) {
-      return { ...result, role: [...result.role as string[], str.slice(ROLE_PREFIX.length)] }
-    }
-    return { ...result, field: [...result.field as string[], str] }
-  }, { group: [], role: [], field: [] })
-  return Object.fromEntries(
-    Object.entries(emailObject)
-      .filter(([_key, val]) => val?.length !== 0)
-      .map(([key, val]) => [key, val?.sort()]) // keep the order in each list
-      .sort()
-  )
-}
+const createEmailObject = (rawValues: string[]): MailListObject =>
+  _(rawValues)
+    .groupBy(str => {
+      if (str.startsWith(GROUP_PREFIX)) {
+        return 'group'
+      }
+      if (str.startsWith(ROLE_PREFIX)) {
+        return 'role'
+      }
+      return 'field'
+    })
+    .mapValues(values => values.map(value => value.slice(value.indexOf(':') + 1)).sort())
+    .mapValues(values => values.sort()) // sort to make sure the order is consistent
+    .value()
 
 // mail lists are space separated, but we want to keep the spaces inside quotes
 // they can contain 3 types of items- fields, groups and roles. groups and roles have prefixes
 // and example: assignee watchers group:jira-software-users role:Administrators group:\"spaces spaces\"
-const replaceMailLists = (value: Value): void => {
+const convertMailStringToObject = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => MAIL_LISTS_FIELDS.includes(key))
@@ -206,7 +218,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, replaceMailLists, objectifyDirectionFields]) })
+          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]) })
       })
   },
   preDeploy: async changes => {
@@ -221,7 +233,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([stringifyDirectionFields, returnOr, returnMailLists]) })
+          func: findScriptRunnerDC([stringifyDirectionFields, returnOr, convertMailObjectToString]) })
       })
   },
   onDeploy: async changes => {
@@ -236,7 +248,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .forEach(instance => {
         walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
           value: instance.value.transitions,
-          func: findScriptRunnerDC([replaceOr, replaceMailLists, objectifyDirectionFields]) })
+          func: findScriptRunnerDC([replaceOr, convertMailStringToObject, objectifyDirectionFields]) })
       })
   },
 })

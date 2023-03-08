@@ -43,12 +43,47 @@ describe('createElementsSourceIndex', () => {
   })
   it('should create the index only once and cache it', async () => {
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = await elementsSourceIndex.getIndexes()
-    const anotherIndex = await elementsSourceIndex.getIndexes()
+    const index = await elementsSourceIndex.getFetchIndexes()
+    const anotherIndex = await elementsSourceIndex.getFetchIndexes()
     expect(index).toBe(anotherIndex)
     expect(getAllMock).toHaveBeenCalledTimes(1)
   })
-  it('should create the right internal ids index', async () => {
+  it('should create the right internal ids index on partial fetch', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    getMock.mockImplementation(buildElementsSourceFromElements([
+      type,
+    ]).get)
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      new InstanceElement(
+        'name',
+        type,
+        { internalId: '4' },
+      ),
+      new InstanceElement(
+        'name2',
+        type,
+        { internalId: '5', isSubInstance: true },
+      ),
+      type,
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord1',
+          [INTERNAL_ID]: '2',
+        },
+      }),
+    ]).getAll)
+
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource, true)
+    const index = (await elementsSourceIndex.getFetchIndexes()).internalIdsIndex
+    expect(index).toEqual({
+      'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name'),
+      'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
+      '-123-2': new ElemID(NETSUITE, 'customrecord1'),
+    })
+  })
+  it('should not create the internal ids index on full fetch', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getMock.mockImplementation(buildElementsSourceFromElements([
       type,
@@ -76,15 +111,26 @@ describe('createElementsSourceIndex', () => {
     ]).getAll)
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
-    expect(index).toEqual({
-      'someType-4': new ElemID(NETSUITE, 'someType', 'instance', 'name'),
-      'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
-      '-123-2': new ElemID(NETSUITE, 'customrecord1'),
-    })
+    const index = (await elementsSourceIndex.getFetchIndexes()).internalIdsIndex
+    expect(index).toEqual({})
   })
+  it('should create the right custom fields index on partial fetch', async () => {
+    const instance1 = new InstanceElement('name1', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
+    const instance2 = new InstanceElement('name2', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: false })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      instance1,
+      instance2,
+    ]).getAll)
 
-  it('should create the right custom fields index', async () => {
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource, true)
+    const index = (await elementsSourceIndex.getFetchIndexes()).customFieldsIndex
+    expect(index.Contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
+      .map(e => e.elemID.getFullName()))
+
+    expect(index.Employee.map(e => e.elemID.getFullName()))
+      .toEqual([instance1.elemID.getFullName()])
+  })
+  it('should not create right custom fields index on full fetch', async () => {
     const instance1 = new InstanceElement('name1', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
     const instance2 = new InstanceElement('name2', entitycustomfield, { appliestocontact: true, appliestocustomer: false, appliestoemployee: false })
     getAllMock.mockImplementation(buildElementsSourceFromElements([
@@ -93,14 +139,9 @@ describe('createElementsSourceIndex', () => {
     ]).getAll)
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource)
-    const index = (await elementsSourceIndex.getIndexes()).customFieldsIndex
-    expect(index.Contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
-      .map(e => e.elemID.getFullName()))
-
-    expect(index.Employee.map(e => e.elemID.getFullName()))
-      .toEqual([instance1.elemID.getFullName()])
+    const index = (await elementsSourceIndex.getFetchIndexes()).customFieldsIndex
+    expect(index).toEqual({})
   })
-
   it('should create the right pathToInternalIds index', async () => {
     const folderInstance = new InstanceElement('folder1', folder, { path: '/folder1', internalId: 0 })
     const fileInstance = new InstanceElement('file1', file, { path: '/folder1/file1', internalId: 1 })
@@ -109,13 +150,12 @@ describe('createElementsSourceIndex', () => {
       fileInstance,
     ]).getAll)
 
-    expect((await createElementsSourceIndex(elementsSource).getIndexes()).pathToInternalIdsIndex)
+    expect((await createElementsSourceIndex(elementsSource).getDeployIndexes()).pathToInternalIdsIndex)
       .toEqual({
         '/folder1': 0,
         '/folder1/file1': 1,
       })
   })
-
   it('should create the right elemIdToChangeByIndex index', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getAllMock.mockImplementation(buildElementsSourceFromElements([
@@ -135,7 +175,7 @@ describe('createElementsSourceIndex', () => {
       }),
     ]).getAll)
 
-    expect((await createElementsSourceIndex(elementsSource).getIndexes()).elemIdToChangeByIndex)
+    expect((await createElementsSourceIndex(elementsSource).getFetchIndexes()).elemIdToChangeByIndex)
       .toEqual({
         'netsuite.someType.instance.inst': 'user name',
         'netsuite.customrecord1': 'user name2',
@@ -149,7 +189,7 @@ describe('createElementsSourceIndex', () => {
     })
     getAllMock.mockImplementation(buildElementsSourceFromElements(types).getAll)
 
-    expect((await createElementsSourceIndex(elementsSource).getIndexes()).mapKeyFieldsIndex)
+    expect((await createElementsSourceIndex(elementsSource).getDeployIndexes()).mapKeyFieldsIndex)
       .toEqual({
         'netsuite.workflow_initcondition_parameters.field.parameter': 'name',
         'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
@@ -266,7 +306,7 @@ describe('createElementsSourceIndex', () => {
       }),
     ]).getAll)
 
-    expect((await createElementsSourceIndex(elementsSource).getIndexes()).elemIdToChangeAtIndex)
+    expect((await createElementsSourceIndex(elementsSource).getFetchIndexes()).elemIdToChangeAtIndex)
       .toEqual({
         'netsuite.someType.instance.inst': '03/23/2022',
         'netsuite.customrecord1': '05/26/2022',

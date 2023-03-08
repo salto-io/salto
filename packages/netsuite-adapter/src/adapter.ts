@@ -120,8 +120,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
-  private elementsSourceIndex: LazyElementsSourceIndexes
+  private elementsSourceIndexForDeploy: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
+    elementsSourceIndex: LazyElementsSourceIndexes
     isPartial?: boolean
     changesGroupId?: string
   }) => Required<Filter>
@@ -209,11 +210,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
         objects: config.deploy?.additionalDependencies?.exclude?.objects ?? [],
       },
     }
-    this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
+    this.elementsSourceIndexForDeploy = createElementsSourceIndex(this.elementsSource)
+    this.createFiltersRunner = ({
+      elementsSourceIndex,
+      isPartial = false,
+      changesGroupId,
+    }) => filter.filtersRunner(
       {
         client: this.client,
-        elementsSourceIndex: this.elementsSourceIndex,
+        elementsSourceIndex,
         elementsSource: this.elementsSource,
         isPartial,
         config,
@@ -327,7 +332,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...customRecords,
     ]
 
-    await this.createFiltersRunner({ isPartial }).onFetch(elements)
+    const elementsSourceIndex = createElementsSourceIndex(this.elementsSource, isPartial)
+    await this.createFiltersRunner({ elementsSourceIndex, isPartial }).onFetch(elements)
 
     return {
       failedToFetchAllAtOnce,
@@ -444,6 +450,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
     const filtersRunner = this.createFiltersRunner({
+      elementsSourceIndex: this.elementsSourceIndexForDeploy,
       changesGroupId: groupID,
     })
     await filtersRunner.preDeploy(changesToDeploy)
@@ -452,7 +459,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changesToDeploy,
       groupID,
       this.additionalDependencies,
-      this.elementsSourceIndex,
+      this.elementsSourceIndexForDeploy,
     )
 
     const ids = new Set(deployResult.appliedChanges.map(
@@ -483,9 +490,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
         filtersRunner: changesGroupId => this.createFiltersRunner({
+          elementsSourceIndex: this.elementsSourceIndexForDeploy,
           changesGroupId,
         }),
-        elementsSourceIndex: this.elementsSourceIndex,
+        elementsSource: this.elementsSource,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

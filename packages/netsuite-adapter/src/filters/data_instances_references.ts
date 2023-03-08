@@ -100,7 +100,7 @@ const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): Filte
   name: 'dataInstancesReferences',
   onFetch: async elements => {
     const elementsMap: Record<string, ElemID> = isPartial ? _.clone(
-      (await elementsSourceIndex.getIndexes()).internalIdsIndex ?? {}
+      (await elementsSourceIndex.getFetchIndexes()).internalIdsIndex ?? {}
     ) : {}
 
     await awu(elements).forEach(async element => {

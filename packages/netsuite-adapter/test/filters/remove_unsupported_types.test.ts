@@ -53,7 +53,8 @@ describe('remove_unsupported_types', () => {
     filterOpts = {
       client: { isSuiteAppConfigured: isSuiteAppConfiguredMock } as unknown as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,

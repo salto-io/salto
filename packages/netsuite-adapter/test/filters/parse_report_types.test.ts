@@ -47,7 +47,8 @@ describe('parse_report_types filter', () => {
     fetchOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -128,7 +129,8 @@ describe('parse_report_types filter', () => {
       fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements(sourceElements),
         isPartial: false,

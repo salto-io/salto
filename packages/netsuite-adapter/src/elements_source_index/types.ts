@@ -17,16 +17,20 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 
 export type ServiceIdRecords = Record<string, { elemID: ElemID; serviceID: string }>
 
-export type ElementsSourceIndexes = {
+export type FetchElementsSourceIndexes = {
   serviceIdRecordsIndex: ServiceIdRecords
   internalIdsIndex: Record<string, ElemID>
   customFieldsIndex: Record<string, InstanceElement[]>
-  pathToInternalIdsIndex: Record<string, number>
   elemIdToChangeByIndex: Record<string, string>
-  mapKeyFieldsIndex: Record<string, string | string[]>
   elemIdToChangeAtIndex: Record<string, string>
 }
 
+export type DeployElementsSourceIndexes = {
+  pathToInternalIdsIndex: Record<string, number>
+  mapKeyFieldsIndex: Record<string, string | string[]>
+}
+
 export type LazyElementsSourceIndexes = {
-  getIndexes: () => Promise<ElementsSourceIndexes>
+  getFetchIndexes: () => Promise<FetchElementsSourceIndexes>
+  getDeployIndexes: () => Promise<DeployElementsSourceIndexes>
 }

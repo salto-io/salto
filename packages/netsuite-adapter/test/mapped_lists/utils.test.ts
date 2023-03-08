@@ -19,7 +19,6 @@ import { convertFieldsTypesFromListToMap, createConvertStandardElementMapsToList
 import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
-import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
@@ -189,15 +188,21 @@ describe('mapped lists', () => {
     transformedDataInstance = dataInstance.clone()
     transformedDataInstance.value = await convertInstanceListsToMaps(dataInstance) ?? {}
 
-    const convertElementMapsToLists = await createConvertStandardElementMapsToLists({ getIndexes: () => ({
-      mapKeyFieldsIndex: {
-        'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
-        'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',
-        'netsuite.workflow_workflowstates_workflowstate.field.workflowactions': 'triggertype',
-        'netsuite.workflow_workflowstates_workflowstate_workflowactions.field.setfieldvalueaction': 'scriptid',
-        'netsuite.customrecordtype_permissions.field.permission': 'permittedrole',
+    const convertElementMapsToLists = await createConvertStandardElementMapsToLists({
+      getFetchIndexes: () => {
+        throw new Error('should not call getFetchIndexes')
       },
-    }) } as unknown as LazyElementsSourceIndexes)
+      getDeployIndexes: async () => ({
+        pathToInternalIdsIndex: {},
+        mapKeyFieldsIndex: {
+          'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
+          'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',
+          'netsuite.workflow_workflowstates_workflowstate.field.workflowactions': 'triggertype',
+          'netsuite.workflow_workflowstates_workflowstate_workflowactions.field.setfieldvalueaction': 'scriptid',
+          'netsuite.customrecordtype_permissions.field.permission': 'permittedrole',
+        },
+      }),
+    })
     transformedBackInstance = await convertElementMapsToLists(transformedInstance) as InstanceElement
     transformedBackCustomRecordType = await convertElementMapsToLists(transformedCustomRecordType) as ObjectType
     transformedBackDataInstance = await convertDataInstanceMapsToLists(transformedDataInstance)

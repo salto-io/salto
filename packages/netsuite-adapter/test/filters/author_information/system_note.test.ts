@@ -97,7 +97,8 @@ describe('netsuite system note author information', () => {
     filterOpts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
@@ -163,7 +164,7 @@ describe('netsuite system note author information', () => {
     const opts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
+        getFetchIndexes: () => Promise.resolve({
           ...createEmptyElementsSourceIndexes(),
           elemIdToChangeByIndex: {
             [missingInstance.elemID.getFullName()]: 'another user name',
@@ -172,6 +173,7 @@ describe('netsuite system note author information', () => {
             [missingInstance.elemID.getFullName()]: '2022-08-19',
           },
         }),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
@@ -186,7 +188,7 @@ describe('netsuite system note author information', () => {
     const opts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve({
+        getFetchIndexes: () => Promise.resolve({
           ...createEmptyElementsSourceIndexes(),
           elemIdToChangeByIndex: {
             [missingInstance.elemID.getFullName()]: 'another user name',
@@ -195,6 +197,7 @@ describe('netsuite system note author information', () => {
             [missingInstance.elemID.getFullName()]: '8/19/2022',
           },
         }),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([serverTimeType, serverTimeInstance]),
       isPartial: false,
@@ -261,7 +264,8 @@ describe('netsuite system note author information', () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -285,7 +289,8 @@ describe('netsuite system note author information', () => {
       filterOpts = {
         client,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -309,7 +314,8 @@ describe('netsuite system note author information', () => {
       filterOpts = {
         client,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,

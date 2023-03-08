@@ -41,7 +41,8 @@ describe('instance_references filter', () => {
 
     const getIndexesMock = jest.fn()
     const elementsSourceIndex = {
-      getIndexes: getIndexesMock,
+      getFetchIndexes: getIndexesMock,
+      getDeployIndexes: getIndexesMock,
     }
 
     beforeEach(async () => {

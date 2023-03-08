@@ -27,8 +27,8 @@ describe('custom record types filter', () => {
     config: {},
     isPartial: false,
     elementsSourceIndex: {
-      getIndexes: () => {
-        throw new Error('should not call getIndexes')
+      getFetchIndexes: () => {
+        throw new Error('should not call getFetchIndexes')
       },
     },
   } as unknown as FilterOpts
@@ -87,7 +87,7 @@ describe('custom record types filter', () => {
       ...filterOpts,
       isPartial: true,
       elementsSourceIndex: ({
-        getIndexes: () => Promise.resolve({
+        getFetchIndexes: () => Promise.resolve({
           serviceIdRecordsIndex: {
             customrecord2: {
               elemID: new ElemID(NETSUITE, 'customrecord2', 'attr', 'scriptid'),

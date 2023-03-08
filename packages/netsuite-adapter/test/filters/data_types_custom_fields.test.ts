@@ -36,7 +36,8 @@ describe('data_types_custom_fields', () => {
     filterOpts = {
       client: {} as NetsuiteClient,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -87,10 +88,11 @@ describe('data_types_custom_fields', () => {
       filterOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
+          getFetchIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
             customFieldsIndex: { Customer: [instance] },
           }),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
@@ -110,10 +112,11 @@ describe('data_types_custom_fields', () => {
       filterOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
+          getFetchIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
             customFieldsIndex: { Customer: [instance] },
           }),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,

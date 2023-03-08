@@ -172,7 +172,7 @@ const createElementsSourceServiceIdToElemID = async (
   isPartial: boolean,
 ): Promise<ServiceIdRecords> => (
   isPartial
-    ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
+    ? (await elementsSourceIndex.getFetchIndexes()).serviceIdRecordsIndex
     : {}
 )
 

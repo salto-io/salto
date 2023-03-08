@@ -76,7 +76,8 @@ describe('sdf internal ids tests', () => {
     filterOpts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -89,7 +90,8 @@ describe('sdf internal ids tests', () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -109,7 +111,8 @@ describe('sdf internal ids tests', () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -127,7 +130,8 @@ describe('sdf internal ids tests', () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,

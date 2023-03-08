@@ -59,7 +59,7 @@ const getElementsSourceCustomRecordTypes = async (
   elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean
 ): Promise<ObjectType[]> => (
-  isPartial ? Object.values((await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex)
+  isPartial ? Object.values((await elementsSourceIndex.getFetchIndexes()).serviceIdRecordsIndex)
     .map(({ elemID, serviceID }) => ({ ...elemID.createTopLevelParentID(), serviceID }))
     .filter(({ parent, path }) => parent.idType === 'type' && path.length === 1 && path[0] === SCRIPT_ID)
     .map(({ serviceID, parent }) => new ObjectType({

@@ -24,7 +24,7 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import { customtransactiontypeType } from '../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { ElementsSourceIndexes, LazyElementsSourceIndexes } from '../src/elements_source_index/types'
+import { LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 
 const { awu } = collections.asynciterable
 
@@ -563,8 +563,11 @@ describe('suiteapp_file_cabinet', () => {
 
     describe('modifications', () => {
       const elementsSourceIndexes: LazyElementsSourceIndexes = {
-        getIndexes: () => {
-          throw new Error('getIndexes should not be called!')
+        getFetchIndexes: () => {
+          throw new Error('getFetchIndexes should not be called!')
+        },
+        getDeployIndexes: () => {
+          throw new Error('getDeployIndexes should not be called!')
         },
       }
 
@@ -677,13 +680,17 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     describe('additions', () => {
-      const elementsSourceIndexes = {
-        getIndexes: async () => ({
+      const elementsSourceIndexes: LazyElementsSourceIndexes = {
+        getFetchIndexes: () => {
+          throw new Error('getFetchIndexes should not be called!')
+        },
+        getDeployIndexes: async () => ({
           pathToInternalIdsIndex: {
             ...Object.fromEntries(_.range(100).map(i => [`/instance${i}`, i])),
             '/instance1/instance101': 101,
           },
-        } as unknown as ElementsSourceIndexes),
+          mapKeyFieldsIndex: {},
+        }),
       }
 
       it('should split by depths', async () => {
@@ -770,8 +777,11 @@ describe('suiteapp_file_cabinet', () => {
 
     describe('deletions', () => {
       const elementsSourceIndexes: LazyElementsSourceIndexes = {
-        getIndexes: () => {
-          throw new Error('getIndexes should not be called!')
+        getFetchIndexes: () => {
+          throw new Error('getFetchIndexes should not be called!')
+        },
+        getDeployIndexes: () => {
+          throw new Error('getDeployIndexes should not be called!')
         },
       }
       it('should split by depths', async () => {

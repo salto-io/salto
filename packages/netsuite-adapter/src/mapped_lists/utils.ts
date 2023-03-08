@@ -278,7 +278,7 @@ export const createConvertStandardElementMapsToLists = async (
   // using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
   const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)
-  const { mapKeyFieldsIndex } = await elementsSourceIndexes.getIndexes()
+  const { mapKeyFieldsIndex } = await elementsSourceIndexes.getDeployIndexes()
 
   const convertToList: TransformFunc = async ({ value, field }) => (
     field !== undefined && await isMappedList(value, field, mapKeyFieldsIndex)

@@ -35,7 +35,7 @@ describe('NetsuiteClient', () => {
       deploy: mockSdfDeploy,
     } as unknown as SdfClient
     const mockElementsSourceIndex = {
-      getIndexes: () => ({ mapKeyFieldsIndex: {} }),
+      getFetchIndexes: () => ({ mapKeyFieldsIndex: {} }),
     } as unknown as LazyElementsSourceIndexes
     const client = new NetsuiteClient(sdfClient)
 

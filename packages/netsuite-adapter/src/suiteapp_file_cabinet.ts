@@ -648,7 +648,7 @@ SuiteAppFileCabinetOperations => {
     elementsSourceIndex: LazyElementsSourceIndexes
   ): Promise<DeployResult> => {
     const { pathToInternalIdsIndex = {} } = type === 'add'
-      ? await elementsSourceIndex.getIndexes()
+      ? await elementsSourceIndex.getDeployIndexes()
       : {}
 
     return type === 'update'

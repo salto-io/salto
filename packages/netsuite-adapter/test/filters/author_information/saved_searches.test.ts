@@ -67,7 +67,8 @@ describe('netsuite saved searches author information tests', () => {
     filterOpts = {
       client,
       elementsSourceIndex: {
-        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+        getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
@@ -190,7 +191,8 @@ describe('netsuite saved searches author information tests', () => {
       filterOpts = {
         client: clientWithoutSuiteApp,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -210,7 +212,8 @@ describe('netsuite saved searches author information tests', () => {
       filterOpts = {
         client,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,

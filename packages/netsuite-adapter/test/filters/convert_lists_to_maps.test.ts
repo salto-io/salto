@@ -397,7 +397,7 @@ describe('convert lists to maps filter', () => {
         ),
       })
       const elementsSourceIndex = {
-        getIndexes: () => ({
+        getDeployIndexes: () => ({
           mapKeyFieldsIndex: {
             'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
             'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',

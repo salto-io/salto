@@ -143,7 +143,7 @@ const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
         .filter(isInstanceElement)
         .map(instance => instance.elemID.getFullName()))
 
-      Object.entries((await elementsSourceIndex.getIndexes()).customFieldsIndex)
+      Object.entries((await elementsSourceIndex.getFetchIndexes()).customFieldsIndex)
         .filter(([type]) => type in nameToType)
         .forEach(([typeName, fields]) => {
           fields

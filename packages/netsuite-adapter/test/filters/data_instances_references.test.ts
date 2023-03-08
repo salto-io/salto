@@ -56,7 +56,8 @@ describe('data_instances_references', () => {
       const filterOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -78,7 +79,8 @@ describe('data_instances_references', () => {
         elements: [instance],
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -104,12 +106,13 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve({
+          getFetchIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
             internalIdsIndex: {
               'firstType-1': referencedInstance.elemID,
             },
           }),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
@@ -136,7 +139,8 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -165,7 +169,8 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -195,7 +200,8 @@ describe('data_instances_references', () => {
       const fetchOpts = {
         client: {} as NetsuiteClient,
         elementsSourceIndex: {
-          getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getFetchIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+          getDeployIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,

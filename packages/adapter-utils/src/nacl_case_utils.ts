@@ -191,21 +191,9 @@ const recapitalize = (str: string): string => str.slice(0, 1).toUpperCase() + st
  */
 export const prettifyName = (name: string): string => {
   const cleanNaclCase = invertNaclCase(name)
-
-  // if ([ZUORA, JIRA].includes(adapter)) {
-  //   cleanNaclCase = cleanCustomSuffix(cleanNaclCase)
-  // }
-
   if (cleanNaclCase.includes(' ')) {
     return cleanNaclCase
   }
-  // if ([NETSUITE].includes(adapter)) {
-  //   return cleanNaclCase
-  // }
-  // if (SALESFORCE === adapter && name.includes('__')) {
-  //   return cleanNaclCase
-  // }
-
   const words = cleanNaclCase.split('_').flatMap(prettifyWord).map(recapitalize)
   return words.join(' ')
 }

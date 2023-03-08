@@ -686,6 +686,21 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
   },
   ...getPolicyConfig(),
+  api__v1__behaviors: {
+    request: {
+      url: '/api/v1/behaviors',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  BehaviorRule: {
+    transformation: {
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -739,6 +754,7 @@ export const SUPPORTED_TYPES = {
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
   Role: ['RolePage'],
+  BehaviorRule: ['api__v1__behaviors'],
 }
 
 

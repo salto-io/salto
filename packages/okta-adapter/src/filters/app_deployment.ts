@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionOrModificationChange, isModificationChange, ModificationChange, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
-import { config as configUtils, elements as elementUtils, deployment } from '@salto-io/adapter-components'
-import { APPLICATION_TYPE_NAME } from '../constants'
+import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
+import { config as configUtils, deployment } from '@salto-io/adapter-components'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
-const INACTIVE_STATUS = 'INACTIVE'
 export const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
@@ -47,27 +46,6 @@ const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByActi
       method: 'put',
     },
   },
-}
-
-const deployAppStatusChange = async (
-  change: ModificationChange<InstanceElement>,
-  client: OktaClient,
-): Promise<deployment.ResponseResult> => {
-  const appId = getChangeData(change).value.id
-  const instanceStatusBefore = change.data.before.value.status
-  const instanceStatusAfter = change.data.after.value.status
-  if (instanceStatusBefore === instanceStatusAfter) {
-    return undefined
-  }
-  const appStatus = instanceStatusAfter === INACTIVE_STATUS ? 'deactivate' : 'activate'
-  const urlParams = { appId, appStatus }
-  const url = elementUtils.replaceUrlParams('/api/v1/apps/{appId}/lifecycle/{appStatus}', urlParams)
-  try {
-    const response = await client.post({ url, data: {} })
-    return response.data
-  } catch (err) {
-    throw new Error(`Application status could not be updated in instance: ${getChangeData(change).elemID.getFullName()}`)
-  }
 }
 
 // Set fields that are created by the service to the returned app instance
@@ -107,13 +85,8 @@ const deployApp = async (
   const fieldsToIgnore = [
     ...Object.keys(APP_ASSIGNMENT_FIELDS),
     // TODO SALTO-2690: remove this once completed
-    'id', 'created', 'lastUpdated', 'status', 'licensing', '_links', '_embedded',
+    'id', 'created', 'lastUpdated', 'licensing', '_links', '_embedded',
   ]
-
-  if (isModificationChange(change)) {
-    // application status must be deployed seperatly
-    await deployAppStatusChange(change, client)
-  }
 
   const response = await defaultDeployChange(
     change,
@@ -121,7 +94,8 @@ const deployApp = async (
     config[API_DEFINITIONS_CONFIG],
     isAdditionChange(change)
       ? fieldsToIgnore.concat(getAdditionalFieldsToIgnore(getChangeData(change))) : fieldsToIgnore,
-    isAdditionChange(change) && getChangeData(change).value.status === 'INACTIVE' ? { activate: 'false' } : undefined
+    // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
+    isAdditionChange(change) && getChangeData(change).value.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
   )
 
   if (isAdditionOrModificationChange(change)) {

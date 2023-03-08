@@ -226,6 +226,7 @@ const addChangedByUsingAuditLog = async ({
       if (!isBeforeNewFetch) {
         // can happen for changes in ticket_fields, routing_attribute(_value), and user_fields for example
         log.debug(`There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`)
+        inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = undefined
       }
       return isAfterPrevFetch && isBeforeNewFetch
     })
@@ -245,6 +246,7 @@ const addChangedByUsingAuditLog = async ({
       })
       if (name === undefined) {
         // error was logged earlier
+        inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = undefined
         return
       }
       inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = name

@@ -29,7 +29,7 @@ type ErrorDetectors = {
   deployStartMessageRegex: RegExp
   settingsValidationErrorRegex: RegExp
   objectValidationErrorRegex: RegExp
-  objectValidationFeatureErrorRegex: RegExp
+  missingFeatureErrorRegex: RegExp[]
   deployedObjectRegex: RegExp
   errorObjectRegex: RegExp
   manifestErrorDetailsRegex: RegExp
@@ -42,7 +42,10 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     deployStartMessageRegex: RegExp('^Begin deployment$', 'm'),
     settingsValidationErrorRegex: RegExp('^Validation of account settings failed\\.$', 'm'),
     objectValidationErrorRegex: RegExp(`^(An error occurred during custom object validation\\.|An error occured during validation of Custom Objects against the account) \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
-    objectValidationFeatureErrorRegex: RegExp(`Details: You must specify the (?<${FEATURE_NAME}>[A-Z_]+)\\(.*?\\) feature in the project manifest`, 'gm'),
+    missingFeatureErrorRegex: [
+      RegExp(`Details: You must specify the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature in the project manifest`, 'gm'),
+      RegExp(`Details: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
+    ],
     deployedObjectRegex: RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm'),
     manifestErrorDetailsRegex: RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm'),
@@ -54,7 +57,10 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     deployStartMessageRegex: RegExp('^Commencer le d.ploiement$', 'm'),
     settingsValidationErrorRegex: RegExp('^La validation des param.tres du compte a .chou.\\.$', 'm'),
     objectValidationErrorRegex: RegExp(`^(Une erreur s'est produite lors de la validation de l'objet personnalis.\\.|An error occured during validation of Custom Objects against the account) \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
-    objectValidationFeatureErrorRegex: RegExp(`D.tails: Vous devez sp.cifier la fonctionnalit. (?<${FEATURE_NAME}>[A-Z_]+)\\(.*?\\) dans le manifeste du projet`, 'gm'),
+    missingFeatureErrorRegex: [
+      RegExp(`D.tails: Vous devez sp.cifier la fonctionnalit. (?<${FEATURE_NAME}>\\w+)\\(.*?\\) dans le manifeste du projet`, 'gm'),
+      RegExp(`D.tails: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
+    ],
     deployedObjectRegex: RegExp(`^(Cr.er un objet|Mettre . jour l'objet) -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     // TODO: find in french
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm'),

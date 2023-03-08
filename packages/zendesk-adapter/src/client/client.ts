@@ -41,8 +41,8 @@ type LogsFilterConfig = {
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
   // this is arbitrary, could not find official limits
-  get: 20,
-  deploy: 20,
+  get: 100,
+  deploy: 100,
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {

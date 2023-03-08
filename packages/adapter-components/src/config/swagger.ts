@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, BuiltinTypes, CORE_ANNOTATIONS, FieldDefinition, ListType, ActionName } from '@salto-io/adapter-api'
 import { types, collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, TypeConfig, TypeDefaultsConfig, UserFetchConfig, validateSupportedTypes } from './shared'
-import { createRequestConfigs, validateRequestConfig } from './request'
-import { createTransformationConfigTypes, getTransformationConfigByType, validateTransoformationConfig } from './transformation'
+import { validateRequestConfig } from './request'
+import { createTransformationConfigTypes, getTransformationConfigByType, TransformationConfig, TransformationDefaultConfig, validateTransoformationConfig } from './transformation'
 
 const { isDefined } = lowerDashValues
 const { findDuplicates } = collections.array
@@ -51,7 +51,8 @@ export type TypeSwaggerConfig = TypeConfig
 export type RequestableTypeSwaggerConfig = types.PickyRequired<TypeSwaggerConfig, 'request'>
 export type TypeSwaggerDefaultConfig = TypeDefaultsConfig
 
-export type AdapterSwaggerApiConfig = AdapterApiConfig & {
+export type AdapterSwaggerApiConfig<A extends string = ActionName> = AdapterApiConfig<
+ TransformationConfig, TransformationDefaultConfig, A> & {
   swagger: SwaggerDefinitionBaseConfig
 }
 export type RequestableAdapterSwaggerApiConfig = AdapterSwaggerApiConfig & {
@@ -131,21 +132,21 @@ export const createSwaggerAdapterApiConfigType = ({
   additionalTypeFields,
   additionalRequestFields,
   additionalTransformationFields,
+  additionalActions,
 }: {
   adapter: string
   additionalTypeFields?: Record<string, FieldDefinition>
   additionalFields?: Record<string, FieldDefinition>
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalTransformationFields?: Record<string, FieldDefinition>
+  additionalActions?: string[]
 }): ObjectType => {
-  const requestTypes = createRequestConfigs(adapter, additionalRequestFields)
   const transformationTypes = createTransformationConfigTypes(
     adapter,
     additionalTransformationFields,
   )
   return createAdapterApiConfigType({
     adapter,
-    requestTypes,
     transformationTypes,
     additionalTypeFields,
     additionalFields: {
@@ -154,6 +155,8 @@ export const createSwaggerAdapterApiConfigType = ({
         refType: createSwaggerDefinitionsBaseConfigType(adapter),
       },
     },
+    additionalRequestFields,
+    additionalActions,
   })
 }
 

@@ -1930,7 +1930,11 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         mockExecuteAction.mockImplementation(context => {
           const errorMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
         Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
-        File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        File: ~/Objects/custimport_xepi_subscriptionimport.xml
+        
+        An error occurred during custom object validation. (customworkflow1)
+        Details: When the SuiteCloud project contains a workflow, the manifest must define the WORKFLOW feature as required.
+        File: ~/Objects/customworkflow1.xml`
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             throw new Error(errorMessage)
           }
@@ -1942,7 +1946,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
           expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toContain('SUBSCRIPTIONBILLING')
+          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW'])
         }
       })
       it('should throw error', async () => {

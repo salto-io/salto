@@ -925,7 +925,7 @@ export default class SdfClient {
       manifestErrorDetailsRegex,
       deployStartMessageRegex,
       objectValidationErrorRegex,
-      objectValidationFeatureErrorRegex,
+      missingFeatureErrorRegex,
       deployedObjectRegex,
       errorObjectRegex,
     } = multiLanguageErrorDetectors[sdfLanguage]
@@ -939,7 +939,8 @@ export default class SdfClient {
     if (!deployStartMessageRegex.test(errorMessage)) {
       // we'll get here when the deploy failed in the validation phase.
       // in this case we're looking for validation error message lines.
-      const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
+      const missingFeatureNames = missingFeatureErrorRegex
+        .flatMap(regex => getGroupItemFromRegex(errorMessage, regex, FEATURE_NAME))
       if (missingFeatureNames.length > 0) {
         return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
       }

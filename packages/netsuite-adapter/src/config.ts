@@ -422,7 +422,14 @@ const validateAdditionalDependencies = (
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
   }
   if (include?.features && exclude?.features) {
-    const conflictedFeatures = _.intersection(include.features, exclude.features)
+    const conflictedFeatures = _.intersection(
+      include.features.map(featureName => (
+        isRequiredFeature(featureName)
+          ? removeRequiredFeatureSuffix(featureName)
+          : featureName
+      )),
+      exclude.features
+    )
     if (conflictedFeatures.length > 0) {
       throw new Error(`Additional features cannot be both included and excluded. The following features are conflicted: ${conflictedFeatures.join(', ')}`)
     }

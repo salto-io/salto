@@ -648,6 +648,28 @@ describe('NetsuiteAdapter creator', () => {
             })
           ).toThrow()
         })
+        it('should throw an error when additionalDependencies has conflicting features (with required)', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { features: ['feature:required'] },
+                  exclude: { features: ['feature'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
         it('should throw an error when additionalDependencies has conflicting objects', () => {
           const invalidConfig = new InstanceElement(
             ElemID.CONFIG_NAME,

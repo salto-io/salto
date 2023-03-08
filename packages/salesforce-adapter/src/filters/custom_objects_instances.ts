@@ -26,11 +26,19 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, SALESFORCE_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, ATTRIBUTES,
+  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries, getFieldNamesForQuery } from './utils'
+import {
+  getNamespace,
+  isMasterDetailField,
+  isLookupField,
+  queryClient,
+  buildSelectQueries,
+  getFieldNamesForQuery,
+  omitDefaultKeys,
+} from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -53,7 +61,6 @@ export type CustomObjectFetchSetting = {
   invalidIdFields?: string[]
 }
 
-const defaultRecordKeysToOmit = [ATTRIBUTES]
 const nameSeparator = '___'
 const detectsParentsIndicator = '##allMasterDetailFields##'
 
@@ -125,12 +132,6 @@ const transformCompoundNameValues = async (
       [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
     }
 }
-
-const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord =>
-  ({
-    ..._.omit(recordValue, defaultRecordKeysToOmit),
-    [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
-  })
 
 export const transformRecordToValues = async (
   type: ObjectType,

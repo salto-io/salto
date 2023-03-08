@@ -17,10 +17,8 @@ import { SALESFORCE, TYPES_PATH } from '../constants'
 
 const TOOLING_FOLDER_NAME = 'Tooling'
 export const TOOLING_PATH = [SALESFORCE, TYPES_PATH, TOOLING_FOLDER_NAME] as const
-export const TOOLING_MAX_QUERY_LIMIT = 200
 
 export const SupportedToolingObject = {
-  InstalledSubscriberPackage: 'InstalledSubscriberPackage',
   SubscriberPackage: 'SubscriberPackage',
 } as const
 
@@ -29,11 +27,6 @@ export const ToolingObjectAnnotation = {
 } as const
 
 export const ToolingObjectInfo = {
-  InstalledSubscriberPackage: {
-    Field: {
-      SubscriberPackageId: 'SubscriberPackageId',
-    },
-  },
   SubscriberPackage: {
     Field: {
       Name: 'Name',

@@ -32,7 +32,7 @@ import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, SALESFORCE_OBJECT_ID_FIELD,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -361,3 +361,9 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
+
+export const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord =>
+  ({
+    ..._.omit(recordValue, ['attributes']),
+    [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
+  })

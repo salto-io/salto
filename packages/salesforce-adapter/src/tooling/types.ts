@@ -39,9 +39,6 @@ export type ToolingObjectType = ObjectType & {
 export type ToolingField = types.ValueOf<ToolingObjectType['fields']>
 
 export type ToolingObject = {
-  InstalledSubscriberPackage: ToolingObjectType & {
-    fields: ToolingObjectType['fields'] & Record<keyof typeof ToolingObjectInfo.InstalledSubscriberPackage.Field, ToolingField>
-  }
   SubscriberPackage: ToolingObjectType & {
     fields: ToolingObjectType['fields'] & Record<keyof typeof ToolingObjectInfo.SubscriberPackage.Field, ToolingField>
   }
@@ -62,14 +59,6 @@ export const isToolingField = (field: Field): field is ToolingField => (
 )
 
 // ToolingObjectType TypeGuards
-
-export const isInstalledSubscriberPackage = (
-  toolingObject: ToolingObjectType
-): toolingObject is ToolingObject['InstalledSubscriberPackage'] => (
-  toolingObject.annotations[API_NAME] === SupportedToolingObject.InstalledSubscriberPackage
-  && Object.keys(ToolingObjectInfo.InstalledSubscriberPackage.Field)
-    .every(fieldName => isDefined(toolingObject.fields[fieldName]))
-)
 
 export const isSubscriberPackage = (
   toolingObject: ToolingObjectType

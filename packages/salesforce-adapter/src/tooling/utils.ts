@@ -17,14 +17,12 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io
 import _ from 'lodash'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
-import {
-  TOOLING_PATH,
-  ToolingObjectAnnotation,
-} from './constants'
+import { TOOLING_PATH, ToolingObjectAnnotation } from './constants'
+import { API_NAME, RECORDS_PATH, SALESFORCE } from '../constants'
 import { SupportedToolingObjectName, ToolingField, ToolingObjectType } from './types'
-import { API_NAME, ATTRIBUTES, RECORDS_PATH, SALESFORCE } from '../constants'
 import { SalesforceRecord } from '../client/types'
 import { DEFAULT_ID_FIELDS, ID_FIELDS_BY_TYPE } from './id_fields'
+import { omitDefaultKeys } from '../filters/utils'
 
 const { isDefined } = values
 
@@ -72,7 +70,7 @@ export const createToolingInstance = async (
   return new InstanceElement(
     naclCase(instanceName),
     toolingObject,
-    _.omit(salesforceRecord, ATTRIBUTES),
+    omitDefaultKeys(salesforceRecord),
     [SALESFORCE, RECORDS_PATH, typeName, pathNaclCase(instanceName)],
   )
 }

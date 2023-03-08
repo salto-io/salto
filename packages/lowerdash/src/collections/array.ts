@@ -40,8 +40,8 @@ export const findDuplicates = (items: string[]): string[] => (
     .sort()
 )
 
-export const keyBy = <T, K extends Key>(values: T | T[], keyFunc: (item: T) => K): Record<K, T> => {
+export const keyBy = <T, K extends Key>(values: T[], keyFunc: (item: T) => K): Record<K, T> => {
   const record = {} as Record<K, T>
-  makeArray(values).forEach(item => { record[keyFunc(item)] = item })
+  values.forEach(item => { record[keyFunc(item)] = item })
   return record
 }

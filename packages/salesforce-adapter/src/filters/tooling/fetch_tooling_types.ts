@@ -15,7 +15,6 @@
 */
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../../filter'
 import {
@@ -30,7 +29,6 @@ import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '.
 import { createToolingObject } from '../../tooling/utils'
 import { SupportedToolingObject } from '../../tooling/constants'
 
-const log = logger(module)
 const { awu } = collections.asynciterable
 const { keyBy } = collections.array
 const { isDefined } = values
@@ -41,12 +39,7 @@ const createToolingObjectTypeFromDescribe = async (
   client: SalesforceClient,
   objectName: SupportedToolingObjectName,
 ): Promise<ToolingObjectType | undefined> => {
-  const { result, errors } = await client.describeToolingObject(objectName)
-  if (!_.isEmpty(errors) || _.isEmpty(result)) {
-    log.warn('Failed to describe tooling object %s: %o', objectName, errors)
-    return undefined
-  }
-  const [typeDescription] = result
+  const typeDescription = await client.describeToolingObject(objectName)
 
   const [topLevelFields, nestedFields] = _.partition(
     typeDescription.fields,

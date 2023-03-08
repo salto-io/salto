@@ -19,39 +19,29 @@ import { FilterResult, RemoteFilterCreator } from '../../filter'
 import { ensureSafeFilterFetch } from '../utils'
 import SalesforceClient from '../../client/client'
 import {
-  isInstalledSubscriberPackage,
   isSubscriberPackage,
   isToolingObject,
   ToolingObject,
 } from '../../tooling/types'
-import { ToolingObjectInfo } from '../../tooling/constants'
 import { SalesforceRecord } from '../../client/types'
-import { createToolingInstance } from '../../tooling/utils'
+import { createToolingInstance, toolingFieldApiName, toolingObjectApiName } from '../../tooling/utils'
 
 const { awu, toArrayAsync } = collections.asynciterable
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch info about the installed packages'
 
-const getSubscriberPackageIds = async (
-  installedSubscriberPackageType: ToolingObject['InstalledSubscriberPackage'],
-  client: SalesforceClient
-): Promise<string[]> => {
-  const queryIterable = await client.queryToolingObject({
-    toolingObject: installedSubscriberPackageType,
-    fields: [installedSubscriberPackageType.fields.SubscriberPackageId],
-  })
-  const records = (await toArrayAsync(queryIterable)).flat()
-  return records
-    .map(record => record[ToolingObjectInfo.InstalledSubscriberPackage.Field.SubscriberPackageId])
-}
-
-const getSubscriberPackageRecord = async (
+const getSubscriberPackageRecords = async (
   subscriberPackageType: ToolingObject['SubscriberPackage'],
   client: SalesforceClient,
-  recordId: string,
-): Promise<SalesforceRecord> => {
-  const queryIterable = await client.queryToolingObject({ toolingObject: subscriberPackageType, recordId })
-  return (await toArrayAsync(queryIterable)).flat()[0]
+): Promise<SalesforceRecord[]> => {
+  const subscriberPackageFields = Object.values(subscriberPackageType.fields).map(toolingFieldApiName)
+  const queryResult = await client.queryAll([
+    `SELECT ${subscriberPackageFields.join(', ')}`,
+    'FROM InstalledSubscriberPackage',
+  ].join('\n'), true)
+  return (await toArrayAsync(queryResult))
+    .flat()
+    .map(record => record[toolingObjectApiName(subscriberPackageType)])
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
@@ -65,12 +55,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         .filter(isObjectType)
         .filter(isToolingObject)
       const subscriberPackageType = toolingObjects.find(isSubscriberPackage)
-      const installedSubscriberPackageType = toolingObjects.find(isInstalledSubscriberPackage)
-      if (subscriberPackageType === undefined || installedSubscriberPackageType === undefined) {
+      if (subscriberPackageType === undefined) {
         return
       }
-      await awu(await getSubscriberPackageIds(installedSubscriberPackageType, client))
-        .map(subscriberPackageId => getSubscriberPackageRecord(subscriberPackageType, client, subscriberPackageId))
+      await awu(await getSubscriberPackageRecords(subscriberPackageType, client))
         .map(record => createToolingInstance(record, subscriberPackageType))
         .forEach(instance => elements.push(instance))
     },

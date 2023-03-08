@@ -121,9 +121,9 @@ describe('Scriptrunner references', () => {
       await filterOff.preDeploy([toChange({ after: instance })])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
     })
-    it('should not change if cloud', async () => {
+    it('should change if cloud', async () => {
       await filterCloud.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(1)
     })
   })
   describe('on deploy', () => {
@@ -135,9 +135,9 @@ describe('Scriptrunner references', () => {
       await filterOff.onDeploy([toChange({ after: instance })])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
     })
-    it('should do nothing if cloud', async () => {
-      await filterCloud.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
+    it('should return if cloud', async () => {
+      await filterCloud.onDeploy([toChange({ after: instance })])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(2)
     })
   })
 })

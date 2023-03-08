@@ -26,12 +26,12 @@ const { awu } = collections.asynciterable
 
 // This filter is used to remove and return references in script runner workflows
 // As the references are encoded we cannot wait for the references filter to resolve them
-const filter: FilterCreator = ({ client, config }) => {
+const filter: FilterCreator = ({ config }) => {
   const originalInstances: Record<string, InstanceElement> = {}
   return {
     name: 'scriptRunnerWorkflowReferencesFilter',
     preDeploy: async changes => {
-      if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
+      if (!config.fetch.enableScriptRunnerAddon) {
         return
       }
       await awu(changes)
@@ -47,7 +47,7 @@ const filter: FilterCreator = ({ client, config }) => {
         })
     },
     onDeploy: async changes => {
-      if (!config.fetch.enableScriptRunnerAddon || !client.isDataCenter) {
+      if (!config.fetch.enableScriptRunnerAddon) {
         return
       }
       await awu(changes)

@@ -95,7 +95,7 @@ const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression
     }
     if (part.elemID.typeName === BEHAVIOR_RULE_TYPE_NAME) {
       // references to BehaviorRule are by name
-      const { name } = part.value.value
+      const { name } = part.value?.value
       if (name !== undefined) {
         return `"${name}"`
       }

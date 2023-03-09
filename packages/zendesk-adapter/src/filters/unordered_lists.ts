@@ -17,23 +17,39 @@ import _ from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
+
+const log = logger(module)
 
 
 const orderDynamicContentItems = (instances: InstanceElement[]): void => {
   const dynamicContentItemInstances = instances
     .filter(e => e.refType.elemID.name === 'dynamic_content_item')
 
+  const dynamicContentItemVariantInstancesById = _.keyBy(
+    instances.filter(e => e.refType.elemID.name === DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME),
+    inst => inst.elemID.getFullName()
+  )
+
   dynamicContentItemInstances.forEach(inst => {
-    if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant =>
-      isReferenceExpression(variant.locale_id) && isInstanceElement(variant.locale_id.value))
+    if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant => {
+      const variantId = isReferenceExpression(variant) ? variant.elemID?.getFullName() : undefined
+      const variantInstance = variantId !== undefined ? dynamicContentItemVariantInstancesById[variantId] : undefined
+      return (variantInstance !== undefined)
+        && isReferenceExpression(variantInstance.value.locale_id)
+        && isInstanceElement(variantInstance.value.locale_id.value)
+    })
     ) {
       inst.value.variants = _.sortBy(
         inst.value.variants,
         // at most one variant is allowed per locale
-        variant => ([variant.locale_id.value.value?.locale])
+        variant =>
+          ([dynamicContentItemVariantInstancesById[variant.elemID.getFullName()].value.locale_id.value.value?.locale])
       )
     }
+    log.error(`could not sort variants for ${inst.elemID.getFullName()}`)
   })
 }
 

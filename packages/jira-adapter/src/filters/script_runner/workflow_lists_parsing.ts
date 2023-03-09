@@ -49,6 +49,7 @@ const GROUP_PREFIX = 'group:'
 const ROLE_PREFIX = 'role:'
 const SPACE = ' '
 const FIELD_LINK_DIRECTION = 'FIELD_LINK_DIRECTION'
+const FIELD_LINK_TYPE = 'FIELD_LINK_TYPE'
 
 const stringifyDirectionFields = (value: Value): void => {
   if (_.isPlainObject(value)) {
@@ -61,16 +62,25 @@ const stringifyDirectionFields = (value: Value): void => {
   }
 }
 
+const createLinkObject = (directionString: string, separator: string): { linkType: string; direction: string } => {
+  const [id, direction] = directionString.split(separator)
+  return { linkType: id, direction }
+}
+
 const objectifyDirectionFields = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => key === FIELD_LINK_DIRECTION)
       .filter((entry): entry is [string, string[]] => Array.isArray(entry[1]))
       .forEach(([key, val]) => {
-        value[key] = val.map((directionString: string) => {
-          const [id, direction] = directionString.split('-')
-          return { linkType: id, direction }
-        }).sort() // sort to make sure the order is consistent
+        value[key] = val.map(directionString => createLinkObject(directionString, '-'))
+          .sort() // sort to make sure the order is consistent
+      })
+    Object.entries(value)
+      .filter(([key]) => key === FIELD_LINK_TYPE)
+      .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
+      .forEach(([key, val]) => {
+        value[key] = createLinkObject(val, ' ')
       })
   }
 }

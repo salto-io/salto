@@ -108,6 +108,8 @@ const postFunctionConfigurationType = new ObjectType({
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_LINK_DIRECTION: { refType: new ListType(linkDirectionType),
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_LINK_TYPE: { refType: new ListType(linkDirectionType),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, POST_FUNCTION_CONFIGURATION],
 })

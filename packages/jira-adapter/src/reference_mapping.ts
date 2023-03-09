@@ -611,6 +611,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  // The second param is needed to resolve references by JiraSerializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]
 

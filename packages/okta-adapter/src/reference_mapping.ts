@@ -129,7 +129,8 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
-  referenceUtils.generateLookupFunc(referencesRules),
+  // The second param is needed to resolve references by oktaSerializationStrategy
+  referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (

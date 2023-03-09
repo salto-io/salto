@@ -32,12 +32,19 @@ export type FormulaIdentifierInfo = {
   instance: string
 }
 
-export const parseField = (value: string, object: string): FormulaIdentifierInfo => {
-  const actualValue = value.includes('.') ? value : createApiName(object, value)
+const isImplicitReferenceToParentField = (fieldIdentifier: string): boolean => (
+  // Either the field identifier has an explicit parent (e.g. 'Account.Industry') or it implicitly refers to
+  // the provided parent object (e.g. 'Name')
+  !fieldIdentifier.includes('.')
+)
+
+export const parseField = (fieldIdentifier: string, object: string): FormulaIdentifierInfo => {
+  const fieldIdentifierWithParent = isImplicitReferenceToParentField(fieldIdentifier)
+    ? createApiName(object, fieldIdentifier) : fieldIdentifier
 
   return {
-    type: (isCustom(actualValue) ? 'customField' : 'standardField'),
-    instance: actualValue,
+    type: (isCustom(fieldIdentifierWithParent) ? 'customField' : 'standardField'),
+    instance: fieldIdentifierWithParent,
   }
 }
 
@@ -111,9 +118,7 @@ export const parseObjectType = (value: string): FormulaIdentifierInfo[] => {
 const parseFieldIdentifier = (fieldWithPrefix: string, parentObject: string): FormulaIdentifierInfo[] => {
   const field = _.trimStart(fieldWithPrefix, '$')
 
-  // Either the field identifier has an explicit parent (e.g. 'Account.Industry') or it implicitly refers to
-  // the provided parent object (e.g. 'Name')
-  const fieldParent = field.includes('.') ? getObject(field) : parentObject
+  const fieldParent = isImplicitReferenceToParentField(field) ? parentObject : getObject(field)
 
   return [
     parseField(field, fieldParent),

@@ -609,6 +609,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/zones',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/zones/{zoneId}',
+        method: 'put',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/zones/{zoneId}',
+        method: 'delete',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+    },
   },
   TrustedOrigin: {
     transformation: {

@@ -636,7 +636,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         },
       },
       deactivate: {
-        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
+        url: '/api/v1/zones/{zoneId}/lifecycle/deactivate',
         method: 'post',
         urlParamsToFields: {
           zoneId: 'id',

@@ -15,13 +15,14 @@
 */
 import _ from 'lodash'
 import {
+  AdditionChange,
   Change,
   Field,
-  getChangeData,
+  getChangeData, isAdditionChange,
   isFieldChange,
-  isModificationChange,
+  isModificationChange, isRemovalChange,
   ModificationChange,
-  ObjectType, ReferenceExpression,
+  ObjectType, ReferenceExpression, RemovalChange,
   toChange,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/history_tracking'
@@ -39,6 +40,12 @@ import {
 const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
 describe(filter.name, () => {
+  const createField = (parentType: ObjectType, fieldName: string): Field => (
+    new Field(parentType, fieldName, Types.primitiveDataTypes.Text, {
+      [API_NAME]: `${parentType.elemID.typeName}.${fieldName}`,
+    })
+  )
+
   describe('onFetch', () => {
     describe('When fetching an object with history tracking disabled', () => {
       it('Should not modify the object', async () => {
@@ -97,11 +104,6 @@ describe(filter.name, () => {
     })
   })
   describe('preDeploy', () => {
-    const createField = (parentType: ObjectType, fieldName: string): Field => (
-      new Field(parentType, fieldName, Types.primitiveDataTypes.Text, {
-        [API_NAME]: `${parentType.elemID.typeName}.${fieldName}`,
-      })
-    )
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
       const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
       const typeName = 'SomeType'
@@ -292,6 +294,26 @@ describe(filter.name, () => {
           expectFieldTrackingRemovalChange(changes[1])
         })
       })
+    })
+  })
+  describe('onDeploy', () => {
+    it('Should handle unrelated field changes', async () => {
+      const field = createField(mockTypes.Account, 'SomeField')
+      const expected = field.clone()
+      const changes = [
+        toChange({ before: field }),
+        toChange({ after: field }),
+        toChange({ before: field, after: field.clone() }),
+      ]
+      getChangeData(changes[2]).annotations.unrelatedAnnotation = 'Something'
+      await filter.onDeploy(changes)
+      expect(isRemovalChange(changes[0])).toBeTrue()
+      expect((changes[0] as RemovalChange<Field>).data.before).toEqual(expected)
+      expect(isAdditionChange(changes[1])).toBeTrue()
+      expect((changes[1] as AdditionChange<Field>).data.after).toEqual(expected)
+      expect(isModificationChange(changes[2])).toBeTrue()
+      expect((changes[2] as ModificationChange<Field>).data.before).toEqual(expected)
+      expect((changes[2] as ModificationChange<Field>).data.after.annotations).toHaveProperty('unrelatedAnnotation', 'Something')
     })
   })
   describe('End to end', () => {

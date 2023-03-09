@@ -227,6 +227,28 @@ describe('securitySchemeFilter', () => {
         expect(securityLevelInstance.value.memberIds).toEqual({})
       })
 
+      it('should omit invalid members', async () => {
+        securityLevelInstance.value.members = [
+          {},
+          {
+            holder: {
+              type: 'type',
+              parameter: 'param',
+            },
+          },
+        ]
+        await filter.onFetch([securityLevelInstance, securityLevelType])
+
+        expect(securityLevelInstance.value.members).toEqual([
+          {
+            holder: {
+              type: 'type',
+              parameter: 'param',
+            },
+          },
+        ])
+      })
+
       it('should add defaultLevel to securityScheme', async () => {
         const originalScheme = securitySchemeInstance.clone()
         securitySchemeInstance.value.defaultSecurityLevelId = securitySchemeInstance.value

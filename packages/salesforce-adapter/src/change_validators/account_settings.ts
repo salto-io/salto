@@ -21,7 +21,7 @@ import {
   isInstanceElement,
 } from '@salto-io/adapter-api'
 import { isInstanceOfType } from '../filters/utils'
-import { SALESFORCE } from '../constants'
+import { ACCOUNT_SETTINGS_METADATA_TYPE, ORGANIZATION_SETTINGS, SALESFORCE } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
@@ -47,20 +47,18 @@ const changeValidator = (): ChangeValidator => async (changes, elementsSource) =
     return []
   }
 
-  const orgWideSettings = await elementsSource.get(new ElemID(SALESFORCE, 'Organization', 'instance'))
+  const orgWideSettings = await elementsSource.get(new ElemID(SALESFORCE, ORGANIZATION_SETTINGS, 'instance'))
 
-  if (orgWideSettings === undefined || !isInstanceElement(orgWideSettings)) {
+  if (!isInstanceElement(orgWideSettings)) {
     log.error('Expected a single Organization instance. Found %o instead', orgWideSettings)
     return []
   }
 
-  const changedInstances = changes
+  return awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isInstanceElement)
-
-  return awu(changedInstances)
-    .filter(isInstanceOfType('AccountSettings'))
+    .filter(isInstanceOfType(ACCOUNT_SETTINGS_METADATA_TYPE))
     .filter(accountSettingsInstance => isRecordTypeInvalid(orgWideSettings, accountSettingsInstance))
     .map(invalidRecordTypeError)
     .toArray()

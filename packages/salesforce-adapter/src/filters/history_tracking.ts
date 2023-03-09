@@ -25,7 +25,6 @@ import {
   isModificationChange,
   isObjectType,
   isObjectTypeChange,
-  isRemovalOrModificationChange,
   ModificationChange,
   ObjectType,
   ReferenceExpression,
@@ -58,7 +57,7 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void =>
   delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
 }
 
-const createFieldChangeIfApplicable = async (
+const createHistoryTrackingFieldChange = async (
   field: Field,
   objectTypeChange: ModificationChange<ObjectType>
 ): Promise<Change<Field> | undefined> => {
@@ -157,7 +156,7 @@ const filter: LocalFilterCreator = () => ({
       .filter(isModificationChange)
       .flatMap(change => awu(Object.values(getChangeData(change).fields))
         .filter(field => !changedFieldNames.includes(field.elemID.getFullName()))
-        .map(field => createFieldChangeIfApplicable(field, change))
+        .map(field => createHistoryTrackingFieldChange(field, change))
         .toArray())
       .filter(valueUtils.isDefined)
       .toArray()
@@ -180,27 +179,17 @@ const filter: LocalFilterCreator = () => ({
       })
 
     changes
-      .filter(isAdditionOrModificationChange)
       .filter(isFieldChange)
       .filter(change => isFieldOfCustomObject(getChangeData(change)))
       .forEach(change => {
-        delete getChangeData(change).annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
+        const [before, after] = getAllChangeData(change)
+        if (before !== undefined) {
+          delete before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
+        }
+        if (after !== undefined) {
+          delete after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
+        }
       })
-
-    changes
-      .filter(isRemovalOrModificationChange)
-      .filter(isFieldChange)
-      .filter(change => isFieldOfCustomObject(getChangeData(change)))
-      .forEach(change => {
-        delete change.data.before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
-      })
-
-    _.remove(changes, change => (
-      isModificationChange(change)
-      && isObjectTypeChange(change)
-      && isCustomObject(getChangeData(change))
-      && change.data.before.isEqual(change.data.after)
-    ))
 
     _.remove(changes, change => (
       isModificationChange(change)

@@ -20,6 +20,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
 import { createFilterCreatorParams } from '../utils'
+import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
 
 describe('Unordered lists filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch'>
@@ -48,28 +49,67 @@ describe('Unordered lists filter', () => {
     const dynamicContentItemType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'dynamic_content_item'),
     })
+    const dynamicContentItemVariantType = new ObjectType({
+      elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME),
+    })
     const triggerDefinitionType = new ObjectType({
       elemID: new ElemID(ZENDESK, 'trigger_definition'),
     })
+    const enVariantInstance = new InstanceElement(
+      'en-variant',
+      dynamicContentItemVariantType,
+      { locale_id: new ReferenceExpression(localeEN.elemID, localeEN), content: 'a' },
+    )
+    const heVariantInstance = new InstanceElement(
+      'he-variant',
+      dynamicContentItemVariantType,
+      { locale_id: new ReferenceExpression(localeHE.elemID, localeHE), content: 'c' },
+    )
+    const esVariantInstance = new InstanceElement(
+      'es-variant',
+      dynamicContentItemVariantType,
+      { locale_id: new ReferenceExpression(localeES.elemID, localeES), content: 'b' },
+    )
+    const enVariantNotPopulatedInstance = new InstanceElement(
+      'en-variant not populated',
+      dynamicContentItemVariantType,
+      { locale_id: new ReferenceExpression(localeEN.elemID), content: 'a' },
+    )
+    const enVariantWithValuesInstance = new InstanceElement(
+      'en-variant no locale',
+      dynamicContentItemVariantType,
+      { locale_id: 3, content: 'a' },
+    )
     const withPopulatedRefs = new InstanceElement(
       'refs',
       dynamicContentItemType,
       {
         variants: [
-          { locale_id: new ReferenceExpression(localeEN.elemID, localeEN), content: 'a' },
-          { locale_id: new ReferenceExpression(localeHE.elemID, localeHE), content: 'c' },
-          { locale_id: new ReferenceExpression(localeES.elemID, localeES), content: 'b' },
+          new ReferenceExpression(enVariantInstance.elemID, enVariantInstance),
+          new ReferenceExpression(heVariantInstance.elemID, heVariantInstance),
+          new ReferenceExpression(esVariantInstance.elemID, esVariantInstance),
         ],
       },
     )
     const withSomeUnpopulatedRefs = new InstanceElement(
-      'missing',
+      'missingRefs',
       dynamicContentItemType,
       {
         variants: [
-          { locale_id: new ReferenceExpression(localeEN.elemID), content: 'a' },
-          { locale_id: new ReferenceExpression(localeHE.elemID), content: 'c' },
-          { locale_id: new ReferenceExpression(localeES.elemID, localeES), content: 'b' },
+          new ReferenceExpression(enVariantInstance.elemID),
+          new ReferenceExpression(heVariantInstance.elemID),
+          new ReferenceExpression(esVariantInstance.elemID, esVariantInstance),
+        ],
+      },
+    )
+    const withSomeUnpopulatedLocaleRefs = new InstanceElement(
+      'missingLocalRefs',
+      dynamicContentItemType,
+      {
+        variants: [
+          new ReferenceExpression(enVariantNotPopulatedInstance.elemID, enVariantNotPopulatedInstance),
+          new ReferenceExpression(heVariantInstance.elemID, heVariantInstance),
+          new ReferenceExpression(esVariantInstance.elemID, esVariantInstance),
         ],
       },
     )
@@ -78,9 +118,20 @@ describe('Unordered lists filter', () => {
       dynamicContentItemType,
       {
         variants: [
-          { locale_id: 456, content: 'b' },
-          { locale_id: 123, content: 'a' },
-          { locale_id: new ReferenceExpression(localeEN.elemID, localeEN), content: 'c' },
+          123,
+          new ReferenceExpression(heVariantInstance.elemID, heVariantInstance),
+          new ReferenceExpression(esVariantInstance.elemID, esVariantInstance),
+        ],
+      },
+    )
+    const withSomeValuesForLocal = new InstanceElement(
+      'valsLocal',
+      dynamicContentItemType,
+      {
+        variants: [
+          new ReferenceExpression(enVariantWithValuesInstance.elemID, enVariantWithValuesInstance),
+          new ReferenceExpression(heVariantInstance.elemID, heVariantInstance),
+          new ReferenceExpression(esVariantInstance.elemID, esVariantInstance),
         ],
       },
     )
@@ -113,7 +164,8 @@ describe('Unordered lists filter', () => {
     return [
       localeType, localeEN, localeHE, localeES,
       dynamicContentItemType, withPopulatedRefs, withSomeUnpopulatedRefs, withSomeValues, empty,
-      triggerDefinitionType, unsortedTriggerDefinitionInstance,
+      triggerDefinitionType, unsortedTriggerDefinitionInstance, enVariantInstance, esVariantInstance, heVariantInstance,
+      enVariantNotPopulatedInstance, enVariantWithValuesInstance, withSomeUnpopulatedLocaleRefs, withSomeValuesForLocal,
     ]
   }
 
@@ -130,23 +182,37 @@ describe('Unordered lists filter', () => {
     it('sort correctly when all references are populated', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'refs')
       expect(instances[0].value.variants).toHaveLength(3)
-      expect(instances[0].value.variants[0].locale_id.elemID.name).toEqual('en_US')
-      expect(instances[0].value.variants[1].locale_id.elemID.name).toEqual('es')
-      expect(instances[0].value.variants[2].locale_id.elemID.name).toEqual('he')
+      expect(instances[0].value.variants[0].elemID.name).toEqual('en-variant')
+      expect(instances[0].value.variants[1].elemID.name).toEqual('es-variant')
+      expect(instances[0].value.variants[2].elemID.name).toEqual('he-variant')
     })
-    it('not change order when not all references are populated', async () => {
-      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'missing')
+    it('sort correctly even when not all references are populated', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'missingRefs')
       expect(instances[0].value.variants).toHaveLength(3)
-      expect(instances[0].value.variants[0].locale_id.elemID.name).toEqual('en_US')
-      expect(instances[0].value.variants[1].locale_id.elemID.name).toEqual('he')
-      expect(instances[0].value.variants[2].locale_id.elemID.name).toEqual('es')
+      expect(instances[0].value.variants[0].elemID.name).toEqual('en-variant')
+      expect(instances[0].value.variants[1].elemID.name).toEqual('es-variant')
+      expect(instances[0].value.variants[2].elemID.name).toEqual('he-variant')
     })
     it('not change order when not all values are references', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'vals')
       expect(instances[0].value.variants).toHaveLength(3)
-      expect(instances[0].value.variants[0].locale_id).toEqual(456)
-      expect(instances[0].value.variants[1].locale_id).toEqual(123)
-      expect(instances[0].value.variants[2].locale_id.elemID.name).toEqual('en_US')
+      expect(instances[0].value.variants[0]).toEqual(123)
+      expect(instances[0].value.variants[1].elemID.name).toEqual('he-variant')
+      expect(instances[0].value.variants[2].elemID.name).toEqual('es-variant')
+    })
+    it('not change order when some all locale_id are values', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valsLocal')
+      expect(instances[0].value.variants).toHaveLength(3)
+      expect(instances[0].value.variants[0].elemID.name).toEqual('en-variant no locale')
+      expect(instances[0].value.variants[1].elemID.name).toEqual('he-variant')
+      expect(instances[0].value.variants[2].elemID.name).toEqual('es-variant')
+    })
+    it('not change order when not all locale_id are populated', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'missingLocalRefs')
+      expect(instances[0].value.variants).toHaveLength(3)
+      expect(instances[0].value.variants[0].elemID.name).toEqual('en-variant not populated')
+      expect(instances[0].value.variants[1].elemID.name).toEqual('he-variant')
+      expect(instances[0].value.variants[2].elemID.name).toEqual('es-variant')
     })
     it('do nothing when instance structure is not as expected', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'empty')

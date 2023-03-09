@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpre
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../utils'
 import oktaExpressionLanguageFilter from '../../src/filters/expression_language'
-import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('expression language filter', () => {
       type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy'>
@@ -27,6 +27,7 @@ describe('expression language filter', () => {
       const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
       const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
       const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
+      const behaviorType = new ObjectType({ elemID: new ElemID(OKTA, BEHAVIOR_RULE_TYPE_NAME) })
       const customPath = ['definitions', 'custom', 'properties', 'additionalProperties', 'saltoDepartment']
       const basePath = ['definitions', 'base', 'properties', 'department']
       const groupRuleWithExpression = new InstanceElement(
@@ -72,6 +73,14 @@ describe('expression language filter', () => {
           },
         }
       )
+      const behaviorInstance = new InstanceElement(
+        'behaviorRule',
+        behaviorType,
+        {
+          name: 'New IP',
+          type: 'ANOMALOUS_LOCATION',
+        }
+      )
       const policyRuleWithExpression = new InstanceElement(
         'policyRuleTest',
         policyRuleType,
@@ -79,7 +88,7 @@ describe('expression language filter', () => {
           name: 'policy',
           conditions: {
             elCondition: {
-              condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", \'123A\'}})',
+              condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", \'123A\'}}) AND security.behaviors.contains("New IP")',
             },
           },
         }
@@ -110,7 +119,9 @@ describe('expression language filter', () => {
           new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
           ', ',
           new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
-          '}})',
+          '}}) AND security.behaviors.contains(',
+          new ReferenceExpression(behaviorInstance.elemID, behaviorInstance),
+          ')',
         ],
       })
 
@@ -121,7 +132,7 @@ describe('expression language filter', () => {
       describe('onFetch', () => {
         it('should resolve templates in instances', async () => {
           const elements = [userSchemaType, groupType, groupRuleType, policyRuleWithExpression, policyRuleType,
-            groupRuleWithExpression, ...groupInstances, userSchemaInstance]
+            groupRuleWithExpression, ...groupInstances, userSchemaInstance, behaviorInstance]
           await filter.onFetch(elements)
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleTest')
           expect(groupRule).toBeDefined()
@@ -234,7 +245,7 @@ describe('expression language filter', () => {
             const policyRuleInstance = instances.find(i => i.elemID.name === 'policyRuleTest')
             expect(policyRuleInstance).toBeDefined()
             expect(policyRuleInstance?.value?.conditions?.elCondition?.condition)
-              .toEqual('user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", "123A"}})')
+              .toEqual('user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", "123A"}}) AND security.behaviors.contains("New IP")')
           })
         })
         describe('onDeploy', () => {

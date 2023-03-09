@@ -17,7 +17,7 @@ import {
   ObjectType, ElemID, InstanceElement, Element, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../src/constants'
+import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
 import { createFilterCreatorParams } from '../utils'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
@@ -27,9 +27,53 @@ describe('Unordered lists filter', () => {
   let filter: FilterType
 
   const generateElements = (): Element[] => {
-    const localeType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'locale'),
-    })
+    const localeType = new ObjectType({ elemID: new ElemID(ZENDESK, 'locale') })
+    const dynamicContentItemType = new ObjectType({ elemID: new ElemID(ZENDESK, 'dynamic_content_item') })
+    const triggerDefinitionType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger_definition') })
+    const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+    const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
+    const dynamicContentItemVariantType = new ObjectType(
+      { elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME) }
+    )
+    const groupOneInstance = new InstanceElement('groupA', groupType, { name: 'a' })
+    const groupTwoInstance = new InstanceElement('groupB', groupType, { name: 'b' })
+    const groupThreeInstance = new InstanceElement('groupC', groupType, { name: 'c' })
+    const validMacroInstance = new InstanceElement(
+      'valid macro',
+      macroType,
+      {
+        restriction: {
+          ids: [
+            new ReferenceExpression(groupThreeInstance.elemID, groupThreeInstance),
+            new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+            new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+          ],
+        },
+      },
+    )
+    const macroWithValuesInstance = new InstanceElement(
+      'values macro',
+      macroType,
+      {
+        restriction: {
+          ids: [
+            123,
+            new ReferenceExpression(groupOneInstance.elemID, groupOneInstance),
+            new ReferenceExpression(groupTwoInstance.elemID, groupTwoInstance),
+          ],
+        },
+      },
+    )
+    const invalidMacroInstance1 = new InstanceElement('invalid macro1', macroType, {})
+    const invalidMacroInstance2 = new InstanceElement(
+      'invalid macro2',
+      macroType,
+      {
+        restriction: {
+          id: 123,
+        },
+      },
+    )
     const localeEN = new InstanceElement(
       'en_US',
       localeType,
@@ -45,16 +89,6 @@ describe('Unordered lists filter', () => {
       localeType,
       { locale: 'es' },
     )
-
-    const dynamicContentItemType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'dynamic_content_item'),
-    })
-    const dynamicContentItemVariantType = new ObjectType({
-      elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME),
-    })
-    const triggerDefinitionType = new ObjectType({
-      elemID: new ElemID(ZENDESK, 'trigger_definition'),
-    })
     const enVariantInstance = new InstanceElement(
       'en-variant',
       dynamicContentItemVariantType,
@@ -166,6 +200,8 @@ describe('Unordered lists filter', () => {
       dynamicContentItemType, withPopulatedRefs, withSomeUnpopulatedRefs, withSomeValues, empty,
       triggerDefinitionType, unsortedTriggerDefinitionInstance, enVariantInstance, esVariantInstance, heVariantInstance,
       enVariantNotPopulatedInstance, enVariantWithValuesInstance, withSomeUnpopulatedLocaleRefs, withSomeValuesForLocal,
+      groupOneInstance, groupTwoInstance, groupThreeInstance, validMacroInstance, invalidMacroInstance1,
+      invalidMacroInstance2, macroWithValuesInstance,
     ]
   }
 
@@ -217,6 +253,30 @@ describe('Unordered lists filter', () => {
     it('do nothing when instance structure is not as expected', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'empty')
       expect(instances[0].value).toEqual({})
+    })
+  })
+  describe('macro', () => {
+    it('sort correctly', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valid macro')
+      expect(instances[0].value.restriction.ids).toHaveLength(3)
+      expect(instances[0].value.restriction.ids[0].elemID.name).toEqual('groupA')
+      expect(instances[0].value.restriction.ids[1].elemID.name).toEqual('groupB')
+      expect(instances[0].value.restriction.ids[2].elemID.name).toEqual('groupC')
+    })
+    it('not change order when some are values', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'values macro')
+      expect(instances[0].value.restriction.ids).toHaveLength(3)
+      expect(instances[0].value.restriction.ids[0]).toEqual(123)
+      expect(instances[0].value.restriction.ids[1].elemID.name).toEqual('groupA')
+      expect(instances[0].value.restriction.ids[2].elemID.name).toEqual('groupB')
+    })
+    it('should do nothing when there is no restriction', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid macro1')
+      expect(instances[0].value.restriction).not.toBeDefined()
+    })
+    it('should do nothing when there is no ids', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid macro2')
+      expect(instances[0].value.restriction.id).toEqual(123)
     })
   })
   describe('trigger definition', () => {

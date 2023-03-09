@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isArray } from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
+import { GROUP_TYPE_NAME, MACRO_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
@@ -34,7 +35,8 @@ const orderDynamicContentItems = (instances: InstanceElement[]): void => {
   )
 
   dynamicContentItemInstances.forEach(inst => {
-    if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant => {
+    const { variants } = inst.value
+    if (Array.isArray(variants) && variants.every(variant => {
       const variantId = isReferenceExpression(variant) ? variant.elemID?.getFullName() : undefined
       const variantInstance = variantId !== undefined ? dynamicContentItemVariantInstancesById[variantId] : undefined
       return (variantInstance !== undefined)
@@ -70,6 +72,28 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
   })
 }
 
+const orderMacros = (instances: InstanceElement[]): void => {
+  const macroInstances = instances
+    .filter(e => e.refType.elemID.name === MACRO_TYPE_NAME)
+  const groupInstancesById = _.keyBy(
+    instances.filter(e => e.refType.elemID.name === GROUP_TYPE_NAME),
+    inst => inst.elemID.getFullName()
+  )
+  macroInstances.forEach(macro => {
+    const ids = macro.value.restriction?.ids
+    if (isArray(ids) && ids.every(
+      id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()] !== undefined)
+      && (groupInstancesById[id.elemID.getFullName()].value.name !== undefined)
+    )) {
+      macro.value.restriction.ids = _.sortBy(
+        macro.value.restriction.ids,
+        // at most one variant is allowed per locale
+        id => ([groupInstancesById[id.elemID.getFullName()].value.name])
+      )
+    }
+  })
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -79,6 +103,7 @@ const filterCreator: FilterCreator = () => ({
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)
     orderTriggerDefinitions(instances)
+    orderMacros(instances)
   },
 })
 

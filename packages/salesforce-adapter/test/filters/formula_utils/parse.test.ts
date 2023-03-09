@@ -15,7 +15,7 @@
 */
 
 import {
-  IdentifierType, parseCustomLabel, parseCustomMetadata, parseCustomSetting,
+  parseCustomLabel, parseCustomMetadata, parseCustomSetting,
   parseField, parseObject, parseObjectType, parseFormulaIdentifier,
 } from '../../../src/filters/formula_utils/parse'
 
@@ -24,14 +24,14 @@ describe('Formula identifier parsing', () => {
     const value = parseField('My_text_field__c', 'Account')
 
     expect(value).toHaveProperty('instance', 'Account.My_text_field__c')
-    expect(value).toHaveProperty('type', IdentifierType.CUSTOM_FIELD)
+    expect(value).toHaveProperty('type', 'customField')
   })
 
   it('Should parse standard fields correctly', () => {
     const value = parseField('Industry', 'Account')
 
     expect(value).toHaveProperty('instance', 'Account.Industry')
-    expect(value).toHaveProperty('type', IdentifierType.STANDARD_FIELD)
+    expect(value).toHaveProperty('type', 'standardField')
   })
 
   it('Should parse custom metadata correctly', () => {
@@ -41,15 +41,15 @@ describe('Formula identifier parsing', () => {
     expect(value.length).toBe(3)
 
     value.forEach(val => {
-      if (val.type === IdentifierType.CUSTOM_FIELD) {
+      if (val.type === 'customField') {
         expect(val.instance).toBe('Trigger_Context_Status__mdt.Enable_After_Insert__c')
       }
 
-      if (val.type === IdentifierType.CUSTOM_METADATA_TYPE_RECORD) {
+      if (val.type === 'customMetadataTypeRecord') {
         expect(val.instance).toBe('Trigger_Context_Status__mdt.SRM_Metadata_c')
       }
 
-      if (val.type === IdentifierType.CUSTOM_METADATA_TYPE) {
+      if (val.type === 'customMetadataType') {
         expect(val.instance).toBe('Trigger_Context_Status__mdt')
       }
     })
@@ -58,8 +58,8 @@ describe('Formula identifier parsing', () => {
   it('Should parse custom labels correctly', () => {
     const value = parseCustomLabel('$Label.SomeName')
 
-    expect(value).toHaveProperty('instance', 'SomeName')
-    expect(value).toHaveProperty('type', IdentifierType.CUSTOM_LABEL)
+    expect(value[0]).toHaveProperty('instance', 'SomeName')
+    expect(value[0]).toHaveProperty('type', 'customLabel')
   })
 
   it('Should parse custom settings correctly', () => {
@@ -67,11 +67,11 @@ describe('Formula identifier parsing', () => {
 
     const expected = [
       {
-        type: IdentifierType.CUSTOM_FIELD,
+        type: 'customField',
         instance: 'My_Setting__c.my_field__c',
       },
       {
-        type: IdentifierType.CUSTOM_SETTING,
+        type: 'customSetting',
         instance: 'My_Setting__c',
       },
     ]
@@ -86,11 +86,11 @@ describe('Formula identifier parsing', () => {
     const expected = [
       {
         instance: 'Center__c.My_text_field__c',
-        type: IdentifierType.CUSTOM_FIELD,
+        type: 'customField',
       },
       {
         instance: 'Center__c',
-        type: IdentifierType.CUSTOM_OBJECT,
+        type: 'customObject',
       },
     ]
 
@@ -103,7 +103,7 @@ describe('Formula identifier parsing', () => {
 
       const expected = {
         instance: 'Account',
-        type: IdentifierType.STANDARD_OBJECT,
+        type: 'standardObject',
       }
 
       expect(result).toEqual(expected)
@@ -114,7 +114,7 @@ describe('Formula identifier parsing', () => {
 
       const expected = {
         instance: 'Account__c',
-        type: IdentifierType.CUSTOM_OBJECT,
+        type: 'customObject',
       }
 
       expect(result).toEqual(expected)
@@ -128,11 +128,11 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.Name',
         },
         {
-          type: IdentifierType.STANDARD_OBJECT,
+          type: 'standardObject',
           instance: 'Account',
         },
       ]
@@ -145,11 +145,11 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'lead__c.custom__C',
         },
         {
-          type: IdentifierType.CUSTOM_OBJECT,
+          type: 'customObject',
           instance: 'lead__c',
         },
       ]
@@ -165,31 +165,31 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'OpportunityLineItem.OpportunityId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Opportunity.AccountId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.ParentId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.AccountNumber',
         },
         {
-          type: IdentifierType.STANDARD_OBJECT,
+          type: 'standardObject',
           instance: 'OpportunityLineItem',
         },
         {
-          type: IdentifierType.STANDARD_OBJECT,
+          type: 'standardObject',
           instance: 'Opportunity',
         },
         {
-          type: IdentifierType.STANDARD_OBJECT,
+          type: 'standardObject',
           instance: 'Account',
         },
       ]
@@ -202,15 +202,15 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Contact.AccountId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.OpportunityId',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Opportunity.Custom__c',
         },
       ]
@@ -223,15 +223,15 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Contact.AccountId',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Account.Opportunity__c',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Opportunity__r.Name',
         },
       ]
@@ -244,23 +244,23 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Lead.AccountId',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Account.Opportunity__c',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Opportunity__r.AssetId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Asset.ContactId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Contact.FirstName',
         },
       ]
@@ -273,27 +273,27 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Order.AccountId',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Account.first__c',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'first__r.second__c',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'second__r.third__c',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'third__r.fourth__c',
         },
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'third__r.fourth__c',
         },
       ]
@@ -306,27 +306,27 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Order.AccountId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.OwnerId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'User.ContactId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Contact.AccountId',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Account.LastModifiedById',
         },
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'User.Department',
         },
       ]
@@ -339,11 +339,11 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Trigger_Context_Status__mdt.Enable_After_Insert__c',
         },
         {
-          type: IdentifierType.CUSTOM_METADATA_TYPE_RECORD,
+          type: 'customMetadataTypeRecord',
           instance: 'Trigger_Context_Status__mdt.SRM_Metadata_c',
         },
       ]
@@ -356,11 +356,11 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Trigger_Context_Status__mdt.QualifiedApiName',
         },
         {
-          type: IdentifierType.CUSTOM_METADATA_TYPE_RECORD,
+          type: 'customMetadataTypeRecord',
           instance: 'Trigger_Context_Status__mdt.SRM_Metadata_c',
         },
       ]
@@ -374,11 +374,11 @@ describe('Formula identifier parsing', () => {
 
         const expected = [
           {
-            type: IdentifierType.CUSTOM_FIELD,
+            type: 'customField',
             instance: 'Customer_Support_Setting__c.Email_Address__c',
           },
           {
-            type: IdentifierType.CUSTOM_SETTING,
+            type: 'customSetting',
             instance: 'Customer_Support_Setting__c',
           },
         ]
@@ -391,11 +391,11 @@ describe('Formula identifier parsing', () => {
 
         const expected = [
           {
-            type: IdentifierType.STANDARD_FIELD,
+            type: 'standardField',
             instance: 'Customer_Support_Setting__c.DeveloperName',
           },
           {
-            type: IdentifierType.CUSTOM_SETTING,
+            type: 'customSetting',
             instance: 'Customer_Support_Setting__c',
           },
         ]
@@ -409,7 +409,7 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.CUSTOM_LABEL,
+          type: 'customLabel',
           instance: 'AWS_Access_Key',
         },
       ]
@@ -418,7 +418,7 @@ describe('Formula identifier parsing', () => {
 
       const notExpected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Case.LabelId',
         },
       ]
@@ -431,7 +431,7 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Center__c.CreatedDate',
         },
       ]
@@ -440,7 +440,7 @@ describe('Formula identifier parsing', () => {
 
       const notExpected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Case.ObjectTypeId',
         },
       ]
@@ -453,7 +453,7 @@ describe('Formula identifier parsing', () => {
 
       const expected = [
         {
-          type: IdentifierType.CUSTOM_FIELD,
+          type: 'customField',
           instance: 'Center__c.Custom__c',
         },
       ]
@@ -462,7 +462,7 @@ describe('Formula identifier parsing', () => {
 
       const notExpected = [
         {
-          type: IdentifierType.STANDARD_FIELD,
+          type: 'standardField',
           instance: 'Case.ObjectTypeId',
         },
       ]
@@ -477,11 +477,11 @@ describe('Formula identifier parsing', () => {
 
         const expected = [
           {
-            type: IdentifierType.STANDARD_FIELD,
+            type: 'standardField',
             instance: 'User.ManagerId',
           },
           {
-            type: IdentifierType.CUSTOM_FIELD,
+            type: 'customField',
             instance: 'User.Employee_Id__c',
           },
         ]
@@ -490,7 +490,7 @@ describe('Formula identifier parsing', () => {
 
         const notExpected = [
           {
-            type: IdentifierType.STANDARD_FIELD,
+            type: 'standardField',
             instance: 'Case.UserId',
           },
         ]
@@ -502,7 +502,7 @@ describe('Formula identifier parsing', () => {
 
         const expected = [
           {
-            type: IdentifierType.STANDARD_FIELD,
+            type: 'standardField',
             instance: 'Organization.TimeZone',
           },
         ]
@@ -511,7 +511,7 @@ describe('Formula identifier parsing', () => {
 
         const notExpected = [
           {
-            type: IdentifierType.STANDARD_FIELD,
+            type: 'standardField',
             instance: 'Case.OrganizationId',
           },
         ]

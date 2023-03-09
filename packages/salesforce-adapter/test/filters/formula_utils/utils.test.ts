@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { transformToUserField, transformToId, replaceRwithC, removePrefix } from '../../../src/filters/formula_utils/utils'
+import { transformToUserField, transformToId } from '../../../src/filters/formula_utils/utils'
 
 describe('Formula utils', () => {
   test('User fields should be transformed to their original API name', () => {
@@ -26,16 +26,5 @@ describe('Formula utils', () => {
 
   test('The "transformToId" function should add "Id" at the end of the field name', () => {
     expect(transformToId('Owner.Manager')).toEqual('Owner.ManagerId')
-  })
-
-  test('The "replaceRwithC" function should replace __r with __c', () => {
-    expect(replaceRwithC('Owner.custom__r')).toEqual('Owner.custom__c')
-    // upper case
-    expect(replaceRwithC('Owner.custom__R')).toEqual('Owner.custom__c')
-  })
-
-  test('The "removePrefix" function should remove the $ character', () => {
-    expect(removePrefix('$Organization.Name')).toEqual('Organization.Name')
-    expect(removePrefix('User.RoleId')).toEqual('User.RoleId')
   })
 })

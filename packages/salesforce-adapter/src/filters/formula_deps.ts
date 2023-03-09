@@ -34,10 +34,10 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
-  if (identifierInfo.type === IdentifierType.CUSTOM_LABEL) {
+  if (identifierInfo.type === 'customLabel') {
     return [identifierInfo.instance]
   }
-  if (identifierInfo.type === IdentifierType.CUSTOM_METADATA_TYPE_RECORD) {
+  if (identifierInfo.type === 'customMetadataTypeRecord') {
     const [typeName, instanceName] = identifierInfo.instance.split('.')
     return [`${typeName.slice(0, -1 * CUSTOM_METADATA_SUFFIX.length)}.${instanceName}`]
   }
@@ -45,7 +45,7 @@ const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): str
 }
 
 const identifierTypeToElementType = (identifierInfo: FormulaIdentifierInfo): string => {
-  if (identifierInfo.type === IdentifierType.CUSTOM_LABEL) {
+  if (identifierInfo.type === 'customLabel') {
     return 'CustomLabel'
   }
 
@@ -54,15 +54,15 @@ const identifierTypeToElementType = (identifierInfo: FormulaIdentifierInfo): str
 
 const identifierTypeToElemIdType = (identifierInfo: FormulaIdentifierInfo): ElemIDType => (
   ({
-    [IdentifierType.STANDARD_OBJECT.name]: 'type',
-    [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
-    [IdentifierType.CUSTOM_OBJECT.name]: 'type',
-    [IdentifierType.CUSTOM_SETTING.name]: 'type',
-    [IdentifierType.STANDARD_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'instance',
-    [IdentifierType.CUSTOM_LABEL.name]: 'instance',
-  } as Record<string, ElemIDType>)[identifierInfo.type.name]
+    standardObject: 'type',
+    customMetadataType: 'type',
+    customObject: 'type',
+    customSetting: 'type',
+    standardField: 'field',
+    customField: 'field',
+    customMetadataTypeRecord: 'instance',
+    customLabel: 'instance',
+  } as Record<IdentifierType, ElemIDType>)[identifierInfo.type]
 )
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (

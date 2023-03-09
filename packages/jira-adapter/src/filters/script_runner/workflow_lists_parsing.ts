@@ -51,18 +51,46 @@ const SPACE = ' '
 const FIELD_LINK_DIRECTION = 'FIELD_LINK_DIRECTION'
 const FIELD_LINK_TYPE = 'FIELD_LINK_TYPE'
 
+type LinkObject = {
+  linkType: string
+  direction: string
+}
+
+const LINK_OBJECT_SCHEME = Joi.object({
+  linkType: Joi.string().required(),
+  direction: Joi.string().required(),
+}).required()
+
+const isLinkObject = createSchemeGuard<LinkObject>(LINK_OBJECT_SCHEME, 'Link object does not fit the scheme')
+
+
+const createLinkString = (linkObj: LinkObject, separator: string): string => `${linkObj.linkType}${separator}${linkObj.direction}`
+
 const stringifyDirectionFields = (value: Value): void => {
   if (_.isPlainObject(value)) {
     Object.entries(value)
       .filter(([key]) => key === FIELD_LINK_DIRECTION)
-      .filter((entry): entry is [string, { linkType: string; direction: string }[]] => Array.isArray(entry[1]))
+      .filter((entry): entry is [string, LinkObject[]] => Array.isArray(entry[1]))
       .forEach(([key, val]) => {
-        value[key] = val.map((directionObj: { linkType: string; direction: string }) => `${directionObj.linkType}-${directionObj.direction}`)
+        value[key] = val.map(directionObj => createLinkString(directionObj, '-'))
+      })
+    Object.entries(value)
+      .filter(([key]) => key === FIELD_LINK_TYPE)
+      .filter((entry): entry is [string, LinkObject] => isLinkObject(entry[1]))
+      .forEach(([key, val]) => {
+        value[key] = createLinkString(val, ' ')
       })
   }
 }
 
-const createLinkObject = (directionString: string, separator: string): { linkType: string; direction: string } => {
+const createLinkObject = (
+  directionString: string,
+  separator: string
+): LinkObject | string => {
+  if (directionString.split(separator).length !== 2) {
+    log.error(`Invalid link type string: ${directionString}`)
+    return directionString
+  }
   const [id, direction] = directionString.split(separator)
   return { linkType: id, direction }
 }

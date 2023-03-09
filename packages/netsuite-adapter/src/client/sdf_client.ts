@@ -923,51 +923,41 @@ export default class SdfClient {
     const {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
-      deployStartMessageRegex,
       objectValidationErrorRegex,
       missingFeatureErrorRegex,
       deployedObjectRegex,
       errorObjectRegex,
     } = multiLanguageErrorDetectors[sdfLanguage]
+    const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+    if (manifestErrorScriptids.length > 0) {
+      return new ManifestValidationError(errorMessage, manifestErrorScriptids)
+    }
+    const missingFeatureNames = missingFeatureErrorRegex
+      .flatMap(regex => getGroupItemFromRegex(errorMessage, regex, FEATURE_NAME))
+    if (missingFeatureNames.length > 0) {
+      return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
+    }
+    const validationErrorObjects = getGroupItemFromRegex(
+      errorMessage, objectValidationErrorRegex, OBJECT_ID
+    )
+    if (validationErrorObjects.length > 0) {
+      return new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
+    }
     if (settingsValidationErrorRegex.test(errorMessage)) {
-      const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
-      if (manifestErrorScriptids.length > 0) {
-        return new ManifestValidationError(errorMessage, manifestErrorScriptids)
-      }
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
-    if (!deployStartMessageRegex.test(errorMessage)) {
-      // we'll get here when the deploy failed in the validation phase.
-      // in this case we're looking for validation error message lines.
-      const missingFeatureNames = missingFeatureErrorRegex
-        .flatMap(regex => getGroupItemFromRegex(errorMessage, regex, FEATURE_NAME))
-      if (missingFeatureNames.length > 0) {
-        return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
-      }
-      const validationErrorObjects = getGroupItemFromRegex(
-        errorMessage, objectValidationErrorRegex, OBJECT_ID
-      )
-      return validationErrorObjects.length > 0
-        ? new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
-        : error
+    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
+    if (errorObject !== undefined) {
+      return new ObjectsDeployError(errorMessage, new Set([errorObject]))
     }
-
     const allDeployedObjects = getGroupItemFromRegex(
       errorMessage, deployedObjectRegex, OBJECT_ID
     )
-    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
-
-    if (allDeployedObjects.length === 0) {
-      return errorObject !== undefined
-        ? new ObjectsDeployError(errorMessage, new Set([errorObject]))
-        : error
+    if (allDeployedObjects.length > 0) {
+      // the last object in the error message is the one that failed the deploy
+      return new ObjectsDeployError(errorMessage, new Set([allDeployedObjects.slice(-1)[0]]))
     }
-    // if errorObject doesn't exists - the last object in the error message is the one
-    // that failed the deploy
-    return new ObjectsDeployError(
-      errorMessage,
-      new Set([errorObject ?? allDeployedObjects.slice(-1)[0]])
-    )
+    return error
   }
 
   private async runDeployCommands(

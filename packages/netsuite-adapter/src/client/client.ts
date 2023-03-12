@@ -63,15 +63,6 @@ const getServiceIdFromElement = (changeData: ChangeDataType): string => {
 const getChangeType = (change: Change): 'addition' | 'modification' =>
   (isAdditionChange(change) ? 'addition' : 'modification')
 
-type SDFObjectNode = {
-  elemIdFullName: string
-  scriptid: string
-  changeType: 'addition' | 'modification'
-  customizationInfos: CustomizationInfo[]
-}
-const isSubsetOfArray = (subsetArray: unknown[], setArray: unknown[]):boolean =>
-  subsetArray.length === _.intersection(subsetArray, setArray).length
-
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
   dependencyGraph: Graph<SDFObjectNode>

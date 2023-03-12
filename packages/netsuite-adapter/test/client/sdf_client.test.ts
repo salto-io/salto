@@ -1366,14 +1366,7 @@ describe('sdf client', () => {
           'some error',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
-        const customTypeInfo = {
-          typeName: 'typeName',
-          values: {
-            key: 'val',
-          },
-          scriptId: 'some_id',
-        } as CustomTypeInfo
-        await expect(client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(
             'Starting deploy\n'
             + '*** ERREUR ***\n'
@@ -1451,13 +1444,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessage.split('\n') })
         let isRejected: boolean
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1827,7 +1814,7 @@ File: ~/AccountConfiguration/features.xml`
           'Configurer la fonction -- La d.sactivation de la fonction SUITEAPPCONTROLCENTER(SuiteApp Control Center) a .chou.',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessages })
-        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']))
       })
     })

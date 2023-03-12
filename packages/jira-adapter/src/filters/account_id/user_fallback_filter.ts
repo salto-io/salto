@@ -81,7 +81,7 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => {
                 fallbackPathToUser[path.createNestedID(fieldName).getFullName()] = value[fieldName].id
                 value[fieldName].id = fallbackUser
               }
-            }),
+            }, config),
           }))
     },
     onDeploy: async changes => log.time(async () => {

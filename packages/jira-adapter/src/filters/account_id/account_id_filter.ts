@@ -97,9 +97,9 @@ const accountIdsScenarios = (
   value: Value,
   path: ElemID,
   callback: WalkOnUsersCallback,
-  config: JiraConfig | undefined,
+  config: JiraConfig,
 ): WALK_NEXT_STEP => {
-  const ACCOUNT_IDS_FIELDS = config?.fetch.enableScriptRunnerAddon
+  const accountIdFields = config.fetch.enableScriptRunnerAddon
     ? ['accountIds', 'FIELD_USER_IDS']
     : ['accountIds']
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
@@ -109,7 +109,7 @@ const accountIdsScenarios = (
     }
   })
   // main scenario, sub branch of multiple account ids
-  ACCOUNT_IDS_FIELDS.forEach(accountIds => {
+  accountIdFields.forEach(accountIds => {
     makeArray(value[accountIds])
       .forEach((_value, index) => {
         callback({ value: value[accountIds], path: path.createNestedID(accountIds), fieldName: index.toString() })
@@ -179,7 +179,7 @@ const accountIdsScenarios = (
   return WALK_NEXT_STEP.RECURSE
 }
 
-export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig | undefined = undefined): WalkOnFunc => (
+export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     if (isInstanceElement(value)) {
       return isAccountIdType(value)

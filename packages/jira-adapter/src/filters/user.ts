@@ -33,13 +33,13 @@ const simplifyUsers: WalkOnUsersCallback = ({ value, fieldName }): void => {
 /**
  * Replaces the user obj with only the account id
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'userFilter',
   onFetch: async elements => {
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
-        walkOnElement({ element, func: walkOnUsers(simplifyUsers) })
+        walkOnElement({ element, func: walkOnUsers(simplifyUsers, config) })
       })
 
     await awu(elements)

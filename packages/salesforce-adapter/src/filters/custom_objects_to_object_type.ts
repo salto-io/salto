@@ -648,10 +648,7 @@ export const createCustomObjectChange = async (
   fullName: string,
   changes: ReadonlyArray<Change>,
 ): Promise<Change<InstanceElement>> => {
-  const objectChange = await awu(changes)
-    .filter(isObjectTypeChange)
-    .find(change => isCustomObject(getChangeData(change)))
-
+  const objectChange = changes.find(isObjectTypeChange)
   if (objectChange !== undefined && objectChange.action === 'remove') {
     // if we remove the custom object we don't really need the field changes
     // We do need to include master-detail field removals explicitly because otherwise salesforce

@@ -19,6 +19,7 @@ import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModif
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { JiraConfig } from '../../config/config'
 import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType, accountIdInfoListType } from './types'
@@ -39,7 +40,6 @@ const VALUE_FIELD = 'value'
 const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
-const ACCOUNT_IDS_FIELDS = ['accountIds', 'FIELD_USER_IDS']
 const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
   'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
@@ -96,8 +96,12 @@ const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
 const accountIdsScenarios = (
   value: Value,
   path: ElemID,
-  callback: WalkOnUsersCallback
+  callback: WalkOnUsersCallback,
+  config: JiraConfig | undefined,
 ): WALK_NEXT_STEP => {
+  const ACCOUNT_IDS_FIELDS = config?.fetch.enableScriptRunnerAddon
+    ? ['accountIds', 'FIELD_USER_IDS']
+    : ['accountIds']
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
   ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
     if (Object.prototype.hasOwnProperty.call(value, fieldName)) {
@@ -175,15 +179,15 @@ const accountIdsScenarios = (
   return WALK_NEXT_STEP.RECURSE
 }
 
-export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
+export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig | undefined = undefined): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     if (isInstanceElement(value)) {
       return isAccountIdType(value)
-        ? accountIdsScenarios(value.value, path, callback)
+        ? accountIdsScenarios(value.value, path, callback, config)
         : WALK_NEXT_STEP.EXIT
     }
     if (value !== undefined) {
-      return accountIdsScenarios(value, path, callback)
+      return accountIdsScenarios(value, path, callback, config)
     }
     return WALK_NEXT_STEP.SKIP
   })
@@ -228,7 +232,7 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
  * The filter also removes this change pre-deploy, and return the original state
  * after onDeploy
  */
-const filter: FilterCreator = () => {
+const filter: FilterCreator = ({ config }) => {
   const cache: AccountIdsCache = {}
   return {
     name: 'accountIdFilter',
@@ -236,7 +240,7 @@ const filter: FilterCreator = () => {
       elements
         .filter(isInstanceElement)
         .forEach(element => {
-          walkOnElement({ element, func: walkOnUsers(objectifyAccountId) })
+          walkOnElement({ element, func: walkOnUsers(objectifyAccountId, config) })
         })
       await awu(elements)
         .filter(isObjectType)
@@ -252,7 +256,7 @@ const filter: FilterCreator = () => {
         .map(getChangeData)
         .filter(isDeployableAccountIdType)
         .forEach(element =>
-          walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
+          walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache), config) }))
     },
     onDeploy: async changes => {
       changes

@@ -16,9 +16,10 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
+
 import { getFilterParams, mockClient } from '../../utils'
 import workflowFilter from '../../../src/filters/script_runner/workflow_filter'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
 
@@ -295,6 +296,28 @@ describe('Scriptrunner DC Workflow', () => {
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
+    })
+  })
+  describe('adding object types', () => {
+    it('should add post function fields', async () => {
+      const postFunctionConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, POST_FUNCTION_CONFIGURATION),
+      })
+      const elementsList = [postFunctionConfigurationType]
+      await filter.onFetch(elementsList)
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_DIRECTION).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_TYPE).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_TO_USER_FIELDS).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_CC_USER_FIELDS).toBeDefined()
+      expect(elementsList.length).toEqual(3)
+    })
+    it('should add condition fields', async () => {
+      const postFunctionConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, CONDITION_CONFIGURATION),
+      })
+      const elementsList = [postFunctionConfigurationType]
+      await filter.onFetch(elementsList)
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_DIRECTION).toBeDefined()
     })
   })
 })

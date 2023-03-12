@@ -17,7 +17,6 @@ import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@s
 import { elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { JIRA, POST_FUNCTION_CONFIGURATION, SCRIPT_RUNNER_TYPE } from '../../constants'
-import { linkDirectionType } from './shared_workflow_types'
 import { PostFunction } from './types'
 
 const postFunctionEventType = new ObjectType({
@@ -105,10 +104,6 @@ const postFunctionConfigurationType = new ObjectType({
     FIELD_SECURITY_LEVEL_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_BOARD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     FIELD_SELECTED_FIELDS: { refType: new ListType(BuiltinTypes.STRING),
-      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-    FIELD_LINK_DIRECTION: { refType: new ListType(linkDirectionType),
-      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
-    FIELD_LINK_TYPE: { refType: new ListType(linkDirectionType),
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
   path: [JIRA, elements.TYPES_PATH, POST_FUNCTION_CONFIGURATION],

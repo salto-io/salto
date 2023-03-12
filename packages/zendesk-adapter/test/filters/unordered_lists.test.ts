@@ -17,7 +17,13 @@ import {
   ObjectType, ElemID, InstanceElement, Element, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, ZENDESK } from '../../src/constants'
+import {
+  GROUP_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  TICKET_FIELD_CUSTOM_FIELD_OPTION, TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+  ZENDESK,
+} from '../../src/constants'
 import filterCreator from '../../src/filters/unordered_lists'
 import { createFilterCreatorParams } from '../utils'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../../src/filters/dynamic_content'
@@ -32,8 +38,128 @@ describe('Unordered lists filter', () => {
     const triggerDefinitionType = new ObjectType({ elemID: new ElemID(ZENDESK, 'trigger_definition') })
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
+    const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
+    const ticketCustomFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_CUSTOM_FIELD_OPTION) })
+    const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
     const dynamicContentItemVariantType = new ObjectType(
       { elemID: new ElemID(ZENDESK, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME) }
+    )
+    const ticketFieldOneInstance = new InstanceElement('fieldA', ticketFieldType, { raw_title: 'a' })
+    const ticketFieldThreeInstance = new InstanceElement('fieldC', ticketFieldType, { raw_title: 'c' })
+    const invalidTicketFieldInstance = new InstanceElement('invalid field', ticketFieldType, {})
+    const customOneInstance = new InstanceElement('customA', ticketCustomFieldType, { value: 'a' })
+    const customThreeInstance = new InstanceElement('customC', ticketCustomFieldType, { value: 'c' })
+    const validTicketFormInstance = new InstanceElement(
+      'valid form',
+      ticketFormType,
+      {
+        agent_conditions: [
+          {
+            value: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+          },
+          {
+            value: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+            child_fields: [
+              {
+                id: new ReferenceExpression(ticketFieldThreeInstance.elemID, ticketFieldThreeInstance),
+              },
+              {
+                id: new ReferenceExpression(ticketFieldOneInstance.elemID, ticketFieldOneInstance),
+              },
+            ],
+          },
+          {
+            value: 'b',
+          },
+        ],
+        end_user_conditions: [
+          {
+            value: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+          },
+          {
+            value: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+            child_fields: [
+              {
+                id: new ReferenceExpression(ticketFieldThreeInstance.elemID, ticketFieldThreeInstance),
+              },
+              {
+                id: new ReferenceExpression(ticketFieldOneInstance.elemID, ticketFieldOneInstance),
+              },
+            ],
+          },
+          {
+            value: 'b',
+          },
+        ],
+
+      },
+    )
+    const invalidTicketFormInstance = new InstanceElement(
+      'invalid form',
+      ticketFormType,
+      {
+        agent_conditions: [
+          {},
+          {
+            value: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+          },
+          {
+            value: 'b',
+          },
+        ],
+        end_user_conditions: [],
+
+      },
+    )
+    const invalidChildFieldTicketFormInstance = new InstanceElement(
+      'invalid child field form',
+      ticketFormType,
+      {
+        agent_conditions: [
+          {
+            value: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+            child_fields: [
+              {
+                id: 123,
+              },
+              {
+                id: new ReferenceExpression(ticketFieldOneInstance.elemID, ticketFieldOneInstance),
+              },
+            ],
+          },
+          {
+            value: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+            child_fields: [
+              {
+                id: new ReferenceExpression(invalidTicketFieldInstance.elemID, invalidTicketFieldInstance),
+              },
+              {
+                id: new ReferenceExpression(ticketFieldOneInstance.elemID, ticketFieldOneInstance),
+              },
+            ],
+          },
+        ],
+        end_user_conditions: [
+          {
+            value: new ReferenceExpression(customThreeInstance.elemID, customThreeInstance),
+          },
+          {
+            value: new ReferenceExpression(customOneInstance.elemID, customOneInstance),
+            child_fields: [
+              {
+                id: new ReferenceExpression(ticketFieldThreeInstance.elemID, ticketFieldThreeInstance),
+              },
+              {
+                id: new ReferenceExpression(ticketFieldOneInstance.elemID, ticketFieldOneInstance),
+              },
+            ],
+          },
+          {
+            value: 'b',
+          },
+        ],
+
+      },
     )
     const groupOneInstance = new InstanceElement('groupA', groupType, { name: 'a' })
     const groupTwoInstance = new InstanceElement('groupB', groupType, { name: 'b' })
@@ -201,7 +327,9 @@ describe('Unordered lists filter', () => {
       triggerDefinitionType, unsortedTriggerDefinitionInstance, enVariantInstance, esVariantInstance, heVariantInstance,
       enVariantNotPopulatedInstance, enVariantWithValuesInstance, withSomeUnpopulatedLocaleRefs, withSomeValuesForLocal,
       groupOneInstance, groupTwoInstance, groupThreeInstance, validMacroInstance, invalidMacroInstance1,
-      invalidMacroInstance2, macroWithValuesInstance,
+      invalidMacroInstance2, macroWithValuesInstance, validTicketFormInstance, customOneInstance, customThreeInstance,
+      invalidTicketFormInstance, ticketFieldOneInstance, ticketFieldThreeInstance, invalidChildFieldTicketFormInstance,
+      invalidTicketFieldInstance,
     ]
   }
 
@@ -277,6 +405,42 @@ describe('Unordered lists filter', () => {
     it('should do nothing when there is no ids', async () => {
       const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid macro2')
       expect(instances[0].value.restriction.id).toEqual(123)
+    })
+  })
+  describe('ticket_form', () => {
+    it('sort correctly', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'valid form')
+      expect(instances[0].value.agent_conditions).toHaveLength(3)
+      expect(instances[0].value.agent_conditions[0].value.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[1].value).toEqual('b')
+      expect(instances[0].value.agent_conditions[2].value.elemID.name).toEqual('customC')
+      expect(instances[0].value.end_user_conditions).toHaveLength(3)
+      expect(instances[0].value.end_user_conditions[0].value.elemID.name).toEqual('customA')
+      expect(instances[0].value.end_user_conditions[1].value).toEqual('b')
+      expect(instances[0].value.end_user_conditions[2].value.elemID.name).toEqual('customC')
+      expect(instances[0].value.agent_conditions[0].child_fields).toHaveLength(2)
+      expect(instances[0].value.agent_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
+      expect(instances[0].value.agent_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
+      expect(instances[0].value.end_user_conditions[0].child_fields).toHaveLength(2)
+      expect(instances[0].value.end_user_conditions[0].child_fields[0].id.elemID.name).toEqual('fieldA')
+      expect(instances[0].value.end_user_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldC')
+    })
+    it('should not change order the form is invalid', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid form')
+      expect(instances[0].value.agent_conditions).toHaveLength(3)
+      expect(instances[0].value.agent_conditions[0]).toEqual({})
+      expect(instances[0].value.agent_conditions[1].value.elemID.name).toEqual('customA')
+      expect(instances[0].value.agent_conditions[2].value).toEqual('b')
+      expect(instances[0].value.end_user_conditions).toHaveLength(0)
+    })
+    it('should not change order the child_fields are invalid', async () => {
+      const instances = elements.filter(isInstanceElement).filter(e => e.elemID.name === 'invalid child field form')
+      expect(instances[0].value.agent_conditions[0].child_fields).toHaveLength(2)
+      expect(instances[0].value.agent_conditions[0].child_fields[0].id).toEqual(123)
+      expect(instances[0].value.agent_conditions[0].child_fields[1].id.elemID.name).toEqual('fieldA')
+      expect(instances[0].value.agent_conditions[1].child_fields).toHaveLength(2)
+      expect(instances[0].value.agent_conditions[1].child_fields[0].id.elemID.name).toEqual('invalid field')
+      expect(instances[0].value.agent_conditions[1].child_fields[1].id.elemID.name).toEqual('fieldA')
     })
   })
   describe('trigger definition', () => {

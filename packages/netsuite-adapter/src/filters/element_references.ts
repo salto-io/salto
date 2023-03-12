@@ -13,19 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement, isStaticFile } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
+import osPath from 'path'
 import { SCRIPT_ID, PATH } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
-import { isCustomRecordType, isStandardType, isFileCabinetType } from '../types'
+import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
+import { getGroupItemFromRegex } from '../client/sdf_client'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+const NETSUITE_MODULE_PREFIX = 'N/'
+const SEMANTIC_REFS = 'semanticReferences'
+// TODO: remove this if not used later
+// const syntacticReferenceRegex = new RegExp(`define\\(\\[((['\\"])(?<${SYNTACTIC_REFS}>[^\\2\\]]*)\\2)+\\]`, 'gm')
+const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${SEMANTIC_REFS}>("[^"]*"|'[^']*'))`, 'gm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -108,6 +116,55 @@ const generateServiceIdToElemID = async (
   .map(elem => getElementServiceIdRecords(elem))
   .reduce<ServiceIdRecords>((acc, records) => Object.assign(acc, records), {})
 
+const isFilePath = (path: string): boolean =>
+  osPath.extname(osPath.basename(path)) !== ''
+
+const resolveRelativePath = (absolutePath: string | undefined, relativePath: string): string | undefined =>
+  (isDefined(absolutePath) ? osPath.resolve(absolutePath, relativePath) : undefined)
+
+const updateDependenciesToAdd = (
+  dependenciesToAdd: ElemID[],
+  foundReferences: string[],
+  fetchedElementsServiceIdToElemID: ServiceIdRecords,
+  elementsSourceServiceIdToElemID: ServiceIdRecords,
+  element: InstanceElement,
+): void =>
+  foundReferences
+    // TODO: file path function doesnt work, fix it
+    .map(ref => (isFilePath(ref) ? resolveRelativePath(element?.path?.join(osPath.sep), ref) : ref))
+    .filter(isDefined)
+    .forEach(ref => {
+      const serviceIdRecord = fetchedElementsServiceIdToElemID[ref] ?? elementsSourceServiceIdToElemID[ref]
+      if (isDefined(serviceIdRecord) && typeof serviceIdRecord !== 'function') {
+        dependenciesToAdd.push(serviceIdRecord.elemID)
+      }
+    })
+
+
+const getSuiteScriptReferences = async (
+  element: InstanceElement,
+  dependenciesToAdd: ElemID[],
+  fetchedElementsServiceIdToElemID: ServiceIdRecords,
+  elementsSourceServiceIdToElemID: ServiceIdRecords
+): Promise<void> => {
+  const content = (await element.value.content.getContent()).toString()
+  if (isDefined(content)) {
+    const potentialReferences = getGroupItemFromRegex(content, semanticReferenceRegex, SEMANTIC_REFS)
+      .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+      .map(semanticRef => semanticRef.slice(1, -1))
+    if (potentialReferences) {
+      // TODO: handle found paths in semantic refs
+      updateDependenciesToAdd(
+        dependenciesToAdd,
+        potentialReferences,
+        fetchedElementsServiceIdToElemID,
+        elementsSourceServiceIdToElemID,
+        element
+      )
+    }
+  }
+}
+
 const replaceReferenceValues = async (
   element: Element,
   fetchedElementsServiceIdToElemID: ServiceIdRecords,
@@ -151,6 +208,11 @@ const replaceReferenceValues = async (
     })
 
     return returnValue
+  }
+  if (isFileCabinetInstance(element) && isFileInstance(element) && isStaticFile(element.value.content)) {
+    await getSuiteScriptReferences(
+      element, dependenciesToAdd, fetchedElementsServiceIdToElemID, elementsSourceServiceIdToElemID
+    )
   }
 
   const newElement = await transformElement({

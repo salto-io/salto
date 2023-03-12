@@ -31,7 +31,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
   )
 
   const fieldConfigurationItem = new InstanceElement(
-    `${randomString}_Assignee__user`,
+    `${randomString}_Component_s__array_duu@uuuum`,
     findType('FieldConfigurationItem', fetchedElements),
     createFieldConfigurationItemValues(fetchedElements),
     undefined,

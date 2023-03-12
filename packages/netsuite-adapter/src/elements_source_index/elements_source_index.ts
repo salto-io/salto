@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetInstance } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { getElementServiceIdRecords } from '../filters/element_references'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, LIST_MAPPED_BY_FIELD } from '../constants'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE } from '../constants'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
@@ -89,7 +89,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
   const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
-  const mapKeyFieldsIndex: Record<string, string | string[]> = {}
   const elemIdToChangeAtIndex: Record<string, string> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
@@ -127,13 +126,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     _.assign(serviceIdRecordsIndex, serviceIdRecords)
   }
 
-  const updateMapKeyFieldsIndex = (type: ObjectType): void => {
-    Object.values(type.fields).forEach(field => {
-      if (field.annotations[LIST_MAPPED_BY_FIELD]) {
-        mapKeyFieldsIndex[field.elemID.getFullName()] = field.annotations[LIST_MAPPED_BY_FIELD]
-      }
-    })
-  }
   const updateElemIdToChangedAtIndex = (element: Element): void => {
     const changeAt = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     if (changeAt !== undefined) {
@@ -158,9 +150,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         updateElemIdToChangedByIndex(element)
         updateElemIdToChangedAtIndex(element)
       }
-      if (isObjectType(element)) {
-        updateMapKeyFieldsIndex(element)
-      }
     })
 
   return {
@@ -169,7 +158,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     customFieldsIndex,
     pathToInternalIdsIndex,
     elemIdToChangeByIndex,
-    mapKeyFieldsIndex,
     elemIdToChangeAtIndex,
   }
 }

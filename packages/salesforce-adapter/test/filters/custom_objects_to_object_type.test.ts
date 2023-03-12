@@ -520,8 +520,8 @@ describe('Custom Objects to Object Type filter', () => {
                   linkType: 'javascript',
                   url: '',
                 },
-                pluralLabel: 'Leads',
                 enableFeeds: 'True',
+                enableReports: 'True',
               },
             )
           })
@@ -543,8 +543,8 @@ describe('Custom Objects to Object Type filter', () => {
             const lead = findElements(result, 'Lead').pop() as ObjectType
             expect((await lead.getAnnotationTypes()).enableFeeds).toBeDefined()
             expect(lead.annotations.enableFeeds).toBeTruthy()
-            expect((await lead.getAnnotationTypes()).pluralLabel).toBeUndefined()
-            expect(lead.annotations.pluralLabel).toBeUndefined()
+            expect((await lead.getAnnotationTypes()).enableReports).toBeUndefined()
+            expect(lead.annotations.enableReports).toBeUndefined()
           })
 
           it('should merge regular instance element annotations into the custom settings-custom object type', async () => {

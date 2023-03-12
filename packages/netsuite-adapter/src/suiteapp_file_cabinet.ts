@@ -547,13 +547,13 @@ SuiteAppFileCabinetOperations => {
       log.debug(`Deployed chunk of ${chunk.length} file changes`)
 
       const [deployErrors, deployChanges] = _.partition(
-        deployResults.map((res, index) => ({ res, change: changes[index].change })),
+        deployResults.map((res, index) => ({ res, ...changes[index].change })),
         ({ res }) => res instanceof Error
       )
 
       return {
-        appliedChanges: deployChanges.map(({ change, res }) => ({ ...change, id: res as number })),
-        failedChanges: deployErrors.map(({ change }) => change),
+        appliedChanges: deployChanges.map(({ res, ...change }) => ({ ...change, id: res as number })),
+        failedChanges: deployErrors,
         errors: deployErrors.map(({ res }) => res as Error),
       }
     } catch (e) {

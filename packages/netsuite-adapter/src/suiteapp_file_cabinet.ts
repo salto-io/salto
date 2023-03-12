@@ -24,7 +24,7 @@ import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableEr
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
-import { INTERNAL_ID, PARENT, PATH } from './constants'
+import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from './constants'
 import { NetsuiteQuery } from './query'
 import { DeployResult, isFileCabinetType, isFileInstance } from './types'
 
@@ -199,10 +199,10 @@ export const isChangeDeployable = async (
   return true
 }
 
-const groupChangeyDepth = (
+const groupChangesByDepth = (
   changes: ReadonlyArray<Change<FileCabinetInstance>>
 ): [string, Change<FileCabinetInstance>[]][] => _(changes)
-  .groupBy(change => getChangeData(change).value.path.split('/').length)
+  .groupBy(change => getChangeData(change).value.path.split(FILE_CABINET_PATH_SEPARATOR).length)
   .entries()
   .sortBy(([depth]) => depth)
   .value()
@@ -369,7 +369,7 @@ SuiteAppFileCabinetOperations => {
         isprivate: folder.isprivate,
         internalId: folder.id,
       },
-    })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
+    })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
 
     const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
@@ -386,7 +386,7 @@ SuiteAppFileCabinetOperations => {
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
-    })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+    })).filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
 
     const [
       filesCustomizationWithoutContent,
@@ -434,7 +434,7 @@ SuiteAppFileCabinetOperations => {
     const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
-        log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
+        log.warn(`Failed reading file /${file.path.join(FILE_CABINET_PATH_SEPARATOR)} with id ${file.id}`)
         if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
           lockedPaths.push(file.path)
         } else {
@@ -459,10 +459,10 @@ SuiteAppFileCabinetOperations => {
           typeName: 'file',
           values: file.values,
         })),
-      ].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
+      ].filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`)),
       failedPaths: {
-        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
-        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
+        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
       },
     }
   }
@@ -473,13 +473,9 @@ SuiteAppFileCabinetOperations => {
   ): Promise<FileCabinetInstanceDetails> => {
     const instance = getChangeData(change)
 
-    const id = type !== 'add'
-      ? parseInt(getChangeData(change).value.internalId, 10)
-      : undefined
-
-    const parentFolderInternalId = type === 'add'
-      ? instance.value.parent
-      : undefined
+    const { parent, id } = type === 'add'
+      ? { parent: instance.value.parent, id: undefined }
+      : { id: parseInt(getChangeData(change).value.internalId, 10), parent: undefined }
 
     const base = {
       id,
@@ -493,7 +489,7 @@ SuiteAppFileCabinetOperations => {
       ? {
         ...base,
         type: 'file',
-        folder: parentFolderInternalId,
+        folder: parent,
         isOnline: instance.value.availablewithoutlogin ?? false,
         hideInBundle: instance.value.hideinbundle ?? false,
         ...instance.value.link === undefined
@@ -503,7 +499,7 @@ SuiteAppFileCabinetOperations => {
       : {
         ...base,
         type: 'folder',
-        parent: parentFolderInternalId,
+        parent,
         isPrivate: instance.value.isprivate ?? false,
       }
   }
@@ -620,7 +616,7 @@ SuiteAppFileCabinetOperations => {
       }
     }
 
-    const orderedChangesGroups = groupChangeyDepth(allChanges)
+    const orderedChangesGroups = groupChangesByDepth(allChanges)
     const deployResults = await promises.array.series(orderedChangesGroups
       .map(([depth, group]) => async () => {
         log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
@@ -640,7 +636,7 @@ SuiteAppFileCabinetOperations => {
   }
 
   const deployDeletions: DeployFunction = async changes => {
-    const orderedChangesGroups = groupChangeyDepth(changes).reverse()
+    const orderedChangesGroups = groupChangesByDepth(changes).reverse()
     const deployResults = await promises.array.series(orderedChangesGroups
       .map(([depth, group]) => async () => {
         log.debug(`Deleting ${group.length} files with depth of ${depth}`)

@@ -15,8 +15,9 @@
 */
 import _ from 'lodash'
 import path from 'path'
+import { values } from '@salto-io/lowerdash'
 import { ChangeError, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
-import { FOLDER, INTERNAL_ID, PATH } from '../constants'
+import { FILE_CABINET_PATH_SEPARATOR, FOLDER, INTERNAL_ID, PATH } from '../constants'
 import { isFileCabinetInstance } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
@@ -28,7 +29,7 @@ export const getParentInternalId = (
   addedFolders?: Set<string>
 ): { id?: number; error?: Pick<ChangeError, 'message' | 'detailedMessage'> } => {
   const parentDirectory = path.dirname(instance.value[PATH])
-  const isTopLevelFolderPath = parentDirectory === '/'
+  const isTopLevelFolderPath = parentDirectory === FILE_CABINET_PATH_SEPARATOR
   const parentAnnotation = instance.annotations[CORE_ANNOTATIONS.PARENT]
 
   if (parentAnnotation === undefined) {
@@ -91,7 +92,7 @@ export const getParentInternalId = (
       return {
         error: {
           message: missingParentMessage,
-          detailedMessage: `The parent folder (in "${CORE_ANNOTATIONS.PARENT}") has no intenal ID. `
+          detailedMessage: `The parent folder (in "${CORE_ANNOTATIONS.PARENT}") has no internal ID. `
           + 'Try fetching and deploying again.',
         },
       }
@@ -116,13 +117,17 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .map(getChangeData)
     .filter(isFileCabinetInstance)
     .map(instance => ({ instance, ...getParentInternalId(instance, addedFolders) }))
-    .filter(({ error }) => error !== undefined)
-    .map(({ instance, error }): ChangeError => ({
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: error?.message ?? '',
-      detailedMessage: error?.detailedMessage ?? '',
-    }))
+    .map(({ instance, error }): ChangeError | undefined => (
+      error !== undefined
+        ? {
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: error.message,
+          detailedMessage: error.detailedMessage,
+        }
+        : undefined
+    ))
+    .filter(values.isDefined)
 
   const missingInternalIdChangeErrors = removalsOrModifications
     .map(getChangeData)

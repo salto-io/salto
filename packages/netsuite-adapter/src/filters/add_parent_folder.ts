@@ -18,7 +18,7 @@ import path from 'path'
 import { isFileCabinetInstance } from '../types'
 import { FilterCreator } from '../filter'
 import { SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
-import { PARENT } from '../constants'
+import { FILE_CABINET_PATH_SEPARATOR, PARENT } from '../constants'
 import { getParentInternalId } from '../change_validators/file_cabinet_internal_ids'
 
 const filterCreator: FilterCreator = ({ changesGroupId }) => ({
@@ -26,7 +26,7 @@ const filterCreator: FilterCreator = ({ changesGroupId }) => ({
   onFetch: async elements => {
     elements
       .filter(isFileCabinetInstance)
-      .filter(instance => path.dirname(instance.value.path) !== '/')
+      .filter(instance => path.dirname(instance.value.path) !== FILE_CABINET_PATH_SEPARATOR)
       .forEach(instance => {
         instance.annotations[CORE_ANNOTATIONS.PARENT] = [`[${path.dirname(instance.value.path)}]`]
       })

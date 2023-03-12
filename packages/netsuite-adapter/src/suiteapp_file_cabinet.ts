@@ -608,7 +608,7 @@ SuiteAppFileCabinetOperations => {
         const failedInstance = getChangeData(failedChange)
         const children = changesByParentDirectory[failedInstance.value.path] ?? []
         if (children.length > 0) {
-          log.debug('adding %s internal id as parent for %d childern files/folders', failedInstance.value.path, children.length)
+          log.debug('skipping %d childern files/folders of %s that failed the deploy', children.length, failedInstance.value.path)
         }
         children.forEach(change => {
           pathsToSkip.add(getChangeData(change).value.path)

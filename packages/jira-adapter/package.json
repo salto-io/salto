@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/jira-adapter",
-  "version": "0.3.32",
+  "version": "0.3.33",
   "license": "Apache-2.0",
   "description": "Salto JIRA adapter",
   "repository": {
@@ -32,11 +32,11 @@
   },
   "dependencies": {
     "@atlassianlabs/jql-ast": "^1.0.0",
-    "@salto-io/adapter-api": "0.3.32",
-    "@salto-io/adapter-components": "0.3.32",
-    "@salto-io/adapter-utils": "0.3.32",
-    "@salto-io/logging": "0.3.32",
-    "@salto-io/lowerdash": "0.3.32",
+    "@salto-io/adapter-api": "0.3.33",
+    "@salto-io/adapter-components": "0.3.33",
+    "@salto-io/adapter-utils": "0.3.33",
+    "@salto-io/logging": "0.3.33",
+    "@salto-io/lowerdash": "0.3.33",
     "joi": "^17.4.0",
     "lodash": "^4.17.21",
     "pako": "^1.0.11",
@@ -45,8 +45,8 @@
     "xml-js": "^1.6.11"
   },
   "devDependencies": {
-    "@salto-io/e2e-credentials-store": "0.3.32",
-    "@salto-io/test-utils": "0.3.32",
+    "@salto-io/e2e-credentials-store": "0.3.33",
+    "@salto-io/test-utils": "0.3.33",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/pako": "^1.0.1",

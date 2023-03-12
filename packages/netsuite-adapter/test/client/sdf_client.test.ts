@@ -20,26 +20,30 @@ import { buildNetsuiteQuery, notQuery } from '../../src/query'
 import mockClient, { DUMMY_CREDENTIALS } from './sdf_client'
 import { APPLICATION_ID, CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../../src/constants'
 import SdfClient, {
-  ATTRIBUTES_FILE_SUFFIX,
-  ATTRIBUTES_FOLDER_NAME,
   COMMANDS,
-  FOLDER_ATTRIBUTES_FILE_SUFFIX,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
+import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
+import { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/deploy_xml_utils'
 
-const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams] = [
+const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
   {
-    additionalDependencies: {
-      include: { features: [], objects: [] },
-      exclude: { features: [], objects: [] },
+    manifestDependencies: {
+      optionalFeatures: [],
+      requiredFeatures: [],
+      excludedFeatures: [],
+      includedObjects: [],
+      excludedObjects: [],
     },
   },
+  new Graph<SDFObjectNode>('elemIdFullName'),
 ]
+
 
 const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
@@ -107,6 +111,22 @@ const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZ
 
 const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
 
+const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
+    <configuration>
+        <path>~/AccountConfiguration/*</path>
+    </configuration>
+    <files>
+        <path>~/FileCabinet/*</path>
+    </files>
+    <objects>
+        <path>~/Objects/*</path>
+    </objects>
+    <translationimports>
+        <path>~/Translations/*</path>
+    </translationimports>
+</deploy>
+`
+
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
   readFile: jest.fn().mockImplementation(filePath => {
@@ -128,6 +148,9 @@ jest.mock('@salto-io/file', () => ({
     }
     if (filePath.endsWith('/features.xml')) {
       return MOCK_FEATURES_XML
+    }
+    if (filePath.endsWith('/deploy.xml')) {
+      return MOCK_ORIGINAL_DEPLOY_XML
     }
     return `<addressForm filename="${filePath.split('/').pop()}">`
   }),
@@ -763,7 +786,7 @@ describe('sdf client', () => {
                   type: 'csvimport',
                   result: {
                     code: 'FAILED',
-                    message: 'An unexpected error has occurred',
+                    message: 'Une erreur inattendue s\'est produite.',
                   },
                 },
               },
@@ -1243,23 +1266,29 @@ describe('sdf client', () => {
 
   describe('deploy', () => {
     let client: SdfClient
+    const testGraph = DEFAULT_DEPLOY_PARAMS[2]
+    let customTypeInfo: CustomTypeInfo
+    let testSDFNode: SDFObjectNode
     beforeEach(() => {
       client = mockClient()
+      testGraph.nodes.clear()
+      customTypeInfo = {
+        typeName: 'typeName',
+        values: {
+          key: 'val',
+        },
+        scriptId: 'scriptId',
+      } as CustomTypeInfo
+      testSDFNode = { serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo }
     })
-
     describe('deployCustomObject', () => {
       it('should succeed for CustomTypeInfo', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
-        const customTypeInfo = {
-          typeName: 'typeName',
-          values: {
-            key: 'val',
-          },
-          scriptId,
-        } as CustomTypeInfo
-        await client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        customTypeInfo.scriptId = scriptId
+        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1273,16 +1302,11 @@ describe('sdf client', () => {
         mockExecuteAction.mockClear()
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
-        const customTypeInfo = {
-          typeName: 'typeName',
-          values: {
-            key: 'val',
-          },
-          scriptId,
-        } as CustomTypeInfo
-        await client.deploy([customTypeInfo], 'a.b.c', DEFAULT_DEPLOY_PARAMS[1])
+        customTypeInfo.scriptId = scriptId
+        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: customTypeInfo })])
+        await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1304,8 +1328,9 @@ describe('sdf client', () => {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
-        await client.deploy([templateCustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: templateCustomTypeInfo })])
+        await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
         expect(writeFileMock)
@@ -1322,7 +1347,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw errorMessage
         })
-        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
 
@@ -1331,7 +1356,7 @@ describe('sdf client', () => {
         mockExecuteAction.mockImplementation(() => {
           throw new Error(errorMessage)
         })
-        await expect(client.deploy([{} as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(errorMessage))
       })
       it('should throw error when sdf result contain error in other language', async () => {
@@ -1341,14 +1366,7 @@ describe('sdf client', () => {
           'some error',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: sdfResult })
-        const customTypeInfo = {
-          typeName: 'typeName',
-          values: {
-            key: 'val',
-          },
-          scriptId: 'some_id',
-        } as CustomTypeInfo
-        await expect(client.deploy([customTypeInfo], ...DEFAULT_DEPLOY_PARAMS)).rejects
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS)).rejects
           .toThrow(new Error(
             'Starting deploy\n'
             + '*** ERREUR ***\n'
@@ -1387,14 +1405,9 @@ File: ~/Objects/custform_114_t1441298_782.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1431,13 +1444,7 @@ File: ~/Objects/custform_114_t1441298_782.xml
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessage.split('\n') })
         let isRejected: boolean
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1487,14 +1494,9 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1542,14 +1544,9 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1598,14 +1595,9 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1655,14 +1647,9 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1714,14 +1701,9 @@ File: ~/AccountConfiguration/features.xml`
           return { isSuccess: () => true }
         })
         let isRejected: boolean
+        testGraph.addNodes([new GraphNode(testSDFNode)])
         try {
-          await client.deploy([{
-            typeName: 'typeName',
-            values: {
-              key: 'val',
-            },
-            scriptId: 'scriptId',
-          } as CustomTypeInfo], ...DEFAULT_DEPLOY_PARAMS)
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
@@ -1742,11 +1724,12 @@ File: ~/AccountConfiguration/features.xml`
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
-        await client.deploy([folderCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
+        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder', elemIdFullName: 'name', changeType: 'addition', customizationInfo: folderCustomizationInfo } as SDFObjectNode)])
+        await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1770,13 +1753,14 @@ File: ~/AccountConfiguration/features.xml`
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: dummyFileContent,
         }
-        await client.deploy([fileCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
+        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder/content.html', elemIdFullName: 'name', changeType: 'addition', customizationInfo: fileCustomizationInfo } as SDFObjectNode)])
+        await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
@@ -1803,9 +1787,10 @@ File: ~/AccountConfiguration/features.xml`
         },
       }
       it('should succeed', async () => {
+        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
-        await client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(2)
@@ -1817,8 +1802,9 @@ File: ~/AccountConfiguration/features.xml`
 
       it('should throw FeaturesDeployError on failed features deploy', async () => {
         const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
+        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
-        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
       })
 
@@ -1828,7 +1814,7 @@ File: ~/AccountConfiguration/features.xml`
           'Configurer la fonction -- La d.sactivation de la fonction SUITEAPPCONTROLCENTER(SuiteApp Control Center) a .chou.',
         ]
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: errorMessages })
-        await expect(client.deploy([featuresCustomizationInfo], ...DEFAULT_DEPLOY_PARAMS))
+        await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessages[1], ['SUITEAPPCONTROLCENTER']))
       })
     })
@@ -1847,8 +1833,12 @@ File: ~/AccountConfiguration/features.xml`
         values: { key: 'val' },
         scriptId: scriptId2,
       }
-      await client.deploy([customTypeInfo1, customTypeInfo2], ...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(3)
+      testGraph.addNodes([
+        new GraphNode({ serviceid: scriptId1, elemIdFullName: 'name1', changeType: 'addition', customizationInfo: customTypeInfo1 } as SDFObjectNode),
+        new GraphNode({ serviceid: scriptId2, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: customTypeInfo2 } as SDFObjectNode),
+      ])
+      await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+      expect(writeFileMock).toHaveBeenCalledTimes(4)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
@@ -1859,15 +1849,17 @@ File: ~/AccountConfiguration/features.xml`
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, addDependenciesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, deployProjectCommandMatcher)
     })
+
     describe('validate only', () => {
       const failObject = 'fail_object'
-      const deployParams: [CustomTypeInfo[], undefined, SdfDeployParams] = [
-        [
-          { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
-          { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
-        ],
+      testGraph.addNodes([
+        new GraphNode({ serviceid: failObject, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject } } as SDFObjectNode),
+        new GraphNode({ serviceid: 'successObject', elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' } } as SDFObjectNode),
+      ])
+      const deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
         undefined,
         { ...DEFAULT_DEPLOY_PARAMS[1], validateOnly: true },
+        testGraph,
       ]
       beforeEach(() => {
         jest.clearAllMocks()
@@ -1927,7 +1919,11 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         mockExecuteAction.mockImplementation(context => {
           const errorMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
         Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
-        File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        File: ~/Objects/custimport_xepi_subscriptionimport.xml
+        
+        An error occurred during custom object validation. (customworkflow1)
+        Details: When the SuiteCloud project contains a workflow, the manifest must define the WORKFLOW feature as required.
+        File: ~/Objects/customworkflow1.xml`
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             throw new Error(errorMessage)
           }
@@ -1939,7 +1935,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
           expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toContain('SUBSCRIPTIONBILLING')
+          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW'])
         }
       })
       it('should throw error', async () => {

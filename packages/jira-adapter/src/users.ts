@@ -95,7 +95,7 @@ const DATA_CENTER_USER_RESPONSE_SCHEME = Joi.object({
   locale: Joi.string(),
   key: Joi.string().required(),
   name: Joi.string().required().allow(''),
-  emailAddress: Joi.string(),
+  emailAddress: Joi.string().allow(''),
   displayName: Joi.string().required().allow(''),
 }).unknown(true)
 

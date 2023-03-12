@@ -62,7 +62,7 @@ import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import { Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -78,7 +78,6 @@ import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { AdditionalDependencies } from './client/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { makeArray } = collections.array
@@ -120,7 +119,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean // TODO remove this from config SALTO-3676
+  private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private elementsSourceIndex: LazyElementsSourceIndexes
   private createFiltersRunner: (params: {
     isPartial?: boolean
@@ -195,7 +194,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.lockedElements = config.fetch?.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.skipList = config.skipList // old version
-    this.useChangesDetection = config.useChangesDetection ?? DEFAULT_USE_CHANGES_DETECTION
+    this.useChangesDetection = config.useChangesDetection
     this.deployReferencedElements = config.deploy?.deployReferencedElements
      ?? config.deployReferencedElements
     this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
@@ -237,7 +236,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
-      isPartial,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -339,15 +337,27 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
+  private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams : {
+    withChangesDetection: boolean
+    hasFetchTarget: boolean
+    isFirstFetch: boolean
+  }) : boolean {
+    return !shouldFetchWithChangesDetectionParams.isFirstFetch && (
+      this.useChangesDetection === true
+      || shouldFetchWithChangesDetectionParams.withChangesDetection
+      // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
+      || (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+  }
+
   /**
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
 
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    const isFirstFetch = async () : Promise<boolean> =>
-      !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
-    if (this.fetchTarget !== undefined && await isFirstFetch()) {
+    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    const hasFetchTarget = this.fetchTarget !== undefined
+    if (hasFetchTarget && isFirstFetch) {
       throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
     }
 
@@ -366,7 +376,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = (withChangesDetection || this.fetchTarget !== undefined) && !(await isFirstFetch())
+    const fetchWithChangesDetection = this.shouldFetchWithChangesDetection({
+      withChangesDetection, hasFetchTarget, isFirstFetch,
+    })
+    const isPartial = fetchWithChangesDetection || hasFetchTarget
 
     const {
       failedToFetchAllAtOnce,
@@ -376,7 +389,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
-      (this.useChangesDetection || withChangesDetection),
+      fetchWithChangesDetection,
       isPartial,
     )
 
@@ -393,7 +406,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
-    isPartial: boolean,
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
@@ -403,12 +415,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
       return {}
-    }
-
-    if (!isPartial) {
-      return {
-        serverTime: sysInfo.time,
-      }
     }
 
     if (!useChangesDetection) {

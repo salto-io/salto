@@ -14,37 +14,43 @@
 * limitations under the License.
 */
 
-import { $, getField, getObject } from './utils'
+import { getField, getObject, parts } from './utils'
+import { CPQ_NAMESPACE, CUSTOM_METADATA_SUFFIX, NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../../constants'
 
-export const RELATIONSHIP_SUFFIX = '__R'
-export const USER_FIELDS = ['OWNER', 'MANAGER', 'CREATEDBY', 'LASTMODIFIEDBY']
-export const CPQ_NAMESPACE = 'SBQQ__'
-export const CUSTOM_METADATA_PREFIX = '__MDT'
-export const CUSTOM_LABEL_PREFIX = '$LABEL.'
-export const CUSTOM_SETTING_PREFIX = '$SETUP.'
-export const CUSTOM_ENTITY_SUFFIX = '__C'
-export const OBJECT_TYPE_PREFIX = '$OBJECTTYPE.'
-export const SELF_REFERENTIAL_PARENT_FIELD = 'PARENTID'
-export const SELF_REFERENTIAL_PARENT_OBJECT = 'PARENT'
-export const PROCESS_BUILDER_BRACKET_START = '['
-export const PROCESS_BUILDER_BRACKET_END = ']'
-export const SPECIAL_PREFIXES = ['$USER', '$PROFILE', '$ORGANIZATION', '$USERROLE', '$SYSTEM']
-export const isUserField = (value: string): boolean => USER_FIELDS.includes($(getObject(value)))
-export const isCustom = (value: string): boolean => $(value).endsWith(CUSTOM_ENTITY_SUFFIX)
-export const isCustomMetadata = (value: string): boolean => $(value).includes(CUSTOM_METADATA_PREFIX)
-export const isCustomLabel = (value: string): boolean => $(value).startsWith(CUSTOM_LABEL_PREFIX)
-export const isCustomSetting = (value: string): boolean => $(value).startsWith(CUSTOM_SETTING_PREFIX)
-export const isObjectType = (value: string): boolean => $(value).startsWith(OBJECT_TYPE_PREFIX)
-export const isParentField = (value: string): boolean => $(getField(value)) === SELF_REFERENTIAL_PARENT_FIELD
-export const isParent = (value: string): boolean => $(value) === SELF_REFERENTIAL_PARENT_OBJECT
-export const isStandardRelationship = (value: string): boolean => !$(value).endsWith(RELATIONSHIP_SUFFIX)
+const RELATIONSHIP_SUFFIX = '__R'
+const USER_FIELDS_REGEX = new RegExp(/^OWNER|MANAGER|CREATEDBY|LASTMODIFIEDBY$/, 'i')
+const CUSTOM_LABEL_PREFIX_REGEX = new RegExp(/^\$LABEL\./, 'i')
+const CUSTOM_SETTING_PREFIX_REGEX = new RegExp(/^\$SETUP\./, 'i')
+const OBJECT_TYPE_PREFIX_REGEX = new RegExp(/^\$OBJECTTYPE\./, 'i')
+const SELF_REFERENTIAL_PARENT_FIELD_REGEX = new RegExp(/^parentid$/, 'i')
+const SELF_REFERENTIAL_PARENT_OBJECT_REGEX = new RegExp(/^parent$/, 'i')
+const SPECIAL_PREFIXES_REGEX = new RegExp(/^\$USER|\$PROFILE|\$ORGANIZATION|\$USERROLE|\$SYSTEM/, 'i')
+
+export const isUserField = (value: string): boolean => {
+  const prefix = parts(value)[0]
+  return USER_FIELDS_REGEX.test(prefix)
+}
+export const isCustom = (value: string): boolean => value.toLocaleLowerCase().endsWith(SALESFORCE_CUSTOM_SUFFIX)
+export const isCustomMetadata = (value: string): boolean => (
+  parts(value.toLocaleLowerCase()).some(part => part.endsWith(CUSTOM_METADATA_SUFFIX))
+)
+export const isCustomLabel = (value: string): boolean => CUSTOM_LABEL_PREFIX_REGEX.test(value)
+export const isCustomSetting = (value: string): boolean => CUSTOM_SETTING_PREFIX_REGEX.test(value)
+export const isObjectType = (value: string): boolean => OBJECT_TYPE_PREFIX_REGEX.test(value)
+export const isParentField = (value: string): boolean => SELF_REFERENTIAL_PARENT_FIELD_REGEX.test(getField(value))
+export const isParent = (value: string): boolean => SELF_REFERENTIAL_PARENT_OBJECT_REGEX.test(value)
+export const isStandardRelationship = (value: string): boolean => (
+  !value.toLocaleUpperCase().endsWith(RELATIONSHIP_SUFFIX)
+)
 export const isRelationshipField = (value: string): boolean => value.includes('.')
-export const isSpecialPrefix = (value: string): boolean => SPECIAL_PREFIXES.includes($(value))
-export const isProcessBuilderPrefix = (value: string): boolean => (
-  value.startsWith(PROCESS_BUILDER_BRACKET_START) && value.endsWith(PROCESS_BUILDER_BRACKET_END)
+export const isSpecialPrefix = (value: string): boolean => SPECIAL_PREFIXES_REGEX.test(value)
+export const isProcessBuilderIdentifier = (value: string): boolean => (
+  // https://help.salesforce.com/s/articleView?id=000383560&type=1
+  value.startsWith('[') && value.endsWith(']')
 )
 export const isCPQRelationship = (value: string): boolean => {
-  const obj = $(getObject(value))
+  const objectUpperCase = getObject(value).toLocaleUpperCase()
 
-  return obj.startsWith(CPQ_NAMESPACE) && obj.endsWith(RELATIONSHIP_SUFFIX)
+  return objectUpperCase.startsWith(`${CPQ_NAMESPACE}${NAMESPACE_SEPARATOR}`)
+    && objectUpperCase.endsWith(RELATIONSHIP_SUFFIX)
 }

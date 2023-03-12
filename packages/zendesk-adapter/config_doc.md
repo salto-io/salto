@@ -26,6 +26,7 @@ zendesk {
     guide = {
       brands = [".*"]
     }
+    includeAuditDetails = true
   }
   deploy = {
     defaultMissingUserFallback = "##DEPLOYER##"

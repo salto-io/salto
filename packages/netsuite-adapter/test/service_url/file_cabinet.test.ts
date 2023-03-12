@@ -17,26 +17,19 @@ import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { getFileCabinetTypes } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/file_cabinet'
+import { INTERNAL_ID } from '../../src/constants'
 
 describe('setFileCabinetUrls', () => {
-  const getPathInternalIdMock = jest.fn()
   const client = {
-    getPathInternalId: getPathInternalIdMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
   const { file, folder } = getFileCabinetTypes()
 
   const elements = [
-    new InstanceElement('A', file, { path: '/path/A' }),
-    new InstanceElement('B', folder, { path: '/path/B' }),
+    new InstanceElement('A', file, { path: '/path/A', [INTERNAL_ID]: '1' }),
+    new InstanceElement('B', folder, { path: '/path/B', [INTERNAL_ID]: '2' }),
     new InstanceElement('C', folder, { path: '/path/C' }),
   ]
-
-  beforeEach(() => {
-    jest.resetAllMocks()
-    getPathInternalIdMock.mockReturnValueOnce(1)
-    getPathInternalIdMock.mockReturnValueOnce(2)
-  })
 
   it('should set the right url', async () => {
     await setServiceUrl(elements, client)

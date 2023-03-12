@@ -13,19 +13,34 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, getChangeData } from '@salto-io/adapter-api'
 import path from 'path'
-import { isFileCabinetType } from '../types'
-import { FilterWith } from '../filter'
+import { isFileCabinetInstance } from '../types'
+import { FilterCreator } from '../filter'
+import { SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
+import { PARENT } from '../constants'
+import { getParentInternalId } from '../change_validators/file_cabinet_internal_ids'
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ changesGroupId }) => ({
   name: 'addParentFolder',
   onFetch: async elements => {
     elements
-      .filter(isInstanceElement)
-      .filter(e => isFileCabinetType(e.refType))
-      .filter(e => path.dirname(e.value.path) !== '/')
-      .forEach(e => { e.annotations[CORE_ANNOTATIONS.PARENT] = [`[${path.dirname(e.value.path)}]`] })
+      .filter(isFileCabinetInstance)
+      .filter(instance => path.dirname(instance.value.path) !== '/')
+      .forEach(instance => {
+        instance.annotations[CORE_ANNOTATIONS.PARENT] = [`[${path.dirname(instance.value.path)}]`]
+      })
+  },
+  preDeploy: async changes => {
+    if (changesGroupId !== SUITEAPP_CREATING_FILES_GROUP_ID) {
+      return
+    }
+    changes
+      .map(getChangeData)
+      .filter(isFileCabinetInstance)
+      .forEach(instance => {
+        instance.value[PARENT] = getParentInternalId(instance).id
+      })
   },
 })
 

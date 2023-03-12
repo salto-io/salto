@@ -16,7 +16,6 @@
 import { collections } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
 import { createElementsSourceIndex } from '../src/elements_source_index/elements_source_index'
@@ -33,8 +32,6 @@ describe('createElementsSourceIndex', () => {
     get: getMock,
   } as unknown as ReadOnlyElementsSource
   const entitycustomfield = entitycustomfieldType().type
-
-  const { file, folder } = getFileCabinetTypes()
 
   beforeEach(() => {
     getAllMock.mockReset()
@@ -99,21 +96,6 @@ describe('createElementsSourceIndex', () => {
 
     expect(index.Employee.map(e => e.elemID.getFullName()))
       .toEqual([instance1.elemID.getFullName()])
-  })
-
-  it('should create the right pathToInternalIds index', async () => {
-    const folderInstance = new InstanceElement('folder1', folder, { path: '/folder1', internalId: 0 })
-    const fileInstance = new InstanceElement('file1', file, { path: '/folder1/file1', internalId: 1 })
-    getAllMock.mockImplementation(buildElementsSourceFromElements([
-      folderInstance,
-      fileInstance,
-    ]).getAll)
-
-    expect((await createElementsSourceIndex(elementsSource).getIndexes()).pathToInternalIdsIndex)
-      .toEqual({
-        '/folder1': 0,
-        '/folder1/file1': 1,
-      })
   })
 
   it('should create the right elemIdToChangeByIndex index', async () => {

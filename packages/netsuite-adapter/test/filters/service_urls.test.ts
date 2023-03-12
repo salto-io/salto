@@ -19,14 +19,12 @@ import { fileType } from '../../src/types/file_cabinet_types'
 import NetsuiteClient from '../../src/client/client'
 import serviceUrls from '../../src/filters/service_urls'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
-import { NETSUITE } from '../../src/constants'
+import { INTERNAL_ID, NETSUITE } from '../../src/constants'
 
 describe('serviceUrls', () => {
   describe('onFetch', () => {
-    const getPathInternalIdMock = jest.fn()
     const isSuiteAppConfiguredMock = jest.fn()
     const client = {
-      getPathInternalId: getPathInternalIdMock,
       isSuiteAppConfigured: isSuiteAppConfiguredMock,
       url: 'https://accountid.app.netsuite.com',
     } as unknown as NetsuiteClient
@@ -35,10 +33,9 @@ describe('serviceUrls', () => {
 
     beforeEach(() => {
       jest.resetAllMocks()
-      getPathInternalIdMock.mockReturnValue(1)
       isSuiteAppConfiguredMock.mockReturnValue(true)
       elements = [
-        new InstanceElement('A', fileType(), { path: '/path/A' }),
+        new InstanceElement('A', fileType(), { path: '/path/A', [INTERNAL_ID]: '1' }),
       ]
     })
 

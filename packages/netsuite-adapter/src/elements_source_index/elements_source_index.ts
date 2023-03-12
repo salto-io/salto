@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetInstance } from '../types'
+import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { getElementServiceIdRecords } from '../filters/element_references'
@@ -87,7 +87,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
-  const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
   const mapKeyFieldsIndex: Record<string, string | string[]> = {}
   const elemIdToChangeAtIndex: Record<string, string> = {}
@@ -104,15 +103,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         }
         customFieldsIndex[type].push(element)
       })
-  }
-
-  const updatePathToInternalIdsIndex = (element: InstanceElement): void => {
-    if (!isFileCabinetInstance(element)) return
-
-    const { path, internalId } = element.value
-    if (path === undefined || internalId === undefined) return
-
-    pathToInternalIdsIndex[path] = parseInt(internalId, 10)
   }
 
   const updateElemIdToChangedByIndex = (element: Element): void => {
@@ -148,7 +138,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
         await updateServiceIdRecordsIndex(element)
         await updateInternalIdsIndex(element)
         updateCustomFieldsIndex(element)
-        updatePathToInternalIdsIndex(element)
         updateElemIdToChangedByIndex(element)
         updateElemIdToChangedAtIndex(element)
       }
@@ -167,7 +156,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     serviceIdRecordsIndex,
     internalIdsIndex,
     customFieldsIndex,
-    pathToInternalIdsIndex,
     elemIdToChangeByIndex,
     mapKeyFieldsIndex,
     elemIdToChangeAtIndex,

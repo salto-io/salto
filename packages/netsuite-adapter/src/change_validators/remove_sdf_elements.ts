@@ -13,20 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, isRemovalChange, getChangeData, Element, isInstanceElement, isObjectType, isField, ChangeError } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import { Change, isRemovalChange, getChangeData, Element, isInstanceElement, isObjectType, isField, ChangeError, ObjectType } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType, hasInternalId } from '../types'
-import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { NetsuiteChangeValidator } from './types'
 import { isSupportedInstance } from '../filters/internal_ids/sdf_internal_ids'
 
+const log = logger(module)
 const { isDefined } = values
 const { awu } = collections.asynciterable
+
+type HasInstancesFunc = (element: ObjectType) => Promise<boolean>
 
 const validateRemovableChange = async (
   element: Element,
   changes: ReadonlyArray<Change>,
-  elementsSourceIndex?: LazyElementsSourceIndexes
+  hasInstances: HasInstancesFunc
 ): Promise<ChangeError | undefined> => {
   if (isInstanceElement(element) && isStandardType(element.refType)) {
     if (!isSupportedInstance(element)) {
@@ -55,16 +58,12 @@ const validateRemovableChange = async (
       }
     }
     // will be redundant once SALTO-3534 introduced
-    if (elementsSourceIndex !== undefined) {
-      const recordTypeIndexInstances = Object.keys((await elementsSourceIndex.getIndexes()).internalIdsIndex)
-        .some(elemInternalId => elemInternalId.startsWith(element.elemID.typeName.concat('-')))
-      if (recordTypeIndexInstances) {
-        return {
-          elemID: element.elemID,
-          severity: 'Error',
-          message: 'Can\'t remove Custom Record Types that are currently in use',
-          detailedMessage: 'Can\'t remove this Custom Record Type. Remove its instances and try again',
-        }
+    if (await hasInstances(element)) {
+      return {
+        elemID: element.elemID,
+        severity: 'Error',
+        message: 'Can\'t remove Custom Record Types that are currently in use',
+        detailedMessage: 'Can\'t remove this Custom Record Type. Remove its instances and try again',
       }
     }
     return {
@@ -90,13 +89,28 @@ const validateRemovableChange = async (
   return undefined
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSourceIndex) => (
-  awu(changes)
+const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
+  let typesWithInstances: Set<string> | undefined
+  const hasInstances = async (element: ObjectType): Promise<boolean> => {
+    if (!elementsSource) {
+      return false
+    }
+    if (typesWithInstances === undefined) {
+      typesWithInstances = await log.time(async () => new Set(
+        await awu(await elementsSource.list())
+          .filter(elemId => elemId.idType === 'instance')
+          .map(elemId => elemId.typeName)
+          .toArray()
+      ), 'creating types with instances set')
+    }
+    return typesWithInstances.has(element.elemID.name)
+  }
+  return awu(changes)
     .filter(isRemovalChange)
     .map(getChangeData)
-    .map(element => validateRemovableChange(element, changes, elementsSourceIndex))
+    .map(element => validateRemovableChange(element, changes, hasInstances))
     .filter(isDefined)
     .toArray()
-)
+}
 
 export default changeValidator

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
@@ -21,7 +21,6 @@ import netsuiteClientValidation from '../src/change_validators/client_validation
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
 import { NetsuiteQuery } from '../src/query'
 import NetsuiteClient from '../src/client/client'
-import { LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 import * as dependencies from '../src/change_validators/dependencies'
 
 const DEFAULT_OPTIONS = {
@@ -36,7 +35,7 @@ const DEFAULT_OPTIONS = {
   filtersRunner: () => ({
     preDeploy: jest.fn(),
   }) as unknown as Required<Filter>,
-  elementsSourceIndex: jest.fn() as unknown as LazyElementsSourceIndexes,
+  elementsSource: jest.fn() as unknown as ReadOnlyElementsSource,
   fetchByQuery: jest.fn(),
 }
 

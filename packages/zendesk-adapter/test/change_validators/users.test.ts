@@ -98,13 +98,13 @@ describe('usersValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@salto.io', name: '1', role: 'agent', custom_role_id: 1 },
-            { id: 2, email: '2@salto.io', name: '2', role: 'agent', custom_role_id: 1 },
-            { id: 3, email: '3@salto.io', name: '3', role: 'admin', custom_role_id: 1 },
-            { id: 4, email: '4@salto.io', name: '4', role: 'agent', custom_role_id: 1 },
-            { id: 5, email: '5@salto.io', name: '5', role: 'agent', custom_role_id: 1 },
-            { id: 6, email: '6@salto.io', name: '6', role: 'agent', custom_role_id: 2 },
-            { id: 7, email: '7@salto.io', name: '7', role: 'agent', custom_role_id: 2 },
+            { id: 1, email: '1@salto.io', name: '1', role: 'agent', custom_role_id: 1, locale: 'en-US' },
+            { id: 2, email: '2@salto.io', name: '2', role: 'agent', custom_role_id: 1, locale: 'en-US' },
+            { id: 3, email: '3@salto.io', name: '3', role: 'admin', custom_role_id: 1, locale: 'en-US' },
+            { id: 4, email: '4@salto.io', name: '4', role: 'agent', custom_role_id: 1, locale: 'en-US' },
+            { id: 5, email: '5@salto.io', name: '5', role: 'agent', custom_role_id: 1, locale: 'en-US' },
+            { id: 6, email: '6@salto.io', name: '6', role: 'agent', custom_role_id: 2, locale: 'en-US' },
+            { id: 7, email: '7@salto.io', name: '7', role: 'agent', custom_role_id: 2, locale: 'en-US' },
           ],
         },
       }

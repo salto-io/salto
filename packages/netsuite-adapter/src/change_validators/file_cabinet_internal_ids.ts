@@ -139,7 +139,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       elemID: instance.elemID,
       severity: 'Error',
       message: 'Missing FileCabinet item ID',
-      detailedMessage: 'This FileCabinet instance has no intenal ID. '
+      detailedMessage: 'This FileCabinet instance has no internal ID. '
       + 'Try fetching and deploying again, or edit it in Netsuite UI.',
     }))
 

@@ -904,9 +904,10 @@ describe('Adapter', () => {
           deploy: {
           },
         }
+        const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
+          elementsSource,
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: configWithoutWarnStaleData,
           getElemIdFunc: mockGetElemIdFunc,
@@ -924,7 +925,7 @@ describe('Adapter', () => {
           validate: expect.anything(),
           filtersRunner: expect.anything(),
           additionalDependencies: expect.anything(),
-          elementsSourceIndex: expect.anything(),
+          elementsSource,
         })
       })
 
@@ -936,9 +937,10 @@ describe('Adapter', () => {
             warnOnStaleWorkspaceData: false,
           },
         }
+        const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
+          elementsSource,
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: configWithoutWarnStaleData,
           getElemIdFunc: mockGetElemIdFunc,
@@ -956,7 +958,7 @@ describe('Adapter', () => {
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
-          elementsSourceIndex: expect.anything(),
+          elementsSource,
         })
       })
 
@@ -968,9 +970,10 @@ describe('Adapter', () => {
             warnOnStaleWorkspaceData: true,
           },
         }
+        const elementsSource = buildElementsSourceFromElements([])
         const adapter = new NetsuiteAdapter({
           client: new NetsuiteClient(client),
-          elementsSource: buildElementsSourceFromElements([]),
+          elementsSource,
           filtersCreators: [firstDummyFilter, secondDummyFilter],
           config: configWithoutWarnStaleData,
           getElemIdFunc: mockGetElemIdFunc,
@@ -988,7 +991,7 @@ describe('Adapter', () => {
           deployReferencedElements: expect.anything(),
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
-          elementsSourceIndex: expect.anything(),
+          elementsSource,
         })
       })
     })

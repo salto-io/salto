@@ -22,8 +22,8 @@ import { CUSTOM_RECORD_TYPE, LIST_MAPPED_BY_FIELD, METADATA_TYPE, NETSUITE, SCRI
 import { TypeAndInnerTypes } from '../../src/types/object_types'
 import { FilterOpts } from '../../src/filter'
 import { workflowType as getWorkflowType } from '../../src/autogen/types/standard_types/workflow'
-import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
+import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
 
 const getDataType = ({ withMaps }: { withMaps: boolean }): TypeAndInnerTypes => {
   const classTranslationType = new ObjectType({
@@ -361,10 +361,15 @@ describe('convert lists to maps filter', () => {
     const { type: workflowType } = getWorkflowType()
 
     beforeEach(async () => {
+      const { type, innerTypes } = getWorkflowType()
+      await Promise.all(
+        Object.values(innerTypes).concat(type)
+          .map(element => convertFieldsTypesFromListToMap(element))
+      )
       instanceChange = toChange({
         after: new InstanceElement(
           'workflow',
-          new ObjectType({ elemID: workflowType.elemID }),
+          type,
           {
             scriptid: 'customworkflow_changed_id',
             workflowcustomfields: {
@@ -396,18 +401,7 @@ describe('convert lists to maps filter', () => {
           }
         ),
       })
-      const elementsSourceIndex = {
-        getIndexes: () => ({
-          mapKeyFieldsIndex: {
-            'netsuite.workflow_workflowcustomfields.field.workflowcustomfield': 'scriptid',
-            'netsuite.workflow_workflowstates.field.workflowstate': 'scriptid',
-            'netsuite.workflow_workflowstates_workflowstate.field.workflowactions': 'triggertype',
-            'netsuite.workflow_workflowstates_workflowstate_workflowactions.field.setfieldvalueaction': 'scriptid',
-            'netsuite.customrecordtype_permissions.field.permission': 'permittedrole',
-          },
-        }),
-      } as unknown as LazyElementsSourceIndexes
-      await filterCreator({ elementsSourceIndex, changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts)
+      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts)
         .preDeploy?.([instanceChange])
     })
     it('should modify instance values', () => {

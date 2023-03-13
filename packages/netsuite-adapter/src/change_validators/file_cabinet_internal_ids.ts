@@ -27,7 +27,7 @@ const parentMismatchMessage = `Mismatch between path and "${CORE_ANNOTATIONS.PAR
 export const getParentInternalId = (
   instance: InstanceElement,
   addedFolders?: Set<string>
-): { id?: number; error?: Pick<ChangeError, 'message' | 'detailedMessage'> } => {
+): { id?: number; error?: ChangeError } => {
   const parentDirectory = path.dirname(instance.value[PATH])
   const isTopLevelFolderPath = parentDirectory === FILE_CABINET_PATH_SEPARATOR
   const parentAnnotation = instance.annotations[CORE_ANNOTATIONS.PARENT]
@@ -36,6 +36,8 @@ export const getParentInternalId = (
     if (!isTopLevelFolderPath) {
       return {
         error: {
+          elemID: instance.elemID,
+          severity: 'Error',
           message: missingParentMessage,
           detailedMessage: `Parent folder is required (in "${CORE_ANNOTATIONS.PARENT}") `
           + 'when trying to deploy a non top level folder or a file.',
@@ -47,6 +49,8 @@ export const getParentInternalId = (
   if (isTopLevelFolderPath) {
     return {
       error: {
+        elemID: instance.elemID,
+        severity: 'Error',
         message: parentMismatchMessage,
         detailedMessage: `Top level folder should not have a "${CORE_ANNOTATIONS.PARENT}" annotation. `
         + `Change the folder path to a non top level folder path or remove the "${CORE_ANNOTATIONS.PARENT}" annotation.`,
@@ -56,6 +60,8 @@ export const getParentInternalId = (
   if (!Array.isArray(parentAnnotation) || parentAnnotation.length !== 1) {
     return {
       error: {
+        elemID: instance.elemID,
+        severity: 'Error',
         message: missingParentMessage,
         detailedMessage: `The "${CORE_ANNOTATIONS.PARENT}" annotation should be a list with one item.`,
       },
@@ -69,6 +75,8 @@ export const getParentInternalId = (
   ) {
     return {
       error: {
+        elemID: instance.elemID,
+        severity: 'Error',
         message: missingParentMessage,
         detailedMessage: `Parent folder (in "${CORE_ANNOTATIONS.PARENT}") must be a reference to a folder`
         + `${typeof parentRef === 'string' ? ' , and not a path' : ''}. `
@@ -80,6 +88,8 @@ export const getParentInternalId = (
   if (parentDirectory !== parentRef.topLevelParent.value[PATH]) {
     return {
       error: {
+        elemID: instance.elemID,
+        severity: 'Error',
         message: parentMismatchMessage,
         detailedMessage: `The path folder (${parentDirectory}) doesn't match the path of the folder in `
         + `"${CORE_ANNOTATIONS.PARENT}" (${parentRef.topLevelParent.value[PATH]}).`,
@@ -91,6 +101,8 @@ export const getParentInternalId = (
     if (addedFolders && !addedFolders.has(parentDirectory)) {
       return {
         error: {
+          elemID: instance.elemID,
+          severity: 'Error',
           message: missingParentMessage,
           detailedMessage: `The parent folder (in "${CORE_ANNOTATIONS.PARENT}") has no internal ID. `
           + 'Try fetching and deploying again.',
@@ -116,17 +128,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
   const parentFolderChangeErrors = additionChanges
     .map(getChangeData)
     .filter(isFileCabinetInstance)
-    .map(instance => ({ instance, ...getParentInternalId(instance, addedFolders) }))
-    .map(({ instance, error }): ChangeError | undefined => (
-      error !== undefined
-        ? {
-          elemID: instance.elemID,
-          severity: 'Error',
-          message: error.message,
-          detailedMessage: error.detailedMessage,
-        }
-        : undefined
-    ))
+    .map(instance => getParentInternalId(instance, addedFolders).error)
     .filter(values.isDefined)
 
   const missingInternalIdChangeErrors = removalsOrModifications

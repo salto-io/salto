@@ -15,9 +15,10 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange, toChange, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, getChangeData, isAdditionChange, toChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { getParents } from '@salto-io/adapter-utils'
 import { ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
@@ -47,7 +48,7 @@ const isRulesResponse = (values: unknown): values is PolicyRule[] => {
   return true
 }
 
-const getDefaultPolicyRuleId = async (
+const getDefaultPolicyRuleEntry = async (
   policyId: string,
   client: OktaClient,
 ): Promise<PolicyRule> => {
@@ -90,12 +91,12 @@ const deployDefaultPolicy = async (
   config: OktaConfig,
 ): Promise<void> => {
   const defaultRuleInstance = getChangeData(change)
-  const parentPolicyId = defaultRuleInstance.annotations[CORE_ANNOTATIONS.PARENT]?.[0]?.id
+  const parentPolicyId = getParents(defaultRuleInstance)?.[0]?.id
   if (parentPolicyId === undefined) {
-    log.error(`Error while trying to get parent id for poilcy rule ${defaultRuleInstance.elemID.getFullName()}`)
+    log.error(`Error while trying to get parent id for policy rule ${defaultRuleInstance.elemID.getFullName()}`)
     throw new Error(`Could not find parent policy id for policy rule ${defaultRuleInstance.elemID.name} from type ${defaultRuleInstance.elemID.typeName}`)
   }
-  const createdPolicyRuleEntry = await getDefaultPolicyRuleId(parentPolicyId, client)
+  const createdPolicyRuleEntry = await getDefaultPolicyRuleEntry(parentPolicyId, client)
   // Assign the id created by the service to the default policy rule
   defaultRuleInstance.value.id = createdPolicyRuleEntry.id
   const createdPolicyRuleInstance = getCreatedPolicyRuleInstance(createdPolicyRuleEntry, defaultRuleInstance, config)
@@ -116,10 +117,10 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-            && isAdditionChange(change)
-            && [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
-              .includes(getChangeData(change).elemID.typeName)
-            && getChangeData(change).value.system === true
+        && isAdditionChange(change)
+        && [ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME]
+          .includes(getChangeData(change).elemID.typeName)
+        && getChangeData(change).value.system === true
     )
 
     const deployResult = await deployChanges(

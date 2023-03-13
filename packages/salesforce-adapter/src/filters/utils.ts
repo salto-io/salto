@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { DescribeSObjectResult } from 'jsforce'
 import { Field as SObjField } from 'jsforce-types/describe-result'
@@ -36,7 +36,7 @@ import {
   KEY_PREFIX,
   MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, SALESFORCE_OBJECT_ID_FIELD, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS,
 } from '../constants'
-import { CustomField, JSONBool, SalesforceRecord } from '../client/types'
+import { JSONBool, SalesforceRecord } from '../client/types'
 import {
   metadataType,
   apiName,
@@ -45,13 +45,12 @@ import {
   isCustomObject,
   MetadataValues,
   isNameField,
-  getSObjectFieldElement, toCustomField,
+  getSObjectFieldElement,
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
-const { isDefined } = lowerdashValues
 
 const log = logger(module)
 
@@ -381,41 +380,31 @@ export const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord
     [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
   })
 
-export const createFieldValue = async (
+const createFieldFromSObjField = async (
   field: SObjField,
   objectName: string,
   objCompoundFieldNames: Record<string, string>,
   systemFields?: string[],
-): Promise<CustomField> => {
+  parent?: ObjectType,
+): Promise<Field> => {
   // temporary hack to maintain the current implementation of the code in transformer.ts
   // in the future we should change the implementation of getSObjectFieldElement to simply
   // create the values we need in the first place instead of having to go through toCustomField
-  const tmpObj = new ObjectType({ elemID: new ElemID('salesforce', objectName) })
-  const dummyField = getSObjectFieldElement(
-    tmpObj,
+  const parentType = parent ?? new ObjectType({ elemID: new ElemID('salesforce', objectName) })
+  return getSObjectFieldElement(
+    parentType,
     field,
     { apiName: objectName },
     objCompoundFieldNames,
     systemFields,
   )
-  const customField = await toCustomField(dummyField, false)
-  // continuation of the temporary hack, since toCustomField returns values with JS classes
-  // The "JSON.parse" part is done to get just the properties without the classes
-  // The "_.pickBy" is to avoid undefined values that cause things to crash down the line
-  // Using JSON.stringify and not safeJsonStringify for performance and because the values here
-  // were JSON initially and should be safe to convert back
-  const fieldValues = _.pickBy(
-    // eslint-disable-next-line no-restricted-syntax
-    JSON.parse(JSON.stringify(customField)),
-    isDefined,
-  )
-  return fieldValues as CustomField
 }
 
-export const getCustomFieldsFromDescribeResult = async (
+export const getFieldsFromDescribeResult = async (
   sobject: DescribeSObjectResult,
   systemFields?: string[],
-): Promise<CustomField[]> => {
+  parent?: ObjectType
+): Promise<Field[]> => {
   const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
     if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
       return nestedFields.some(field => field.name === NAME_FIELDS.SALUTATION)
@@ -438,6 +427,6 @@ export const getCustomFieldsFromDescribeResult = async (
   return Promise.all(
     sobject.fields
       .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
-      .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
+      .map(field => createFieldFromSObjField(field, sobject.name, objCompoundFieldNames, systemFields, parent))
   )
 }

@@ -13,17 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
+import { Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { FilterResult, RemoteFilterCreator } from '../../filter'
-import {
-  ensureSafeFilterFetch,
-} from '../utils'
-import {
-  API_NAME, SALESFORCE_OBJECT_ID_FIELD,
-} from '../../constants'
-import { getSObjectFieldElement } from '../../transformers/transformer'
+import { ensureSafeFilterFetch, getFieldsFromDescribeResult } from '../utils'
 import SalesforceClient from '../../client/client'
 import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../../tooling/types'
 import { createToolingObject } from '../../tooling/utils'
@@ -39,30 +33,13 @@ const createToolingObjectTypeFromDescribe = async (
   client: SalesforceClient,
   objectName: SupportedToolingObjectName,
 ): Promise<ToolingObjectType | undefined> => {
-  const { fields } = await client.describeToolingObject(objectName)
-
-  const [topLevelFields, nestedFields] = _.partition(
-    fields,
-    field => _.isNil(field.compoundFieldName)
-  )
-
-  const objCompoundFieldNames = _.mapValues(
-    _.groupBy(nestedFields, field => field.compoundFieldName),
-    (_nestedFields, compoundName) => compoundName,
-  )
-
+  const sobject = await client.describeToolingObject(objectName)
   const toolingType = createToolingObject(objectName)
-  const toolingFields = topLevelFields.map(sObjectField =>
-    getSObjectFieldElement(
-      toolingType,
-      sObjectField,
-      { [API_NAME]: objectName },
-      objCompoundFieldNames
-    ))
+  const fields = await getFieldsFromDescribeResult(sobject, undefined, toolingType)
+  const toolingFields = fields
     .map(field => Object.assign(field, { annotations: _.omitBy(field.annotations, _.isNil) }))
     .filter(isToolingField)
   toolingType.fields = keyBy(toolingFields, field => field.name)
-  toolingType.fields[SALESFORCE_OBJECT_ID_FIELD].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
   return toolingType
 }
 

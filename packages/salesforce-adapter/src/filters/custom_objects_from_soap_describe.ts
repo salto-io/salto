@@ -15,16 +15,46 @@
 */
 import _ from 'lodash'
 import { DescribeSObjectResult } from 'jsforce'
-import { collections } from '@salto-io/lowerdash'
-import { isInstanceElement, InstanceElement, Element } from '@salto-io/adapter-api'
+import { collections, values } from '@salto-io/lowerdash'
+import { isInstanceElement, InstanceElement, Element, Field } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { apiName } from '../transformers/transformer'
-import { isInstanceOfType, ensureSafeFilterFetch, getCustomFieldsFromDescribeResult } from './utils'
+import { apiName, toCustomField } from '../transformers/transformer'
+import {
+  isInstanceOfType,
+  ensureSafeFilterFetch,
+  getFieldsFromDescribeResult,
+} from './utils'
 import { createSkippedListConfigChangeFromError } from '../config_change'
+import { CustomField } from '../client/types'
 
 const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
+const { isDefined } = values
+
+const getCustomFieldsFromDescribeResult = async (
+  sobject: DescribeSObjectResult,
+  systemFields?: string[],
+): Promise<CustomField[]> => {
+  const createCustomField = async (dummyField: Field): Promise<CustomField> => {
+    const customField = await toCustomField(dummyField, false)
+    // continuation of the temporary hack, since toCustomField returns values with JS classes
+    // The "JSON.parse" part is done to get just the properties without the classes
+    // The "_.pickBy" is to avoid undefined values that cause things to crash down the line
+    // Using JSON.stringify and not safeJsonStringify for performance and because the values here
+    // were JSON initially and should be safe to convert back
+    const fieldValues = _.pickBy(
+      // eslint-disable-next-line no-restricted-syntax
+      JSON.parse(JSON.stringify(customField)),
+      isDefined,
+    )
+    return fieldValues as CustomField
+  }
+  const dummyFields = await getFieldsFromDescribeResult(sobject, systemFields)
+  return awu(dummyFields)
+    .map(createCustomField)
+    .toArray()
+}
 
 const addSObjectInformationToInstance = async (
   instance: InstanceElement,

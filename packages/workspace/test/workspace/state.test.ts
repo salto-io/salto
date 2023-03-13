@@ -175,12 +175,12 @@ describe('state', () => {
     it('updatePathIndex', async () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
-      const oneElement = [newElem, newField]
-      await state.updatePathIndex(oneElement, ['salesforce'])
+      const otherElements = [newElem, newField]
+      await state.updatePathIndex(otherElements, ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
       const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
       expect(index).toEqual(getElementsPathHints([newElem, elem]))
-      expect(topLevelIndex).toEqual(getElementsPathHints([newElem]))
+      expect(topLevelIndex).toEqual(getElementsPathHints([newElem, elem]))
     })
 
     it('clear should clear all data', async () => {

@@ -32,7 +32,7 @@ const { isDefined } = values
 const NETSUITE_MODULE_PREFIX = 'N/'
 const POSSIBLE_REFS = 'semanticReferences'
 const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${POSSIBLE_REFS}>("[^"]*"|'[^']*'))`, 'gm')
-const amdConfigRegex = new RegExp(`@NAmdConfig (?<${POSSIBLE_REFS}>.*)`, 'gm')
+const amdConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${POSSIBLE_REFS}>.*)`, 'gm')
 
 const getServiceIdsToElemIds = async (
   element: Element,

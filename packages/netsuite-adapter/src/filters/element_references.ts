@@ -30,10 +30,9 @@ import { getGroupItemFromRegex } from '../client/sdf_client'
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const NETSUITE_MODULE_PREFIX = 'N/'
-const SEMANTIC_REFS = 'semanticReferences'
-// TODO: remove this if not used later
-// const syntacticReferenceRegex = new RegExp(`define\\(\\[((['\\"])(?<${SYNTACTIC_REFS}>[^\\2\\]]*)\\2)+\\]`, 'gm')
-const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${SEMANTIC_REFS}>("[^"]*"|'[^']*'))`, 'gm')
+const POSSIBLE_REFS = 'semanticReferences'
+const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${POSSIBLE_REFS}>("[^"]*"|'[^']*'))`, 'gm')
+const amdConfigRegex = new RegExp(`@NAmdConfig (?<${POSSIBLE_REFS}>.*)`, 'gm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -120,7 +119,7 @@ const isFilePath = (path: string): boolean =>
   osPath.extname(osPath.basename(path)) !== ''
 
 const resolveRelativePath = (absolutePath: string | undefined, relativePath: string): string | undefined =>
-  (isDefined(absolutePath) ? osPath.resolve(absolutePath, relativePath) : undefined)
+  (isDefined(absolutePath) ? osPath.resolve(osPath.dirname(absolutePath), relativePath) : undefined)
 
 const updateDependenciesToAdd = (
   dependenciesToAdd: ElemID[],
@@ -130,8 +129,7 @@ const updateDependenciesToAdd = (
   element: InstanceElement,
 ): void =>
   foundReferences
-    // TODO: file path function doesnt work, fix it
-    .map(ref => (isFilePath(ref) ? resolveRelativePath(element?.path?.join(osPath.sep), ref) : ref))
+    .map(ref => (isFilePath(ref) ? resolveRelativePath(element.value?.path, ref) : ref))
     .filter(isDefined)
     .forEach(ref => {
       const serviceIdRecord = fetchedElementsServiceIdToElemID[ref] ?? elementsSourceServiceIdToElemID[ref]
@@ -149,14 +147,15 @@ const getSuiteScriptReferences = async (
 ): Promise<void> => {
   const content = (await element.value.content.getContent()).toString()
   if (isDefined(content)) {
-    const potentialReferences = getGroupItemFromRegex(content, semanticReferenceRegex, SEMANTIC_REFS)
-      .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+    const amdConfigReferences = getGroupItemFromRegex(content, amdConfigRegex, POSSIBLE_REFS)
+    const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, POSSIBLE_REFS)
       .map(semanticRef => semanticRef.slice(1, -1))
-    if (potentialReferences) {
-      // TODO: handle found paths in semantic refs
+      .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+      .concat(amdConfigReferences)
+    if (semanticReferences) {
       updateDependenciesToAdd(
         dependenciesToAdd,
-        potentialReferences,
+        semanticReferences,
         fetchedElementsServiceIdToElemID,
         elementsSourceServiceIdToElemID,
         element

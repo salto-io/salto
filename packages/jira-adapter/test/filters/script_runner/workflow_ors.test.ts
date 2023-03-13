@@ -14,23 +14,21 @@
 * limitations under the License.
 */
 import { filterUtils } from '@salto-io/adapter-components'
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getFilterParams, mockClient } from '../../utils'
-import orFilter, { OR_FIELDS } from '../../../src/filters/script_runner/workflow_ors'
+import { createEmptyType, getFilterParams, mockClient } from '../../utils'
+import orFilter, { OR_FIELDS } from '../../../src/filters/script_runner/workflow_lists_parsing'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
-
+const REDUCED_OR_FIELDS = OR_FIELDS.filter(field => field !== 'FIELD_LINK_DIRECTION')
 describe('ScriptRunner ors in DC', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterCloud: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
 
-  const workflowType = new ObjectType({
-    elemID: new ElemID('jira', WORKFLOW_TYPE_NAME),
-  })
+  const workflowType = createEmptyType(WORKFLOW_TYPE_NAME)
 
   beforeEach(() => {
     const config = _.cloneDeep(getDefaultConfig({ isDataCenter: true }))
@@ -77,13 +75,18 @@ describe('ScriptRunner ors in DC', () => {
   })
   describe('fetch', () => {
     it('should replace all field ors to arrays', async () => {
-      OR_FIELDS.forEach(field => {
-        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'reporter|||assignee'
+      REDUCED_OR_FIELDS.forEach(field => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration[field] = 'assignee|||reporter'
       })
       await filter.onFetch([instance])
-      OR_FIELDS.forEach(field => {
-        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual(['reporter', 'assignee'])
+      REDUCED_OR_FIELDS.forEach(field => {
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual(['assignee', 'reporter'])
       })
+    })
+    it('should sort the order of the fields', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
+      await filter.onFetch([instance])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual(['assignee', 'reporter'])
     })
     it('should insert single value to array', async () => {
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter'
@@ -95,17 +98,17 @@ describe('ScriptRunner ors in DC', () => {
       await filter.onFetch([instance])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.a).toEqual('reporter|||assignee')
     })
-    it('should not decode if script runner not supported', async () => {
+    it('should not replace if script runner not supported', async () => {
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filterOff.onFetch([instance])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual('reporter|||assignee')
     })
-    it('should not decode if not data center', async () => {
+    it('should not replace if not data center', async () => {
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filterCloud.onFetch([instance])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual('reporter|||assignee')
     })
-    it('should not decode if wrong type', async () => {
+    it('should not replace if wrong type', async () => {
       instance.value.transitions[0].rules.postFunctions[1] = {
         type: 'other',
         configuration: {
@@ -118,11 +121,11 @@ describe('ScriptRunner ors in DC', () => {
   })
   describe('pre deploy', () => {
     it('should replace arrays to ors', async () => {
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         instance.value.transitions[0].rules.postFunctions[0].configuration[field] = ['reporter', 'assignee']
       })
       await filter.preDeploy([toChange({ after: instance })])
-      OR_FIELDS.forEach(field => {
+      REDUCED_OR_FIELDS.forEach(field => {
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration[field]).toEqual('reporter|||assignee')
       })
     })
@@ -131,7 +134,7 @@ describe('ScriptRunner ors in DC', () => {
     it('should replace ors to arrays', async () => {
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS = 'reporter|||assignee'
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual(['reporter', 'assignee'])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SELECTED_FIELDS).toEqual(['assignee', 'reporter'])
     })
   })
 })

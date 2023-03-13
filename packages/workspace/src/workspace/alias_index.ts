@@ -55,14 +55,6 @@ const getChangedFields = (change: ModificationChange<ObjectType>): Change<Elemen
     .concat(removedFields.map(field => toChange({ before: field })))
 }
 
-// const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
-//   const element = getChangeData(change)
-//   const fieldsNames = isObjectType(element)
-//     ? element.getFieldsElemIDsFullName()
-//     : []
-//   return [element.elemID.getFullName(), ...fieldsNames]
-// }
-
 const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
   changes.flatMap((change):Change<Element> | Change<Element>[] | undefined => {
     if (isModificationChange(change)) {

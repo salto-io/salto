@@ -15,7 +15,7 @@
 */
 import {
   CORE_ANNOTATIONS,
-  Element, InstanceElement,
+  Element, ElemID, INSTANCE_ANNOTATIONS, InstanceElement,
   isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -400,9 +400,10 @@ const aliasMap: Record<string, AliasData> = {
   },
 }
 
-const isAnnotation = (field: string): boolean => Object.values(CORE_ANNOTATIONS).includes(field?.split('.')[0])
+const isInstanceAnnotation = (field: string): boolean =>
+  Object.values(INSTANCE_ANNOTATIONS).includes(field?.split(ElemID.NAMESPACE_SEPARATOR)[0])
 
-const isValidAlias = (aliasParts: (string|undefined)[], instance: InstanceElement): boolean =>
+const isValidAlias = (aliasParts: (string | undefined)[], instance: InstanceElement): boolean =>
   aliasParts.every((val, index) => {
     if (val === undefined) {
       log.debug(`for instance ${instance.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
@@ -411,29 +412,34 @@ const isValidAlias = (aliasParts: (string|undefined)[], instance: InstanceElemen
     return true
   })
 
-const getFieldVal = ({ instance, component, field, instById }:{
+const getFieldVal = ({ instance, component, elementPart, instById }:{
   instance: InstanceElement
   component: AliasComponent
-  field: 'value'|'annotations'
+  elementPart: 'value'|'annotations'
   instById: Record<string, InstanceElement>
 }): string | undefined => {
-  const potentialRef = _.get(instance[field], component.fieldName)
+  const fieldValue = _.get(instance[elementPart], component.fieldName)
   if (component.referenceFieldName === undefined) {
-    return potentialRef
+    return fieldValue
   }
-  if (!isReferenceExpression(potentialRef)) {
+  if (!isReferenceExpression(fieldValue)) {
     log.error(`${component.fieldName} is treated as a reference expression but it is not`)
     return undefined
   }
-  const referencedInstance = instById[potentialRef.elemID.getFullName()]
+  const referencedInstance = instById[fieldValue.elemID.getFullName()]
   if (referencedInstance === undefined) {
-    log.error(`could not find ${potentialRef.elemID.getFullName()} in instById`)
+    log.error(`could not find ${fieldValue.elemID.getFullName()} in instById`)
     return undefined
   }
-  return isAnnotation(component.referenceFieldName)
+  return isInstanceAnnotation(component.referenceFieldName)
     ? _.get(referencedInstance.annotations, component.referenceFieldName)
     : _.get(referencedInstance.value, component.referenceFieldName)
 }
+
+const isConstantComponent = (component: AliasComponent | ConstantComponent): component is ConstantComponent => 'constant' in component
+
+const isAliasComponent = (component: AliasComponent | ConstantComponent): component is AliasComponent => 'fieldName' in component
+
 
 const calculateAlias = (
   instance: InstanceElement, instById: Record<string, InstanceElement>,
@@ -443,13 +449,13 @@ const calculateAlias = (
   const separator = aliasMap[currentType].separator ?? ' '
   const aliasParts = aliasComponents
     .map(component => {
-      if ('constant' in component) {
+      if (isConstantComponent(component)) {
         return component.constant
       }
-      if (('fieldName' in component) && isAnnotation(component.fieldName)) {
-        return getFieldVal({ instance, component, field: 'annotations', instById })
+      if (isAliasComponent(component) && isInstanceAnnotation(component.fieldName)) {
+        return getFieldVal({ instance, component, elementPart: 'annotations', instById })
       }
-      return getFieldVal({ instance, component, field: 'value', instById })
+      return getFieldVal({ instance, component, elementPart: 'value', instById })
     })
   if (!isValidAlias(aliasParts, instance)) {
     return undefined

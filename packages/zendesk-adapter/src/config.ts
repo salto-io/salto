@@ -2613,7 +2613,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
           includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
-          addAlias: { refType: BuiltinTypes.BOOLEAN },
+          addAlias: { refType: BuiltinTypes.BOOLEAN }, // SALTO-3662 this flag should become true by default
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },

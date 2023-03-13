@@ -76,32 +76,36 @@ const changeValidator: ChangeValidator = async changes => {
     .filter(async obj => !isCustom(await apiName(getChangeData(obj))))
     .toArray()
 
-  const standardFieldAdditions = await awu(standardFieldChanges)
+  const standardFieldAdditionErrors = await awu(standardFieldChanges)
     .filter(isAdditionChange)
     .map(getChangeData)
     .map(createFieldAdditionChangeError)
     .toArray()
 
-  const standardObjectAdditions = await awu(standardObjectChanges)
+  const standardObjectAdditionErrors = await awu(standardObjectChanges)
     .filter(isAdditionChange)
     .map(getChangeData)
     .map(createObjectAdditionChangeError)
     .toArray()
 
-  const standardFieldRemovals = await awu(standardFieldChanges)
+  const standardFieldRemovalErrors = await awu(standardFieldChanges)
     .filter(isRemovalChange)
     .map(getChangeData)
     .map(createFieldRemovalChangeError)
     .toArray()
 
-  const standardObjectRemovals = await awu(standardObjectChanges)
+  const standardObjectRemovalErrors = await awu(standardObjectChanges)
     .filter(isRemovalChange)
     .map(getChangeData)
     .map(createObjectRemovalChangeError)
     .toArray()
 
-  return [...standardFieldAdditions, ...standardObjectAdditions,
-    ...standardFieldRemovals, ...standardObjectRemovals]
+  return [
+    ...standardFieldAdditionErrors,
+    ...standardObjectAdditionErrors,
+    ...standardFieldRemovalErrors,
+    ...standardObjectRemovalErrors,
+  ]
 }
 
 export default changeValidator

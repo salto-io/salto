@@ -571,13 +571,13 @@ export default class ZendeskAdapter implements AdapterOperations {
       if (isCurrentUserResponse(res)) {
         if (res.user.locale !== 'en-US') {
           return {
-            message: 'You are fetching zendesk with a user whose local is set to a non-English language. This may affect Salto\'s behavior in some cases. Therefore, its highly recommended to set the user language to English or create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change Zendesk users’ language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support',
+            message: 'You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto\'s behavior in some cases. Therefore, it is highly recommended to set the user\'s language to "English (United States)" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user\'s language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support',
             severity: 'Warning',
           }
         }
         return undefined
       }
-      log.error('could not verify fetching users locale is set to en-US. received invalid response')
+      log.error('could not verify fetching user\'s locale is set to en-US. received invalid response')
     } catch (e) {
       log.error(`could not verify fetching user's locale is set to en-US'. error: ${e}`)
     }

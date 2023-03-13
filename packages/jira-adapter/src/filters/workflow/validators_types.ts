@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
-import { JIRA } from '../../constants'
+import { JIRA, VALIDATOR_CONFIGURATION } from '../../constants'
 
 const statusRef = new ObjectType({
   elemID: new ElemID(JIRA, 'StatusRef'),
@@ -26,7 +26,7 @@ const statusRef = new ObjectType({
 })
 
 const validatorConfigurationType = new ObjectType({
-  elemID: new ElemID(JIRA, 'ValidatorConfiguration'),
+  elemID: new ElemID(JIRA, VALIDATOR_CONFIGURATION),
   fields: {
     comparator: {
       refType: BuiltinTypes.STRING,
@@ -84,9 +84,29 @@ const validatorConfigurationType = new ObjectType({
       refType: BuiltinTypes.BOOLEAN,
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },
+    FIELD_FORM_FIELD: {
+      refType: BuiltinTypes.STRING,
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
+    FIELD_TEXT_FIELD: {
+      refType: BuiltinTypes.STRING,
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
     username: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_FIELD_IDS: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
+    FIELD_REQUIRED_FIELDS: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
+    FIELD_USER_IN_FIELDS: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+    },
   },
-  path: [JIRA, elements.TYPES_PATH, 'ValidatorConfiguration'],
+  path: [JIRA, elements.TYPES_PATH, VALIDATOR_CONFIGURATION],
 })
 
 export const validatorType = new ObjectType({

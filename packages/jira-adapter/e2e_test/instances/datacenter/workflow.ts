@@ -133,15 +133,13 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'com.onresolve.jira.groovy.GroovyFunctionPlugin',
             configuration: {
-              FIELD_SECURITY_LEVEL_ID: '10000',
+              FIELD_SECURITY_LEVEL_ID: createReference(new ElemID(JIRA, 'SecurityLevel', 'instance', 'test__test'), allElements),
               FIELD_FUNCTION_ID: '8b6dfd6d-d46a-49ba-9dab-fe2ca70c2911',
               FIELD_NOTES: 'Post17',
               'full.module.key': 'com.onresolve.jira.groovy.groovyrunnerscriptrunner-workflow-function-com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
               'canned-script': 'com.onresolve.scriptrunner.canned.jira.workflow.postfunctions.SetIssueSecurity',
               FIELD_CONDITION: {
                 script: 'issue.projectObject.key == XYZ17',
-                parameters: {
-                },
               },
             },
           },

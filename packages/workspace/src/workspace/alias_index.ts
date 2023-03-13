@@ -70,6 +70,7 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
           return toChange({ after: change.data.after })
         }
       }
+
       // any other modification
       return undefined // the relevant modification changes are added as addition changes
     }

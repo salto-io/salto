@@ -17,45 +17,53 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
-import changeValidator from '../../src/change_validators/standard_field_or_object_addition'
+import changeValidator from '../../src/change_validators/standard_field_or_object_additions_or_deletions'
 
-describe('Adding or removing standard objects and fields', () => {
+describe('standardCustomFieldOrObject Change Validator', () => {
   describe('Addition or removal of standard object', () => {
-    it('should have error for standard object creation', async () => {
+    it('should have error for standard object addition', async () => {
       const standardObjectAdditionChange = toChange({ after: mockTypes.Account })
       const changeErrors = await changeValidator([standardObjectAdditionChange])
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(mockTypes.Account.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: mockTypes.Account.elemID,
+          severity: 'Error',
+        }),
+      ])
     })
 
     it('should have error for standard object removals', async () => {
       const standardObjectRemovalChange = toChange({ before: mockTypes.Account })
       const changeErrors = await changeValidator([standardObjectRemovalChange])
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(mockTypes.Account.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: mockTypes.Account.elemID,
+          severity: 'Error',
+        }),
+      ])
     })
   })
   describe('Addition or removal of standard field', () => {
     it('should have error for standard field additions', async () => {
       const standardFieldAdditionChange = toChange({ after: mockTypes.Account.fields.Name })
       const changeErrors = await changeValidator([standardFieldAdditionChange])
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(mockTypes.Account.fields.Name.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: mockTypes.Account.fields.Name.elemID,
+          severity: 'Error',
+        }),
+      ])
     })
 
     it('should have error for standard field removals', async () => {
       const standardFieldRemovalChange = toChange({ before: mockTypes.Account.fields.Name })
       const changeErrors = await changeValidator([standardFieldRemovalChange])
-      expect(changeErrors).toHaveLength(1)
-      const [changeError] = changeErrors
-      expect(changeError.elemID).toEqual(mockTypes.Account.fields.Name.elemID)
-      expect(changeError.severity).toEqual('Error')
+      expect(changeErrors).toEqual([
+        expect.objectContaining({
+          elemID: mockTypes.Account.fields.Name.elemID,
+          severity: 'Error',
+        }),
+      ])
     })
   })
 })

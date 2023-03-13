@@ -21,77 +21,81 @@ import {
   isRemovalChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { apiName, isCustom } from '../transformers/transformer'
+import { apiName, isCustom, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
 
-const isStandardFieldChange = (change: Change<Field>): boolean =>
-  (!isCustom(getChangeData(change).elemID.getFullName()))
+const isCustomFieldChange = async (change: Change<Field>): Promise<boolean> =>
+  (isFieldOfCustomObject(getChangeData(change)))
 
-const isStandardObjectChange = (change: Change<ObjectType>): boolean =>
-  (!isCustom(getChangeData(change).elemID.getFullName()))
+const isCustomObjectChange = async (change: Change<ObjectType>): Promise<boolean> =>
+  (isCustomObject(getChangeData(change)))
 
 const createFieldAdditionChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
-  message: 'Cannot create a standard field',
-  detailedMessage: `The standard field ${field.name} of type ${field.parent} does not exist in your organization. Please make sure you have the required enabled settings to manage this field.`,
+  message: 'Standard field does not exist in target organization',
+  detailedMessage: `The standard field ${field.name} of type ${field.parent} does not exist in your target organization. It is not possible to create a standard field through the API. You may need additional feature licenses.`,
 })
 
-const createObjectAdditionChangeError = (objectType: ObjectType): ChangeError => ({
+const createObjectAdditionChangeError = async (objectType: ObjectType): Promise<ChangeError> => ({
   elemID: objectType.elemID,
   severity: 'Error',
-  message: 'Cannot create a standard object',
-  detailedMessage: `The standard object ${apiName(objectType)} does not exist in your org.  Please make sure you have the required enabled settings to manage this object.`,
+  message: 'Standard object does not exist in target organization',
+  detailedMessage: `The standard object ${await apiName(objectType)} does not exist in your target organization.  You cannot create a standard object through the API. You may need additional feature licenses.`,
 })
 
 const createFieldRemovalChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Cannot delete a standard field',
-  detailedMessage: `Deletion of standard field ${field.name} is forbidden.`,
+  detailedMessage: `Deletion of standard field ${field.name} through the API is forbidden.`,
 })
 
-const createObjectRemovalChangeError = (objectType: ObjectType): ChangeError => ({
+const createObjectRemovalChangeError = async (objectType: ObjectType): Promise<ChangeError> => ({
   elemID: objectType.elemID,
   severity: 'Error',
   message: 'Cannot delete a standard object',
-  detailedMessage: `Deletion of standard object ${apiName(objectType)} is forbidden.`,
+  detailedMessage: `Deletion of standard object ${await apiName(objectType)} through the API is forbidden.`,
 })
 
 /**
  * It is forbidden to create standard fields or objects.
  */
 const changeValidator: ChangeValidator = async changes => {
-  const standardFieldAdditions = await awu(changes)
-    .filter(isAdditionChange)
+  const standardFieldChanges = await awu(changes)
     .filter(isFieldChange)
-    .filter(isStandardFieldChange)
+    .filter(isCustomFieldChange)
+    .filter(async field => !isCustom(await apiName(getChangeData(field))))
+    .toArray()
+
+  const standardObjectChanges = await awu(changes)
+    .filter(isObjectTypeChange)
+    .filter(isCustomObjectChange)
+    .filter(async obj => !isCustom(await apiName(getChangeData(obj))))
+    .toArray()
+
+  const standardFieldAdditions = await awu(standardFieldChanges)
+    .filter(isAdditionChange)
     .map(getChangeData)
     .map(createFieldAdditionChangeError)
     .toArray()
 
-  const standardObjectAdditions = await awu(changes)
+  const standardObjectAdditions = await awu(standardObjectChanges)
     .filter(isAdditionChange)
-    .filter(isObjectTypeChange)
-    .filter(isStandardObjectChange)
     .map(getChangeData)
     .map(createObjectAdditionChangeError)
     .toArray()
 
-  const standardFieldRemovals = await awu(changes)
+  const standardFieldRemovals = await awu(standardFieldChanges)
     .filter(isRemovalChange)
-    .filter(isFieldChange)
-    .filter(isStandardFieldChange)
     .map(getChangeData)
     .map(createFieldRemovalChangeError)
     .toArray()
 
-  const standardObjectRemovals = await awu(changes)
+  const standardObjectRemovals = await awu(standardObjectChanges)
     .filter(isRemovalChange)
-    .filter(isObjectTypeChange)
-    .filter(isStandardObjectChange)
     .map(getChangeData)
     .map(createObjectRemovalChangeError)
     .toArray()

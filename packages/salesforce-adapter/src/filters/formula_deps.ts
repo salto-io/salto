@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
@@ -76,9 +75,16 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
 )
 
 const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
-  const isValidReference = (elemId: ElemID): boolean => (
-    allElements.get(elemId) !== undefined
-  )
+  const isValidReference = async (elemId: ElemID): Promise<boolean> => {
+    if (elemId.idType === 'type' || elemId.idType === 'instance') {
+      return await allElements.get(elemId) !== undefined
+    }
+
+    // field
+    const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
+    const typeElement = await allElements.get(typeElemId)
+    return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
+  }
 
   const logInvalidReferences = (
     invalidReferences: ElemID[],
@@ -129,7 +135,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const [validReferences, invalidReferences] = _.partition(references, isValidReference)
+    const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
     logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
     log.info(`Extracted ${validReferences.length} valid references`)

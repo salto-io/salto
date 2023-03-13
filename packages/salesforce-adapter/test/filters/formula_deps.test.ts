@@ -14,13 +14,21 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, ElemID, ObjectType, PrimitiveType, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  ElemID,
+  InstanceElement,
+  ObjectType,
+  PrimitiveType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { FlatDetailedDependency } from '@salto-io/adapter-utils'
 import formulaDepsFilter from '../../src/filters/formula_deps'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
-import { formulaTypeName, Types } from '../../src/transformers/transformer'
+import { createInstanceElement, formulaTypeName, Types } from '../../src/transformers/transformer'
 import { FIELD_TYPE_NAMES, FORMULA, SALESFORCE } from '../../src/constants'
+import { mockTypes } from '../mock_elements'
 
 const depNameToRefExpr = (typeName: string, fieldName: string|undefined = undefined): FlatDetailedDependency => {
   const additionalParams = fieldName ? [fieldName] : []
@@ -44,6 +52,7 @@ describe('Formula dependencies', () => {
   let filter: FilterWith<'onFetch'>
   let typeWithFormula: ObjectType
   let referredTypes: ObjectType[]
+  let referredInstances: InstanceElement[]
   let featureEnabledQuery: jest.SpyInstance
 
   beforeAll(() => {
@@ -84,7 +93,16 @@ describe('Formula dependencies', () => {
           ParentId: {
             refType: BuiltinTypes.SERVICE_ID_NUMBER,
           },
+          RecordTypeId: {
+            refType: BuiltinTypes.SERVICE_ID_NUMBER,
+          },
         },
+      })
+    const someCustomMetadataType = customObjectTypeWithFields('Trigger_Context_Status__mdt',
+      {
+        Enable_After_Delete__c: BuiltinTypes.BOOLEAN,
+        Enable_After_Insert__c: BuiltinTypes.BOOLEAN,
+        DeveloperName: BuiltinTypes.STRING,
       })
     referredTypes = [
       customObjectTypeWithFields('Contact',
@@ -93,12 +111,7 @@ describe('Formula dependencies', () => {
           AssistantName: BuiltinTypes.STRING,
           CreatedById: BuiltinTypes.SERVICE_ID_NUMBER,
         }),
-      customObjectTypeWithFields('Trigger_Context_Status__mdt',
-        {
-          Enable_After_Delete__c: BuiltinTypes.BOOLEAN,
-          Enable_After_Insert__c: BuiltinTypes.BOOLEAN,
-          DeveloperName: BuiltinTypes.STRING,
-        }),
+      someCustomMetadataType,
       customObjectTypeWithFields('User',
         {
           ContactId: BuiltinTypes.SERVICE_ID_NUMBER,
@@ -114,8 +127,14 @@ describe('Formula dependencies', () => {
       customObjectTypeWithFields('Opportunity__r', { Related_Asset__c: BuiltinTypes.SERVICE_ID_NUMBER }),
       customObjectTypeWithFields('Organization', { UiSkin: BuiltinTypes.SERVICE_ID_NUMBER }),
       customObjectTypeWithFields('Profile', { Id: BuiltinTypes.SERVICE_ID_NUMBER }),
+      customObjectTypeWithFields('RecordType', { Name: BuiltinTypes.STRING }),
       customObjectTypeWithFields('Related_Asset__r', { Name: BuiltinTypes.STRING }),
       customObjectTypeWithFields('SRM_API_Metadata_Client_Setting__mdt', { CreatedDate: BuiltinTypes.STRING }),
+    ]
+    referredInstances = [
+      createInstanceElement({ fullName: 'Details' }, mockTypes.CustomLabel),
+      createInstanceElement({ fullName: 'Trigger_Context_Status.by_class' }, someCustomMetadataType),
+      createInstanceElement({ fullName: 'Trigger_Context_Status.by_handler' }, someCustomMetadataType),
     ]
   })
 
@@ -149,11 +168,17 @@ describe('Formula dependencies', () => {
       expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField__c'))
     })
     it('Should return a Metadata Type Record field reference as a dependency', async () => {
-      const elements = [typeWithFormula.clone()]
-      elements[0].fields.someFormulaField__c.annotations[FORMULA] = '$CustomMetadata.SomeCustomMetadataType__mdt.SomeCustomMetadataTypeRecord.SomeTextField__c'
+      const customMetadataType = customObjectTypeWithFields('SomeCustomMetadataType__mdt', { SomeTextField__c: BuiltinTypes.STRING })
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = '$CustomMetadata.SomeCustomMetadataType__mdt.SomeCustomMetadataTypeRecord.SomeTextField__c'
+      const elements = [
+        typeUnderTest,
+        customMetadataType,
+        createInstanceElement({ fullName: 'SomeCustomMetadataType.SomeCustomMetadataTypeRecord' }, customMetadataType),
+      ]
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
-      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
 
       const expectedRefs = [
@@ -169,17 +194,30 @@ describe('Formula dependencies', () => {
       ]
       expect(deps).toEqual(expectedRefs)
     })
+    it('should not return a reference if it refers to something that doesn\'t exist', async () => {
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = 'ISBLANK(someField__c) && ISBLANK(GarbageType.DreckField)'
+
+      await filter.onFetch([typeUnderTest])
+      // eslint-disable-next-line no-underscore-dangle
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps).toBeDefined()
+      expect(deps).toHaveLength(2)
+      expect(deps[0].reference.elemID.typeName).not.toEqual('GarbageType')
+      expect(deps[1].reference.elemID.typeName).not.toEqual('GarbageType')
+    })
   })
 
   describe('When referencing RecordType', () => {
     it('should extract the correct dependencies', async () => {
-      const elements = [typeWithFormula.clone(), ...referredTypes]
-      elements[0].fields.someFormulaField__c.annotations[FORMULA] = `IF( RecordType.Name = 'New Sale', 'Onboarding - New',
+      const typeUnderTest = typeWithFormula.clone()
+      const elements = [typeUnderTest, ...referredTypes, ...referredInstances]
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = `IF( RecordType.Name = 'New Sale', 'Onboarding - New',
         IF( RecordType.Name = 'Upgrade', 'Onboarding - Upgrade',
           IF( RecordType.Name = 'Add-On', 'Onboarding - Add-On', "")))`
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
-      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
       expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
       expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'RecordTypeId'))
@@ -228,22 +266,24 @@ describe('Formula dependencies', () => {
       'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId', 'salesforce.original_lead__r',
       'salesforce.original_lead__r.field.ConvertedAccountId']
     it('Should extract the correct references from a complex standard formula', async () => {
-      const elements = [typeWithFormula.clone(), ...referredTypes]
-      elements[0].fields.someFormulaField__c.annotations[FORMULA] = standardFormula
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = standardFormula
+      const elements = [typeUnderTest, ...referredTypes, ...referredInstances]
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
-      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps.map((refExpr: {reference: ReferenceExpression}) => refExpr.reference.elemID.getFullName()))
+      expect(deps.map(({ reference }: {reference: ReferenceExpression}) => reference.elemID.getFullName()))
         .toEqual(standardFormulaExpectedRefs)
     })
 
     it('Should extract the correct references from a Process Builder formula', async () => {
-      const elements = [typeWithFormula.clone(), ...referredTypes]
-      elements[0].fields.someFormulaField__c.annotations[FORMULA] = processBuilderFormula
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = processBuilderFormula
+      const elements = [typeUnderTest, ...referredTypes, ...referredInstances]
       await filter.onFetch(elements)
       // eslint-disable-next-line no-underscore-dangle
-      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
       expect(deps.map((refExpr: {reference: ReferenceExpression}) => refExpr.reference.elemID.getFullName()))
         .toEqual(processBuilderFormulaExpectedRefs)

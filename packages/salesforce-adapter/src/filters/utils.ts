@@ -24,22 +24,35 @@ import {
 } from '@salto-io/adapter-api'
 import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
-import { chunks, collections } from '@salto-io/lowerdash'
+import { chunks, collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import Joi from 'joi'
+import { DescribeSObjectResult } from 'jsforce'
+import { Field as SObjField } from 'jsforce-types/describe-result'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
   KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, SALESFORCE_OBJECT_ID_FIELD,
+  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, SALESFORCE_OBJECT_ID_FIELD, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS,
 } from '../constants'
-import { JSONBool, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
+import { CustomField, JSONBool, SalesforceRecord } from '../client/types'
+import {
+  metadataType,
+  apiName,
+  defaultApiName,
+  Types,
+  isCustomObject,
+  MetadataValues,
+  isNameField,
+  getSObjectFieldElement, toCustomField,
+} from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
 const { weightedChunks } = chunks
+const { isDefined } = lowerdashValues
+
 const log = logger(module)
 
 const METADATA_VALUES_SCHEME = Joi.object({
@@ -367,3 +380,64 @@ export const omitDefaultKeys = (recordValue: SalesforceRecord): SalesforceRecord
     ..._.omit(recordValue, ['attributes']),
     [SALESFORCE_OBJECT_ID_FIELD]: recordValue[SALESFORCE_OBJECT_ID_FIELD],
   })
+
+export const createFieldValue = async (
+  field: SObjField,
+  objectName: string,
+  objCompoundFieldNames: Record<string, string>,
+  systemFields?: string[],
+): Promise<CustomField> => {
+  // temporary hack to maintain the current implementation of the code in transformer.ts
+  // in the future we should change the implementation of getSObjectFieldElement to simply
+  // create the values we need in the first place instead of having to go through toCustomField
+  const tmpObj = new ObjectType({ elemID: new ElemID('salesforce', objectName) })
+  const dummyField = getSObjectFieldElement(
+    tmpObj,
+    field,
+    { apiName: objectName },
+    objCompoundFieldNames,
+    systemFields,
+  )
+  const customField = await toCustomField(dummyField, false)
+  // continuation of the temporary hack, since toCustomField returns values with JS classes
+  // The "JSON.parse" part is done to get just the properties without the classes
+  // The "_.pickBy" is to avoid undefined values that cause things to crash down the line
+  // Using JSON.stringify and not safeJsonStringify for performance and because the values here
+  // were JSON initially and should be safe to convert back
+  const fieldValues = _.pickBy(
+    // eslint-disable-next-line no-restricted-syntax
+    JSON.parse(JSON.stringify(customField)),
+    isDefined,
+  )
+  return fieldValues as CustomField
+}
+
+export const getCustomFieldsFromDescribeResult = async (
+  sobject: DescribeSObjectResult,
+  systemFields?: string[],
+): Promise<CustomField[]> => {
+  const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
+    if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
+      return nestedFields.some(field => field.name === NAME_FIELDS.SALUTATION)
+        ? COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
+        : COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME_NO_SALUTATION
+    }
+    return compoundName
+  }
+
+  // Only fields with "child's" referring to a field as it's compoundField
+  // should be regarded as compound.
+  const objCompoundFieldNames = _.mapValues(
+    _.groupBy(
+      sobject.fields.filter(field => field.compoundFieldName !== undefined),
+      field => field.compoundFieldName,
+    ),
+    getCompoundTypeName,
+  )
+
+  return Promise.all(
+    sobject.fields
+      .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
+      .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
+  )
+}

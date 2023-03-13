@@ -74,6 +74,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
       await awu(Object.values(SupportedToolingObject))
+        .filter(objectName => config.fetchProfile.metadataQuery.isTypeMatch(objectName))
         .map(objectName => createToolingObjectTypeFromDescribe(client, objectName))
         .filter(isDefined)
         .forEach(toolingType => elements.push(toolingType))

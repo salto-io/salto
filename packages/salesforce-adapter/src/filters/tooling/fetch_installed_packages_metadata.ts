@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { isObjectType, Element } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../../filter'
 import { ensureSafeFilterFetch } from '../utils'
@@ -25,9 +25,15 @@ import {
 } from '../../tooling/types'
 import { SalesforceRecord } from '../../client/types'
 import { createToolingInstance, toolingFieldApiName, toolingObjectApiName } from '../../tooling/utils'
+import { ToolingObjectInfo } from '../../tooling/constants'
 
 const { awu, toArrayAsync } = collections.asynciterable
 
+
+const ID_FIELDS: types.NonEmptyArray<string> = [
+  ToolingObjectInfo.SubscriberPackage.Field.NamespacePrefix,
+  ToolingObjectInfo.SubscriberPackage.Field.Name,
+]
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch info about the installed packages'
 
 const getSubscriberPackageRecords = async (
@@ -45,7 +51,7 @@ const getSubscriberPackageRecords = async (
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
-  name: 'fetchSubscriberPackageInstancesFilter',
+  name: 'fetchInstalledPackagesMetadataFilter',
   onFetch: ensureSafeFilterFetch({
     filterName: 'tooling',
     warningMessage: WARNING_MESSAGE,
@@ -59,7 +65,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         return
       }
       await awu(await getSubscriberPackageRecords(subscriberPackageType, client))
-        .map(record => createToolingInstance(record, subscriberPackageType))
+        .map(record => createToolingInstance(record, subscriberPackageType, ID_FIELDS))
         .forEach(instance => elements.push(instance))
     },
   }),

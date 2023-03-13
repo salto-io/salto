@@ -78,7 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import fetchToolingTypesFilter from './filters/tooling/fetch_tooling_types'
-import subscriberPackageInstancesFilter from './filters/tooling/fetch_subscriber_package_instances'
+import fetchInstalledPackagesMetadataFilter from './filters/tooling/fetch_installed_packages_metadata'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
@@ -111,7 +111,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
   { creator: organizationWideDefaults, addsNewInformation: true },
   { creator: fetchToolingTypesFilter, addsNewInformation: true },
-  { creator: subscriberPackageInstancesFilter, addsNewInformation: true },
+  { creator: fetchInstalledPackagesMetadataFilter, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },

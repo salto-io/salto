@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { keyBy } from 'lodash'
+import _ from 'lodash'
 import { collections } from '../../src'
 
-const { makeArray, arrayOf, findDuplicates } = collections.array
+const { makeArray, arrayOf, findDuplicates, keyBy } = collections.array
 
 describe('array', () => {
   describe('makeArray', () => {

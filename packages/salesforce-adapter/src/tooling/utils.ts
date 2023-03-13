@@ -16,12 +16,11 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { values } from '@salto-io/lowerdash'
+import { types, values } from '@salto-io/lowerdash'
 import { TOOLING_PATH, ToolingObjectAnnotation } from './constants'
 import { API_NAME, RECORDS_PATH, SALESFORCE } from '../constants'
 import { SupportedToolingObjectName, ToolingField, ToolingObjectType } from './types'
 import { SalesforceRecord } from '../client/types'
-import { DEFAULT_ID_FIELDS, ID_FIELDS_BY_TYPE } from './id_fields'
 import { omitDefaultKeys } from '../filters/utils'
 
 const { isDefined } = values
@@ -58,10 +57,10 @@ export const createToolingObject = (
 
 export const createToolingInstance = async (
   salesforceRecord: SalesforceRecord,
-  toolingObject: ToolingObjectType
+  toolingObject: ToolingObjectType,
+  idFields: types.NonEmptyArray<string>,
 ): Promise<InstanceElement> => {
   const typeName = toolingObjectApiName(toolingObject)
-  const idFields = ID_FIELDS_BY_TYPE[typeName] ?? DEFAULT_ID_FIELDS
   const instanceName = Object.values(_.pick(salesforceRecord, idFields))
     .filter(isDefined)
     .join('_')

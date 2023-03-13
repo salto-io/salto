@@ -15,6 +15,7 @@
 */
 import { CORE_ANNOTATIONS, Element } from '@salto-io/adapter-api'
 import { DescribeSObjectResult } from 'jsforce'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
 import { SalesforceClient } from '../../../index'
 import filterCreator from '../../../src/filters/tooling/fetch_tooling_types'
 import mockClient from '../../client'
@@ -155,26 +156,50 @@ describe('fetchToolingTypesFilter', () => {
     beforeEach(async () => {
       client = mockClient().client
       jest.spyOn(client, 'describeToolingObject').mockResolvedValue(DESCRIBE_RESULT)
-      const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       elements = []
-      await filter.onFetch(elements)
     })
 
-    it('should create ObjectType per supported tooling type', () => {
-      expect(elements.length).toEqual(Object.keys(SupportedToolingObject).length)
-      Object.keys(SupportedToolingObject).forEach(toolingObjectName => {
-        expect(elements).toContainEqual(expect.objectContaining({
-          elemID: expect.objectContaining({ typeName: toolingObjectName }),
-          path: [...TOOLING_PATH, toolingObjectName],
-          fields: expect.toContainAllKeys(FIELD_NAMES),
-          annotations: expect.objectContaining({
-            [CORE_ANNOTATIONS.CREATABLE]: false,
-            [CORE_ANNOTATIONS.UPDATABLE]: false,
-            [CORE_ANNOTATIONS.DELETABLE]: false,
-            [API_NAME]: toolingObjectName,
-            [ToolingObjectAnnotation.isToolingObject]: true,
+    describe('when ToolingObject type is not excluded from the config', () => {
+      beforeEach(async () => {
+        const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+        await filter.onFetch(elements)
+      })
+
+      it('should create ObjectType per supported tooling type', () => {
+        expect(elements.length).toEqual(Object.keys(SupportedToolingObject).length)
+        Object.keys(SupportedToolingObject).forEach(toolingObjectName => {
+          expect(elements).toContainEqual(expect.objectContaining({
+            elemID: expect.objectContaining({ typeName: toolingObjectName }),
+            path: [...TOOLING_PATH, toolingObjectName],
+            fields: expect.toContainAllKeys(FIELD_NAMES),
+            annotations: expect.objectContaining({
+              [CORE_ANNOTATIONS.CREATABLE]: false,
+              [CORE_ANNOTATIONS.UPDATABLE]: false,
+              [CORE_ANNOTATIONS.DELETABLE]: false,
+              [API_NAME]: toolingObjectName,
+              [ToolingObjectAnnotation.isToolingObject]: true,
+            }),
+          }))
+        })
+      })
+    })
+
+    describe('when all the supported tooling types are excluded from the config', () => {
+      beforeEach(async () => {
+        const filterContext = {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            metadata: {
+              exclude: Object.keys(SupportedToolingObject)
+                .map(typeName => ({ metadataType: typeName })),
+            },
           }),
-        }))
+        }
+        const filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>
+        await filter.onFetch(elements)
+      })
+      it('should not create any ObjectType', () => {
+        expect(elements).toBeEmpty()
       })
     })
   })

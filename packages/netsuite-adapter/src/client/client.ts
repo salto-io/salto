@@ -30,12 +30,12 @@ import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_cli
 import { CustomizationInfo, FeaturesMap, GetCustomObjectsResult, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
-import { DeployResult, getElementValueOrAnnotations } from '../types'
-import { APPLICATION_ID, SCRIPT_ID } from '../constants'
+import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
+import { APPLICATION_ID, PATH, SCRIPT_ID } from '../constants'
 import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
-import { Graph, GraphNode } from './graph_utils'
+import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 
 const { isDefined } = values
@@ -50,7 +50,10 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getScriptIdFromElement = (changeData: ChangeDataType): string => {
+const getServiceIdFromElement = (changeData: ChangeDataType): string => {
+  if (isFileCabinetInstance(changeData)) {
+    return getElementValueOrAnnotations(changeData)[PATH]
+  }
   if (isField(changeData)) {
     return changeData.parent.annotations[SCRIPT_ID]
   }
@@ -59,13 +62,6 @@ const getScriptIdFromElement = (changeData: ChangeDataType): string => {
 
 const getChangeType = (change: Change): 'addition' | 'modification' =>
   (isAdditionChange(change) ? 'addition' : 'modification')
-
-type SDFObjectNode = {
-  elemIdFullName: string
-  scriptid: string
-  changeType: 'addition' | 'modification'
-  customizationInfos: CustomizationInfo[]
-}
 
 type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
@@ -169,9 +165,9 @@ export default class NetsuiteClient {
     return awu(elementsAndChangeTypes)
       .map(async ({ element, changeType }) => ({
         elemIdFullName: element.elemID.getFullName(),
-        scriptid: getScriptIdFromElement(element),
+        serviceid: getServiceIdFromElement(element),
         changeType,
-        customizationInfos: await NetsuiteClient.toCustomizationInfos([element]),
+        customizationInfo: (await NetsuiteClient.toCustomizationInfos([element]))[0],
       }))
       .toArray()
   }
@@ -187,20 +183,19 @@ export default class NetsuiteClient {
     elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
       const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
       const endNode = dependencyGraph.findNode(elemIdAndCustInfo)
-      elemIdAndCustInfo.customizationInfos.forEach(custInfo =>
-        lookupValue(custInfo.values, val => {
-          if (!_.isString(val)) {
-            return
+      lookupValue(elemIdAndCustInfo.customizationInfo.values, val => {
+        if (!_.isString(val)) {
+          return
+        }
+        const serviceIdInfoArray = captureServiceIdInfo(val)
+        serviceIdInfoArray.forEach(serviceIdInfo => {
+          currSet.add(serviceIdInfo.serviceId)
+          const startNode = dependencyGraph.findNodeByField('serviceid', serviceIdInfo.serviceId)
+          if (startNode && endNode && startNode.value.changeType === 'addition') {
+            startNode.addEdge(dependencyGraph.key, endNode)
           }
-          const serviceIdInfoArray = captureServiceIdInfo(val)
-          serviceIdInfoArray.forEach(serviceIdInfo => {
-            currSet.add(serviceIdInfo.serviceId)
-            const startNode = dependencyGraph.findNodeByField(SCRIPT_ID, serviceIdInfo.serviceId)
-            if (startNode && endNode && startNode.value.changeType === 'addition') {
-              startNode.addEdge(endNode)
-            }
-          })
-        }))
+        })
+      })
     })
     return { dependencyMap, dependencyGraph }
   }
@@ -304,8 +299,6 @@ export default class NetsuiteClient {
     const featuresMap = NetsuiteClient.createFeaturesMap(additionalDependencies)
 
     while (changesToDeploy.length > 0) {
-      // eslint-disable-next-line no-await-in-loop
-      const customizationInfos = await NetsuiteClient.toCustomizationInfos(changesToDeploy.map(getChangeData))
       const changesToApply = changesToDeploy.flatMap(change => [
         change,
         ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
@@ -317,9 +310,9 @@ export default class NetsuiteClient {
         // eslint-disable-next-line no-await-in-loop
         await log.time(
           () => this.sdfClient.deploy(
-            customizationInfos,
             suiteAppId,
-            { manifestDependencies, validateOnly }
+            { manifestDependencies, validateOnly },
+            dependencyGraph
           ),
           'sdfDeploy'
         )
@@ -349,6 +342,7 @@ export default class NetsuiteClient {
           getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy),
           dependencyGraph
         )
+        elemIdsToRemove.forEach(elemIdName => dependencyGraph.removeNode(elemIdName))
         const removedChanges = _.remove(
           changesToDeploy,
           change => elemIdsToRemove.has(getChangeData(change).elemID.getFullName())

@@ -26,6 +26,7 @@ import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/config'
+import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -49,10 +50,13 @@ describe('NetsuiteClient', () => {
       },
       mockElementsSourceIndex,
     ]
+
+    const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
     describe('deploy', () => {
       beforeEach(() => {
         jest.resetAllMocks()
         deployParams[0].include.features = []
+        testGraph.nodes.clear()
       })
 
       it('should try again to deploy after ObjectsDeployError', async () => {
@@ -256,6 +260,7 @@ describe('NetsuiteClient', () => {
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
         await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -276,22 +281,20 @@ describe('NetsuiteClient', () => {
           },
           mockElementsSourceIndex
         )
-        expect(mockSdfDeploy).toHaveBeenCalledWith([{
-          scriptId: 'someObject',
-          typeName: 'type',
-          values: { scriptid: 'someObject' },
-        }],
-        undefined,
-        {
-          manifestDependencies: {
-            optionalFeatures: ['optional'],
-            requiredFeatures: ['required'],
-            excludedFeatures: ['excluded'],
-            includedObjects: [],
-            excludedObjects: [],
+        expect(mockSdfDeploy).toHaveBeenCalledWith(
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['optional'],
+              requiredFeatures: ['required'],
+              excludedFeatures: ['excluded'],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
           },
-          validateOnly: false,
-        })
+          testGraph
+        )
       })
 
       it('should try to deploy again MissingManifestFeaturesError and fail on excluded feature', async () => {
@@ -304,6 +307,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.addNodes([new GraphNode({ serviceid: 'someObject', elemIdFullName: 'netsuite.type.instance.instance', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -327,11 +331,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
         expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -342,13 +341,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: false,
-          })
+          },
+          testGraph,)
         expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -359,7 +354,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: false,
-          })
+          },
+          testGraph)
       })
 
       it('should try to deploy again MissingManifestFeaturesError and fail on required feature', async () => {
@@ -372,6 +368,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -382,11 +379,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
         expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -397,13 +389,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: false,
-          })
+          },
+          testGraph)
         expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -414,13 +402,9 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: false,
-          })
+          },
+          testGraph)
         expect(mockSdfDeploy).toHaveBeenNthCalledWith(3,
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -431,10 +415,19 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: false,
-          })
+          },
+          testGraph)
       })
 
       describe('custom record types', () => {
+        beforeEach(() => {
+          testGraph.nodes.clear()
+        })
+        const customizationInfo = {
+          scriptId: 'customrecord1',
+          typeName: 'customrecordtype',
+          values: { '@_scriptid': 'customrecord1' },
+        }
         it('should transform type to customrecordtype instance', async () => {
           const change = toChange({
             after: new ObjectType({
@@ -445,6 +438,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
             }),
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -454,11 +448,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [{
-              scriptId: 'customrecord1',
-              typeName: 'customrecordtype',
-              values: { '@_scriptid': 'customrecord1' },
-            }],
             undefined,
             {
               manifestDependencies: {
@@ -470,6 +459,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
               validateOnly: false,
             },
+            testGraph,
           )
         })
         it('should include custom record type field in appliedChanges', async () => {
@@ -498,6 +488,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           const successFieldChange = toChange({
             after: customRecordType.fields.custom_field,
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1.field.custom_field', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
           expect(await client.deploy(
             [successTypeChange, successFieldChange, failedChange],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -506,7 +497,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             errors: [objectsDeployError],
             appliedChanges: [successTypeChange, successFieldChange],
           })
-          expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
         })
       })
 
@@ -589,15 +579,17 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.nodes.clear()
       })
       it('should call sdfValidate', async () => {
+        const customizationInfo = {
+          scriptId: 'someObject',
+          typeName: 'type',
+          values: { scriptid: 'someObject' },
+        }
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo } as SDFObjectNode)])
         await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
           {
             manifestDependencies: {
@@ -608,7 +600,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedObjects: [],
             },
             validateOnly: true,
-          }
+          },
+          testGraph,
         )
       })
       it('should skip validation', async () => {

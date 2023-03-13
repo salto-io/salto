@@ -93,6 +93,83 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
         fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
         fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       },
+      deployRequests: {
+        add: {
+          url: '/api/v1/policies/{policyId}/rules',
+          method: 'post',
+          urlParamsToFields: {
+            policyId: '_parent.0.id',
+          },
+        },
+        modify: {
+          url: '/api/v1/policies/{policyId}/rules/{ruleId}',
+          method: 'put',
+          urlParamsToFields: {
+            policyId: '_parent.0.id',
+            ruleId: 'id',
+          },
+        },
+        remove: {
+          url: '/api/v1/policies/{policyId}/rules/{ruleId}',
+          method: 'delete',
+          urlParamsToFields: {
+            policyId: '_parent.0.id',
+            ruleId: 'id',
+          },
+        },
+        activate: {
+          url: '/api/v1/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
+          method: 'post',
+          urlParamsToFields: {
+            policyId: '_parent.0.id',
+            ruleId: 'id',
+          },
+        },
+        deactivate: {
+          url: '/api/v1/policies/{policyId}/rules/{ruleId}/lifecycle/deactivate',
+          method: 'post',
+          urlParamsToFields: {
+            policyId: '_parent.0.id',
+            ruleId: 'id',
+          },
+        },
+      },
+    }
+    const policyDeployRequests = {
+      add: {
+        url: '/api/v1/policies',
+        method: 'post',
+        fieldsToIgnore: ['policyRules'],
+      },
+      modify: {
+        url: '/api/v1/policies/{policyId}',
+        method: 'put',
+        urlParamsToFields: {
+          policyId: 'id',
+        },
+        fieldsToIgnore: ['policyRules'],
+      },
+      remove: {
+        url: '/api/v1/policies/{policyId}',
+        method: 'delete',
+        urlParamsToFields: {
+          policyId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/policies/{policyId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          policyId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/policies/{policyId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          policyId: 'id',
+        },
+      },
     }
     if ([IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME].includes(typeName)) {
       _.set(
@@ -141,6 +218,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
           standaloneFields: [{ fieldName: 'policyRules' }],
         },
+        deployRequests: typeName !== IDP_POLICY_TYPE_NAME ? policyDeployRequests : undefined,
       },
       [details.ruleName]: policyRuleConfig,
     }
@@ -608,6 +686,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/zones',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/zones/{zoneId}',
+        method: 'put',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/zones/{zoneId}',
+        method: 'delete',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/zones/{zoneId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/zones/{zoneId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          zoneId: 'id',
+        },
+      },
     },
   },
   TrustedOrigin: {

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
+import { createEmptyType } from '../../utils'
 import { accountIdInfoType } from '../../../src/filters/account_id/types'
 import { AUTOMATION_TYPE, BOARD_TYPE_NAME, JIRA } from '../../../src/constants'
 import { OWNER_STYLE_TYPES, PARAMETER_STYLE_TYPES } from '../../../src/filters/account_id/account_id_filter'
@@ -84,9 +85,6 @@ export const createType = (
     },
   })
 }
-export const createEmptyType = (type: string): ObjectType => new ObjectType({
-  elemID: new ElemID(JIRA, type),
-})
 
 export const createBoardType = (): ObjectType => {
   const boardAdminsType = createEmptyType('Board_admins')

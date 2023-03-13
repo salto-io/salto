@@ -196,6 +196,33 @@ export const overrideTopLevelPathIndex = async (
   await current.setAll(entries)
 }
 
+export const updateTopLevelPathIndex = async (
+  current: PathIndex,
+  unmergedElements: Element[],
+  accountsToMaintain: string[]
+): Promise<void> => {
+  if (accountsToMaintain.length === 0) {
+    await overrideTopLevelPathIndex(current, unmergedElements)
+    return
+  }
+  const topLevelElementsWithPath = unmergedElements
+    .filter(e => e.path !== undefined)
+    .filter(e => e.elemID.isTopLevel())
+  const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())
+  const entries = Object.entries(elementsByID)
+    .filter(([_key, value]) => value.length > 0)
+    .map(([key, value]) => ({
+      key,
+      value: value.map(e => e.path as Path),
+    }))
+  const oldPathHintsToMaintain = await awu(current.entries())
+    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
+    .concat(entries)
+    .toArray()
+  await current.clear()
+  await current.setAll(awu(oldPathHintsToMaintain))
+}
+
 export const updatePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],

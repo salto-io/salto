@@ -17,7 +17,13 @@ import { Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
-import { updatePathIndex, overridePathIndex, PathIndex, overrideTopLevelPathIndex } from '../path_index'
+import {
+  updatePathIndex,
+  overridePathIndex,
+  PathIndex,
+  overrideTopLevelPathIndex,
+  updateTopLevelPathIndex,
+} from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
 
@@ -116,8 +122,8 @@ export const buildInMemState = (
       await updatePathIndex(
         currentStateData.pathIndex, unmergedElements, servicesNotToChange
       )
-      await overrideTopLevelPathIndex(
-        currentStateData.topLevelPathIndex, unmergedElements
+      await updateTopLevelPathIndex(
+        currentStateData.topLevelPathIndex, unmergedElements, servicesNotToChange
       )
     },
     getPathIndex: async (): Promise<PathIndex> =>

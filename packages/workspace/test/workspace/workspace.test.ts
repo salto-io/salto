@@ -2596,9 +2596,12 @@ describe('workspace', () => {
         },
       )
     })
-    describe('getAliasByElemId', () => {
+    describe('getAliases', () => {
       it('should return full map', async () => {
-        const result = await workspace.getAliasByElemId()
+        const index = await workspace.getAliases()
+        const result = Object.fromEntries(await awu(index.entries())
+          .map(({ key: id, value: alias }) => ([id, alias]))
+          .toArray())
         expect(result).toEqual(
           {
             'salesforce.lead.field.singleDef': 'single Def alias',

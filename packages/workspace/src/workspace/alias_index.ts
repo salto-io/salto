@@ -21,11 +21,11 @@ import {
   CORE_ANNOTATIONS,
   isAdditionChange,
   isModificationChange,
-  isObjectType, ObjectType, isObjectTypeChange, ModificationChange, isField,
+  ObjectType, isObjectTypeChange, ModificationChange, isField, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { prettifyName } from '@salto-io/adapter-utils'
+import { getRelevantNamesFromChange, prettifyName } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { getAllElementsChanges } from './index_utils'
@@ -48,20 +48,20 @@ const getChangedFields = (change: ModificationChange<ObjectType>): Change<Elemen
   const removedFields = beforeFields.filter(beforeField => !afterFieldsNamesSet.has(beforeField.name))
   const aliasModifiedFields = afterFields.filter(afterField => {
     const field = change.data.before.fields[afterField.name]
-    return (isField(field) && field !== undefined) && (calcAlias(afterField) !== calcAlias(field))
+    return isField(field) && (calcAlias(afterField) !== calcAlias(field))
   })
-  return (addedFields.map(field => toChange({ after: field })) ?? [])
-    .concat(aliasModifiedFields.map(field => toChange({ after: field })) ?? [])
-    .concat(removedFields.map(field => toChange({ before: field })) ?? [])
+  return (addedFields.map(field => toChange({ after: field })))
+    .concat(aliasModifiedFields.map(field => toChange({ after: field })))
+    .concat(removedFields.map(field => toChange({ before: field })))
 }
 
-const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
-  const element = getChangeData(change)
-  const fieldsNames = isObjectType(element)
-    ? element.getFieldsElemIDsFullName()
-    : []
-  return [element.elemID.getFullName(), ...fieldsNames]
-}
+// const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
+//   const element = getChangeData(change)
+//   const fieldsNames = isObjectType(element)
+//     ? element.getFieldsElemIDsFullName()
+//     : []
+//   return [element.elemID.getFullName(), ...fieldsNames]
+// }
 
 const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
   changes.flatMap((change):Change<Element> | Change<Element>[] | undefined => {
@@ -73,10 +73,12 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
           : []
         return changedFields.concat(objAliasModification)
       }
-      // modification of an instance
-      if (calcAlias(change.data.before) !== calcAlias(change.data.after)) {
-        return toChange({ after: change.data.after })
+      if (isInstanceChange(change)) {
+        if (calcAlias(change.data.before) !== calcAlias(change.data.after)) {
+          return toChange({ after: change.data.after })
+        }
       }
+
       // any other modification
       return undefined // the relevant modification changes are added as addition changes
     }
@@ -98,7 +100,7 @@ const getRemovalsAndAdditions = (changes: Change<Element>[]):
 }
 
 const getInfoForIndex = (changes: Change<Element>[]):
-  {removalNames:string[]; additionsIdsToAlias: Record<string, string>} => {
+  { removalNames:string[]; additionsIdsToAlias: Record<string, string> } => {
   const { additions, removals } = getRemovalsAndAdditions(changes)
   const additionsIdsToAlias = _.mapValues(
     _.keyBy(additions.map(getChangeData), elem => elem.elemID.getFullName()),

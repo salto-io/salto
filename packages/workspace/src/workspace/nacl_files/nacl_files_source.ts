@@ -20,7 +20,13 @@ import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObj
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, isModificationChange,
   isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
-import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  resolvePath,
+  TransformFuncArgs,
+  transformElement,
+  safeJsonStringify,
+  getRelevantNamesFromChange,
+} from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import osPath from 'path'
@@ -345,13 +351,6 @@ const buildNaclFilesState = async ({
   const updateSearchableNamesIndex = async (
     changes: Change[]
   ): Promise<void> => {
-    const getRelevantNamesFromChange = (change: Change): string[] => {
-      const element = getChangeData(change)
-      const fieldsNames = isObjectType(element)
-        ? element.getFieldsElemIDsFullName()
-        : []
-      return [element.elemID.getFullName(), ...fieldsNames]
-    }
     const [additions, removals] = _.partition(changes.flatMap(change => {
       if (isModificationChange(change)) {
         if (isObjectTypeChange(change)) {

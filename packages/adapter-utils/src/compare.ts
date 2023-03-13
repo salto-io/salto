@@ -19,7 +19,7 @@ import {
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
   isElement,
   CompareOptions,
-  isIndexPathPart, Change, getChangeData,
+  isIndexPathPart, Change, getChangeData, Element,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { hash as hashUtils } from '@salto-io/lowerdash'
@@ -375,3 +375,11 @@ const sortChanges = (a: Change, b: Change): number =>
 
 export const calculateChangesHash = (changes: ReadonlyArray<Change>): string =>
   hashUtils.toMD5(safeJsonStringify(Array.from(changes).sort(sortChanges)))
+
+export const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
+  const element = getChangeData(change)
+  const fieldsNames = isObjectType(element)
+    ? element.getFieldsElemIDsFullName()
+    : []
+  return [element.elemID.getFullName(), ...fieldsNames]
+}

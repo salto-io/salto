@@ -258,7 +258,7 @@ export type Workspace = {
     filePaths?: Set<string>,
     envName?: string
   ): Promise<Record<string, string>>
-  getAliasByElemId(envName?: string): Promise<Record<string, string>>
+  getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
 }
@@ -1018,14 +1018,10 @@ export const loadWorkspace = async (
         .toArray()
     )
   }
-  const getAliasByElemId = async (envName?: string): Promise<Record<string, string>> => {
+  const getAliases = async (envName?: string): Promise<ReadOnlyRemoteMap<string>> => {
     const env = envName ?? currentEnv()
     const currentWorkspaceState = await getWorkspaceState()
-    return Object.fromEntries(
-      await awu(currentWorkspaceState.states[env].alias.entries())
-        .map(({ key: id, value: alias }) => ([id, alias]))
-        .toArray()
-    )
+    return currentWorkspaceState.states[env].alias
   }
 
   const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {
@@ -1451,7 +1447,7 @@ export const loadWorkspace = async (
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
-    getAliasByElemId,
+    getAliases,
     isChangedAtIndexEmpty,
   }
 }

@@ -22,7 +22,6 @@ import {
   overridePathIndex,
   PathIndex,
   overrideTopLevelPathIndex,
-  updateTopLevelPathIndex,
 } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
@@ -120,10 +119,10 @@ export const buildInMemState = (
     ): Promise<void> => {
       const currentStateData = await stateData()
       await updatePathIndex(
-        currentStateData.pathIndex, unmergedElements, servicesNotToChange
+        currentStateData.pathIndex, unmergedElements, servicesNotToChange, false
       )
-      await updateTopLevelPathIndex(
-        currentStateData.topLevelPathIndex, unmergedElements, servicesNotToChange
+      await updatePathIndex(
+        currentStateData.topLevelPathIndex, unmergedElements, servicesNotToChange, true
       )
     },
     getPathIndex: async (): Promise<PathIndex> =>

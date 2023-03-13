@@ -134,7 +134,7 @@ describe('updatePathIndex', () => {
       multiPathFieldsObj,
       multiPathInstanceA,
       multiPathInstanceB,
-    ], ['salto'])
+    ], ['salto'], false)
   })
   it('should add new elements with proper paths', async () => {
     expect(await index.get(multiPathObjID.getFullName()))

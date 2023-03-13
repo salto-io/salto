@@ -266,6 +266,9 @@ export const convertDataInstanceMapsToLists = async (instance: InstanceElement):
   })
 }
 
+// We use hardcoded types when running transformMapsToLists,
+// so the fields don't have the `map_key_field` annotation.
+// Because of that, we add that annotation on the mapped list itself.
 const setListMappedByFieldToValue = <T extends ChangeDataType>(element: T): Promise<T> =>
   transformElement({
     element,
@@ -283,6 +286,7 @@ const transformMapsToLists = (element: ChangeDataType): Promise<ChangeDataType> 
     transformFunc: async ({ value, field }) => (
       field !== undefined && await isMappedList(value, field)
         ? _.sortBy(
+          // Removing the `map_key_field` annotation that was used to identify the mapped list.
           Object.values(_.omit(value, [LIST_MAPPED_BY_FIELD])),
           [INDEX, value[LIST_MAPPED_BY_FIELD]].flat()
         ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
@@ -294,7 +298,7 @@ const transformMapsToLists = (element: ChangeDataType): Promise<ChangeDataType> 
 export const createConvertStandardElementMapsToLists = async (): Promise<(
   element: ChangeDataType
 ) => Promise<ChangeDataType>> => {
-  // using hardcoded types so the transformed elements will have fields with List<> ref types.
+  // Using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
   const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)
 

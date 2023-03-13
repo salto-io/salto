@@ -370,7 +370,7 @@ describe('Test elements.ts', () => {
     describe('fromFullName', () => {
       it('should create elem ID from its full name', () => {
         [typeId, fieldId, annotationTypesId, annotationTypeId, typeInstId, valueId, configTypeId,
-          configInstId, variableId, listId, mapId, nestedListId]
+          configInstId, variableId, listId, mapId, nestedListId, BuiltinTypes.STRING.elemID]
           .forEach(id => expect(ElemID.fromFullName(id.getFullName())).toEqual(id))
       })
       it('should fail on invalid id type', () => {

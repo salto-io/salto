@@ -28,8 +28,8 @@ import {
 } from '../src/filters/custom_type_split'
 import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
-import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { SYSTEM_FIELDS } from '../src/constants'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,

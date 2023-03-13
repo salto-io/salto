@@ -501,3 +501,23 @@ export const isSalesforceError = (error: Error): error is SalesforceError => {
   const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
   return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
 }
+
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  'LastModifiedDate',
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  'OwnerId',
+  'SetupOwnerId',
+]

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Key } from '../types'
 
 export const makeArray = <TIn>(input: TIn | TIn[] | undefined): TIn[] => {
   if (input === undefined) {
@@ -39,9 +38,3 @@ export const findDuplicates = (items: string[]): string[] => (
     .map(([str]) => str)
     .sort()
 )
-
-export const keyBy = <T, K extends Key>(values: T[], keyFunc: (item: T) => K): Record<K, T> => {
-  const record = {} as Record<K, T>
-  values.forEach(item => { record[keyFunc(item)] = item })
-  return record
-}

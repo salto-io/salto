@@ -15,8 +15,7 @@
 */
 import { SALESFORCE, TYPES_PATH } from '../constants'
 
-const TOOLING_FOLDER_NAME = 'Tooling'
-export const TOOLING_PATH = [SALESFORCE, TYPES_PATH, TOOLING_FOLDER_NAME] as const
+export const TOOLING_PATH = [SALESFORCE, TYPES_PATH] as const
 
 export const SupportedToolingObject = {
   SubscriberPackage: 'SubscriberPackage',

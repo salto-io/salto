@@ -22,9 +22,9 @@ import SalesforceClient from '../../client/client'
 import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../../tooling/types'
 import { createToolingObject } from '../../tooling/utils'
 import { SupportedToolingObject } from '../../tooling/constants'
+import { SYSTEM_FIELDS } from '../../constants'
 
 const { awu } = collections.asynciterable
-const { keyBy } = collections.array
 const { isDefined } = values
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch info about the installed packages'
@@ -35,11 +35,11 @@ const createToolingObjectTypeFromDescribe = async (
 ): Promise<ToolingObjectType | undefined> => {
   const sobject = await client.describeToolingObject(objectName)
   const toolingType = createToolingObject(objectName)
-  const fields = await getFieldsFromDescribeResult(sobject, undefined, toolingType)
+  const fields = await getFieldsFromDescribeResult(sobject, SYSTEM_FIELDS, toolingType)
   const toolingFields = fields
     .map(field => Object.assign(field, { annotations: _.omitBy(field.annotations, _.isNil) }))
     .filter(isToolingField)
-  toolingType.fields = keyBy(toolingFields, field => field.name)
+  toolingFields.forEach(field => { toolingType.fields[field.name] = field })
   return toolingType
 }
 

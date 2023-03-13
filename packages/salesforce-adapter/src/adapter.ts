@@ -14,21 +14,34 @@
 * limitations under the License.
 */
 import {
-  TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
-  ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
+  AdapterOperations,
+  Change,
+  DeployOptions,
+  DeployResult,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  ObjectType,
   ReadOnlyElementsSource,
+  TypeElement,
 } from '@salto-io/adapter-api'
 import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values, promises, objects } from '@salto-io/lowerdash'
+import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SYSTEM_FIELDS } from './constants'
+import { apiName, isMetadataObjectType, Types } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
-import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
+import customObjectsToObjectTypeFilter, {
+  NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
+} from './filters/custom_objects_to_object_type'
 import customSettingsFilter from './filters/custom_settings_filter'
 import customTypeSplit from './filters/custom_type_split'
 import customObjectAuthorFilter from './filters/author_information/custom_objects'
@@ -84,14 +97,20 @@ import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
-import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
+import {
+  Filter,
+  FilterResult,
+  LocalFilterCreator,
+  LocalFilterCreatorDefinition,
+  RemoteFilterCreator,
+  RemoteFilterCreatorDefinition,
+} from './filter'
 import { addDefaults } from './filters/utils'
-import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
-import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
+import { fetchMetadataInstances, fetchMetadataType, listMetadataObjects, retrieveMetadataInstances } from './fetch'
+import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo, quickDeploy } from './metadata_deploy'
-import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import { buildFetchProfile, FetchProfile } from './fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -248,26 +267,6 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
   'Layout', // retrieve returns more information about relatedLists
-]
-
-// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
-export const SYSTEM_FIELDS = [
-  'ConnectionReceivedId',
-  'ConnectionSentId',
-  'CreatedById',
-  'CreatedDate',
-  'Id',
-  'IsDeleted',
-  'LastActivityDate',
-  'LastModifiedDate',
-  'LastModifiedById',
-  'LastReferencedDate',
-  'LastViewedDate',
-  'Name',
-  'RecordTypeId',
-  'SystemModstamp',
-  'OwnerId',
-  'SetupOwnerId',
 ]
 
 export const UNSUPPORTED_SYSTEM_FIELDS = [

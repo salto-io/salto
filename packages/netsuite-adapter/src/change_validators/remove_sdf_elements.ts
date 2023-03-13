@@ -13,10 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, isRemovalChange, getChangeData, Element, isInstanceElement, isObjectType, isField, ChangeError } from '@salto-io/adapter-api'
+import { Change, isRemovalChange, getChangeData, Element, isInstanceElement, isObjectType, isField, ChangeError, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType, hasInternalId } from '../types'
-import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { NetsuiteChangeValidator } from './types'
 import { isSupportedInstance } from '../filters/internal_ids/sdf_internal_ids'
 
@@ -26,7 +25,7 @@ const { awu } = collections.asynciterable
 const validateRemovableChange = async (
   element: Element,
   changes: ReadonlyArray<Change>,
-  elementsSourceIndex?: LazyElementsSourceIndexes
+  elementsSource?: ReadOnlyElementsSource
 ): Promise<ChangeError | undefined> => {
   if (isInstanceElement(element) && isStandardType(element.refType)) {
     if (!isSupportedInstance(element)) {
@@ -55,10 +54,10 @@ const validateRemovableChange = async (
       }
     }
     // will be redundant once SALTO-3534 introduced
-    if (elementsSourceIndex !== undefined) {
-      const recordTypeIndexInstances = Object.keys((await elementsSourceIndex.getIndexes()).internalIdsIndex)
-        .some(elemInternalId => elemInternalId.startsWith(element.elemID.typeName.concat('-')))
-      if (recordTypeIndexInstances) {
+    if (elementsSource !== undefined) {
+      const hasCustomRecordInstances = await awu(await elementsSource.list())
+        .some(elemId => elemId.idType === 'instance' && elemId.typeName === element.elemID.name)
+      if (hasCustomRecordInstances) {
         return {
           elemID: element.elemID,
           severity: 'Error',
@@ -90,11 +89,11 @@ const validateRemovableChange = async (
   return undefined
 }
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSourceIndex) => (
+const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => (
   awu(changes)
     .filter(isRemovalChange)
     .map(getChangeData)
-    .map(element => validateRemovableChange(element, changes, elementsSourceIndex))
+    .map(element => validateRemovableChange(element, changes, elementsSource))
     .filter(isDefined)
     .toArray()
 )

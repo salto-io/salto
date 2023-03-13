@@ -38,6 +38,7 @@ export type User = {
   role: string
   // eslint-disable-next-line camelcase
   custom_role_id: number
+  locale: string
 }
 
 type CurrentUserResponse = {
@@ -50,6 +51,7 @@ const EXPECTED_USER_SCHEMA = Joi.object({
   email: Joi.string().required(),
   role: Joi.string(),
   custom_role_id: Joi.number(),
+  locale: Joi.string().required(),
 }).unknown(true)
 
 const EXPECTED_USERS_SCHEMA = Joi.array().items(EXPECTED_USER_SCHEMA).required()
@@ -58,7 +60,7 @@ const CURRENT_USER_RESPONSE_SCHEME = Joi.object({
   user: EXPECTED_USER_SCHEMA,
 }).required()
 
-const isCurrentUserResponse = createSchemeGuard<CurrentUserResponse>(CURRENT_USER_RESPONSE_SCHEME, 'Received an invalid current user response')
+export const isCurrentUserResponse = createSchemeGuard<CurrentUserResponse>(CURRENT_USER_RESPONSE_SCHEME, 'Received an invalid current user response')
 
 const areUsers = (values: unknown): values is User[] => {
   const { error } = EXPECTED_USERS_SCHEMA.validate(values)

@@ -41,6 +41,7 @@ import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
 import { SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
 import { isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
+import { SupportedToolingObject } from '../src/tooling/constants'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -292,6 +293,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(elementNames).toHaveLength(_.concat(
         Object.keys(Types.getAllFieldTypes()),
         Object.keys(Types.getAllMissingTypes()),
+        Object.keys(SupportedToolingObject)
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
@@ -1240,7 +1242,6 @@ public class LargeClass${index} {
               metadata: {
                 exclude: [
                   ...metadataExclude,
-                  { metadataType: 'InstalledPackage', name: 'Test2' },
                   { metadataType: 'MetadataTest1', name: 'instance1' },
                   { metadataType: 'MetadataTest2' },
                 ],
@@ -1272,7 +1273,6 @@ public class LargeClass${index} {
             fetch: {
               metadata: {
                 exclude: [
-                  { metadataType: 'InstalledPackage', name: 'Test2' },
                   { metadataType: 'MetadataTest1', name: 'instance1' },
                   { metadataType: 'MetadataTest2' },
                 ],

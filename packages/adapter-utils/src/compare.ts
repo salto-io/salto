@@ -19,11 +19,10 @@ import {
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
   isElement,
   CompareOptions,
-  isIndexPathPart, Change, getChangeData, Element,
+  isIndexPathPart,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { hash as hashUtils } from '@salto-io/lowerdash'
-import { resolvePath, safeJsonStringify, setPath } from './utils'
+import { resolvePath, setPath } from './utils'
 import { applyListChanges, getArrayIndexMapping } from './list_comparison'
 
 const log = logger(module)
@@ -370,11 +369,6 @@ export const applyDetailedChanges = (
     applyListChanges(element, changes)
   })
 }
-const sortChanges = (a: Change, b: Change): number =>
-  getChangeData(a).elemID.getFullName().localeCompare(getChangeData(b).elemID.getFullName())
-
-export const calculateChangesHash = (changes: ReadonlyArray<Change>): string =>
-  hashUtils.toMD5(safeJsonStringify(Array.from(changes).sort(sortChanges)))
 
 export const getRelevantNamesFromChange = (change: Change<Element>): string[] => {
   const element = getChangeData(change)

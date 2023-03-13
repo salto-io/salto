@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
-import { safeJsonStringify, calculateChangesHash } from '@salto-io/adapter-utils'
+import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+
 import {
   DeployResult,
   Change,
@@ -314,7 +315,6 @@ export const deployMetadata = async (
   })
 
   const pkgData = await pkg.getZip()
-
   const sfDeployRes = await client.deploy(pkgData, { checkOnly })
 
   log.debug('deploy result: %s', safeJsonStringify({
@@ -348,7 +348,7 @@ export const deployMetadata = async (
     extraProperties: {
       deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
       groups: isQuickDeployable(sfDeployRes)
-        ? [{ id: groupId, requestId: sfDeployRes.id, hash: log.time(() => calculateChangesHash(validChanges), 'changes hash calculation'), url: deploymentUrl }]
+        ? [{ id: groupId, requestId: sfDeployRes.id, hash: hashUtils.toMD5(pkgData), url: deploymentUrl }]
         : [{ id: groupId, url: deploymentUrl }],
     },
   }
@@ -359,13 +359,21 @@ export const quickDeploy = async (
   client: SalesforceClient,
   groupId: string,
   quickDeployParams: QuickDeployParams,
+  nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
+  deleteBeforeUpdate?: boolean,
 ): Promise<DeployResult> => {
+  const pkg = createDeployPackage(deleteBeforeUpdate)
   const { validChanges, errors: validationErrors } = await validateChanges(changes)
   if (validChanges.length === 0) {
     // Skip deploy if there are no valid changes
     return { appliedChanges: [], errors: validationErrors }
   }
-  if (quickDeployParams.hash !== calculateChangesHash(validChanges)) {
+  await awu(validChanges).forEach(async change => {
+    await addChangeToPackage(pkg, change, nestedMetadataTypes)
+  })
+
+  const pkgData = await pkg.getZip()
+  if (quickDeployParams.hash !== hashUtils.toMD5(pkgData)) {
     return {
       appliedChanges: [],
       errors: [new Error('Quick deploy option is not available because the current deploy plan is different than the validated one')],

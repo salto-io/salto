@@ -448,6 +448,13 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       if (deleteManifest.size !== 0) {
         zip.file(`${PACKAGE}/${deletionsPackageName}`, toPackageXml(deleteManifest))
       }
+      // as part of the QuickDeploy feature
+      // we need a fixed date in  the timeStamp order to the hash to be consistent
+      // we chose a significant date for Salto
+      const date = new Date(2023, 6, 15)
+      Object.values(zip.files).forEach(info => {
+        info.date = date
+      })
       return zip.generateAsync({ type: 'nodebuffer' })
     },
     getDeletionsPackageName: () => deletionsPackageName,

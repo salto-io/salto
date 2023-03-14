@@ -376,8 +376,8 @@ export const ensureSafeFilterFetch = ({
 /**
  * Remove after https://salto-io.atlassian.net/browse/SALTO-3626
  */
-export const isUpdatable = ({ annotations }: Element): boolean => (
-  annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && isCoreUpdatable(annotations[CORE_ANNOTATIONS.UPDATABLE])
+export const isUpdatable = (element: Element): boolean => (
+  element.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && isCoreUpdatable(element)
 )
 
 export const isRestrictableField = (field: Field): boolean => (

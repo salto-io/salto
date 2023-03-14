@@ -32,7 +32,7 @@ const createPackageElementModificationChangeWarning = (
   severity: 'Warning',
   message: 'Modification of element from managed package may not be allowed',
   detailedMessage: `Modification of element ${elemID.getFullName()} from managed package with namespace ${namespace} may not be allowed. `
-  + `For more information refer to ${annotations[CORE_ANNOTATIONS.SERVICE_URL]} https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/packaging_packageable_components.htm`,
+  + `For more information refer to ${annotations[CORE_ANNOTATIONS.SERVICE_URL]}. If you cannot find the information there refer to https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/packaging_packageable_components.htm`,
 })
 
 export const hasNamespace = async (customElement: Element): Promise<boolean> => {
@@ -53,7 +53,7 @@ export const hasNamespace = async (customElement: Element): Promise<boolean> => 
 }
 
 export const getNamespace = async (customElement: Element): Promise<string | undefined> => {
-  const parts = (await apiName(customElement, true)).split(NAMESPACE_SEPARATOR)
+  const parts = (await apiName(customElement, true))?.split(NAMESPACE_SEPARATOR) ?? []
   return parts.length > 1 ? parts[0] : undefined
 }
 

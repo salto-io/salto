@@ -207,6 +207,8 @@ export default class SdfClient {
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
   private readonly installedSuiteApps: string[]
+  private manifestXmlContent: string
+  private deployXmlContent: string
 
   constructor({
     credentials,
@@ -226,6 +228,8 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
+    this.manifestXmlContent = ''
+    this.deployXmlContent = ''
   }
 
   @SdfClient.logDecorator
@@ -896,20 +900,21 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
   }
 
-  private static async fixManifest(
+  private async fixManifest(
     projectName: string,
     customizationInfos: CustomizationInfo[],
     manifestDependencies: ManifestDependencies
   ): Promise<void> {
     const manifestPath = SdfClient.getManifestFilePath(projectName)
     const manifestContent = (await readFile(manifestPath)).toString()
+    this.manifestXmlContent = fixManifest(manifestContent, customizationInfos, manifestDependencies)
     await writeFile(
       manifestPath,
-      fixManifest(manifestContent, customizationInfos, manifestDependencies)
+      this.manifestXmlContent
     )
   }
 
-  private static customizeDeployError(error: Error): Error {
+  private customizeDeployError(error: Error): Error {
     if (error instanceof FeaturesDeployError) {
       return error
     }
@@ -939,7 +944,7 @@ export default class SdfClient {
     if (validationErrorObjects.length > 0) {
       return new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
     }
-    if (settingsValidationErrorRegex.test(errorMessage)) {
+    if (settingsValidationErrorRegex.test(errorMessage) && errorMessage.includes(FEATURES_XML)) {
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
     const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
@@ -953,18 +958,28 @@ export default class SdfClient {
       // the last object in the error message is the one that failed the deploy
       return new ObjectsDeployError(errorMessage, new Set([allDeployedObjects.slice(-1)[0]]))
     }
+
+    log.warn(`
+could not detect the reason for this sdf error.
+manifest.xml:
+${this.manifestXmlContent}
+
+deploy.xml:
+${this.deployXmlContent}
+`)
     return error
   }
 
-  private static async fixDeployXml(
+  private async fixDeployXml(
     dependencyGraph: Graph<SDFObjectNode>,
     projectName: string,
   ): Promise<void> {
     const deployFilePath = SdfClient.getDeployFilePath(projectName)
     const deployXmlContent = (await readFile(deployFilePath)).toString()
+    this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
     await writeFile(
       deployFilePath,
-      reorderDeployXml(deployXmlContent, dependencyGraph)
+      this.deployXmlContent
     )
   }
 
@@ -976,8 +991,8 @@ export default class SdfClient {
     dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.fixManifest(projectName, customizationInfos, manifestDependencies)
-    await SdfClient.fixDeployXml(dependencyGraph, projectName)
+    await this.fixManifest(projectName, customizationInfos, manifestDependencies)
+    await this.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -991,7 +1006,7 @@ export default class SdfClient {
         executor
       )
     } catch (e) {
-      throw SdfClient.customizeDeployError(toError(e))
+      throw this.customizeDeployError(toError(e))
     }
   }
 

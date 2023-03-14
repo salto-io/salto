@@ -13,18 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/change_validator'
-export * from './src/compare'
-export * from './src/decorators'
-export * from './src/dependencies'
-export * from './src/deploy'
-export * from './src/element_source'
-export * from './src/element'
-export * as filter from './src/filter'
-export * from './src/nacl_case_utils'
-export * from './src/utils'
-export * from './src/template'
-export * from './src/walk_element'
-export * from './src/collisions'
-export * as references from './src/references'
-export * from './src/annotations'
+import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+
+export const isHidden = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+)
+
+export const isHiddenValue = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isUpdatable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true
+)
+
+export const isRequired = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
+)

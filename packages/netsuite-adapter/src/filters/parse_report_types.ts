@@ -17,6 +17,7 @@
 import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { FilterCreator } from '../filter'
 import { savedsearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
@@ -28,11 +29,30 @@ import { financiallayoutType as oldFinancialLayout } from '../autogen/types/stan
 import { reportdefinitionType as oldReportDefinition } from '../autogen/types/standard_types/reportdefinition'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 const typeNameToOldType: Record<string, ObjectType> = {
   [SAVED_SEARCH]: oldSavedSearch().type,
   [REPORT_DEFINITION]: oldReportDefinition().type,
   [FINANCIAL_LAYOUT]: oldFinancialLayout().type,
+}
+
+export const shouldBeList: Record<string, string[][]> = {
+  [SAVED_SEARCH]: [
+    ['dependencies', 'dependency'],
+  ],
+  [REPORT_DEFINITION]: [],
+  [FINANCIAL_LAYOUT]: [],
+}
+
+const transformLists = (instance: InstanceElement): void => {
+  shouldBeList[instance.elemID.typeName].forEach(path => {
+    const listElemId = instance.elemID.createNestedID(...path)
+    const value = resolvePath(instance, listElemId)
+    if (value !== undefined) {
+      setPath(instance, listElemId, makeArray(value))
+    }
+  })
 }
 
 const filterCreator: FilterCreator = ({ elementsSource }) => ({
@@ -53,8 +73,9 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       const parsedInstance = await parser(instance.value[layoutOrDefinition])
       Object.assign(instance.value, parsedInstance)
       if (oldInstance?.value[layoutOrDefinition] !== undefined) {
-        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition]),
-          parsedInstance)) {
+        const oldType = typeNameToOldType[instance.elemID.typeName]
+        const oldParsedInstance = _.omitBy(oldInstance.value, (_val, key) => oldType.fields[key] !== undefined)
+        if (_.isEqual(oldParsedInstance, parsedInstance)) {
           // In case the parsed definitions are equal that mean there is no reason
           // to change the definition string and create a change in the file.
           instance.value[layoutOrDefinition] = oldInstance.value[layoutOrDefinition]
@@ -75,6 +96,7 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
           .map(instance => cloneReportInstance(instance, type))
           .map(async (instance: InstanceElement) => {
             await assignReportTypesValues(instance, await elementsSource.get(instance.elemID))
+            transformLists(instance)
             return instance
           })
       )

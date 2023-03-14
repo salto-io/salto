@@ -15,21 +15,21 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import axios from 'axios'
+import MockAdapter from 'axios-mock-adapter'
 import { organizationExistenceValidator } from '../../src/change_validators'
 import { ZENDESK } from '../../src/constants'
 import { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
 import ZendeskClient from '../../src/client/client'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+import { getOrganizationsByIds } from '../../src/filters/organizations'
 
-const paginatorMock = jest.fn()
-jest.mock('@salto-io/adapter-components', () => {
-  const actual = jest.requireActual('@salto-io/adapter-components')
+const logTrace = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
   return {
     ...actual,
-    client: {
-      ...actual.client,
-      createPaginator: () => paginatorMock,
-    },
+    logger: () => ({ ...actual.logger('test'), trace: (...args: unknown[]) => logTrace(args) }),
   }
 })
 
@@ -80,14 +80,25 @@ describe('OrganizationExistence', () => {
     { conditions: createOrgsList(ids) }
   )
 
-  const client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
-  const getSinglePageMock = jest.fn()
-  client.getSinglePage = getSinglePageMock
+  let mockAxios: MockAdapter
+  let client: ZendeskClient
+  beforeEach(() => {
+    mockAxios = new MockAdapter(axios)
+    client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+  })
+
+  afterEach(() => {
+    mockAxios.restore()
+  })
 
   it('should return an error if the organization does not exist, with resolved Ids', async () => {
     const fetchConfig = { ...DEFAULT_CONFIG[FETCH_CONFIG], resolveOrganizationIDs: true }
-    const validator = organizationExistenceValidator(client, fetchConfig)
-    paginatorMock.mockReturnValue([{ organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
+    const resolvedIdsClient = new ZendeskClient({
+      credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
+      allowOrganizationNames: true,
+    })
+    const validator = organizationExistenceValidator(resolvedIdsClient, fetchConfig)
+    mockAxios.onGet().reply(() => [200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] }])
 
     const slaInstance = createSlaInstance(false)
     const triggerInstance = createTriggerInstance(false)
@@ -117,7 +128,9 @@ describe('OrganizationExistence', () => {
 
   it('should return an error if the organization does not exist, and request all orgs in one request, with unresolved Ids', async () => {
     const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
-    getSinglePageMock.mockReturnValue({ data: { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] } })
+    mockAxios.onGet().replyOnce(200).onGet().replyOnce(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
+      .onGet()
+      .replyOnce(401) // Makes sure that there is only one request
 
     const slaInstance = createSlaInstance()
     const triggerInstance = createTriggerInstance()
@@ -143,16 +156,26 @@ describe('OrganizationExistence', () => {
         detailedMessage: 'The following referenced organizations do not exist: 3, 4',
       },
     ])
-    expect(getSinglePageMock).toHaveBeenCalledTimes(1)
   })
   it('should not crash if the request for organizations fails', async () => {
     const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
-    getSinglePageMock.mockRejectedValueOnce('')
+    mockAxios.onGet().abortRequestOnce()
 
     const slaInstance = createSlaInstance()
     const changes = [toChange({ after: slaInstance })]
 
     const errors = await validator(changes)
     expect(errors.length).toBe(0)
+  })
+  it('should filter organization names from the logs with unresolved Ids', async () => {
+    mockAxios.onGet().reply(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
+    await getOrganizationsByIds(['1', '2'], client)
+
+    expect(logTrace).toHaveBeenCalledWith([
+      'Full HTTP response for %s on %s: %s',
+      'GET',
+      '/api/v2/organizations/show_many?ids=1,2',
+      '{"url":"/api/v2/organizations/show_many?ids=1,2","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+    ])
   })
 })

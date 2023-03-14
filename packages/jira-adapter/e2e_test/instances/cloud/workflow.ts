@@ -77,15 +77,15 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           {
             type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
             configuration: {
-              value: {
+              scriptRunner: {
                 className: 'com.adaptavist.sr.cloud.workflow.AssignToUserInGroup',
                 uuid: 'e9c3d0ec-0d9d-4b1f-b010-3c0e3a18111a',
                 enabled: true,
                 executionUser: 'ADD_ON',
                 condition: 'issue.fields.assignee != null',
                 description: 'Assign Issue',
-                groupName: 'jira-software-users-ido-small-test',
-                roleId: '10003',
+                groupName: createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, ['name']),
+                roleId: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
               },
             },
           },

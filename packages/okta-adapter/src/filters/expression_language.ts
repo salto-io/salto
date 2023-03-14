@@ -18,15 +18,17 @@ import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isT
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, POLICY_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z0-9_]+)/g // pattern: user.someString
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z0-9_]+)/g // pattern: user.profile.someString
 const ID_REGEX = /(["'][a-zA-Z0-9]+?['"])/g // pattern: "someId" or 'someId'
+const BEHAVIOR_REGEX = /(security\.behaviors\.contains\(.+?\))/g // pattern: security.behaviors.contains(someString)
 const USER_SCHEMA_PREFIX = 'user.'
 const USER_SCHEMA_IE_PREFIX = 'user.profile.'
+const BEHAVIOR_EXPRESSION_PREFIX = 'security.behaviors.contains'
 const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
 const USER_SCHEMA_BASE_PATH = ['definitions', 'base', 'properties']
 
@@ -44,10 +46,10 @@ const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
     patterns: [ID_REGEX, USER_SCHEMA_REGEX],
     isIdentityEngine: false,
   },
-  [POLICY_RULE_TYPE_NAME]: {
-    pathToContainer: ['conditions', 'additionalProperties', 'elCondition'],
+  [ACCESS_POLICY_RULE_TYPE_NAME]: {
+    pathToContainer: ['conditions', 'elCondition'],
     fieldName: 'condition',
-    patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX],
+    patterns: [ID_REGEX, USER_SCHEMA_IE_REGEX, BEHAVIOR_REGEX],
     isIdentityEngine: true,
   },
 }
@@ -91,6 +93,13 @@ const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression
         return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
       }
     }
+    if (part.elemID.typeName === BEHAVIOR_RULE_TYPE_NAME) {
+      // references to BehaviorRule are by name
+      const { name } = part.value?.value
+      if (name !== undefined) {
+        return `"${name}"`
+      }
+    }
     if (part.elemID.isTopLevel()) {
       const { id } = part.value.value
       if (id !== undefined) {
@@ -112,6 +121,7 @@ const stringToTemplate = (
 ): string | TemplateExpression => {
   const groupInstances = instances.filter(i => i.elemID.typeName === GROUP_TYPE_NAME)
   const userSchemaInstance = instances.find(i => i.elemID.typeName === USER_SCHEMA_TYPE_NAME && i.elemID.name === 'user')
+  const behaviorInstances = instances.filter(i => i.elemID.typeName === BEHAVIOR_RULE_TYPE_NAME)
   const template = extractTemplate(
     expressionValue,
     patterns,
@@ -134,6 +144,16 @@ const stringToTemplate = (
         const userAttribute = expression.replace(USER_SCHEMA_PREFIX, '')
         return getUserSchemaReference(userAttribute, userSchemaInstance) ?? expression
       }
+      if (expression.startsWith(BEHAVIOR_EXPRESSION_PREFIX)) {
+        // extract BehaviorRule name between the quotes
+        const behaviorName = expression.match(/(["'].+?['"])/)?.[0]?.slice(1, -1)
+        if (_.isString(behaviorName)) {
+          const matchingBehavior = behaviorInstances.find(instance => instance.value.name === behaviorName)
+          return matchingBehavior !== undefined
+            ? [BEHAVIOR_EXPRESSION_PREFIX, '(', new ReferenceExpression(matchingBehavior.elemID, matchingBehavior), ')']
+            : expression
+        }
+      }
       return expression
     },
   )
@@ -152,8 +172,9 @@ const filter: FilterCreator = () => {
       const instances = elements.filter(isInstanceElement)
       const potentialExpressionInstances = instances
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
+      const potentialTargetTypes = new Set([GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME])
       const potentialTargetInstances = instances
-        .filter(instance => [GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME].includes(instance.elemID.typeName))
+        .filter(instance => potentialTargetTypes.has(instance.elemID.typeName))
 
       potentialExpressionInstances
         .forEach(instance => {

@@ -52,7 +52,7 @@ const MEMBER_SCHEME = Joi.object({
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isMember = createSchemeGuard<Member>(MEMBER_SCHEME, 'Received an invalid member')
+export const isMember = createSchemeGuard<Member>(MEMBER_SCHEME, 'Received an invalid member')
 
 const getMemberRequestValues = (member: Values, securityLevel: InstanceElement): Values => {
   if (!isMember(member)) {

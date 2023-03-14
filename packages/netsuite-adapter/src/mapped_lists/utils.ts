@@ -29,7 +29,6 @@ import { captureServiceIdInfo } from '../service_id_info'
 import { getStandardTypes, isStandardTypeName } from '../autogen/types'
 import { isCustomRecordType } from '../types'
 import { toAnnotationRefTypes } from '../custom_records/custom_record_type'
-import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 
 const { mapValuesAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -191,13 +190,10 @@ export const convertAnnotationListsToMaps = async (
 export const isMappedList = async (
   value: Value,
   field: Field,
-  mapKeyFieldsIndex?: Record<string, string | string[]>,
 ): Promise<boolean> =>
-  (mapKeyFieldsIndex === undefined
-    ? field.annotations[LIST_MAPPED_BY_FIELD]
-    : mapKeyFieldsIndex[field.elemID.getFullName()])
-  && _.isPlainObject(value)
+  _.isPlainObject(value)
   && isContainerType(await field.getType())
+  && (field.annotations[LIST_MAPPED_BY_FIELD] || value[LIST_MAPPED_BY_FIELD])
 
 export const getMappedLists = async (
   instance: InstanceElement
@@ -270,51 +266,57 @@ export const convertDataInstanceMapsToLists = async (instance: InstanceElement):
   })
 }
 
-export const createConvertStandardElementMapsToLists = async (
-  elementsSourceIndexes: LazyElementsSourceIndexes
-): Promise<(
+// We use hardcoded types when running transformMapsToLists,
+// so the fields don't have the `map_key_field` annotation.
+// Because of that, we add that annotation on the mapped list itself.
+const setListMappedByFieldToValue = <T extends ChangeDataType>(element: T): Promise<T> =>
+  transformElement({
+    element,
+    transformFunc: async ({ value, field }) => (
+      field !== undefined && await isMappedList(value, field)
+        ? { ...value, [LIST_MAPPED_BY_FIELD]: field.annotations[LIST_MAPPED_BY_FIELD] }
+        : value
+    ),
+    strict: false,
+  })
+
+const transformMapsToLists = (element: ChangeDataType): Promise<ChangeDataType> =>
+  transformElement({
+    element,
+    transformFunc: async ({ value, field }) => (
+      field !== undefined && await isMappedList(value, field)
+        ? _.sortBy(
+          // Removing the `map_key_field` annotation that was used to identify the mapped list.
+          Object.values(_.omit(value, [LIST_MAPPED_BY_FIELD])),
+          [INDEX, value[LIST_MAPPED_BY_FIELD]].flat()
+        ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
+        : value
+    ),
+    strict: false,
+  })
+
+export const createConvertStandardElementMapsToLists = async (): Promise<(
   element: ChangeDataType
 ) => Promise<ChangeDataType>> => {
-  // using hardcoded types so the transformed elements will have fields with List<> ref types.
+  // Using hardcoded types so the transformed elements will have fields with List<> ref types.
   const standardTypes = getStandardTypes()
   const customRecordTypeAnnotationRefTypes = toAnnotationRefTypes(standardTypes.customrecordtype.type)
-  const { mapKeyFieldsIndex } = await elementsSourceIndexes.getIndexes()
 
-  const convertToList: TransformFunc = async ({ value, field }) => (
-    field !== undefined && await isMappedList(value, field, mapKeyFieldsIndex)
-      ? _.sortBy(
-        Object.values(value),
-        [INDEX, mapKeyFieldsIndex[field.elemID.getFullName()]].flat()
-      ).map(item => (_.isObject(item) ? _.omit(item, INDEX) : item))
-      : value
-  )
-
-  return element => {
-    if (isInstanceElement(element) && isStandardTypeName(element.refType.elemID.name)) {
-      return transformElement({
-        element: new InstanceElement(
-          element.elemID.name,
-          standardTypes[element.refType.elemID.name].type,
-          element.value,
-        ),
-        transformFunc: convertToList,
-        strict: false,
-      })
+  return async element => {
+    if (isInstanceElement(element) && isStandardTypeName(element.elemID.typeName)) {
+      return transformMapsToLists(new InstanceElement(
+        element.elemID.name,
+        standardTypes[element.elemID.typeName].type,
+        (await setListMappedByFieldToValue(element)).value,
+      ))
     }
     if (isObjectType(element) && isCustomRecordType(element)) {
-      return transformElement({
-        element: new ObjectType({
-          elemID: element.elemID,
-          fields: _.mapValues(
-            element.fields,
-            ({ refType, annotations }) => ({ refType, annotations })
-          ),
-          annotationRefsOrTypes: customRecordTypeAnnotationRefTypes,
-          annotations: element.annotations,
-        }),
-        transformFunc: convertToList,
-        strict: false,
-      })
+      return transformMapsToLists(new ObjectType({
+        elemID: element.elemID,
+        fields: element.fields,
+        annotationRefsOrTypes: customRecordTypeAnnotationRefTypes,
+        annotations: (await setListMappedByFieldToValue(element)).annotations,
+      }))
     }
     return Promise.resolve(element)
   }

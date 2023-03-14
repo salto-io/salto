@@ -103,8 +103,8 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
   if (url !== undefined) {
     return {
       postAction: {
-        title: 'Deploying as inactive',
-        description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
+        title: 'Deploying flows as inactive',
+        description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
         subActions: [
           `Go to: ${url}`,
           'Activate it by clicking “Activate”',
@@ -115,8 +115,8 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
   if (baseUrl !== undefined) {
     return {
       postAction: {
-        title: 'Deploying as inactive',
-        description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
+        title: 'Deploying flows as inactive',
+        description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
         subActions: [
           `Go to: ${baseUrl}${FLOW_URL_SUFFIX}`,
           `Search for the ${instance.elemID.getFullName()} flow and click on it`,
@@ -127,8 +127,8 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
   }
   return {
     postAction: {
-      title: 'Deploying as inactive',
-      description: 'Your salesforce is configured not to allow deployment of active flows, please make sure to manually activate the flow',
+      title: 'Deploying flows as inactive',
+      description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
       subActions: [
         'Go to the flow set up page in your org',
         `Search for the ${instance.elemID.getFullName()} flow and click on it`,

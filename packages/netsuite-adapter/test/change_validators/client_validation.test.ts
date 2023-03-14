@@ -18,7 +18,7 @@ import { Filter } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import clientValidation from '../../src/change_validators/client_validation'
 import NetsuiteClient from '../../src/client/client'
-import { AdditionalDependencies } from '../../src/client/types'
+import { AdditionalDependencies } from '../../src/config'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 
@@ -147,6 +147,38 @@ File: ~/Objects/customrecord1.xml`
     expect(changeErrors[0]).toEqual({
       detailedMessage,
       elemID: getChangeData(fieldChanges[0]).elemID,
+      message: 'SDF Objects Validation Error',
+      severity: 'Error',
+    })
+  })
+  it('should have SDF Objects Validation Error - in other language', async () => {
+    const detailedMessage = `Une erreur s'est produite lors de la validation de l'objet personnalis.. (object_name)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/object_name.xml`
+    const fullErrorMessage = `
+*** ERREUR ***
+La validation a .chou..
+
+${detailedMessage}`
+
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['object_name'])),
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage,
+      elemID: getChangeData(changes[0]).elemID,
       message: 'SDF Objects Validation Error',
       severity: 'Error',
     })

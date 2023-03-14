@@ -20,6 +20,7 @@ import { applicationValidator } from './application'
 import { applicationFieldsValidator } from './application_addition_fields'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
+import { defaultPoliciesValidator } from './default_policies'
 
 export default (
 ): ChangeValidator => {
@@ -29,6 +30,7 @@ export default (
     applicationFieldsValidator,
     groupRuleStatusValidator,
     groupRuleActionsValidator,
+    defaultPoliciesValidator,
   ]
 
   return createChangeValidator(validators)

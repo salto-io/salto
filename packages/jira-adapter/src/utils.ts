@@ -103,3 +103,10 @@ export const isFreeLicense = async (
   }
   return mainApplication.plan === JIRA_FREE_PLAN
 }
+
+export const renameKey = (object: Value, { from, to }: { from: string; to: string }): void => {
+  if (object[from] !== undefined) {
+    object[to] = object[from]
+    delete object[from]
+  }
+}

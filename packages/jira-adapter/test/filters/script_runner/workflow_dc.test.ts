@@ -16,9 +16,10 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
+
 import { getFilterParams, mockClient } from '../../utils'
 import workflowFilter from '../../../src/filters/script_runner/workflow_filter'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
+import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 
 
@@ -27,8 +28,7 @@ const compareScriptObjectsBase64 = (obj1: string, obj2: string): void => {
   expect(toObject(obj1)).toEqual(toObject(obj2))
 }
 
-
-describe('DC Workflow post functions', () => {
+describe('Scriptrunner DC Workflow', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let filterOff: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let instance: InstanceElement
@@ -40,8 +40,8 @@ describe('DC Workflow post functions', () => {
   const objectNoNullsBase64 = 'YCFgeyJhIjoxfQ==' // YCFg followed by base64 of '{"a":1}'
   const objectScriptOnlyBase64 = 'YCFgeyJzY3JpcHQiOjEsInNjcmlwdFBhdGgiOm51bGx9' // YCFg followed by base64 of '{"script":1,"scriptPath":null}'
   const objectPathOnlyBase64 = 'YCFgeyJzY3JpcHQiOm51bGwsInNjcmlwdFBhdGgiOjF9'
-  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_ADDITIONAL_SCRIPT']
-  const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
+  const FIELD_NAMES_STRINGS = ['FIELD_NOTES', 'FIELD_MESSAGE', 'FIELD_INCLUDE_ATTACHMENTS_CALLBACK', 'FIELD_EMAIL_TEMPLATE', 'FIELD_EMAIL_SUBJECT_TEMPLATE']
+  const FIELD_NAMES_OBJECTS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
 
 
   beforeEach(() => {
@@ -158,6 +158,14 @@ describe('DC Workflow post functions', () => {
         await filter.onFetch([instance])
         expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION).toEqual(goodBase64)
       })
+      it('should delete empty fields', async () => {
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES = ''
+        instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_SCRIPT_FILE_OR_SCRIPT = ''
+        await filter.onFetch([instance])
+        expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_NOTES).toBeUndefined()
+        expect(instance.value.transitions[0].rules.postFunctions[0]
+          .configuration.FIELD_SCRIPT_FILE_OR_SCRIPT).toBeUndefined()
+      })
     })
     describe('pre deploy', () => {
       it('should encode properly', async () => {
@@ -248,7 +256,7 @@ describe('DC Workflow post functions', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
-        instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = 'demo string'
+        instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES = goodBase64
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.validators[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
@@ -284,9 +292,32 @@ describe('DC Workflow post functions', () => {
     })
     describe('on deploy', () => {
       it('should decode properly', async () => {
+        instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES = goodBase64
         await filter.onDeploy([toChange({ after: instance })])
         expect(instance.value.transitions[0].rules.conditions[0].configuration.FIELD_NOTES).toEqual('demo string')
       })
+    })
+  })
+  describe('adding object types', () => {
+    it('should add post function fields', async () => {
+      const postFunctionConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, POST_FUNCTION_CONFIGURATION),
+      })
+      const elementsList = [postFunctionConfigurationType]
+      await filter.onFetch(elementsList)
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_DIRECTION).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_TYPE).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_TO_USER_FIELDS).toBeDefined()
+      expect(postFunctionConfigurationType.fields.FIELD_CC_USER_FIELDS).toBeDefined()
+      expect(elementsList.length).toEqual(3)
+    })
+    it('should add condition fields', async () => {
+      const postFunctionConfigurationType = new ObjectType({
+        elemID: new ElemID(JIRA, CONDITION_CONFIGURATION),
+      })
+      const elementsList = [postFunctionConfigurationType]
+      await filter.onFetch(elementsList)
+      expect(postFunctionConfigurationType.fields.FIELD_LINK_DIRECTION).toBeDefined()
     })
   })
 })

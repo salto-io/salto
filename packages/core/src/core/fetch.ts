@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement, FetchOptions,
+  isAdditionOrModificationChange, Value, StaticFile, isElement,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -371,35 +371,13 @@ const runPostFetch = async ({
   )
 }
 
-type RunAdapterFetchFunctionParams = {
-  adapter: AdapterOperations
-  fetchOptions: FetchOptions
-  adapterName: string
-  withChangeDetection: boolean | undefined
-}
-
-const runAdapterFetchFunction = ({
-  adapter,
-  fetchOptions,
-  adapterName,
-  withChangeDetection,
-}: RunAdapterFetchFunctionParams): Promise<FetchResult> => {
-  if (withChangeDetection) {
-    if (adapter.fetchWithChangeDetection === undefined) {
-      throw new Error(`Adapter: ${adapterName} does not support fetch with change detection operation`)
-    }
-    return adapter.fetchWithChangeDetection(fetchOptions)
-  }
-  return adapter.fetch(fetchOptions)
-}
-
 const fetchAndProcessMergeErrors = async (
   accountsToAdapters: Record<string, AdapterOperations>,
   stateElements: elementSource.ElementsSource,
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -465,12 +443,9 @@ const fetchAndProcessMergeErrors = async (
     const fetchResults = await Promise.all(
       Object.entries(accountsToAdapters)
         .map(async ([accountName, adapter]) => {
-          const fetchOptions = { progressReporter: progressReporters[accountName] }
-          const fetchResult = await runAdapterFetchFunction({
-            adapter,
-            fetchOptions,
-            adapterName: accountToServiceNameMap[accountName],
-            withChangeDetection,
+          const fetchResult = await adapter.fetch({
+            progressReporter: progressReporters[accountName],
+            withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (
@@ -615,11 +590,19 @@ export const calcFetchChanges = async (
     'calculate service-state changes',
   )
 
+  // We only care about conflicts with changes from the service, so for the next two comparisons
+  // we only need to check elements for which we have service changes
+  const serviceChangesTopLevelIDs = new Set(
+    wu(serviceChanges.values())
+      .map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName())
+  )
+  const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
+
   const pendingChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
       workspaceElements,
-      [accountFetchFilter, partialFetchFilter],
+      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
       'workspace',
     ),
     'calculate pending changes',
@@ -628,7 +611,7 @@ export const calcFetchChanges = async (
     () => getDetailedChangeTree(
       workspaceElements,
       partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter],
+      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
       'service',
     ),
     'calculate service-workspace changes',
@@ -742,7 +725,7 @@ export const fetchChanges = async (
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -757,7 +740,7 @@ export const fetchChanges = async (
     accountToServiceNameMap,
     getChangesEmitter,
     progressEmitter,
-    withChangeDetection
+    withChangesDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

@@ -158,6 +158,7 @@ export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 
 // Salesforce annotations
 export const LABEL = 'label'
+export const PLURAL_LABEL = 'pluralLabel'
 export const DESCRIPTION = 'description'
 export const HELP_TEXT = 'inlineHelpText'
 export const FORMULA = 'formula'
@@ -370,11 +371,15 @@ export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
+export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const ACTIVATE_RSS = 'activateRSS'
 export const GLOBAL_VALUE_SET_METADATA_TYPE = 'GlobalValueSet'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+
+// Standard Object Types
+export const ORGANIZATION_SETTINGS = 'Organization'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

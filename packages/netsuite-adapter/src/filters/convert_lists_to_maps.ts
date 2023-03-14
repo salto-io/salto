@@ -30,10 +30,7 @@ const shouldTransformDataInstance = async (instance: InstanceElement): Promise<b
   Object.values((await instance.getType()).fields)
     .some(field => dataTypesToConvert.has(field.refType.elemID.name))
 
-const filterCreator: FilterCreator = ({
-  elementsSourceIndex,
-  changesGroupId,
-}): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: FilterCreator = ({ changesGroupId }): FilterWith<'onFetch' | 'preDeploy'> => ({
   name: 'convertListsToMaps',
   /**
    * Upon fetch, do the following:
@@ -90,7 +87,7 @@ const filterCreator: FilterCreator = ({
    */
   preDeploy: async changes => {
     const convertElementMapsToLists = changesGroupId && isSdfCreateOrUpdateGroupId(changesGroupId)
-      ? await createConvertStandardElementMapsToLists(elementsSourceIndex)
+      ? await createConvertStandardElementMapsToLists()
       : undefined
 
     await awu(changes)

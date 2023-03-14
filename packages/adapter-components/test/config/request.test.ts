@@ -76,6 +76,18 @@ describe('config_request', () => {
       expect(requestDefault.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID))
         .toBeTruthy()
     })
+
+    it('should include additional actions when added', () => {
+      const { deployRequests } = createRequestConfigs(
+        'myAdapter',
+        undefined,
+        ['a', 'b']
+      )
+      expect(Object.keys(deployRequests.fields)).toHaveLength(5)
+      expect(Object.keys(deployRequests.fields).sort()).toEqual(['a', 'add', 'b', 'modify', 'remove'])
+      expect(deployRequests.fields.a.refType.elemID).toEqual(deployRequests.fields.add.refType.elemID)
+      expect(deployRequests.fields.b.refType.elemID).toEqual(deployRequests.fields.add.refType.elemID)
+    })
   })
 
   describe('validateRequestConfig', () => {

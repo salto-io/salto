@@ -27,7 +27,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     await referenceUtils.addReferences({
       elements,
-      fieldsToGroupBy: ['id', 'name'],
+      fieldsToGroupBy: ['id', 'name', 'key'],
       defs: referencesRules,
       fieldReferenceResolverCreator: defs => new OktaFieldReferenceResolver(defs),
     })

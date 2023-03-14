@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
-import { getFilterParams } from '../utils'
+import { createEmptyType, getFilterParams } from '../utils'
 import userFilter from '../../src/filters/user'
 import { Filter } from '../../src/filter'
 import { ACCOUNT_ID_INFO_TYPE, JIRA } from '../../src/constants'
-import { createBoardType, createDashboardType, createEmptyType, createFilterType } from './account_id/account_id_common'
+import { createBoardType, createDashboardType, createFilterType } from './account_id/account_id_common'
 
 describe('userFilter', () => {
   let filter: Filter

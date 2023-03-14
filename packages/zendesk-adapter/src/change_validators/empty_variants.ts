@@ -17,7 +17,6 @@ import _ from 'lodash'
 import { ChangeValidator, getChangeData,
   isAdditionOrModificationChange, isInstanceElement } from '@salto-io/adapter-api'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../filters/dynamic_content'
-import { createEmptyFieldErrorMessage } from './utils'
 
 export const emptyVariantsValidator: ChangeValidator = async changes => (
   changes
@@ -30,10 +29,8 @@ export const emptyVariantsValidator: ChangeValidator = async changes => (
         return [{
           elemID: instance.elemID,
           severity: 'Error',
-          message: createEmptyFieldErrorMessage(instance.elemID.getFullName(), VARIANTS_FIELD_NAME),
-          detailedMessage: createEmptyFieldErrorMessage(
-            instance.elemID.getFullName(), VARIANTS_FIELD_NAME
-          ),
+          message: 'Cannot make this change due to missing variants',
+          detailedMessage: 'Dynamic content item must have at least one variant',
         }]
       }
       return []

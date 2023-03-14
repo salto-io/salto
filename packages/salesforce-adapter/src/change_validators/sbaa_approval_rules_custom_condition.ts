@@ -65,7 +65,7 @@ const changeValidator: ChangeValidator = async changes => {
   return rulesReferencedFromAdditionConditions.map(referencedInstanceElemID =>
     ({
       elemID: idToRuleWithCustomAdditionInst[referencedInstanceElemID].elemID,
-      severity: 'Warning' as SeverityLevel,
+      severity: 'Error' as SeverityLevel,
       message: 'Cannot deploy ApprovalRule with ConditionMet set to ‘Custom’',
       detailedMessage: 'Cannot deploy an ApprovalRule with ConditionMet set to ‘Custom‘ that has a referencing ApprovalCondition.\nYou can edit ConditionMet in Salto and set it to ‘All’ and deploy. Then, change it back to ‘Custom’ and deploy again.',
     })).filter(values.isDefined)

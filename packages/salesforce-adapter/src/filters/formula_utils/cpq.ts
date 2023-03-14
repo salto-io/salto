@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { $, createApiName, parts } from './utils'
+import { createApiName, parts } from './utils'
 
 const cpqMapping: Record<string, Record<string, string>> = {
   SBQQ__QUOTE__C: {
@@ -183,7 +183,7 @@ const cpqMapping: Record<string, Record<string, string>> = {
 
 export const mapCPQField = (value: string, originalObject: string): string => {
   const [relationshipName, field] = parts(value)
-  const apiName = cpqMapping[$(originalObject)]?.[$(relationshipName)]
+  const apiName = cpqMapping[originalObject.toLocaleUpperCase()]?.[relationshipName.toLocaleUpperCase()]
 
   return createApiName(apiName ?? relationshipName, field)
 }

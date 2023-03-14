@@ -18,7 +18,7 @@ import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP } fro
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { AUTOMATION_TYPE } from '../../constants'
+import { AUTOMATION_TYPE, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { generateTemplateExpression, generateJqlContext, removeCustomFieldPrefix } from './template_expression_generator'
 
@@ -39,24 +39,32 @@ type JqlDetails = {
 
 type StringJqlDetails = JqlDetails & { jql: string }
 type TemplateJqlDetails = JqlDetails & { jql: TemplateExpression }
+// maps between the automation component type (which is determined by 'type' field)
+// and the corresponding jql relative paths
+const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
+  'jira.jql.condition': [['rawValue']],
+  'jira.issue.assign': [['value', 'jql']],
+  'jira.issue.related': [['value', 'jql']],
+  'jira.issues.related.condition': [['value', 'compareJql'], ['value', 'relatedJql'], ['value', 'jql']],
+  'jira.jql.scheduled': [['value', 'jql']],
+  JQL: [['query', 'value']],
+}
 
-const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
-  // maps between the automation component type (which is determined by 'type' field)
-  // and the corresponding jql relative paths
-  const AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
-    'jira.jql.condition': [['rawValue']],
-    'jira.issue.assign': [['value', 'jql']],
-    'jira.issue.related': [['value', 'jql']],
-    'jira.issues.related.condition': [['value', 'compareJql'], ['value', 'relatedJql'], ['value', 'jql']],
-    'jira.jql.scheduled': [['value', 'jql']],
-    JQL: [['query', 'value']],
-  }
+const SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE: Record<string, string[][]> = {
+  'com.onresolve.jira.groovy.GroovyCondition': [['configuration', 'FIELD_JQL_QUERY']],
+}
 
+const instanceTypeToMap: Map<string, Record<string, string[][]>> = new Map([
+  [AUTOMATION_TYPE, AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE],
+  [WORKFLOW_TYPE_NAME, SCRIPT_RUNNER_JQL_RELATIVE_PATHS_BY_TYPE],
+])
+
+const getRelativePathJqls = (instance: InstanceElement, pathMap: Record<string, string[][]>): JqlDetails[] => {
   const jqlPaths: JqlDetails[] = []
   walkOnElement({
     element: instance,
     func: ({ value, path }) => {
-      const jqlRelativePaths = AUTOMATION_JQL_RELATIVE_PATHS_BY_TYPE[value?.type]
+      const jqlRelativePaths = pathMap[value?.type]
       if (jqlRelativePaths !== undefined) {
         jqlRelativePaths.forEach(relativePath => {
           const jqlValue = _.get(value, relativePath)
@@ -75,8 +83,8 @@ const getAutomationJqls = (instance: InstanceElement): JqlDetails[] => {
 }
 
 const getJqls = (instance: InstanceElement): JqlDetails[] => {
-  if (instance.elemID.typeName === AUTOMATION_TYPE) {
-    return getAutomationJqls(instance)
+  if (instanceTypeToMap.has(instance.elemID.typeName)) {
+    return getRelativePathJqls(instance, instanceTypeToMap.get(instance.elemID.typeName) as Record<string, string[][]>)
   }
   return JQL_FIELDS
     .filter(({ type }) => type === instance.elemID.typeName)

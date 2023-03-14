@@ -536,66 +536,162 @@ describe('NetsuiteAdapter creator', () => {
           })
         ).toThrow()
       })
-      it('should throw an error when additionalDependencies is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            deploy: {
-              additionalDependencies: 'should be an object',
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
-            credentials,
-            config: invalidConfig,
-            getElemIdFunc: mockGetElemIdFunc,
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-        ).toThrow()
-      })
-      it('should throw an error when additionalDependencies.include is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            deploy: {
-              additionalDependencies: {
-                include: { features: ['should be list of strings', 1] },
+      describe('additionalDependencies', () => {
+        it('should not throw', () => {
+          const validConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: {
+                    features: ['feature1'],
+                    objects: ['object1'],
+                  },
+                  exclude: {
+                    features: ['feature2'],
+                    objects: ['object2'],
+                  },
+                },
               },
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
-            credentials,
-            config: invalidConfig,
-            getElemIdFunc: mockGetElemIdFunc,
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-        ).toThrow()
-      })
-      it('should throw an error when additionalDependencies.exclude is invalid', () => {
-        const invalidConfig = new InstanceElement(
-          ElemID.CONFIG_NAME,
-          adapter.configType as ObjectType,
-          {
-            deploy: {
-              additionalDependencies: {
-                exclude: { objects: ['should be list of strings', 1] },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: validConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).not.toThrow()
+        })
+        it('should throw an error when additionalDependencies is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: 'should be an object',
               },
-            },
-          }
-        )
-        expect(
-          () => adapter.operations({
-            credentials,
-            config: invalidConfig,
-            getElemIdFunc: mockGetElemIdFunc,
-            elementsSource: buildElementsSourceFromElements([]),
-          })
-        ).toThrow()
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when additionalDependencies.include is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { features: ['should be list of strings', 1] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when additionalDependencies.exclude is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  exclude: { objects: ['should be list of strings', 1] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when additionalDependencies has conflicting features', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { features: ['feature'] },
+                  exclude: { features: ['feature'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when additionalDependencies has conflicting features (with required)', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { features: ['feature:required'] },
+                  exclude: { features: ['feature'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when additionalDependencies has conflicting objects', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { objects: ['script_id'] },
+                  exclude: { objects: ['script_id'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
       })
     })
 

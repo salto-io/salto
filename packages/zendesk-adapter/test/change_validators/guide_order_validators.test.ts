@@ -182,8 +182,8 @@ describe('GuideOrdersValidator', () => {
         expect(errors).toMatchObject([{
           elemID: instance.elemID,
           severity: 'Warning',
-          message: `${instance.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-          detailedMessage: `Instance ${instance.elemID.name} of type ${instance.elemID.typeName} not listed in ${instance.elemID.typeName} sort order, and will be added first by default. If order is important, please include it in ${orderTypeName}`,
+          message: 'Order not specified',
+          detailedMessage: `Element ${instance.elemID.name} of type ${instance.elemID.typeName} is not listed in ${instance.elemID.typeName} sort order.  Therefore, it will be added at the beginning by default.  If the order is important, please include it in ${orderTypeName}`,
         }])
       }
 

@@ -36,7 +36,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE, CUSTOM_OBJECT_TRANSLATION_METADATA_TYPE, SHARING_RULES_TYPE,
   VALIDATION_RULES_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE,
   WEBLINK_METADATA_TYPE, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_FIELD, INTERNAL_ID_ANNOTATION,
-  INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE, KEY_PREFIX,
+  INTERNAL_ID_FIELD, LIGHTNING_PAGE_TYPE, FLEXI_PAGE_TYPE, KEY_PREFIX, PLURAL_LABEL,
 } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import {
@@ -56,7 +56,7 @@ import {
   isInstanceOfType,
   isMasterDetailField,
   buildElementsSourceForFetch,
-  addKeyPrefix,
+  addKeyPrefix, addPluralLabel,
 } from './utils'
 import { convertList } from './convert_lists'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../metadata_deploy'
@@ -395,6 +395,7 @@ export const createCustomTypeFromCustomObjectInstance = async ({
 }): Promise<ObjectType> => {
   const name = instance.value[INSTANCE_FULL_NAME_FIELD]
   const label = instance.value[LABEL]
+  const pluralLabel = instance.value[PLURAL_LABEL]
   const keyPrefix = instance.value[KEY_PREFIX]
   const serviceIds = {
     [API_NAME]: name,
@@ -404,6 +405,9 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   addApiName(object, name)
   addMetadataType(object, objectMetadataType)
   addLabel(object, label)
+  if (pluralLabel !== undefined) {
+    addPluralLabel(object, pluralLabel)
+  }
   addKeyPrefix(object, keyPrefix === null ? undefined : keyPrefix)
   object.path = [...await getObjectDirectoryPath(object), pathNaclCase(object.elemID.name)]
   const annotationTypes = annotationTypesForObject(
@@ -644,10 +648,7 @@ export const createCustomObjectChange = async (
   fullName: string,
   changes: ReadonlyArray<Change>,
 ): Promise<Change<InstanceElement>> => {
-  const objectChange = await awu(changes)
-    .filter(isObjectTypeChange)
-    .find(change => isCustomObject(getChangeData(change)))
-
+  const objectChange = changes.find(isObjectTypeChange)
   if (objectChange !== undefined && objectChange.action === 'remove') {
     // if we remove the custom object we don't really need the field changes
     // We do need to include master-detail field removals explicitly because otherwise salesforce

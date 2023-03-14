@@ -18,9 +18,15 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
-  placeholderReadonlyElementsSource, ObjectType, isModificationChange,
+  placeholderReadonlyElementsSource, isModificationChange,
   isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
-import { resolvePath, TransformFuncArgs, transformElement, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  resolvePath,
+  TransformFuncArgs,
+  transformElement,
+  safeJsonStringify,
+  getRelevantNamesFromChange,
+} from '@salto-io/adapter-utils'
 import { promises, values, collections } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import osPath from 'path'
@@ -342,19 +348,9 @@ const buildNaclFilesState = async ({
     await index.setAll(awu(entriesToSet))
   }
 
-  const getFieldsElemIDsFullName = (objectType: ObjectType): string[] =>
-    Object.values(objectType.fields).map(field => field.elemID.getFullName())
-
   const updateSearchableNamesIndex = async (
     changes: Change[]
   ): Promise<void> => {
-    const getRelevantNamesFromChange = (change: Change): string[] => {
-      const element = getChangeData(change)
-      const fieldsNames = isObjectType(element)
-        ? getFieldsElemIDsFullName(element)
-        : []
-      return [element.elemID.getFullName(), ...fieldsNames]
-    }
     const [additions, removals] = _.partition(changes.flatMap(change => {
       if (isModificationChange(change)) {
         if (isObjectTypeChange(change)) {

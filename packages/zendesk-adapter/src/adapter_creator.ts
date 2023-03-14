@@ -147,6 +147,7 @@ export const adapter: Adapter = {
       client: new ZendeskClient({
         credentials,
         config: config[CLIENT_CONFIG],
+        allowOrganizationNames: config[FETCH_CONFIG].resolveOrganizationIDs,
       }),
       credentials,
       config,

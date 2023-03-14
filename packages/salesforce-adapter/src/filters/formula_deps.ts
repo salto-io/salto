@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
-import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
+import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
-import { FORMULA, SALESFORCE } from '../constants'
+import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
 import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
@@ -33,36 +32,59 @@ const { extract } = formulon
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const identifierTypeToElemIdType = (typeInfo: FormulaIdentifierInfo): ElemIDType => {
-  if ((typeInfo.instance.match(/\./g) || []).length > 0) {
-    return 'field'
+const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
+  if (identifierInfo.type === 'customLabel') {
+    return [identifierInfo.instance]
+  }
+  if (identifierInfo.type === 'customMetadataTypeRecord') {
+    const [typeName, instanceName] = identifierInfo.instance.split('.')
+    return [`${typeName.slice(0, -1 * CUSTOM_METADATA_SUFFIX.length)}.${instanceName}`]
+  }
+  return identifierInfo.instance.split('.').slice(1)
+}
+
+const identifierTypeToElementType = (identifierInfo: FormulaIdentifierInfo): string => {
+  if (identifierInfo.type === 'customLabel') {
+    return 'CustomLabel'
   }
 
-  return ({
-    [IdentifierType.STANDARD_OBJECT.name]: 'type',
-    [IdentifierType.CUSTOM_METADATA_TYPE.name]: 'type',
-    [IdentifierType.CUSTOM_OBJECT.name]: 'type',
-    [IdentifierType.CUSTOM_SETTING.name]: 'type',
-    [IdentifierType.STANDARD_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_FIELD.name]: 'field',
-    [IdentifierType.CUSTOM_METADATA_TYPE_RECORD.name]: 'type',
-  } as Record<string, ElemIDType>)[typeInfo.type.name]
+  return identifierInfo.instance.split('.')[0]
 }
+
+const identifierTypeToElemIdType = (identifierInfo: FormulaIdentifierInfo): ElemIDType => (
+  ({
+    standardObject: 'type',
+    customMetadataType: 'type',
+    customObject: 'type',
+    customSetting: 'type',
+    standardField: 'field',
+    customField: 'field',
+    customMetadataTypeRecord: 'instance',
+    customLabel: 'instance',
+  } as Record<IdentifierType, ElemIDType>)[identifierInfo.type]
+)
 
 const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Promise<ElemID[]> => (
   typeInfos
     .map(identifierInfo => (
       new ElemID(SALESFORCE,
-        identifierInfo.instance.split('.')[0],
+        naclCase(identifierTypeToElementType(identifierInfo)),
         identifierTypeToElemIdType(identifierInfo),
-        ...identifierInfo.instance.split('.').slice(1))
+        ...identifierTypeToElementName(identifierInfo).map(naclCase))
     ))
 )
 
 const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
-  const isValidReference = (elemId: ElemID): boolean => (
-    allElements.get(elemId) !== undefined
-  )
+  const isValidReference = async (elemId: ElemID): Promise<boolean> => {
+    if (elemId.idType === 'type' || elemId.idType === 'instance') {
+      return await allElements.get(elemId) !== undefined
+    }
+
+    // field
+    const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
+    const typeElement = await allElements.get(typeElemId)
+    return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
+  }
 
   const logInvalidReferences = (
     invalidReferences: ElemID[],
@@ -113,7 +135,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const [validReferences, invalidReferences] = _.partition(references, isValidReference)
+    const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
     logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
     log.info(`Extracted ${validReferences.length} valid references`)
@@ -131,8 +153,6 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  * This filter parses formulas, identifies such references and adds them to the _generated_references annotation of the
  * formula field.
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
- * Note: Because formulas are part of the type's definition we assume they can only refer to other types/fields and to
- *       instances
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'formula_deps',

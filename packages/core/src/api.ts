@@ -221,7 +221,7 @@ export type FetchFunc = (
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   accounts?: string[],
   ignoreStateElemIdMapping?: boolean,
-  withChangeDetection?: boolean,
+  withChangeDetection?: boolean
 ) => Promise<FetchResult>
 
 export type FetchFromWorkspaceFuncParams = {

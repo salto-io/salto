@@ -39,6 +39,12 @@ zendesk {
             fieldName = "updated_at"
             fieldType = "string"
           },
+          {
+            fieldName = "created_by_id"
+          },
+          {
+            fieldName = "updated_by_id"
+          },
         ]
         serviceIdField = "id"
       }
@@ -57,6 +63,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -71,12 +83,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/groups"
+            url = "/api/v2/groups"
             deployAsField = "group"
             method = "post"
           }
           modify = {
-            url = "/groups/{groupId}"
+            url = "/api/v2/groups/{groupId}"
             method = "put"
             deployAsField = "group"
             urlParamsToFields = {
@@ -84,7 +96,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/groups/{groupId}"
+            url = "/api/v2/groups/{groupId}"
             method = "delete"
             deployAsField = "group"
             urlParamsToFields = {
@@ -104,6 +116,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -144,12 +162,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/custom_roles"
+            url = "/api/v2/custom_roles"
             deployAsField = "custom_role"
             method = "post"
           }
           modify = {
-            url = "/custom_roles/{customRoleId}"
+            url = "/api/v2/custom_roles/{customRoleId}"
             method = "put"
             deployAsField = "custom_role"
             urlParamsToFields = {
@@ -157,7 +175,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/custom_roles/{customRoleId}"
+            url = "/api/v2/custom_roles/{customRoleId}"
             method = "delete"
             deployAsField = "custom_role"
             urlParamsToFields = {
@@ -179,6 +197,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -197,12 +221,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/organizations"
+            url = "/api/v2/organizations"
             deployAsField = "organization"
             method = "post"
           }
           modify = {
-            url = "/organizations/{organizationId}"
+            url = "/api/v2/organizations/{organizationId}"
             method = "put"
             deployAsField = "organization"
             urlParamsToFields = {
@@ -210,7 +234,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/organizations/{organizationId}"
+            url = "/api/v2/organizations/{organizationId}"
             method = "delete"
             deployAsField = "organization"
             urlParamsToFields = {
@@ -238,6 +262,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -252,12 +282,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/views"
+            url = "/api/v2/views"
             deployAsField = "view"
             method = "post"
           }
           modify = {
-            url = "/views/{viewId}"
+            url = "/api/v2/views/{viewId}"
             method = "put"
             deployAsField = "view"
             urlParamsToFields = {
@@ -265,7 +295,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/views/{viewId}"
+            url = "/api/v2/views/{viewId}"
             method = "delete"
             deployAsField = "view"
             urlParamsToFields = {
@@ -277,7 +307,7 @@ zendesk {
       view_order = {
         deployRequests = {
           modify = {
-            url = "/views/update_many"
+            url = "/api/v2/views/update_many"
             method = "put"
           }
         }
@@ -311,6 +341,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -325,12 +361,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/triggers"
+            url = "/api/v2/triggers"
             deployAsField = "trigger"
             method = "post"
           }
           modify = {
-            url = "/triggers/{triggerId}"
+            url = "/api/v2/triggers/{triggerId}"
             method = "put"
             deployAsField = "trigger"
             urlParamsToFields = {
@@ -338,7 +374,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/triggers/{triggerId}"
+            url = "/api/v2/triggers/{triggerId}"
             method = "delete"
             deployAsField = "trigger"
             urlParamsToFields = {
@@ -363,6 +399,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
             },
           ]
@@ -376,12 +418,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/trigger_categories"
+            url = "/api/v2/trigger_categories"
             deployAsField = "trigger_category"
             method = "post"
           }
           modify = {
-            url = "/trigger_categories/{triggerCategoryId}"
+            url = "/api/v2/trigger_categories/{triggerCategoryId}"
             method = "patch"
             deployAsField = "trigger_category"
             urlParamsToFields = {
@@ -389,7 +431,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/trigger_categories/{triggerCategoryId}"
+            url = "/api/v2/trigger_categories/{triggerCategoryId}"
             method = "delete"
             deployAsField = "trigger_category"
             urlParamsToFields = {
@@ -401,7 +443,7 @@ zendesk {
       trigger_order = {
         deployRequests = {
           modify = {
-            url = "/trigger_categories/jobs"
+            url = "/api/v2/trigger_categories/jobs"
             method = "post"
             deployAsField = "job"
           }
@@ -431,6 +473,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -445,12 +493,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/automations"
+            url = "/api/v2/automations"
             deployAsField = "automation"
             method = "post"
           }
           modify = {
-            url = "/automations/{automationId}"
+            url = "/api/v2/automations/{automationId}"
             method = "put"
             deployAsField = "automation"
             urlParamsToFields = {
@@ -458,7 +506,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/automations/{automationId}"
+            url = "/api/v2/automations/{automationId}"
             method = "delete"
             deployAsField = "automation"
             urlParamsToFields = {
@@ -470,7 +518,7 @@ zendesk {
       automation_order = {
         deployRequests = {
           modify = {
-            url = "/automations/update_many"
+            url = "/api/v2/automations/update_many"
             method = "put"
           }
         }
@@ -494,6 +542,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -508,12 +562,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/slas/policies"
+            url = "/api/v2/slas/policies"
             deployAsField = "sla_policy"
             method = "post"
           }
           modify = {
-            url = "/slas/policies/{slaPolicyId}"
+            url = "/api/v2/slas/policies/{slaPolicyId}"
             method = "put"
             deployAsField = "sla_policy"
             urlParamsToFields = {
@@ -521,7 +575,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/slas/policies/{slaPolicyId}"
+            url = "/api/v2/slas/policies/{slaPolicyId}"
             method = "delete"
             deployAsField = "sla_policy"
             urlParamsToFields = {
@@ -530,10 +584,30 @@ zendesk {
           }
         }
       }
+      sla_policy__filter__all = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "value"
+              fieldType = "unknown"
+            },
+          ]
+        }
+      }
+      sla_policy__filter__any = {
+        transformation = {
+          fieldTypeOverrides = [
+            {
+              fieldName = "value"
+              fieldType = "unknown"
+            },
+          ]
+        }
+      }
       sla_policy_order = {
         deployRequests = {
           modify = {
-            url = "/slas/policies/reorder"
+            url = "/api/v2/slas/policies/reorder"
             method = "put"
           }
         }
@@ -550,6 +624,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -575,6 +655,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -589,12 +675,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/targets"
+            url = "/api/v2/targets"
             deployAsField = "target"
             method = "post"
           }
           modify = {
-            url = "/targets/{targetId}"
+            url = "/api/v2/targets/{targetId}"
             method = "put"
             deployAsField = "target"
             urlParamsToFields = {
@@ -602,7 +688,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/targets/{targetId}"
+            url = "/api/v2/targets/{targetId}"
             method = "delete"
             deployAsField = "target"
             urlParamsToFields = {
@@ -628,6 +714,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -664,12 +756,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/macros"
+            url = "/api/v2/macros"
             deployAsField = "macro"
             method = "post"
           }
           modify = {
-            url = "/macros/{macroId}"
+            url = "/api/v2/macros/{macroId}"
             method = "put"
             deployAsField = "macro"
             urlParamsToFields = {
@@ -677,7 +769,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/macros/{macroId}"
+            url = "/api/v2/macros/{macroId}"
             method = "delete"
             deployAsField = "macro"
             urlParamsToFields = {
@@ -699,6 +791,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -726,6 +824,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -743,6 +847,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -763,6 +873,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -810,6 +926,10 @@ zendesk {
               fieldName = "id"
               fieldType = "number"
             },
+            {
+              fieldName = "categories"
+              fieldType = "list<category>"
+            },
           ]
           fieldsToHide = [
             {
@@ -821,6 +941,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -829,12 +955,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/brands"
+            url = "/api/v2/brands"
             deployAsField = "brand"
             method = "post"
           }
           modify = {
-            url = "/brands/{brandId}"
+            url = "/api/v2/brands/{brandId}"
             method = "put"
             deployAsField = "brand"
             urlParamsToFields = {
@@ -842,7 +968,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/brands/{brandId}"
+            url = "/api/v2/brands/{brandId}"
             method = "delete"
             deployAsField = "brand"
             urlParamsToFields = {
@@ -870,6 +996,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -884,7 +1016,7 @@ zendesk {
       }
       business_hours_schedules = {
         request = {
-          url = "/business_hours/schedules"
+          url = "/api/v2/business_hours/schedules"
           recurseInto = [
             {
               type = "business_hours_schedule_holiday"
@@ -920,6 +1052,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -934,12 +1072,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/business_hours/schedules"
+            url = "/api/v2/business_hours/schedules"
             deployAsField = "schedule"
             method = "post"
           }
           modify = {
-            url = "/business_hours/schedules/{scheduleId}"
+            url = "/api/v2/business_hours/schedules/{scheduleId}"
             method = "put"
             deployAsField = "schedule"
             urlParamsToFields = {
@@ -947,7 +1085,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/business_hours/schedules/{scheduleId}"
+            url = "/api/v2/business_hours/schedules/{scheduleId}"
             method = "delete"
             deployAsField = "schedule"
             urlParamsToFields = {
@@ -999,6 +1137,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1006,12 +1150,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/sharing_agreements"
+            url = "/api/v2/sharing_agreements"
             deployAsField = "sharing_agreement"
             method = "post"
           }
           modify = {
-            url = "/sharing_agreements/{sharingAgreementId}"
+            url = "/api/v2/sharing_agreements/{sharingAgreementId}"
             method = "put"
             deployAsField = "sharing_agreement"
             urlParamsToFields = {
@@ -1019,7 +1163,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/sharing_agreements/{sharingAgreementId}"
+            url = "/api/v2/sharing_agreements/{sharingAgreementId}"
             method = "delete"
             deployAsField = "sharing_agreement"
             urlParamsToFields = {
@@ -1031,6 +1175,10 @@ zendesk {
       support_address = {
         transformation = {
           sourceTypeName = "support_addresses__recipient_addresses"
+          idFields = [
+            "name",
+            "&email",
+          ]
           fieldTypeOverrides = [
             {
               fieldName = "cname_status"
@@ -1107,6 +1255,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1117,12 +1271,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/recipient_addresses"
+            url = "/api/v2/recipient_addresses"
             deployAsField = "recipient_address"
             method = "post"
           }
           modify = {
-            url = "/recipient_addresses/{supportAddressId}"
+            url = "/api/v2/recipient_addresses/{supportAddressId}"
             method = "put"
             deployAsField = "recipient_address"
             urlParamsToFields = {
@@ -1130,7 +1284,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/recipient_addresses/{supportAddressId}"
+            url = "/api/v2/recipient_addresses/{supportAddressId}"
             method = "delete"
             deployAsField = "recipient_address"
             urlParamsToFields = {
@@ -1150,6 +1304,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1190,12 +1350,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/ticket_forms"
+            url = "/api/v2/ticket_forms"
             deployAsField = "ticket_form"
             method = "post"
           }
           modify = {
-            url = "/ticket_forms/{ticketFormId}"
+            url = "/api/v2/ticket_forms/{ticketFormId}"
             method = "put"
             deployAsField = "ticket_form"
             urlParamsToFields = {
@@ -1203,11 +1363,130 @@ zendesk {
             }
           }
           remove = {
-            url = "/ticket_forms/{ticketFormId}"
+            url = "/api/v2/ticket_forms/{ticketFormId}"
             method = "delete"
             deployAsField = "ticket_form"
             urlParamsToFields = {
               ticketFormId = "id"
+            }
+          }
+        }
+      }
+      custom_statuses = {
+        request = {
+          url = "/api/v2/custom_statuses"
+        }
+        transformation = {
+          dataField = "custom_statuses"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      custom_status = {
+        transformation = {
+          sourceTypeName = "custom_statuses__custom_statuses"
+          idFields = [
+            "status_category",
+            "raw_agent_label",
+          ]
+          fileNameFields = [
+            "status_category",
+            "raw_agent_label",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "end_user_label"
+              fieldType = "string"
+            },
+            {
+              fieldName = "agent_label"
+              fieldType = "string"
+            },
+            {
+              fieldName = "description"
+              fieldType = "string"
+            },
+            {
+              fieldName = "end_user_description"
+              fieldType = "string"
+            },
+            {
+              fieldName = "default"
+              fieldType = "boolean"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/objects-rules/tickets/ticket_statuses/edit/{id}"
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/custom_statuses"
+            deployAsField = "custom_status"
+            method = "post"
+          }
+          modify = {
+            url = "/api/v2/custom_statuses/{custom_status_id}"
+            method = "put"
+            deployAsField = "custom_status"
+            urlParamsToFields = {
+              custom_status_id = "id"
             }
           }
         }
@@ -1236,6 +1515,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1273,6 +1558,9 @@ zendesk {
               fieldName = "title_in_portal"
               fieldType = "string"
             },
+            {
+              fieldName = "custom_statuses"
+            },
           ]
           fieldTypeOverrides = [
             {
@@ -1284,12 +1572,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/ticket_fields"
+            url = "/api/v2/ticket_fields"
             deployAsField = "ticket_field"
             method = "post"
           }
           modify = {
-            url = "/ticket_fields/{ticketFieldId}"
+            url = "/api/v2/ticket_fields/{ticketFieldId}"
             method = "put"
             deployAsField = "ticket_field"
             urlParamsToFields = {
@@ -1297,7 +1585,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/ticket_fields/{ticketFieldId}"
+            url = "/api/v2/ticket_fields/{ticketFieldId}"
             method = "delete"
             deployAsField = "ticket_field"
             urlParamsToFields = {
@@ -1309,7 +1597,7 @@ zendesk {
       ticket_field__custom_field_options = {
         deployRequests = {
           add = {
-            url = "/ticket_fields/{ticketFieldId}/options"
+            url = "/api/v2/ticket_fields/{ticketFieldId}/options"
             method = "post"
             deployAsField = "custom_field_option"
             urlParamsToFields = {
@@ -1317,7 +1605,7 @@ zendesk {
             }
           }
           modify = {
-            url = "/ticket_fields/{ticketFieldId}/options"
+            url = "/api/v2/ticket_fields/{ticketFieldId}/options"
             method = "post"
             deployAsField = "custom_field_option"
             urlParamsToFields = {
@@ -1325,7 +1613,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}"
+            url = "/api/v2/ticket_fields/{ticketFieldId}/options/{ticketFieldOptionId}"
             method = "delete"
             urlParamsToFields = {
               ticketFieldId = "_parent.0.id"
@@ -1347,6 +1635,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1355,6 +1649,14 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "value"
+              fieldType = "string"
+              restrictions = {
+                enforce_value = true
+                regex = "^[^&%$#@\\! \\{\\}\\[\\]=\\+\\(\\)\\*\\?<>,\"'`;\\\\]+$"
+              }
             },
           ]
         }
@@ -1403,6 +1705,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1435,12 +1743,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/user_fields"
+            url = "/api/v2/user_fields"
             deployAsField = "user_field"
             method = "post"
           }
           modify = {
-            url = "/user_fields/{userFieldId}"
+            url = "/api/v2/user_fields/{userFieldId}"
             method = "put"
             deployAsField = "user_field"
             urlParamsToFields = {
@@ -1448,7 +1756,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/user_fields/{userFieldId}"
+            url = "/api/v2/user_fields/{userFieldId}"
             method = "delete"
             deployAsField = "user_field"
             urlParamsToFields = {
@@ -1460,7 +1768,7 @@ zendesk {
       user_field__custom_field_options = {
         deployRequests = {
           add = {
-            url = "/user_fields/{userFieldId}/options"
+            url = "/api/v2/user_fields/{userFieldId}/options"
             method = "post"
             deployAsField = "custom_field_option"
             urlParamsToFields = {
@@ -1468,7 +1776,7 @@ zendesk {
             }
           }
           modify = {
-            url = "/user_fields/{userFieldId}/options"
+            url = "/api/v2/user_fields/{userFieldId}/options"
             method = "post"
             deployAsField = "custom_field_option"
             urlParamsToFields = {
@@ -1476,7 +1784,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/user_fields/{userFieldId}/options/{userFieldOptionId}"
+            url = "/api/v2/user_fields/{userFieldId}/options/{userFieldOptionId}"
             method = "delete"
             urlParamsToFields = {
               userFieldId = "_parent.0.id"
@@ -1498,6 +1806,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1517,7 +1831,7 @@ zendesk {
       user_field_order = {
         deployRequests = {
           modify = {
-            url = "/user_fields/reorder"
+            url = "/api/v2/user_fields/reorder"
             method = "put"
           }
         }
@@ -1566,6 +1880,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1598,12 +1918,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/organization_fields"
+            url = "/api/v2/organization_fields"
             deployAsField = "organization_field"
             method = "post"
           }
           modify = {
-            url = "/organization_fields/{organizationFieldId}"
+            url = "/api/v2/organization_fields/{organizationFieldId}"
             method = "put"
             deployAsField = "organization_field"
             urlParamsToFields = {
@@ -1611,7 +1931,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/organization_fields/{organizationFieldId}"
+            url = "/api/v2/organization_fields/{organizationFieldId}"
             method = "delete"
             deployAsField = "organization_field"
             urlParamsToFields = {
@@ -1633,6 +1953,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1679,6 +2005,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1686,7 +2018,7 @@ zendesk {
         }
         deployRequests = {
           modify = {
-            url = "/organization_fields/reorder"
+            url = "/api/v2/organization_fields/reorder"
             method = "put"
           }
         }
@@ -1709,6 +2041,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "string"
             },
@@ -1723,12 +2061,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/routing/attributes"
+            url = "/api/v2/routing/attributes"
             deployAsField = "attribute"
             method = "post"
           }
           modify = {
-            url = "/routing/attributes/{attributeId}"
+            url = "/api/v2/routing/attributes/{attributeId}"
             method = "put"
             deployAsField = "attribute"
             urlParamsToFields = {
@@ -1736,7 +2074,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/routing/attributes/{attributeId}"
+            url = "/api/v2/routing/attributes/{attributeId}"
             method = "delete"
             deployAsField = "attribute"
             urlParamsToFields = {
@@ -1758,6 +2096,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1785,6 +2129,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -1799,12 +2149,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/workspaces"
+            url = "/api/v2/workspaces"
             deployAsField = "workspace"
             method = "post"
           }
           modify = {
-            url = "/workspaces/{workspaceId}"
+            url = "/api/v2/workspaces/{workspaceId}"
             method = "put"
             deployAsField = "workspace"
             urlParamsToFields = {
@@ -1812,7 +2162,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/workspaces/{workspaceId}"
+            url = "/api/v2/workspaces/{workspaceId}"
             method = "delete"
             deployAsField = "workspace"
             urlParamsToFields = {
@@ -1846,7 +2196,7 @@ zendesk {
       workspace_order = {
         deployRequests = {
           modify = {
-            url = "/workspaces/reorder"
+            url = "/api/v2/workspaces/reorder"
             method = "put"
           }
         }
@@ -1862,6 +2212,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1906,18 +2262,18 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/apps/installations"
+            url = "/api/v2/apps/installations"
             method = "post"
           }
           modify = {
-            url = "/apps/installations/{appInstallationId}"
+            url = "/api/v2/apps/installations/{appInstallationId}"
             method = "put"
             urlParamsToFields = {
               appInstallationId = "id"
             }
           }
           remove = {
-            url = "/apps/installations/{appInstallationId}"
+            url = "/api/v2/apps/installations/{appInstallationId}"
             method = "delete"
             urlParamsToFields = {
               appInstallationId = "id"
@@ -1935,6 +2291,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -1966,6 +2328,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
             },
             {
@@ -1992,6 +2360,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2014,12 +2388,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/oauth/clients"
+            url = "/api/v2/oauth/clients"
             deployAsField = "client"
             method = "post"
           }
           modify = {
-            url = "/oauth/clients/{oauthClientId}"
+            url = "/api/v2/oauth/clients/{oauthClientId}"
             method = "put"
             deployAsField = "client"
             urlParamsToFields = {
@@ -2027,7 +2401,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/oauth/clients/{oauthClientId}"
+            url = "/api/v2/oauth/clients/{oauthClientId}"
             method = "delete"
             deployAsField = "client"
             urlParamsToFields = {
@@ -2047,6 +2421,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -2075,6 +2455,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2082,7 +2468,7 @@ zendesk {
         }
         deployRequests = {
           modify = {
-            url = "/account/settings"
+            url = "/api/v2/account/settings"
             method = "put"
             deployAsField = "settings"
           }
@@ -2099,6 +2485,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -2126,6 +2518,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2140,7 +2538,11 @@ zendesk {
       }
       groups = {
         request = {
-          url = "/groups"
+          url = "/api/v2/groups"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "groups"
@@ -2148,7 +2550,7 @@ zendesk {
       }
       custom_roles = {
         request = {
-          url = "/custom_roles"
+          url = "/api/v2/custom_roles"
         }
         transformation = {
           dataField = "custom_roles"
@@ -2156,7 +2558,11 @@ zendesk {
       }
       organizations = {
         request = {
-          url = "/organizations"
+          url = "/api/v2/organizations"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "organizations"
@@ -2164,7 +2570,11 @@ zendesk {
       }
       views = {
         request = {
-          url = "/views"
+          url = "/api/v2/views"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "views"
@@ -2175,12 +2585,19 @@ zendesk {
       }
       triggers = {
         request = {
-          url = "/triggers"
+          url = "/api/v2/triggers"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "triggers"
         }
       }
       trigger_definitions = {
         request = {
-          url = "/triggers/definitions"
+          url = "/api/v2/triggers/definitions"
         }
         transformation = {
           dataField = "definitions"
@@ -2200,6 +2617,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2208,7 +2631,10 @@ zendesk {
       }
       trigger_categories = {
         request = {
-          url = "/trigger_categories"
+          url = "/api/v2/trigger_categories"
+          queryParams = {
+            "page[size]" = "100"
+          }
           paginationField = "links.next"
         }
         transformation = {
@@ -2217,7 +2643,11 @@ zendesk {
       }
       automations = {
         request = {
-          url = "/automations"
+          url = "/api/v2/automations"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "automations"
@@ -2225,12 +2655,12 @@ zendesk {
       }
       sla_policies = {
         request = {
-          url = "/slas/policies"
+          url = "/api/v2/slas/policies"
         }
       }
       sla_policies_definitions = {
         request = {
-          url = "/slas/policies/definitions"
+          url = "/api/v2/slas/policies/definitions"
         }
         transformation = {
           dataField = "value"
@@ -2238,12 +2668,16 @@ zendesk {
       }
       targets = {
         request = {
-          url = "/targets"
+          url = "/api/v2/targets"
         }
       }
       macros = {
         request = {
-          url = "/macros"
+          url = "/api/v2/macros"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "macros"
@@ -2251,7 +2685,7 @@ zendesk {
       }
       macros_actions = {
         request = {
-          url = "/macros/actions"
+          url = "/api/v2/macros/actions"
         }
         transformation = {
           dataField = "."
@@ -2266,6 +2700,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2274,7 +2714,7 @@ zendesk {
       }
       macro_categories = {
         request = {
-          url = "/macros/categories"
+          url = "/api/v2/macros/categories"
         }
         transformation = {
           isSingleton = true
@@ -2288,6 +2728,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2296,7 +2742,7 @@ zendesk {
       }
       macros_definitions = {
         request = {
-          url = "/macros/definitions"
+          url = "/api/v2/macros/definitions"
         }
         transformation = {
           fieldsToHide = [
@@ -2307,6 +2753,12 @@ zendesk {
             {
               fieldName = "updated_at"
               fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
             },
             {
               fieldName = "id"
@@ -2327,7 +2779,11 @@ zendesk {
       }
       brands = {
         request = {
-          url = "/brands"
+          url = "/api/v2/brands"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "brands"
@@ -2335,7 +2791,7 @@ zendesk {
       }
       dynamic_content_item = {
         request = {
-          url = "/dynamic_content/items"
+          url = "/api/v2/dynamic_content/items"
         }
         transformation = {
           dataField = "."
@@ -2354,6 +2810,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2368,12 +2830,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/dynamic_content/items"
+            url = "/api/v2/dynamic_content/items"
             deployAsField = "item"
             method = "post"
           }
           modify = {
-            url = "/dynamic_content/items/{dynamicContentItemId}"
+            url = "/api/v2/dynamic_content/items/{dynamicContentItemId}"
             method = "put"
             deployAsField = "item"
             urlParamsToFields = {
@@ -2381,7 +2843,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/dynamic_content/items/{dynamicContentItemId}"
+            url = "/api/v2/dynamic_content/items/{dynamicContentItemId}"
             method = "delete"
             deployAsField = "item"
             urlParamsToFields = {
@@ -2405,6 +2867,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2415,10 +2883,11 @@ zendesk {
               fieldType = "number"
             },
           ]
+          extendsParentId = true
         }
         deployRequests = {
           add = {
-            url = "/dynamic_content/items/{dynamicContentItemId}/variants"
+            url = "/api/v2/dynamic_content/items/{dynamicContentItemId}/variants"
             deployAsField = "variant"
             method = "post"
             urlParamsToFields = {
@@ -2426,7 +2895,7 @@ zendesk {
             }
           }
           modify = {
-            url = "/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
+            url = "/api/v2/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
             deployAsField = "variant"
             method = "put"
             urlParamsToFields = {
@@ -2435,7 +2904,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
+            url = "/api/v2/dynamic_content/items/{dynamicContentItemId}/variants/{dynammicContentVariantId}"
             method = "delete"
             urlParamsToFields = {
               dynammicContentVariantId = "id"
@@ -2446,7 +2915,7 @@ zendesk {
       }
       locales = {
         request = {
-          url = "/locales"
+          url = "/api/v2/locales"
         }
         transformation = {
           dataField = "locales"
@@ -2454,11 +2923,11 @@ zendesk {
       }
       business_hours_schedule_holiday = {
         request = {
-          url = "/business_hours/schedules/{scheduleId}/holidays"
+          url = "/api/v2/business_hours/schedules/{scheduleId}/holidays"
         }
         deployRequests = {
           add = {
-            url = "/business_hours/schedules/{scheduleId}/holidays"
+            url = "/api/v2/business_hours/schedules/{scheduleId}/holidays"
             deployAsField = "holiday"
             method = "post"
             urlParamsToFields = {
@@ -2466,7 +2935,7 @@ zendesk {
             }
           }
           modify = {
-            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            url = "/api/v2/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
             deployAsField = "holiday"
             method = "put"
             urlParamsToFields = {
@@ -2475,7 +2944,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
+            url = "/api/v2/business_hours/schedules/{scheduleId}/holidays/{holidayId}"
             method = "delete"
             urlParamsToFields = {
               holidayId = "id"
@@ -2496,6 +2965,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2510,12 +2985,16 @@ zendesk {
       }
       sharing_agreements = {
         request = {
-          url = "/sharing_agreements"
+          url = "/api/v2/sharing_agreements"
         }
       }
       support_addresses = {
         request = {
-          url = "/recipient_addresses"
+          url = "/api/v2/recipient_addresses"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           sourceTypeName = "recipient_addresses"
@@ -2524,7 +3003,7 @@ zendesk {
       }
       ticket_forms = {
         request = {
-          url = "/ticket_forms"
+          url = "/api/v2/ticket_forms"
         }
         transformation = {
           dataField = "ticket_forms"
@@ -2533,14 +3012,18 @@ zendesk {
       ticket_form_order = {
         deployRequests = {
           modify = {
-            url = "/ticket_forms/reorder"
+            url = "/api/v2/ticket_forms/reorder"
             method = "put"
           }
         }
       }
       ticket_fields = {
         request = {
-          url = "/ticket_fields"
+          url = "/api/v2/ticket_fields"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "ticket_fields"
@@ -2557,6 +3040,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2565,21 +3054,35 @@ zendesk {
       }
       user_fields = {
         request = {
-          url = "/user_fields"
+          url = "/api/v2/user_fields"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "user_fields"
         }
       }
       organization_fields = {
         request = {
-          url = "/organization_fields"
+          url = "/api/v2/organization_fields"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "organization_fields"
         }
       }
       routing_attribute_value = {
         request = {
-          url = "/routing/attributes/{attributeId}/values"
+          url = "/api/v2/routing/attributes/{attributeId}/values"
         }
         deployRequests = {
           add = {
-            url = "/routing/attributes/{attributeId}/values"
+            url = "/api/v2/routing/attributes/{attributeId}/values"
             deployAsField = "attribute_value"
             method = "post"
             urlParamsToFields = {
@@ -2587,7 +3090,7 @@ zendesk {
             }
           }
           modify = {
-            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            url = "/api/v2/routing/attributes/{attributeId}/values/{attributeValueId}"
             deployAsField = "attribute_value"
             method = "put"
             urlParamsToFields = {
@@ -2596,7 +3099,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/routing/attributes/{attributeId}/values/{attributeValueId}"
+            url = "/api/v2/routing/attributes/{attributeId}/values/{attributeValueId}"
             method = "delete"
             urlParamsToFields = {
               attributeValueId = "id"
@@ -2617,6 +3120,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "string"
             },
@@ -2632,7 +3141,7 @@ zendesk {
       }
       routing_attributes = {
         request = {
-          url = "/routing/attributes"
+          url = "/api/v2/routing/attributes"
           recurseInto = [
             {
               type = "routing_attribute_value"
@@ -2649,7 +3158,7 @@ zendesk {
       }
       routing_attribute_definitions = {
         request = {
-          url = "/routing/attributes/definitions"
+          url = "/api/v2/routing/attributes/definitions"
         }
         transformation = {
           dataField = "definitions"
@@ -2657,32 +3166,47 @@ zendesk {
       }
       workspaces = {
         request = {
-          url = "/workspaces"
+          url = "/api/v2/workspaces"
         }
       }
       app_installations = {
         request = {
-          url = "/apps/installations"
+          url = "/api/v2/apps/installations"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
       }
       apps_owned = {
         request = {
-          url = "/apps/owned"
+          url = "/api/v2/apps/owned"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
       }
       oauth_clients = {
         request = {
-          url = "/oauth/clients"
+          url = "/api/v2/oauth/clients"
         }
       }
       oauth_global_clients = {
         request = {
-          url = "/oauth/global_clients"
+          url = "/api/v2/oauth/global_clients"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          dataField = "global_clients"
         }
       }
       account_settings = {
         request = {
-          url = "/account/settings"
+          url = "/api/v2/account/settings"
         }
         transformation = {
           dataField = "settings"
@@ -2690,17 +3214,21 @@ zendesk {
       }
       resource_collections = {
         request = {
-          url = "/resource_collections"
+          url = "/api/v2/resource_collections"
+          paginationField = "next_page"
         }
       }
       monitored_twitter_handles = {
         request = {
-          url = "/channels/twitter/monitored_twitter_handles"
+          url = "/api/v2/channels/twitter/monitored_twitter_handles"
         }
       }
       webhooks = {
         request = {
-          url = "/webhooks"
+          url = "/api/v2/webhooks"
+          queryParams = {
+            "page[size]" = "100"
+          }
           paginationField = "links.next"
         }
         transformation = {
@@ -2739,6 +3267,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "string"
             },
@@ -2761,12 +3295,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/webhooks"
+            url = "/api/v2/webhooks"
             deployAsField = "webhook"
             method = "post"
           }
           modify = {
-            url = "/webhooks/{webhookId}"
+            url = "/api/v2/webhooks/{webhookId}"
             method = "patch"
             deployAsField = "webhook"
             urlParamsToFields = {
@@ -2774,7 +3308,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/webhooks/{webhookId}"
+            url = "/api/v2/webhooks/{webhookId}"
             method = "delete"
             urlParamsToFields = {
               webhookId = "id"
@@ -2784,14 +3318,29 @@ zendesk {
       }
       articles = {
         request = {
-          url = "/help_center/articles"
+          url = "/api/v2/help_center/categories/{category_id}/articles"
+          dependsOn = [
+            {
+              pathParam = "category_id"
+              from = {
+                type = "categories"
+                field = "id"
+              }
+            },
+          ]
+          queryParams = {
+            "page[size]" = "100"
+            include = "translations"
+            sort_by = "updated_at"
+          }
+          paginationField = "links.next"
           recurseInto = [
             {
-              type = "article_translation"
-              toField = "translations"
+              type = "article_attachment"
+              toField = "attachments"
               context = [
                 {
-                  name = "articleId"
+                  name = "article_id"
                   fromField = "id"
                 },
               ]
@@ -2805,16 +3354,19 @@ zendesk {
       article = {
         transformation = {
           idFields = [
-            "&brand",
-            "name",
+            "title",
+            "&section_id",
           ]
           fileNameFields = [
-            "&brand",
-            "name",
+            "title",
+            "&section_id",
           ]
           standaloneFields = [
             {
               fieldName = "translations"
+            },
+            {
+              fieldName = "attachments"
             },
           ]
           sourceTypeName = "articles__articles"
@@ -2828,7 +3380,17 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "position"
               fieldType = "number"
             },
           ]
@@ -2839,7 +3401,15 @@ zendesk {
             },
             {
               fieldName = "author_id"
-              fieldType = "unknown"
+              fieldType = "string"
+            },
+            {
+              fieldName = "translations"
+              fieldType = "list<article_translation>"
+            },
+            {
+              fieldName = "attachments"
+              fieldType = "list<article_attachment>"
             },
           ]
           fieldsToOmit = [
@@ -2867,25 +3437,145 @@ zendesk {
               fieldName = "edited_at"
             },
             {
+              fieldName = "name"
+            },
+            {
               fieldName = "html_url"
               fieldType = "string"
             },
           ]
-          serviceUrl = "/knowledge/articles/{id}"
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/sections/{sectionId}/articles"
+            method = "post"
+            deployAsField = "article"
+            urlParamsToFields = {
+              sectionId = "section_id"
+            }
+          }
+          modify = {
+            url = "/api/v2/help_center/articles/{articleId}"
+            method = "put"
+            deployAsField = "article"
+            urlParamsToFields = {
+              articleId = "id"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/articles/{articleId}"
+            method = "delete"
+            urlParamsToFields = {
+              articleId = "id"
+            }
+          }
         }
       }
-      article_translation = {
+      article_attachment = {
         request = {
-          url = "/help_center/articles/{articleId}/translations"
+          url = "/api/v2/help_center/articles/{article_id}/attachments"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           idFields = [
-            "&brand",
-            "locale",
+            "file_name",
+            "inline",
           ]
+          sourceTypeName = "article__attachments"
+          fieldsToHide = [
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "content_url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "size"
+              fieldType = "number"
+            },
+          ]
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "article_attachments"
+              fieldType = "List<article_attachment>"
+            },
+            {
+              fieldName = "content"
+              fieldType = "string"
+            },
+          ]
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "article_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "display_file_name"
+              fieldType = "string"
+            },
+            {
+              fieldName = "relative_path"
+              fieldType = "string"
+            },
+          ]
+          extendsParentId = true
+          dataField = "article_attachments"
+        }
+        deployRequests = {
+          remove = {
+            url = "/api/v2/help_center/articles/attachments/{articleAttachmentId}"
+            method = "delete"
+            urlParamsToFields = {
+              articleAttachmentId = "id"
+            }
+          }
+        }
+      }
+      article_translation = {
+        transformation = {
+          idFields = [
+            "&locale",
+          ]
+          extendsParentId = true
           fileNameFields = [
-            "&brand",
-            "locale",
+            "&locale",
           ]
           sourceTypeName = "article__translations"
           dataField = "translations"
@@ -2899,6 +3589,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -2907,6 +3603,18 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "brand"
+              fieldType = "number"
+            },
+            {
+              fieldName = "created_by_id"
+              fieldType = "unknown"
+            },
+            {
+              fieldName = "updated_by_id"
+              fieldType = "unknown"
             },
           ]
           fieldsToOmit = [
@@ -2938,22 +3646,221 @@ zendesk {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/articles/{article_id}/translations"
+            method = "post"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              article_id = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/api/v2/help_center/articles/{article_id}/translations/{locale}"
+            method = "put"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              article_id = "_parent.0.id"
+              locale = "locale"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/translations/{translation_id}"
+            method = "delete"
+            urlParamsToFields = {
+              translation_id = "id"
+            }
+          }
+        }
+      }
+      guide_language_settings = {
+        request = {
+          url = "/hc/api/internal/help_center_translations"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          idFields = [
+            "&brand",
+            "locale",
+          ]
+          fileNameFields = [
+            "&brand",
+            "locale",
+          ]
+          dataField = "."
+        }
+        deployRequests = {
+          modify = {
+            url = "/hc/api/internal/help_center_translations/{locale}"
+            method = "put"
+            urlParamsToFields = {
+              locale = "locale"
+            }
+          }
+          add = {
+            url = "/hc/api/internal/help_center_translations"
+            method = "post"
+            deployAsField = "locales"
+          }
+          remove = {
+            url = "/hc/api/internal/help_center_translations/{locale}"
+            method = "delete"
+            urlParamsToFields = {
+              locale = "locale"
+            }
+          }
+        }
+      }
+      guide_settings = {
+        request = {
+          url = "/hc/api/internal/general_settings"
+          queryParams = {
+            "page[size]" = "100"
+          }
+          paginationField = "links.next"
+        }
+        transformation = {
+          idFields = [
+            "&brand",
+          ]
+          fileNameFields = [
+            "&brand",
+          ]
+          dataField = "."
+          fieldTypeOverrides = [
+            {
+              fieldName = "default_locale"
+              fieldType = "string"
+            },
+          ]
+        }
+        deployRequests = {
+          modify = {
+            url = "/hc/api/internal/general_settings"
+            method = "put"
+          }
+        }
+      }
+      guide_settings__help_center = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "feature_restrictions"
+            },
+          ]
+        }
+      }
+      guide_settings__help_center__settings = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "account_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "help_center_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "draft"
+              fieldType = "boolean"
+            },
+            {
+              fieldName = "kind"
+              fieldType = "string"
+            },
+          ]
+        }
+      }
+      guide_settings__help_center__text_filter = {
+        transformation = {
+          fieldsToOmit = [
+            {
+              fieldName = "extended_input_schema"
+            },
+            {
+              fieldName = "extended_output_schema"
+            },
+            {
+              fieldName = "url"
+              fieldType = "string"
+            },
+            {
+              fieldName = "count"
+              fieldType = "number"
+            },
+            {
+              fieldName = "id"
+            },
+            {
+              fieldName = "account_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "help_center_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "created_at"
+              fieldType = "string"
+            },
+            {
+              fieldName = "updated_at"
+              fieldType = "string"
+            },
+          ]
+        }
       }
       sections = {
         request = {
-          url = "/help_center/sections"
-          recurseInto = [
-            {
-              type = "section_translation"
-              toField = "translations"
-              context = [
-                {
-                  name = "sectionId"
-                  fromField = "id"
-                },
-              ]
-            },
-          ]
+          url = "/api/v2/help_center/sections"
+          queryParams = {
+            "page[size]" = "100"
+            include = "translations"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "sections"
@@ -2962,12 +3869,12 @@ zendesk {
       section = {
         transformation = {
           idFields = [
-            "&brand",
             "name",
+            "&direct_parent_id",
           ]
           fileNameFields = [
-            "&brand",
             "name",
+            "&direct_parent_id",
           ]
           standaloneFields = [
             {
@@ -2985,7 +3892,24 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "direct_parent_id"
+            },
+            {
+              fieldName = "direct_parent_type"
+              fieldType = "string"
+            },
+            {
+              fieldName = "position"
               fieldType = "number"
             },
           ]
@@ -2993,6 +3917,22 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "parent_section_id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "sections"
+              fieldType = "list<section>"
+            },
+            {
+              fieldName = "articles"
+              fieldType = "list<article>"
+            },
+            {
+              fieldName = "translations"
+              fieldType = "list<section_translation>"
             },
           ]
           fieldsToOmit = [
@@ -3015,21 +3955,62 @@ zendesk {
               fieldType = "string"
             },
           ]
-          serviceUrl = "/knowledge/sections/{id}"
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/categories/{category_id}/sections"
+            method = "post"
+            deployAsField = "section"
+            urlParamsToFields = {
+              category_id = "category_id"
+            }
+          }
+          modify = {
+            url = "/api/v2/help_center/sections/{section_id}"
+            method = "put"
+            deployAsField = "section"
+            urlParamsToFields = {
+              section_id = "id"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/sections/{section_id}"
+            method = "delete"
+            urlParamsToFields = {
+              section_id = "id"
+            }
+          }
+        }
+      }
+      section_order = {
+        transformation = {
+          idFields = [
+          ]
+          extendsParentId = true
+        }
+      }
+      article_order = {
+        transformation = {
+          idFields = [
+          ]
+          extendsParentId = true
+        }
+      }
+      category_order = {
+        transformation = {
+          idFields = [
+          ]
+          extendsParentId = true
         }
       }
       section_translation = {
-        request = {
-          url = "/help_center/sections/{sectionId}/translations"
-        }
         transformation = {
           idFields = [
-            "&brand",
-            "locale",
+            "&locale",
           ]
+          extendsParentId = true
           fileNameFields = [
-            "&brand",
-            "locale",
+            "&locale",
           ]
           sourceTypeName = "section__translations"
           dataField = "translations"
@@ -3043,6 +4024,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -3051,6 +4038,18 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "brand"
+              fieldType = "number"
+            },
+            {
+              fieldName = "created_by_id"
+              fieldType = "unknown"
+            },
+            {
+              fieldName = "updated_by_id"
+              fieldType = "unknown"
             },
           ]
           fieldsToOmit = [
@@ -3082,63 +4081,41 @@ zendesk {
             },
           ]
         }
-      }
-      labels = {
-        request = {
-          url = "/help_center/articles/labels"
-        }
-        transformation = {
-          dataField = "labels"
-        }
-      }
-      label = {
-        transformation = {
-          idFields = [
-            "&brand",
-            "name",
-          ]
-          fileNameFields = [
-            "&brand",
-            "name",
-          ]
-          sourceTypeName = "labels__labels"
-          fieldsToHide = [
-            {
-              fieldName = "created_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "updated_at"
-              fieldType = "string"
-            },
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
-          ]
-          fieldTypeOverrides = [
-            {
-              fieldName = "id"
-              fieldType = "number"
-            },
-          ]
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/sections/{section_id}/translations"
+            method = "post"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              section_id = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/api/v2/help_center/sections/{section_id}/translations/{locale}"
+            method = "put"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              section_id = "_parent.0.id"
+              locale = "locale"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/translations/{translation_id}"
+            method = "delete"
+            urlParamsToFields = {
+              translation_id = "id"
+            }
+          }
         }
       }
       categories = {
         request = {
-          url = "/help_center/categories"
-          recurseInto = [
-            {
-              type = "category_translation"
-              toField = "translations"
-              context = [
-                {
-                  name = "categoryId"
-                  fromField = "id"
-                },
-              ]
-            },
-          ]
+          url = "/api/v2/help_center/categories"
+          queryParams = {
+            "page[size]" = "100"
+            include = "translations"
+          }
+          paginationField = "links.next"
         }
         transformation = {
           dataField = "categories"
@@ -3147,12 +4124,12 @@ zendesk {
       category = {
         transformation = {
           idFields = [
-            "&brand",
             "name",
+            "&brand",
           ]
           fileNameFields = [
-            "&brand",
             "name",
+            "&brand",
           ]
           standaloneFields = [
             {
@@ -3170,7 +4147,17 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
+              fieldType = "number"
+            },
+            {
+              fieldName = "position"
               fieldType = "number"
             },
           ]
@@ -3178,6 +4165,14 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "sections"
+              fieldType = "list<section>"
+            },
+            {
+              fieldName = "translations"
+              fieldType = "list<category_translation>"
             },
           ]
           fieldsToOmit = [
@@ -3200,21 +4195,38 @@ zendesk {
               fieldType = "string"
             },
           ]
-          serviceUrl = "/hc/admin/categories/{id}/edit"
+        }
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/categories"
+            method = "post"
+            deployAsField = "category"
+          }
+          modify = {
+            url = "/api/v2/help_center/categories/{category_id}"
+            method = "put"
+            deployAsField = "category"
+            urlParamsToFields = {
+              category_id = "id"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/categories/{category_id}"
+            method = "delete"
+            urlParamsToFields = {
+              category_id = "id"
+            }
+          }
         }
       }
       category_translation = {
-        request = {
-          url = "/help_center/categories/{categoryId}/translations"
-        }
         transformation = {
           idFields = [
-            "&brand",
-            "locale",
+            "&locale",
           ]
+          extendsParentId = true
           fileNameFields = [
-            "&brand",
-            "locale",
+            "&locale",
           ]
           sourceTypeName = "category__translations"
           dataField = "translations"
@@ -3228,6 +4240,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -3236,6 +4254,18 @@ zendesk {
             {
               fieldName = "id"
               fieldType = "number"
+            },
+            {
+              fieldName = "brand"
+              fieldType = "number"
+            },
+            {
+              fieldName = "created_by_id"
+              fieldType = "unknown"
+            },
+            {
+              fieldName = "updated_by_id"
+              fieldType = "unknown"
             },
           ]
           fieldsToOmit = [
@@ -3267,10 +4297,40 @@ zendesk {
             },
           ]
         }
+        deployRequests = {
+          add = {
+            url = "/api/v2/help_center/categories/{category_id}/translations"
+            method = "post"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              category_id = "_parent.0.id"
+            }
+          }
+          modify = {
+            url = "/api/v2/help_center/categories/{category_id}/translations/{locale}"
+            method = "put"
+            deployAsField = "translation"
+            urlParamsToFields = {
+              category_id = "_parent.0.id"
+              locale = "locale"
+            }
+          }
+          remove = {
+            url = "/api/v2/help_center/translations/{translation_id}"
+            method = "delete"
+            urlParamsToFields = {
+              translation_id = "id"
+            }
+          }
+        }
       }
       permission_groups = {
         request = {
-          url = "/guide/permission_groups"
+          url = "/api/v2/guide/permission_groups"
+          queryParams = {
+            per_page = "100"
+          }
+          paginationField = "next_page"
         }
         transformation = {
           dataField = "permission_groups"
@@ -3289,6 +4349,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -3303,12 +4369,12 @@ zendesk {
         }
         deployRequests = {
           add = {
-            url = "/guide/permission_groups"
+            url = "/api/v2/guide/permission_groups"
             deployAsField = "permission_group"
             method = "post"
           }
           modify = {
-            url = "/guide/permission_groups/{permissionGroupId}"
+            url = "/api/v2/guide/permission_groups/{permissionGroupId}"
             method = "put"
             deployAsField = "permission_group"
             urlParamsToFields = {
@@ -3316,7 +4382,7 @@ zendesk {
             }
           }
           remove = {
-            url = "/guide/permission_groups/{permissionGroupId}"
+            url = "/api/v2/guide/permission_groups/{permissionGroupId}"
             method = "delete"
             urlParamsToFields = {
               permissionGroupId = "id"
@@ -3326,7 +4392,11 @@ zendesk {
       }
       user_segments = {
         request = {
-          url = "/help_center/user_segments"
+          url = "/api/v2/help_center/user_segments"
+          queryParams = {
+            per_page = "100"
+          }
+          paginationField = "next_page"
         }
         transformation = {
           dataField = "user_segments"
@@ -3345,6 +4415,12 @@ zendesk {
               fieldType = "string"
             },
             {
+              fieldName = "created_by_id"
+            },
+            {
+              fieldName = "updated_by_id"
+            },
+            {
               fieldName = "id"
               fieldType = "number"
             },
@@ -3356,19 +4432,35 @@ zendesk {
             },
             {
               fieldName = "added_user_ids"
-              fieldType = "unknown"
+              fieldType = "List<unknown>"
+            },
+            {
+              fieldName = "organization_ids"
+              fieldType = "List<unknown>"
+            },
+            {
+              fieldName = "user_type"
+              fieldType = "string"
+              restrictions = {
+                enforce_value = true
+                values = [
+                  "signed_in_users",
+                  "staff",
+                  "Everyone",
+                ]
+              }
             },
           ]
           serviceUrl = "/knowledge/user_segments/edit/{id}"
         }
         deployRequests = {
           add = {
-            url = "/help_center/user_segments"
+            url = "/api/v2/help_center/user_segments"
             deployAsField = "user_segment"
             method = "post"
           }
           modify = {
-            url = "/help_center/user_segments/{userSegmentId}"
+            url = "/api/v2/help_center/user_segments/{userSegmentId}"
             method = "put"
             deployAsField = "user_segment"
             urlParamsToFields = {
@@ -3376,12 +4468,85 @@ zendesk {
             }
           }
           remove = {
-            url = "/help_center/user_segments/{userSegmentId}"
+            url = "/api/v2/help_center/user_segments/{userSegmentId}"
             method = "delete"
             urlParamsToFields = {
               userSegmentId = "id"
             }
           }
+        }
+      }
+      api_tokens = {
+        request = {
+          url = "/api/v2/api_tokens"
+        }
+        transformation = {
+          dataField = "api_tokens"
+        }
+      }
+      api_token = {
+        transformation = {
+          sourceTypeName = "api_tokens__api_tokens"
+          idFields = [
+            "description",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/apps-integrations/apis/zendesk-api/settings/tokens/"
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      oauth_tokens = {
+        request = {
+          url = "/api/v2/oauth/tokens"
+        }
+        transformation = {
+          dataField = "tokens"
+        }
+      }
+      oauth_token = {
+        transformation = {
+          sourceTypeName = "oauth_tokens__tokens"
+          idFields = [
+            "&client_id",
+            "token",
+          ]
+          fieldsToHide = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+          serviceUrl = "/admin/apps-integrations/apis/zendesk-api/oauth_clients"
+          fieldTypeOverrides = [
+            {
+              fieldName = "id"
+              fieldType = "number"
+            },
+          ]
+        }
+      }
+      features = {
+        request = {
+          url = "/api/v2/account/features"
+        }
+        transformation = {
+          dataField = "features"
+        }
+      }
+      account_features = {
+        transformation = {
+          sourceTypeName = "features__features"
+          isSingleton = true
         }
       }
     }
@@ -3406,6 +4571,9 @@ zendesk {
       ]
       custom_role = [
         "custom_roles",
+      ]
+      custom_status = [
+        "custom_statuses",
       ]
       dynamic_content_item = [
         "dynamic_content_item",
@@ -3481,6 +4649,9 @@ zendesk {
       ]
       workspace = [
         "workspaces",
+      ]
+      account_features = [
+        "features",
       ]
     }
   }

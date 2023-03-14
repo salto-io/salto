@@ -119,6 +119,10 @@ import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
+import pluginVersionFliter from './filters/data_center/plugin_version'
+import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
+import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
+import storeUsersFilter from './filters/store_users'
 
 const {
   generateTypes,
@@ -131,6 +135,7 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
+  storeUsersFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
@@ -196,11 +201,17 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
+  scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowListsFilter,
+  // must run after scriptRunnerWorkflowListsFilter
+  scriptRunnerWorkflowReferencesFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,
+  pluginVersionFliter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
@@ -224,7 +235,6 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-  scriptRunnerWorkflowFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter
@@ -417,7 +427,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.getUserMapFunc, this.paginator),
+      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

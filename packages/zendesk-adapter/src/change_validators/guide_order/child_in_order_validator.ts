@@ -67,7 +67,7 @@ const validateOrderElementAdded = ({ orderInstances, childInstances, orderField,
     .map(child => child.elemID.getFullName()))
 
   return childInstances.filter(child => !childrenInOrderInstances.has(child.elemID.getFullName()))
-    .map(child => notInOrderError({ instance: child, orderTypeName, defaultLocation: 'first' }))
+    .map(child => notInOrderError({ instance: child, orderTypeName, defaultLocation: 'beginning' }))
 }
 
 const validateChildrenInOrder = ({ changes, orderField, orderTypeName, childTypeName }: {

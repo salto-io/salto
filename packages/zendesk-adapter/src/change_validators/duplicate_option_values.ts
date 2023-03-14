@@ -77,7 +77,7 @@ const getConflictedIds = ({
   pair: ParentAndChildTypePair
   childInstances: InstanceElement[]
   parentInstances: InstanceElement[]
-}): string[] => {
+}): {instanceNames: string[]; tag: string} => {
   const instance = getChangeData(change)
   const value = instance.elemID.typeName === pair.parent
     ? instance.value.tag
@@ -88,9 +88,10 @@ const getConflictedIds = ({
   const conflictedParentInstanceNames = findConflictedInstances({
     instanceToCheck: instance, relevantInstances: parentInstances, fieldName: 'tag', value,
   })
-  return [
-    ...conflictedChildInstanceNames, ...conflictedParentInstanceNames,
-  ]
+  return {
+    instanceNames: [...conflictedChildInstanceNames, ...conflictedParentInstanceNames],
+    tag: value,
+  }
 }
 
 const getRelevantInstances = async ({
@@ -146,13 +147,13 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
         const conflictedInstanceNames = getConflictedIds({
           change, pair, childInstances, parentInstances,
         })
-        if (conflictedInstanceNames.length > 0) {
+        if (conflictedInstanceNames.instanceNames.length > 0) {
           return [{
             elemID: instance.elemID,
             severity: 'Error',
-            message: `Can not change ${instance.elemID.getFullName()} because there are others ${pair.parent} with the same tag value`,
-            detailedMessage: `Can not change ${instance.elemID.getFullName()} because there are others ${pair.parent} with the same tag value: ${
-              conflictedInstanceNames.join(', ')}`,
+            message: 'Cannot do this change since this tag value is already in use',
+            detailedMessage: `The tag ‘${conflictedInstanceNames.tag}’ is already used by the following elements:
+${conflictedInstanceNames.instanceNames.join(', ')}`,
           }]
         }
         return []

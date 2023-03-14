@@ -435,6 +435,10 @@ export class ObjectType extends Element {
 
     return res
   }
+
+  getFieldsElemIDsFullName(): string[] {
+    return Object.values(this.fields).map(field => field.elemID.getFullName())
+  }
 }
 
 export class PlaceholderObjectType extends ObjectType {

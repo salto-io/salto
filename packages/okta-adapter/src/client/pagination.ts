@@ -19,7 +19,7 @@ import * as parse from 'parse-link-header'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
-const LINK_HEADER_NAME = 'link'
+export const LINK_HEADER_NAME = 'link'
 
 const getNextPage = (link: string): URL | undefined => {
   const parsedLinkHeader = parse.default(link)

@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, InstanceElement, ChangeError } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { AUTO_LOGIN_APP } from '../filters/app_deployment'
 import { APPLICATION_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -32,10 +31,6 @@ const getReadOnlyFields = (instance: InstanceElement): string[] => {
   }
   return fields
 }
-
-const isNameOverride = (instance: InstanceElement): boolean => (
-  instance.value.signOnMode === AUTO_LOGIN_APP && instance.value.name !== undefined
-)
 
 /**
  * Validate the created app does not have read only fields
@@ -58,16 +53,6 @@ export const applicationFieldsValidator: ChangeValidator = async changes => (
           detailedMessage: `Cannot create an application: ${instance.elemID.getFullName()} with read-only fields: ${readOnlyFields.join(',')}`,
         }
       }
-
-      if (isNameOverride(instance)) {
-        return {
-          elemID: instance.elemID,
-          severity: 'Info',
-          message: 'Field \'name\' is created by the service',
-          detailedMessage: `In application: ${instance.elemID.getFullName()}, name field will be overridden with the name created by the service`,
-        }
-      }
-
       return undefined
     })
     .filter(values.isDefined)

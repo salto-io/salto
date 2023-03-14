@@ -21,9 +21,6 @@ import { FILE_CABINET_PATH_SEPARATOR, FOLDER, INTERNAL_ID, PATH } from '../const
 import { isFileCabinetInstance } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
-const missingParentMessage = 'Missing parent folder reference'
-const parentMismatchMessage = `Mismatch between path and "${CORE_ANNOTATIONS.PARENT}" annotation`
-
 export const getParentInternalId = (
   instance: InstanceElement,
   addedFolders?: Set<string>
@@ -38,9 +35,9 @@ export const getParentInternalId = (
         error: {
           elemID: instance.elemID,
           severity: 'Error',
-          message: missingParentMessage,
-          detailedMessage: `Parent folder is required (in "${CORE_ANNOTATIONS.PARENT}") `
-          + 'when trying to deploy a non top level folder or a file.',
+          message: 'Missing a reference to the parent folder',
+          detailedMessage: `The parent folder (under '${CORE_ANNOTATIONS.PARENT}') is required`
+          + ' when trying to deploy a non-top-level folder or file.',
         },
       }
     }
@@ -51,9 +48,9 @@ export const getParentInternalId = (
       error: {
         elemID: instance.elemID,
         severity: 'Error',
-        message: parentMismatchMessage,
-        detailedMessage: `Top level folder should not have a "${CORE_ANNOTATIONS.PARENT}" annotation. `
-        + `Change the folder path to a non top level folder path or remove the "${CORE_ANNOTATIONS.PARENT}" annotation.`,
+        message: `Mismatch between the path folder and the '${CORE_ANNOTATIONS.PARENT}'`,
+        detailedMessage: 'Top-level folders should not have a parent.'
+        + ` Change the folder path to a non-top-level folder path or remove the '${CORE_ANNOTATIONS.PARENT}'.`,
       },
     }
   }
@@ -62,8 +59,8 @@ export const getParentInternalId = (
       error: {
         elemID: instance.elemID,
         severity: 'Error',
-        message: missingParentMessage,
-        detailedMessage: `The "${CORE_ANNOTATIONS.PARENT}" annotation should be a list with one item.`,
+        message: `Invalid '${CORE_ANNOTATIONS.PARENT}'`,
+        detailedMessage: `'${CORE_ANNOTATIONS.PARENT}' should be a list of one item.`,
       },
     }
   }
@@ -77,11 +74,10 @@ export const getParentInternalId = (
       error: {
         elemID: instance.elemID,
         severity: 'Error',
-        message: missingParentMessage,
-        detailedMessage: `Parent folder (in "${CORE_ANNOTATIONS.PARENT}") must be a reference to a folder`
-        + `${typeof parentRef === 'string' ? ' , and not a path' : ''}. `
-        + 'Make sure that the parent folder is included in the fetch config, then fetch, '
-        + 'then try to deploy again.',
+        message: 'Can\'t resolve the reference to the parent folder',
+        detailedMessage: `The parent folder (under '${CORE_ANNOTATIONS.PARENT}') must be a valid reference to a folder${
+          typeof parentRef === 'string' ? ' - not a path' : ''
+        }. Include the parent folder in the environment configuration, then fetch and deploy again.`,
       },
     }
   }
@@ -90,9 +86,9 @@ export const getParentInternalId = (
       error: {
         elemID: instance.elemID,
         severity: 'Error',
-        message: parentMismatchMessage,
-        detailedMessage: `The path folder (${parentDirectory}) doesn't match the path of the folder in `
-        + `"${CORE_ANNOTATIONS.PARENT}" (${parentRef.topLevelParent.value[PATH]}).`,
+        message: `Mismatch between the path folder and the '${CORE_ANNOTATIONS.PARENT}'`,
+        detailedMessage: `The path folder (${parentDirectory}) doesn't match the path of the`
+        + ` '${CORE_ANNOTATIONS.PARENT}' (${parentRef.topLevelParent.value[PATH]}).`,
       },
     }
   }
@@ -103,9 +99,9 @@ export const getParentInternalId = (
         error: {
           elemID: instance.elemID,
           severity: 'Error',
-          message: missingParentMessage,
-          detailedMessage: `The parent folder (in "${CORE_ANNOTATIONS.PARENT}") has no internal ID. `
-          + 'Try fetching and deploying again.',
+          message: 'Invalid parent folder',
+          detailedMessage: `The parent folder (under '${CORE_ANNOTATIONS.PARENT}') is missing its internal ID.`
+          + ' Fetch and deploy again.',
         },
       }
     }
@@ -138,9 +134,9 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .map((instance): ChangeError => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Missing FileCabinet item ID',
-      detailedMessage: 'This FileCabinet instance has no internal ID. '
-      + 'Try fetching and deploying again, or edit it in Netsuite UI.',
+      message: `Invalid FileCabinet ${instance.elemID.typeName}`,
+      detailedMessage: `This FileCabinet ${instance.elemID.typeName} is missing its internal ID.`
+      + ' Fetch and deploy again, or edit it in Netsuite UI.',
     }))
 
   return parentFolderChangeErrors.concat(missingInternalIdChangeErrors)

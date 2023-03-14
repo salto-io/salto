@@ -16,20 +16,29 @@
 import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { InstanceElement, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, ReferenceExpression, ObjectType, ElemID, CORE_ANNOTATIONS, AdapterOperations, toChange, BuiltinTypes, ListType, Field } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
 import { configType, DEFAULT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
-import { RECIPE_CODE_TYPE } from '../src/constants'
+import { CONNECTION_TYPE, DEPLOY_USING_RLM_GROUP, FOLDER_TYPE, RECIPE_CODE_TYPE, RECIPE_CONFIG_TYPE, RECIPE_TYPE, WORKATO } from '../src/constants'
+import { RLMDeploy } from '../src/rlm'
 
 type MockReply = {
   url: string
   params: Record<string, string>
   response: unknown
 }
+
+jest.mock('../src/rlm', () => {
+  const orig = jest.requireActual('../src/rlm')
+  return {
+    ...orig,
+    RLMDeploy: jest.fn(),
+  }
+})
 
 describe('adapter', () => {
   let mockAxiosAdapter: MockAdapter
@@ -234,6 +243,8 @@ describe('adapter', () => {
             'field_list',
           ],
           block: expect.anything(),
+          extended_input_schema: expect.anything(),
+          extended_output_schema: expect.anything(),
           uuid: '12345678-1234-1234-1234-1234567890ab',
         })
       })
@@ -468,8 +479,79 @@ describe('adapter', () => {
   })
 
   describe('deploy', () => {
-    it('should throw not implemented', async () => {
-      const operations = adapter.operations({
+    let mockRLMDeploy: jest.MockedFunction<typeof RLMDeploy>
+    let operations: AdapterOperations
+    let recipe : InstanceElement
+    let recipeCode : InstanceElement
+    let connection : InstanceElement
+    let rootFolder : InstanceElement
+    let folderRecipes : InstanceElement
+    let folderConnection : InstanceElement
+
+    const labelType = new ObjectType({
+      elemID: new ElemID(WORKATO, 'labelValue'),
+      fields: {
+        label: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const dynamicPickListSelectionType = new ObjectType({
+      elemID: new ElemID(WORKATO, 'recipe__code__dynamicPickListSelection'),
+      fields: {
+        sobject_name: { refType: BuiltinTypes.STRING },
+        netsuite_object: { refType: BuiltinTypes.STRING },
+        topic_id: { refType: BuiltinTypes.STRING },
+        table_list: { refType: new ListType(labelType) },
+        field_list: { refType: new ListType(labelType) },
+      },
+    })
+
+    const connectionType = new ObjectType({
+      elemID: new ElemID(WORKATO, CONNECTION_TYPE),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+        folder_id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+    const recipeType = new ObjectType({
+      elemID: new ElemID(WORKATO, RECIPE_TYPE),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+        folder_id: { refType: BuiltinTypes.NUMBER },
+        code: { refType: BuiltinTypes.UNKNOWN },
+        config: { refType: new ListType(new ObjectType({
+          elemID: new ElemID(WORKATO, RECIPE_CONFIG_TYPE),
+          fields: {
+            account_id: { refType: BuiltinTypes.NUMBER },
+          },
+        })) },
+      },
+    })
+    const recipeCodeType = new ObjectType({
+      elemID: new ElemID(WORKATO, RECIPE_CODE_TYPE),
+      fields: {
+        dynamicPickListSelection: {
+          refType: dynamicPickListSelectionType,
+        },
+      },
+    })
+    const folderType = new ObjectType({
+      elemID: new ElemID(WORKATO, FOLDER_TYPE),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER, annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true } },
+        // eslint-disable-next-line camelcase
+        parent_id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    beforeEach(() => {
+      mockRLMDeploy = RLMDeploy as jest.MockedFunction<
+      typeof RLMDeploy
+     >
+      mockRLMDeploy.mockClear()
+      mockRLMDeploy.mockImplementation(async changes => ({ appliedChanges: changes, errors: [] }))
+
+      operations = adapter.operations({
         credentials: new InstanceElement(
           'config',
           usernameTokenCredentialsType,
@@ -480,14 +562,417 @@ describe('adapter', () => {
           configType,
           {
             include: [...Object.keys(DEFAULT_TYPES)].sort()
-              .filter(type => type !== RECIPE_CODE_TYPE)
               .map(type => ({ type })),
             exclude: [],
           }
         ),
         elementsSource: buildElementsSourceFromElements([]),
       })
-      await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+      rootFolder = new InstanceElement('rootFolder', folderType, { id: 98 })
+      folderRecipes = new InstanceElement('innerFolder1InstanceName', folderType, {
+        parent_id: new ReferenceExpression(rootFolder.elemID, rootFolder), name: 'innerFolder1',
+      })
+      folderConnection = new InstanceElement('innerFolder2InstanceName', folderType, {
+        parent_id: new ReferenceExpression(rootFolder.elemID, rootFolder), name: 'innerFolder2',
+      })
+      connection = new InstanceElement('connectionInstanceName', connectionType, {
+        folder_id: new ReferenceExpression(folderConnection.elemID, folderConnection),
+      })
+      recipe = new InstanceElement('recipe1InstanceName', recipeType)
+      recipeCode = new InstanceElement('recipe1CodeInstanceName', recipeCodeType, { block: 'block' }, undefined, {
+        [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(recipe.elemID, recipe),
+      },)
+
+      recipe.value = {
+        folder_id: new ReferenceExpression(folderRecipes.elemID, folderRecipes),
+        config: [{ account_id: new ReferenceExpression(connection.elemID, connection) }],
+        code: new ReferenceExpression(recipeCode.elemID, recipeCode),
+      }
+    })
+
+    it('should return the applied changes', async () => {
+      const beforeRecipe = _.cloneDeep(recipe)
+      beforeRecipe.value.before = true
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: DEPLOY_USING_RLM_GROUP,
+          changes: [
+            toChange({
+              before: beforeRecipe,
+              after: _.cloneDeep(recipe),
+            }),
+            toChange({ after: _.cloneDeep(recipeCode) }),
+            toChange({ after: _.cloneDeep(connection) }),
+          ],
+        },
+      })
+      expect(deployRes.errors).toHaveLength(0)
+      expect(deployRes.appliedChanges).toEqual([
+        toChange({
+          before: _.cloneDeep(beforeRecipe),
+          after: _.cloneDeep(recipe),
+        }),
+        toChange({ after: _.cloneDeep(recipeCode) }),
+        toChange({ after: _.cloneDeep(connection) }),
+      ])
+    })
+
+    describe('deploy connection', () => {
+      let resolvedConnection: InstanceElement
+      beforeEach(() => {
+        resolvedConnection = _.cloneDeep(connection)
+        resolvedConnection.value.folder_id = {
+          folderParts: [
+            'innerFolder2',
+          ],
+          rootId: 98,
+        }
+      })
+      it('should call RLMDeploy with the resolved connection', async () => {
+        await operations.deploy({
+          changeGroup: {
+            groupID: DEPLOY_USING_RLM_GROUP,
+            changes: [
+              toChange({ after: _.cloneDeep(connection) }),
+            ],
+          },
+        })
+        expect(mockRLMDeploy).toHaveBeenCalledWith([
+          toChange({ after: resolvedConnection }),
+        ], expect.anything())
+      })
+    })
+
+
+    describe('deploy recipe', () => {
+      let resolvedRecipe: InstanceElement
+      describe('without cross service resolving', () => {
+        beforeEach(() => {
+          const resolvedConnection = _.cloneDeep(connection)
+          resolvedConnection.value.folder_id = {
+            folderParts: [
+              'innerFolder2',
+            ],
+            rootId: 98,
+          }
+          resolvedRecipe = _.cloneDeep(recipe)
+          resolvedRecipe.value = {
+            folder_id: {
+              folderParts: [
+                'innerFolder1',
+              ],
+              rootId: 98,
+            },
+            config: [{ account_id: resolvedConnection.value }],
+            code: { block: 'block' },
+          }
+        })
+        it('should call RLMDeploy with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipe) }),
+              ],
+            },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+        it('should call RLMDeploy (RecipeCode input) with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipeCode) }),
+              ],
+            },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+      })
+      describe('with salesforce cross service resolving', () => {
+        const opportunitySalesforceType = new ObjectType({
+          elemID: new ElemID('salesforce', 'Opportunity'),
+          fields: {
+            Id: {
+              refType: BuiltinTypes.STRING,
+              annotations: {
+                apiName: 'Opportunity.Id',
+              },
+            },
+            Custom__c: {
+              refType: BuiltinTypes.STRING,
+              annotations: {
+                apiName: 'Opportunity.Custom__c',
+              },
+            },
+            Name: {
+              refType: BuiltinTypes.STRING,
+              annotations: {
+                apiName: 'Opportunity.Name',
+              },
+            },
+          },
+          annotations: {
+            label: 'Opportunity',
+            apiName: 'OpportunityApiName',
+          },
+        })
+
+        beforeEach(() => {
+          const salesforceOpportunity = new InstanceElement(
+            'salesforceOppertunityInstanceName',
+            opportunitySalesforceType,
+            {
+              Id: new Field(opportunitySalesforceType, 'Id', BuiltinTypes.STRING, {
+                label: 'OppertunityIdLabel',
+              },),
+              Custom__c: new Field(opportunitySalesforceType, 'Custom__c', BuiltinTypes.STRING, {
+                label: 'OppertunityCLabel',
+              },),
+              Name: new Field(opportunitySalesforceType, 'Name', BuiltinTypes.STRING, {
+                label: 'OppertunityNameLabel',
+              },),
+            }
+          )
+
+          recipe = new InstanceElement('recipe1InstanceName', recipeType)
+          recipeCode = new InstanceElement('recipe1CodeInstanceName', recipeCodeType, { block: {
+            dynamicPickListSelection: {
+              sobject_name: new ReferenceExpression(
+                opportunitySalesforceType.elemID, opportunitySalesforceType
+              ),
+              field_list: [
+                new ReferenceExpression(
+                  salesforceOpportunity.value.Name.elemID,
+                  salesforceOpportunity.value.Name
+                ),
+                new ReferenceExpression(
+                  salesforceOpportunity.value.Id.elemID,
+                  salesforceOpportunity.value.Id
+                ),
+                new ReferenceExpression(
+                  salesforceOpportunity.value.Custom__c.elemID,
+                  salesforceOpportunity.value.Custom__c
+                ),
+              ],
+              table_list: [
+                new ReferenceExpression(
+                  opportunitySalesforceType.elemID, opportunitySalesforceType
+                ),
+              ],
+            },
+          } }, undefined, {
+            [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(recipe.elemID, recipe),
+          },)
+
+          recipe.value = {
+            folder_id: new ReferenceExpression(folderRecipes.elemID, folderRecipes),
+            config: [{ account_id: new ReferenceExpression(connection.elemID, connection) }],
+            code: new ReferenceExpression(recipeCode.elemID, recipeCode),
+          }
+
+          const resolvedConnection = _.cloneDeep(connection)
+          resolvedConnection.value.folder_id = {
+            folderParts: [
+              'innerFolder2',
+            ],
+            rootId: 98,
+          }
+          resolvedRecipe = _.cloneDeep(recipe)
+          resolvedRecipe.value = {
+            folder_id: {
+              folderParts: [
+                'innerFolder1',
+              ],
+              rootId: 98,
+            },
+            config: [{ account_id: resolvedConnection.value }],
+            code: { block: {
+              dynamicPickListSelection: {
+                sobject_name: 'Opportunity',
+                field_list: [
+                  {
+                    label: 'OppertunityNameLabel',
+                    value: 'Name',
+                  },
+                  {
+                    label: 'OppertunityIdLabel',
+                    value: 'Id',
+                  },
+                  {
+                    label: 'OppertunityCLabel',
+                    value: 'Custom__c',
+                  },
+                ],
+                table_list: [
+                  {
+                    label: 'Opportunity',
+                    value: 'OpportunityApiName',
+                  },
+                ],
+              },
+            } },
+          }
+        })
+        it('should call RLMDeploy with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipe) }),
+              ],
+            },
+            accountToServiceNameMap: { salesforce: 'salesforce' },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+        it('should call RLMDeploy (RecipeCode input) with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipeCode) }),
+              ],
+            },
+            accountToServiceNameMap: { salesforce: 'salesforce' },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+      })
+      describe('with netsuite cross service resolving', () => {
+        const customerNetsuiteType = new ObjectType({
+          elemID: new ElemID('netsuite', 'Customer'),
+          fields: {
+            companyName: { refType: BuiltinTypes.STRING },
+          },
+        })
+
+        const otherCustomFieldNetsuiteType = new ObjectType({
+          elemID: new ElemID('netsuite', 'othercustomfield'),
+          fields: {},
+        })
+
+        beforeEach(() => {
+          const netsuiteOtherCustomField16 = new InstanceElement(
+            'netsuiteOtherCustomField16InstanceName',
+            otherCustomFieldNetsuiteType,
+            {
+              scriptid: 'otherCustomField16ScriptId',
+              label: 'otherCustomField16Label',
+            },
+          )
+          recipe = new InstanceElement('recipe1InstanceName', recipeType)
+          recipeCode = new InstanceElement('recipe1CodeInstanceName', recipeCodeType, { block: {
+            dynamicPickListSelection: {
+              custom_list: [
+                new ReferenceExpression(
+                  netsuiteOtherCustomField16.elemID,
+                  netsuiteOtherCustomField16
+                ),
+              ],
+            },
+            input: {
+              netsuite_object: new ReferenceExpression(
+                customerNetsuiteType.elemID,
+                customerNetsuiteType
+              ),
+            },
+          } }, undefined, {
+            [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(recipe.elemID, recipe),
+          },)
+
+          recipe.value = {
+            folder_id: new ReferenceExpression(folderRecipes.elemID, folderRecipes),
+            config: [{ account_id: new ReferenceExpression(connection.elemID, connection) }],
+            code: new ReferenceExpression(recipeCode.elemID, recipeCode),
+          }
+
+          const resolvedConnection = _.cloneDeep(connection)
+          resolvedConnection.value.folder_id = {
+            folderParts: [
+              'innerFolder2',
+            ],
+            rootId: 98,
+          }
+          resolvedRecipe = _.cloneDeep(recipe)
+          resolvedRecipe.value = {
+            folder_id: {
+              folderParts: [
+                'innerFolder1',
+              ],
+              rootId: 98,
+            },
+            config: [{ account_id: resolvedConnection.value }],
+            code: { block: {
+              dynamicPickListSelection: {
+                custom_list: [
+                  {
+                    label: 'otherCustomField16Label',
+                    value: 'othercustomfield@otherCustomField16ScriptId',
+                  },
+                ],
+              },
+              input: {
+                netsuite_object: 'Customer@@script',
+              },
+            } },
+          }
+        })
+        it('should call RLMDeploy with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipe) }),
+              ],
+            },
+            accountToServiceNameMap: { netsuite: 'netsuite' },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+        it('should call RLMDeploy (RecipeCode input) with the resolved recipe', async () => {
+          await operations.deploy({
+            changeGroup: {
+              groupID: DEPLOY_USING_RLM_GROUP,
+              changes: [
+                toChange({ after: _.cloneDeep(recipeCode) }),
+              ],
+            },
+            accountToServiceNameMap: { netsuite: 'netsuite' },
+          })
+          expect(mockRLMDeploy).toHaveBeenCalledWith([
+            toChange({ after: _.cloneDeep(resolvedRecipe) }),
+          ], expect.anything())
+        })
+      })
+    })
+
+    describe('deploy non InFolder group change', () => {
+      const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
+
+      it('should throw not implemented', async () => {
+        const AdditionChange = toChange({
+          after: new InstanceElement('inst1', nonInFolderType),
+        })
+        await expect(operations.deploy({ changeGroup: { groupID: 'not InFolder', changes: [AdditionChange] } })).rejects.toThrow()
+
+        const ModificationChange = toChange({
+          before: new InstanceElement('inst2', nonInFolderType),
+          after: new InstanceElement('inst2', nonInFolderType),
+        })
+        await expect(operations.deploy({ changeGroup: { groupID: 'not InFolder', changes: [ModificationChange] } })).rejects.toThrow()
+      })
     })
   })
 })

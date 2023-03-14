@@ -13,34 +13,43 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID } from '@salto-io/adapter-api'
+import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import changeValidator from '../src/change_validator'
-import { WORKATO } from '../src/constants'
+import { DEPLOY_SUPPORTED_TYPES, WORKATO } from '../src/constants'
 
 describe('change validator creator', () => {
-  describe('deployNotSupportedValidator', () => {
+  describe('notSupportedTypesValidator', () => {
+    const nonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM') })
+    const anotherNonInFolderType = new ObjectType({ elemID: new ElemID(WORKATO, 'nonRLM1') })
+
     it('should not fail if there are no deploy changes', async () => {
       expect(await changeValidator([])).toEqual([])
     })
 
-    it('should fail each change individually', async () => {
+    it('both should fail', async () => {
       expect(await changeValidator([
-        toChange({ after: new ObjectType({ elemID: new ElemID(WORKATO, 'obj') }) }),
-        toChange({ before: new ObjectType({ elemID: new ElemID(WORKATO, 'obj2') }) }),
-      ])).toEqual([
-        {
-          elemID: new ElemID(WORKATO, 'obj'),
-          severity: 'Error',
-          message: 'Salto does not support workato deployments.',
-          detailedMessage: 'Salto does not support workato deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
-        },
-        {
-          elemID: new ElemID(WORKATO, 'obj2'),
-          severity: 'Error',
-          message: 'Salto does not support workato deployments.',
-          detailedMessage: 'Salto does not support workato deployments. Please see https://help.salto.io/en/articles/6927118-supported-business-applications for more details.',
-        },
-      ])
+        toChange({ after: new InstanceElement('inst1', nonInFolderType) }),
+        toChange({ before: new InstanceElement('inst1', anotherNonInFolderType),
+          after: new InstanceElement('inst1', anotherNonInFolderType) }),
+      ])).toMatchObject([{
+        severity: 'Error',
+        message: expect.stringContaining('not supported'),
+      }, {
+        severity: 'Error',
+        message: expect.stringContaining('not supported'),
+      }])
+    })
+  })
+
+  describe('notSupportedRemovalValidator', () => {
+    const InFolderType = new ObjectType({ elemID: new ElemID(WORKATO, DEPLOY_SUPPORTED_TYPES[0]) })
+    it('should fail', async () => {
+      expect(await changeValidator([
+        toChange({ before: new InstanceElement('inst1', InFolderType) }),
+      ])).toMatchObject([{
+        severity: 'Error',
+        message: expect.stringContaining('not supported'),
+      }])
     })
   })
 })

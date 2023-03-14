@@ -13,15 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import { createChangeValidator } from '@salto-io/adapter-components/src/deployment/change_validators'
 import { ChangeValidatorName } from './config'
+import notSupportedTypesValidator from './change_validators/types_not_supported'
+import notSupportedRemovalValidator from './change_validators/actions_not_supported'
+import recipeOverwrittenValuesValidator from './change_validators/recipe_overwritten_values'
 
-const { deployNotSupportedValidator, getDefaultChangeValidators, createChangeValidator } = deployment.changeValidators
+const { deployTypesNotSupportedValidator, getDefaultChangeValidators } = deployment.changeValidators
 
 const validators: Record<ChangeValidatorName, ChangeValidator> = {
   ...getDefaultChangeValidators(),
-  deployNotSupported: deployNotSupportedValidator,
+  deployTypesNotSupported: deployTypesNotSupportedValidator,
+  notSupportedTypes: notSupportedTypesValidator,
+  notSupportedRemoval: notSupportedRemovalValidator,
+  recipeOverwrittenValues: recipeOverwrittenValuesValidator,
 }
 
 export default createChangeValidator({ validators })

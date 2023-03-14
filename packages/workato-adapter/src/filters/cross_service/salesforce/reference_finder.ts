@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import _ from 'lodash'
 import {
   InstanceElement, ElemID, ReferenceExpression,
@@ -22,11 +23,10 @@ import { DependencyDirection } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { addReferencesForService, FormulaReferenceFinder, MappedReference, ReferenceFinder, createMatcher, Matcher, getBlockDependencyDirection } from '../reference_finders'
 import { SalesforceIndex } from './element_index'
+import { SALESFORCE_LABEL_ANNOTATION, SALESFORCE_S_OBJECT_NAME } from './resolve'
 import { isSalesforceBlock, SalesforceBlock } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
-
-const SALESFORCE_LABEL_ANNOTATION = 'label'
 
 type SalesforceFieldMatchGroup = { obj?: string; field: string; block: string }
 const isSalesforceFieldMatchGroup = (val: Values): val is SalesforceFieldMatchGroup => (
@@ -112,13 +112,13 @@ export const addSalesforceRecipeReferences = async (
     const direction = getBlockDependencyDirection(blockValue)
 
     const references: MappedReference[] = [{
-      pathToOverride: path.createNestedID('input', 'sobject_name'),
+      pathToOverride: path.createNestedID('input', SALESFORCE_S_OBJECT_NAME),
       location,
       reference: new ReferenceExpression(objectDetails.id),
       direction,
     }]
 
-    const inputFieldNames = Object.keys(_.omit(input, 'sobject_name'))
+    const inputFieldNames = Object.keys(_.omit(input, SALESFORCE_S_OBJECT_NAME))
     inputFieldNames.forEach(fieldName => {
       if (objectDetails.fields[fieldName] !== undefined) {
         references.push(
@@ -135,7 +135,7 @@ export const addSalesforceRecipeReferences = async (
     // dynamicPickListSelection uses the label, not the api name
     if (dynamicPickListSelection.sobject_name === objectDetails.label) {
       references.push({
-        pathToOverride: path.createNestedID('dynamicPickListSelection', 'sobject_name'),
+        pathToOverride: path.createNestedID('dynamicPickListSelection', SALESFORCE_S_OBJECT_NAME),
         location,
         direction,
         reference: new ReferenceExpression(objectDetails.id),

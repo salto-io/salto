@@ -34,8 +34,6 @@ export const DEFAULT_ID_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'created_at', fieldType: 'string' },
   { fieldName: 'updated_at', fieldType: 'string' },
-  { fieldName: 'extended_input_schema' },
-  { fieldName: 'extended_output_schema' },
 ]
 export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
@@ -230,7 +228,10 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
 }
 
 export type ChangeValidatorName = (
-  | 'deployNotSupported'
+  'deployTypesNotSupported' 
+  | 'notSupportedTypes'
+  | 'notSupportedRemoval'
+  | 'recipeOverwrittenValues'
 )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement, isStaticFile } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -26,13 +26,14 @@ import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
 import { getGroupItemFromRegex } from '../client/sdf_client'
+import { getContent } from '../suiteapp_file_cabinet'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const NETSUITE_MODULE_PREFIX = 'N/'
-const POSSIBLE_REFS = 'semanticReferences'
-const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${POSSIBLE_REFS}>("[^"]*"|'[^']*'))`, 'gm')
-const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${POSSIBLE_REFS}>.*)`, 'gm')
+const OPTIONAL_REFS = 'optionalReferences'
+const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${OPTIONAL_REFS}>("[^"]*"|'[^']*'))`, 'gm')
+const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${OPTIONAL_REFS}>.*)`, 'gm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -145,10 +146,10 @@ const getSuiteScriptReferences = async (
   fetchedElementsServiceIdToElemID: ServiceIdRecords,
   elementsSourceServiceIdToElemID: ServiceIdRecords
 ): Promise<void> => {
-  const content = (await element.value.content.getContent()).toString()
+  const content = (await getContent(element.value.content)).toString()
   if (isDefined(content)) {
-    const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, POSSIBLE_REFS)
-    const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, POSSIBLE_REFS)
+    const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+    const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
       .map(semanticRef => semanticRef.slice(1, -1))
       .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
       .concat(nsConfigReferences)
@@ -208,7 +209,7 @@ const replaceReferenceValues = async (
 
     return returnValue
   }
-  if (isFileCabinetInstance(element) && isFileInstance(element) && isStaticFile(element.value.content)) {
+  if (isFileCabinetInstance(element) && isFileInstance(element)) {
     await getSuiteScriptReferences(
       element, dependenciesToAdd, fetchedElementsServiceIdToElemID, elementsSourceServiceIdToElemID
     )

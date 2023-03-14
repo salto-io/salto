@@ -129,9 +129,7 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     .flatMap(({ elemID, missingRequiredParams }) => [{
       elemID,
       severity: 'Error',
-      message: 'Can not change app installation, because not all parameters that are defined as required are populated',
-      detailedMessage: `Can not change app installation ${elemID.getFullName()},
-      because the parameters: ${missingRequiredParams}, 
-      are required but not populated.`,
+      message: 'Cannot change app installation since some required parameters are missing',
+      detailedMessage: `The following parameters are required: ${missingRequiredParams}`,
     }])
 }

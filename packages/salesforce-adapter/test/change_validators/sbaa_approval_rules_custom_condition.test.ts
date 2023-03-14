@@ -94,7 +94,7 @@ describe('sbaa addition approval rules with custom condition met with incoming a
       ]
     )
     expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Warning')
+    expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(approvalRuleInstCustomCond.elemID)
   })
 

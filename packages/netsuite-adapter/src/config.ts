@@ -25,7 +25,7 @@ import {
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
-import { AdditionalDependencies, AdditionalSdfDeployDependencies, FailedFiles, FailedTypes } from './client/types'
+import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
@@ -36,7 +36,22 @@ export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_USE_CHANGES_DETECTION = true
+
+const REQUIRED_FEATURE_SUFFIX = ':required'
+export const isRequiredFeature = (featureName: string): boolean =>
+  featureName.toLowerCase().endsWith(REQUIRED_FEATURE_SUFFIX)
+export const removeRequiredFeatureSuffix = (featureName: string): string =>
+  featureName.slice(0, featureName.length - REQUIRED_FEATURE_SUFFIX.length)
+
+type AdditionalSdfDeployDependencies = {
+  features: string[]
+  objects: string[]
+}
+
+export type AdditionalDependencies = {
+  include: AdditionalSdfDeployDependencies
+  exclude: AdditionalSdfDeployDependencies
+}
 
 export type DeployParams = {
   warnOnStaleWorkspaceData?: boolean
@@ -190,7 +205,7 @@ const queryConfigType = createMatchingObjectType<NetsuiteQueryParameters>({
       refType: new MapType(new ListType(BuiltinTypes.STRING)),
       annotations: {
         [CORE_ANNOTATIONS.DEFAULT]: {},
-        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrecord[0-9a-z_]+', enforce_value: false }),
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({ regex: '^customrecord[0-9a-z_]+$', enforce_value: false }),
       },
     },
   },
@@ -382,10 +397,11 @@ const additionalDependenciesConfigPath: string[] = [
   DEPLOY_PARAMS.additionalDependencies,
 ]
 
-const validateAdditionalSdfDeployDependencies = (
-  { features, objects }: Record<keyof AdditionalSdfDeployDependencies, unknown>,
+function validateAdditionalSdfDeployDependencies(
+  input: Partial<Record<keyof AdditionalSdfDeployDependencies, unknown>>,
   configName: string
-): void => {
+): asserts input is Partial<AdditionalSdfDeployDependencies> {
+  const { features, objects } = input
   if (features !== undefined) {
     validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
@@ -395,7 +411,7 @@ const validateAdditionalSdfDeployDependencies = (
 }
 
 const validateAdditionalDependencies = (
-  { include, exclude }: Record<keyof AdditionalDependencies, unknown>
+  { include, exclude }: Partial<Record<keyof AdditionalDependencies, unknown>>
 ): void => {
   if (include !== undefined) {
     validatePlainObject(include, additionalDependenciesConfigPath.concat('include'))
@@ -404,6 +420,25 @@ const validateAdditionalDependencies = (
   if (exclude !== undefined) {
     validatePlainObject(exclude, additionalDependenciesConfigPath.concat('exclude'))
     validateAdditionalSdfDeployDependencies(exclude, 'exclude')
+  }
+  if (include?.features && exclude?.features) {
+    const conflictedFeatures = _.intersection(
+      include.features.map(featureName => (
+        isRequiredFeature(featureName)
+          ? removeRequiredFeatureSuffix(featureName)
+          : featureName
+      )),
+      exclude.features
+    )
+    if (conflictedFeatures.length > 0) {
+      throw new Error(`Additional features cannot be both included and excluded. The following features are conflicted: ${conflictedFeatures.join(', ')}`)
+    }
+  }
+  if (include?.objects && exclude?.objects) {
+    const conflictedObjects = _.intersection(include.objects, exclude.objects)
+    if (conflictedObjects.length > 0) {
+      throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedObjects.join(', ')}`)
+    }
   }
 }
 

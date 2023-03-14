@@ -369,10 +369,14 @@ export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
+export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const ACTIVATE_RSS = 'activateRSS'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+
+// Standard Object Types
+export const ORGANIZATION_SETTINGS = 'Organization'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/

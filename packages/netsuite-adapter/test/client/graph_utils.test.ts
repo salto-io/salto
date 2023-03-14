@@ -26,13 +26,15 @@ describe('graph utils tests', () => {
   const testNode2 = new GraphNode({ name: 'node2', num: 2 })
   const testNode3 = new GraphNode({ name: 'node3', num: 3 })
   const testGraph = new Graph<testNode>('name', [testNode1, testNode2, testNode3])
-  testNode1.addEdge(testNode2)
-  testNode1.addEdge(testNode3)
-  testNode2.addEdge(testNode1)
+  testNode1.addEdge(testGraph.key, testNode2)
+  testNode1.addEdge(testGraph.key, testNode3)
+  testNode2.addEdge(testGraph.key, testNode1)
 
 
   it('should find the nodes dependencies', async () => {
-    expect(testGraph.getNodeDependencies(testNode1)).toEqual([testNode1, testNode2, testNode3])
+    const result = testGraph.getNodeDependencies(testNode1)
+    expect(result).toHaveLength(3)
+    expect(result).toEqual(expect.arrayContaining([testNode2, testNode3, testNode1]))
   })
 
   it('should find the node through its value', async () => {
@@ -50,5 +52,15 @@ describe('graph utils tests', () => {
 
   it('should find node by field', async () => {
     expect(testGraph.findNodeByField('name', 'node3')).toEqual(testNode3)
+  })
+
+  it('should return nodes in topological sort', async () => {
+    expect(testGraph.getTopologicalOrder()).toEqual([testNode1, testNode3, testNode2])
+  })
+
+  it('should remove node from graph and edges from nodes', async () => {
+    testGraph.removeNode('node1')
+    expect(testGraph.nodes.get('node1')).toBeUndefined()
+    expect(testNode2.edges).not.toContain(testNode1)
   })
 })

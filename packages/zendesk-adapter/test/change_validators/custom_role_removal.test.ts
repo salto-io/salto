@@ -50,11 +50,11 @@ describe('customRoleRemovalValidator', () => {
         status: 200,
         data: {
           users: [
-            { id: 1, email: '1@1', role: 'agent', custom_role_id: 123 },
-            { id: 2, email: '2@2', role: 'agent', custom_role_id: 234 },
-            { id: 3, email: '3@3', role: 'admin', custom_role_id: 234 },
-            { id: 4, email: '4@4', role: 'agent' },
-            { id: 5, email: '5@5', role: 'agent', custom_role_id: 123 },
+            { id: 1, email: '1@1', role: 'agent', custom_role_id: 123, name: '1', locale: 'en-US' },
+            { id: 2, email: '2@2', role: 'agent', custom_role_id: 234, name: '2', locale: 'en-US' },
+            { id: 3, email: '3@3', role: 'admin', custom_role_id: 234, name: '2', locale: 'en-US' },
+            { id: 4, email: '4@4', role: 'agent', name: '2', locale: 'en-US' },
+            { id: 5, email: '5@5', role: 'agent', custom_role_id: 123, name: '2', locale: 'en-US' },
           ],
         },
       }
@@ -70,14 +70,14 @@ describe('customRoleRemovalValidator', () => {
       {
         elemID: customRole1.elemID,
         severity: 'Error',
-        message: 'Can not remove custom role with associated agents',
-        detailedMessage: `Can not remove ${customRole1.elemID.name} of type custom_role because 2 agents are associated with this role (partial list): [1@1, 5@5].\nPlease disconnect the agents from the role before deploying this change.`,
+        message: 'Cannot remove a custom role with associated agents',
+        detailedMessage: '2 agents are associated with this role (partial list): [1@1, 5@5].\nPlease disconnect the agents from the role in the Zendesk UI before deploying this change.',
       },
       {
         elemID: customRole2.elemID,
         severity: 'Error',
-        message: 'Can not remove custom role with associated agents',
-        detailedMessage: `Can not remove ${customRole2.elemID.name} of type custom_role because 1 agents are associated with this role (partial list): [2@2].\nPlease disconnect the agents from the role before deploying this change.`,
+        message: 'Cannot remove a custom role with associated agents',
+        detailedMessage: '1 agents are associated with this role (partial list): [2@2].\nPlease disconnect the agents from the role in the Zendesk UI before deploying this change.',
       },
     ])
   })

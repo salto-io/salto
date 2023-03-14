@@ -1037,6 +1037,7 @@ export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
 
 export const lookupFunc = referenceUtils.generateLookupFunc(
   fieldNameToTypeMappingDefs,
+  // This param is needed to resolve references by zendeskSerializationStrategy
   defs => new ZendeskFieldReferenceResolver(defs)
 )
 

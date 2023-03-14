@@ -33,8 +33,8 @@ export const accountSettingsValidator: ChangeValidator = async changes => (
         return [{
           elemID: getChangeData(change).elemID,
           severity: 'Error',
-          message: `Can not change ${ACCOUNT_SETTING_TYPE_NAME}' routing.autorouting_tag to be empty`,
-          detailedMessage: `Can not change ${ACCOUNT_SETTING_TYPE_NAME}' routing.autorouting_tag to be empty`,
+          message: 'Cannot change an auto-routing tag to an empty value',
+          detailedMessage: 'routing.autorouting_tag cannot be empty',
         }]
       }
       return []

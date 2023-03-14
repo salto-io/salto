@@ -114,6 +114,10 @@ describe('views filter', () => {
             operator: 'includes',
             value: [5, 6],
           },
+          {
+            field: 'custom_fields_1500009152882',
+            operator: 'not_present',
+          },
         ],
         any: [
           {
@@ -153,6 +157,7 @@ describe('views filter', () => {
         { field: 'status', operator: 'is', value: 'open' },
         { field: 'brand_id', operator: 'is', value: '3' },
         { field: 'custom_status_id', operator: 'includes', value: ['5', '6'] },
+        { field: 'custom_fields_1500009152882', operator: 'not_present' },
       ])
     })
     it('should add output', async () => {

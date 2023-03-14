@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 
-import { ChangeError, getChangeData, ChangeValidator, Change, ChangeDataType, isFieldChange, isAdditionOrRemovalChange } from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, ChangeValidator, Change, ChangeDataType, isFieldChange, isAdditionOrRemovalChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
@@ -42,9 +42,8 @@ import exchangeRateValidator from './change_validators/currency_exchange_rate'
 import netsuiteClientValidation from './change_validators/client_validation'
 import currencyUndeployableFieldsValidator from './change_validators/currency_undeployable_fields'
 import NetsuiteClient from './client/client'
-import { AdditionalDependencies } from './client/types'
+import { AdditionalDependencies } from './config'
 import { Filter } from './filter'
-import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { NetsuiteChangeValidator } from './change_validators/types'
 
 
@@ -124,7 +123,7 @@ const getChangeValidator: ({
   deployReferencedElements?: boolean
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
-  elementsSourceIndex: LazyElementsSourceIndexes
+  elementsSource: ReadOnlyElementsSource
   }) => ChangeValidator = (
     {
       client,
@@ -135,7 +134,7 @@ const getChangeValidator: ({
       deployReferencedElements,
       additionalDependencies,
       filtersRunner,
-      elementsSourceIndex,
+      elementsSource,
     }
   ) =>
     async (changes, elementSource) => {
@@ -145,7 +144,7 @@ const getChangeValidator: ({
 
       const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
         ...changeValidators.map(validator => validator(changes, elementSource)),
-        ...validators.map(validator => validator(changes, deployReferencedElements, elementsSourceIndex)),
+        ...validators.map(validator => validator(changes, deployReferencedElements, elementsSource)),
         warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
       ]))
       const dependedChangeErrors = await validateDependsOnInvalidElement(

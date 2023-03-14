@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers, WalkOnUsersCallback } from './account_id_filter'
-import { UserMap } from '../../users'
+import { UserMap, getUsersMap } from '../../users'
 import { PROJECT_TYPE } from '../../constants'
 
 const { awu } = collections.asynciterable
@@ -53,20 +53,23 @@ const convertUserNameToId = (userMap: UserMap): WalkOnUsersCallback => (
  * A filter to add display names beside account ids. The source is a JIRA query.
  * While using Jira DC the filter convert user id to user key
  */
-const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
+const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource }) => ({
   name: 'userIdFilter',
   onFetch: async elements => {
     if (!(config.fetch.convertUsersIds ?? true)) {
       return
     }
     const userMap = await getUserMapFunc()
+    if (userMap === undefined) {
+      return
+    }
     await awu(elements)
       .filter(isInstanceElement)
       .forEach(async element => {
         if (client.isDataCenter) {
-          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) })
+          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) })
         } else {
-          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap,)) })
+          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap), config) })
         }
       })
   },
@@ -75,8 +78,12 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       return
     }
 
-    const userMap = _.keyBy(
-      Object.values(await getUserMapFunc()).filter(userInfo => _.isString(userInfo.username)),
+    const userMap = await getUsersMap(elementsSource)
+    if (userMap === undefined) {
+      return
+    }
+    const preDeployUserMap = _.keyBy(
+      Object.values(userMap).filter(userInfo => _.isString(userInfo.username)),
       userInfo => userInfo.username as string
     )
 
@@ -86,21 +93,24 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc }) => ({
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap), config) }))
   },
   onDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true)
        || !client.isDataCenter) {
       return
     }
-    const userMap = await getUserMapFunc()
+    const userMap = await getUsersMap(elementsSource)
+    if (userMap === undefined) {
+      return
+    }
     changes
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) }))
   },
 })
 

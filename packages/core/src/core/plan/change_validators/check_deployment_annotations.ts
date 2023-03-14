@@ -86,7 +86,7 @@ export const checkDeploymentAnnotationsValidator: ChangeValidator = async change
       const unsupportedPaths = await getUnsupportedPaths(change)
 
       return unsupportedPaths.map(({ path }) => ({
-        elemID: instance.elemID,
+        elemID: path,
         severity: 'Info',
         message: 'Operation not supported for specific value',
         detailedMessage: detailedNestedElementErrorMessage(path, change.action),

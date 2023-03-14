@@ -90,7 +90,7 @@ const filterCreator: FilterCreator = () => ({
       return new InstanceElement(
         instanceName,
         channelType,
-        { id: channel.value, name: instanceName },
+        { id: channel.value, name: channel.title },
         [ZENDESK, RECORDS_PATH, CHANNEL_TYPE_NAME, instanceName],
       )
     })

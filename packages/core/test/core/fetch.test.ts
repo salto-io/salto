@@ -269,7 +269,7 @@ describe('fetch', () => {
         })
       })
 
-      it('should use the existing elements to resolve the fetched elements when calculating changes', async () => {
+      it('should use the existing elements to resolve the fetched elements when calculcating changes', async () => {
         const beforeElement = new InstanceElement(
           'name',
           new ObjectType({
@@ -1137,66 +1137,6 @@ describe('fetch', () => {
           .refType)
         expectedHiddenInstanceAlternateId.refType.type = expect.anything()
         expect(passed).toEqual([expectedHiddenInstanceAlternateId])
-      })
-    })
-
-    describe('when call with withChangeDetection true', () => {
-      const mockFetch = jest.fn()
-      const mockDeploy = jest.fn()
-      const mockFetchWithChangeDetection = jest.fn()
-        .mockResolvedValue({ elements: [] })
-      const adapters = {
-        adapterWithQuickFetch: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-          fetchWithChangeDetection: mockFetchWithChangeDetection,
-        },
-        adapterWithoutFetchWithChangeDetection: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-        },
-        adapter2WithoutFetchWithChangeDetection: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-        },
-        adapter3WithoutFetchWithChangeDetection: {
-          fetch: mockFetch,
-          deploy: mockDeploy,
-        },
-      }
-      it('should throw an error when run fetchWithChangeDetection with unsupported adapters', async () => {
-        await expect(fetchChanges(
-          adapters,
-          createElementSource([]),
-          createElementSource([]),
-          {
-            adapterWithoutFetchWithChangeDetection: 'adapter1',
-            adapter2WithoutFetchWithChangeDetection: 'adapter1',
-            adapter3WithoutFetchWithChangeDetection: 'adapter2',
-          },
-          [],
-          undefined,
-          true,
-        )).rejects.toThrow('Adapters: adapter1, adapter2 do not support fetch with change detection operation')
-      })
-      it('should call fetchWithChangeDetection function', async () => {
-        mockFetch.mockClear()
-        mockFetchWithChangeDetection.mockClear()
-        await fetchChanges(
-          _.pick(adapters, 'adapterWithQuickFetch'),
-          createElementSource([]),
-          createElementSource([]),
-          {
-            adapterWithoutFetchWithChangeDetection: 'adapter1',
-            adapter2WithoutFetchWithChangeDetection: 'adapter1',
-            adapter3WithoutFetchWithChangeDetection: 'adapter2',
-          },
-          [],
-          undefined,
-          true,
-        )
-        expect(mockFetchWithChangeDetection).toHaveBeenCalled()
-        expect(mockFetch).not.toHaveBeenCalled()
       })
     })
   })

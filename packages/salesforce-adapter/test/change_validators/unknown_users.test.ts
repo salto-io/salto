@@ -13,11 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, ChangeValidator, getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
+import {
+  BuiltinTypes,
+  Change,
+  ChangeValidator,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  toChange,
+} from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD, SALESFORCE } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
@@ -191,6 +199,40 @@ describe('unknown user change validator', () => {
       expect(changeErrors[0].detailedMessage).toContain(ANOTHER_TEST_USERNAME)
       expect(changeErrors[1].elemID).toEqual(getChangeData(change).elemID)
       expect(changeErrors[1].detailedMessage).toContain(TEST_USERNAME)
+    })
+  })
+  describe('when a field references multiple usernames', () => {
+    let change: Change
+    beforeEach(() => {
+      const beforeRecord = createInstanceElement({
+        fullName: new ElemID(SALESFORCE, 'WorkflowAlert', 'instance', 'SomeWorkflowAlert').getFullName(),
+        recipients: [
+          {
+            type: 'user',
+            recipient: TEST_USERNAME,
+          },
+          {
+            type: 'user',
+            recipient: ANOTHER_TEST_USERNAME,
+          },
+          {
+            type: 'email',
+            recipient: IRRELEVANT_USERNAME,
+          },
+        ],
+      },
+      mockTypes.WorkflowAlert)
+      const afterRecord = beforeRecord.clone()
+      afterRecord.value.defaultCaseUser = ANOTHER_TEST_USERNAME
+      change = toChange({ before: beforeRecord, after: afterRecord })
+    })
+
+    it('Should only create an error for the users that don\'t exist', async () => {
+      setupClientMock([TEST_USERNAME])
+      const changeErrors = await validator([change])
+      expect(changeErrors).toHaveLength(1)
+      expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
+      expect(changeErrors[0].detailedMessage).toContain(ANOTHER_TEST_USERNAME)
     })
   })
 })

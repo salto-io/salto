@@ -21,11 +21,12 @@ import { doesProjectHaveIssues } from './project_deletion'
 
 const { awu } = collections.asynciterable
 
-const RELEVANT_FIELDS = ['priorityScheme', 'workflowScheme']
+const RELEVANT_FIELDS = ['priorityScheme', 'workflowScheme', 'issueTypeScheme']
 type RelevantField = typeof RELEVANT_FIELDS[number]
 const FIELD_FORMATS: Record<RelevantField, string> = {
   priorityScheme: 'priority scheme',
   workflowScheme: 'workflow scheme',
+  issueTypeScheme: 'issue type scheme',
 }
 
 const projectSchemeChanged = (change : ModificationChange<InstanceElement>): RelevantField[] => {

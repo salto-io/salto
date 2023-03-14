@@ -13,22 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { APPLICATION_TYPE_NAME } from '../constants'
-import { FilterCreator } from '../filter'
+import { DependencyChanger } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
+import { collections } from '@salto-io/lowerdash'
 
-/**
- * Remove appUsers field from app instances
- *
- */
-const filter: FilterCreator = () => ({
-  name: 'appStructureFilter',
-  onFetch: async (elements: Element[]) => {
-    elements
-      .filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-      .forEach(instance => delete instance.value.appUsers)
-  },
-})
+const { awu } = collections.asynciterable
 
-export default filter
+const DEPENDENCY_CHANGERS: DependencyChanger[] = [
+  deployment.dependency.removeStandaloneFieldDependency,
+]
+
+export const dependencyChanger: DependencyChanger = async (
+  changes, deps
+) => awu(DEPENDENCY_CHANGERS).flatMap(changer => changer(changes, deps)).toArray()

@@ -15,7 +15,7 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange, InstanceElement, ChangeError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { APPLICATION_TYPE_NAME } from '../constants'
+import { ACTIVE_STATUS, APPLICATION_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -28,7 +28,7 @@ export const applicationValidator: ChangeValidator = async changes => (
     .filter(isRemovalChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
-    .filter(instance => instance.value.status === 'ACTIVE')
+    .filter(instance => instance.value.status === ACTIVE_STATUS)
     .map((instance: InstanceElement): ChangeError => ({
       elemID: instance.elemID,
       severity: 'Error',

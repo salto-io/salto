@@ -47,6 +47,17 @@ describe('dummy adapter', () => {
       })
     })
   })
+  describe('validate', () => {
+    it('should be defined', () => {
+      expect(adapter.validate).toBeDefined()
+    })
+    it('should do nothing', async () => {
+      expect(await adapter.validate({ changeGroup: { changes: [], groupID: ':)' } })).toEqual({
+        appliedChanges: [],
+        errors: [],
+      })
+    })
+  })
 
   describe('fetch', () => {
     const progressReportMock = {

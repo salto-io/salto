@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
@@ -75,19 +75,19 @@ const getAllIssueTypesForWorkflowScheme = async (
   elementSource: ReadOnlyElementsSource,
   assignedProjects: InstanceElement[]
 ): Promise<ReferenceExpression[]> => {
-  const issueTypeSchemes = await awu(assignedProjects)
+  const issueTypeSchemes: InstanceElement[] = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
-    .filter((ref): ref is ReferenceExpression => ref instanceof ReferenceExpression)
-    .map((ref: ReferenceExpression) => elementSource.get(ref.elemID))
+    .filter(isReferenceExpression)
+    .map(ref => elementSource.get(ref.elemID))
+    .filter(isInstanceElement)
     .toArray()
-  const issueTypes = issueTypeSchemes
-    .filter(isDefined)
+  const issueTypes: ReferenceExpression[] = issueTypeSchemes
     .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
     .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
+    .filter(isReferenceExpression)
   return _.uniqBy(
-    issueTypes
-      .filter((ref): ref is ReferenceExpression => ref instanceof ReferenceExpression),
-    (issueType: ReferenceExpression) => issueType.elemID.getFullName()
+    issueTypes,
+    issueType => issueType.elemID.getFullName()
   )
 }
 
@@ -108,6 +108,8 @@ const getChangedItemsFromChange = async (
   elementSource: ReadOnlyElementsSource,
 ): Promise<ChangedItem[]> => {
   const { before, after } = change.data
+  const beforeItems = (before.value.items ?? []).filter(isWorkflowSchemeItem)
+  const afterItems = (after.value.items ?? []).filter(isWorkflowSchemeItem)
   const assignedIssueTypes = await getAllIssueTypesForWorkflowScheme(elementSource, assignedProjects)
   const defaultWorkflowIssueTypes = !before.value.defaultWorkflow.elemID.isEqual(after.value.defaultWorkflow.elemID)
     ? getDefaultWorkflowIssueTypes(after, assignedIssueTypes) : []
@@ -117,8 +119,8 @@ const getChangedItemsFromChange = async (
     issueType,
   }))
   const removedItems = _.differenceWith(
-    before.value.items.filter(isWorkflowSchemeItem),
-    after.value.items.filter(isWorkflowSchemeItem),
+    beforeItems,
+    afterItems,
     isItemEquals,
   ).map((item: WorkflowSchemeItem) => ({
     before: item.workflow,
@@ -126,22 +128,21 @@ const getChangedItemsFromChange = async (
     issueType: item.issueType,
   }))
   const addedItems = _.differenceWith(
-    after.value.items.filter(isWorkflowSchemeItem),
-    before.value.items.filter(isWorkflowSchemeItem),
+    afterItems,
+    beforeItems,
     isItemEquals,
   ).map(item => ({
     before: before.value.defaultWorkflow,
     after: item.workflow,
     issueType: item.issueType,
   }))
-  const afterItems = _.keyBy(
-    after.value.items.filter(isWorkflowSchemeItem),
+  const afterItemsIssueTypes = _.keyBy(
+    afterItems,
     item => item.issueType.elemID.getFullName(),
   )
-  const modifiedItems = before.value.items
-    .filter(isWorkflowSchemeItem)
+  const modifiedItems = beforeItems
     .map((beforeItem: WorkflowSchemeItem) => {
-      const afterItem: WorkflowSchemeItem = afterItems[beforeItem.issueType.elemID.getFullName()]
+      const afterItem: WorkflowSchemeItem = afterItemsIssueTypes[beforeItem.issueType.elemID.getFullName()]
       if (afterItem === undefined || !isItemModified(beforeItem, afterItem)) {
         return undefined
       }
@@ -161,14 +162,16 @@ const getChangedItemsFromChange = async (
     // Might happen if the user changed default workflow.
     .filter(item => !item.before.elemID.isEqual(item.after.elemID))
     .filter(item => assignedIssueTypes.some(issueType => issueType.elemID.isEqual(item.issueType.elemID)))
+    // Might happen on unresolved reference to new/old workflow.
+    .filter(item => isInstanceElement(item.before.value) && isInstanceElement(item.after.value))
 }
 
 const areStatusesEquals = (status1: ReferenceExpression, status2: ReferenceExpression): boolean =>
   status1.elemID.isEqual(status2.elemID)
 
 const getMissingStatuses = (before: InstanceElement, after: InstanceElement): ReferenceExpression[] => {
-  const beforeStatuses = before.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
-  const afterStatuses = after.value.statuses.map((status: {id: ReferenceExpression}) => status.id)
+  const beforeStatuses = (before.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
+  const afterStatuses = (after.value.statuses ?? []).map((status: {id: ReferenceExpression}) => status.id)
   return _.differenceWith(beforeStatuses, afterStatuses, areStatusesEquals)
 }
 

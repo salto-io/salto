@@ -16,18 +16,18 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { Change, ChangeError, changeId, getChangeData, ChangeDataType, isField, isFieldChange, isInstanceChange, isObjectTypeChange, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { getGroupItemFromRegex, objectValidationErrorRegex, OBJECT_ID } from '../client/sdf_client'
+import { AdditionalDependencies } from '../config'
+import { getGroupItemFromRegex } from '../client/sdf_client'
 import NetsuiteClient from '../client/client'
-import { AdditionalDependencies } from '../client/types'
 import { getChangeGroupIdsFunc } from '../group_changes'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../client/errors'
+import { detectLanguage, multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
 import { SCRIPT_ID } from '../constants'
 import { getElementValueOrAnnotations } from '../types'
 import { Filter } from '../filter'
 import { cloneChange } from './utils'
 
 const { awu } = collections.asynciterable
-const VALIDATION_FAIL = 'Validation failed.'
 
 type FailedChangeWithDependencies = {
   change: Change<ChangeDataType>
@@ -36,8 +36,10 @@ type FailedChangeWithDependencies = {
 
 const mapObjectDeployErrorToInstance = (error: Error):
 { get: (changeData: ChangeDataType) => string | undefined } => {
+  const detectedLanguage = detectLanguage(error.message)
+  const { validationFailed, objectValidationErrorRegex } = multiLanguageErrorDetectors[detectedLanguage]
   const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorMessageChunks = error.message.split(VALIDATION_FAIL)[1]?.split('\n\n')
+  const errorMessageChunks = error.message.split(validationFailed)[1]?.split('\n\n') ?? []
   errorMessageChunks.forEach(chunk => {
     const objectErrorScriptId = getGroupItemFromRegex(
       chunk, objectValidationErrorRegex, OBJECT_ID

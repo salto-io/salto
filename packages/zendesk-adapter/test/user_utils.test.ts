@@ -22,6 +22,15 @@ import { ZedneskDeployConfig } from '../src/config'
 import { SECTION_TRANSLATION_TYPE_NAME, ZENDESK } from '../src/constants'
 import * as usersUtilsModule from '../src/user_utils'
 
+const logError = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
+  return {
+    ...actual,
+    logger: () => ({ ...actual.logger('test'), error: (...args: unknown[]) => logError(args) }),
+  }
+})
+
 describe('userUtils', () => {
   describe('getUsers', () => {
     let userUtils: typeof usersUtilsModule
@@ -38,9 +47,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
-              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
             ] },
           ]
         })
@@ -48,9 +57,9 @@ describe('userUtils', () => {
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
-          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
         ]
       )
     })
@@ -59,23 +68,23 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com' },
-              { id: 2, email: 'b@b.com' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
             ] },
           ]
         })
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
         ]
       )
       const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
       expect(getUsersAfterCache).toEqual(
         [
-          { id: 1, email: 'a@a.com' },
-          { id: 2, email: 'b@b.com' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
         ]
       )
       await userUtils.getUsers(mockPaginator)
@@ -97,7 +106,140 @@ describe('userUtils', () => {
       expect(mockPaginator).toHaveBeenCalledTimes(1)
     })
   })
+  describe('getIdByEmail', () => {
+    let userUtils: typeof usersUtilsModule
 
+    beforeEach(() => {
+      jest.isolateModules(() => {
+        // eslint-disable-next-line global-require
+        userUtils = require('../src/user_utils')
+      })
+    })
+    it('should return valid id-email record when called', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
+            ] },
+          ]
+        })
+
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+        3: 'c@c.com',
+      })
+    })
+    it('should cache results when between getIdByEmail calls', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+            ] },
+          ]
+        })
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+      })
+      const idByEmailAfterCache = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmailAfterCache).toEqual({
+        1: 'a@a.com',
+        2: 'b@b.com',
+      })
+      await userUtils.getIdByEmail(mockPaginator)
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+    it('should return empty object if users are in invalid format, getIdByEmail', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1 },
+              { id: 2, email: 'b@b.com' },
+              { email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+            ] },
+          ]
+        })
+      const idByEmail = await userUtils.getIdByEmail(mockPaginator)
+      expect(idByEmail).toEqual({})
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+  })
+  describe('getIdByName', () => {
+    let userUtils: typeof usersUtilsModule
+
+    beforeEach(() => {
+      jest.isolateModules(() => {
+        // eslint-disable-next-line global-require
+        userUtils = require('../src/user_utils')
+      })
+    })
+    it('should return valid id-name record when called', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
+            ] },
+          ]
+        })
+
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({
+        1: 'a',
+        2: 'b',
+        3: 'c',
+      })
+    })
+    it('should cache results when between getIdByName calls', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+            ] },
+          ]
+        })
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({
+        1: 'a',
+        2: 'b',
+      })
+      const idByEmailAfterCache = await userUtils.getIdByName(mockPaginator)
+      expect(idByEmailAfterCache).toEqual({
+        1: 'a',
+        2: 'b',
+      })
+      await userUtils.getIdByName(mockPaginator)
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+    it('should return empty object if users are in invalid format, getIdByName', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>()
+        .mockImplementation(async function *get() {
+          yield [
+            { users: [
+              { id: 1 },
+              { id: 2, email: 'b@b.com' },
+              { email: 'c@c.com', role: 'agent', custom_role_id: '123' },
+            ] },
+          ]
+        })
+      const idByName = await userUtils.getIdByName(mockPaginator)
+      expect(idByName).toEqual({})
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+    })
+  })
   describe('UserReplacers', () => {
     const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, 'macro') })
     const slaPolicyType = new ObjectType({ elemID: new ElemID(ZENDESK, 'sla_policy') })
@@ -637,15 +779,15 @@ describe('userUtils', () => {
       deployConfig = {
         defaultMissingUserFallback: 'useruser@zendesk.com',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('User provided in defaultMissingUserFallback does not exist in the target environemt'))
+      )).toBe(undefined)
     })
     it('should return deployer user email', async () => {
       mockGet
-        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' } } })
+        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234', name: 'saltoo', locale: 'en-US' } } })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
@@ -656,28 +798,30 @@ describe('userUtils', () => {
       )
       expect(fallbackValue).toEqual('saltoo@io')
     })
-    it('should throw in case of fallback to deployer and invalid user reponse', async () => {
+    it('should fail and log an error in case of fallback to deployer and invalid user response', async () => {
       mockGet
         .mockResolvedValueOnce({ status: 200, data: { users: [{ id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234' }] } })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
+      )).toBe(undefined)
+      expect(logError).toHaveBeenCalledWith(['Received invalid response from endpoint \'/api/v2/users/me\''])
     })
-    it('should throw in case of an error in current user request', async () => {
+    it('should fail and log an error in case of an error in current user request', async () => {
       mockGet.mockRejectedValue({ status: 400, data: {} })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }
-      await expect(getUserFallbackValue(
+      expect(await getUserFallbackValue(
         deployConfig.defaultMissingUserFallback as string,
         existingUsers,
         client
-      )).rejects.toThrow(new Error('Failed to get current user from endpoint \'/api/v2/users/me\''))
+      )).toBe(undefined)
+      expect(logError).toHaveBeenCalledWith(['Attempt to get current user details has failed with error: %o', { data: {}, status: 400 }])
     })
   })
 })

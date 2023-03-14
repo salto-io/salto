@@ -45,9 +45,8 @@ describe('onlyOneTicketFormDefaultValidator', () => {
     expect(errors).toEqual([{
       elemID: anotherDefaultTicketForm.elemID,
       severity: 'Error',
-      message: `Can not change ${anotherDefaultTicketForm.elemID.getFullName()} to be default because there are others default ${TICKET_FORM_TYPE_NAME}`,
-      detailedMessage: `Can not change ${anotherDefaultTicketForm.elemID.getFullName()} to be default because there are others default ${TICKET_FORM_TYPE_NAME
-      }: ${defaultTicketForm.elemID.getFullName()}`,
+      message: 'Cannot set this as the default ticket form since another one is already defined as the default',
+      detailedMessage: `The following ticket forms are also marked as default: ${defaultTicketForm.elemID.getFullName()}`,
     }])
   })
   it('should not return an error when we remove an item', async () => {

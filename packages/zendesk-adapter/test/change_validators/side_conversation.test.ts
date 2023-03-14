@@ -91,14 +91,16 @@ describe('macro side conversation fields', () => {
     expect(errors[0]).toEqual({
       elemID: macroInstance1.elemID,
       severity: 'Error',
-      message: 'Can not change macro with side conversation fields when the feature is disabled in the account',
-      detailedMessage: `Can not change ${macroInstance1.elemID.name} because the macro contains the following side conversation actions which are disabled in the account: side_conversation_ticket`,
+      message: 'Cannot change a macro with side conversation actions since the feature is disabled in the account',
+      detailedMessage: `Macro contains the following side conversation actions which are disabled in the account: side_conversation_ticket.
+Please enable side conversations in your account or remove those actions from the macro in order to deploy.`,
     })
     expect(errors[1]).toEqual({
       elemID: macroInstance2.elemID,
       severity: 'Error',
-      message: 'Can not change macro with side conversation fields when the feature is disabled in the account',
-      detailedMessage: `Can not change ${macroInstance2.elemID.name} because the macro contains the following side conversation actions which are disabled in the account: side_conversation, side_conversation_slack`,
+      message: 'Cannot change a macro with side conversation actions since the feature is disabled in the account',
+      detailedMessage: `Macro contains the following side conversation actions which are disabled in the account: side_conversation, side_conversation_slack.
+Please enable side conversations in your account or remove those actions from the macro in order to deploy.`,
     })
   })
   it('should not return an error when all macro side conversation fields are enabled', async () => {

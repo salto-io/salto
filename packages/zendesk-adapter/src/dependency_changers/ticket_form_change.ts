@@ -19,7 +19,7 @@ import {
   getChangeData,
   InstanceElement,
   isAdditionChange,
-  isInstanceChange, isReferenceExpression, isRemovalChange, ReferenceExpression,
+  isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { TICKET_FORM_ORDER_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
@@ -54,7 +54,10 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
 
   const ticketFormOrderValue = getChangeData(ticketFormOrderChange.change).value
   const orderTicketForms = new Set((ticketFormOrderValue.active ?? []).concat(ticketFormOrderValue.inactive ?? [])
-    .filter(isReferenceExpression).map((ref: ReferenceExpression) => ref.value.elemID.getFullName()).flat())
+  // Filter out referenceExpressions that are unresolved (which means they don't have a value)
+    .filter(isReferenceExpression).filter((ref: ReferenceExpression) => isInstanceElement(ref.value))
+    .map((ref: ReferenceExpression) => ref.value.elemID.getFullName())
+    .flat())
 
 
   const addedFormsDependencies = ticketFormChanges.filter(change => isAdditionChange(change.change)).map(change => {

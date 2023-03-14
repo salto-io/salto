@@ -76,6 +76,7 @@ export type ZendeskClientConfig = clientUtils.ClientBaseConfig<clientUtils.Clien
 export type ZendeskFetchConfig = configUtils.UserFetchConfig
   & {
   enableMissingReferences?: boolean
+  includeAuditDetails?: boolean
   greedyAppReferences?: boolean
   appReferenceLocators?: IdLocator[]
   guide?: Guide
@@ -1464,6 +1465,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       idFields: ['&locale_id'],
       fieldsToHide: FIELDS_TO_HIDE.concat({ fieldName: 'id', fieldType: 'number' }),
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
+      extendsParentId: true,
     },
     deployRequests: {
       add: {
@@ -2526,6 +2528,7 @@ export const DEFAULT_CONFIG: ZendeskConfig = {
     hideTypes: true,
     enableMissingReferences: true,
     resolveOrganizationIDs: false,
+    includeAuditDetails: false,
   },
   [API_DEFINITIONS_CONFIG]: {
     typeDefaults: {
@@ -2598,6 +2601,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
         ZENDESK,
         {
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
+          includeAuditDetails: { refType: BuiltinTypes.BOOLEAN },
           greedyAppReferences: { refType: BuiltinTypes.BOOLEAN },
           appReferenceLocators: { refType: IdLocatorType },
           guide: { refType: GuideType },
@@ -2620,6 +2624,7 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       `${FETCH_CONFIG}.enableMissingReferences`,
       `${FETCH_CONFIG}.guide`,
       `${FETCH_CONFIG}.resolveOrganizationIDs`,
+      `${FETCH_CONFIG}.includeAuditDetails`,
       DEPLOY_CONFIG,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

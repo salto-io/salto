@@ -276,6 +276,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         articleById,
         apiDefinitions: config[API_DEFINITIONS_CONFIG],
         attachments: isAttachments(attachments) ? attachments : [],
+        config,
       })
       articleInstances.forEach(article => {
         const sortedAttachments = _.sortBy(article.value.attachments, [

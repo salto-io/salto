@@ -35,7 +35,7 @@ export const parentAnnotationToHaveSingleValueValidatorCreator = (
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Can not change the ${instance.elemID.typeName} instance because it should have exactly one parent`,
-      detailedMessage: `Can not change ${instance.elemID.getFullName()} because it should have exactly one parent`,
+      message: 'Cannot change an element with zero or multiple parents',
+      detailedMessage: 'Please make sure to set exactly one parent for this element',
     }))
 }

@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ResponseType } from 'axios'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
+import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Connection, ConnectionCreator, createRetryOptions, createClientConnection, ResponseValue, Response } from './http_connection'
 import { AdapterClientBase } from './base'
@@ -125,6 +126,25 @@ export abstract class AdapterHTTPClient<
     }
   }
 
+  // eslint-disable-next-line class-methods-use-this
+  protected clearValuesFromResponseData(
+    responseData: Values,
+    _url: string,
+  ): Values {
+    return responseData
+  }
+
+  /**
+   * Extract headers needed by the adapter
+   */
+  // eslint-disable-next-line class-methods-use-this
+  protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
+    return headers !== undefined
+      // include headers related to rate limits
+      ? _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith('rate-') || key.toLowerCase().startsWith('x-rate-'))
+      : undefined
+  }
+
   /**
    * Get a single response
    */
@@ -198,10 +218,15 @@ export abstract class AdapterHTTPClient<
           requestConfig,
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
+      const responseHeaders = this.extractHeaders(res.headers)
       log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
-        url, queryParams, response: res.data, headers: res.headers, method: method.toUpperCase(),
+        url,
+        queryParams,
+        response: Buffer.isBuffer(res.data) ? `<omitted buffer of length ${res.data.length}>` : this.clearValuesFromResponseData(res.data, url),
+        headers: responseHeaders,
+        method: method.toUpperCase(),
       }))
-      const { data, status, headers: responseHeaders } = res
+      const { data, status } = res
       return {
         data,
         status,

@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
-import { JIRA } from '../../constants'
+import { CONDITION_CONFIGURATION, JIRA } from '../../constants'
 
 export const createConditionConfigurationTypes = (): {
   type: ObjectType
@@ -38,7 +38,7 @@ export const createConditionConfigurationTypes = (): {
   })
 
   const conditionConfigurationType = new ObjectType({
-    elemID: new ElemID(JIRA, 'ConditionConfiguration'),
+    elemID: new ElemID(JIRA, CONDITION_CONFIGURATION),
     fields: {
       fieldId: {
         refType: BuiltinTypes.STRING,
@@ -77,7 +77,7 @@ export const createConditionConfigurationTypes = (): {
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       value: {
-        refType: BuiltinTypes.STRING,
+        refType: BuiltinTypes.UNKNOWN,
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       toStatus: {
@@ -114,6 +114,42 @@ export const createConditionConfigurationTypes = (): {
       },
       comparisonType: {
         refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_STATUS_ID: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      RESOLUTION_FIELD_NAME: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_TEXT_FIELD: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_LINKED_ISSUE_RESOLUTION: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_PROJECT_ROLE_IDS: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_GROUP_NAMES: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_REQUIRED_FIELDS: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_USER_IN_FIELDS: {
+        refType: new ListType(BuiltinTypes.STRING),
+        annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
+      },
+      FIELD_LINKED_ISSUE_STATUS: {
+        refType: new ListType(BuiltinTypes.STRING),
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
     },

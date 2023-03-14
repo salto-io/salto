@@ -59,6 +59,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   addTypeToFieldName?: boolean
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
+  enableScriptRunnerAddon?: boolean
 }
 
 export type MaskingConfig = {
@@ -143,7 +144,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
   masking: {
     automationHeaders: [],
-    secretRegexps: [],
+    secretRegexps: ['xoxb-.*'], // xoxb-.* is Slack token, used by script runner
   },
 }
 
@@ -190,6 +191,7 @@ const fetchConfigType = createUserFetchConfigType(
     fallbackToInternalId: { refType: BuiltinTypes.BOOLEAN },
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
     showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
+    enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
   },

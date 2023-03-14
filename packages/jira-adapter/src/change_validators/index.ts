@@ -36,7 +36,6 @@ import { systemFieldsValidator } from './system_fields'
 import { workflowPropertiesValidator } from './workflows/workflow_properties'
 import { permissionSchemeValidator } from './sd_portals_permission_scheme'
 import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_scheme'
-import { GetUserMapFunc } from '../users'
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
@@ -51,6 +50,8 @@ import { activeSchemeDeletionValidator } from './active_scheme_deletion'
 import { automationProjectUnresolvedReferenceValidator } from './automation_unresolved_references'
 import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
+import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
+import { issueTypeDeletionValidator } from './issue_type_deletion'
 
 const {
   deployTypesNotSupportedValidator,
@@ -58,7 +59,7 @@ const {
 
 
 export default (
-  client: JiraClient, config: JiraConfig, getUserMapFunc: GetUserMapFunc, paginator: clientUtils.Paginator
+  client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
@@ -84,16 +85,18 @@ export default (
     statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
     workflowSchemeMigrationValidator(client, config, paginator),
+    issueTypeSchemeMigrationValidator(client),
     activeSchemeChangeValidator(client),
     maskingValidator(client),
+    issueTypeDeletionValidator(client),
     lockedFieldsValidator,
     fieldContextValidator,
     systemFieldsValidator,
     workflowPropertiesValidator,
     permissionSchemeValidator,
     screenSchemeDefaultValidator,
-    wrongUserPermissionSchemeValidator(client, config, getUserMapFunc),
-    accountIdValidator(client, config, getUserMapFunc),
+    wrongUserPermissionSchemeValidator(client, config),
+    accountIdValidator(client, config),
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
   ]

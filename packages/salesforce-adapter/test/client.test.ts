@@ -337,6 +337,9 @@ describe('salesforce client', () => {
   describe('when client throws mappable error', () => {
     const TEST_HOSTNAME = 'test-org.my.salesforce.com'
 
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
+
     type TestInput = {
       expectedMessage: string
       errorProperties: Partial<Record<ErrorProperty, unknown>>
@@ -390,9 +393,6 @@ describe('salesforce client', () => {
         ...testInput,
       })
 
-      let testClient: SalesforceClient
-      let testConnection: MockInterface<Connection>
-
       beforeEach(() => {
         const mocks = mockClient()
         testClient = mocks.client
@@ -406,6 +406,21 @@ describe('salesforce client', () => {
           await expect(testClient.listMetadataTypes())
             .rejects.toThrow(expectedMessage)
         })
+    })
+
+    describe('when login throws invaid_grant error', () => {
+      beforeEach(() => {
+        const mocks = mockClient()
+        testClient = mocks.client
+        testConnection = mocks.connection
+        jest.spyOn(testClient, 'ensureLoggedIn').mockImplementation(() => {
+          throw Object.assign(new Error(INVALID_GRANT), { name: INVALID_GRANT })
+        })
+      })
+      it('should be mapped to user friendly message', async () => {
+        await expect(testClient.listMetadataTypes())
+          .rejects.toThrow(INVALID_GRANT_MESSAGE)
+      })
     })
   })
 

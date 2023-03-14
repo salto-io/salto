@@ -197,35 +197,3 @@ export const prettifyName = (name: string): string => {
   const words = cleanNaclCase.split('_').flatMap(prettifyWord).map(recapitalize)
   return words.join(' ')
 }
-
-const prettifyWord = (str: string): string[] => {
-  if (allCapsRegex.test(str)) {
-    return [str]
-  }
-  let result = str
-  if (camelCaseRegex.test(str)) {
-    result = str.replace(camelCaseRegex, ([lower, upper]) => [lower, upper].join(' '))
-  }
-  if (allCapsCamelCaseRegex.test(result)) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    result = result.replace(allCapsCamelCaseRegex, (match, subMatch) => `${match[0]} ${subMatch}`)
-  }
-
-  return result.split(' ')
-}
-
-
-const recapitalize = (str: string): string => str.slice(0, 1).toUpperCase() + str.slice(1)
-
-
-/**
- * name is a single namePart from the elemId
- */
-export const prettifyName = (name: string): string => {
-  const cleanNaclCase = invertNaclCase(name)
-  if (cleanNaclCase.includes(' ')) {
-    return cleanNaclCase
-  }
-  const words = cleanNaclCase.split('_').flatMap(prettifyWord).map(recapitalize)
-  return words.join(' ')
-}

@@ -119,50 +119,46 @@ const generateServiceIdToElemID = async (
 const isFilePath = (path: string): boolean =>
   osPath.extname(osPath.basename(path)) !== ''
 
-const resolveRelativePath = (absolutePath: string | undefined, relativePath: string): string | undefined =>
-  (isDefined(absolutePath) ? osPath.resolve(osPath.dirname(absolutePath), relativePath) : undefined)
+const resolveRelativePath = (absolutePath: string | undefined, relativePath: string): string =>
+  (isDefined(absolutePath) ? osPath.resolve(osPath.dirname(absolutePath), relativePath) : '')
 
 const updateDependenciesToAdd = (
-  dependenciesToAdd: ElemID[],
   foundReferences: string[],
   fetchedElementsServiceIdToElemID: ServiceIdRecords,
   elementsSourceServiceIdToElemID: ServiceIdRecords,
   element: InstanceElement,
-): void =>
+): ElemID[] =>
   foundReferences
     .map(ref => (isFilePath(ref) ? resolveRelativePath(element.value?.path, ref) : ref))
-    .filter(isDefined)
-    .forEach(ref => {
+    .map(ref => {
       const serviceIdRecord = fetchedElementsServiceIdToElemID[ref] ?? elementsSourceServiceIdToElemID[ref]
       if (isDefined(serviceIdRecord) && typeof serviceIdRecord !== 'function') {
-        dependenciesToAdd.push(serviceIdRecord.elemID)
+        return serviceIdRecord.elemID
       }
+      return undefined
     })
+    .filter(isDefined)
 
 
 const getSuiteScriptReferences = async (
   element: InstanceElement,
-  dependenciesToAdd: ElemID[],
   fetchedElementsServiceIdToElemID: ServiceIdRecords,
   elementsSourceServiceIdToElemID: ServiceIdRecords
-): Promise<void> => {
+): Promise<ElemID[]> => {
   const content = (await getContent(element.value.content)).toString()
-  if (isDefined(content)) {
-    const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
-    const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-      .map(semanticRef => semanticRef.slice(1, -1))
-      .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-      .concat(nsConfigReferences)
-    if (semanticReferences) {
-      updateDependenciesToAdd(
-        dependenciesToAdd,
-        semanticReferences,
-        fetchedElementsServiceIdToElemID,
-        elementsSourceServiceIdToElemID,
-        element
-      )
-    }
-  }
+
+  const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
+    .map(semanticRef => semanticRef.slice(1, -1))
+    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+    .concat(nsConfigReferences)
+
+  return updateDependenciesToAdd(
+    semanticReferences,
+    fetchedElementsServiceIdToElemID,
+    elementsSourceServiceIdToElemID,
+    element
+  )
 }
 
 const replaceReferenceValues = async (
@@ -210,8 +206,8 @@ const replaceReferenceValues = async (
     return returnValue
   }
   if (isFileCabinetInstance(element) && isFileInstance(element)) {
-    await getSuiteScriptReferences(
-      element, dependenciesToAdd, fetchedElementsServiceIdToElemID, elementsSourceServiceIdToElemID
+    dependenciesToAdd.push(
+      ...await getSuiteScriptReferences(element, fetchedElementsServiceIdToElemID, elementsSourceServiceIdToElemID)
     )
   }
 

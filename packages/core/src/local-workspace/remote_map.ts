@@ -208,8 +208,8 @@ const readonlyDBConnections: ConnectionPool = {}
 const tmpDBConnections: Record<string, ConnectionPool> = {}
 const readonlyDBConnectionsPerRemoteMap: Record<string, ConnectionPool> = {}
 let currentConnectionsCount = 0
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
+
+
 const COUNTER_TYPES = [
   'LocationCacheCreated',
   'LocationCacheReuse',
@@ -224,6 +224,59 @@ const COUNTER_TYPES = [
 ] as const
 type CounterType = typeof COUNTER_TYPES[number]
 const counters: Record<string, Record<CounterType, number>> = {}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+class LocationCache extends LRU<string, any> {
+  readonly location: string
+
+  constructor(location: string, cacheSize: number) {
+    super({ max: cacheSize })
+    this.location = location
+  }
+}
+
+type LocationCachePool = {
+  get: (location: string, cacheSize: number) => LocationCache
+
+  // The 'string' overload is temporary to allow the implementation of closeRemoteMapsOfLocation.
+  // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
+  put: (cache: LocationCache | string) => void
+}
+
+const createLocationCachePool = (): LocationCachePool => {
+  // TODO: LRU if we determine too many locationCaches are created.
+  const pool = new Map<string, {cache: LocationCache; refcnt: number}>()
+  return {
+    get: (location, cacheSize) => {
+      const cachePoolEntry = pool.get(location)
+      if (cachePoolEntry) {
+        counters[location].LocationCacheReuse += 1
+        cachePoolEntry.refcnt += 1
+        return cachePoolEntry.cache
+      }
+      counters[location].LocationCacheCreated += 1
+      const newCache:LocationCache = new LocationCache(location, cacheSize)
+      pool.set(location, { cache: newCache, refcnt: 1 })
+      return newCache
+    },
+    put: cacheOrLocation => {
+      const location = _.isString(cacheOrLocation) ? cacheOrLocation : cacheOrLocation.location
+      const poolEntry = pool.get(location)
+      if (!poolEntry || poolEntry.refcnt === 0) {
+        log.error('Bug in LocationCachePool refcounting!')
+        return
+      }
+      poolEntry.refcnt -= 1
+
+      if (poolEntry.refcnt === 0) {
+        pool.delete(location)
+      }
+    },
+  }
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+const locationCaches = createLocationCachePool()
 
 const deleteLocation = async (location: string): Promise<void> => {
   try {
@@ -287,7 +340,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  locationCaches.del(location)
+  locationCaches.put(location)
   log.debug('Remote Map Stats for location \'%s\': %o', location, counters[location])
   delete counters[location]
 }
@@ -457,22 +510,7 @@ remoteMap.RemoteMapCreator => {
     ) as Record<CounterType, number>
   }
 
-  // Note: once we set a non-zero cache size,
-  // we won't change the cache size even if we give different value
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  let locationCache: LRU<string, any>
-  if (locationCaches.has(location)) {
-    counterInc('LocationCacheReuse')
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    locationCache = locationCaches.get(location) as LRU<string, any>
-  } else {
-    counterInc('LocationCacheCreated')
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    locationCache = new LRU<string, any>({ max: cacheSize })
-    if (cacheSize > 0) {
-      locationCaches.set(location, locationCache)
-    }
-  }
+  const locationCache = locationCaches.get(location, cacheSize)
 
   let persistentDB: rocksdb
   let tmpDB: rocksdb

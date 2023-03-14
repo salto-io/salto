@@ -122,8 +122,8 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: automation3.elemID,
       severity: 'Warning',
-      message: `${automation3.elemID.typeName} instance not specified under the corresponding ${orderTypeName}`,
-      detailedMessage: `Instance ${automation3.elemID.name} of type ${automation3.elemID.typeName} not listed in ${automation3.elemID.typeName} sort order, and will be added last by default. If order is important, please include it in ${orderTypeName} under the inactive list`,
+      message: 'Order not specified',
+      detailedMessage: `Element ${automation3.elemID.name} of type ${automation3.elemID.typeName} is not listed in ${automation3.elemID.typeName} sort order.  Therefore, it will be added at the end by default.  If the order is important, please include it in ${orderTypeName} under the inactive list`,
     }])
   })
   it('should return an error if the instance exist on the other activity list', async () => {
@@ -154,8 +154,9 @@ describe('orderInstanceContainsAllTheInstancesValidator', () => {
     expect(errors).toEqual([{
       elemID: workspace1.elemID,
       severity: 'Warning',
-      message: `Instance misplaced in ${orderTypeName}`,
-      detailedMessage: `Instance ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. Please make sure to place it under the active list`,
+      message: `Element misplaced in ${orderTypeName}`,
+      detailedMessage: `Element ${workspace1.elemID.name} of type ${workspace1.elemID.typeName} is misplaced in ${orderTypeName}. 
+Please make sure to place it under the active list`,
     }])
   })
   it('should not return an error if there is no elements source', async () => {

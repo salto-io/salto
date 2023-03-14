@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, toChange } from '@salto-io/adapter-api'
+import { DeployResult, Element, getChangeData, InstanceElement, isAdditionChange, isInstanceElement, isObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { getParents, resolveValues } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, getParents, resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import each from 'jest-each'
 import { Credentials } from '../src/auth'
@@ -38,13 +38,16 @@ each([
   let fetchedElements: Element[]
   let credLease: CredsLease<Credentials>
   let adapter: JiraAdapter
+  let elementsSource: ReadOnlyElementsSource
 
   beforeAll(async () => {
+    elementsSource = buildElementsSourceFromElements([])
     credLease = await credsLease(isDataCenter)
     const adapterAttr = realAdapter(
       {
         credentials: credLease.value,
         isDataCenter,
+        elementsSource,
       },
     )
     adapter = adapterAttr.adapter
@@ -90,6 +93,15 @@ each([
     let instanceGroups: InstanceElement[][]
 
     beforeAll(async () => {
+      elementsSource = buildElementsSourceFromElements(fetchedElements)
+      const adapterAttr = realAdapter(
+        {
+          credentials: credLease.value,
+          isDataCenter,
+          elementsSource,
+        },
+      )
+      adapter = adapterAttr.adapter
       instanceGroups = createInstances(fetchedElements, isDataCenter)
 
       deployResults = await awu(instanceGroups).map(async group => {

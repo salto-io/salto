@@ -29,7 +29,7 @@ import {
   isAdditionChange,
   toChange,
 } from '@salto-io/adapter-api'
-import { detailedCompare, applyDetailedChanges, calculateChangesHash } from '../src/compare'
+import { detailedCompare, applyDetailedChanges, calculateChangesHash, getRelevantNamesFromChange } from '../src/compare'
 
 describe('detailedCompare', () => {
   const hasChange = (changes: DetailedChange[], action: string, id: ElemID): boolean => (
@@ -996,5 +996,32 @@ describe('calculateChangesHash', () => {
   })
   it('should calculate different hash for the different changes', () => {
     expect(calculateChangesHash(changes)).not.toEqual(calculateChangesHash([toChange({ after: instance1 })]))
+  })
+})
+
+describe('getRelevantNamesFromChange', () => {
+  const instType = new ObjectType({ elemID: new ElemID('salto', 'obj') })
+  const objectWithFields = new ObjectType({
+    elemID: new ElemID('test', 'obj2'),
+    fields: {
+      fieldOne: {
+        refType: BuiltinTypes.STRING,
+      },
+      fieldTwo: {
+        refType: BuiltinTypes.STRING,
+      },
+    },
+  })
+  const instance1 = new InstanceElement('inst1', instType, {})
+  it('should get relevant name for instance', () => {
+    expect(getRelevantNamesFromChange(toChange({ after: instance1 }))).toEqual(['salto.obj.instance.inst1'])
+  })
+  it('should get relevant name for object without fields', () => {
+    expect(getRelevantNamesFromChange(toChange({ after: instType }))).toEqual(['salto.obj'])
+  })
+  it('should get relevant name for object with fields', () => {
+    expect(getRelevantNamesFromChange(toChange({ before: objectWithFields }))).toEqual(
+      ['test.obj2', 'test.obj2.field.fieldOne', 'test.obj2.field.fieldTwo']
+    )
   })
 })

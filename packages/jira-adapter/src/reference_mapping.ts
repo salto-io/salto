@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME, ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION, BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
+import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
 const { neighborContextGetter, basicLookUp } = referenceUtils
 
@@ -66,7 +67,11 @@ export const contextStrategyLookup: Record<
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
   (ref.elemID.typeName === GROUP_TYPE_NAME ? ref.value.value.originalName : ref.value.value.id)
 
-type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName'
+const groupIdSerialize: GetLookupNameFunc = ({ ref }) =>
+  (isInstanceElement(ref.value) ? ref.value.value.groupId : ref.value)
+
+
+type JiraReferenceSerializationStrategyName = 'groupStrategyById' | 'groupStrategyByOriginalName' | 'groupId' | 'key'
 const JiraReferenceSerializationStrategyLookup: Record<
   JiraReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
   referenceUtils.ReferenceSerializationStrategy
@@ -77,10 +82,20 @@ const JiraReferenceSerializationStrategyLookup: Record<
     lookup: basicLookUp,
     lookupIndexName: 'id',
   },
+  groupId: {
+    serialize: groupIdSerialize,
+    lookup: basicLookUp,
+    lookupIndexName: 'groupId',
+  },
   groupStrategyByOriginalName: {
     serialize: groupNameSerialize,
     lookup: basicLookUp,
     lookupIndexName: 'originalName',
+  },
+  key: {
+    serialize: ({ ref }) => ref.value.value.key,
+    lookup: basicLookUp,
+    lookupIndexName: 'key',
   },
 }
 
@@ -105,7 +120,7 @@ ReferenceContextStrategyName
 
 export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
-    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem'] },
+    src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER_TYPE] },
     serializationStrategy: 'id',
     target: { type: ISSUE_TYPE_NAME },
   },
@@ -160,37 +175,37 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: 'ProjectRole' },
   },
   {
-    src: { field: 'fieldId', parentTypes: ['PostFunctionConfiguration'] },
+    src: { field: 'fieldId', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'destinationFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    src: { field: 'destinationFieldId', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'sourceFieldId', parentTypes: ['PostFunctionConfiguration'] },
+    src: { field: 'sourceFieldId', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'date1', parentTypes: ['ValidatorConfiguration'] },
+    src: { field: 'date1', parentTypes: [VALIDATOR_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'date2', parentTypes: ['ValidatorConfiguration'] },
+    src: { field: 'date2', parentTypes: [VALIDATOR_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'fieldIds', parentTypes: ['ValidatorConfiguration'] },
+    src: { field: 'fieldIds', parentTypes: [VALIDATOR_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
   {
-    src: { field: 'fieldId', parentTypes: ['ValidatorConfiguration'] },
+    src: { field: 'fieldId', parentTypes: [VALIDATOR_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
@@ -275,7 +290,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: 'Field' },
   },
   {
-    src: { field: 'projectId', parentTypes: ['Board_location'] },
+    src: { field: 'projectId', parentTypes: ['Board_location', SCRIPT_RUNNER_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Project' },
   },
@@ -335,7 +350,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: ISSUE_TYPE_NAME },
   },
   {
-    src: { field: 'field', parentTypes: [BOARD_ESTIMATION_TYPE] },
+    src: { field: 'field', parentTypes: [BOARD_ESTIMATION_TYPE, MAIL_LIST_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
   },
@@ -390,7 +405,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'group', parentTypes: ['ConditionConfiguration'] },
+    src: { field: 'group', parentTypes: ['ConditionConfiguration', MAIL_LIST_TYPE_NAME] },
     JiraSerializationStrategy: 'groupStrategyByOriginalName',
     target: { type: GROUP_TYPE_NAME },
   },
@@ -425,19 +440,29 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
+    src: { field: 'groupName', parentTypes: [SCRIPT_RUNNER_TYPE] },
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'boardId', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE, SCRIPT_RUNNER_TYPE] },
     serializationStrategy: 'id',
     target: { type: 'Board' },
   },
   {
     src: { field: 'linkTypes', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'nameWithPath',
-    target: { type: 'IssueLinkType' },
+    target: { type: ISSUE_LINK_TYPE_NAME },
   },
   {
     src: { field: 'linkType', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
     serializationStrategy: 'id',
-    target: { type: 'IssueLinkType' },
+    target: { type: ISSUE_LINK_TYPE_NAME },
+  },
+  {
+    src: { field: 'linkTypeId', parentTypes: [SCRIPT_RUNNER_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: ISSUE_LINK_TYPE_NAME },
   },
   {
     src: { field: 'sourceProject', parentTypes: [AUTOMATION_COMPONENT_VALUE_TYPE] },
@@ -524,7 +549,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { typeContext: 'parentSelectedFieldType' },
   },
   {
-    src: { field: 'fieldValue', parentTypes: ['PostFunctionConfiguration'] },
+    src: { field: 'fieldValue', parentTypes: [POST_FUNCTION_CONFIGURATION] },
     serializationStrategy: 'id',
     target: { typeContext: 'parentFieldId' },
   },
@@ -571,12 +596,163 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'roleIds', parentTypes: ['UserFilter'] },
     serializationStrategy: 'id',
-    target: { type: 'ProjectRole' },
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  {
+    src: { field: 'roleId', parentTypes: [SCRIPT_RUNNER_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  {
+    src: { field: 'FIELD_ROLE_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  { // for cloud
+    src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
+    JiraSerializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for cloud
+    src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    JiraSerializationStrategy: 'groupId',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for DC
+    src: { field: 'groupIds', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'nameWithPath',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  { // for DC
+    src: { field: 'groupId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'nameWithPath',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'projectId', parentTypes: ['CustomFieldContextDefaultValue'] },
+    serializationStrategy: 'id',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'FIELD_RESOLUTION_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: RESOLUTION_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_EVENT_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: ISSUE_EVENT_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_TARGET_ISSUE_TYPE', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: ISSUE_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_TARGET_FIELD_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_SOURCE_FIELD_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_TARGET_PROJECT', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    JiraSerializationStrategy: 'key',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'FIELD_SELECTED_FIELDS', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_SECURITY_LEVEL_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: SECURITY_LEVEL_TYPE },
+  },
+  {
+    src: { field: 'FIELD_BOARD_ID', parentTypes: [POST_FUNCTION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: BOARD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_STATUS_ID', parentTypes: [CONDITION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_LINKED_ISSUE_RESOLUTION', parentTypes: [CONDITION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: RESOLUTION_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_PROJECT_ROLE_IDS', parentTypes: [CONDITION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: PROJECT_ROLE_TYPE },
+  },
+  {
+    src: { field: 'FIELD_GROUP_NAMES', parentTypes: [CONDITION_CONFIGURATION] },
+    JiraSerializationStrategy: 'groupStrategyByOriginalName',
+    target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'RESOLUTION_FIELD_NAME', parentTypes: [CONDITION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: RESOLUTION_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_LINKED_ISSUE_STATUS', parentTypes: [CONDITION_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_TEXT_FIELD', parentTypes: [CONDITION_CONFIGURATION, VALIDATOR_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_USER_IN_FIELDS', parentTypes: [CONDITION_CONFIGURATION, VALIDATOR_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_REQUIRED_FIELDS', parentTypes: [CONDITION_CONFIGURATION, VALIDATOR_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_FIELD_IDS', parentTypes: [VALIDATOR_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'FIELD_FORM_FIELD', parentTypes: [VALIDATOR_CONFIGURATION] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'linkType', parentTypes: [DIRECTED_LINK_TYPE] },
+    serializationStrategy: 'id',
+    target: { type: ISSUE_LINK_TYPE_NAME },
+  },
+  {
+    src: { field: 'field', parentTypes: [MAIL_LIST_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: FIELD_TYPE_NAME },
+  },
+  {
+    src: { field: 'role', parentTypes: [MAIL_LIST_TYPE_NAME] },
+    serializationStrategy: 'name',
+    target: { type: PROJECT_ROLE_TYPE },
   },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
   getFieldsLookUpName,
+  // The second param is needed to resolve references by JiraSerializationStrategy
   referenceUtils.generateLookupFunc(referencesRules, defs => new JiraFieldReferenceResolver(defs)),
 ]
 

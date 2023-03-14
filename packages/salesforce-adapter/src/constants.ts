@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { types } from '@salto-io/lowerdash'
+import _ from 'lodash'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -156,6 +158,7 @@ export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 
 // Salesforce annotations
 export const LABEL = 'label'
+export const PLURAL_LABEL = 'pluralLabel'
 export const DESCRIPTION = 'description'
 export const HELP_TEXT = 'inlineHelpText'
 export const FORMULA = 'formula'
@@ -367,10 +370,14 @@ export const EMAIL_TEMPLATE_METADATA_TYPE = 'EmailTemplate'
 export const CUSTOM_METADATA = 'CustomMetadata'
 export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
+export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const ACTIVATE_RSS = 'activateRSS'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+
+// Standard Object Types
+export const ORGANIZATION_SETTINGS = 'Organization'
 
 // Retrieve constants
 export const RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX = /Load of metadata from db failed for metadata of type:(?<type>\w+) and file name:(?<instance>\w+).$/
@@ -456,13 +463,42 @@ export const UNLIMITED_INSTANCES_VALUE = -1
 
 // Errors
 export const SOCKET_TIMEOUT = 'ESOCKETTIMEDOUT'
-export const INVALID_CROSS_REFERENCE_KEY = 'sf:INVALID_CROSS_REFERENCE_KEY'
-export const DUPLICATE_VALUE = 'sf:DUPLICATE_VALUE'
-export const INVALID_ID_FIELD = 'sf:INVALID_ID_FIELD'
-export const INVALID_FIELD = 'sf:INVALID_FIELD'
-export const INVALID_TYPE = 'sf:INVALID_TYPE'
-export const UNKNOWN_EXCEPTION = 'sf:UNKNOWN_EXCEPTION'
-export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
-export const SF_REQUEST_LIMIT_EXCEEDED = 'sf:REQUEST_LIMIT_EXCEEDED'
 export const INVALID_GRANT = 'invalid_grant'
 export const ENOTFOUND = 'ENOTFOUND'
+export const ERROR_HTTP_502 = 'ERROR_HTTP_502'
+
+export const ERROR_PROPERTIES = {
+  MESSAGE: 'message',
+  STACKTRACE: 'stacktrace',
+  NAME: 'name',
+  HOSTNAME: 'hostname',
+  CODE: 'code',
+  ERROR_CODE: 'errorCode',
+} as const
+
+export type ErrorProperty = types.ValueOf<typeof ERROR_PROPERTIES>
+
+// Salesforce Errors
+export const SALESFORCE_ERROR_PREFIX = 'sf:'
+
+export const SALESFORCE_ERRORS = {
+  INVALID_CROSS_REFERENCE_KEY: `${SALESFORCE_ERROR_PREFIX}INVALID_CROSS_REFERENCE_KEY`,
+  DUPLICATE_VALUE: `${SALESFORCE_ERROR_PREFIX}DUPLICATE_VALUE`,
+  INVALID_ID_FIELD: `${SALESFORCE_ERROR_PREFIX}INVALID_ID_FIELD`,
+  INVALID_FIELD: `${SALESFORCE_ERROR_PREFIX}INVALID_FIELD`,
+  INVALID_TYPE: `${SALESFORCE_ERROR_PREFIX}INVALID_TYPE`,
+  UNKNOWN_EXCEPTION: `${SALESFORCE_ERROR_PREFIX}UNKNOWN_EXCEPTION`,
+  REQUEST_LIMIT_EXCEEDED: `${SALESFORCE_ERROR_PREFIX}REQUEST_LIMIT_EXCEEDED`,
+  INVALID_QUERY_FILTER_OPERATOR: `${SALESFORCE_ERROR_PREFIX}INVALID_QUERY_FILTER_OPERATOR`,
+} as const
+
+export type SalesforceErrorName = types.ValueOf<typeof SALESFORCE_ERRORS>
+
+export type SalesforceError = Error & {
+  [ERROR_PROPERTIES.ERROR_CODE]: SalesforceErrorName
+}
+
+export const isSalesforceError = (error: Error): error is SalesforceError => {
+  const errorCode = _.get(error, ERROR_PROPERTIES.ERROR_CODE)
+  return _.isString(errorCode) && (Object.values(SALESFORCE_ERRORS) as ReadonlyArray<string>).includes(errorCode)
+}

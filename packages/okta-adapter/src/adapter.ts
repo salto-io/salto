@@ -23,6 +23,7 @@ import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
 import { paginate } from './client/pagination'
+import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import commonFilters from './filters/common'
 import replaceObjectWithIdFilter from './filters/replace_object_with_id'
@@ -31,9 +32,10 @@ import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
-import appStructureFilter from './filters/app_structure'
 import standardRolesFilter from './filters/standard_roles'
 import fetchUserSchemaFilter from './filters/user_schema'
+import oktaExpressionLanguageFilter from './filters/expression_language'
+import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -50,14 +52,15 @@ const log = logger(module)
 export const DEFAULT_FILTERS = [
   standardRolesFilter,
   fetchUserSchemaFilter,
-  appStructureFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
+  oktaExpressionLanguageFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
   appDeploymentFilter,
+  defaultPolicyRuleDeployment,
   // should run after fieldReferences
   ...Object.values(commonFilters),
   // should run last
@@ -222,6 +225,7 @@ export default class OktaAdapter implements AdapterOperations {
   static get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
       changeValidator: changeValidator(),
+      dependencyChanger,
     }
   }
 }

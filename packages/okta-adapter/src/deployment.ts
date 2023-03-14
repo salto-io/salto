@@ -14,14 +14,19 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange } from '@salto-io/adapter-api'
-import { config as configUtils, deployment, elements as elementUtils } from '@salto-io/adapter-components'
+import Joi from 'joi'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID } from '@salto-io/adapter-api'
+import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
+import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
+import { OktaActionName, OktaApiConfig } from './config'
 
 const log = logger(module)
 
+const { createUrl } = elementUtils
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -29,13 +34,82 @@ const isStringArray = (
   value: unknown,
 ): value is string[] => _.isArray(value) && value.every(_.isString)
 
+type OktaError = {
+  errorSummary: string
+  errorCauses: {
+    errorSummary: string
+  }[]
+}
+
+const OKTA_ERROR_SCHEMA = Joi.object({
+  errorSummary: Joi.string().required(),
+  errorCauses: Joi.array().items(Joi.object({
+    errorSummary: Joi.string().required(),
+  }).unknown(true).optional()),
+}).unknown(true)
+
+const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an invalid error')
+
+const getOktaError = (elemID: ElemID, error: Error): Error => {
+  if (!(error instanceof clientUtils.HTTPError)) {
+    return error
+  }
+  const { status, data } = error.response
+  const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed with status code ${status}:`
+  if (isOktaError(data)) {
+    const { errorSummary, errorCauses } = data
+    const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
+    log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
+    return new Error(`${baseErrorMessage} ${oktaErrorMessage}`)
+  }
+  log.error(`${baseErrorMessage} ${error}`)
+  return new Error(`${baseErrorMessage} ${error}`)
+}
+
+const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+  const statusBefore = change.data.before.value.status
+  const statusAfter = change.data.after.value.status
+  return statusBefore === INACTIVE_STATUS && statusAfter === ACTIVE_STATUS
+}
+
+const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+  const statusBefore = change.data.before.value.status
+  const statusAfter = change.data.after.value.status
+  return statusBefore === ACTIVE_STATUS && statusAfter === INACTIVE_STATUS
+}
+
+const deployStatusChange = async (
+  change: ModificationChange<InstanceElement>,
+  client: OktaClient,
+  deployRequests?: Partial<Record<OktaActionName, configUtils.DeployRequestConfig>>
+): Promise<void> => {
+  const instance = getChangeData(change)
+  const endpoint = isActivationChange(change)
+    ? deployRequests?.activate
+    : deployRequests?.deactivate
+  if (endpoint === undefined) {
+    return
+  }
+  const url = createUrl({
+    instance,
+    baseUrl: endpoint.url,
+    urlParamsToFields: endpoint.urlParamsToFields,
+  })
+  try {
+    await client[endpoint.method]({ url, data: {} })
+  } catch (err) {
+    log.error(`Status could not be updated in instance: ${getChangeData(change).elemID.getFullName()}`, err)
+    throw err
+  }
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
 export const defaultDeployChange = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: configUtils.AdapterApiConfig,
+  apiDefinitions: OktaApiConfig,
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
@@ -62,6 +136,12 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
+    // If the instance is deactivated,
+    // we should first change the status as some instances can not be changed in status 'ACTIVE'
+    if (isModificationChange(change) && isDeactivationChange(change)) {
+      await deployStatusChange(change, client, deployRequests)
+    }
+
     const response = await deployment.deployChange({
       change: changeToDeploy,
       client,
@@ -69,6 +149,11 @@ export const defaultDeployChange = async (
       fieldsToIgnore,
       queryParams,
     })
+
+    // If the instance is activated, we should first make the changes and then change the status
+    if (isModificationChange(change) && isActivationChange(change)) {
+      await deployStatusChange(change, client, deployRequests)
+    }
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
@@ -82,8 +167,7 @@ export const defaultDeployChange = async (
     }
     return response
   } catch (err) {
-    const errorMessage = `Deployment of instance ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-    throw new Error(errorMessage)
+    throw getOktaError(getChangeData(change).elemID, err)
   }
 }
 
@@ -139,8 +223,8 @@ export const deployEdges = async (
       const response = await client[deployRequest.method]({ url, data: {} })
       return response.data
     } catch (err) {
-      // TODO handle error better
-      throw new Error(`Deploy values of ${fieldName} in instance ${instance.elemID.getFullName()} failed`)
+      log.error(`Deploy values of ${fieldName} in instance ${instance.elemID.getFullName()} failed`)
+      throw getOktaError(getChangeData(change).elemID, err)
     }
   }
 

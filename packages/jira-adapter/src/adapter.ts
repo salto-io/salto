@@ -38,6 +38,7 @@ import boardColumnsFilter from './filters/board/board_columns'
 import boardSubQueryFilter from './filters/board/board_subquery'
 import boardEstimationFilter from './filters/board/board_estimation'
 import boardDeploymentFilter from './filters/board/board_deployment'
+import automationBrokenReferenceFilter from './filters/automation/automation_project_broken_reference'
 import automationDeploymentFilter from './filters/automation/automation_deployment'
 import smartValueReferenceFilter from './filters/automation/smart_values/smart_value_reference_filter'
 import webhookFilter from './filters/webhook/webhook'
@@ -117,6 +118,11 @@ import { GetUserMapFunc, getUserMapFuncCreator } from './users'
 import commonFilters from './filters/common'
 import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
+import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
+import pluginVersionFliter from './filters/data_center/plugin_version'
+import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
+import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
+import storeUsersFilter from './filters/store_users'
 
 const {
   generateTypes,
@@ -129,14 +135,20 @@ const log = logger(module)
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
+  storeUsersFilter,
   automationLabelFetchFilter,
   automationLabelDeployFilter,
   automationFetchFilter,
   automationStructureFilter,
+  // Should run before automationDeploymentFilter
+  automationBrokenReferenceFilter,
   automationDeploymentFilter,
   webhookFilter,
   // Should run before duplicateIdsFilter
   fieldNameFilter,
+  workflowStructureFilter,
+  // This should happen after workflowStructureFilter and before fieldStructureFilter
+  queryFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,
@@ -151,7 +163,6 @@ export const DEFAULT_FILTERS = [
   contextDeploymentFilter,
   avatarsFilter,
   iconUrlFilter,
-  workflowStructureFilter,
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
@@ -190,11 +201,17 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
+  scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowListsFilter,
+  // must run after scriptRunnerWorkflowListsFilter
+  scriptRunnerWorkflowReferencesFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
   removeEmptyValuesFilter,
   maskingFilter,
+  pluginVersionFliter,
   referenceBySelfLinkFilter,
   // Must run after referenceBySelfLinkFilter
   removeSelfFilter,
@@ -213,7 +230,6 @@ export const DEFAULT_FILTERS = [
   serviceUrlFilter,
   filtersFilter,
   hiddenValuesInListsFilter,
-  queryFilter,
   missingDescriptionsFilter,
   smartValueReferenceFilter,
   permissionSchemeFilter,
@@ -411,7 +427,7 @@ export default class JiraAdapter implements AdapterOperations {
 
   get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(this.client, this.userConfig, this.getUserMapFunc),
+      changeValidator: changeValidator(this.client, this.userConfig, this.paginator),
       dependencyChanger,
       getChangeGroupIds,
     }

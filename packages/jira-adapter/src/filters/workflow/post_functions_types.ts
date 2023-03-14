@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { JIRA } from '../../constants'
+import { JIRA, POST_FUNCTION_CONFIGURATION, SCRIPT_RUNNER_TYPE } from '../../constants'
 import { PostFunction } from './types'
 
 const postFunctionEventType = new ObjectType({
@@ -51,8 +51,21 @@ const webhookConfigType = new ObjectType({
   path: [JIRA, elements.TYPES_PATH, 'WebhookConfig'],
 })
 
+const scriptRunnerObjectType = new ObjectType({
+  elemID: new ElemID(JIRA, SCRIPT_RUNNER_TYPE),
+  fields: {
+    issueTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    projectId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    groupName: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    roleId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    boardId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    linkTypeId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+  },
+  path: [JIRA, elements.TYPES_PATH, elements.SUBTYPES_PATH, SCRIPT_RUNNER_TYPE],
+})
+
 const postFunctionConfigurationType = new ObjectType({
-  elemID: new ElemID(JIRA, 'PostFunctionConfiguration'),
+  elemID: new ElemID(JIRA, POST_FUNCTION_CONFIGURATION),
   fields: {
     event: { refType: postFunctionEventType, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
     fieldId: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
@@ -80,8 +93,20 @@ const postFunctionConfigurationType = new ObjectType({
       annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
     },
     value: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    scriptRunner: { refType: scriptRunnerObjectType, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_ROLE_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_RESOLUTION_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_EVENT_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_TARGET_ISSUE_TYPE: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_TARGET_FIELD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_SOURCE_FIELD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_TARGET_PROJECT: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_SECURITY_LEVEL_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_BOARD_ID: { refType: BuiltinTypes.STRING, annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
+    FIELD_SELECTED_FIELDS: { refType: new ListType(BuiltinTypes.STRING),
+      annotations: { [CORE_ANNOTATIONS.CREATABLE]: true } },
   },
-  path: [JIRA, elements.TYPES_PATH, 'PostFunctionConfiguration'],
+  path: [JIRA, elements.TYPES_PATH, POST_FUNCTION_CONFIGURATION],
 })
 
 export const postFunctionType = createMatchingObjectType<PostFunction>({
@@ -98,6 +123,7 @@ export const types = [
   projectRoleConfigType,
   issueSecurityLevelType,
   webhookConfigType,
+  scriptRunnerObjectType,
   postFunctionConfigurationType,
   postFunctionType,
 ]

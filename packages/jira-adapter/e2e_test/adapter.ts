@@ -15,7 +15,7 @@
 */
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import JiraClient from '../src/client/client'
 import JiraAdapter, { JiraAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
@@ -32,16 +32,23 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<JiraAdapterParams>
   credentials: Credentials
+  elementsSource: ReadOnlyElementsSource
   isDataCenter?: boolean
+  enableScriptRunner?: boolean
 }
 
-export const realAdapter = ({ adapterParams, credentials, isDataCenter = false }: Opts, config?: JiraConfig): Reals => {
+export const realAdapter = (
+  { adapterParams, credentials, elementsSource, isDataCenter = false, enableScriptRunner = true }: Opts,
+  jiraConfig?: JiraConfig
+): Reals => {
   const client = (adapterParams && adapterParams.client)
     || new JiraClient({ credentials, isDataCenter })
+  const config = jiraConfig ?? getDefaultConfig({ isDataCenter })
+  config.fetch.enableScriptRunnerAddon = enableScriptRunner
   const adapter = new JiraAdapter({
     client,
-    config: config ?? getDefaultConfig({ isDataCenter }),
-    elementsSource: buildElementsSourceFromElements([]),
+    config,
+    elementsSource,
   })
   return { client, adapter }
 }

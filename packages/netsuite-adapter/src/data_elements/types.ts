@@ -209,6 +209,7 @@ const MANUALLY_MAPPED_TYPES_TO_INTERNAL_IDS: Record<string, string> = {
   restlet: SCRIPT_TYPE,
   massupdatescript: SCRIPT_TYPE,
   mapreducescript: SCRIPT_TYPE,
+  customSegment: FIELD_TYPE,
   customsegment: FIELD_TYPE,
   usereventscript: SCRIPT_TYPE,
   sdfinstallationscript: SCRIPT_TYPE,
@@ -285,4 +286,4 @@ export const getTypeIdentifier = (type: ObjectType): string => (
     : TYPE_TO_IDENTIFIER[type.elemID.name]
 )
 
-export const SUPPORTED_TYPES = Object.keys(TYPES_TO_INTERNAL_ID)
+export const SUPPORTED_TYPES = Object.keys(TYPE_TO_IDENTIFIER)

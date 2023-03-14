@@ -191,6 +191,7 @@ export const InstanceAnnotationTypes: TypeMap = {
   [INSTANCE_ANNOTATIONS.CREATED_AT]: BuiltinTypes.HIDDEN_STRING,
   [INSTANCE_ANNOTATIONS.CHANGED_BY]: BuiltinTypes.HIDDEN_STRING,
   [INSTANCE_ANNOTATIONS.CHANGED_AT]: BuiltinTypes.HIDDEN_STRING,
+  [INSTANCE_ANNOTATIONS.ALIAS]: StandardBuiltinTypes.STRING,
 }
 
 export const CoreAnnotationTypes: TypeMap = {

@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError } from '@salto-io/adapter-api'
-
+import { Change, ChangeError, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 
 export type NetsuiteChangeValidator = (
     changes: ReadonlyArray<Change>,
-    deployReferencedElements?: boolean
+    deployReferencedElements?: boolean,
+    elementsSource?: ReadOnlyElementsSource,
   ) => Promise<ReadonlyArray<ChangeError>>

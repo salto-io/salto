@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, DEPLOY_CONFIG, FETCH_CONFIG } from '../src/config'
 import createChangeValidator from '../src/change_validator'
 import { ZENDESK } from '../src/constants'
 import ZendeskClient from '../src/client/client'
@@ -26,6 +26,8 @@ describe('change validator creator', () => {
       expect(await createChangeValidator({
         client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],
       })([]))
@@ -36,6 +38,8 @@ describe('change validator creator', () => {
       expect(await createChangeValidator({
         client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],
       })([
@@ -63,6 +67,8 @@ describe('change validator creator', () => {
       expect(await createChangeValidator({
         client,
         apiConfig: DEFAULT_CONFIG[API_DEFINITIONS_CONFIG],
+        fetchConfig: DEFAULT_CONFIG[FETCH_CONFIG],
+        deployConfig: DEFAULT_CONFIG[DEPLOY_CONFIG],
         typesDeployedViaParent: [],
         typesWithNoDeploy: [],
       })([

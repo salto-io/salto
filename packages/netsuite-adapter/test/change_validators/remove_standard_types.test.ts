@@ -17,7 +17,7 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
 import removeStandardTypesValidator from '../../src/change_validators/remove_standard_types'
-import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE } from '../../src/constants'
 
 
 describe('remove custom object change validator', () => {
@@ -33,7 +33,7 @@ describe('remove custom object change validator', () => {
     it('should have change error when removing a custom record type', async () => {
       const customRecordType = new ObjectType({
         elemID: new ElemID(NETSUITE, 'customrecord1'),
-        annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE },
+        annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [INTERNAL_ID]: '14' },
       })
       const changeErrors = await removeStandardTypesValidator([
         toChange({ before: customRecordType }),

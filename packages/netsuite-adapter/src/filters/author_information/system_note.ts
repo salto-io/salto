@@ -14,18 +14,19 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
+import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
 import { FilterCreator, FilterWith } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
-import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE, INTERNAL_ID } from '../../constants'
+import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
+import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { changeDateFormat, getZoneAndFormat } from './saved_searches'
 
 const { isDefined } = lowerDashValues
@@ -185,8 +186,10 @@ const indexSystemNotes = (
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
-  lastFetchTime: Date
+  lastFetchTime: Date,
+  timeZone: string,
 ): Promise<Record<string, ModificationInformation>> => {
+  const now = moment.tz(timeZone)
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -195,14 +198,14 @@ const fetchSystemNotes = async (
     log.warn('System note query failed')
     return {}
   }
-  return indexSystemNotes(distinctSortedSystemNotes(systemNotes))
+  return indexSystemNotes(
+    distinctSortedSystemNotes(
+      systemNotes.filter(
+        systemNote => isDefined(systemNote.date) && !now.isBefore(moment.tz(systemNote.date, timeZone))
+      )
+    )
+  )
 }
-
-const getInternalId = (element: Element): Value =>
-  getElementValueOrAnnotations(element)[INTERNAL_ID]
-
-const hasInternalId = (element: Element): boolean =>
-  isDefined(getInternalId(element))
 
 const getInstancesWithInternalIds = (elements: Element[]): InstanceElement[] =>
   elements
@@ -263,8 +266,9 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
+    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
     const systemNotes = !_.isEmpty(employeeNames)
-      ? await fetchSystemNotes(client, queryIds, lastFetchTime)
+      ? await fetchSystemNotes(client, queryIds, lastFetchTime, timeZone)
       : {}
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)
@@ -286,8 +290,6 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
         }
       }
     }
-
-    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
 
     const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
       if (isDefined(lastModifiedDate)) {

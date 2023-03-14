@@ -15,9 +15,8 @@
 */
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
-  ElemIdGetter, ReadOnlyElementsSource,
-  FetchOptions, Field, BuiltinTypes, DeployModifiers, Change, getChangeData,
-  Element, ProgressReporter,
+  ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
+  FetchOptions, Field, BuiltinTypes, DeployModifiers, getChangeData,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -61,8 +60,9 @@ import currencyExchangeRate from './filters/currency_exchange_rate'
 import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
+import additionalChanges from './filters/additional_changes'
 import { Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_USE_CHANGES_DETECTION, DEFAULT_VALIDATE } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -71,13 +71,13 @@ import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import getChangeValidator from './change_validator'
+import { cloneChange } from './change_validators/utils'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { AdditionalDependencies } from './client/types'
 import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { makeArray } = collections.array
@@ -119,10 +119,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
   private readonly skipList?: NetsuiteQueryParameters // old version
-  private readonly useChangesDetection: boolean
-  private createFiltersRunner: (isPartial: boolean) => Required<Filter>
+  private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private elementsSourceIndex: LazyElementsSourceIndexes
-
+  private createFiltersRunner: (params: {
+    isPartial?: boolean
+    changesGroupId?: string
+  }) => Required<Filter>
 
   public constructor({
     client,
@@ -167,6 +169,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
+      // additionalChanges should be the first preDeploy filter to run
+      additionalChanges,
     ],
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
@@ -190,7 +194,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.lockedElements = config.fetch?.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
     this.skipList = config.skipList // old version
-    this.useChangesDetection = config.useChangesDetection ?? DEFAULT_USE_CHANGES_DETECTION
+    this.useChangesDetection = config.useChangesDetection
     this.deployReferencedElements = config.deploy?.deployReferencedElements
      ?? config.deployReferencedElements
     this.warnStaleData = config.deploy?.warnOnStaleWorkspaceData
@@ -206,19 +210,18 @@ export default class NetsuiteAdapter implements AdapterOperations {
       },
     }
     this.elementsSourceIndex = createElementsSourceIndex(this.elementsSource)
-    this.createFiltersRunner = isPartial => filter.filtersRunner(
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: this.elementsSourceIndex,
         elementsSource: this.elementsSource,
         isPartial,
         config,
+        changesGroupId,
       },
       filtersCreators,
     )
   }
-
-  private isPartialFetch(): boolean { return this.fetchTarget !== undefined }
 
   public fetchByQuery: FetchByQueryFunc = async (
     fetchQuery: NetsuiteQuery,
@@ -242,7 +245,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ? await getOrCreateServerTimeElements(
         serverTime,
         this.elementsSource,
-        this.isPartialFetch(),
+        isPartial,
       )
       : undefined
 
@@ -324,7 +327,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...customRecords,
     ]
 
-    await this.createFiltersRunner(isPartial).onFetch(elements)
+    await this.createFiltersRunner({ isPartial }).onFetch(elements)
 
     return {
       failedToFetchAllAtOnce,
@@ -334,12 +337,30 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
   }
 
+  private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams : {
+    withChangesDetection: boolean
+    hasFetchTarget: boolean
+    isFirstFetch: boolean
+  }) : boolean {
+    return !shouldFetchWithChangesDetectionParams.isFirstFetch && (
+      this.useChangesDetection === true
+      || shouldFetchWithChangesDetectionParams.withChangesDetection
+      // by default when having fetch target we prefer to fetch with change detection (unless explicitly disabled)
+      || (shouldFetchWithChangesDetectionParams.hasFetchTarget && this.useChangesDetection !== false))
+  }
+
   /**
    * Fetch configuration elements: objects, types and instances for the given Netsuite account.
    * Account credentials were given in the constructor.
    */
 
-  public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+  public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
+    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    const hasFetchTarget = this.fetchTarget !== undefined
+    if (hasFetchTarget && isFirstFetch) {
+      throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
+    }
+
     const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
       .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
@@ -355,14 +376,22 @@ export default class NetsuiteAdapter implements AdapterOperations {
       notQuery(deprecatedSkipList),
     ].filter(values.isDefined).reduce(andQuery)
 
-    const isPartial = this.isPartialFetch()
+    const fetchWithChangesDetection = this.shouldFetchWithChangesDetection({
+      withChangesDetection, hasFetchTarget, isFirstFetch,
+    })
+    const isPartial = fetchWithChangesDetection || hasFetchTarget
 
     const {
       failedToFetchAllAtOnce,
       failedFilePaths,
       failedTypes,
       elements,
-    } = await this.fetchByQuery(fetchQuery, progressReporter, this.useChangesDetection, isPartial)
+    } = await this.fetchByQuery(
+      fetchQuery,
+      progressReporter,
+      fetchWithChangesDetection,
+      isPartial,
+    )
 
     const updatedConfig = getConfigFromConfigChanges(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
@@ -386,12 +415,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     if (sysInfo === undefined) {
       log.debug('Did not get sysInfo, skipping SuiteApp operations')
       return {}
-    }
-
-    if (!this.isPartialFetch()) {
-      return {
-        serverTime: sysInfo.time,
-      }
     }
 
     if (!useChangesDetection) {
@@ -418,34 +441,27 @@ export default class NetsuiteAdapter implements AdapterOperations {
   }
 
 
-  public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
-    const changesToDeploy = changeGroup.changes
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (element: Element) => element.clone()),
-      })) as Change[]
-
-    const filtersRunner = this.createFiltersRunner(this.isPartialFetch())
+  public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
+    const changesToDeploy = changes.map(cloneChange)
+    const filtersRunner = this.createFiltersRunner({
+      changesGroupId: groupID,
+    })
     await filtersRunner.preDeploy(changesToDeploy)
 
     const deployResult = await this.client.deploy(
       changesToDeploy,
-      changeGroup.groupID,
-      this.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
+      groupID,
       this.additionalDependencies,
       this.elementsSourceIndex,
     )
 
-    const ids = deployResult.appliedChanges.map(
+    const ids = new Set(deployResult.appliedChanges.map(
       change => getChangeData(change).elemID.getFullName()
-    )
+    ))
 
-    const appliedChanges = changeGroup.changes
-      .filter(change => ids.includes(getChangeData(change).elemID.getFullName()))
-      .map(change => ({
-        action: change.action,
-        data: _.mapValues(change.data, (element: Element) => element.clone()),
-      } as Change))
+    const appliedChanges = changes
+      .filter(change => ids.has(getChangeData(change).elemID.getFullName()))
+      .map(cloneChange)
 
     await filtersRunner.onDeploy(appliedChanges, deployResult)
 
@@ -466,8 +482,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
           ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS,
         validate: this.validateBeforeDeploy,
         additionalDependencies: this.additionalDependencies,
-        filtersRunner: this.createFiltersRunner(this.isPartialFetch()),
-        elementsSourceIndex: this.elementsSourceIndex,
+        filtersRunner: changesGroupId => this.createFiltersRunner({
+          changesGroupId,
+        }),
+        elementsSource: this.elementsSource,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
     }

@@ -20,6 +20,10 @@ import { getStandardTypes } from '../../src/autogen/types'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
 import { CUSTOM_RECORD_TYPE, LIST_MAPPED_BY_FIELD, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { TypeAndInnerTypes } from '../../src/types/object_types'
+import { FilterOpts } from '../../src/filter'
+import { workflowType as getWorkflowType } from '../../src/autogen/types/standard_types/workflow'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
+import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
 
 const getDataType = ({ withMaps }: { withMaps: boolean }): TypeAndInnerTypes => {
   const classTranslationType = new ObjectType({
@@ -169,7 +173,7 @@ describe('convert lists to maps filter', () => {
         },
       })
 
-      await filterCreator().onFetch([
+      await filterCreator({} as FilterOpts).onFetch?.([
         ...getTopLevelStandardTypes(standardTypes),
         ...getInnerStandardTypes(standardTypes),
         instance,
@@ -296,59 +300,139 @@ describe('convert lists to maps filter', () => {
     })
   })
   describe('preDeploy', () => {
-    let dataInstanceChange: Change<InstanceElement>
-    beforeAll(async () => {
-      dataInstanceChange = toChange({
-        after: new InstanceElement('subsidiary1', getDataType({ withMaps: true }).type, {
+    describe('when changes are data instances', () => {
+      let dataInstanceChange: Change<InstanceElement>
+      beforeAll(async () => {
+        dataInstanceChange = toChange({
+          after: new InstanceElement('subsidiary1', getDataType({ withMaps: true }).type, {
+            identifier: 'subsidiary1',
+            internalId: '1',
+            classTranslationList: {
+              classTranslation: {
+                Czech: {
+                  language: 'Czech',
+                  name: 'a',
+                },
+                Danish: {
+                  language: 'Danish',
+                  name: 'b',
+                },
+                German: {
+                  language: 'German',
+                  name: 'c',
+                },
+              },
+            },
+          }),
+        })
+        await filterCreator({} as FilterOpts).preDeploy?.([dataInstanceChange])
+      })
+      it('should modify data instance values', () => {
+        expect(getChangeData(dataInstanceChange).value).toEqual({
           identifier: 'subsidiary1',
           internalId: '1',
           classTranslationList: {
-            classTranslation: {
-              Czech: {
-                language: 'Czech',
-                name: 'a',
-              },
-              Danish: {
-                language: 'Danish',
-                name: 'b',
-              },
-              German: {
-                language: 'German',
-                name: 'c',
+            classTranslation: [{
+              language: 'Czech',
+              name: 'a',
+            }, {
+              language: 'Danish',
+              name: 'b',
+            }, {
+              language: 'German',
+              name: 'c',
+            }],
+          },
+        })
+      })
+      it('should modify data instance ref type', () => {
+        const instance = getChangeData(dataInstanceChange)
+        expect(
+          isObjectType(instance.refType.type)
+          && isObjectType(instance.refType.type.fields.classTranslationList.refType.type)
+          && isListType(instance.refType.type.fields.classTranslationList.refType.type
+            .fields.classTranslation.refType.type)
+        ).toBeTruthy()
+      })
+    })
+  })
+  describe('when changes group id is SDF', () => {
+    let instanceChange: Change<InstanceElement>
+    const { type: workflowType } = getWorkflowType()
+
+    beforeEach(async () => {
+      const { type, innerTypes } = getWorkflowType()
+      await Promise.all(
+        Object.values(innerTypes).concat(type)
+          .map(element => convertFieldsTypesFromListToMap(element))
+      )
+      instanceChange = toChange({
+        after: new InstanceElement(
+          'workflow',
+          type,
+          {
+            scriptid: 'customworkflow_changed_id',
+            workflowcustomfields: {
+              workflowcustomfield: {
+                custworkflow1: {
+                  scriptid: 'custworkflow1',
+                  index: 0,
+                },
+                custworkflow2: {
+                  scriptid: 'custworkflow2',
+                  index: 1,
+                },
               },
             },
-          },
-        }),
+            workflowstates: {
+              workflowstate: {
+                workflowstate1: {
+                  scriptid: 'workflowstate1',
+                  index: 0,
+                  workflowactions: {
+                    ONENTRY: {
+                      triggertype: 'ONENTRY',
+                      index: 0,
+                    },
+                  },
+                },
+              },
+            },
+          }
+        ),
       })
-
-      await filterCreator().preDeploy([dataInstanceChange])
+      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts)
+        .preDeploy?.([instanceChange])
     })
-    it('should modify data instance values', () => {
-      expect(getChangeData(dataInstanceChange).value).toEqual({
-        identifier: 'subsidiary1',
-        internalId: '1',
-        classTranslationList: {
-          classTranslation: [{
-            language: 'Czech',
-            name: 'a',
-          }, {
-            language: 'Danish',
-            name: 'b',
-          }, {
-            language: 'German',
-            name: 'c',
-          }],
+    it('should modify instance values', () => {
+      expect(getChangeData(instanceChange).value).toEqual({
+        scriptid: 'customworkflow_changed_id',
+        workflowcustomfields: {
+          workflowcustomfield: [
+            {
+              scriptid: 'custworkflow1',
+            },
+            {
+              scriptid: 'custworkflow2',
+            },
+          ],
+        },
+        workflowstates: {
+          workflowstate: [
+            {
+              scriptid: 'workflowstate1',
+              workflowactions: [
+                {
+                  triggertype: 'ONENTRY',
+                },
+              ],
+            },
+          ],
         },
       })
     })
-    it('should modify data instance ref type', () => {
-      const instance = getChangeData(dataInstanceChange)
-      expect(
-        isObjectType(instance.refType.type)
-        && isObjectType(instance.refType.type.fields.classTranslationList.refType.type)
-        && isListType(instance.refType.type.fields.classTranslationList.refType.type
-          .fields.classTranslation.refType.type)
-      ).toBeTruthy()
+    it('should set instance type to sdf suitable type', () => {
+      expect(getChangeData(instanceChange).refType.type).toEqual(workflowType)
     })
   })
 })

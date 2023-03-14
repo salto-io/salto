@@ -17,7 +17,7 @@ import wu from 'wu'
 import {
   Change, ChangeGroupIdFunction, ChangeId, getChangeData, isAdditionChange,
   isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
-  isField, isRemovalChange, Element,
+  isField, isRemovalChange, Element, isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -29,7 +29,8 @@ import { isPathAllowedBySdf } from './types/file_cabinet_types'
 
 const { awu } = collections.asynciterable
 
-export const SDF_CHANGE_GROUP_ID = 'SDF'
+export const SDF_CREATE_OR_UPDATE_GROUP_ID = 'SDF - create or update'
+export const SDF_DELETE_GROUP_ID = 'SDF - Delete'
 export const SUITEAPP_CREATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Creating Files'
 export const SUITEAPP_UPDATING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Updating Files'
 export const SUITEAPP_DELETING_FILES_GROUP_ID = 'Salto SuiteApp - File Cabinet - Deleting Files'
@@ -37,6 +38,24 @@ export const SUITEAPP_CREATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Cr
 export const SUITEAPP_UPDATING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Updating Records'
 export const SUITEAPP_DELETING_RECORDS_GROUP_ID = 'Salto SuiteApp - Records - Deleting Records'
 export const SUITEAPP_UPDATING_CONFIG_GROUP_ID = 'Salto SuiteApp - Updating Config'
+
+export const isSdfCreateOrUpdateGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SDF_CREATE_OR_UPDATE_GROUP_ID)
+
+export const isSdfDeleteGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SDF_DELETE_GROUP_ID)
+
+export const isSuiteAppCreateRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_CREATING_RECORDS_GROUP_ID)
+
+export const isSuiteAppUpdateRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_UPDATING_RECORDS_GROUP_ID)
+
+export const isSuiteAppDeleteRecordsGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_DELETING_RECORDS_GROUP_ID)
+
+export const isSuiteAppUpdateConfigGroupId = (groupId: string): boolean =>
+  groupId.startsWith(SUITEAPP_UPDATING_CONFIG_GROUP_ID)
 
 export const SUITEAPP_FILE_CABINET_GROUPS = [
   SUITEAPP_CREATING_FILES_GROUP_ID,
@@ -47,23 +66,24 @@ export const SUITEAPP_FILE_CABINET_GROUPS = [
 const getSdfWithSuiteAppGroupName = (change: Change): string => {
   const element = getChangeData(change)
   if (isInstanceElement(element) && element.value[APPLICATION_ID] !== undefined) {
-    return `${SDF_CHANGE_GROUP_ID} - ${element.value[APPLICATION_ID]}`
+    return `${SDF_CREATE_OR_UPDATE_GROUP_ID} - ${element.value[APPLICATION_ID]}`
   }
   if (isObjectType(element) && element.annotations[APPLICATION_ID] !== undefined) {
-    return `${SDF_CHANGE_GROUP_ID} - ${element.annotations[APPLICATION_ID]}`
+    return `${SDF_CREATE_OR_UPDATE_GROUP_ID} - ${element.annotations[APPLICATION_ID]}`
   }
   if (isField(element) && element.parent.annotations[APPLICATION_ID] !== undefined) {
-    return `${SDF_CHANGE_GROUP_ID} - ${element.parent.annotations[APPLICATION_ID]}`
+    return `${SDF_CREATE_OR_UPDATE_GROUP_ID} - ${element.parent.annotations[APPLICATION_ID]}`
   }
-  return SDF_CHANGE_GROUP_ID
+  return SDF_CREATE_OR_UPDATE_GROUP_ID
 }
 
 const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes => {
   const isSdfChange = (change: Change): boolean => {
     const changeData = getChangeData(change)
-    return isStandardInstanceOrCustomRecordType(changeData)
+    return isAdditionOrModificationChange(change)
+      && (isStandardInstanceOrCustomRecordType(changeData)
       || (isFileCabinetInstance(changeData) && isPathAllowedBySdf(changeData))
-      || isSDFConfigTypeName(changeData.elemID.typeName)
+      || isSDFConfigTypeName(changeData.elemID.typeName))
   }
   return {
     changeGroupIdMap: new Map(
@@ -138,12 +158,19 @@ const isSuiteAppFileCabinetDeletion = async (change: Change): Promise<boolean> =
   && isRemovalChange(change)
 }
 
-const isSdfChange = async (change: Change): Promise<boolean> => {
+const isSdfCreateOrUpdate = async (change: Change): Promise<boolean> => {
   const changeData = getChangeData(change)
-  return isStandardInstanceOrCustomRecordType(changeData)
-    || (isFileCabinetInstance(changeData)
-      && !await suiteAppFileCabinet.isChangeDeployable(change))
+  return isAdditionOrModificationChange(change)
+    && (
+      isStandardInstanceOrCustomRecordType(changeData)
+    || (isFileCabinetInstance(changeData) && !await suiteAppFileCabinet.isChangeDeployable(change))
     || isSDFConfigTypeName(changeData.elemID.typeName)
+    )
+}
+
+const isSdfDelete = async (change: Change): Promise<boolean> => {
+  const changeData = getChangeData(change)
+  return isRemovalChange(change) && isStandardInstanceOrCustomRecordType(changeData)
 }
 
 const isSuiteAppRecordChange = async (change: Change): Promise<boolean> => {
@@ -181,7 +208,8 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
     { condition: isSuiteAppRecordModification, group: SUITEAPP_UPDATING_RECORDS_GROUP_ID },
     { condition: isSuiteAppRecordDeletion, group: SUITEAPP_DELETING_RECORDS_GROUP_ID },
     { condition: isSuiteAppConfigChange, group: SUITEAPP_UPDATING_CONFIG_GROUP_ID },
-    { condition: isSdfChange, group: SDF_CHANGE_GROUP_ID },
+    { condition: isSdfCreateOrUpdate, group: SDF_CREATE_OR_UPDATE_GROUP_ID },
+    { condition: isSdfDelete, group: SDF_DELETE_GROUP_ID },
   ]
 
   const changesWithGroups = await awu(changes.entries())
@@ -195,7 +223,7 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
     .filter(values.isDefined)
     .map(change => ({
       ...change,
-      group: change.group === SDF_CHANGE_GROUP_ID
+      group: change.group === SDF_CREATE_OR_UPDATE_GROUP_ID
         ? getSdfWithSuiteAppGroupName(change.change)
         : change.group,
     }))

@@ -2539,6 +2539,82 @@ describe('workspace', () => {
       })
     })
   })
+  describe('alias index', () => {
+    let workspace: Workspace
+    const firstTypeFile = `
+      type salesforce.text is string {}
+      type salesforce.lead {
+        annotations {
+          string _alias {
+          }
+        }
+        _alias = "lead alias"
+        salesforce.text singleDef {
+          _alias = "single Def alias"
+        }
+        salesforce.text multiDef {
+  
+        }
+      }
+    `
+    const firstInstance = `
+      salesforce.lead someName1 {
+        _alias = "some name alias"
+      }
+    `
+    const secondInstance = `
+      salesforce.lead someName2 {
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstTypeFile,
+      'someName1.nacl': firstInstance,
+      'someName2.nacl': secondInstance,
+    })
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    describe('getAliases', () => {
+      it('should return full map', async () => {
+        const index = await workspace.getAliases()
+        const result = Object.fromEntries(await awu(index.entries())
+          .map(({ key: id, value: alias }) => ([id, alias]))
+          .toArray())
+        expect(result).toEqual(
+          {
+            'salesforce.lead.field.singleDef': 'single Def alias',
+            'salesforce.lead.field.multiDef': 'Multi Def',
+            'salesforce.lead': 'lead alias',
+            'salesforce.lead.instance.someName1': 'some name alias',
+            'salesforce.lead.instance.someName2': 'Some Name2',
+            'salesforce.text': 'Text',
+          }
+        )
+      })
+    })
+  })
   describe('changed by index', () => {
     let workspace: Workspace
     const firstFile = `

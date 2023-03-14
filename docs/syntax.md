@@ -281,6 +281,7 @@ Currently the following core annotations are supported:
 - [_restriction](#_restriction)
 - [_hidden / _hidden_value](#_hidden-_hidden_value)
 - [_parent](#_parent)
+- [_alias](#_alias)
 - [_generated_dependencies / _depends_on](#_generated_dependencies-_depends_on)
 - [_service_url](#_service_url)
 - [_is_service_id](#_is_service_id)
@@ -418,6 +419,23 @@ salto.example child2 {
   name = "second child"
 }
 ```
+
+#### _alias
+
+This annotation is used to define a user-friendly alias for the element. The alias can be used in Salto enabled editors to display a shorter, clearer element name to users. Unlike the element ID, it does not have to be unique.
+
+Type: `string` Default: `undefined` Applicable to: Types, Instances, Fields
+Example:
+```HCL
+type salto.example_type_long_id {
+_alias = "Example Type"
+}
+
+salto.example_type_long_id example_instance_id_with_long_prefix {
+_alias = "Example Instance"
+}
+```
+
 
 #### _generated_dependencies / _depends_on
 These are place holders for additional references from one element to another.

@@ -26,6 +26,10 @@ zendesk {
     guide = {
       brands = [".*"]
     }
+    includeAuditDetails = true
+  }
+  deploy = {
+    defaultMissingUserFallback = "##DEPLOYER##"
   }
 }
 ```
@@ -61,14 +65,23 @@ zendesk {
 
 ## Fetch configuration options
 
-| Name                                        | Default when undefined            | Description
-|---------------------------------------------|-----------------------------------|------------
-| [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
-| [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
-| [guide](#fetch-entry-options)               | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
+| Name                            | Default when undefined            | Description
+|---------------------------------|-----------------------------------|------------
+| [include](#fetch-entry-options) | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options) | []                                | List of entries to determine what instances to exclude in the fetch
+| [guide]                         | undefined (Guide will be disabled)| Configuration for defining which brands will be included in Zendesk Guide fetch
+| [resolveOrganizationIDs]        | false                             | When enabled, organization IDs will be replaced with organization names
+| includeAuditDetails             | false                             | When enabled, changed_at and changed_by information will be added to instances
+
 
 ## Fetch entry options
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
+
+### Deploy configuration options
+
+| Name                                                          | Default when undefined   | Description
+|---------------------------------------------------------------|--------------------------|------------
+| [defaultMissingUserFallback]                                  | ""                       | Configure replacement for missing users during deploy, can be user email or ##DEPLOYER## to fallback to deployer's user 

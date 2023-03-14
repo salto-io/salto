@@ -81,13 +81,14 @@ export const buildS3DirectoryStore = (
 
     try {
       await bottleneck.schedule(
-        () => {
-          log.trace('Writing %s to S3 bucket %s', fullFilePath, bucketName)
-          return s3.putObject({
+        async () => {
+          log.trace('Writing %s with size of %d to S3 bucket %s', fullFilePath, file.buffer.length, bucketName)
+          await s3.putObject({
             Bucket: bucketName,
             Key: fullFilePath,
             Body: file.buffer,
           })
+          log.trace('Wrote %s to S3 bucket %s', fullFilePath, bucketName)
         }
       )
     } catch (err) {

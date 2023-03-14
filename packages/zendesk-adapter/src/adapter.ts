@@ -15,34 +15,46 @@
 */
 import _, { isString } from 'lodash'
 import {
-  FetchResult, AdapterOperations, DeployResult, DeployModifiers, FetchOptions,
-  DeployOptions, Change, isInstanceChange, InstanceElement, getChangeData, ElemIdGetter,
-  isInstanceElement, Element,
-  ReadOnlyElementsSource, isReferenceExpression,
+  AdapterOperations,
+  Change,
+  DeployModifiers,
+  DeployOptions,
+  DeployResult,
+  Element,
+  ElemIdGetter,
+  FetchOptions,
+  FetchResult,
+  getChangeData,
+  InstanceElement,
+  isInstanceChange,
+  isInstanceElement,
+  isReferenceExpression,
+  ReadOnlyElementsSource,
+  SaltoError,
 } from '@salto-io/adapter-api'
-import {
-  client as clientUtils,
-  config as configUtils,
-  elements as elementUtils,
-} from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
-import { FilterCreator, Filter, filtersRunner, FilterResult, BrandIdToClient } from './filter'
+import { BrandIdToClient, Filter, FilterCreator, FilterResult, filtersRunner } from './filter'
 import {
   API_DEFINITIONS_CONFIG,
-  FETCH_CONFIG,
-  ZendeskConfig,
   CLIENT_CONFIG,
+  DEPLOY_CONFIG,
+  FETCH_CONFIG,
+  GUIDE_BRAND_SPECIFIC_TYPES,
+  GUIDE_SUPPORTED_TYPES,
   GUIDE_TYPES_TO_HANDLE_BY_BRAND,
-  GUIDE_BRAND_SPECIFIC_TYPES, GUIDE_SUPPORTED_TYPES, isGuideEnabled,
+  isGuideEnabled,
+  ZendeskConfig,
 } from './config'
 import {
-  ZENDESK,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
   BRAND_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  DEFAULT_CUSTOM_STATUSES_TYPE_NAME,
+  ZENDESK,
 } from './constants'
 import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
@@ -115,6 +127,9 @@ import ticketFormDeploy from './filters/ticket_form'
 import supportAddress from './filters/support_address'
 import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
+import hideAccountFeatures from './filters/hide_account_features'
+import auditTimeFilter from './filters/audit_logs'
+import { isCurrentUserResponse } from './user_utils'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -153,11 +168,13 @@ export const DEFAULT_FILTERS = [
   restrictionFilter,
   organizationFieldFilter,
   hardcodedChannelFilter,
+  auditTimeFilter, // needs to be before userFilter as it uses the ids of the users
   // removeDefinitionInstancesFilter should be after hardcodedChannelFilter
   removeDefinitionInstancesFilter,
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
@@ -202,6 +219,7 @@ export const DEFAULT_FILTERS = [
   collisionErrorsFilter, // needs to be after referencedIdFieldsFilter (which is part of the common filters)
   deployBrandedGuideTypesFilter,
   guideArrangePaths,
+  hideAccountFeatures,
   fetchCategorySection, // need to be after arrange paths as it uses the 'name'/'title' field
   // defaultDeployFilter should be last!
   defaultDeployFilter,
@@ -418,12 +436,11 @@ export default class ZendeskAdapter implements AdapterOperations {
         // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
         Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
       }
-      return new ZendeskClient(
-        {
-          credentials: { ...credentials, subdomain },
-          config: clientConfig,
-        },
-      )
+      return new ZendeskClient({
+        credentials: { ...credentials, subdomain },
+        config: clientConfig,
+        allowOrganizationNames: this.userConfig[FETCH_CONFIG].resolveOrganizationIDs,
+      })
     }
 
     const clientsBySubdomain: Record<string, ZendeskClient> = {}
@@ -450,10 +467,7 @@ export default class ZendeskAdapter implements AdapterOperations {
         {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
-          config: {
-            fetch: config.fetch,
-            apiDefinitions: config.apiDefinitions,
-          },
+          config,
           getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
@@ -549,6 +563,27 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
   }
 
+  private async isLocaleEnUs(): Promise<SaltoError | undefined> {
+    try {
+      const res = (await this.client.getSinglePage({
+        url: '/api/v2/users/me',
+      })).data
+      if (isCurrentUserResponse(res)) {
+        if (res.user.locale !== 'en-US') {
+          return {
+            message: 'You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto\'s behavior in some cases. Therefore, it is highly recommended to set the user\'s language to "English (United States)" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user\'s language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support',
+            severity: 'Warning',
+          }
+        }
+        return undefined
+      }
+      log.error('could not verify fetching user\'s locale is set to en-US. received invalid response')
+    } catch (e) {
+      log.error(`could not verify fetching user's locale is set to en-US'. error: ${e}`)
+    }
+    return undefined
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -557,8 +592,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
-
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const brandsWithHelpCenter = elements
@@ -578,7 +613,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 
-    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
+    const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
@@ -694,6 +729,8 @@ export default class ZendeskAdapter implements AdapterOperations {
       changeValidator: createChangeValidator({
         client: this.client,
         apiConfig: this.userConfig[API_DEFINITIONS_CONFIG],
+        fetchConfig: this.userConfig[FETCH_CONFIG],
+        deployConfig: this.userConfig[DEPLOY_CONFIG],
         typesDeployedViaParent: ['organization_field__custom_field_options', 'macro_attachment', BRAND_LOGO_TYPE_NAME],
         // article_attachment additions supported in a filter
         typesWithNoDeploy: ['tag', ARTICLE_ATTACHMENT_TYPE_NAME, ...GUIDE_ORDER_TYPES, DEFAULT_CUSTOM_STATUSES_TYPE_NAME],

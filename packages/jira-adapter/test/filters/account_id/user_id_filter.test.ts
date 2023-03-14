@@ -18,6 +18,7 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import addDisplayNameFilter from '../../../src/filters/account_id/user_id_filter'
@@ -31,23 +32,36 @@ describe('add_display_name_filter', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   let elemIdGetter: jest.MockedFunction<ElemIdGetter>
-  let config: JiraConfig
-
   let objectType: ObjectType
   let instances: InstanceElement[] = []
 
   beforeEach(() => {
     elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
-
-    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    const usersType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Users'),
+    })
+    const usersElements = new InstanceElement(
+      'users',
+      usersType,
+      {
+        users: {
+          id1: {
+            accountId: 'id1',
+            locale: 'en_US',
+            displayName: 'name1',
+          },
+        },
+      }
+    )
+    const elementsSource = buildElementsSourceFromElements([usersElements])
     const { client, paginator, connection, getUserMapFunc } = mockClient()
     mockConnection = connection
     filter = addDisplayNameFilter(getFilterParams({
       client,
       paginator,
-      config,
       getUserMapFunc,
+      elementsSource,
       getElemIdFunc: elemIdGetter,
     })) as typeof filter
 
@@ -153,6 +167,14 @@ describe('add_display_name_filter', () => {
         accountId: '2users2',
         displayName: 'disp2users2',
         locale: 'en_US',
+      }, {
+        accountId: '2Ids1',
+        displayName: 'disp2Ids1',
+        locale: 'en_US',
+      }, {
+        accountId: '2Ids2',
+        displayName: 'disp2Ids2',
+        locale: 'en_US',
       }],
     })
   })
@@ -251,6 +273,37 @@ describe('convert userId to key in Jira DC', () => {
   let projectInstance: InstanceElement
 
   beforeEach(() => {
+    const usersType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Users'),
+    })
+    const usersElements = new InstanceElement(
+      'users',
+      usersType,
+      {
+        users: {
+          JIRAUSER10100: {
+            userId: 'JIRAUSER10100',
+            username: 'salto',
+            locale: 'en_US',
+            displayName: 'salto',
+          },
+          JIRAUSER10200: {
+            userId: 'JIRAUSER10200',
+            username: 'admin',
+            locale: 'en_US',
+            displayName: 'admin',
+          },
+          JIRAUSER10300: {
+            userId: 'JIRAUSER10300',
+            username: 'projectLeadAccount',
+            locale: 'en_US',
+            displayName: 'projectLeadAccount',
+          },
+        },
+      }
+    )
+    const elementsSource = buildElementsSourceFromElements([usersElements])
+
     elemIdGetter = mockFunction<ElemIdGetter>()
       .mockImplementation((adapterName, _serviceIds, name) => new ElemID(adapterName, name))
 
@@ -262,6 +315,7 @@ describe('convert userId to key in Jira DC', () => {
       paginator,
       config,
       getUserMapFunc,
+      elementsSource,
       getElemIdFunc: elemIdGetter,
     })) as typeof filter
 
@@ -486,6 +540,30 @@ describe('convert userId to key in Jira DC', () => {
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
       await filter.onDeploy([toChange({ after: instance })])
       common.checkInstanceUserIds(instance, '2', EMPTY_STRING)
+    })
+    it('should not raise error when user permission is missing', async () => {
+      mockConnection.get.mockRejectedValue(new clientUtils.HTTPError('failed', { data: {}, status: 403 }))
+      await expect(filter.onFetch([])).resolves.not.toThrow()
+    })
+    it('should raise error on any other error', async () => {
+      mockConnection.get.mockRejectedValue(new Error('failed'))
+      await expect(filter.onFetch([])).rejects.toThrow()
+    })
+  })
+  describe('pre deploy', () => {
+    it('should not raise error when no users NaCl', async () => {
+      filter = addDisplayNameFilter(getFilterParams({
+        elementsSource: buildElementsSourceFromElements([]),
+      })) as typeof filter
+      await expect(filter.preDeploy([])).resolves.not.toThrow()
+    })
+  })
+  describe('deploy', () => {
+    it('should not raise error when user permission is missing', async () => {
+      filter = addDisplayNameFilter(getFilterParams({
+        elementsSource: buildElementsSourceFromElements([]),
+      })) as typeof filter
+      await expect(filter.onDeploy([])).resolves.not.toThrow()
     })
   })
 })

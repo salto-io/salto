@@ -49,6 +49,7 @@ describe('fields_references', () => {
           },
         },
         defaultValue: {
+          type: 'option.cascading',
           optionId: '1',
           cascadingOptionId: '3',
         },
@@ -62,6 +63,37 @@ describe('fields_references', () => {
     expect(instance.value.defaultValue.cascadingOptionId)
       .toBeInstanceOf(ReferenceExpression)
     expect(instance.value.defaultValue.cascadingOptionId.elemID.getFullName()).toBe('jira.CustomFieldContext.instance.instance.options.a1.cascadingOptions.c1')
+  })
+  it('should add references to multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+          b1: {
+            id: '2',
+            value: 'b1',
+          },
+        },
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['1', '2'],
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toHaveLength(2)
+    expect(instance.value.defaultValue.optionIds[0]).toBeInstanceOf(ReferenceExpression)
+    expect(instance.value.defaultValue.optionIds[1]).toBeInstanceOf(ReferenceExpression)
+    expect(instance.value.defaultValue.optionIds[0].elemID.getFullName()).toBe('jira.CustomFieldContext.instance.instance.options.a1')
+    expect(instance.value.defaultValue.optionIds[1].elemID.getFullName()).toBe('jira.CustomFieldContext.instance.instance.options.b1')
   })
 
   it('should only change optionId if cascadingOptionId cannot be found', async () => {
@@ -77,6 +109,7 @@ describe('fields_references', () => {
           },
         },
         defaultValue: {
+          type: 'option.cascading',
           optionId: '1',
           cascadingOptionId: '3',
         },
@@ -96,6 +129,7 @@ describe('fields_references', () => {
       {
         name: 'name',
         defaultValue: {
+          type: 'option.cascading',
           optionId: '1',
           cascadingOptionId: '3',
         },
@@ -106,6 +140,140 @@ describe('fields_references', () => {
 
     expect(instance.value.defaultValue.optionId).toBe('1')
     expect(instance.value.defaultValue.cascadingOptionId).toBe('3')
+  })
+
+  it('should do nothing if all the optionIds references cannot be found - multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['3', '2'],
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toHaveLength(2)
+    expect(instance.value.defaultValue.optionIds[0]).toBe('3')
+    expect(instance.value.defaultValue.optionIds[1]).toBe('2')
+  })
+
+  it('should convert only the optionIds that found to references - multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+        },
+        defaultValue: {
+          type: 'option.multiple',
+          optionIds: ['1', '2'],
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toHaveLength(2)
+    expect(instance.value.defaultValue.optionIds[0]).toBeInstanceOf(ReferenceExpression)
+    expect(instance.value.defaultValue.optionIds[0].elemID.getFullName()).toBe('jira.CustomFieldContext.instance.instance.options.a1')
+    expect(instance.value.defaultValue.optionIds[1]).toBe('2')
+  })
+
+  it('should do nothing if there is no options - multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        defaultValue: {
+          type: 'option.multiple',
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toBeUndefined()
+  })
+
+  it('should do nothing if there is no default optionsIds - multiple options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+        },
+        defaultValue: {
+          type: 'option.multiple',
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toBeUndefined()
+  })
+
+  it('should do nothing if there is no default optionsIds - cascading options', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+        },
+        defaultValue: {
+          type: 'option.cascading',
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue.optionIds).toBeUndefined()
+  })
+  it('should do nothing if there is no defaultValue', async () => {
+    const instance = new InstanceElement(
+      'instance',
+      fieldContextType,
+      {
+        name: 'name',
+        options: {
+          a1: {
+            id: '1',
+            value: 'a1',
+          },
+        },
+      },
+    )
+
+    await filter.onFetch([instance])
+
+    expect(instance.value.defaultValue).toBeUndefined()
+    expect(instance.value.options.a1)
+      .toEqual({
+        id: '1',
+        value: 'a1',
+      },)
   })
 
   it('Should do nothing when there are no contexts', async () => {

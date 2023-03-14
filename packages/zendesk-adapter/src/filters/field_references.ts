@@ -990,6 +990,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborReferenceTicketField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: {
@@ -1001,6 +1002,7 @@ const secondIterationFieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition
     },
     serializationStrategy: 'id',
     target: { typeContext: 'neighborReferenceUserAndOrgField' },
+    zendeskMissingRefStrategy: 'typeAndValue',
   },
   {
     src: { field: 'group_ids', parentTypes: ['user_segment'] },
@@ -1035,6 +1037,7 @@ export const fieldNameToTypeMappingDefs: ZendeskFieldReferenceDefinition[] = [
 
 export const lookupFunc = referenceUtils.generateLookupFunc(
   fieldNameToTypeMappingDefs,
+  // This param is needed to resolve references by zendeskSerializationStrategy
   defs => new ZendeskFieldReferenceResolver(defs)
 )
 

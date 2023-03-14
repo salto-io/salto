@@ -18,7 +18,7 @@ import nock from 'nock'
 import { Bulk, FileProperties, Metadata, RetrieveResult } from 'jsforce-types'
 import { logger } from '@salto-io/logging'
 import { Values } from '@salto-io/adapter-api'
-import { collections, types } from '@salto-io/lowerdash'
+import { collections, types, values } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import SalesforceClient, {
@@ -32,14 +32,16 @@ import { OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../src
 import Connection from '../src/client/jsforce'
 import {
   ENOTFOUND,
-  ERROR_HTTP_502, INVALID_GRANT,
+  ERROR_HTTP_502, ERROR_PROPERTIES,
+  ErrorProperty,
+  INVALID_GRANT,
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  SF_REQUEST_LIMIT_EXCEEDED,
+  SALESFORCE_ERRORS,
 } from '../src/constants'
 import { mockFileProperties, mockRetrieveLocator, mockRetrieveResult } from './connection'
 import {
-  ENOTFOUND_MESSAGE, ERROR_HTTP_502_MESSAGE, INVALID_GRANT_MESSAGE, MAPPABLE_ERROR_PROPERTIES,
-  MappableErrorProperty,
+  ERROR_HTTP_502_MESSAGE, ERROR_MAPPERS, ErrorMappers,
+  INVALID_GRANT_MESSAGE,
   MAX_CONCURRENT_REQUESTS_MESSAGE,
   REQUEST_LIMIT_EXCEEDED_MESSAGE,
 } from '../src/client/user_facing_errors'
@@ -47,6 +49,8 @@ import {
 const { array, asynciterable } = collections
 const { makeArray } = array
 const { mapAsync, toArrayAsync } = asynciterable
+const { isDefined } = values
+
 const logging = logger('salesforce-adapter/src/client/client')
 
 
@@ -331,47 +335,92 @@ describe('salesforce client', () => {
   })
 
   describe('when client throws mappable error', () => {
-    const NON_IMPORTANT_FAULT = 'test non important fault'
+    const TEST_HOSTNAME = 'test-org.my.salesforce.com'
+
+    let testClient: SalesforceClient
+    let testConnection: MockInterface<Connection>
 
     type TestInput = {
       expectedMessage: string
-      responseCode?: number
-      faultString?: string
-    }
-    const mappableErrorToTestInputs: Record<MappableErrorProperty, types.NonEmptyArray<TestInput> | TestInput> = {
-      [SF_REQUEST_LIMIT_EXCEEDED]: [
-        { faultString: 'ConcurrentRequests (Concurrent API Requests) Limit exceeded.', expectedMessage: MAX_CONCURRENT_REQUESTS_MESSAGE },
-        { faultString: 'TotalRequests Limit exceeded.', expectedMessage: REQUEST_LIMIT_EXCEEDED_MESSAGE },
-      ],
-      [ENOTFOUND]: { expectedMessage: ENOTFOUND_MESSAGE },
-      [ERROR_HTTP_502]: { expectedMessage: ERROR_HTTP_502_MESSAGE, responseCode: 502 },
-      [INVALID_GRANT]: { expectedMessage: INVALID_GRANT_MESSAGE },
+      errorProperties: Partial<Record<ErrorProperty, unknown>>
     }
 
-    describe.each(MAPPABLE_ERROR_PROPERTIES)('%p', mappableError => {
-      const testInputs = mappableErrorToTestInputs[mappableError]
+    const mappableErrorToTestInputs: Record<keyof ErrorMappers, types.NonEmptyArray<TestInput> | TestInput> = {
+      [SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED]: [
+        {
+          errorProperties: {
+            [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
+            [ERROR_PROPERTIES.MESSAGE]: 'ConcurrentRequests (Concurrent API Requests) Limit exceeded.',
+          },
+          expectedMessage: MAX_CONCURRENT_REQUESTS_MESSAGE,
+        },
+        {
+          errorProperties: {
+            [ERROR_PROPERTIES.ERROR_CODE]: SALESFORCE_ERRORS.REQUEST_LIMIT_EXCEEDED,
+            [ERROR_PROPERTIES.MESSAGE]: 'TotalRequests Limit exceeded.',
+          },
+          expectedMessage: REQUEST_LIMIT_EXCEEDED_MESSAGE,
+        },
+      ],
+      [ENOTFOUND]: {
+        errorProperties: {
+          [ERROR_PROPERTIES.HOSTNAME]: TEST_HOSTNAME,
+          [ERROR_PROPERTIES.CODE]: ENOTFOUND,
+        },
+        expectedMessage: `Unable to communicate with the salesforce org at ${TEST_HOSTNAME}.`
+          + ' This may indicate that the org no longer exists, e.g. a sandbox that was deleted, or due to other network issues.',
+      },
+      [ERROR_HTTP_502]: {
+        errorProperties: {
+          [ERROR_PROPERTIES.MESSAGE]: ERROR_HTTP_502,
+        },
+        expectedMessage: ERROR_HTTP_502_MESSAGE,
+      },
+      [INVALID_GRANT]: {
+        errorProperties: {
+          [ERROR_PROPERTIES.NAME]: INVALID_GRANT,
+        },
+        expectedMessage: INVALID_GRANT_MESSAGE,
+      },
+    }
+
+    describe.each(Object.keys(ERROR_MAPPERS))('%p', mappableError => {
+      const testInputs = mappableErrorToTestInputs[mappableError as keyof ErrorMappers]
       const withTestName = (testInput: TestInput): TestInput & {name: string} => ({
-        name: testInput.faultString ?? 'should replace error message',
+        name: isDefined(testInput.errorProperties)
+          ? safeJsonStringify(testInput.errorProperties)
+          : 'should replace error message',
         ...testInput,
       })
+
+      beforeEach(() => {
+        const mocks = mockClient()
+        testClient = mocks.client
+        testConnection = mocks.connection
+      })
       it.each(makeArray(testInputs).map(withTestName))('$name',
-        async ({
-          expectedMessage,
-          responseCode = 500,
-          faultString = NON_IMPORTANT_FAULT,
-        }) => {
-          const dodoScope = nock(`http://dodo22/services/Soap/m/${API_VERSION}`)
-            .post(/.*/)
-            .times(1)
-            .reply(
-              responseCode,
-              { 'a:Envelope': { 'a:Body': { 'a:Fault': { faultcode: mappableError, faultstring: faultString } } } },
-              headers,
-            )
-          await expect(client.listMetadataTypes())
+        async ({ expectedMessage, errorProperties }) => {
+          testConnection.metadata.describe.mockImplementation(() => {
+            throw Object.assign(new Error('Test error'), errorProperties)
+          })
+          await expect(testClient.listMetadataTypes())
             .rejects.toThrow(expectedMessage)
-          expect(dodoScope.isDone()).toBeTrue()
         })
+    })
+
+    describe('when login throws invaid_grant error', () => {
+      beforeEach(() => {
+        const mocks = mockClient()
+        testClient = mocks.client
+        testConnection = mocks.connection
+        jest.spyOn(testClient, 'ensureLoggedIn').mockImplementation(() => {
+          throw Object.assign(new Error(INVALID_GRANT), { name: INVALID_GRANT })
+        })
+      })
+      it('should be mapped to user friendly message', async () => {
+        await expect(testClient.listMetadataTypes())
+          .rejects.toThrow(INVALID_GRANT_MESSAGE)
+      })
     })
   })
 

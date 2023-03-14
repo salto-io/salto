@@ -377,6 +377,7 @@ const fetchAndProcessMergeErrors = async (
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangesDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -444,6 +445,7 @@ const fetchAndProcessMergeErrors = async (
         .map(async ([accountName, adapter]) => {
           const fetchResult = await adapter.fetch({
             progressReporter: progressReporters[accountName],
+            withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (
@@ -588,11 +590,19 @@ export const calcFetchChanges = async (
     'calculate service-state changes',
   )
 
+  // We only care about conflicts with changes from the service, so for the next two comparisons
+  // we only need to check elements for which we have service changes
+  const serviceChangesTopLevelIDs = new Set(
+    wu(serviceChanges.values())
+      .map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName())
+  )
+  const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
+
   const pendingChanges = await log.time(
     () => getDetailedChangeTree(
       stateElements,
       workspaceElements,
-      [accountFetchFilter, partialFetchFilter],
+      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
       'workspace',
     ),
     'calculate pending changes',
@@ -601,7 +611,7 @@ export const calcFetchChanges = async (
     () => getDetailedChangeTree(
       workspaceElements,
       partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter],
+      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
       'service',
     ),
     'calculate service-workspace changes',
@@ -714,7 +724,8 @@ export const fetchChanges = async (
   // As part of SALTO-1661, parameters here should be replaced with named parameters
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
-  progressEmitter?: EventEmitter<FetchProgressEvents>
+  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  withChangesDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -728,7 +739,8 @@ export const fetchChanges = async (
     stateElements,
     accountToServiceNameMap,
     getChangesEmitter,
-    progressEmitter
+    progressEmitter,
+    withChangesDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

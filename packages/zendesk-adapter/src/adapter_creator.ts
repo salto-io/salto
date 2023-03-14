@@ -29,6 +29,7 @@ import {
   ZendeskFetchConfig,
   validateGuideTypesConfig,
   GUIDE_SUPPORTED_TYPES,
+  DEPLOY_CONFIG,
 } from './config'
 import ZendeskClient from './client/client'
 import { createConnection, instanceUrl } from './client/connection'
@@ -36,7 +37,7 @@ import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateDuckTypeApiDefinitionConfig } = configUtils
+const { validateDuckTypeApiDefinitionConfig, validateDeployConfig } = configUtils
 
 /*
 
@@ -59,6 +60,7 @@ see https://support.zendesk.com/hc/en-us/articles/4408845965210 for more informa
 
 */
 
+const EMAIL_REGEX = /^[\w+]+([.-]?[\w+]+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const domain = config.value.domain === undefined || config.value.domain === ''
     ? undefined
@@ -88,6 +90,8 @@ const createOAuthRequest = (userInput: InstanceElement): OAuthRequestParameters 
   oauthRequiredFields: ['access_token'],
 })
 
+const isValidUser = (user: string): boolean => (EMAIL_REGEX.test(user))
+
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): ZendeskConfig => {
   const configValue = config?.value ?? {}
   const isGuideDisabled = config?.value.fetch.guide === undefined
@@ -107,6 +111,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const adapterConfig: { [K in keyof Required<ZendeskConfig>]: ZendeskConfig[K] } = {
     client: configValue.client,
     fetch,
+    deploy: configValue.deploy,
     apiDefinitions,
   }
 
@@ -114,6 +119,9 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateFetchConfig(FETCH_CONFIG, adapterConfig.fetch, apiDefinitions)
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
+  if (adapterConfig.deploy !== undefined) {
+    validateDeployConfig(DEPLOY_CONFIG, adapterConfig.deploy, isValidUser)
+  }
 
   Object.keys(configValue)
     .filter(k => !Object.keys(adapterConfig).includes(k))
@@ -139,6 +147,7 @@ export const adapter: Adapter = {
       client: new ZendeskClient({
         credentials,
         config: config[CLIENT_CONFIG],
+        allowOrganizationNames: config[FETCH_CONFIG].resolveOrganizationIDs,
       }),
       credentials,
       config,

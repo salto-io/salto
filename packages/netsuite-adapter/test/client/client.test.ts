@@ -13,20 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
-import { SDF_CHANGE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
-import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/errors'
+import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
-import { AdditionalDependencies } from '../../src/client/types'
-
+import { AdditionalDependencies } from '../../src/config'
+import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
 
 describe('NetsuiteClient', () => {
   describe('with SDF client', () => {
@@ -41,20 +41,22 @@ describe('NetsuiteClient', () => {
     const client = new NetsuiteClient(sdfClient)
 
     const deployParams: [
-      boolean,
       AdditionalDependencies,
       LazyElementsSourceIndexes,
     ] = [
-      false,
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },
       },
       mockElementsSourceIndex,
     ]
+
+    const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
     describe('deploy', () => {
       beforeEach(() => {
         jest.resetAllMocks()
+        deployParams[0].include.features = []
+        testGraph.nodes.clear()
       })
 
       it('should try again to deploy after ObjectsDeployError', async () => {
@@ -69,7 +71,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [objectsDeployError],
@@ -89,7 +91,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [objectsDeployError],
@@ -110,7 +112,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [settingsDeployError],
@@ -127,7 +129,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [change],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [settingsDeployError],
@@ -149,7 +151,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -171,7 +173,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -193,7 +195,7 @@ describe('NetsuiteClient', () => {
         })
         expect(await client.deploy(
           [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -202,26 +204,23 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
       })
 
-      it('should try to deploy again after ManifestValidationError from salto reference', async () => {
-        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'center') })
-        const manifestErrorMessage = 'Details: The manifest contains a dependency on custcenter1'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['custcenter1'])
+      it('should try to deploy again after removing instance and its dependencies due to ManifestValidationError', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
-          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
         })
-        const centerInstance = new InstanceElement('name', type, { scriptid: 'custcenter1' })
-        const saltoRefExp = new ReferenceExpression(
-          centerInstance.elemID.createNestedID(SCRIPT_ID),
-          centerInstance.value.scriptid,
-          centerInstance
-        )
         const failedChange = toChange({
-          after: new InstanceElement('failInstance', type, { scriptid: 'otherObject', ref: saltoRefExp }),
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]' }),
+        })
+        const failedChangeDependency = toChange({
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
         })
         expect(await client.deploy(
-          [successChange, failedChange],
-          SDF_CHANGE_GROUP_ID,
+          [successChange, failedChange, failedChangeDependency],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams
         )).toEqual({
           errors: [manifestValidationError],
@@ -230,7 +229,205 @@ describe('NetsuiteClient', () => {
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
 
+      it('should try to deploy again without removing dependencies when the failed changeType is modification', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
+        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
+        const successChange = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
+        })
+        const failedChange = toChange({
+          after: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'after' }),
+          before: new InstanceElement('failedInstance', type, { scriptid: 'scriptid', bad_ref: '[scriptid=failed_scriptid]', changeField: 'before' }),
+        })
+        const failedChangeDependency = toChange({
+          after: new InstanceElement('failedChangedDependency', type, { scriptid: 'dependency_scriptid', ref: '[scriptid=scriptid]' }),
+        })
+        expect(await client.deploy(
+          [successChange, failedChange, failedChangeDependency],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [manifestValidationError],
+          appliedChanges: [successChange, failedChangeDependency],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+      })
+
+      it('should pass features to sdf_client deploy', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        await client.deploy(
+          [change],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          {
+            include: {
+              features: [
+                'optional',
+                'required:required',
+              ],
+              objects: [],
+            },
+            exclude: {
+              features: [
+                'excluded',
+              ],
+              objects: [],
+            },
+          },
+          mockElementsSourceIndex
+        )
+        expect(mockSdfDeploy).toHaveBeenCalledWith(
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['optional'],
+              requiredFeatures: ['required'],
+              excludedFeatures: ['excluded'],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph
+        )
+      })
+
+      it('should try to deploy again MissingManifestFeaturesError and fail on excluded feature', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
+Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
+File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
+        mockSdfDeploy.mockRejectedValue(missingManifestFeaturesError)
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        testGraph.addNodes([new GraphNode({ serviceid: 'someObject', elemIdFullName: 'netsuite.type.instance.instance', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        expect(await client.deploy(
+          [change],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          {
+            include: {
+              features: [],
+              objects: [],
+            },
+            exclude: {
+              features: ['SUBSCRIPTIONBILLING'],
+              objects: [],
+            },
+          },
+          mockElementsSourceIndex
+        )).toEqual({
+          errors: [
+            missingManifestFeaturesError,
+            new Error('The following features are required but they are excluded: SUBSCRIPTIONBILLING.'),
+          ],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: ['SUBSCRIPTIONBILLING'],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph,)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['SUBSCRIPTIONBILLING'],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph)
+      })
+
+      it('should try to deploy again MissingManifestFeaturesError and fail on required feature', async () => {
+        const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
+        const missingManifestFeatureMessage = `An error occurred during custom object validation. (custimport_xepi_subscriptionimport)
+Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing) feature in the project manifest as required to use the SUBSCRIPTION value in the recordtype field.
+File: ~/Objects/custimport_xepi_subscriptionimport.xml`
+        const missingManifestFeaturesError = new MissingManifestFeaturesError(missingManifestFeatureMessage, ['SUBSCRIPTIONBILLING'])
+        mockSdfDeploy.mockRejectedValue(missingManifestFeaturesError)
+        const change = toChange({
+          after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
+        })
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        expect(await client.deploy(
+          [change],
+          SDF_CREATE_OR_UPDATE_GROUP_ID,
+          ...deployParams,
+        )).toEqual({
+          errors: [missingManifestFeaturesError],
+          appliedChanges: [],
+        })
+        expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(1,
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(2,
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: ['SUBSCRIPTIONBILLING'],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph)
+        expect(mockSdfDeploy).toHaveBeenNthCalledWith(3,
+          undefined,
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: ['SUBSCRIPTIONBILLING'],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: false,
+          },
+          testGraph)
+      })
+
       describe('custom record types', () => {
+        beforeEach(() => {
+          testGraph.nodes.clear()
+        })
+        const customizationInfo = {
+          scriptId: 'customrecord1',
+          typeName: 'customrecordtype',
+          values: { '@_scriptid': 'customrecord1' },
+        }
         it('should transform type to customrecordtype instance', async () => {
           const change = toChange({
             after: new ObjectType({
@@ -241,30 +438,31 @@ describe('NetsuiteClient', () => {
               },
             }),
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
           expect(await client.deploy(
             [change],
-            SDF_CHANGE_GROUP_ID,
+            SDF_CREATE_OR_UPDATE_GROUP_ID,
             ...deployParams
           )).toEqual({
             errors: [],
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [{
-              scriptId: 'customrecord1',
-              typeName: 'customrecordtype',
-              values: { '@_scriptid': 'customrecord1' },
-            }],
             undefined,
             {
-              additionalDependencies: {
-                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
+              manifestDependencies: {
+                optionalFeatures: [],
+                requiredFeatures: [],
+                excludedFeatures: [],
+                includedObjects: [],
+                excludedObjects: [],
               },
               validateOnly: false,
             },
+            testGraph,
           )
         })
-        it('should transform field to customrecordtype instance', async () => {
+        it('should include custom record type field in appliedChanges', async () => {
           const customRecordType = new ObjectType({
             elemID: new ElemID(NETSUITE, 'customrecord1'),
             fields: {
@@ -275,64 +473,30 @@ describe('NetsuiteClient', () => {
               [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
             },
           })
-          const change = toChange({
-            after: customRecordType.fields.custom_field,
-          })
-          expect(await client.deploy(
-            [change],
-            SDF_CHANGE_GROUP_ID,
-            ...deployParams
-          )).toEqual({
-            errors: [],
-            appliedChanges: [change],
-          })
-          expect(mockSdfDeploy).toHaveBeenCalledWith(
-            [{
-              scriptId: 'customrecord1',
-              typeName: 'customrecordtype',
-              values: { '@_scriptid': 'customrecord1' },
-            }],
-            undefined,
-            {
-              additionalDependencies: {
-                exclude: { features: [], objects: [] }, include: { features: [], objects: [] },
-              },
-              validateOnly: false,
-            },
-          )
-        })
-        it('should try again to deploy after ObjectsDeployError field fail', async () => {
-          const customRecordType = new ObjectType({
-            elemID: new ElemID(NETSUITE, 'customrecord1'),
-            fields: {
-              custom_field: { refType: BuiltinTypes.STRING },
-            },
-            annotations: {
-              [SCRIPT_ID]: 'customrecord1',
-              [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
-            },
-          })
-          const objectsDeployError = new ObjectsDeployError('error', new Set(['customrecord1']))
+          const objectsDeployError = new ObjectsDeployError('error', new Set(['some_object']))
           mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
-          const successChange = toChange({
+          const failedChange = toChange({
             after: new InstanceElement(
               'instance',
               new ObjectType({ elemID: new ElemID(NETSUITE, 'type') }),
-              { scriptid: 'someObject' }
+              { scriptid: 'some_object' }
             ),
           })
-          const failedChange = toChange({
+          const successTypeChange = toChange({
+            after: customRecordType,
+          })
+          const successFieldChange = toChange({
             after: customRecordType.fields.custom_field,
           })
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1.field.custom_field', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
           expect(await client.deploy(
-            [successChange, failedChange],
-            SDF_CHANGE_GROUP_ID,
+            [successTypeChange, successFieldChange, failedChange],
+            SDF_CREATE_OR_UPDATE_GROUP_ID,
             ...deployParams
           )).toEqual({
             errors: [objectsDeployError],
-            appliedChanges: [successChange],
+            appliedChanges: [successTypeChange, successFieldChange],
           })
-          expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
         })
       })
 
@@ -366,7 +530,7 @@ describe('NetsuiteClient', () => {
           const change = toChange({ before, after })
           expect(await client.deploy(
             [change],
-            SDF_CHANGE_GROUP_ID,
+            SDF_CREATE_OR_UPDATE_GROUP_ID,
             ...deployParams
           )).toEqual({
             errors: [featuresDeployError],
@@ -397,7 +561,7 @@ describe('NetsuiteClient', () => {
           const change = toChange({ before, after })
           expect(await client.deploy(
             [change],
-            SDF_CHANGE_GROUP_ID,
+            SDF_CREATE_OR_UPDATE_GROUP_ID,
             ...deployParams
           )).toEqual({
             errors: [featuresDeployError],
@@ -415,21 +579,33 @@ describe('NetsuiteClient', () => {
         change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
+        testGraph.nodes.clear()
       })
       it('should call sdfValidate', async () => {
-        await client.validate([change], SDF_CHANGE_GROUP_ID, ...deployParams)
+        const customizationInfo = {
+          scriptId: 'someObject',
+          typeName: 'type',
+          values: { scriptid: 'someObject' },
+        }
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo } as SDFObjectNode)])
+        await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
-          [{
-            scriptId: 'someObject',
-            typeName: 'type',
-            values: { scriptid: 'someObject' },
-          }],
           undefined,
-          { additionalDependencies: deployParams[1], validateOnly: true }
+          {
+            manifestDependencies: {
+              optionalFeatures: [],
+              requiredFeatures: [],
+              excludedFeatures: [],
+              includedObjects: [],
+              excludedObjects: [],
+            },
+            validateOnly: true,
+          },
+          testGraph,
         )
       })
       it('should skip validation', async () => {
-        await client.validate([change], SUITEAPP_UPDATING_CONFIG_GROUP_ID, ...deployParams)
+        await client.validate([change], SDF_DELETE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).not.toHaveBeenCalled()
       })
     })
@@ -442,6 +618,7 @@ describe('NetsuiteClient', () => {
     const updateInstancesMock = jest.fn()
     const addInstancesMock = jest.fn()
     const deleteInstancesMock = jest.fn()
+    const deleteSdfInstancesMock = jest.fn()
     const getConfigRecordsMock = jest.fn()
     const setConfigRecordsValuesMock = jest.fn()
 
@@ -449,6 +626,7 @@ describe('NetsuiteClient', () => {
       updateInstances: updateInstancesMock,
       addInstances: addInstancesMock,
       deleteInstances: deleteInstancesMock,
+      deleteSdfInstances: deleteSdfInstancesMock,
       getConfigRecords: getConfigRecordsMock,
       setConfigRecordsValues: setConfigRecordsValuesMock,
     } as unknown as SuiteAppClient
@@ -461,11 +639,9 @@ describe('NetsuiteClient', () => {
     const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
 
     const deployParams: [
-      boolean,
       AdditionalDependencies,
       LazyElementsSourceIndexes,
     ] = [
-      false,
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },
@@ -524,6 +700,15 @@ describe('NetsuiteClient', () => {
           ...deployParams
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
+          appliedChanges: [],
+        })
+        expect(await clientWithoutSuiteApp.deploy(
+          [change1, change2],
+          SDF_DELETE_GROUP_ID,
+          ...deployParams
+        )).toEqual({
+          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`)],
+          elemIdToInternalId: {},
           appliedChanges: [],
         })
       })
@@ -597,6 +782,20 @@ describe('NetsuiteClient', () => {
         )
         expect(results.appliedChanges.length).toEqual(1)
         expect(results.errors.length).toEqual(0)
+      })
+
+      it('should use deleteInstances for sdf instances deletions', async () => {
+        deleteSdfInstancesMock.mockResolvedValue([1, new Error('error')])
+        const results = await client.deploy(
+          [
+            toChange({ before: instance1 }),
+            toChange({ before: instance2 }),
+          ],
+          SDF_DELETE_GROUP_ID,
+          ...deployParams
+        )
+        expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
+        expect(results.errors).toEqual([new Error('error')])
       })
     })
   })

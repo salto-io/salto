@@ -15,8 +15,8 @@
 */
 export { createDucktypeAdapterApiConfigType, AdapterDuckTypeApiConfig, DuckTypeTransformationConfig, DuckTypeTransformationDefaultConfig, TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig, validateApiDefinitionConfig as validateDuckTypeApiDefinitionConfig, validateFetchConfig as validateDuckTypeFetchConfig } from './ducktype'
 export { createRequestConfigs, validateRequestConfig, FetchRequestConfig, DeployRequestConfig, UrlParams, DeploymentRequestsByAction, RecurseIntoCondition, isRecurseIntoConditionByField } from './request'
-export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, UserFetchConfig, TypeConfig, createUserFetchConfigType, DEPLOYER_FALLBACK_VALUE, UserDeployConfig, createUserDeployConfigType } from './shared'
+export { createAdapterApiConfigType, getConfigWithDefault, AdapterApiConfig, UserFetchConfig, TypeConfig, createUserFetchConfigType, DEPLOYER_FALLBACK_VALUE, UserDeployConfig, createUserDeployConfigType, validateDeployConfig } from './shared'
 export { mergeWithDefaultConfig } from './merge'
 export { createTypeNameOverrideConfigType, createSwaggerAdapterApiConfigType, AdapterSwaggerApiConfig, RequestableAdapterSwaggerApiConfig, TypeSwaggerConfig, RequestableTypeSwaggerConfig, TypeSwaggerDefaultConfig, TypeNameOverrideConfig, validateApiDefinitionConfig as validateSwaggerApiDefinitionConfig, validateFetchConfig as validateSwaggerFetchConfig } from './swagger'
-export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, NameMappingOptions, DATA_FIELD_ENTIRE_OBJECT } from './transformation'
+export { createTransformationConfigTypes, validateTransoformationConfig, TransformationDefaultConfig, TransformationConfig, StandaloneFieldConfigType, FieldToOmitType, FieldToHideType, getTransformationConfigByType, dereferenceFieldName, isReferencedIdField, NameMappingOptions, DATA_FIELD_ENTIRE_OBJECT, getTypeTransformationConfig } from './transformation'
 export * as configMigrations from './config_migrations'

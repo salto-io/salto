@@ -129,11 +129,9 @@ If you continue with the deploy they will be removed from the service, and any r
       expect(errors).toEqual([{
         elemID: clonedDynamicContentItem.elemID,
         severity: 'Error',
-        message: `Cannot remove variants from ${clonedDynamicContentItem.elemID.typeName} without removing the related instances`,
-        detailedMessage: `The following variants are no longer referenced from ${clonedDynamicContentItem.elemID.typeName} "${clonedDynamicContentItem.elemID.name}", but the instances still exist:
-- ${variant2.elemID.name}
-
-Please remove these options first and deploy again.`,
+        message: 'Cannot remove this element since it is referenced by its children',
+        detailedMessage: `Cannot remove this element since it is referred to by the following children: ${variant2.elemID.getFullName()}
+Please make sure to remove these references in order to remove the element`,
       }])
     })
     it('should not return an error when remove an option from the parent and remove the instance as well', async () => {

@@ -32,7 +32,6 @@ import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
 import { APPLICATION_ID, PATH, SCRIPT_ID } from '../constants'
-import { LazyElementsSourceIndexes } from '../elements_source_index/types'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
@@ -383,7 +382,6 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
-    elementsSourceIndex: LazyElementsSourceIndexes,
   ): Promise<DeployResult> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return this.sdfDeploy({
@@ -398,7 +396,6 @@ export default class NetsuiteClient {
         ? this.suiteAppFileCabinet.deploy(
           instancesChanges,
           GROUP_TO_DEPLOY_TYPE[groupID],
-          elementsSourceIndex
         )
         : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
     }
@@ -473,11 +470,6 @@ export default class NetsuiteClient {
 
   public isSuiteAppConfigured(): boolean {
     return this.suiteAppClient !== undefined
-  }
-
-  public getPathInternalId(path: string): number | undefined {
-    const pathToId = this.suiteAppFileCabinet?.getPathToIdMap() ?? {}
-    return pathToId[path]
   }
 
   private static logDecorator = decorators.wrapMethodWith(

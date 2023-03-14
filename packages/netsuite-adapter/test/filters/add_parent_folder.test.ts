@@ -13,30 +13,67 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/add_parent_folder'
-import { PATH } from '../../src/constants'
-import { fileType } from '../../src/types/file_cabinet_types'
+import { INTERNAL_ID, PATH } from '../../src/constants'
+import { fileType, folderType } from '../../src/types/file_cabinet_types'
+import { FilterOpts } from '../../src/filter'
+import { SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../../src/group_changes'
 
 describe('add_parent_folder filter', () => {
   let instance: InstanceElement
+  let parentFolder: InstanceElement
   beforeEach(() => {
     instance = new InstanceElement(
       'someFile',
       fileType(),
       {}
     )
+    parentFolder = new InstanceElement(
+      'someFolder',
+      folderType(),
+      {}
+    )
   })
 
-  it('should add parent field to file', async () => {
-    instance.value[PATH] = '/aa/bb/cc.txt'
-    await filterCreator().onFetch([instance])
-    expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual(['[/aa/bb]'])
+  describe('onFetch', () => {
+    it('should add parent field to file', async () => {
+      instance.value[PATH] = '/aa/bb/cc.txt'
+      await filterCreator({} as FilterOpts).onFetch?.([instance])
+      expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual(['[/aa/bb]'])
+    })
+    it('should not add parent if file is top level', async () => {
+      instance.value[PATH] = '/aa'
+      await filterCreator({} as FilterOpts).onFetch?.([instance])
+      expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+    })
   })
-
-  it('should not add parent if file is top level', async () => {
-    instance.value[PATH] = '/aa'
-    await filterCreator().onFetch([instance])
-    expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
+  describe('preDeploy', () => {
+    it('should add parent field to file on suiteapp file cabinet additions group', async () => {
+      instance.value[PATH] = '/aa/bb/cc.txt'
+      parentFolder.value[INTERNAL_ID] = '101'
+      parentFolder.value[PATH] = '/aa/bb'
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+        parentFolder.elemID,
+        undefined,
+        parentFolder
+      )]
+      await filterCreator({ changesGroupId: SUITEAPP_CREATING_FILES_GROUP_ID } as FilterOpts)
+        .preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.parent).toEqual(101)
+    })
+    it('should not add parent for removals/modifications', async () => {
+      instance.value[PATH] = '/aa/bb/cc.txt'
+      parentFolder.value[INTERNAL_ID] = '101'
+      parentFolder.value[PATH] = '/aa/bb'
+      instance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+        parentFolder.elemID,
+        undefined,
+        parentFolder
+      )]
+      await filterCreator({ changesGroupId: SUITEAPP_UPDATING_FILES_GROUP_ID } as FilterOpts)
+        .preDeploy?.([toChange({ after: instance })])
+      expect(instance.value.parent).toBeUndefined()
+    })
   })
 })

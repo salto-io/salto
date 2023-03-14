@@ -158,6 +158,7 @@ export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 
 // Salesforce annotations
 export const LABEL = 'label'
+export const PLURAL_LABEL = 'pluralLabel'
 export const DESCRIPTION = 'description'
 export const HELP_TEXT = 'inlineHelpText'
 export const FORMULA = 'formula'

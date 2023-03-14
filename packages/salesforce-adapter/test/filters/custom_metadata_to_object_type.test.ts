@@ -36,7 +36,7 @@ import {
   CUSTOM_OBJECT,
   INSTANCE_FULL_NAME_FIELD,
   INTERNAL_ID_FIELD, LABEL,
-  METADATA_TYPE,
+  METADATA_TYPE, PLURAL_LABEL,
 } from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import { mockTypes } from '../mock_elements'
@@ -107,6 +107,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         {
           [INSTANCE_FULL_NAME_FIELD]: CUSTOM_METADATA_RECORD_TYPE_NAME,
           [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
+          [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
           [INTERNAL_ID_FIELD]: CUSTOM_METADATA_RECORD_INTERNAL_ID,
           fields: [checkboxField, picklistField],
         }
@@ -118,8 +119,13 @@ describe('customMetadataToObjectTypeFilter', () => {
         .find(async e => await apiName(e) === CUSTOM_METADATA_RECORD_TYPE_NAME) as ObjectType
       expect(customMetadataRecordType).toBeDefined()
     })
-    it('should create type with "CustomMetadata" MetadataType', () => {
-      expect(customMetadataRecordType.annotations[METADATA_TYPE]).toEqual(CUSTOM_METADATA)
+    it('should create type with correct annotations', () => {
+      expect(customMetadataRecordType.annotations).toEqual({
+        [METADATA_TYPE]: CUSTOM_METADATA,
+        [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
+        [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
+        [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
+      })
     })
     it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {
       expect(Object.keys(customMetadataRecordType.fields))

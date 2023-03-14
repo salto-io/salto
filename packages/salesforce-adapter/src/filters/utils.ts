@@ -31,8 +31,7 @@ import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX,
-  MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX,
+  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, PLURAL_LABEL,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -95,6 +94,10 @@ const setAnnotationDefault = (
 export const addLabel = (elem: TypeElement | Field, label?: string): void => {
   const { name } = elem.elemID
   setAnnotationDefault(elem, LABEL, label ?? name, BuiltinTypes.STRING)
+}
+
+export const addPluralLabel = (elem: ObjectType, pluralLabel: string): void => {
+  setAnnotationDefault(elem, PLURAL_LABEL, pluralLabel, BuiltinTypes.STRING)
 }
 
 export const addKeyPrefix = (elem: TypeElement | Field, keyPrefix?: string): void => {

@@ -31,4 +31,35 @@ describe('fetch_criteria', () => {
       expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
     })
   })
+  describe('type', () => {
+    it('should match custom field type', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          schema: {
+            custom: 'type',
+          },
+        }
+      )
+
+      expect(fetchCriteria.type({ instance, value: '.ype' })).toBeTruthy()
+      expect(fetchCriteria.type({ instance, value: 'ype' })).toBeFalsy()
+    })
+
+    it('should match standard field type', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          schema: {
+            type: 'type',
+          },
+        }
+      )
+
+      expect(fetchCriteria.type({ instance, value: '.ype' })).toBeTruthy()
+      expect(fetchCriteria.type({ instance, value: 'ype' })).toBeFalsy()
+    })
+  })
 })

@@ -32,7 +32,7 @@ const { isDefined } = values
 const NETSUITE_MODULE_PREFIX = 'N/'
 const POSSIBLE_REFS = 'semanticReferences'
 const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${POSSIBLE_REFS}>("[^"]*"|'[^']*'))`, 'gm')
-const amdConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${POSSIBLE_REFS}>.*)`, 'gm')
+const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${POSSIBLE_REFS}>.*)`, 'gm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -147,11 +147,11 @@ const getSuiteScriptReferences = async (
 ): Promise<void> => {
   const content = (await element.value.content.getContent()).toString()
   if (isDefined(content)) {
-    const amdConfigReferences = getGroupItemFromRegex(content, amdConfigRegex, POSSIBLE_REFS)
+    const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, POSSIBLE_REFS)
     const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, POSSIBLE_REFS)
       .map(semanticRef => semanticRef.slice(1, -1))
       .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
-      .concat(amdConfigReferences)
+      .concat(nsConfigReferences)
     if (semanticReferences) {
       updateDependenciesToAdd(
         dependenciesToAdd,

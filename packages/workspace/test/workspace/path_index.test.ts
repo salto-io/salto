@@ -127,9 +127,33 @@ const multiPathInstanceFull = new InstanceElement(
   },
 )
 describe('topLevelPathIndex', () => {
-  let topLevelPathIndex: PathIndex
-  beforeAll(async () => {
-    topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
+  it('get top level path hints should return correct path hints', () => {
+    expect(getTopLevelPathHints(
+      [
+        multiPathAnnoObj,
+        multiPathFieldsObj,
+        multiPathInstanceA,
+        multiPathInstanceB,
+      ]
+    )).toEqual([
+      {
+        key: 'salto.multiPathObj',
+        value: [
+          ['salto', 'obj', 'multi', 'anno'],
+          ['salto', 'obj', 'multi', 'fields'],
+        ],
+      },
+      {
+        key: 'salto.obj.instance.inst',
+        value: [
+          ['salto', 'inst', 'A'],
+          ['salto', 'inst', 'B'],
+        ],
+      },
+    ])
+  })
+  it('should only add new top level elements paths to index', async () => {
+    const topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
     await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject]))
     await updatePathIndex({
       index: topLevelPathIndex,
@@ -142,24 +166,16 @@ describe('topLevelPathIndex', () => {
       accountsToMaintain: ['salto'],
       isTopLevel: true,
     })
-  })
-  it('should add new elements with proper paths', async () => {
     expect(await awu(topLevelPathIndex.entries()).toArray()).toEqual(
       [
-        {
-          key: 'salto.multiPathObj',
-          value: [
-            ['salto', 'obj', 'multi', 'anno'],
-            ['salto', 'obj', 'multi', 'fields'],
-          ],
-        },
-        {
-          key: 'salto.obj.instance.inst',
-          value: [
-            ['salto', 'inst', 'A'],
-            ['salto', 'inst', 'B'],
-          ],
-        },
+        ...getTopLevelPathHints(
+          [
+            multiPathAnnoObj,
+            multiPathFieldsObj,
+            multiPathInstanceA,
+            multiPathInstanceB,
+          ]
+        ),
         {
           key: 'salto.singlePathObj',
           value: [

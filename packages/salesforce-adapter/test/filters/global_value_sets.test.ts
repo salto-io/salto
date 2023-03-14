@@ -17,22 +17,24 @@ import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE
 import * as constants from '../../src/constants'
 import { FilterWith } from '../../src/filter'
 import filterCreator,
-{ GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
+{ MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
+import * as utilsModule from '../../src/filters/utils'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({
     elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
     annotationRefsOrTypes: {},
-    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
+    annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET_METADATA_TYPE },
   }),
   {
     [constants.INSTANCE_FULL_NAME_FIELD]: name,
     [MASTER_LABEL]: name,
     [constants.DESCRIPTION]: name,
     sorted: false,
-    [CUSTOM_VALUE]: values.map(v => (
+    [FIELD_ANNOTATIONS.CUSTOM_VALUE]: values.map(v => (
       {
         [constants.CUSTOM_VALUE.FULL_NAME]: v,
         [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -51,7 +53,7 @@ const createPicklistObjectType = (
     state: {
       refType: Types.primitiveDataTypes[constants.FIELD_TYPE_NAMES.PICKLIST],
       annotations: {
-        [CORE_ANNOTATIONS.REQUIRED]: false,
+        [CORE_ANNOTATIONS.REQUIRED]: true,
         [constants.API_NAME]: apiName,
         label: 'test label',
         [constants.VALUE_SET_FIELDS.VALUE_SET_NAME]: valueSetName,
@@ -72,33 +74,66 @@ const createPicklistObjectType = (
 })
 
 describe('Global Value Sets filter', () => {
+  let isRestrictableFieldSpy: jest.SpyInstance
+
   const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
   const mockElemID = new ElemID(constants.SALESFORCE, 'test')
+  const GLOBAL_VALUE_SET_VALUES = ['val1', 'val2']
+
   let elements: Element[] = []
 
   beforeEach(() => {
+    isRestrictableFieldSpy = jest.spyOn(utilsModule, 'isRestrictableField')
     elements = [
-      createGlobalValueSetInstanceElement('test1', ['val1', 'val2']),
+      createGlobalValueSetInstanceElement('test1', GLOBAL_VALUE_SET_VALUES),
     ]
   })
 
   describe('on fetch', () => {
-    it('should replace value set with references', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
-      await filter.onFetch(elements)
-      const globalValueSetInstance = elements[0] as InstanceElement
-      const customObjectType = elements[1] as ObjectType
-      expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+    describe('when field is restrictable', () => {
+      beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(true)
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'test1'))
+        await filter.onFetch(elements)
+      })
+      it('should replace value set with references and restrict their values', () => {
+        const globalValueSetInstance = elements[0] as InstanceElement
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+        expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+          enforce_value: true,
+          values: GLOBAL_VALUE_SET_VALUES,
+        })
+      })
     })
-
-    it('should not replace value set with references if value set name does not exist', async () => {
-      elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist'))
-      await filter.onFetch(elements)
-      const customObjectType = elements[1] as ObjectType
-      expect(customObjectType.fields.state
-        .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
-        .toEqual('not_exist')
+    describe('when field is not restrictable', () => {
+      beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(false)
+        const picklistObjectType = createPicklistObjectType(mockElemID, 'test', 'test1')
+        picklistObjectType.annotations[CORE_ANNOTATIONS.HIDDEN] = true
+        elements.push(picklistObjectType)
+        await filter.onFetch(elements)
+      })
+      it('should only replace value set with references', () => {
+        const globalValueSetInstance = elements[0] as InstanceElement
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state.annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toEqual(new ReferenceExpression(globalValueSetInstance.elemID))
+        expect(customObjectType.fields.state.annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
+      })
+    })
+    describe('when GlobalValueSet instance does not exist', () => {
+      beforeEach(async () => {
+        elements.push(createPicklistObjectType(mockElemID, 'test', 'not_exist'))
+        await filter.onFetch(elements)
+      })
+      it('should not replace value set with references if value set name does not exist', async () => {
+        const customObjectType = elements[1] as ObjectType
+        expect(customObjectType.fields.state
+          .annotations[constants.VALUE_SET_FIELDS.VALUE_SET_NAME])
+          .toEqual('not_exist')
+      })
     })
   })
 })

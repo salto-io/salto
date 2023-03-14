@@ -249,6 +249,8 @@ export default class NetsuiteClient {
     featuresMap: FeaturesMap,
     missingFeaturesError: MissingManifestFeaturesError
   ): { failedToUpdate: boolean; error?: Error } {
+    log.debug('going to update the features map with the following missing features: %o', missingFeaturesError.missingFeatures)
+
     const missingExcludedFeatures = new Set<string>()
     let failedToUpdate = false
     missingFeaturesError.missingFeatures.forEach(featureName => {
@@ -270,6 +272,9 @@ export default class NetsuiteClient {
     if (missingExcludedFeatures.size > 0) {
       const error = new Error(`The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`)
       return { failedToUpdate: true, error }
+    }
+    if (!failedToUpdate) {
+      log.debug('features map was updated: %o', featuresMap)
     }
     return { failedToUpdate }
   }
@@ -326,9 +331,6 @@ export default class NetsuiteClient {
           }
         }
         if (error instanceof MissingManifestFeaturesError) {
-          if (_.isEmpty(error.missingFeatures)) {
-            return { errors, appliedChanges: [] }
-          }
           const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)
           if (res.failedToUpdate) {
             return { errors: errors.concat(res.error ?? []), appliedChanges: [] }

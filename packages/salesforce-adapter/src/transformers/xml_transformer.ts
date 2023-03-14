@@ -452,7 +452,7 @@ export const createDeployPackage = (deleteBeforeUpdate?: boolean): DeployPackage
       // Set a constant date for all files in the zip in order to keep the zip hash constant when
       // the contents are the same.
       // this is important for the "quickDeploy" feature
-      const date = new Date(2023, 6, 15)
+      const date = new Date('2023-06-15T00:00:00.000+01:00')
       Object.values(zip.files).forEach(info => {
         info.date = date
       })

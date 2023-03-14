@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, isObjectType, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
+import { BuiltinTypes, createRefToElmWithValue, ElemID, Field, FieldMap, InstanceElement, isListType, isMapType, isObjectType, ListType, MapType, ObjectType, Value } from '@salto-io/adapter-api'
 import { convertFieldsTypesFromListToMap, createConvertStandardElementMapsToLists, convertInstanceListsToMaps, getMappedLists, isMappedList, validateTypesFieldMapping, convertAnnotationListsToMaps, convertDataInstanceMapsToLists } from '../../src/mapped_lists/utils'
 import { getStandardTypes } from '../../src/autogen/types'
 import { LIST_MAPPED_BY_FIELD, NETSUITE, SCRIPT_ID } from '../../src/constants'
@@ -258,7 +259,11 @@ describe('mapped lists', () => {
       .toEqual({ [LIST_MAPPED_BY_FIELD]: ['locale', 'language'] })
   })
   it('should add index field', () => {
-    expect(workflow.innerTypes.workflow_workflowstates_workflowstate_workflowactions.fields.index).toBeDefined()
+    expect(
+      workflow.innerTypes
+        .workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting
+        .fields.index
+    ).toBeDefined()
   })
   it('should not add index field to unordered lists', async () => {
     expect(customrecordtype.innerTypes.customrecordtype_permissions_permission.fields.index).toBeUndefined()
@@ -309,7 +314,6 @@ describe('mapped lists', () => {
             index: 0,
             workflowactions: {
               BEFORELOAD: {
-                index: 1,
                 setfieldvalueaction: {
                   workflowaction3: {
                     index: 0,
@@ -324,7 +328,6 @@ describe('mapped lists', () => {
               },
               ONENTRY: {
                 triggertype: 'ONENTRY',
-                index: 0,
                 setfieldvalueaction: {
                   workflowaction1: {
                     index: 0,
@@ -528,7 +531,6 @@ describe('mapped lists', () => {
             scriptid: 'workflowstate1',
             workflowactions: {
               BEFORELOAD: {
-                index: 1,
                 triggertype: 'BEFORELOAD',
                 setfieldvalueaction: {
                   workflowaction3: {
@@ -542,7 +544,6 @@ describe('mapped lists', () => {
                 },
               },
               ONENTRY: {
-                index: 0,
                 triggertype: 'ONENTRY',
                 setfieldvalueaction: {
                   workflowaction1: {
@@ -564,7 +565,6 @@ describe('mapped lists', () => {
         path: new ElemID('netsuite', 'workflow', 'instance', 'instanceName', 'workflowstates', 'workflowstate', 'workflowstate1', 'workflowactions'),
         value: {
           BEFORELOAD: {
-            index: 1,
             setfieldvalueaction: {
               workflowaction3: {
                 index: 0,
@@ -578,7 +578,6 @@ describe('mapped lists', () => {
             triggertype: 'BEFORELOAD',
           },
           ONENTRY: {
-            index: 0,
             setfieldvalueaction: {
               workflowaction1: {
                 index: 0,
@@ -624,7 +623,16 @@ describe('mapped lists', () => {
     ])
   })
   it('should convert map back to a list in standard instance', () => {
-    expect(transformedBackInstance.value).toEqual(instance.value)
+    expect(transformedBackInstance.value).toEqual({
+      ...instance.value,
+      workflowstates: {
+        workflowstate: instance.value.workflowstates.workflowstate
+          .map((state: Value) => ({
+            ...state,
+            workflowactions: _.sortBy(state.workflowactions, 'triggertype'),
+          })),
+      },
+    })
   })
   it('should convert map back to a list in data instance', async () => {
     expect(transformedBackDataInstance.value).toEqual(dataInstance.value)

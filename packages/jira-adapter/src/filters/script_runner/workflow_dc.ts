@@ -96,6 +96,9 @@ const fieldToEncodeMap: FieldToCodeFuncMap = new Map([
 
 const transformConfigFields = (funcMap: FieldToCodeFuncMap): WalkOnFunc => (
   ({ value }): WALK_NEXT_STEP => {
+    if (value === undefined) {
+      return WALK_NEXT_STEP.SKIP
+    }
     if (SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined) {
       // remove empty fields
       Object.entries(value.configuration).forEach(([fieldName, fieldValue]) => {

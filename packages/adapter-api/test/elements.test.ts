@@ -334,6 +334,15 @@ describe('Test elements.ts', () => {
       })
     })
 
+    describe('getFieldsElemIDsFullName', () => {
+      it('should get full name of fields in objectType', () => {
+        expect(ot.getFieldsElemIDsFullName()).toEqual([
+          'test.obj.field.num_field',
+          'test.obj.field.str_field',
+        ])
+      })
+    })
+
     describe('isBaseLevel', () => {
       it('should return true for type ID', () => {
         expect(typeId.isBaseID()).toBeTruthy()

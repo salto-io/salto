@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { invertNaclCase, naclCase, normalizeFilePathPart, pathNaclCase } from '../src/nacl_case_utils'
+import { invertNaclCase, naclCase, normalizeFilePathPart, pathNaclCase, prettifyName } from '../src/nacl_case_utils'
 
 describe('naclCase utils', () => {
   const generateRandomChar = (): string =>
@@ -201,6 +201,29 @@ describe('naclCase utils', () => {
       it('Should not contain the full file extension', () => {
         expect(normalizeFilePathPart(longString)).not.toContain(extension)
       })
+    })
+  })
+  describe('prettifyName func', () => {
+    it('should return if there is a space', () => {
+      expect(prettifyName('prettify_camelCase_text@su')).toEqual('prettify camelCase_text')
+    })
+    it('should handle only numbers correctly', () => {
+      expect(prettifyName('1222@')).toEqual('1222')
+    })
+    it('should handle numbers and letters correctly', () => {
+      expect(prettifyName('126_bla22bla__as2@szcs')).toEqual('126 bla22bla$ as2')
+    })
+    it('should split by space camelCase', () => {
+      expect(prettifyName('camelCase')).toEqual('Camel Case')
+    })
+    it('should split by space camelCase and _', () => {
+      expect(prettifyName('camelCase_a')).toEqual('Camel Case A')
+    })
+    it('should do nothing for capital only', () => {
+      expect(prettifyName('ABCDE')).toEqual('ABCDE')
+    })
+    it('should handel splitting two words one is all capitalized', () => {
+      expect(prettifyName('NAMEName')).toEqual('NAME Name')
     })
   })
 })

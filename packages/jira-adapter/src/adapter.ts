@@ -120,7 +120,8 @@ import accountInfoFilter from './filters/account_info'
 import deployPermissionSchemeFilter from './filters/permission_scheme/deploy_permission_scheme_filter'
 import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
-import scriptRunnerWorkflowOrFilter from './filters/script_runner/workflow_ors'
+import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
+import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
 import storeUsersFilter from './filters/store_users'
 
 const {
@@ -200,6 +201,11 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
+  scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowListsFilter,
+  // must run after scriptRunnerWorkflowListsFilter
+  scriptRunnerWorkflowReferencesFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,
@@ -229,9 +235,6 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-  scriptRunnerWorkflowFilter,
-  // must run after scriptRunnerWorkflowFilter
-  scriptRunnerWorkflowOrFilter,
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

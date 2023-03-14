@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference, createRefToElmWithValue, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
-  overridePathIndex, splitElementByPath } from '../../src/workspace/path_index'
+  overridePathIndex, splitElementByPath, getTopLevelPathHints } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+
+const { awu } = collections.asynciterable
 
 const nestedType = new ObjectType({
   elemID: new ElemID('salto', 'nested'),
@@ -123,6 +126,50 @@ const multiPathInstanceFull = new InstanceElement(
     [CORE_ANNOTATIONS.CHANGED_BY]: 'Me',
   },
 )
+describe('topLevelPathIndex', () => {
+  let topLevelPathIndex: PathIndex
+  beforeAll(async () => {
+    topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
+    await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject]))
+    await updatePathIndex({
+      index: topLevelPathIndex,
+      elements: [
+        multiPathAnnoObj,
+        multiPathFieldsObj,
+        multiPathInstanceA,
+        multiPathInstanceB,
+      ],
+      accountsToMaintain: ['salto'],
+      isTopLevel: true,
+    })
+  })
+  it('should add new elements with proper paths', async () => {
+    expect(await awu(topLevelPathIndex.entries()).toArray()).toEqual(
+      [
+        {
+          key: 'salto.multiPathObj',
+          value: [
+            ['salto', 'obj', 'multi', 'anno'],
+            ['salto', 'obj', 'multi', 'fields'],
+          ],
+        },
+        {
+          key: 'salto.obj.instance.inst',
+          value: [
+            ['salto', 'inst', 'A'],
+            ['salto', 'inst', 'B'],
+          ],
+        },
+        {
+          key: 'salto.singlePathObj',
+          value: [
+            ['salto', 'obj', 'simple'],
+          ],
+        },
+      ]
+    )
+  })
+})
 
 describe('updatePathIndex', () => {
   let index: PathIndex

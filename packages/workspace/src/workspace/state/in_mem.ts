@@ -119,10 +119,20 @@ export const buildInMemState = (
     ): Promise<void> => {
       const currentStateData = await stateData()
       await updatePathIndex(
-        currentStateData.pathIndex, unmergedElements, servicesNotToChange, false
+        {
+          index: currentStateData.pathIndex,
+          elements: unmergedElements,
+          accountsToMaintain: servicesNotToChange,
+          isTopLevel: false,
+        }
       )
       await updatePathIndex(
-        currentStateData.topLevelPathIndex, unmergedElements, servicesNotToChange, true
+        {
+          index: currentStateData.topLevelPathIndex,
+          elements: unmergedElements,
+          accountsToMaintain: servicesNotToChange,
+          isTopLevel: true,
+        }
       )
     },
     getPathIndex: async (): Promise<PathIndex> =>

@@ -129,12 +129,17 @@ describe('updatePathIndex', () => {
   beforeAll(async () => {
     index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(getElementsPathHints([singlePathObject]))
-    await updatePathIndex(index, [
-      multiPathAnnoObj,
-      multiPathFieldsObj,
-      multiPathInstanceA,
-      multiPathInstanceB,
-    ], ['salto'], false)
+    await updatePathIndex({
+      index,
+      elements: [
+        multiPathAnnoObj,
+        multiPathFieldsObj,
+        multiPathInstanceA,
+        multiPathInstanceB,
+      ],
+      accountsToMaintain: ['salto'],
+      isTopLevel: false,
+    })
   })
   it('should add new elements with proper paths', async () => {
     expect(await index.get(multiPathObjID.getFullName()))

@@ -53,7 +53,7 @@ describe('unknownPicklistValues ChangeValidator', () => {
       Object.fromEntries(values.map((value, i) => [`field${i}__c`, value]))
     )
   )
-  describe('when data instances have unknown picklist values', () => {
+  describe('when instances have unknown picklist values', () => {
     const UNKNOWN_VALUES = ['unknownValue1', 'unknownValue2', 'unknownValue1']
     beforeEach(async () => {
       const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2', ...UNKNOWN_VALUES)
@@ -64,9 +64,23 @@ describe('unknownPicklistValues ChangeValidator', () => {
     })
   })
 
-  describe('when data instances dont have unknown picklist values', () => {
+  describe('when instances dont have unknown picklist values', () => {
     beforeEach(async () => {
       const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2', 'knownValue3', 'knownValue1')
+      changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+    })
+    it('should not create errors', () => {
+      expect(changeErrors).toBeEmpty()
+    })
+  })
+
+  describe('whn picklist field has no restriction annotation', () => {
+    beforeEach(async () => {
+      const instance = createInstanceWithPicklistValues('value', 'anotherValue')
+      const instanceType = await instance.getType()
+      Object.values(instanceType.fields).forEach(field => {
+        delete field.annotations[CORE_ANNOTATIONS.RESTRICTION]
+      })
       changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
     })
     it('should not create errors', () => {

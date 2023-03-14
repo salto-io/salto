@@ -22,7 +22,7 @@ import {
   isInstanceChange,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { isInstanceOfCustomObjectChange } from '../custom_object_instances_deploy'
+import _ from 'lodash'
 import { isPicklistField } from '../filters/value_set'
 
 
@@ -45,8 +45,8 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
     .map(picklistFieldName => {
       const field = fields[picklistFieldName]
       const fieldValue = instance.value[picklistFieldName]
-      const allowedValues = field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values ?? []
-      return allowedValues.includes(fieldValue)
+      const allowedValues = field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values
+      return !_.isArray(allowedValues) || allowedValues.includes(fieldValue)
         ? undefined
         : createUnknownPicklistValueChangeError(field, fieldValue)
     })
@@ -57,7 +57,6 @@ const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-    .filter(isInstanceOfCustomObjectChange)
     .map(getChangeData)
     .flatMap(createUnknownPicklistValueChangeErrors)
     .toArray()

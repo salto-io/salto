@@ -21,6 +21,12 @@ const nameCriterion: elementUtils.query.QueryCriterion = ({
   value,
 }): boolean => regex.isFullRegexMatch(instance.value.name, value)
 
+const typeCriterion: elementUtils.query.QueryCriterion = ({
+  instance,
+  value,
+}): boolean => regex.isFullRegexMatch(instance.value.schema?.custom ?? instance.value.schema?.type, value)
+
 export default {
   name: nameCriterion,
+  type: typeCriterion,
 }

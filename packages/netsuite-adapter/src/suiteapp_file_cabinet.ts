@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile } from '@salto-io/adapter-api'
+import { Element, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile, StaticFile } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { chunks, collections, promises, values } from '@salto-io/lowerdash'
+import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
@@ -24,16 +24,40 @@ import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableEr
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
 import { ImportFileCabinetResult } from './client/types'
-import { INTERNAL_ID } from './constants'
-import { LazyElementsSourceIndexes } from './elements_source_index/types'
+import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from './constants'
 import { NetsuiteQuery } from './query'
 import { DeployResult, isFileCabinetType, isFileInstance } from './types'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
 export type DeployType = 'add' | 'update' | 'delete'
+
+type WithPath = Record<typeof PATH, string>
+type WithInternalId = Record<typeof INTERNAL_ID, string>
+type WithParent = Partial<Record<typeof PARENT, number>>
+type FileCabinetInstance = Element & Omit<InstanceElement, 'value'> & {
+  value: WithPath & WithInternalId & WithParent & {
+    bundleable?: boolean
+    isinactive?: boolean
+    description?: string
+    availablewithoutlogin?: boolean
+    hideinbundle?: boolean
+    link?: string
+    content?: StaticFile | string
+    isprivate?: boolean
+  }
+}
+
+type ChangeWithId = Change<FileCabinetInstance> & { id: number }
+type FileCabinetDeployResult = {
+  appliedChanges: ChangeWithId[]
+  failedChanges: Change<FileCabinetInstance>[]
+  errors: Error[]
+}
+
+type DeployFunction = (
+  changes: ReadonlyArray<Change<FileCabinetInstance>>
+) => Promise<DeployResult>
 
 const FOLDERS_SCHEMA = {
   type: 'array',
@@ -126,11 +150,9 @@ const MAX_ITEMS_IN_WHERE_QUERY = 200
 
 export type SuiteAppFileCabinetOperations = {
   importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
-  getPathToIdMap: () => Record<string, number>
   deploy: (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
-    elementsSourceIndex: LazyElementsSourceIndexes
   ) => Promise<DeployResult>
 }
 
@@ -177,10 +199,17 @@ export const isChangeDeployable = async (
   return true
 }
 
+const groupChangesByDepth = (
+  changes: ReadonlyArray<Change<FileCabinetInstance>>
+): [string, Change<FileCabinetInstance>[]][] => _(changes)
+  .groupBy(change => getChangeData(change).value.path.split(FILE_CABINET_PATH_SEPARATOR).length)
+  .entries()
+  .sortBy(([depth]) => depth)
+  .value()
+
 export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClient):
 SuiteAppFileCabinetOperations => {
   let fileCabinetResults: FileCabinetResults
-  let pathToIdResults: Record<string, number>
 
   const queryFolders = (
     whereQuery: string
@@ -340,7 +369,7 @@ SuiteAppFileCabinetOperations => {
         isprivate: folder.isprivate,
         internalId: folder.id,
       },
-    })).filter(folder => query.isFileMatch(`/${folder.path.join('/')}`))
+    })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
 
     const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
@@ -357,7 +386,7 @@ SuiteAppFileCabinetOperations => {
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
-    })).filter(file => query.isFileMatch(`/${file.path.join('/')}`))
+    })).filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
 
     const [
       filesCustomizationWithoutContent,
@@ -405,7 +434,7 @@ SuiteAppFileCabinetOperations => {
     const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
-        log.warn(`Failed reading file /${file.path.join('/')} with id ${file.id}`)
+        log.warn(`Failed reading file /${file.path.join(FILE_CABINET_PATH_SEPARATOR)} with id ${file.id}`)
         if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
           lockedPaths.push(file.path)
         } else {
@@ -430,89 +459,49 @@ SuiteAppFileCabinetOperations => {
           typeName: 'file',
           values: file.values,
         })),
-      ].filter(file => query.isFileMatch(`/${file.path.join('/')}`)),
+      ].filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`)),
       failedPaths: {
-        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
-        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join('/')}`),
+        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
+        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
       },
     }
   }
 
-  const getPathToIdMap = (): Record<string, number> => {
-    if (pathToIdResults === undefined) {
-      log.debug('creating pathToId mapping')
-      if (fileCabinetResults === undefined) {
-        throw new Error('missing fileCabinet results cache')
-      }
-      const { foldersResults, filesResults } = fileCabinetResults
-      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-      pathToIdResults = Object.fromEntries([
-        ...filesResults.map(file => [
-          `/${[...getFullPath(idToFolder[file.folder], idToFolder), file.name].join('/')}`,
-          parseInt(file.id, 10),
-        ]),
-        ...foldersResults.map(folder => [
-          `/${getFullPath(folder, idToFolder).join('/')}`,
-          parseInt(folder.id, 10),
-        ]),
-      ])
-    }
-    return pathToIdResults
-  }
+  const convertToFileCabinetDetails = async (
+    change: Change<FileCabinetInstance>,
+    type: DeployType,
+  ): Promise<FileCabinetInstanceDetails> => {
+    const instance = getChangeData(change)
 
-  const convertToFileCabinetDetails = async (params: {
-    change: Change<InstanceElement>
-  } & ({
-    type: 'delete' | 'update'
-  } | {
-    type: 'add'
-    pathToId: Record<string, number>
-  })): Promise<FileCabinetInstanceDetails | Error> => {
-    const instance = getChangeData(params.change)
-    const dirname = path.dirname(instance.value.path)
-    if (dirname !== '/' && params.type === 'add' && !(dirname in params.pathToId)) {
-      return new Error(`Directory ${dirname} was not found when attempting to deploy a file with path ${instance.value.path}`)
+    const { parent, id } = type === 'add'
+      ? { parent: instance.value.parent, id: undefined }
+      : { id: parseInt(getChangeData(change).value.internalId, 10), parent: undefined }
+
+    const base = {
+      id,
+      path: instance.value.path,
+      bundleable: instance.value.bundleable ?? false,
+      isInactive: instance.value.isinactive ?? false,
+      description: instance.value.description ?? '',
     }
 
     return isFileInstance(instance)
       ? {
+        ...base,
         type: 'file',
-        path: instance.value.path,
-        folder: params.type === 'add' ? params.pathToId[dirname] : undefined,
-        bundleable: instance.value.bundleable ?? false,
-        isInactive: instance.value.isinactive ?? false,
+        folder: parent,
         isOnline: instance.value.availablewithoutlogin ?? false,
         hideInBundle: instance.value.hideinbundle ?? false,
-        description: instance.value.description ?? '',
         ...instance.value.link === undefined
           ? { content: await getContent(instance.value.content) }
           : { url: instance.value.link },
       }
       : {
+        ...base,
         type: 'folder',
-        path: instance.value.path,
-        parent: dirname !== '/' && params.type === 'add' ? params.pathToId[dirname] : undefined,
-        bundleable: instance.value.bundleable ?? false,
-        isInactive: instance.value.isinactive ?? false,
+        parent,
         isPrivate: instance.value.isprivate ?? false,
-        description: instance.value.description ?? '',
       }
-  }
-
-  const convertToExistingFileCabinetDetails = async (
-    change: Change<InstanceElement>,
-    type: 'delete' | 'update'
-  ): Promise<ExistingFileCabinetInstanceDetails | Error> => {
-    const details = await convertToFileCabinetDetails({ change, type })
-    if (details instanceof Error) {
-      return details
-    }
-    const instance = getChangeData(change)
-    if (instance.value[INTERNAL_ID] === undefined) {
-      log.warn(`Failed to find the internal id of the file ${instance.value.path}`)
-      return new Error(`Failed to find the internal id of the file ${instance.value.path}`)
-    }
-    return { ...details, id: parseInt(instance.value[INTERNAL_ID], 10) }
   }
 
   const deployInstances = async (
@@ -533,132 +522,148 @@ SuiteAppFileCabinetOperations => {
   }
 
   const deployChunk = async (
-    chunk: ReadonlyArray<Change<InstanceElement>>,
-    pathToId: Record<string, number>,
-    type: DeployType
-  ): Promise<DeployResult> => {
+    chunk: ReadonlyArray<Change<FileCabinetInstance>>,
+    type: DeployType,
+  ): Promise<FileCabinetDeployResult> => {
     log.debug(`Deploying chunk of ${chunk.length} file changes`)
 
-    const instancesDetails = await awu(chunk).map(
+    const changes = await Promise.all(chunk.map(
       async change => ({
-        details: type === 'add'
-          ? await convertToFileCabinetDetails({ change, type, pathToId })
-          : await convertToExistingFileCabinetDetails(change, type),
+        details: await convertToFileCabinetDetails(change, type),
         change,
       })
-    ).toArray()
-
-    const [errorsInstances, validInstances] = _.partition(
-      instancesDetails,
-      ({ details }) => details instanceof Error,
-    )
+    ))
 
     try {
-      const deployResults = validInstances.length > 0 ? await deployInstances(validInstances.map(
-        ({ details }) => details as FileCabinetInstanceDetails
-      ), type) : []
+      const deployResults = await deployInstances(
+        changes.map(({ details }) => details),
+        type
+      )
 
       log.debug(`Deployed chunk of ${chunk.length} file changes`)
 
-      const [deployErrors, deployChanges] = _(deployResults)
-        .map((res, index) => ({ res, change: validInstances[index].change }))
-        .partition(({ res }) => res instanceof Error)
-        .value()
-
-      deployChanges.forEach(deployedChange => {
-        pathToId[getChangeData(deployedChange.change).value.path] = deployedChange.res as number
-      })
+      const [deployErrors, deployChanges] = _.partition(
+        deployResults.map((res, index) => ({ res, ...changes[index].change })),
+        ({ res }) => res instanceof Error
+      )
 
       return {
-        errors: [
-          ...deployErrors.map(({ res }) => res as Error),
-          ...errorsInstances.map(({ details }) => details as Error),
-        ],
-        appliedChanges: deployChanges.map(({ change }) => change),
+        appliedChanges: deployChanges.map(({ res, ...change }) => ({ ...change, id: res as number })),
+        failedChanges: deployErrors,
+        errors: deployErrors.map(({ res }) => res as Error),
       }
     } catch (e) {
       return {
-        errors: [
-          e,
-          ...errorsInstances.map(({ details }) => details as Error),
-        ],
+        errors: [e],
         appliedChanges: [],
+        failedChanges: [...chunk],
       }
     }
   }
 
   const deployChanges = async (
-    changes: ReadonlyArray<Change<InstanceElement>>,
-    pathToId: Record<string, number>,
-    type: DeployType): Promise<DeployResult> => {
+    changes: ReadonlyArray<Change<FileCabinetInstance>>,
+    type: DeployType,
+  ): Promise<FileCabinetDeployResult> => {
     const deployChunkResults = await Promise.all(
       _.chunk(changes, DEPLOY_CHUNK_SIZE)
-        .map(chunk => deployChunk(chunk, pathToId, type))
+        .map(chunk => deployChunk(chunk, type))
     )
     return {
-      appliedChanges: deployChunkResults
-        .flatMap(deployChunkResult => deployChunkResult.appliedChanges),
-      errors: deployChunkResults.flatMap(deployChunkResult => deployChunkResult.errors),
-      ...type === 'add' ? {
-        elemIdToInternalId: _(changes)
-          .map(getChangeData)
-          .filter(change => pathToId[change.value.path] !== undefined)
-          .keyBy(change => change.elemID.getFullName())
-          .mapValues(change => pathToId[change.value.path].toString())
-          .value(),
-      } : {},
+      appliedChanges: deployChunkResults.flatMap(res => res.appliedChanges),
+      failedChanges: deployChunkResults.flatMap(res => res.failedChanges),
+      errors: deployChunkResults.flatMap(res => res.errors),
     }
   }
 
-  const deployAdditionsOrDeletions = async (
-    changes: ReadonlyArray<Change<InstanceElement>>,
-    pathToId: Record<string, number>,
-    type: 'add' | 'delete'
-  ): Promise<DeployResult> => {
-    const changesGroups = _(changes)
-      .groupBy(change => getChangeData(change).value.path.split('/').length)
-      .entries()
-      .sortBy(([depth]) => depth)
-      .value()
+  const deployAdditions: DeployFunction = async allChanges => {
+    const changesByParentDirectory = _.groupBy(
+      allChanges,
+      change => path.dirname(getChangeData(change).value.path)
+    )
+    const pathsToSkip = new Set<string>()
+    const elemIdToInternalId: Record<string, string> = {}
 
-    const orderedChangesGroups = type === 'delete' ? changesGroups.reverse() : changesGroups
-
-    const deployResults = await promises.array.series(orderedChangesGroups
-      .map(([depth, group]) => () => {
-        if (type === 'delete') {
-          log.debug(`Deleting ${group.length} files with depth of ${depth}`)
-        } else {
-          log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+    const deployGroup = async (changes: Change<FileCabinetInstance>[]): Promise<DeployResult> => {
+      const { appliedChanges, failedChanges, errors } = await deployChanges(
+        changes.filter(change => !pathsToSkip.has(getChangeData(change).value.path)),
+        'add'
+      )
+      appliedChanges.forEach(({ id, ...appliedChange }) => {
+        const appliedInstance = getChangeData(appliedChange)
+        elemIdToInternalId[appliedInstance.elemID.getFullName()] = id.toString()
+        const children = changesByParentDirectory[appliedInstance.value.path] ?? []
+        if (children.length > 0) {
+          log.debug('adding %s internal id as parent for %d childern files/folders', appliedInstance.value.path, children.length)
         }
-
-        return deployChanges(group, pathToId, type)
-      }))
-    return {
-      appliedChanges: deployResults.flatMap(deployResult => deployResult.appliedChanges),
-      errors: deployResults.flatMap(deployResult => deployResult.errors),
-      elemIdToInternalId: deployResults
-        .map(deployResult => deployResult.elemIdToInternalId)
-        .reduce((val1, val2) => ({ ...val1, ...val2 })),
+        children.forEach(change => {
+          getChangeData(change).value.parent = id
+        })
+      })
+      failedChanges.forEach(failedChange => {
+        const failedInstance = getChangeData(failedChange)
+        const children = changesByParentDirectory[failedInstance.value.path] ?? []
+        if (children.length > 0) {
+          log.debug('skipping %d childern files/folders of %s that failed the deploy', children.length, failedInstance.value.path)
+        }
+        children.forEach(change => {
+          pathsToSkip.add(getChangeData(change).value.path)
+        })
+      })
+      return {
+        appliedChanges,
+        errors,
+      }
     }
+
+    const orderedChangesGroups = groupChangesByDepth(allChanges)
+    const deployResults = await promises.array.series(orderedChangesGroups
+      .map(([depth, group]) => async () => {
+        log.debug(`Deploying ${group.length} new files with depth of ${depth}`)
+        return deployGroup(group)
+      }))
+
+    const dependenciesError = pathsToSkip.size > 0
+      ? new Error(`Can't deploy the following files/folders because their parent folders deploy failed:\n${
+        Array.from(pathsToSkip).map(failedPath => `- ${failedPath}`).join('\n')}`)
+      : []
+
+    return {
+      appliedChanges: deployResults.flatMap(res => res.appliedChanges),
+      errors: deployResults.flatMap(res => res.errors).concat(dependenciesError),
+      elemIdToInternalId,
+    }
+  }
+
+  const deployDeletions: DeployFunction = async changes => {
+    const orderedChangesGroups = groupChangesByDepth(changes).reverse()
+    const deployResults = await promises.array.series(orderedChangesGroups
+      .map(([depth, group]) => async () => {
+        log.debug(`Deleting ${group.length} files with depth of ${depth}`)
+        return deployChanges(group, 'delete')
+      }))
+
+    return {
+      appliedChanges: deployResults.flatMap(res => res.appliedChanges),
+      errors: deployResults.flatMap(res => res.errors),
+    }
+  }
+
+  const deployUpdates: DeployFunction = changes => deployChanges(changes, 'update')
+
+  const typeToDeployFunction: Record<DeployType, DeployFunction> = {
+    add: deployAdditions,
+    delete: deployDeletions,
+    update: deployUpdates,
   }
 
   const deploy = async (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
-    elementsSourceIndex: LazyElementsSourceIndexes
-  ): Promise<DeployResult> => {
-    const { pathToInternalIdsIndex = {} } = type === 'add'
-      ? await elementsSourceIndex.getIndexes()
-      : {}
-
-    return type === 'update'
-      ? deployChanges(changes, pathToInternalIdsIndex, 'update')
-      : deployAdditionsOrDeletions(changes, pathToInternalIdsIndex, type)
-  }
+  ): Promise<DeployResult> => typeToDeployFunction[type](changes as ReadonlyArray<Change<FileCabinetInstance>>)
 
   return {
     importFileCabinet,
-    getPathToIdMap,
     deploy,
   }
 }

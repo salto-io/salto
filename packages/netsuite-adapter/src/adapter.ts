@@ -452,7 +452,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changesToDeploy,
       groupID,
       this.additionalDependencies,
-      this.elementsSourceIndex,
     )
 
     const ids = new Set(deployResult.appliedChanges.map(

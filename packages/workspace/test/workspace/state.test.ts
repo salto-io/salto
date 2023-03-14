@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, StaticFile, Field } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, StaticFile } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { serialize } from '../../src/serializer'
 import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
-import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
+import { PathIndex, getElementsPathHints, getTopLevelPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
@@ -41,7 +41,6 @@ describe('state', () => {
   let newElemID: ElemID
   let staticFile: StaticFile
   let newElem: ObjectType
-  let newField: Field
 
   beforeAll(async () => {
     pathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
@@ -72,7 +71,6 @@ describe('state', () => {
         staticFile,
       },
     })
-    newField = new Field(newElem, 'field', newElem)
   })
 
   describe('buildStateData', () => {
@@ -164,23 +162,23 @@ describe('state', () => {
       expect(await state.getTopLevelPathIndex()).toEqual(topLevelPathIndex)
     })
     it('overridePathIndex', async () => {
-      const elements = [elem, newElem, newField]
+      const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(getElementsPathHints([newElem, elem, newField]))
+      expect(index).toEqual(getElementsPathHints([newElem, elem]))
       const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
-      expect(topLevelIndex).toEqual(getElementsPathHints([newElem, elem]))
+      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
     })
 
     it('updatePathIndex', async () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
-      const otherElements = [newElem, newField]
-      await state.updatePathIndex(otherElements, ['salesforce'])
+      const oneElement = [newElem]
+      await state.updatePathIndex(oneElement, ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
       const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
       expect(index).toEqual(getElementsPathHints([newElem, elem]))
-      expect(topLevelIndex).toEqual(getElementsPathHints([newElem, elem]))
+      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
     })
 
     it('clear should clear all data', async () => {

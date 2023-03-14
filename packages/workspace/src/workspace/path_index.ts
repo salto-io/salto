@@ -178,7 +178,7 @@ export const overridePathIndex = async (
   await current.setAll(entries)
 }
 
-const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
+export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
   const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())

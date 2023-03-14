@@ -1099,10 +1099,10 @@ export const loadWorkspace = async (
     getElementReferencedFiles: async id => (
       (await getLoadedNaclFilesSource()).getElementReferencedFiles(currentEnv(), id)
     ),
-    getReferenceSourcesIndex: async () => (await getWorkspaceState())
-      .states[currentEnv()].referenceSources,
-    getReferenceTargetsIndex: async () => (await getWorkspaceState())
-      .states[currentEnv()].referenceTargets,
+    getReferenceSourcesIndex: async (envName = currentEnv()) => (await getWorkspaceState())
+      .states[envName].referenceSources,
+    getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
+      .states[envName].referenceTargets,
     getElementOutgoingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)

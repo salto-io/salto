@@ -328,6 +328,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
+        { fieldName: 'customName', fieldType: 'string' },
         { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },
@@ -338,6 +339,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
+        { fieldName: 'customName' },
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],

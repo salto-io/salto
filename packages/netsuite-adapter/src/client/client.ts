@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isField, ChangeDataType, isAdditionChange, isAdditionOrModificationChange, ObjectType, isObjectTypeChange, isFieldChange, ElemID } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, ObjectType, isFieldChange, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -27,7 +27,7 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { CustomizationInfo, FeaturesMap, GetCustomObjectsResult, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
+import { FeaturesMap, GetCustomObjectsResult, getDeployableChanges, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
@@ -37,7 +37,6 @@ import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToR
 import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 
-const { isDefined } = values
 const { awu } = collections.asynciterable
 const { lookupValue } = values
 const log = logger(module)
@@ -49,12 +48,9 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getServiceIdFromElement = (changeData: ChangeDataType): string => {
+const getServiceIdFromElement = (changeData: ObjectType | InstanceElement): string => {
   if (isFileCabinetInstance(changeData)) {
     return getElementValueOrAnnotations(changeData)[PATH]
-  }
-  if (isField(changeData)) {
-    return changeData.parent.annotations[SCRIPT_ID]
   }
   return getElementValueOrAnnotations(changeData)[SCRIPT_ID]
 }
@@ -144,16 +140,6 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query)
   }
 
-  private static async toCustomizationInfos(
-    elements: (InstanceElement | ObjectType)[],
-  ): Promise<CustomizationInfo[]> {
-    return awu(elements)
-      .map(getOrTransformCustomRecordTypeToInstance)
-      .filter(isDefined)
-      .map(toCustomizationInfo)
-      .toArray()
-  }
-
   private static async getSDFObjectNodes(
     changes: Change<InstanceElement | ObjectType>[],
   ): Promise<SDFObjectNode[]> {
@@ -166,7 +152,7 @@ export default class NetsuiteClient {
         elemIdFullName: element.elemID.getFullName(),
         serviceid: getServiceIdFromElement(element),
         changeType,
-        customizationInfo: (await NetsuiteClient.toCustomizationInfos([element]))[0],
+        customizationInfo: await toCustomizationInfo(getOrTransformCustomRecordTypeToInstance(element)),
       }))
       .toArray()
   }
@@ -287,9 +273,7 @@ export default class NetsuiteClient {
     additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
   }): Promise<DeployResult> {
-    const changesToDeploy = changes.filter(
-      change => isInstanceChange(change) || isObjectTypeChange(change)
-    ) as Change<InstanceElement | ObjectType>[]
+    const changesToDeploy = getDeployableChanges(changes)
     const fieldChangesByType = _.groupBy(
       changes.filter(isFieldChange),
       change => getChangeData(change).parent.elemID.getFullName()
@@ -410,10 +394,8 @@ export default class NetsuiteClient {
   }
 
   private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
-    const relevantInstances = changes.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance).filter(isDefined)
-    const relevantChanges = changes.filter(
-      change => isDefined(getOrTransformCustomRecordTypeToInstance(getChangeData(change)))
-    )
+    const relevantChanges = getDeployableChanges(changes)
+    const relevantInstances = relevantChanges.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance)
 
     const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID)
     const results = deployResults

@@ -46,6 +46,7 @@ import { updateChangedByIndex, Author, authorKeyToAuthor, authorToAuthorKey } fr
 import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
 import { resolve } from '../expressions'
+import { updateAliasIndex } from './alias_index'
 
 const log = logger(module)
 
@@ -257,6 +258,7 @@ export type Workspace = {
     filePaths?: Set<string>,
     envName?: string
   ): Promise<Record<string, string>>
+  getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
 }
@@ -267,6 +269,7 @@ type SingleState = {
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
   changedAt: RemoteMap<ElemID[]>
+  alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
@@ -388,6 +391,12 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('changedAt', envName),
             serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          alias: await remoteMapCreator<string>({
+            namespace: getRemoteMapNamespace('alias', envName),
+            serialize: async val => safeJsonStringify(val),
+            deserialize: data => JSON.parse(data),
             persistent,
           }),
           referencedStaticFiles: await remoteMapCreator<string[]>({
@@ -630,6 +639,13 @@ export const loadWorkspace = async (
       await updateChangedAtIndex(
         changes,
         stateToBuild.states[envName].changedAt,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+      await updateAliasIndex(
+        changes,
+        stateToBuild.states[envName].alias,
         stateToBuild.states[envName].mapVersions,
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
@@ -1001,6 +1017,11 @@ export const loadWorkspace = async (
         ))
         .toArray()
     )
+  }
+  const getAliases = async (envName?: string): Promise<ReadOnlyRemoteMap<string>> => {
+    const env = envName ?? currentEnv()
+    const currentWorkspaceState = await getWorkspaceState()
+    return currentWorkspaceState.states[env].alias
   }
 
   const isChangedAtIndexEmpty = async (envName?: string): Promise<boolean> => {
@@ -1426,6 +1447,7 @@ export const loadWorkspace = async (
     getChangedElementsBetween,
     getStaticFilePathsByElemIds,
     getElemIdsByStaticFilePaths,
+    getAliases,
     isChangedAtIndexEmpty,
   }
 }

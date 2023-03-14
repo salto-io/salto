@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
-import { safeJsonStringify, calculateChangesHash } from '@salto-io/adapter-utils'
+import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+
 import {
   DeployResult,
   Change,
@@ -289,6 +290,21 @@ const getDeployStatusUrl = async (
   return `${baseUrl}lightning/setup/DeployStatus/page?address=%2Fchangemgmt%2FmonitorDeploymentsDetails.apexp%3FasyncId%3D${id}`
 }
 
+const quickDeployOrDeploy = async (
+  client: SalesforceClient,
+  pkgData: Buffer,
+  checkOnly?: boolean,
+  quickDeployParams?: QuickDeployParams,
+): Promise<SFDeployResult> => {
+  if (quickDeployParams !== undefined) {
+    try {
+      return await client.quickDeploy(quickDeployParams.requestId)
+    } catch (e) {
+      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+    }
+  }
+  return client.deploy(pkgData, { checkOnly })
+}
 const isQuickDeployable = (deployRes: SFDeployResult): boolean =>
   deployRes.id !== undefined && deployRes.checkOnly && deployRes.success && deployRes.numberTestsCompleted >= 1
 
@@ -299,6 +315,7 @@ export const deployMetadata = async (
   nestedMetadataTypes: Record<string, NestedMetadataTypeInfo>,
   deleteBeforeUpdate?: boolean,
   checkOnly?: boolean,
+  quickDeployParams?: QuickDeployParams,
 ): Promise<DeployResult> => {
   const pkg = createDeployPackage(deleteBeforeUpdate)
 
@@ -314,8 +331,17 @@ export const deployMetadata = async (
   })
 
   const pkgData = await pkg.getZip()
+  const planHash = hashUtils.toMD5(pkgData)
+  if (quickDeployParams !== undefined) {
+    if (quickDeployParams.hash !== planHash) {
+      return {
+        appliedChanges: [],
+        errors: [new Error('Quick deploy option is not available because the current deploy plan is different than the validated one')],
+      }
+    }
+  }
 
-  const sfDeployRes = await client.deploy(pkgData, { checkOnly })
+  const sfDeployRes = await quickDeployOrDeploy(client, pkgData, checkOnly, quickDeployParams)
 
   log.debug('deploy result: %s', safeJsonStringify({
     ...sfDeployRes,
@@ -348,44 +374,8 @@ export const deployMetadata = async (
     extraProperties: {
       deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
       groups: isQuickDeployable(sfDeployRes)
-        ? [{ id: groupId, requestId: sfDeployRes.id, hash: log.time(() => calculateChangesHash(validChanges), 'changes hash calculation'), url: deploymentUrl }]
+        ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]
         : [{ id: groupId, url: deploymentUrl }],
-    },
-  }
-}
-
-export const quickDeploy = async (
-  changes: ReadonlyArray<Change>,
-  client: SalesforceClient,
-  groupId: string,
-  quickDeployParams: QuickDeployParams,
-): Promise<DeployResult> => {
-  const { validChanges, errors: validationErrors } = await validateChanges(changes)
-  if (validChanges.length === 0) {
-    // Skip deploy if there are no valid changes
-    return { appliedChanges: [], errors: validationErrors }
-  }
-  if (quickDeployParams.hash !== calculateChangesHash(validChanges)) {
-    return {
-      appliedChanges: [],
-      errors: [new Error('Quick deploy option is not available because the current deploy plan is different than the validated one')],
-    }
-  }
-  const deployRes = await client.quickDeploy(quickDeployParams.requestId)
-  log.debug('deploy result: %s', safeJsonStringify(deployRes, undefined, 2))
-
-  // we are not expecting any deploy error after a successful validation
-  if (!_.isEmpty(makeArray(deployRes.details)
-    .flatMap(detail => makeArray(detail.componentFailures)))) {
-    log.error('There were unexpected component failures in the quick deploy, id: %s', quickDeployParams.requestId)
-  }
-  const deploymentUrl = await getDeployStatusUrl(deployRes, client)
-  return {
-    appliedChanges: validChanges,
-    errors: validationErrors,
-    extraProperties: {
-      deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
-      groups: [{ id: groupId, url: deploymentUrl }],
     },
   }
 }

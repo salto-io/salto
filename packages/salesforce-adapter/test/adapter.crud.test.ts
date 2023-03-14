@@ -346,14 +346,18 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'ae603ec5f43ad6e8d4aaae0b44996ebd',
+                        hash: '0c865cba7327c680fd0ce5a0c55efb1d',
                       },
                     },
                   },
                 },
               },
             }))
-            connection.metadata.deployRecentValidation.mockReturnValue(mockDeployResult({}))
+            connection.metadata.deployRecentValidation.mockReturnValue(mockDeployResult({
+              success: true,
+              componentSuccess: [{ fullName: instanceName, componentType: 'Flow' }],
+              checkOnly: true,
+            }))
             result = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
@@ -403,7 +407,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: 'ae603ec5f43ad6e8d4aaae0b44996ebd',
+                        hash: '0c865cba7327c680fd0ce5a0c55efb1d',
                       },
                     },
                   },

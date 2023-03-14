@@ -17,9 +17,7 @@ import _ from 'lodash'
 import {
   ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
   PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
-  isElement,
-  CompareOptions,
-  isIndexPathPart,
+  isElement, CompareOptions, isIndexPathPart, Change, getChangeData, Element,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from './utils'

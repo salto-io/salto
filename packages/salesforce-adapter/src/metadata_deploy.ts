@@ -300,7 +300,7 @@ const quickDeployOrDeploy = async (
     try {
       return await client.quickDeploy(quickDeployParams.requestId)
     } catch (e) {
-      log.info(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
+      log.warn(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
     }
   }
   return client.deploy(pkgData, { checkOnly })
@@ -332,7 +332,6 @@ export const deployMetadata = async (
 
   const pkgData = await pkg.getZip()
   const planHash = hashUtils.toMD5(pkgData)
-
   if (quickDeployParams !== undefined) {
     if (quickDeployParams.hash !== planHash) {
       return {

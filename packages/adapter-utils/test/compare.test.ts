@@ -27,6 +27,7 @@ import {
   createRefToElmWithValue,
   ReferenceExpression,
   isAdditionChange,
+  toChange,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges, getRelevantNamesFromChange } from '../src/compare'
 

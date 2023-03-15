@@ -52,23 +52,17 @@ export const hasNamespace = async (customElement: Element): Promise<boolean> => 
   return cleanFullName.includes(NAMESPACE_SEPARATOR)
 }
 
-export const getNamespace = async (customElement: Element): Promise<string | undefined> => {
-  const parts = (await apiName(customElement, true))?.split(NAMESPACE_SEPARATOR) ?? []
-  return parts.length > 1 ? parts[0] : undefined
-}
-
-
-export const PACKAGE_VERSION_FIELD_NAME = 'version_number'
+const getNamespace = async (customElement: Element): Promise<string> => (
+  (await apiName(customElement, true))
+    .split(NAMESPACE_SEPARATOR)[0]
+)
 
 const changeValidator: ChangeValidator = async changes => (
   awu(changes)
     .map(getChangeData)
-    .map(async element => {
-      const elementNamespace = await getNamespace(element)
-      return isDefined(elementNamespace)
-        ? createPackageElementModificationChangeWarning(element, elementNamespace)
-        : undefined
-    })
+    .filter(hasNamespace)
+    .map(async managedElement =>
+      createPackageElementModificationChangeWarning(managedElement, await getNamespace(managedElement)))
     .filter(isDefined)
     .toArray()
 )

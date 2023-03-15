@@ -204,7 +204,7 @@ const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-export const resolvers: UrlResolver[] = [genernalConstantsResolver,
+export const resolvers: UrlResolver[] = [generalConstantsResolver,
   settingsConstantsResolver, assignmentRulesResolver, metadataTypeResolver,
   objectResolver, fieldResolver, flowResolver, workflowResolver, standardSubObjectResolver, queueResolver,
   pathAssistantResolver, internalIdResolver, instanceCustomObjectResolver]

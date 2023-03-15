@@ -17,7 +17,6 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
 import { applicationValidator } from './application'
-import { applicationFieldsValidator } from './application_addition_fields'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { defaultPoliciesValidator } from './default_policies'
@@ -27,7 +26,6 @@ export default (
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(),
     applicationValidator,
-    applicationFieldsValidator,
     groupRuleStatusValidator,
     groupRuleActionsValidator,
     defaultPoliciesValidator,

@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import wu from 'wu'
 
+const { isDefined } = values
 const { toAsyncIterable, awu } = collections.asynciterable
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -92,6 +93,7 @@ export type RemoteMapCreator = <T, K extends string = string>(
 export type ReadOnlyRemoteMapCreator = <T, K extends string = string>(
   opts: CreateReadOnlyRemoteMapParams<T>
 ) => Promise<RemoteMap<T, K>>
+
 export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMap<T, K> {
   private data: Map<K, T>
   constructor(data: RemoteMapEntry<T, K>[] = []) {
@@ -139,15 +141,44 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
 
   entries<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<RemoteMapEntry<T, K>, Opts> {
     const sortedEntries = this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
-    if (opts && isPagedIterationOpts(opts)) {
-      return toAsyncIterable(wu(sortedEntries)
-        .chunk(opts.pageSize)) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+    if (isDefined(opts)) {
+      const { filter } = opts
+      if (isDefined(filter) && isPagedIterationOpts(opts)) {
+        return toAsyncIterable(
+          wu(sortedEntries).filter(e => filter(e.key)).chunk(opts.pageSize)
+        ) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+      }
+      if (isDefined(filter)) {
+        return toAsyncIterable(
+          sortedEntries.filter(e => filter(e.key))
+        ) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+      }
+      if (isPagedIterationOpts(opts)) {
+        return toAsyncIterable(wu(sortedEntries)
+          .chunk(opts.pageSize)) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
+      }
     }
     return toAsyncIterable(sortedEntries) as RemoteMapIterator<RemoteMapEntry<T, K>, Opts>
   }
 
   keys<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<K, Opts> {
     const sortedKeys = Array.from(this.data.keys()).sort()
+    if (isDefined(opts)) {
+      const { filter } = opts
+      if (isDefined(filter) && isPagedIterationOpts(opts)) {
+        return toAsyncIterable(
+          wu(sortedKeys).filter(key => filter(key)).chunk(opts.pageSize)
+        ) as RemoteMapIterator<K, Opts>
+      }
+      if (isDefined(filter)) {
+        return toAsyncIterable(
+          sortedKeys.filter(key => filter(key))
+        ) as RemoteMapIterator<K, Opts>
+      }
+      if (isPagedIterationOpts(opts)) {
+        return toAsyncIterable(wu(sortedKeys).chunk(opts.pageSize)) as RemoteMapIterator<K, Opts>
+      }
+    }
     if (opts && isPagedIterationOpts(opts)) {
       return toAsyncIterable(wu(sortedKeys).chunk(opts.pageSize)) as RemoteMapIterator<K, Opts>
     }
@@ -155,11 +186,31 @@ export class InMemoryRemoteMap<T, K extends string = string> implements RemoteMa
   }
 
   values<Opts extends IterationOpts>(opts?: Opts): RemoteMapIterator<T, Opts> {
-    const sortedValues = this.getSortedEntries().map(e => e[1])
-    if (opts && isPagedIterationOpts(opts)) {
-      return toAsyncIterable(wu(sortedValues).chunk(opts.pageSize)) as RemoteMapIterator<T, Opts>
+    const sortedEntries = this.getSortedEntries().map(e => ({ key: e[0], value: e[1] }))
+    if (isDefined(opts)) {
+      const { filter } = opts
+      if (isDefined(filter) && isPagedIterationOpts(opts)) {
+        return toAsyncIterable(
+          wu(sortedEntries).filter(entry => filter(entry.key)).map(entry => entry.value).chunk(opts.pageSize)
+        ) as RemoteMapIterator<T, Opts>
+      }
+      if (isDefined(filter)) {
+        return toAsyncIterable(
+          sortedEntries.filter(entry => filter(entry.key)).map(entry => entry.value)
+        ) as RemoteMapIterator<T, Opts>
+      }
+      if (isPagedIterationOpts(opts)) {
+        return toAsyncIterable(
+          wu(sortedEntries).map(entry => entry.value).chunk(opts.pageSize)
+        ) as RemoteMapIterator<T, Opts>
+      }
     }
-    return toAsyncIterable(sortedValues) as RemoteMapIterator<T, Opts>
+    if (opts && isPagedIterationOpts(opts)) {
+      return toAsyncIterable(
+        wu(sortedEntries).map(entry => entry.value).chunk(opts.pageSize)
+      ) as RemoteMapIterator<T, Opts>
+    }
+    return toAsyncIterable(sortedEntries.map(entry => entry.value)) as RemoteMapIterator<T, Opts>
   }
 
   // eslint-disable-next-line class-methods-use-this
@@ -192,8 +243,8 @@ export const mapRemoteMapResult = <T, R>(
       const origValue = await source.get(id)
       return origValue !== undefined ? func(origValue) : undefined
     },
-    entries: () => awu(source.entries())
+    entries: <Opts extends IterationOpts>(opts?: Opts) => awu(source.entries(opts))
       .map(async entry => ({ ...entry, value: await func(entry.value) })),
-    values: () => awu(source.values()).map(func),
+    values: <Opts extends IterationOpts>(opts?: Opts) => awu(source.values(opts)).map(func),
     has: id => source.has(id),
   })

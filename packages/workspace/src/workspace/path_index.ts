@@ -181,19 +181,20 @@ export const overridePathIndex = async (
 export const updatePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
-  accountsToMaintain: string[]
+  notFetchedAccounts: string[],
+  elementsScope?: string[],
 ): Promise<void> => {
-  if (accountsToMaintain.length === 0) {
+  if (notFetchedAccounts.length === 0 && elementsScope === undefined) {
     await overridePathIndex(current, unmergedElements)
     return
   }
-  const entries = getElementsPathHints(unmergedElements)
-  const oldPathHintsToMaintain = await awu(current.entries())
-    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
-    .concat(entries)
-    .toArray()
+  const newElementsPaths = getElementsPathHints(unmergedElements)
+  const oldPathHintsToMaintain = awu(current.entries())
+    .filter(e => notFetchedAccounts.includes(ElemID.fromFullName(e.key).adapter)
+      || (elementsScope !== undefined && !elementsScope.includes(e.key)))
+  const combinedPaths = oldPathHintsToMaintain.concat(newElementsPaths)
   await current.clear()
-  await current.setAll(awu(oldPathHintsToMaintain))
+  await current.setAll(combinedPaths)
 }
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

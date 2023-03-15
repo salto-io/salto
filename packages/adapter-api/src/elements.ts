@@ -617,8 +617,8 @@ export function isEqualElements(
 }
 
 export type ReadOnlyElementsSource = {
-  list: () => Promise<AsyncIterable<ElemID>>
-  getAll: () => Promise<AsyncIterable<Element>>
+  list: (filter?: (key: string) => boolean) => Promise<AsyncIterable<ElemID>>
+  getAll: (filter?: (key: string) => boolean) => Promise<AsyncIterable<Element>>
   has: (id: ElemID) => Promise<boolean>
   get(id: ElemID): Promise<Value>
 }
@@ -631,10 +631,10 @@ export const placeholderReadonlyElementsSource = {
       elemID: id,
     })
   },
-  async list(): Promise<AsyncIterable<ElemID>> {
+  async list(_filter?: (key: string) => boolean): Promise<AsyncIterable<ElemID>> {
     return awu([])
   },
-  async getAll(): Promise<AsyncIterable<Element>> {
+  async getAll(_filter?: (key: string) => boolean): Promise<AsyncIterable<Element>> {
     return awu([])
   },
   async has(_id: ElemID): Promise<boolean> {

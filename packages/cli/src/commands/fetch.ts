@@ -16,7 +16,7 @@
 import { EOL } from 'os'
 import _ from 'lodash'
 import wu from 'wu'
-import { getChangeData, isInstanceElement, AdapterOperationName, Progress } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceElement, AdapterOperationName, Progress, ElemID } from '@salto-io/adapter-api'
 import { fetch as apiFetch, FetchFunc, FetchChange, FetchProgressEvents, StepEmitter,
   PlanItem, FetchFromWorkspaceFunc, loadLocalWorkspace, fetchFromWorkspace } from '@salto-io/core'
 import { Workspace, nacl, StateRecency } from '@salto-io/workspace'
@@ -67,6 +67,7 @@ const createFetchFromWorkspaceCommand = (
   otherWorkspacePath: string,
   env: string,
   fromState: boolean,
+  elementsScope?: string[]
 ): FetchFunc => async (workspace, progressEmitter, accounts) => {
   let otherWorkspace: Workspace
   try {
@@ -84,6 +85,7 @@ const createFetchFromWorkspaceCommand = (
     accounts,
     env,
     fromState,
+    elementsScope,
   })
 }
 
@@ -248,6 +250,28 @@ const shouldRecommendAlignMode = async (
   )
 }
 
+const isElementsScopeValid = (
+  elementsScope: string[],
+  cliOutput: CliOutput,
+): boolean => {
+  const invalidScopes = elementsScope.map(scope => {
+    try {
+      const elemID = ElemID.fromFullName(scope)
+      if (!elemID.isTopLevel()) {
+        return scope
+      }
+    } catch (error) {
+      return scope
+    }
+    return undefined
+  }).filter(values.isDefined)
+  if (invalidScopes.length > 0) {
+    errorOutputLine(`ElementScopes must be a valid Top Level Element ID, these are not - ${invalidScopes.join(', ')}`, cliOutput)
+    return false
+  }
+  return true
+}
+
 type FetchArgs = {
   force: boolean
   stateOnly: boolean
@@ -255,6 +279,7 @@ type FetchArgs = {
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
+  elementsScope?: string[]
 } & AccountsArg & EnvArg & UpdateModeArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -266,7 +291,8 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const {
-    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState,
+    force, stateOnly, accounts, mode, regenerateSaltoIds,
+    fromWorkspace, fromEnv, fromState, elementsScope,
   } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
@@ -274,6 +300,14 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   ) {
     errorOutputLine('The fromEnv and fromWorkspace arguments must both be provided.', output)
     outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+  if (elementsScope && !fromEnv) {
+    errorOutputLine('elementsScope can only be used together with fromEnv and fromWorkspace.', output)
+    outputLine(EOL, output)
+    return CliExitCode.UserInputError
+  }
+  if (elementsScope !== undefined && !isElementsScopeValid(elementsScope, output)) {
     return CliExitCode.UserInputError
   }
   const { shouldCalcTotalSize } = config
@@ -316,6 +350,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
       fromWorkspace,
       fromEnv,
       fromState,
+      elementsScope,
     ) : apiFetch,
     getApprovedChanges: cliGetApprovedChanges,
     shouldUpdateConfig: cliShouldUpdateConfig,
@@ -377,6 +412,13 @@ const fetchDef = createWorkspaceCommand({
         description: 'Fetch the data from another workspace from the state',
         type: 'boolean',
         default: false,
+      },
+      {
+        name: 'elementsScope',
+        alias: 'es',
+        required: false,
+        description: 'The scope of the Fetch From workspace',
+        type: 'stringsList',
       },
     ],
   },

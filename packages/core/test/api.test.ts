@@ -215,8 +215,8 @@ describe('api.ts', () => {
       })
       it('should override state but also include existing elements', async () => {
         const existingElements = [stateElements[1]]
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
+        const overrideElementsParam = await awu(stateOverride.mock.calls[0][0]).toArray()
+        expect(overrideElementsParam).toEqual([...existingElements, ...fetchedElements])
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
@@ -689,13 +689,14 @@ describe('api.ts', () => {
 
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].fetchAccounts
+        expect(accountsUsed).toEqual([mockService])
       })
     })
 
     describe('default accounts', () => {
       let ws: workspace.Workspace
       let ows: workspace.Workspace
-
 
       beforeAll(async () => {
         ws = mockWorkspace({ accounts: ['salto', 'salesforce'] })
@@ -709,8 +710,30 @@ describe('api.ts', () => {
       })
 
       it('should use accounts that are in the current workspace as defaults', () => {
-        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][1]
+        const accountsUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].fetchAccounts
         expect(accountsUsed).toEqual(['salto', 'netsuite'])
+      })
+    })
+
+    describe('with elementsScope', () => {
+      let ws: workspace.Workspace
+      let ows: workspace.Workspace
+      beforeAll(async () => {
+        ws = mockWorkspace({})
+        ows = mockWorkspace({})
+        mockFetchChangesFromWorkspace.mockClear()
+        await api.fetchFromWorkspace({
+          otherWorkspace: ws,
+          workspace: ows,
+          env: 'default',
+          elementsScope: ['salto.type'],
+        })
+      })
+
+      it('should call fetch changes with elementsScope', () => {
+        expect(mockFetchChangesFromWorkspace).toHaveBeenCalled()
+        const elementsScopeUsed = mockFetchChangesFromWorkspace.mock.calls[0][0].elementsScope
+        expect(elementsScopeUsed).toEqual(['salto.type'])
       })
     })
   })

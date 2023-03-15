@@ -860,15 +860,85 @@ const fixStaticFilesForFromStateChanges = async (
   }
 }
 
-export const fetchChangesFromWorkspace = async (
+/*
+* A filtered ElementsSource
+* This filter only applies to the Read functionality of the ElementsSource
+* and does not work properly for isEmpty
+*/
+const filteredElementsSource = (
+  source: elementSource.ElementsSource,
+  filter: (key: string) => boolean
+): elementSource.ElementsSource => ({
+  ...source,
+  getAll: (): Promise<AsyncIterable<Element>> => (source.getAll(filter)),
+  list: (): Promise<AsyncIterable<ElemID>> => (source.list(filter)),
+  has: (id: ElemID): Promise<boolean> => {
+    if (filter(id.getFullName())) {
+      return source.has(id)
+    }
+    return Promise.resolve(false)
+  },
+  get: (id: ElemID): Promise<Value> => {
+    if (filter(id.getFullName())) {
+      return source.get(id)
+    }
+    return Promise.resolve(undefined)
+  },
+})
+
+const getElementsSources = async (
   otherWorkspace: Workspace,
-  fetchAccounts: string[],
-  workspaceElements: elementSource.ElementsSource,
-  stateElements: elementSource.ElementsSource,
-  currentConfigs: InstanceElement[],
-  env: string,
+  workspaceElementsSource: elementSource.ElementsSource,
+  stateElementsSource: elementSource.ElementsSource,
   fromState: boolean,
-  progressEmitter?: EventEmitter<FetchProgressEvents>,
+  env: string,
+  elementsScope?: string[],
+): Promise<{
+  workspaceElementsSource: elementSource.ElementsSource
+  stateElementsSource: elementSource.ElementsSource
+  otherElementsSource: elementSource.ElementsSource
+}> => {
+  const otherElementsSource = fromState
+    ? otherWorkspace.state(env)
+    : (await otherWorkspace.elements(true, env))
+  if (elementsScope === undefined) {
+    return {
+      workspaceElementsSource,
+      stateElementsSource,
+      otherElementsSource,
+    }
+  }
+  const filterElementsSourceFn = (key: string): boolean => (elementsScope.includes(key))
+  return {
+    workspaceElementsSource: filteredElementsSource(workspaceElementsSource, filterElementsSourceFn),
+    stateElementsSource: filteredElementsSource(stateElementsSource, filterElementsSourceFn),
+    otherElementsSource: filteredElementsSource(otherElementsSource, filterElementsSourceFn),
+  }
+}
+
+export type FetchChangesFromWorkspaceParams = {
+  otherWorkspace: Workspace
+  fetchAccounts: string[]
+  workspaceElements: elementSource.ElementsSource
+  stateElements: elementSource.ElementsSource
+  currentConfigs: InstanceElement[]
+  env: string
+  fromState: boolean
+  progressEmitter?: EventEmitter<FetchProgressEvents>
+  elementsScope?: string[]
+}
+
+export const fetchChangesFromWorkspace = async ({
+  otherWorkspace,
+  fetchAccounts,
+  workspaceElements,
+  stateElements,
+  currentConfigs,
+  env,
+  fromState,
+  progressEmitter,
+  elementsScope,
+}: FetchChangesFromWorkspaceParams
 ): Promise<FetchChangesResult> => {
   const splitElementByFile = async (element: Element): Promise<Element[]> => {
     const elementNaclFiles = await otherWorkspace.getElementNaclFiles(element.elemID)
@@ -923,9 +993,14 @@ export const fetchChangesFromWorkspace = async (
   if (progressEmitter) {
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, fetchAccounts)
   }
-  const otherElementsSource = fromState
-    ? otherWorkspace.state(env)
-    : (await otherWorkspace.elements(true, env))
+  const { otherElementsSource, workspaceElementsSource, stateElementsSource } = await getElementsSources(
+    otherWorkspace,
+    workspaceElements,
+    stateElements,
+    fromState,
+    env,
+    elementsScope,
+  )
   const fullElements = await log.time(async () =>
     awu(await (otherElementsSource).getAll())
       .filter(elem => fetchAccounts.includes(elem.elemID.adapter))
@@ -962,8 +1037,8 @@ export const fetchChangesFromWorkspace = async (
         keptElements: fullElements,
         errorsWithDroppedElements: [],
       },
-      stateElements,
-      workspaceElements,
+      stateElements: stateElementsSource,
+      workspaceElements: workspaceElementsSource,
       unmergedElements,
     }), 'Creating Fetch Changes')
   // We currently cannot access the content of static files from the state so when fetching

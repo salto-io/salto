@@ -231,24 +231,36 @@ export type FetchFromWorkspaceFuncParams = {
   accounts?: string[]
   services?: string[]
   fromState?: boolean
+  elementsScope?: string[]
   env: string
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
+
+const getNotFetchedAccounts = async (
+  workspace: Workspace,
+  fetchedAccounts: string[],
+): Promise<string[]> =>
+  (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key))
 
 const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
-  fetchedAccounts: string[]
+  fetchedAccounts: string[],
+  elementsScope?: string[],
 ): Promise<void> => {
-  const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
-  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
-    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
-  await workspace.state()
-    .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
+  const stateElementsToKeep = awu(await workspace.state().getAll())
+    .filter(element =>
+      // Elements not from the fetchedAccounts
+      !shouldElementBeIncluded(fetchedAccounts)(element.elemID)
+      // Elements from the fetchedAccounts that are not in the scope
+      || (elementsScope !== undefined && !elementsScope.includes(element.elemID.getFullName())))
+  await workspace.state().override(awu(stateElementsToKeep).concat(mergedElements), fetchedAccounts)
+  await workspace.state().updatePathIndex(
+    unmergedElements,
+    await getNotFetchedAccounts(workspace, fetchedAccounts),
+    elementsScope,
+  )
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 
@@ -322,6 +334,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   services,
   fromState = false,
   env,
+  elementsScope,
 }: FetchFromWorkspaceFuncParams) => {
   log.debug('fetch starting from workspace..')
   const fetchAccounts = services ?? accounts ?? workspace.accounts()
@@ -335,19 +348,26 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   const {
     changes, elements, mergeErrors, errors,
     configChanges, accountNameToConfigMessage, unmergedElements,
-  } = await fetchChangesFromWorkspace(
+  } = await fetchChangesFromWorkspace({
     otherWorkspace,
     fetchAccounts,
-    await workspace.elements(),
-    workspace.state(),
+    workspaceElements: await workspace.elements(),
+    stateElements: workspace.state(),
     currentConfigs,
     env,
     fromState,
     progressEmitter,
-  )
+    elementsScope,
+  })
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+  await updateStateWithFetchResults(
+    workspace,
+    elements,
+    unmergedElements,
+    fetchAccounts,
+    elementsScope,
+  )
   return {
     changes,
     fetchErrors: errors,

@@ -768,7 +768,20 @@ export const generateElements = async (
       { Field: 'FieldValue' },
       [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvInst`]
     )
-    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos]
+    const content = generateFileContent()
+    const withStaticInst = new InstanceElement(
+      `${envID}EnvWithStaticInst`,
+      envSpecificObj,
+      {
+        Field: new StaticFile({
+          content,
+          hash: calculateStaticFileHash(content),
+          filepath: [getName(), 'txt'].join('.'),
+        }),
+      },
+      [DUMMY_ADAPTER, 'EnvStuff', `${envID}EnvWithStaticInst`]
+    )
+    const res = [envSpecificInst, sharedObj, sharedInst, PrimWithHiddenAnnos, withStaticInst]
     if (!process.env.SALTO_OMIT) {
       res.push(envSpecificObj)
     }

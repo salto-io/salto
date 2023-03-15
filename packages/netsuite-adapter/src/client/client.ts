@@ -175,7 +175,7 @@ export default class NetsuiteClient {
         const serviceIdInfoArray = captureServiceIdInfo(val)
         serviceIdInfoArray.forEach(serviceIdInfo => {
           currSet.add(serviceIdInfo.serviceId)
-          const startNode = dependencyGraph.findNodeByField('serviceid', serviceIdInfo.serviceId)
+          const startNode = dependencyGraph.findNodeByField('serviceid', serviceIdInfo.serviceId.split('.')[0])
           if (startNode && endNode && startNode.value.changeType === 'addition') {
             startNode.addEdge(dependencyGraph.key, endNode)
           }

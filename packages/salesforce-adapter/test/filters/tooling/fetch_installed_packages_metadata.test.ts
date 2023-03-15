@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Element, Field } from '@salto-io/adapter-api'
+import { BuiltinTypes, Element, Field, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import mockClient from '../../client'
 import { SalesforceRecord } from '../../../src/client/types'
@@ -23,6 +23,9 @@ import { FilterWith } from '../../../src/filter'
 import { createToolingObject } from '../../../src/tooling/utils'
 import { API_NAME } from '../../../src/constants'
 import { ToolingField, ToolingObject } from '../../../src/tooling/types'
+import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
+import { SupportedToolingObject } from '../../../src/tooling/constants'
+import { SalesforceClient } from '../../../index'
 
 const { awu } = collections.asynciterable
 
@@ -34,6 +37,8 @@ describe('fetchSubscriberPackageInstancesFilter', () => {
       [{ SubscriberPackage: { Id: '03330000000wDAbAAB', Name: 'Another Test Package Name', NamespacePrefix: 'test', Description: 'description', IsPackageValid: true, attributes: {} } }],
       [{ SubscriberPackage: { Id: '03330000000wDAbAAC', Name: 'Test Package Name', NamespacePrefix: 'test2', Description: 'description', IsPackageValid: true, attributes: {} } }],
     ]
+
+    let client: SalesforceClient
 
     const createSubscriberPackageType = (): ToolingObject['SubscriberPackage'] => {
       const objectType = createToolingObject('SubscriberPackage')
@@ -84,26 +89,110 @@ describe('fetchSubscriberPackageInstancesFilter', () => {
     let subscriberPackageType: ToolingObject['SubscriberPackage']
 
     beforeEach(async () => {
-      const { client } = mockClient()
+      client = mockClient().client
       jest.spyOn(client, 'queryAll').mockResolvedValue(awu(QUERY_RESULT as unknown as SalesforceRecord[][]))
-      const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
       subscriberPackageType = createSubscriberPackageType()
-      elements = [subscriberPackageType]
-      await filter.onFetch(elements)
     })
-    it('should create SubscriberPackageInstances', () => {
-      const subscriberPackageValuesFromQuery = QUERY_RESULT.flat().map(record => record.SubscriberPackage)
-      subscriberPackageValuesFromQuery.forEach(subscriberPackageValueFromQuery => {
-        expect(elements).toContainEqual(expect.objectContaining({
-          refType: expect.objectContaining({ type: subscriberPackageType }),
-          value: {
-            Id: subscriberPackageValueFromQuery.Id,
-            Name: subscriberPackageValueFromQuery.Name,
-            NamespacePrefix: subscriberPackageValueFromQuery.NamespacePrefix,
-            Description: subscriberPackageValueFromQuery.Description,
-            IsPackageValid: subscriberPackageValueFromQuery.IsPackageValid,
-          },
-        }))
+    describe('when SubscriberPackage are not excluded', () => {
+      beforeEach(async () => {
+        const filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+        elements = [subscriberPackageType]
+        await filter.onFetch(elements)
+      })
+      it('should create SubscriberPackageInstances', () => {
+        const subscriberPackageValuesFromQuery = QUERY_RESULT.flat().map(record => record.SubscriberPackage)
+        expect(elements.filter(isInstanceElement)).toHaveLength(subscriberPackageValuesFromQuery.length)
+        subscriberPackageValuesFromQuery.forEach(subscriberPackageValueFromQuery => {
+          expect(elements).toContainEqual(expect.objectContaining({
+            refType: expect.objectContaining({ type: subscriberPackageType }),
+            value: {
+              Id: subscriberPackageValueFromQuery.Id,
+              Name: subscriberPackageValueFromQuery.Name,
+              NamespacePrefix: subscriberPackageValueFromQuery.NamespacePrefix,
+              Description: subscriberPackageValueFromQuery.Description,
+              IsPackageValid: subscriberPackageValueFromQuery.IsPackageValid,
+            },
+          }))
+        })
+      })
+    })
+
+    describe('when a SubscriberPackage are excluded by namespace', () => {
+      const EXCLUDED_NAMESPACE = 'test'
+      beforeEach(async () => {
+        const filterContext = {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            metadata: {
+              exclude: [
+                {
+                  metadataType: SupportedToolingObject.SubscriberPackage,
+                  namespace: EXCLUDED_NAMESPACE,
+                },
+              ],
+            },
+          }),
+        }
+        const filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>
+        elements = [subscriberPackageType]
+        await filter.onFetch(elements)
+      })
+      it('should skip all the instances from this namespace', () => {
+        const includedPackageValuesFromQuery = QUERY_RESULT.flat()
+          .map(record => record.SubscriberPackage)
+          .filter(subscriberPackage => subscriberPackage.NamespacePrefix !== EXCLUDED_NAMESPACE)
+        expect(elements.filter(isInstanceElement)).toHaveLength(includedPackageValuesFromQuery.length)
+        includedPackageValuesFromQuery.forEach(subscriberPackageValueFromQuery => {
+          expect(elements).toContainEqual(expect.objectContaining({
+            refType: expect.objectContaining({ type: subscriberPackageType }),
+            value: {
+              Id: subscriberPackageValueFromQuery.Id,
+              Name: subscriberPackageValueFromQuery.Name,
+              NamespacePrefix: subscriberPackageValueFromQuery.NamespacePrefix,
+              Description: subscriberPackageValueFromQuery.Description,
+              IsPackageValid: subscriberPackageValueFromQuery.IsPackageValid,
+            },
+          }))
+        })
+      })
+    })
+    describe('when a SubscriberPackage are excluded by name', () => {
+      const EXCLUDED_NAME = 'Test Package Name'
+      beforeEach(async () => {
+        const filterContext = {
+          ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            metadata: {
+              exclude: [
+                {
+                  metadataType: SupportedToolingObject.SubscriberPackage,
+                  name: EXCLUDED_NAME,
+                },
+              ],
+            },
+          }),
+        }
+        const filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>
+        elements = [subscriberPackageType]
+        await filter.onFetch(elements)
+      })
+      it('should skip all the instances from this namespace', () => {
+        const includedPackageValuesFromQuery = QUERY_RESULT.flat()
+          .map(record => record.SubscriberPackage)
+          .filter(subscriberPackage => subscriberPackage.Name !== EXCLUDED_NAME)
+        expect(elements.filter(isInstanceElement)).toHaveLength(includedPackageValuesFromQuery.length)
+        includedPackageValuesFromQuery.forEach(subscriberPackageValueFromQuery => {
+          expect(elements).toContainEqual(expect.objectContaining({
+            refType: expect.objectContaining({ type: subscriberPackageType }),
+            value: {
+              Id: subscriberPackageValueFromQuery.Id,
+              Name: subscriberPackageValueFromQuery.Name,
+              NamespacePrefix: subscriberPackageValueFromQuery.NamespacePrefix,
+              Description: subscriberPackageValueFromQuery.Description,
+              IsPackageValid: subscriberPackageValueFromQuery.IsPackageValid,
+            },
+          }))
+        })
       })
     })
   })

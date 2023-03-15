@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, types } from '@salto-io/lowerdash'
-import { isObjectType, Element } from '@salto-io/adapter-api'
+import { isObjectType, Element, InstanceElement } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../../filter'
 import { ensureSafeFilterFetch } from '../utils'
 import SalesforceClient from '../../client/client'
@@ -25,7 +25,7 @@ import {
 } from '../../tooling/types'
 import { SalesforceRecord } from '../../client/types'
 import { createToolingInstance, toolingFieldApiName, toolingObjectApiName } from '../../tooling/utils'
-import { ToolingObjectInfo } from '../../tooling/constants'
+import { SupportedToolingObject, ToolingObjectInfo } from '../../tooling/constants'
 
 const { awu, toArrayAsync } = collections.asynciterable
 
@@ -57,6 +57,14 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
+      const isIncluded = (subscriberPackageInstance: InstanceElement): boolean => (
+        config.fetchProfile.metadataQuery.isInstanceMatch({
+          metadataType: SupportedToolingObject.SubscriberPackage,
+          namespace: subscriberPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.NamespacePrefix],
+          name: subscriberPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.Name],
+          isFolderType: false,
+        })
+      )
       const toolingObjects = elements
         .filter(isObjectType)
         .filter(isToolingObject)
@@ -66,6 +74,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
       }
       await awu(await getSubscriberPackageRecords(subscriberPackageType, client))
         .map(record => createToolingInstance(record, subscriberPackageType, ID_FIELDS))
+        .filter(isIncluded)
         .forEach(instance => elements.push(instance))
     },
   }),

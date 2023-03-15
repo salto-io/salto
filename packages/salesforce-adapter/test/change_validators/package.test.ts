@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, CORE_ANNOTATIONS, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ChangeError, CORE_ANNOTATIONS, Field, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
-import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
+import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 import changeValidator from '../../src/change_validators/package'
 
 describe('package change validator', () => {
@@ -47,7 +47,20 @@ describe('package change validator', () => {
         [CORE_ANNOTATIONS.SERVICE_URL]: SERVICE_URL,
       }
     )
-    changeErrors = await changeValidator([managedElement, nonManagedElement].map(e => toChange({ after: e })))
+
+    const nonManagedCustomField = new Field(
+      mockTypes.Account,
+      'NonManagedField',
+      BuiltinTypes.STRING,
+      {
+        [API_NAME]: 'Account.NonManagedField__c',
+      }
+    )
+    changeErrors = await changeValidator([
+      managedElement,
+      nonManagedElement,
+      nonManagedCustomField,
+    ].map(e => toChange({ after: e })))
   })
   it('should create change warning on elements from managed package', () => {
     expect(changeErrors).toEqual([

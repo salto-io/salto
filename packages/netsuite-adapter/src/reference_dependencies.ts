@@ -170,13 +170,11 @@ export const getRequiredReferencedElements = async (
     elementFullName
   )
 
-  log.debug(`adding referenced elements:${os.EOL}${
-    requiredReferencedElements
-      .concat(referencedTranslationCollectionInstances)
-      .map(elementFullName)
-      .join(os.EOL)
-  }`)
-  return requiredReferencedElements.concat(referencedTranslationCollectionInstances)
+  const result = requiredReferencedElements.concat(referencedTranslationCollectionInstances)
+  if (result.length > 0) {
+    log.debug(`adding referenced elements:${os.EOL}${result.map(elementFullName).join(os.EOL)}`)
+  }
+  return result
 }
 
 export const getReferencedElements = async (

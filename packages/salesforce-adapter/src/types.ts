@@ -106,6 +106,7 @@ export type ChangeValidatorName = (
   | 'duplicateRulesSortOrder'
   | 'lastLayoutRemoval'
   | 'accountSettings'
+  | 'unknownPicklistValues'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -602,6 +603,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
     lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
+    unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

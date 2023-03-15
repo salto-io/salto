@@ -21,7 +21,6 @@ export type ElementsSourceIndexes = {
   serviceIdRecordsIndex: ServiceIdRecords
   internalIdsIndex: Record<string, ElemID>
   customFieldsIndex: Record<string, InstanceElement[]>
-  pathToInternalIdsIndex: Record<string, number>
   elemIdToChangeByIndex: Record<string, string>
   elemIdToChangeAtIndex: Record<string, string>
 }

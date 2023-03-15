@@ -100,3 +100,4 @@ jira {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | name                                        | .*                                | A regex used to filter instances by matching the regex to their name value
+| type                                        | .*                                | A regex used to filter field instances by matching the regex to their type value

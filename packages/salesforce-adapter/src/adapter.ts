@@ -109,8 +109,8 @@ import { addDefaults } from './filters/utils'
 import { fetchMetadataInstances, fetchMetadataType, listMetadataObjects, retrieveMetadataInstances } from './fetch'
 import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
-import { deployMetadata, NestedMetadataTypeInfo, quickDeploy } from './metadata_deploy'
-import { buildFetchProfile, FetchProfile } from './fetch_profile/fetch_profile'
+import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
+import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -158,6 +158,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
+  // valueSetFilter and globalValueSetFilter should run after customObjectsToObjectTypeFilter
   { creator: valueSetFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
@@ -441,18 +442,10 @@ export default class SalesforceAdapter implements AdapterOperations {
         changeGroup.groupID,
         this.fetchProfile.dataManagement,
       )
-    } else if (this.userConfig.client?.deploy?.quickDeployParams !== undefined) {
-      try {
-        deployResult = await quickDeploy(resolvedChanges, this.client,
-          changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
-      } catch (e) {
-        log.info(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
-        deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
-          this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
-      }
     } else {
       deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
-        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
+        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
+          this.userConfig.client?.deploy?.quickDeployParams)
     }
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]

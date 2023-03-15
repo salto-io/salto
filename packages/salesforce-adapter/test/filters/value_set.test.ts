@@ -17,11 +17,82 @@ import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from 
 import filterCreator from '../../src/filters/value_set'
 import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
-import { GLOBAL_VALUE_SET, MASTER_LABEL, CUSTOM_VALUE } from '../../src/filters/global_value_sets'
+import * as utilsModule from '../../src/filters/utils'
 import { Types } from '../../src/transformers/transformer'
+import { FIELD_ANNOTATIONS, GLOBAL_VALUE_SET_METADATA_TYPE } from '../../src/constants'
 
 describe('value set filter', () => {
-  const filter = filterCreator() as FilterWith<'onDeploy'>
+  let isRestrictableFieldSpy: jest.SpyInstance
+  const filter = filterCreator() as FilterWith<'onFetch' | 'onDeploy'>
+
+  const customObjectName = 'PicklistTest'
+  const fieldName = 'picklist_field'
+
+  const mockElemID = new ElemID(constants.SALESFORCE, customObjectName)
+  const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
+    new ObjectType({
+      elemID: mockElemID,
+      fields: { [fieldName]: {
+        refType: Types.primitiveDataTypes.Picklist,
+        annotations: {
+          [constants.API_NAME]: `${customObjectName}.${fieldName}`,
+          [constants.LABEL]: 'label',
+          [CORE_ANNOTATIONS.REQUIRED]: true,
+          [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
+          ...values === undefined
+            ? {}
+            : { [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => ({
+              [constants.CUSTOM_VALUE.FULL_NAME]: v,
+              [constants.CUSTOM_VALUE.DEFAULT]: false,
+              [constants.CUSTOM_VALUE.LABEL]: v,
+              [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
+            })) },
+        },
+      } },
+      annotations: {
+        [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+        [constants.API_NAME]: customObjectName,
+        [constants.LABEL]: 'object label',
+      },
+    })
+
+  beforeEach(() => {
+    isRestrictableFieldSpy = jest.spyOn(utilsModule, 'isRestrictableField')
+  })
+
+  describe('on fetch', () => {
+    const PICKLIST_VALUES = ['val1', 'val2', 'val3']
+    let objectWithPicklistField: ObjectType
+
+    beforeEach(async () => {
+      objectWithPicklistField = createObjectWithPicklistField(PICKLIST_VALUES)
+    })
+
+    describe('when field is restrictable', () => {
+      beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(true)
+        await filter.onFetch([objectWithPicklistField])
+      })
+      it('should add restrictions', () => {
+        const { annotations } = objectWithPicklistField.fields[fieldName]
+        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toEqual({
+          enforce_value: true,
+          values: PICKLIST_VALUES,
+        })
+      })
+    })
+
+    describe('when field is not restrictable', () => {
+      beforeEach(async () => {
+        isRestrictableFieldSpy.mockReturnValue(false)
+        await filter.onFetch([objectWithPicklistField])
+      })
+      it('should not add restrictions', () => {
+        const { annotations } = objectWithPicklistField.fields[fieldName]
+        expect(annotations[CORE_ANNOTATIONS.RESTRICTION]).toBeUndefined()
+      })
+    })
+  })
 
   describe('on deploy', () => {
     describe('Global value set', () => {
@@ -30,14 +101,13 @@ describe('value set filter', () => {
         new InstanceElement('global_value_set_test', new ObjectType({
           elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
           annotationRefsOrTypes: {},
-          annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
+          annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET_METADATA_TYPE },
         }),
         {
           [constants.INSTANCE_FULL_NAME_FIELD]: globalValueSetName,
-          [MASTER_LABEL]: globalValueSetName,
           [constants.DESCRIPTION]: globalValueSetName,
           sorted: false,
-          [CUSTOM_VALUE]: values.map(v => (
+          [FIELD_ANNOTATIONS.CUSTOM_VALUE]: values.map(v => (
             {
               [constants.CUSTOM_VALUE.FULL_NAME]: v,
               [constants.CUSTOM_VALUE.DEFAULT]: false,
@@ -51,7 +121,7 @@ describe('value set filter', () => {
         const afterInstance = createGlobalValueSetInstanceElement(['val2'])
 
         await filter.onDeploy([toChange({ before: beforeInstance, after: afterInstance })])
-        expect(afterInstance.value[CUSTOM_VALUE]).toEqual([{
+        expect(afterInstance.value[FIELD_ANNOTATIONS.CUSTOM_VALUE]).toEqual([{
           [constants.CUSTOM_VALUE.FULL_NAME]: 'val2',
           [constants.CUSTOM_VALUE.DEFAULT]: false,
           [constants.CUSTOM_VALUE.LABEL]: 'val2',
@@ -69,7 +139,7 @@ describe('value set filter', () => {
         const beforeInstance = createGlobalValueSetInstanceElement(['val1'])
         const afterInstance = createGlobalValueSetInstanceElement(['val1', 'val2'])
         await filter.onDeploy([toChange({ before: beforeInstance, after: afterInstance })])
-        expect(afterInstance.value[CUSTOM_VALUE]).toEqual([{
+        expect(afterInstance.value[FIELD_ANNOTATIONS.CUSTOM_VALUE]).toEqual([{
           [constants.CUSTOM_VALUE.FULL_NAME]: 'val1',
           [constants.CUSTOM_VALUE.DEFAULT]: false,
           [constants.CUSTOM_VALUE.LABEL]: 'val1',
@@ -85,36 +155,6 @@ describe('value set filter', () => {
     })
 
     describe('Custom picklist', () => {
-      const customObjectName = 'PicklistTest'
-      const fieldName = 'picklist_field'
-      const mockElemID = new ElemID(constants.SALESFORCE, customObjectName)
-      const createObjectWithPicklistField = (values?: string[], restricted = true): ObjectType =>
-        new ObjectType({
-          elemID: mockElemID,
-          fields: { [fieldName]: {
-            refType: Types.primitiveDataTypes.Picklist,
-            annotations: {
-              [constants.API_NAME]: `${customObjectName}.${fieldName}`,
-              [constants.LABEL]: 'label',
-              [CORE_ANNOTATIONS.REQUIRED]: false,
-              [constants.FIELD_ANNOTATIONS.RESTRICTED]: restricted,
-              ...values === undefined
-                ? {}
-                : { [constants.FIELD_ANNOTATIONS.VALUE_SET]: values.map(v => ({
-                  [constants.CUSTOM_VALUE.FULL_NAME]: v,
-                  [constants.CUSTOM_VALUE.DEFAULT]: false,
-                  [constants.CUSTOM_VALUE.LABEL]: v,
-                  [constants.CUSTOM_VALUE.IS_ACTIVE]: true,
-                })) },
-            },
-          } },
-          annotations: {
-            [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
-            [constants.API_NAME]: customObjectName,
-            [constants.LABEL]: 'object label',
-          },
-        })
-
       it('should add inactive values to custom picklist', async () => {
         const before = createObjectWithPicklistField(['val1']).fields[fieldName]
         const after = createObjectWithPicklistField(['val2']).fields[fieldName]

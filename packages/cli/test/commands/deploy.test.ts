@@ -335,6 +335,7 @@ describe('deploy command', () => {
       return state.buildInMemState(async () => ({
         elements: createInMemoryElementSource(),
         pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
+        topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
         accountsUpdateDate: dateMap ?? new InMemoryRemoteMap(),
         saltoMetadata,
         staticFilesSource: mocks.mockStateStaticFilesSource(),

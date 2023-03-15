@@ -16,7 +16,6 @@
 import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
-import * as suiteAppFileCabinet from '../../src/suiteapp_file_cabinet'
 import NetsuiteClient from '../../src/client/client'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID, SUITEAPP_CREATING_RECORDS_GROUP_ID, SUITEAPP_DELETING_RECORDS_GROUP_ID, SDF_DELETE_GROUP_ID, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_RECORDS_GROUP_ID } from '../../src/group_changes'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
@@ -24,7 +23,6 @@ import { SetConfigType } from '../../src/client/suiteapp_client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import { featuresType } from '../../src/types/configuration_types'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
-import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { AdditionalDependencies } from '../../src/config'
 import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
 
@@ -35,20 +33,16 @@ describe('NetsuiteClient', () => {
       getCredentials: () => ({ accountId: 'someId' }),
       deploy: mockSdfDeploy,
     } as unknown as SdfClient
-    const mockElementsSourceIndex = {
-      getIndexes: () => ({ mapKeyFieldsIndex: {} }),
-    } as unknown as LazyElementsSourceIndexes
+
     const client = new NetsuiteClient(sdfClient)
 
     const deployParams: [
       AdditionalDependencies,
-      LazyElementsSourceIndexes,
     ] = [
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },
       },
-      mockElementsSourceIndex,
     ]
 
     const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
@@ -279,7 +273,6 @@ describe('NetsuiteClient', () => {
               objects: [],
             },
           },
-          mockElementsSourceIndex
         )
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           undefined,
@@ -321,7 +314,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               objects: [],
             },
           },
-          mockElementsSourceIndex
         )).toEqual({
           errors: [
             missingManifestFeaturesError,
@@ -631,41 +623,19 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
       setConfigRecordsValues: setConfigRecordsValuesMock,
     } as unknown as SuiteAppClient
 
-    const getPathToIdMapMock = jest.fn()
-    jest.spyOn(suiteAppFileCabinet, 'createSuiteAppFileCabinetOperations').mockReturnValue({
-      getPathToIdMap: getPathToIdMapMock,
-    } as unknown as suiteAppFileCabinet.SuiteAppFileCabinetOperations)
-
-    const mockElementsSourceIndex = jest.fn() as unknown as LazyElementsSourceIndexes
-
     const deployParams: [
       AdditionalDependencies,
-      LazyElementsSourceIndexes,
     ] = [
       {
         include: { features: [], objects: [] },
         exclude: { features: [], objects: [] },
       },
-      mockElementsSourceIndex,
     ]
 
     const client = new NetsuiteClient(sdfClient, suiteAppClient)
 
     beforeEach(() => {
       jest.resetAllMocks()
-    })
-
-    describe('getPathInternalId', () => {
-      it('should return the right id', async () => {
-        getPathToIdMapMock.mockReturnValue({ '/some/path': 1 })
-        expect(client.getPathInternalId('/some/path')).toBe(1)
-        expect(client.getPathInternalId('/some/path2')).toBeUndefined()
-      })
-
-      it('should return undefined when failed to get map', async () => {
-        getPathToIdMapMock.mockResolvedValue(undefined)
-        expect(client.getPathInternalId('/some/path1')).toBeUndefined()
-      })
     })
 
     describe('deploy', () => {

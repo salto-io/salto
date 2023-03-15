@@ -13,20 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { regex } from '@salto-io/lowerdash'
+import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 
-const nameCriterion: elementUtils.query.QueryCriterion = ({
-  instance,
-  value,
-}): boolean => regex.isFullRegexMatch(instance.value.name, value)
+export const isHidden = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+)
 
-const typeCriterion: elementUtils.query.QueryCriterion = ({
-  instance,
-  value,
-}): boolean => regex.isFullRegexMatch(instance.value.schema?.custom ?? instance.value.schema?.type, value)
+export const isHiddenValue = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
 
-export default {
-  name: nameCriterion,
-  type: typeCriterion,
-}
+export const isUpdatable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true
+)
+
+export const isRequired = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
+)

@@ -14,11 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { matchAll } from '@salto-io/lowerdash/src/strings'
-import { isDefined } from '@salto-io/lowerdash/src/values'
+import { strings, values } from '@salto-io/lowerdash'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
+
+const { matchAll } = strings
+const { isDefined } = values
+
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo

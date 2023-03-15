@@ -21,7 +21,7 @@ import uniq from 'lodash/uniq'
 import * as fileUtils from '@salto-io/file'
 import { remoteMap } from '@salto-io/workspace'
 import { collections, promises, values } from '@salto-io/lowerdash'
-import type rocksdb from '@salto-io/rocksdb'
+import rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { locationCaches } from './location_cache'
@@ -45,7 +45,7 @@ type CreateIteratorOpts = remoteMap.IterationOpts & {
   keys: boolean
   values: boolean
 }
-type ConnectionPool = Record<string, Promise<rocksdb>>
+
 
 type ReadIterator = {
   next: () => Promise<remoteMap.RemoteMapEntry<string> | undefined>
@@ -204,12 +204,9 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 }
 
 export const MAX_CONNECTIONS = 1000
-const persistentDBConnections: ConnectionPool = {}
-const readonlyDBConnections: ConnectionPool = {}
-const tmpDBConnections: Record<string, ConnectionPool> = {}
-const readonlyDBConnectionsPerRemoteMap: Record<string, ConnectionPool> = {}
+const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
+const readonlyDBConnectionsPerRemoteMap: Record<string, Record<string, Promise<rocksdb>>> = {}
 let currentConnectionsCount = 0
-
 
 const deleteLocation = async (location: string): Promise<void> => {
   try {
@@ -217,6 +214,28 @@ const deleteLocation = async (location: string): Promise<void> => {
   } catch (e) {
     // If the DB does not exist, we don't want to throw error upon destroy
     if (!isDBNotExistErr(e)) {
+      throw e
+    }
+  }
+}
+
+
+const createDBIfNotExist = async (loc: string, persistent: boolean): Promise<void> => {
+  const newDb: rocksdb = getRemoteDbImpl()(loc)
+  const readOnly = !persistent
+  try {
+    await promisify(newDb.open.bind(newDb, { readOnly }))()
+    await promisify(newDb.close.bind(newDb))()
+  } catch (e) {
+    if (newDb.status === 'new' && readOnly) {
+      log.info('DB does not exist. Creating on %s', loc)
+      try {
+        await promisify(newDb.open.bind(newDb))()
+        await promisify(newDb.close.bind(newDb))()
+      } catch (err) {
+        throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
+      }
+    } else {
       throw e
     }
   }
@@ -231,36 +250,204 @@ const closeDanglingConnection = async (connection: Promise<rocksdb>): Promise<vo
 }
 
 const closeConnection = async (
-  location: string, connection: Promise<rocksdb>, connPool: ConnectionPool
+  location: string, connection: Promise<rocksdb>, connPool: Record<string, Promise<rocksdb>>
 ): Promise<void> => {
   await closeDanglingConnection(connection)
   delete connPool[location]
   log.debug('closed connection to %s', location)
 }
 
-const closeTmpConnection = async (
-  location: string,
-  tmpLocation: string,
-  connection: Promise<rocksdb>
-): Promise<void> => {
-  await closeDanglingConnection(connection)
-  await deleteLocation(tmpLocation)
-  delete (tmpDBConnections[location] ?? {})[tmpLocation]
-  log.debug('closed temporary connection to %s', tmpLocation)
+type DbType = 'main-persistent' | 'main-ephemeral' | 'temporary'
+
+type DbAttributes = {
+  location: string
+  type: DbType
 }
 
+type DbConnection = {
+  dbConn: rocksdb
+  attributes: DbAttributes
+}
+
+const createDbConnection = async (attributes: DbAttributes, readonly: boolean): Promise<DbConnection> => {
+  const openRocksDBConnection = async (loc: string, isReadOnly: boolean): Promise<rocksdb> => {
+    log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
+    if (currentConnectionsCount >= MAX_CONNECTIONS) {
+      throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
+    }
+    const newDb = getRemoteDbImpl()(loc)
+    await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
+    currentConnectionsCount += 1
+    return newDb
+  }
+
+  return {
+    dbConn: await openRocksDBConnection(attributes.location, readonly),
+    attributes,
+  }
+}
+
+
+type DBConnectionPool = {
+  get: (attributes: DbAttributes) => Promise<DbConnection>
+  put: (connection: DbConnection) => Promise<void>
+  destroyAll: () => Promise<void>
+
+  // These methods are temporary to allow the implementation of closeRemoteMapsOfLocation.
+  // Once we remove closeRemoteMapOfLocation, these methods should be removed.
+  primaryDbLocations: () => string[]
+  putAll: (location: string, type?: DbType) => Promise<void>
+  // ---
+}
+
+const createDBConnectionPool = (): DBConnectionPool => {
+  const discoverAllTmpDbs = async (dbLocation: string): Promise<string[]> => {
+    const tmpDir = getDBTmpDir(dbLocation)
+    return fileUtils.readDir(tmpDir)
+  }
+  const deleteDb = async (dbDir: string, force?: boolean): Promise<void> => {
+    try {
+      log.debug('cleaning db %s', dbDir)
+      await deleteLocation(dbDir)
+    } catch (e) {
+      if (isDBLockErr(e)) {
+        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', e.message)
+      } else {
+        log.warn('caught an unexpected error while cleaning tmp db: %s', e.message)
+      }
+
+      if (!force) {
+        throw isDBLockErr(e) ? new DBLockError() : e
+      }
+    }
+  }
+
+  const deleteAllTmpDBs = async (location: string, force?: boolean): Promise<void> => {
+    await awu(await discoverAllTmpDbs(location))
+      .forEach(async tmpDbDir => deleteDb(path.join(getDBTmpDir(location), tmpDbDir), force))
+  }
+
+  const prepareAndOpenDB = async ({ location, type }: DbAttributes): Promise<DbConnection> => {
+    try {
+      log.debug('Creating %s DB at %s', type, location)
+      switch (type) {
+        case 'main-persistent':
+          // Make sure there are no leftovers from previous runs
+          await deleteAllTmpDBs(location, true)
+          break
+        case 'main-ephemeral':
+          // This is an ephemeral DB, so we create a new one every time we need one
+          await createDBIfNotExist(location, false)
+          break
+        case 'temporary':
+          break
+        default:
+          throw new Error('Unexpected DB type')
+      }
+
+      const readOnly = (type === 'main-ephemeral')
+      return await createDbConnection({ location, type }, readOnly)
+    } catch (e) {
+      if (isDBLockErr(e)) {
+        throw new DBLockError()
+      }
+      throw e
+    }
+  }
+
+  type PoolEntry = { conn: DbConnection; refcnt: number }
+  const pool:Record<string, PoolEntry> = {}
+  const primaryDbLocations: string[] = []
+
+  const connectionKey = (attributes: DbAttributes): string => (
+    `${attributes.type}@@${attributes.location}`
+  )
+  const getPoolEntry = (attributes: DbAttributes):PoolEntry|undefined => (
+    pool[connectionKey(attributes)]
+  )
+  const newPoolEntry = (attributes: DbAttributes, connection: DbConnection): void => {
+    pool[connectionKey(attributes)] = { conn: connection, refcnt: 1 }
+  }
+  const deletePoolEntry = (attributes: DbAttributes): void => {
+    delete pool[connectionKey(attributes)]
+  }
+  const putImpl = async (connection: DbConnection): Promise<void> => {
+    const poolEntry = getPoolEntry(connection.attributes)
+    if (!poolEntry) {
+      throw new Error('Closing a DB connection that was never opened')
+    }
+    poolEntry.refcnt -= 1
+    if (poolEntry.refcnt === 0) {
+      await closeDanglingConnection(Promise.resolve(poolEntry.conn.dbConn))
+      if (connection.attributes.type === 'temporary') {
+        await deleteDb(poolEntry.conn.attributes.location)
+      } else {
+        _.pull(primaryDbLocations, connection.attributes.location)
+      }
+      deletePoolEntry(connection.attributes)
+    }
+  }
+  return {
+    get: async (attributes): Promise<DbConnection> => {
+      const poolEntry = getPoolEntry(attributes)
+      if (poolEntry) {
+        if (attributes.type === 'temporary') {
+          log.error('Two temporary DBs are sharing the same location')
+        }
+        poolEntry.refcnt += 1
+        counters.locationCounters(attributes.location).PersistentDbConnectionReuse.inc()
+        return poolEntry.conn
+      }
+
+      const conn = await prepareAndOpenDB(attributes)
+      newPoolEntry(attributes, conn)
+      if (attributes.type !== 'temporary') {
+        primaryDbLocations.push(attributes.location)
+      }
+      counters.locationCounters(attributes.location).PersistentDbConnectionCreated.inc()
+      return conn
+    },
+    put: putImpl,
+    destroyAll: async () => {
+      if (pool.size) {
+        log.error('Destroying DBs without closing all connections')
+      }
+      await awu(primaryDbLocations)
+        .forEach(location => deleteAllTmpDBs(location))
+
+      await awu(primaryDbLocations)
+        .forEach(primaryDbDir => deleteDb(primaryDbDir))
+
+      primaryDbLocations.length = 0
+    },
+    primaryDbLocations: (): string[] => (
+      primaryDbLocations
+    ),
+    putAll: async (locationToClose, dbType?) => {
+      const removeFromPool = async (conn: DbConnection): Promise<void> => {
+        const poolEntry = getPoolEntry(conn.attributes)
+        if (!poolEntry) {
+          return
+        }
+        poolEntry.refcnt = 1
+        await putImpl(conn)
+      }
+
+      await Promise.all(
+        Object.values(pool)
+          .filter(({ conn }) => (conn.attributes.location.startsWith(locationToClose)))
+          .filter(({ conn }) => (!dbType || conn.attributes.type === dbType))
+          .map(({ conn }) => removeFromPool(conn))
+      )
+    },
+  }
+}
+
+const dbConnectionPool = createDBConnectionPool()
+
+
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  const persistentConnection = persistentDBConnections[location]
-  if (await persistentConnection) {
-    await closeConnection(location, persistentConnection, persistentDBConnections)
-  }
-  const tmpConnections = tmpDBConnections[location]
-  if (tmpConnections) {
-    await awu(Object.entries(tmpConnections)).forEach(async ([tmpLoc, tmpCon]) => {
-      await closeTmpConnection(location, tmpLoc, tmpCon)
-    })
-    delete tmpDBConnections[location]
-  }
+  await dbConnectionPool.putAll(location)
   const readOnlyConnection = readonlyDBConnections[location]
   if (await readOnlyConnection) {
     await closeConnection(location, readOnlyConnection, readonlyDBConnections)
@@ -280,45 +467,21 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
   const allLocations = uniq([
-    ...Object.keys(persistentDBConnections),
     ...Object.keys(readonlyDBConnections),
-    ...Object.keys(tmpDBConnections),
     ...Object.keys(readonlyDBConnectionsPerRemoteMap),
+    ...dbConnectionPool.primaryDbLocations(),
   ])
   await awu(allLocations).forEach(async loc => {
     await closeRemoteMapsOfLocation(loc)
   })
-}
-
-const cleanTmpDatabases = async (loc: string, ignoreErrors = false): Promise<void> => {
-  const tmpDir = getDBTmpDir(loc)
-  await awu(await fileUtils.readDir(tmpDir)).forEach(async tmpLoc => {
-    try {
-      log.debug('cleaning tmp db %s', tmpLoc)
-      await deleteLocation(path.join(tmpDir, tmpLoc))
-    } catch (e) {
-      if (isDBLockErr(e)) {
-        log.debug('caught a rocksdb lock error while cleaning tmp db: %s', e.message)
-      } else {
-        log.warn('caught an unexpected error while cleaning tmp db: %s', e.message)
-      }
-
-      if (!ignoreErrors) {
-        throw isDBLockErr(e) ? new DBLockError() : e
-      }
-    }
-  })
-  if (_.isEmpty(tmpDBConnections[loc])) {
-    delete tmpDBConnections[loc]
+  if (currentConnectionsCount > 0) {
+    log.error('Not all connections were closed after all remote maps were closed: %o', dbConnectionPool.primaryDbLocations())
   }
 }
+
 export const cleanDatabases = async (): Promise<void> => {
-  const persistentDBs = Object.entries(persistentDBConnections)
   await closeAllRemoteMaps()
-  await awu(persistentDBs).forEach(async ([loc]) => {
-    await cleanTmpDatabases(loc)
-    return deleteLocation(loc)
-  })
+  await dbConnectionPool.destroyAll()
 }
 
 export const replicateDB = async (
@@ -333,20 +496,6 @@ export const replicateDB = async (
 const creatorLock = new AsyncLock()
 const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
   await creatorLock.acquire('createInProgress', fn)
-}
-
-const getOpenDBConnection = async (
-  loc: string,
-  isReadOnly: boolean
-): Promise<rocksdb> => {
-  log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
-  if (currentConnectionsCount >= MAX_CONNECTIONS) {
-    throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
-  }
-  const newDb = getRemoteDbImpl()(loc)
-  await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
-  currentConnectionsCount += 1
-  return newDb
 }
 
 const getKeyPrefix = (namespace: string): string =>
@@ -435,8 +584,8 @@ remoteMap.RemoteMapCreator => {
 
   const locationCache = locationCaches.get(location)
 
-  let persistentDB: rocksdb
-  let tmpDB: rocksdb
+  let persistentDB: DbConnection
+  let tmpDB: DbConnection
   return async <T, K extends string = string>(
     { namespace,
       batchInterval = 1000,
@@ -480,7 +629,7 @@ remoteMap.RemoteMapCreator => {
       return createIterator(
         tempKeyPrefix,
         normalizedOpts,
-        tmpDB
+        tmpDB.dbConn,
       )
     }
 
@@ -489,7 +638,7 @@ remoteMap.RemoteMapCreator => {
         ...opts,
         ...(opts.after ? { after: keyToDBKey(opts.after) } : {}),
       }
-      return createIterator(keyPrefix, normalizedOpts, persistentDB)
+      return createIterator(keyPrefix, normalizedOpts, persistentDB.dbConn)
     }
     const batchUpdate = async (
       batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
@@ -498,7 +647,7 @@ remoteMap.RemoteMapCreator => {
     ): Promise<boolean> => {
       const connection = temp ? tmpDB : persistentDB
       let i = 0
-      let batch = connection.batch()
+      let batch = connection.dbConn.batch()
       for await (const entry of batchInsertIterator) {
         i += 1
         if (operation === SET_OPERATION) {
@@ -509,7 +658,7 @@ remoteMap.RemoteMapCreator => {
         }
         if (i % batchInterval === 0) {
           await promisify(batch.write.bind(batch))()
-          batch = connection.batch()
+          batch = connection.dbConn.batch()
         }
       }
       if (i % batchInterval !== 0) {
@@ -582,12 +731,12 @@ remoteMap.RemoteMapCreator => {
         ))
     }
     const clearImpl = (
-      connection: rocksdb,
+      connection: DbConnection,
       prefix: string,
       suffix?: string
     ): Promise<void> =>
       new Promise<void>(resolve => {
-        connection.clear({
+        connection.dbConn.clear({
           gte: prefix,
           lte: suffix ?? getPrefixEndCondition(prefix),
         }, () => {
@@ -620,13 +769,13 @@ remoteMap.RemoteMapCreator => {
           locationCache.set(keyToTempDBKey(key), ret)
           resolve(ret)
         }
-        tmpDB.get(keyToTempDBKey(key), async (error, value) => {
+        tmpDB.dbConn.get(keyToTempDBKey(key), async (error, value) => {
           if (error) {
             if (wasClearCalled) {
               statCounters.RemoteMapMiss.inc()
               resolve(undefined)
             }
-            persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
+            persistentDB.dbConn.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {
                 statCounters.RemoteMapMiss.inc()
                 resolve(undefined)
@@ -646,61 +795,14 @@ remoteMap.RemoteMapCreator => {
       delKeys.add(key)
       locationCache.del(key)
     }
-    const createDBIfNotExist = async (loc: string): Promise<void> => {
-      const newDb: rocksdb = getRemoteDbImpl()(loc)
-      const readOnly = !persistent
-      try {
-        await promisify(newDb.open.bind(newDb, { readOnly }))()
-        await promisify(newDb.close.bind(newDb))()
-      } catch (e) {
-        if (newDb.status === 'new' && readOnly) {
-          log.info('DB does not exist. Creating on %s', loc)
-          try {
-            await promisify(newDb.open.bind(newDb))()
-            await promisify(newDb.close.bind(newDb))()
-          } catch (err) {
-            throw new Error(`Failed to open DB in write mode - ${loc}. Error: ${err}`)
-          }
-        } else {
-          throw e
-        }
-      }
-    }
     const createDBConnections = async (): Promise<void> => {
       if (tmpDB === undefined) {
-        const tmpConnection = getOpenDBConnection(tmpLocation, false)
-        tmpDB = await tmpConnection
-        tmpDBConnections[location] = tmpDBConnections[location] ?? {}
-        tmpDBConnections[location][tmpLocation] = tmpConnection
+        tmpDB = await dbConnectionPool.get({ location: tmpLocation, type: 'temporary' })
       } else {
         statCounters.TmpDbConnectionReuse.inc()
       }
-      const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections
-      if (location in mainDBConnections) {
-        statCounters.PersistentDbConnectionReuse.inc()
-        persistentDB = await mainDBConnections[location]
-        return
-      }
-      const connectionPromise = (async () => {
-        try {
-          if (persistent) {
-            await cleanTmpDatabases(location, true)
-          }
-          const readOnly = !persistent
-          if (readOnly) {
-            await createDBIfNotExist(location)
-          }
-          statCounters.PersistentDbConnectionCreated.inc()
-          return await getOpenDBConnection(location, readOnly)
-        } catch (e) {
-          if (isDBLockErr(e)) {
-            throw new DBLockError()
-          }
-          throw e
-        }
-      })()
-      persistentDB = await connectionPromise
-      mainDBConnections[location] = connectionPromise
+      const connType = persistent ? 'main-persistent' : 'main-ephemeral' as const
+      persistentDB = await dbConnectionPool.get({ location, type: connType })
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     await withCreatorLock(createDBConnections)
@@ -730,7 +832,7 @@ remoteMap.RemoteMapCreator => {
       set: async (key: string, element: T): Promise<void> => {
         delKeys.delete(key)
         locationCache.set(keyToTempDBKey(key), element)
-        await promisify(tmpDB.put.bind(tmpDB))(keyToTempDBKey(key), await serialize(element))
+        await promisify(tmpDB.dbConn.put.bind(tmpDB.dbConn))(keyToTempDBKey(key), await serialize(element))
       },
       setAll: setAllImpl,
       deleteAll: async (iterator: AsyncIterable<K>) => awu(iterator).forEach(deleteImpl),
@@ -781,9 +883,9 @@ remoteMap.RemoteMapCreator => {
         if (locationCache.has(keyToTempDBKey(key))) {
           return true
         }
-        const hasKeyImpl = async (k: string, db: rocksdb): Promise<boolean> =>
+        const hasKeyImpl = async (k: string, db: DbConnection): Promise<boolean> =>
           new Promise(resolve => {
-            db.get(k, async (error, value) => {
+            db.dbConn.get(k, async (error, value) => {
               resolve(!error && value !== undefined)
             })
           })
@@ -821,10 +923,24 @@ remoteMap.ReadOnlyRemoteMapCreator => {
       }
       return createIterator(keyPrefix, normalizedOpts, db)
     }
+
+    const getOpenReadOnlyDBConnection = async (
+      loc: string
+    ): Promise<rocksdb> => {
+      log.debug('opening read-only connection to %s', loc)
+      if (currentConnectionsCount >= MAX_CONNECTIONS) {
+        throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
+      }
+      const newDb = getRemoteDbImpl()(loc)
+      await promisify(newDb.open.bind(newDb, { readOnly: true }))()
+      currentConnectionsCount += 1
+      return newDb
+    }
+
     const createDBConnection = async (): Promise<void> => {
       readonlyDBConnectionsPerRemoteMap[location] = readonlyDBConnectionsPerRemoteMap[location]
         ?? {}
-      const connectionPromise = (async () => getOpenDBConnection(location, true))()
+      const connectionPromise = (async () => getOpenReadOnlyDBConnection(location))()
       db = await connectionPromise
       readonlyDBConnectionsPerRemoteMap[location][uniqueId] = connectionPromise
     }

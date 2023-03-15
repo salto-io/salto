@@ -75,7 +75,6 @@ export type ClientChangeValidator = (
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,
   filtersRunner: (groupID: string) => Required<Filter>,
-  deployReferencedElements?: boolean
 ) => Promise<ReadonlyArray<ChangeError>>
 
 const changeValidator: ClientChangeValidator = async (

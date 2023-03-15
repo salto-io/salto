@@ -180,7 +180,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
     it('should call netsuiteClientValidation with only valid changes', async () => {
@@ -205,7 +204,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
   })

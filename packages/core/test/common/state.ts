@@ -51,5 +51,6 @@ export const mockState = (
     ),
     saltoMetadata: new remoteMap.InMemoryRemoteMap<string, 'version'>([{ key: 'version', value: '0.0.1' }]),
     staticFilesSource: mockStaticFilesSource(),
+    topLevelPathIndex: new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>(index),
   }))
 )

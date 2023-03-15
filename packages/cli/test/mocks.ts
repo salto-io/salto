@@ -293,6 +293,7 @@ export const mockWorkspace = ({
   const mockStateData = async (): Promise<wsState.StateData> => ({
     elements: createInMemoryElementSource(getElements()),
     pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
+    topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
     accountsUpdateDate: new InMemoryRemoteMap(),
     saltoMetadata: new InMemoryRemoteMap([
       { key: 'version', value: currentVersion },

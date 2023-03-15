@@ -178,22 +178,54 @@ export const overridePathIndex = async (
   await current.setAll(entries)
 }
 
-export const updatePathIndex = async (
+export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
+  const topLevelElementsWithPath = unmergedElements
+    .filter(e => e.path !== undefined)
+  const elementsByID = _.groupBy(topLevelElementsWithPath, e => e.elemID.getFullName())
+  return Object.entries(elementsByID)
+    .map(([key, value]) => ({
+      key,
+      value: value.map(e => e.path as Path),
+    }))
+}
+
+export const overrideTopLevelPathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
+): Promise<void> => {
+  const entries = getTopLevelPathHints(unmergedElements)
+  await current.clear()
+  await current.setAll(entries)
+}
+
+type UpdateIndexParms = {
+  index: PathIndex
+  elements: Element[]
   accountsToMaintain: string[]
+  isTopLevel: boolean
+}
+
+export const updatePathIndex = async (
+  { index,
+    elements,
+    accountsToMaintain,
+    isTopLevel }: UpdateIndexParms
 ): Promise<void> => {
   if (accountsToMaintain.length === 0) {
-    await overridePathIndex(current, unmergedElements)
+    if (isTopLevel) {
+      await overrideTopLevelPathIndex(index, elements)
+      return
+    }
+    await overridePathIndex(index, elements)
     return
   }
-  const entries = getElementsPathHints(unmergedElements)
-  const oldPathHintsToMaintain = await awu(current.entries())
+  const entries = isTopLevel ? getTopLevelPathHints(elements) : getElementsPathHints(elements)
+  const oldPathHintsToMaintain = await awu(index.entries())
     .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
     .concat(entries)
     .toArray()
-  await current.clear()
-  await current.setAll(awu(oldPathHintsToMaintain))
+  await index.clear()
+  await index.setAll(awu(oldPathHintsToMaintain))
 }
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

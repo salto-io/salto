@@ -166,6 +166,11 @@ export const DEFAULT_FILTERS = [
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
+  scriptRunnerWorkflowFilter,
+  // must run after scriptRunnerWorkflowFilter
+  scriptRunnerWorkflowListsFilter,
+  // must run after scriptRunnerWorkflowListsFilter
+  scriptRunnerWorkflowReferencesFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,
@@ -201,11 +206,6 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationFilter,
   fieldConfigurationItemsFilter,
   fieldConfigurationSchemeFilter,
-  scriptRunnerWorkflowFilter,
-  // must run after scriptRunnerWorkflowFilter
-  scriptRunnerWorkflowListsFilter,
-  // must run after scriptRunnerWorkflowListsFilter
-  scriptRunnerWorkflowReferencesFilter,
   userFilter,
   forbiddenPermissionSchemeFilter,
   jqlReferencesFilter,

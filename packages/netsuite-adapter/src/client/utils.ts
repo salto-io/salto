@@ -14,6 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { matchAll } from '@salto-io/lowerdash/src/strings'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
@@ -43,3 +45,9 @@ export const mergeTypeToInstances = (
       objValue ? [...objValue, ...srcValue] : srcValue
     )
   )
+
+export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
+  Array.from(matchAll(str, regex))
+    .map(r => r.groups)
+    .filter(isDefined)
+    .map(groups => groups[item])

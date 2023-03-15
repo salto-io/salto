@@ -25,15 +25,20 @@ import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
-import { getGroupItemFromRegex } from '../client/sdf_client'
+import { getGroupItemFromRegex } from '../client/utils'
 import { getContent } from '../suiteapp_file_cabinet'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
-const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])(?<${OPTIONAL_REFS}>("[^"]*"|'[^']*'))`, 'gm')
+// matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
+// e.g: 'custrecord1' "./someFolder/someScript.js"
+const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])("|')(?<${OPTIONAL_REFS}>.*?)\\1[\\s,\\]]`, 'gm')
+// matches lines which start with '*' than a string with '@N' prefix
+// followed by a space and another string , e.g: "* @NAmdConfig ./utils/ToastDalConfig.json"'
 const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${OPTIONAL_REFS}>.*)`, 'gm')
+const pathPrefixRegex = new RegExp(`^${osPath.sep}|^.${osPath.sep}|^..${osPath.sep}`, 'm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -116,22 +121,18 @@ const generateServiceIdToElemID = async (
   .map(elem => getElementServiceIdRecords(elem))
   .reduce<ServiceIdRecords>((acc, records) => Object.assign(acc, records), {})
 
-const isFilePath = (path: string): boolean =>
-  osPath.extname(osPath.basename(path)) !== ''
+const resolveRelativePath = (absolutePath: string, relativePath: string): string =>
+  osPath.resolve(osPath.dirname(absolutePath), relativePath)
 
-const resolveRelativePath = (absolutePath: string | undefined, relativePath: string): string =>
-  (isDefined(absolutePath) ? osPath.resolve(osPath.dirname(absolutePath), relativePath) : '')
-
-const updateDependenciesToAdd = (
+const getServiceElemIDsFromPaths = (
   foundReferences: string[],
-  fetchedElementsServiceIdToElemID: ServiceIdRecords,
-  elementsSourceServiceIdToElemID: ServiceIdRecords,
+  serviceIdToElemID: ServiceIdRecords,
   element: InstanceElement,
 ): ElemID[] =>
   foundReferences
-    .map(ref => (isFilePath(ref) ? resolveRelativePath(element.value?.path, ref) : ref))
+    .map(ref => (pathPrefixRegex.test(ref) ? resolveRelativePath(element.value.path, ref) : ref))
     .map(ref => {
-      const serviceIdRecord = fetchedElementsServiceIdToElemID[ref] ?? elementsSourceServiceIdToElemID[ref]
+      const serviceIdRecord = serviceIdToElemID[ref]
       if (isDefined(serviceIdRecord) && typeof serviceIdRecord !== 'function') {
         return serviceIdRecord.elemID
       }
@@ -142,29 +143,25 @@ const updateDependenciesToAdd = (
 
 const getSuiteScriptReferences = async (
   element: InstanceElement,
-  fetchedElementsServiceIdToElemID: ServiceIdRecords,
-  elementsSourceServiceIdToElemID: ServiceIdRecords
+  serviceIdToElemID: ServiceIdRecords,
 ): Promise<ElemID[]> => {
   const content = (await getContent(element.value.content)).toString()
 
   const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
   const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
-    .map(semanticRef => semanticRef.slice(1, -1))
     .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
     .concat(nsConfigReferences)
 
-  return updateDependenciesToAdd(
+  return getServiceElemIDsFromPaths(
     semanticReferences,
-    fetchedElementsServiceIdToElemID,
-    elementsSourceServiceIdToElemID,
+    serviceIdToElemID,
     element
   )
 }
 
 const replaceReferenceValues = async (
   element: Element,
-  fetchedElementsServiceIdToElemID: ServiceIdRecords,
-  elementsSourceServiceIdToElemID: ServiceIdRecords,
+  serviceIdToElemID: ServiceIdRecords,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -175,8 +172,7 @@ const replaceReferenceValues = async (
     let returnValue: ReferenceExpression | string = value
     serviceIdInfo.forEach(serviceIdInfoRecord => {
       const { serviceId, type } = serviceIdInfoRecord
-      const serviceIdRecord = fetchedElementsServiceIdToElemID[serviceId]
-      ?? elementsSourceServiceIdToElemID[serviceId]
+      const serviceIdRecord = serviceIdToElemID[serviceId]
 
       if (serviceIdRecord === undefined) {
         return
@@ -207,7 +203,7 @@ const replaceReferenceValues = async (
   }
   if (isFileCabinetInstance(element) && isFileInstance(element)) {
     dependenciesToAdd.push(
-      ...await getSuiteScriptReferences(element, fetchedElementsServiceIdToElemID, elementsSourceServiceIdToElemID)
+      ...await getSuiteScriptReferences(element, serviceIdToElemID)
     )
   }
 
@@ -255,18 +251,16 @@ const filterCreator: FilterCreator = ({
 }): FilterWith<'onFetch' | 'preDeploy'> => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
-    const fetchedElementsServiceIdToElemID = await generateServiceIdToElemID(elements)
-    const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
-      elementsSourceIndex,
-      isPartial
+    const serviceIdToElemID = Object.assign(
+      await generateServiceIdToElemID(elements),
+      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
     )
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)
     )).forEach(async element => {
       const newElement = await replaceReferenceValues(
         element,
-        fetchedElementsServiceIdToElemID,
-        elementsSourceServiceIdToElemID
+        serviceIdToElemID
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

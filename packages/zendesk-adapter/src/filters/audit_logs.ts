@@ -163,7 +163,7 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
         }
         // eslint-disable-next-line no-empty
       } catch (e) {
-        log.error(`getParent returned an error: ${e}`)
+        log.warn(`getParent returned an error: ${e}`)
       }
     })
 }
@@ -190,7 +190,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
     .forEach(elem => {
       const id = elem.value.updated_by_id
       if (id === undefined) {
-        log.error(`updated_by_id for the translations ${elem.elemID.name} is undefined`)
+        log.warn(`updated_by_id for the translations ${elem.elemID.name} is undefined`)
         return
       }
       const name = idToName[elem.value.updated_by_id]

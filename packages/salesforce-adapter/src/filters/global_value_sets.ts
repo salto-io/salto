@@ -75,7 +75,7 @@ const addRefAndRestrict = (
     log.warn('Could not create restriction for GlobalValueSet %s, due to unknown value format: %o', valueSetName, globalValueSetValue)
     return
   }
-  if (isRestrictableField(field)) {
+  if (isRestrictableField(field) && _.isArray(globalValueSetValue.customValue)) {
     field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
       enforce_value: isRequired(field),
       values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),

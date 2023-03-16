@@ -132,7 +132,7 @@ describe('lightningElementsUrlRetriever', () => {
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId'))
       })
 
-      it('Layout', async () => {
+      it('Object subtype', async () => {
         const element = new InstanceElement(
           'testLayout',
           new ObjectType({ elemID: new ElemID('salesforce', 'Layout'), annotations: { metadataType: 'Layout' } }),
@@ -152,6 +152,11 @@ describe('lightningElementsUrlRetriever', () => {
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'NotExists'))] }
         )
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/_classic/%2FsomeId'))
+      })
+
+      it('pathAssistantResolver', async () => {
+        const element = new InstanceElement('PathAssistant', new ObjectType({ elemID: new ElemID('salesforce', 'PathAssistant'), annotations: { metadataType: 'PathAssistant' } }))
+        await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1'))
       })
 
       it('internalIdResolver', async () => {

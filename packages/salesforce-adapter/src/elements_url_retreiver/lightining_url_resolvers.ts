@@ -60,6 +60,15 @@ const SETTINGS_URLS_MAP: Record<string, string> = {
   ApexSettings: 'lightning/setup/ApexSettings/home',
 }
 
+const METADATA_TYPE_TO_URI: Record<string, string> = {
+  Layout: 'PageLayouts',
+  RecordType: 'RecordTypes',
+  WebLink: 'ButtonsLinksActions',
+  ValidationRule: 'ValidationRules',
+  LightningPage: 'LightningPages',
+  FieldSet: 'FieldSets',
+}
+
 const getTypeIdentifier = async (element?: Element): Promise<string | undefined> =>
   (element === undefined ? undefined : (getInternalId(element) ?? apiName(element)))
 
@@ -145,15 +154,6 @@ const queueResolver: UrlResolver = async (element, baseUrl) => {
     return new URL(`${baseUrl}lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3D${internalId}`)
   }
   return undefined
-}
-
-const METADATA_TYPE_TO_URI: Record<string, string> = {
-  Layout: 'PageLayouts',
-  RecordType: 'RecordTypes',
-  WebLink: 'ButtonsLinksActions',
-  ValidationRule: 'ValidationRules',
-  LightningPage: 'LightningPages',
-  FieldSet: 'FieldSets',
 }
 
 const customObjectSubInstanceResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {

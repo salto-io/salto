@@ -47,11 +47,13 @@ describe('groupRuleStatusValidator', () => {
     },
   )
 
-  it('should return an error in case of change of group rule in status ACTIVE', async () => {
+  it('should return an error in case of group rule change in status ACTIVE', async () => {
+    const groupRule2After = groupRule2.clone()
+    groupRule2After.value.name = 'new name'
     const changeErrors = await groupRuleStatusValidator(
       [
         toChange({ before: groupRule1 }),
-        toChange({ before: groupRule2, after: groupRule2 }),
+        toChange({ before: groupRule2, after: groupRule2After }),
       ]
     )
     expect(changeErrors).toHaveLength(2)
@@ -92,27 +94,31 @@ describe('groupRuleStatusValidator', () => {
     expect(changeErrors).toEqual([
       {
         elemID: groupRule1.elemID,
-        severity: 'Error',
+        severity: 'Warning',
         message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
-        detailedMessage: `${GROUP_RULE_TYPE_NAME} must be created with status INACTIVE`,
+        detailedMessage: `${GROUP_RULE_TYPE_NAME} will be created with status INACTIVE`,
       },
     ])
   })
-  // TODO remove test after SALTO-3591
-  it('should return an error when trying to change group rule status', async () => {
-    const groupRule1WithNewStatus = groupRule1.clone()
-    groupRule1WithNewStatus.value.status = 'INACTIVE'
-    const changeErrors = await groupRuleStatusValidator(
-      [toChange({ before: groupRule1, after: groupRule1WithNewStatus })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors).toEqual([
+  it('should not return errors when group rule status changed', async () => {
+    const groupRule1After = groupRule1.clone()
+    groupRule1After.value.status = 'INACTIVE'
+    const groupRule4 = new InstanceElement(
+      'groupRule4',
+      groupRuleType,
       {
-        elemID: groupRule1.elemID,
-        severity: 'Error',
-        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} status`,
-        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
+        name: 'rule',
+        status: 'INACTIVE',
+        conditions: {},
       },
+    )
+    const groupRule4After = groupRule4.clone()
+    groupRule4After.value.status = 'ACTIVE'
+    const changeErrors = await groupRuleStatusValidator([
+      toChange({ before: groupRule1, after: groupRule1After }),
+      toChange({ before: groupRule4, after: groupRule4After }),
     ])
+    expect(changeErrors).toHaveLength(0)
+    expect(changeErrors).toEqual([])
   })
 })

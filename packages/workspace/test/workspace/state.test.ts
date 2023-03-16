@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { serialize } from '../../src/serializer'
 import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
-import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
+import { PathIndex, getElementsPathHints, getTopLevelPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
@@ -31,6 +31,7 @@ describe('state', () => {
   const elemID = new ElemID(adapter, 'elem')
   const elem = new ObjectType({ elemID, path: ['test', 'new'] })
   let pathIndex: PathIndex
+  let topLevelPathIndex: PathIndex
   const updateDate = new Date()
   const accountsUpdateDate = { [adapter]: updateDate }
 
@@ -43,6 +44,7 @@ describe('state', () => {
 
   beforeAll(async () => {
     pathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
+    topLevelPathIndex = new InMemoryRemoteMap(getElementsPathHints([elem]))
   })
 
   beforeEach(() => {
@@ -51,6 +53,7 @@ describe('state', () => {
       elements: createInMemoryElementSource([elem]),
       accountsUpdateDate: new InMemoryRemoteMap([{ key: adapter, value: updateDate }]),
       pathIndex,
+      topLevelPathIndex,
       saltoMetadata: new InMemoryRemoteMap([{ key: 'version', value: '0.0.1' }]),
       staticFilesSource: stateStaticFilesSource,
     })
@@ -155,11 +158,16 @@ describe('state', () => {
     it('getPathIndex', async () => {
       expect(await state.getPathIndex()).toEqual(pathIndex)
     })
+    it('getTopLevelPathIndex', async () => {
+      expect(await state.getTopLevelPathIndex()).toEqual(topLevelPathIndex)
+    })
     it('overridePathIndex', async () => {
       const elements = [elem, newElem]
       await state.overridePathIndex(elements)
       const index = await awu((await state.getPathIndex()).entries()).toArray()
       expect(index).toEqual(getElementsPathHints([newElem, elem]))
+      const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
+      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
     })
 
     it('updatePathIndex', async () => {
@@ -168,13 +176,16 @@ describe('state', () => {
       const oneElement = [newElem]
       await state.updatePathIndex(oneElement, ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
+      const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
       expect(index).toEqual(getElementsPathHints([newElem, elem]))
+      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
     })
 
     it('clear should clear all data', async () => {
       await state.clear()
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
       expect((await awu((await state.getPathIndex()).keys()).toArray()).length).toEqual(0)
+      expect((await awu((await state.getTopLevelPathIndex()).keys()).toArray()).length).toEqual(0)
       expect(await state.getAccountsUpdateDates()).toEqual({})
       expect(stateStaticFilesSource.clear).toHaveBeenCalled()
     })

@@ -130,7 +130,7 @@ export const createMockNaclFileSource = (
     ),
     getSearchableNames: mockFunction<NaclFilesSource['getSearchableNames']>().mockResolvedValue(_.uniq(currentElements.flatMap(e => {
       const fieldNames = isObjectType(e)
-        ? Object.values(e.fields).map(field => field.elemID.getFullName())
+        ? e.getFieldsElemIDsFullName()
         : []
       return [e.elemID.getFullName(), ...fieldNames]
     }))),

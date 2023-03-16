@@ -194,6 +194,7 @@ Promise<Workspace> => {
             await awu(await commonNaclFilesSource.getAll()).toArray()
           ),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
+          topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),
@@ -214,6 +215,7 @@ Promise<Workspace> => {
         state: state.buildInMemState(async () => ({
           elements: createInMemoryElementSource([]),
           pathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
+          topLevelPathIndex: new InMemoryRemoteMap<pathIndex.Path[]>(),
           accountsUpdateDate: new InMemoryRemoteMap(),
           saltoVersion: '0.0.1',
           saltoMetadata: new InMemoryRemoteMap(),

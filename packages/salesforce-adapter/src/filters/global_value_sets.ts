@@ -13,35 +13,74 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, Field, ReferenceExpression, ElemID, isObjectType } from '@salto-io/adapter-api'
-import { multiIndex } from '@salto-io/lowerdash'
+import {
+  Element,
+  Field,
+  ReferenceExpression,
+  isObjectType,
+  CORE_ANNOTATIONS,
+  createRestriction,
+  InstanceElement,
+  isInstanceElement,
+  Values,
+} from '@salto-io/adapter-api'
+import { collections, multiIndex, types } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import _ from 'lodash'
+import { isRequired } from '@salto-io/adapter-utils'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { VALUE_SET_FIELDS } from '../constants'
+import {
+  FIELD_ANNOTATIONS,
+  GLOBAL_VALUE_SET_METADATA_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  VALUE_SET_FIELDS,
+} from '../constants'
 import { isCustomObject, apiName } from '../transformers/transformer'
-import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
+import { isInstanceOfType, buildElementsSourceForFetch, isRestrictableField } from './utils'
 
-export const GLOBAL_VALUE_SET = 'GlobalValueSet'
-export const CUSTOM_VALUE = 'customValue'
+const log = logger(module)
+const { awu } = collections.asynciterable
+const { makeArray } = collections.array
+
 export const MASTER_LABEL = 'master_label'
 
-const addGlobalValueSetRefToObject = (
-  object: ObjectType,
-  gvsToRef: multiIndex.Index<[string], ElemID>
-): void => {
-  const getValueSetName = (field: Field): string | undefined =>
-    field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
 
-  Object.values(object.fields)
-    .forEach(f => {
-      const valueSetName = getValueSetName(f)
-      if (valueSetName === undefined) {
-        return
-      }
-      const valueSetId = gvsToRef.get(valueSetName)
-      if (valueSetId) {
-        f.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(valueSetId)
-      }
+type GlobalValueSetValue = InstanceElement['value'] & {
+  [FIELD_ANNOTATIONS.CUSTOM_VALUE]: types.ArrayOrSingle<{
+    [INSTANCE_FULL_NAME_FIELD]: string
+  }>
+}
+
+const isGlobalValueSetValue = (value: Values): value is GlobalValueSetValue => (
+  makeArray(value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
+    .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
+)
+
+const addRefAndRestrict = (
+  field: Field,
+  globalValueSetInstanceByName: multiIndex.Index<[string], InstanceElement>
+): void => {
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (valueSetName === undefined) {
+    return
+  }
+  const globalValueSetInstance = globalValueSetInstanceByName.get(valueSetName)
+  if (globalValueSetInstance === undefined) {
+    log.warn('Could not find GlobalValueSet instance with name: %s', valueSetName)
+    return
+  }
+  field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME] = new ReferenceExpression(globalValueSetInstance.elemID)
+  const { value: globalValueSetValue } = globalValueSetInstance
+  if (!isGlobalValueSetValue(globalValueSetValue)) {
+    log.warn('Could not create restriction for GlobalValueSet %s, due to unknown value format: %o', valueSetName, globalValueSetValue)
+    return
+  }
+  if (isRestrictableField(field)) {
+    field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
+      enforce_value: isRequired(field),
+      values: makeArray(globalValueSetValue.customValue).map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
     })
+  }
 }
 
 /**
@@ -55,13 +94,17 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
   onFetch: async (elements: Element[]): Promise<void> => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const valueSetNameToRef = await multiIndex.keyByAsync({
-      iter: await referenceElements.getAll(),
-      filter: isInstanceOfType(GLOBAL_VALUE_SET),
+      iter: awu(await referenceElements.getAll())
+        .filter(isInstanceElement)
+        .filter(isInstanceOfType(GLOBAL_VALUE_SET_METADATA_TYPE)),
       key: async inst => [await apiName(inst)],
-      map: inst => inst.elemID,
+      map: inst => inst,
     })
-    const customObjects = elements.filter(isObjectType).filter(isCustomObject)
-    customObjects.forEach(object => addGlobalValueSetRefToObject(object, valueSetNameToRef))
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomObject)
+      .flatMap(customObject => Object.values(customObject.fields))
+      .forEach(field => addRefAndRestrict(field, valueSetNameToRef))
   },
 })
 

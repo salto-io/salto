@@ -36,6 +36,7 @@ const CURRENT_TIME = '2023-02-08T06:34:53Z'
 const BEFORE_TIME = '2023-02-08T04:34:53Z'
 const BETWEEN_TIME = '2023-02-08T08:34:53Z'
 const AFTER_TIME = '2023-02-08T10:34:53Z'
+const AFTER_AFTER_TIME = '2023-02-08T10:38:53Z'
 jest.mock('../../src/user_utils', () => ({
   ...jest.requireActual<{}>('../../src/user_utils'),
   getIdByName: jest.fn(),
@@ -152,7 +153,7 @@ describe('audit_logs filter', () => {
     })
   })
   describe('onFetch', () => {
-    it('should do nothing when flag is false', async () => {
+    it('should only add changed_at correctly when flag is false', async () => {
       filter = filterCreator(createFilterCreatorParams({
         client,
         config: {
@@ -171,19 +172,6 @@ describe('audit_logs filter', () => {
         paginator: mockPaginator,
         elementsSource: buildElementsSourceFromElements([]),
       })) as FilterType
-      const elements = [
-        automationInstance,
-        ticketFieldInstance,
-        ticketFieldCustomOptionInstance,
-        articleTranslationInstance,
-      ].map(e => e.clone())
-      await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(0)
-      expect(elements).toHaveLength(4)
-      expect(elements
-        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === undefined)).toHaveLength(4)
-    })
-    it('should only add changed_at correctly', async () => {
       const elements = [
         automationInstance,
         ticketFieldInstance,
@@ -242,7 +230,7 @@ describe('audit_logs filter', () => {
       expect(elements).toHaveLength(1)
       expect(elements.filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_AT] === BEFORE_TIME)).toHaveLength(1)
     })
-    it('should not add changed_by when flag is true and it is fist fetch', async () => {
+    it('should not add changed_by when flag is true and it is first fetch', async () => {
       const elements = [
         automationInstance,
         ticketFieldInstance,
@@ -444,6 +432,114 @@ describe('audit_logs filter', () => {
       expect(mockGet).toHaveBeenCalledTimes(2) // time, 1 automation, ticket_field, custom_field
       expect(elements).toHaveLength(3)
       expect(elements.filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
+        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+    })
+    it('should set changed_by as undefined if res for getUpdatedByID is undefined', async () => {
+      const newTicketField = ticketFieldInstance.clone()
+      newTicketField.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'TEST'
+      filter = filterCreator(createFilterCreatorParams({
+        client,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
+            guide: {
+              brands: ['.*'],
+            },
+            includeAuditDetails: true,
+          },
+        },
+        paginator: mockPaginator,
+        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+      })) as FilterType
+      mockGet.mockImplementation(params => {
+        if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
+          return {
+            status: 200,
+            data: {
+              audit_logs: [],
+            },
+          }
+        }
+        return {
+          status: 200,
+          data: {
+            audit_logs: [
+              {
+                created_at: AFTER_TIME,
+                actor_name: 'NOT IMPORTANT',
+              },
+            ],
+          },
+        }
+      })
+      getIdByNameMock
+        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
+      const elements = [ticketFieldInstance].map(e => e.clone()).map(e => {
+        e.value.updated_at = BETWEEN_TIME
+        return e
+      })
+      await filter.onFetch(elements)
+      expect(mockGet).toHaveBeenCalledTimes(2) // time, ticket_field
+      expect(elements).toHaveLength(3)
+      expect(elements.filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
+        .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
+    })
+    it('should set changed_by to undefined if changed_at is after audit_time', async () => {
+      const newTicketField = ticketFieldInstance.clone()
+      newTicketField.annotations[CORE_ANNOTATIONS.CHANGED_BY] = 'TEST'
+      filter = filterCreator(createFilterCreatorParams({
+        client,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
+            guide: {
+              brands: ['.*'],
+            },
+            includeAuditDetails: true,
+          },
+        },
+        paginator: mockPaginator,
+        elementsSource: buildElementsSourceFromElements([auditTimeInstance, auditTimeType, newTicketField]),
+      })) as FilterType
+      mockGet.mockImplementation(params => {
+        if (params.url === '/api/v2/audit_logs' && params.queryParams['filter[source_id]'] !== undefined) {
+          return {
+            status: 200,
+            data: {
+              audit_logs: [],
+            },
+          }
+        }
+        return {
+          status: 200,
+          data: {
+            audit_logs: [
+              {
+                created_at: AFTER_TIME,
+                actor_name: 'NOT IMPORTANT',
+              },
+            ],
+          },
+        }
+      })
+      getIdByNameMock
+        .mockResolvedValue({ 11: 'new user', 21: 'b', 31: 'c' },)
+      const elements = [ticketFieldInstance].map(e => e.clone()).map(e => {
+        e.value.updated_at = AFTER_AFTER_TIME
+        return e
+      })
+      await filter.onFetch(elements)
+      expect(mockGet).toHaveBeenCalledTimes(1) // time
+      expect(elements).toHaveLength(3)
+      expect(elements.filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
         .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
     })
     it('should add changed_by from elements source', async () => {

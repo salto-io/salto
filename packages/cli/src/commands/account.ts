@@ -375,7 +375,7 @@ const serviceGroupDef = createCommandGroupDef({
   subCommands: [
     serviceAddDef,
     serviceListDef,
-    accountLoginDef,
+    serviceLoginDef,
   ],
 })
 
@@ -387,7 +387,7 @@ const accountGroupDef = createCommandGroupDef({
   subCommands: [
     accountAddDef,
     accountListDef,
-    serviceLoginDef,
+    accountLoginDef,
   ],
 })
 

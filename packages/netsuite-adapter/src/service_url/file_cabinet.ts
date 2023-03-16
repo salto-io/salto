@@ -18,12 +18,12 @@ import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ServiceUrlSetter } from './types'
 import { isFileCabinetInstance, isFileInstance } from '../types'
-import NetsuiteClient from '../client/client'
+import { INTERNAL_ID } from '../constants'
 
 const log = logger(module)
 
-const generateUrl = (element: InstanceElement, client: NetsuiteClient): string | undefined => {
-  const id = element.value.internalId ?? client.getPathInternalId(element.value.path)
+const generateUrl = (element: InstanceElement): string | undefined => {
+  const id = element.value[INTERNAL_ID]
   if (id === undefined) {
     log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     return undefined
@@ -36,7 +36,7 @@ const generateUrl = (element: InstanceElement, client: NetsuiteClient): string |
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   elements.filter(isFileCabinetInstance).forEach(element => {
-    const url = generateUrl(element, client)
+    const url = generateUrl(element)
     if (url !== undefined) {
       element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
     }

@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetInstance } from '../types'
+import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { getElementServiceIdRecords } from '../filters/element_references'
-import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE, LIST_MAPPED_BY_FIELD } from '../constants'
+import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE } from '../constants'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 const { awu } = collections.asynciterable
@@ -82,14 +82,12 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
-const createIndexes = async (elementsSource: ReadOnlyElementsSource):
+const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean):
   Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
-  const pathToInternalIdsIndex: Record<string, number> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
-  const mapKeyFieldsIndex: Record<string, string | string[]> = {}
   const elemIdToChangeAtIndex: Record<string, string> = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
@@ -106,15 +104,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
       })
   }
 
-  const updatePathToInternalIdsIndex = (element: InstanceElement): void => {
-    if (!isFileCabinetInstance(element)) return
-
-    const { path, internalId } = element.value
-    if (path === undefined || internalId === undefined) return
-
-    pathToInternalIdsIndex[path] = parseInt(internalId, 10)
-  }
-
   const updateElemIdToChangedByIndex = (element: Element): void => {
     const changeBy = element.annotations[CORE_ANNOTATIONS.CHANGED_BY]
     if (changeBy !== undefined) {
@@ -127,13 +116,6 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     _.assign(serviceIdRecordsIndex, serviceIdRecords)
   }
 
-  const updateMapKeyFieldsIndex = (type: ObjectType): void => {
-    Object.values(type.fields).forEach(field => {
-      if (field.annotations[LIST_MAPPED_BY_FIELD]) {
-        mapKeyFieldsIndex[field.elemID.getFullName()] = field.annotations[LIST_MAPPED_BY_FIELD]
-      }
-    })
-  }
   const updateElemIdToChangedAtIndex = (element: Element): void => {
     const changeAt = element.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     if (changeAt !== undefined) {
@@ -143,23 +125,16 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
 
   const elements = await elementsSource.getAll()
   await awu(elements)
+    .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
     .forEach(async element => {
-      if (isInstanceElement(element)) {
+      updateElemIdToChangedByIndex(element)
+      updateElemIdToChangedAtIndex(element)
+      if (isPartial) {
         await updateServiceIdRecordsIndex(element)
         await updateInternalIdsIndex(element)
-        updateCustomFieldsIndex(element)
-        updatePathToInternalIdsIndex(element)
-        updateElemIdToChangedByIndex(element)
-        updateElemIdToChangedAtIndex(element)
-      }
-      if (isObjectType(element) && isCustomRecordType(element)) {
-        await updateServiceIdRecordsIndex(element)
-        await updateInternalIdsIndex(element)
-        updateElemIdToChangedByIndex(element)
-        updateElemIdToChangedAtIndex(element)
-      }
-      if (isObjectType(element)) {
-        updateMapKeyFieldsIndex(element)
+        if (isInstanceElement(element)) {
+          updateCustomFieldsIndex(element)
+        }
       }
     })
 
@@ -167,21 +142,20 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource):
     serviceIdRecordsIndex,
     internalIdsIndex,
     customFieldsIndex,
-    pathToInternalIdsIndex,
     elemIdToChangeByIndex,
-    mapKeyFieldsIndex,
     elemIdToChangeAtIndex,
   }
 }
 
 export const createElementsSourceIndex = (
   elementsSource: ReadOnlyElementsSource,
+  isPartial: boolean
 ): LazyElementsSourceIndexes => {
   let cachedIndex: ElementsSourceIndexes | undefined
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(() => createIndexes(elementsSource), 'createIndexes')
+        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial), 'createIndexes')
       }
       return cachedIndex
     },

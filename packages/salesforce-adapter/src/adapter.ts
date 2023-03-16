@@ -79,6 +79,8 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import formulaDepsFilter from './filters/formula_deps'
+import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
+import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -86,7 +88,7 @@ import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
-import { deployMetadata, NestedMetadataTypeInfo, quickDeploy } from './metadata_deploy'
+import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
@@ -107,6 +109,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: customMetadataToObjectTypeFilter },
   // customObjectsFilter depends on missingFieldsFilter and settingsFilter
   { creator: customObjectsFromDescribeFilter, addsNewInformation: true },
+  { creator: organizationWideDefaults, addsNewInformation: true },
   // customSettingsFilter depends on customObjectsFilter
   { creator: customSettingsFilter, addsNewInformation: true },
   { creator: customObjectsToObjectTypeFilter },
@@ -134,6 +137,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
+  // valueSetFilter and globalValueSetFilter should run after customObjectsToObjectTypeFilter
   { creator: valueSetFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
@@ -167,6 +171,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: extraDependenciesFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
+  // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
+  { creator: removeUnixTimeZeroFilter },
 ]
 
 // By default we run all filters and provide a client
@@ -436,18 +442,10 @@ export default class SalesforceAdapter implements AdapterOperations {
         changeGroup.groupID,
         this.fetchProfile.dataManagement,
       )
-    } else if (this.userConfig.client?.deploy?.quickDeployParams !== undefined) {
-      try {
-        deployResult = await quickDeploy(resolvedChanges, this.client,
-          changeGroup.groupID, this.userConfig.client?.deploy?.quickDeployParams)
-      } catch (e) {
-        log.info(`preforming regular deploy instead of quick deploy due to error: ${e.message}`)
-        deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
-          this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
-      }
     } else {
       deployResult = await deployMetadata(resolvedChanges, this.client, changeGroup.groupID,
-        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly)
+        this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
+          this.userConfig.client?.deploy?.quickDeployParams)
     }
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]

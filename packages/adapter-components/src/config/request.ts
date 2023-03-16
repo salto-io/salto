@@ -81,13 +81,14 @@ export type DeployRequestConfig = BaseRequestConfig & {
   fieldsToIgnore?: string[]
 }
 
-export type DeploymentRequestsByAction = Partial<Record<ActionName, DeployRequestConfig>>
+export type DeploymentRequestsByAction<A extends string = ActionName> = Partial<Record<A, DeployRequestConfig>>
 
 export type FetchRequestDefaultConfig = Partial<Omit<FetchRequestConfig, 'url'>>
 
 export const createRequestConfigs = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
+  additionalActions?: string[],
 ): { fetch: { request: ObjectType; requestDefault: ObjectType }; deployRequests: ObjectType } => {
   const dependsOnFromConfig = new ObjectType({
     elemID: new ElemID(adapter, 'dependsOnFromConfig'),
@@ -282,6 +283,9 @@ export const createRequestConfigs = (
     },
   })
 
+  const additionalActionFields = Object.fromEntries(
+    additionalActions?.map(actionName => [actionName, { refType: deployRequestConfigType }]) ?? []
+  )
   const deployRequestsType = new ObjectType({
     elemID: new ElemID(adapter, 'deployRequests'),
     fields: {
@@ -294,6 +298,7 @@ export const createRequestConfigs = (
       remove: {
         refType: deployRequestConfigType,
       },
+      ...additionalActionFields,
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -16,18 +16,26 @@
 
 import _ from 'lodash'
 import wu from 'wu'
+import { CustomizationInfo } from './types'
+
+export type SDFObjectNode = {
+  elemIdFullName: string
+  serviceid: string
+  changeType: 'addition' | 'modification'
+  customizationInfo: CustomizationInfo
+}
 
 export class GraphNode<T> {
-  edges: GraphNode<T>[]
+  edges: Map<T[keyof T], GraphNode<T>>
   value: T
 
   constructor(value: T) {
     this.value = value
-    this.edges = []
+    this.edges = new Map<T[keyof T], GraphNode<T>>()
   }
 
-  addEdge(node: GraphNode<T>): void {
-    this.edges.push(node)
+  addEdge(key: keyof T, node: GraphNode<T>): void {
+    this.edges.set(node.value[key], node)
   }
 }
 
@@ -43,28 +51,40 @@ export class Graph<T> {
 
   addNodes(nodes: GraphNode<T>[]): void {
     nodes.forEach(node => {
-      if (!this.nodes.get(node.value[this.key])) {
+      if (!this.nodes.has(node.value[this.key])) {
         this.nodes.set(node.value[this.key], node)
       }
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Map<T[keyof T], GraphNode<T>>): void {
-    visited.set(node.value[this.key], node)
+  private dfs(node: GraphNode<T>, visited: Set<T[keyof T]>, resultArray: GraphNode<T>[]): void {
+    if (visited.has(node.value[this.key])) {
+      return
+    }
+    visited.add(node.value[this.key])
     node.edges.forEach(dependency => {
-      if (!visited.get(dependency.value[this.key])) {
-        this.dfs(dependency, visited)
-      }
+      this.dfs(dependency, visited, resultArray)
     })
+    resultArray.push(node)
+  }
+
+  getTopologicalOrder(): GraphNode<T>[] {
+    const visited = new Set<T[keyof T]>()
+    const sortedNodes: GraphNode<T>[] = []
+    Array.from(this.nodes.values()).forEach(node => {
+      this.dfs(node, visited, sortedNodes)
+    })
+    return sortedNodes.reverse()
   }
 
   getNodeDependencies(startNode: GraphNode<T>): GraphNode<T>[] {
     if (_.isEmpty(startNode.edges)) {
       return [startNode]
     }
-    const visited = new Map<T[keyof T], GraphNode<T>>()
-    this.dfs(startNode, visited)
-    return Array.from(visited.values())
+    const visited = new Set<T[keyof T]>()
+    const dependencies: GraphNode<T>[] = []
+    this.dfs(startNode, visited, dependencies)
+    return dependencies
   }
 
   findNode(value: T): GraphNode<T> | undefined {
@@ -77,5 +97,15 @@ export class Graph<T> {
 
   findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
     return wu(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
+  }
+
+  removeNode(key: T[keyof T]): void {
+    const node = this.nodes.get(key)
+    if (node) {
+      Array.from(this.nodes.values()).forEach(otherNode => {
+        otherNode.edges.delete(key)
+      })
+      this.nodes.delete(key)
+    }
   }
 }

@@ -15,12 +15,10 @@
 */
 import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { GROUP_RULE_TYPE_NAME } from '../constants'
+import { ACTIVE_STATUS, GROUP_RULE_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
 const { awu } = collections.asynciterable
-const ACTIVE_STATUS = 'ACTIVE'
 const INVALID_STATUS = 'INVALID'
-const INACTIVE_STATUS = 'INACTIVE'
 
 const getGroupRuleStatusError = (
   change: Change<InstanceElement>
@@ -36,23 +34,6 @@ const getGroupRuleStatusError = (
   }
   if (isModificationChange(change)) {
     const { before, after } = change.data
-    if (before.value.status !== after.value.status) {
-      // TODO remove after SALTO-3591
-      return {
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} status`,
-        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} status, please make this change in Okta.`,
-      }
-    }
-    if (before.value.status === ACTIVE_STATUS) {
-      return {
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
-        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
-      }
-    }
     if (before.value.status === INVALID_STATUS) {
       return {
         elemID: instance.elemID,
@@ -61,15 +42,23 @@ const getGroupRuleStatusError = (
         detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${INVALID_STATUS}. You can remove this instance and create a new one.`,
       }
     }
-  }
-  if (isAdditionChange(change)) {
-    // TODO remove after SALTO-3591
-    if (instance.value.status === ACTIVE_STATUS) {
+    if (before.value.status === ACTIVE_STATUS && after.value.status === ACTIVE_STATUS) {
+      // Other changes for the instance while it's in status ACTIVE are not allowed
       return {
         elemID: instance.elemID,
         severity: 'Error',
+        message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
+        detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
+      }
+    }
+  }
+  if (isAdditionChange(change)) {
+    if (instance.value.status === ACTIVE_STATUS) {
+      return {
+        elemID: instance.elemID,
+        severity: 'Warning',
         message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
-        detailedMessage: `${GROUP_RULE_TYPE_NAME} must be created with status ${INACTIVE_STATUS}`,
+        detailedMessage: `${GROUP_RULE_TYPE_NAME} will be created with status ${INACTIVE_STATUS}`,
       }
     }
   }

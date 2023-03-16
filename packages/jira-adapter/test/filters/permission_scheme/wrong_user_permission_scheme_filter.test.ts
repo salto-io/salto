@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change, Value } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, Value, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils } from '@salto-io/adapter-components'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFilterParams, mockClient } from '../../utils'
 import wrongUserPermissionSchemeFilter from '../../../src/filters/permission_scheme/wrong_user_permission_scheme_filter'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -24,14 +25,38 @@ import { JIRA, PERMISSION_SCHEME_TYPE_NAME } from '../../../src/constants'
 describe('wrongUsersPermissionSchemeFilter', () => {
   let instances: InstanceElement[]
   let changes: Change[]
-  const { getUserMapFunc, connection } = mockClient()
-  const config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-  const filter = wrongUserPermissionSchemeFilter(getFilterParams({
-    getUserMapFunc,
-    config,
-  })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-
+  let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+  let elementsSource: ReadOnlyElementsSource
   beforeEach(async () => {
+    jest.clearAllMocks()
+    const usersType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Users'),
+    })
+    const usersElements = new InstanceElement(
+      'users',
+      usersType,
+      {
+        users: {
+          id1: {
+            accountId: 'id1',
+            locale: 'en_US',
+            displayName: 'name1',
+          },
+          id4: {
+            accountId: 'id4',
+            locale: 'en_US',
+            displayName: 'name2',
+          },
+          id5: {
+            accountId: 'id5',
+            locale: 'en_US',
+            displayName: 'name3',
+          },
+        },
+      }
+    )
+    elementsSource = buildElementsSourceFromElements([usersElements])
+    filter = wrongUserPermissionSchemeFilter(getFilterParams({ elementsSource })) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     const type = new ObjectType({
       elemID: new ElemID(JIRA, PERMISSION_SCHEME_TYPE_NAME),
     })
@@ -68,22 +93,6 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     )
     changes[0] = toChange({ after: instances[0] })
     changes[1] = toChange({ after: instances[1] })
-    connection.get.mockResolvedValue({
-      status: 200,
-      data: [{
-        accountId: 'id1',
-        locale: 'en_US',
-        displayName: 'name1',
-      }, {
-        accountId: 'id4',
-        locale: 'en_US',
-        displayName: 'name2',
-      }, {
-        accountId: 'id5',
-        locale: 'en_US',
-        displayName: 'name3',
-      }],
-    })
   })
   it('should remove permissions with wrong account ids', async () => {
     await filter.preDeploy(changes)
@@ -92,11 +101,16 @@ describe('wrongUsersPermissionSchemeFilter', () => {
     expect(instances[0].value.permissions[1].holder.parameter.id).toEqual('id4')
     expect(instances[0].value.permissions[2].holder.parameter.id).toEqual('id5')
     expect(instances[0].value.permissions[3].wrong.anotherWrong).toEqual('anotherWrong')
-    expect(connection.get).toHaveBeenCalledOnce()
     expect(instances[1].value.permissions.length).toEqual(3)
     expect(instances[1].value.permissions[2].holder.parameter.id).toEqual('id1')
     expect(instances[1].value.permissions[1].holder.parameter.id).toEqual('id4')
     expect(instances[1].value.permissions[0].holder.parameter.id).toEqual('id5')
+  })
+  it('should not raise error on empty users', async () => {
+    filter = wrongUserPermissionSchemeFilter(
+      getFilterParams({ elementsSource: buildElementsSourceFromElements([]) })
+    ) as filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+    await expect(filter.preDeploy(changes)).resolves.not.toThrow()
   })
   it('should return removed permissions in the right order', async () => {
     await filter.preDeploy(changes)

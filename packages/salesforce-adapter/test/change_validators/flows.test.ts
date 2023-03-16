@@ -106,7 +106,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying flows as inactive')
         })
       })
       describe('activating a flow', () => {
@@ -154,7 +154,7 @@ describe('flows change validator', () => {
           expect(changeErrors).toHaveLength(1)
           const [changeError] = changeErrors
           expect(changeError.severity).toEqual('Info')
-          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying as inactive')
+          expect(changeError.deployActions?.postAction?.title).toEqual('Deploying flows as inactive')
         })
       })
     })

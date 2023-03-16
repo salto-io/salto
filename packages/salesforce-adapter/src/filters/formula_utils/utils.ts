@@ -14,20 +14,15 @@
 * limitations under the License.
 */
 
+import _ from 'lodash'
 
 const STANDARD_RELATIONSHIP_ID_NAME = 'Id'
-const DOLLAR_SIGN = '$'
 
-export const $ = (value: string): string => value.toUpperCase()
 export const parts = (value: string): string[] => value.split('.')
 export const getObject = (value: string): string => parts(value)[0]
 export const getField = (value: string): string => parts(value)[1]
 
 export const createApiName = (object: string, field: string): string => `${object}.${field}`
-export const removePrefix = (value: string): string => (
-  value.startsWith(DOLLAR_SIGN) ? value.substring(1) : value
-)
-export const removeFirstAndLastChars = (value: string): string => value.slice(1).slice(0, -1)
-export const transformToId = (value: string): string => value + STANDARD_RELATIONSHIP_ID_NAME
-export const transformToUserField = (value: string): string => `User.${getField(value)}`
-export const replaceRwithC = (value: string): string => value.slice(0, -1).concat('c')
+export const canonicalizeProcessBuilderIdentifier = (value: string): string => _.trim(value, '[]')
+export const transformToId = (fieldName: string): string => `${fieldName}${STANDARD_RELATIONSHIP_ID_NAME}`
+export const transformToUserField = (identifier: string): string => `User.${getField(identifier)}`

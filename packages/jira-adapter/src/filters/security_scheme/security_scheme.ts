@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, DeployResult, Element, Field, g
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, safeJsonStringify } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { findObject, getFilledJspUrls, setFieldDeploymentAnnotations, setTypeDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
@@ -25,7 +25,7 @@ import { deployWithJspEndpoints } from '../../deployment/jsp_deployment'
 import { SECURITY_LEVEL_MEMBER_TYPE, SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE } from '../../constants'
 import { JiraConfig } from '../../config/config'
 import JiraClient from '../../client/client'
-import { deployMembers, getMemberKey } from './members_deployment'
+import { deployMembers, getMemberKey, isMember } from './members_deployment'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'
 
 const log = logger(module)
@@ -121,6 +121,15 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === SECURITY_LEVEL_TYPE)
       .forEach(instance => {
+        if (Array.isArray(instance.value.members)) {
+          instance.value.members = instance.value.members.filter(member => {
+            if (!isMember(member)) {
+              log.error(`Invalid member ${safeJsonStringify(member)} in security level ${instance.elemID.getFullName()}`)
+              return false
+            }
+            return true
+          })
+        }
         instance.value.memberIds = Object.fromEntries((instance.value.members ?? [])
           .map((member: Values) => [getMemberKey(member), member.id]))
 

@@ -20,7 +20,8 @@ import { CredsLease } from '@salto-io/e2e-credentials-store'
 import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
-  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes, isInstanceElement,
+  ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
+  isInstanceElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
@@ -197,6 +198,14 @@ describe('Netsuite adapter E2E with real account', () => {
         ...(withSuiteApp ? { [PATH]: '/Images' } : {}),
       }
     )
+
+    fileToCreate.annotate({
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+        folderToModify.elemID,
+        undefined,
+        folderToModify,
+      )],
+    })
 
     const roleToCreateThatDependsOnCustomRecord = createInstanceElement(
       ROLE,

@@ -19,6 +19,7 @@ import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isAdditionOrModif
 import { walkOnElement, WALK_NEXT_STEP, WalkOnFunc, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { JiraConfig } from '../../config/config'
 import { ACCOUNT_ID_STRING, ACCOUNT_IDS_FIELDS_NAMES, AUTOMATION_TYPE, BOARD_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { accountIdInfoType, accountIdInfoListType } from './types'
@@ -30,7 +31,8 @@ export const OWNER_STYLE_TYPES = ['Filter', 'Dashboard']
 export const NON_DEPLOYABLE_TYPES = ['Board']
 export const PARAMETER_STYLE_TYPES = ['PermissionScheme', 'NotificationScheme', 'SecurityLevel']
 export const DEPLOYABLE_TYPES = [...PARAMETER_STYLE_TYPES,
-  'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard', 'CustomFieldContext', 'ProjectRoleUser', 'CustomFieldContextDefaultValue']
+  'Automation', 'Project', 'ProjectComponent', 'ProjectRole', 'Filter', 'Dashboard', 'CustomFieldContext', 'ProjectRoleUser',
+  'CustomFieldContextDefaultValue', 'Workflow']
 export const ACCOUNT_ID_TYPES = [...NON_DEPLOYABLE_TYPES, ...DEPLOYABLE_TYPES]
 
 const USER_TYPE = 'user'
@@ -38,7 +40,6 @@ const VALUE_FIELD = 'value'
 const VALUES_FIELD = 'values'
 const PARAMETER_FIELD = 'parameter'
 const OWNER_FIELD = 'owner'
-const ACCOUNT_IDS = 'accountIds'
 const USER_TYPE_FIELDS = ['assignee', 'reporter', 'creator', 'com.atlassian.jira.plugin.system.customfieldtypes:multiuserpicker',
   'com.atlassian.jira.plugin.system.customfieldtypes:userpicker', 'com.atlassian.servicedesk:sd-request-participants']
 
@@ -95,8 +96,12 @@ const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
 const accountIdsScenarios = (
   value: Value,
   path: ElemID,
-  callback: WalkOnUsersCallback
+  callback: WalkOnUsersCallback,
+  config: JiraConfig,
 ): WALK_NEXT_STEP => {
+  const accountIdFields = config.fetch.enableScriptRunnerAddon
+    ? ['accountIds', 'FIELD_USER_IDS']
+    : ['accountIds']
   // main scenario, field is within the ACCOUNT_IDS_FIELDS_NAMES
   ACCOUNT_IDS_FIELDS_NAMES.forEach(fieldName => {
     if (Object.prototype.hasOwnProperty.call(value, fieldName)) {
@@ -104,10 +109,12 @@ const accountIdsScenarios = (
     }
   })
   // main scenario, sub branch of multiple account ids
-  makeArray(value[ACCOUNT_IDS])
-    .forEach((_value, index) => {
-      callback({ value: value[ACCOUNT_IDS], path: path.createNestedID(ACCOUNT_IDS), fieldName: index.toString() })
-    })
+  accountIdFields.forEach(accountIds => {
+    makeArray(value[accountIds])
+      .forEach((_value, index) => {
+        callback({ value: value[accountIds], path: path.createNestedID(accountIds), fieldName: index.toString() })
+      })
+  })
   // second scenario: the type has ACCOUNT_ID_STRING and the value holds the actual account id
   if (value.type === ACCOUNT_ID_STRING) {
     callback({ value, path, fieldName: VALUE_FIELD })
@@ -172,15 +179,15 @@ const accountIdsScenarios = (
   return WALK_NEXT_STEP.RECURSE
 }
 
-export const walkOnUsers = (callback: WalkOnUsersCallback): WalkOnFunc => (
+export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig): WalkOnFunc => (
   ({ value, path }): WALK_NEXT_STEP => {
     if (isInstanceElement(value)) {
       return isAccountIdType(value)
-        ? accountIdsScenarios(value.value, path, callback)
+        ? accountIdsScenarios(value.value, path, callback, config)
         : WALK_NEXT_STEP.EXIT
     }
     if (value !== undefined) {
-      return accountIdsScenarios(value, path, callback)
+      return accountIdsScenarios(value, path, callback, config)
     }
     return WALK_NEXT_STEP.SKIP
   })
@@ -225,7 +232,7 @@ const convertType = async (objectType: ObjectType): Promise<void> => {
  * The filter also removes this change pre-deploy, and return the original state
  * after onDeploy
  */
-const filter: FilterCreator = () => {
+const filter: FilterCreator = ({ config }) => {
   const cache: AccountIdsCache = {}
   return {
     name: 'accountIdFilter',
@@ -233,7 +240,7 @@ const filter: FilterCreator = () => {
       elements
         .filter(isInstanceElement)
         .forEach(element => {
-          walkOnElement({ element, func: walkOnUsers(objectifyAccountId) })
+          walkOnElement({ element, func: walkOnUsers(objectifyAccountId, config) })
         })
       await awu(elements)
         .filter(isObjectType)
@@ -249,7 +256,7 @@ const filter: FilterCreator = () => {
         .map(getChangeData)
         .filter(isDeployableAccountIdType)
         .forEach(element =>
-          walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache)) }))
+          walkOnElement({ element, func: walkOnUsers(cacheAndSimplifyAccountId(cache), config) }))
     },
     onDeploy: async changes => {
       changes

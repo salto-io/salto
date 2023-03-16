@@ -27,6 +27,7 @@ import { UnauthorizedError, Paginator, PageEntriesExtractor, HTTPError } from '.
 import {
   TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
+  StandaloneFieldConfigType,
 } from '../../config'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
@@ -64,11 +65,18 @@ const extractStandaloneFields = async (
   }
   const additionalInstances: InstanceElement[] = []
 
-  const replaceWithReference = async ({ values, parent, objType, nestedPath: updatedNestedPath }: {
+  const replaceWithReference = async ({
+    values,
+    parent,
+    objType,
+    nestedPath: updatedNestedPath,
+    fieldExtractionDefinition,
+  }: {
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
     nestedPath: string[]
+    fieldExtractionDefinition: StandaloneFieldConfigType
   }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line no-use-before-define
     const refInstances = await generateInstancesForType({
@@ -80,6 +88,7 @@ const extractStandaloneFields = async (
       transformationDefaultConfig,
       normalized: true,
       nestedPath: updatedNestedPath,
+      fieldExtractionDefinition,
       getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
@@ -98,9 +107,9 @@ const extractStandaloneFields = async (
     if (standaloneFields === undefined) {
       return value
     }
-    const fieldExtractionDef = standaloneFields.find(def => def.fieldName === field.name)
+    const fieldExtractionDefinition = standaloneFields.find(def => def.fieldName === field.name)
 
-    if (fieldExtractionDef === undefined || isReferenceExpression(value)) {
+    if (fieldExtractionDefinition === undefined || isReferenceExpression(value)) {
       return value
     }
 
@@ -117,6 +126,7 @@ const extractStandaloneFields = async (
         parent: inst,
         objType: refType,
         nestedPath: [...nestedPath, field.name],
+        fieldExtractionDefinition,
       })
     }
     return (await replaceWithReference({
@@ -124,6 +134,7 @@ const extractStandaloneFields = async (
       parent: inst,
       objType: refType,
       nestedPath: [...nestedPath, field.name],
+      fieldExtractionDefinition,
     }))[0]
   }
 
@@ -210,6 +221,7 @@ const generateInstancesForType = ({
   transformationDefaultConfig,
   normalized,
   nestedPath,
+  fieldExtractionDefinition,
   getElemIdFunc,
 }: {
   entries: Values[]
@@ -220,6 +232,7 @@ const generateInstancesForType = ({
   transformationDefaultConfig: TransformationDefaultConfig
   normalized?: boolean
   nestedPath?: string[]
+  fieldExtractionDefinition?: StandaloneFieldConfigType
   getElemIdFunc?: ElemIdGetter
 }): Promise<InstanceElement[]> => {
   const standaloneFields = transformationConfigByType[objType.elemID.name]?.standaloneFields
@@ -233,6 +246,7 @@ const generateInstancesForType = ({
       transformationDefaultConfig,
       normalized,
       nestedPath,
+      fieldExtractionDefinition,
       defaultName: `unnamed_${index}`, // TODO improve
       getElemIdFunc,
     }))

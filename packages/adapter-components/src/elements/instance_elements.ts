@@ -21,9 +21,10 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { shouldNestFiles } from '../config/ducktype'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
-  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions, StandaloneFieldConfigType } from '../config'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
@@ -40,6 +41,7 @@ export type InstanceCreationParams = {
   nestedPath?: string[]
   parent?: InstanceElement
   normalized?: boolean
+  fieldExtractionDefinition?: StandaloneFieldConfigType
   getElemIdFunc?: ElemIdGetter
 }
 
@@ -200,6 +202,7 @@ export const toBasicInstance = async ({
   nestedPath,
   parent,
   defaultName,
+  fieldExtractionDefinition,
   getElemIdFunc,
 }: InstanceCreationParams): Promise<InstanceElement> => {
   const omitFields: TransformFunc = ({ value, field }) => {
@@ -253,10 +256,10 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
-    nestedTypes: nestedPath,
+    nestedTypes: shouldNestFiles(fieldExtractionDefinition) ? nestedPath : undefined,
   })
-  if (transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined) {
-    // If standaloneFields is defined, we need to make the instance name into a folder with itself.
+  if (transformationConfigByType[type.elemID.name]?.standaloneFields?.some(shouldNestFiles)) {
+    // If at least one standalone field is nested, we need to make the instance name into a folder with itself.
     filePath.push(filePath[filePath.length - 1])
   }
 

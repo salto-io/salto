@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ObjectType, BuiltinTypes, FieldDefinition } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { AdapterApiConfig, createAdapterApiConfigType, UserFetchConfig, TypeConfig, TypeDefaultsConfig, validateSupportedTypes } from './shared'
-import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType } from './transformation'
+import { TransformationConfig, TransformationDefaultConfig, createTransformationConfigTypes, validateTransoformationConfig, getTransformationConfigByType, StandaloneFieldConfigType } from './transformation'
 import { createRequestConfigs, validateRequestConfig } from './request'
 
 const { isDefined } = lowerDashValues
@@ -62,6 +62,13 @@ export const createDucktypeAdapterApiConfigType = ({
     additionalFields,
   })
 }
+
+export const shouldNestFiles = (
+  standaloneField: StandaloneFieldConfigType | undefined
+): boolean =>
+  isDefined(standaloneField)
+  && isDefined(standaloneField.nestFiles)
+  && standaloneField.nestFiles
 
 export const validateApiDefinitionConfig = (
   apiDefinitionConfigPath: string,

@@ -27,6 +27,7 @@ export const FIELD_REFERENCE_PREFIX = '&'
 export type StandaloneFieldConfigType = {
   fieldName: string
   parseJSON?: boolean
+  nestFiles?: boolean
 }
 type FieldToAdjustType = {
   fieldName: string

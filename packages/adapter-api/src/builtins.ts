@@ -17,45 +17,45 @@ import _ from 'lodash'
 import { ElemID, INSTANCE_ANNOTATIONS, GLOBAL_ADAPTER } from './element_id'
 import { Element, TypeMap, ObjectType, PrimitiveType, PrimitiveTypes, ListType, BuiltinTypesRefByFullName } from './elements'
 import { TypeReference } from './values'
-import { CORE_ANNOTATIONS } from './core_annotations'
+import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
 export { CORE_ANNOTATIONS }
 
 const StandardBuiltinTypes = {
   STRING: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'string'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.STRING),
     primitive: PrimitiveTypes.STRING,
   }),
   NUMBER: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'number'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.NUMBER),
     primitive: PrimitiveTypes.NUMBER,
   }),
   BOOLEAN: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'boolean'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.BOOLEAN),
     primitive: PrimitiveTypes.BOOLEAN,
   }),
   SERVICE_ID: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'serviceid'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.SERVICEID),
     primitive: PrimitiveTypes.STRING,
     annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
   }),
   SERVICE_ID_NUMBER: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'serviceid_number'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.SERVICEID_NUMBER),
     primitive: PrimitiveTypes.NUMBER,
     annotations: { [CORE_ANNOTATIONS.SERVICE_ID]: true },
   }),
   JSON: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'json'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.JSON),
     primitive: PrimitiveTypes.STRING,
   }),
   UNKNOWN: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'unknown'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.UNKNOWN),
     primitive: PrimitiveTypes.UNKNOWN,
   }),
 }
 
 const restrictionType = new ObjectType({
-  elemID: new ElemID(GLOBAL_ADAPTER, 'restriction'),
+  elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.RESTRICTION),
   fields: {
     // eslint-disable-next-line camelcase
     enforce_value: {
@@ -104,14 +104,14 @@ const restrictionType = new ObjectType({
 })
 
 const dependencyOccurrenceType = new ObjectType({
-  elemID: new ElemID(GLOBAL_ADAPTER, 'dependencyOccurrence'),
+  elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.DEPENDENCY_OCCURRENCE),
   fields: {
     direction: { refType: StandardBuiltinTypes.STRING },
     location: { refType: StandardBuiltinTypes.UNKNOWN },
   },
 })
 const dependencyType = new ObjectType({
-  elemID: new ElemID(GLOBAL_ADAPTER, 'dependency'),
+  elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.DEPENDENCY),
   fields: {
     reference: {
       refType: StandardBuiltinTypes.UNKNOWN,
@@ -145,7 +145,7 @@ const StandardCoreAnnotationTypes: TypeMap = {
 export const BuiltinTypes = {
   ...StandardBuiltinTypes,
   HIDDEN_STRING: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_string'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.HIDDEN_STRING),
     primitive: PrimitiveTypes.STRING,
     annotationRefsOrTypes: StandardCoreAnnotationTypes,
     annotations: {
@@ -153,7 +153,7 @@ export const BuiltinTypes = {
     },
   }),
   HIDDEN_BOOLEAN: new PrimitiveType({
-    elemID: new ElemID(GLOBAL_ADAPTER, 'hidden_boolean'),
+    elemID: new ElemID(GLOBAL_ADAPTER, BUILTIN_TYPE_NAMES.HIDDEN_BOOLEAN),
     primitive: PrimitiveTypes.BOOLEAN,
     annotationRefsOrTypes: StandardCoreAnnotationTypes,
     annotations: {

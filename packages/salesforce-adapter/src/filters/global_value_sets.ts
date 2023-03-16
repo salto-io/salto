@@ -78,7 +78,7 @@ const addRefAndRestrict = (
   if (isRestrictableField(field)) {
     field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
       enforce_value: isRequired(field),
-      values: makeArray(globalValueSetValue).customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
+      values: makeArray(globalValueSetValue.customValue).map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
     })
   }
 }

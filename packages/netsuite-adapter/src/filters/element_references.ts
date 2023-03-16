@@ -38,7 +38,7 @@ const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])("|')(?<${OPTIONAL_REFS}
 // matches lines which start with '*' than a string with '@N' prefix
 // followed by a space and another string , e.g: "* @NAmdConfig ./utils/ToastDalConfig.json"'
 const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${OPTIONAL_REFS}>.*)`, 'gm')
-const pathPrefixRegex = new RegExp(`^${osPath.sep}|^.${osPath.sep}|^..${osPath.sep}`, 'm')
+const pathPrefixRegex = new RegExp(`^${osPath.sep}|^.${osPath.sep}|^..\\${osPath.sep}`, 'm')
 
 const getServiceIdsToElemIds = async (
   element: Element,

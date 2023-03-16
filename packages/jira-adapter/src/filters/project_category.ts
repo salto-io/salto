@@ -13,43 +13,55 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 
 const PROJECT_TYPE_NAME = 'Project'
 export const DELETED_CATEGORY = -1
 
-export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean => {
-  if (isModificationChange(change)
+export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean =>
+  isModificationChange(change)
     && change.data.before.value.projectCategory !== undefined
-    && change.data.after.value.projectCategory === undefined) {
-    return true
+    && change.data.after.value.projectCategory === undefined
+
+const convertProjectCategoryToCategoryId = async (
+  instance: InstanceElement,
+  projectIdToCategory: Record<string, unknown>
+): Promise<void> => {
+  if (instance.value.projectCategory !== undefined) {
+    if (isReferenceExpression(instance.value.projectCategory)) {
+      const category = await instance.value.projectCategory.getResolvedValue()
+      instance.value.categoryId = category.value.id
+    } else {
+      instance.value.categoryId = instance.value.projectCategory
+    }
+    projectIdToCategory[instance.value.id] = instance.value.projectCategory
+    delete instance.value.projectCategory
   }
-  return false
 }
 
 /**
  * Restructures ProjectCategory to fit the deployment endpoint
  */
 const filter: FilterCreator = ({ client }) => {
-  const projectIdToCategory: Record<string, ReferenceExpression> = {}
+  const projectIdToCategory: Record<string, unknown> = {}
   return {
     name: 'projectCategoryFilter',
     preDeploy: async changes => {
-      changes
-        .filter(isAdditionOrModificationChange)
-        .filter(isInstanceChange)
-        .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE_NAME)
-        .forEach(change => {
-          if (isNeedToDeleteCategory(change) && !client.isDataCenter) {
-            // Jira DC does not support removing projectCategory from a project
-            change.data.after.value.categoryId = DELETED_CATEGORY
-          } else if (change.data.after.value.projectCategory !== undefined) {
-            change.data.after.value.categoryId = change.data.after.value.projectCategory.resValue.value.id
-            projectIdToCategory[change.data.after.value.id] = change.data.after.value.projectCategory
-            delete change.data.after.value.projectCategory
-          }
-        })
+      await Promise.all(
+        changes
+          .filter(isAdditionOrModificationChange)
+          .filter(isInstanceChange)
+          .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE_NAME)
+          .map(async change => {
+            const instance = getChangeData(change)
+            if (isNeedToDeleteCategory(change) && !client.isDataCenter) {
+              // Jira DC does not support removing projectCategory from a project
+              instance.value.categoryId = DELETED_CATEGORY
+            }
+            await convertProjectCategoryToCategoryId(instance, projectIdToCategory)
+          })
+      )
     },
 
     onDeploy: async (changes: Change<Element>[]) => {
@@ -60,7 +72,8 @@ const filter: FilterCreator = ({ client }) => {
         .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
         .forEach(instance => {
           if (instance.value.categoryId !== undefined) {
-            instance.value.projectCategory = projectIdToCategory[instance.value.id]
+            // if somehow the category not in the Record, we will at least keep the id
+            instance.value.projectCategory = projectIdToCategory[instance.value.id] ?? instance.value.categoryId
             delete instance.value.categoryId
           }
         })

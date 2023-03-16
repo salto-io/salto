@@ -101,7 +101,6 @@ export default (
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
     projectCategoryValidator(client),
-
   ]
 
   return createChangeValidator(validators)

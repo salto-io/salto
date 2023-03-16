@@ -74,8 +74,8 @@ describe('projectCategoryValidator', () => {
       {
         elemID: afterInstance.elemID,
         severity: 'Warning',
-        message: 'Changing project category to None is not supported',
-        detailedMessage: 'Changing project category to None is not supported and the project category will not be changed in the service',
+        message: 'Cannot remove project Category from a project',
+        detailedMessage: 'Removing a project category from a project is not supported, the project will retain its previous category in the service.',
       },
     ])
   })

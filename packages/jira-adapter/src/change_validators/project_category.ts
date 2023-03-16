@@ -15,11 +15,10 @@
 */
 
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { PROJECT_TYPE } from '../constants'
 import JiraClient from '../client/client'
 import { isNeedToDeleteCategory } from '../filters/project_category'
 
-const { awu } = collections.asynciterable
 
 export const projectCategoryValidator: (client: JiraClient) =>
   ChangeValidator = client => async changes => {
@@ -27,17 +26,16 @@ export const projectCategoryValidator: (client: JiraClient) =>
       return []
     }
 
-    return awu(changes)
+    return changes
       .filter(isInstanceChange)
       .filter(isModificationChange)
-      .filter(change => change.data.after.elemID.typeName === 'Project')
+      .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE)
       .filter(isNeedToDeleteCategory)
       .map(getChangeData)
       .map(instance => ({
         elemID: instance.elemID,
         severity: 'Warning' as SeverityLevel,
-        message: 'Changing project category to None is not supported',
-        detailedMessage: 'Changing project category to None is not supported and the project category will not be changed in the service',
+        message: 'Cannot remove project Category from a project',
+        detailedMessage: 'Removing a project category from a project is not supported, the project will retain its previous category in the service.',
       }))
-      .toArray()
   }

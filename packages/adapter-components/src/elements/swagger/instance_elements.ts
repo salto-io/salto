@@ -64,11 +64,11 @@ const extractStandaloneFields = async (
   }
   const additionalInstances: InstanceElement[] = []
 
-  const replaceWithReference = async ({ values, parent, objType, nestedPath2 }: {
+  const replaceWithReference = async ({ values, parent, objType, nestedPath: updatedNestedPath }: {
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
-    nestedPath2?: string[]
+    nestedPath?: string[]
   }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line no-use-before-define
     const refInstances = await generateInstancesForType({
@@ -79,7 +79,7 @@ const extractStandaloneFields = async (
       transformationConfigByType,
       transformationDefaultConfig,
       normalized: true,
-      nestedPath: nestedPath2,
+      nestedPath: updatedNestedPath,
       getElemIdFunc,
     })
     additionalInstances.push(...refInstances)
@@ -116,14 +116,14 @@ const extractStandaloneFields = async (
         values: value,
         parent: inst,
         objType: refType,
-        nestedPath2: [...nestedPath, field.name],
+        nestedPath: [...nestedPath, field.name],
       })
     }
     return (await replaceWithReference({
       values: [value],
       parent: inst,
       objType: refType,
-      nestedPath2: [...nestedPath, field.name],
+      nestedPath: [...nestedPath, field.name],
     }))[0]
   }
 

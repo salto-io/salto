@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 const PROJECT_TYPE_NAME = 'Project'
 export const DELETED_CATEGORY = -1
 
-const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean => {
+export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean => {
   if (isModificationChange(change)
     && change.data.before.value.projectCategory !== undefined
     && change.data.after.value.projectCategory === undefined) {

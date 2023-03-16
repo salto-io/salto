@@ -21,9 +21,8 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
-import { shouldNestFiles } from '../config/ducktype'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
-import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault, shouldNestFiles,
   RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions, StandaloneFieldConfigType } from '../config'
 
 const log = logger(module)

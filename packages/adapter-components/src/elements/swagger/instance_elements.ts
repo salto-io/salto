@@ -68,7 +68,7 @@ const extractStandaloneFields = async (
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
-    nestedPath?: string[]
+    nestedPath: string[]
   }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line no-use-before-define
     const refInstances = await generateInstancesForType({

@@ -19,7 +19,7 @@ import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
-import { CUSTOM_METADATA_SUFFIX } from '../constants'
+import { CUSTOM_METADATA_SUFFIX, PATH_ASSISTANT } from '../constants'
 
 const log = logger(module)
 
@@ -147,7 +147,7 @@ const queueResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const metadataTypeToURI: Record<string, string> = {
+const METADATA_TYPE_TO_URI: Record<string, string> = {
   Layout: 'PageLayouts',
   RecordType: 'RecordTypes',
   WebLink: 'ButtonsLinksActions',
@@ -156,25 +156,26 @@ const metadataTypeToURI: Record<string, string> = {
   FieldSet: 'FieldSets',
 }
 
-const standardSubObjectResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
-  if (!isInstanceElement(element)) return undefined
+const customObjectSubInstanceResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
+  if (!isInstanceElement(element)) {
+    return undefined
+  }
 
   const instanceType = await apiName(await element.getType())
-  const instanceUri = metadataTypeToURI[instanceType]
-  if (instanceUri === undefined) {
-    log.warn(`Unable to resolve ${instanceType} to valid URI`)
-  }
+  const instanceUri = METADATA_TYPE_TO_URI[instanceType]
 
   const internalId = getInternalId(element)
   const [parentRef] = getParents(element)
 
-  if (instanceUri !== undefined
-      && internalId !== undefined
+  if (internalId !== undefined
       && isReferenceExpression(parentRef)) {
     const parent = await elementIDResolver(parentRef.elemID)
     const parentIdentifier = await getTypeIdentifier(parent)
     if (parentIdentifier !== undefined) {
-      return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)
+      if (instanceUri !== undefined) {
+        return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)
+      }
+      log.debug(`Unable to resolve ${instanceType} to valid URI`)
     }
   }
   return undefined
@@ -189,7 +190,7 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
-  if (await isInstanceOfType('PathAssistant')(element)) {
+  if (await isInstanceOfType(PATH_ASSISTANT)(element)) {
     return new URL(`${baseUrl}lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1`)
   }
   return undefined
@@ -206,5 +207,6 @@ const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
 
 export const resolvers: UrlResolver[] = [generalConstantsResolver,
   settingsConstantsResolver, assignmentRulesResolver, metadataTypeResolver,
-  objectResolver, fieldResolver, flowResolver, workflowResolver, standardSubObjectResolver, queueResolver,
-  pathAssistantResolver, internalIdResolver, instanceCustomObjectResolver]
+  objectResolver, fieldResolver, flowResolver, workflowResolver,
+  customObjectSubInstanceResolver, queueResolver, pathAssistantResolver,
+  internalIdResolver, instanceCustomObjectResolver]

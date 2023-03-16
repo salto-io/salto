@@ -34,10 +34,6 @@ type ChildField = {id: ReferenceExpression}
 // eslint-disable-next-line camelcase
 type Condition = { child_fields: ChildField[]; value: ReferenceExpression | string }
 
-type MacroIds = ReferenceExpression[]
-
-type Variants = ReferenceExpression[]
-
 
 const getInstanceByFullName = (type: string, instances: InstanceElement[]): Record<string, InstanceElement> => _.keyBy(
   instances.filter(e => e.refType.elemID.name === type),
@@ -45,7 +41,7 @@ const getInstanceByFullName = (type: string, instances: InstanceElement[]): Reco
 )
 
 const idValidVariants = (variants: unknown, dynamicContentItemVariantInstancesById: Record<string, InstanceElement>)
-  : variants is Variants =>
+  : variants is ReferenceExpression[] =>
   _.isArray(variants) && variants.every(variant => {
     const variantInstance = isReferenceExpression(variant)
       ? dynamicContentItemVariantInstancesById[variant.elemID.getFullName()]
@@ -95,7 +91,8 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
   })
 }
 
-const isValidMacroIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>): ids is MacroIds =>
+const isValidMacroIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>)
+  : ids is ReferenceExpression[] =>
   isArray(ids) && ids.every(
     id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()]?.value.name !== undefined)
   )

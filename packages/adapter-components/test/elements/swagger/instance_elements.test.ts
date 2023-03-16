@@ -358,8 +358,8 @@ describe('swagger_instance_elements', () => {
               },
               transformation: {
                 standaloneFields: [
-                  { fieldName: 'owners' },
-                  { fieldName: 'primaryOwner' },
+                  { fieldName: 'owners', nestFiles: true },
+                  { fieldName: 'primaryOwner', nestFiles: false },
                 ],
               },
             },
@@ -390,6 +390,16 @@ describe('swagger_instance_elements', () => {
         `${ADAPTER_NAME}.Owner.instance.cat__o2`,
         `${ADAPTER_NAME}.Pet.instance.mouse`,
         `${ADAPTER_NAME}.Owner.instance.mouse__o3`,
+      ])
+      expect(res.elements.map(e => e.path)).toEqual([
+        [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'dog'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'owners', 'dog__o1'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'dog__primary'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'cat'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'owners', 'cat__o2'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'mouse'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'owners', 'mouse__o3'],
       ])
       expect(mockPaginator).toHaveBeenCalledTimes(2)
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/pet', queryParams: { a: 'b' }, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())

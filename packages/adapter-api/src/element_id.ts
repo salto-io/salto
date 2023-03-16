@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS } from './core_annotations'
+import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
 export const ElemIDTypes = ['type', 'field', 'instance', 'attr', 'annotation', 'var'] as ReadonlyArray<string>
@@ -76,12 +76,20 @@ export class ElemID {
 
   static getDefaultIdType = (adapter: string): ElemIDType => (adapter === ElemID.VARIABLES_NAMESPACE ? 'var' : 'type')
 
+  private static readonly BUILTIN_TYPE_NAMES = new Set(Object.values(BUILTIN_TYPE_NAMES))
+
   static fromFullName(fullName: string): ElemID {
     const containerNameParts = getContainerPrefix(fullName)
     if (containerNameParts !== undefined) {
       return new ElemID(GLOBAL_ADAPTER, fullName)
     }
     const [adapter, typeName, idType, ...name] = fullName.split(ElemID.NAMESPACE_SEPARATOR)
+    if (typeName === undefined && ElemID.BUILTIN_TYPE_NAMES.has(adapter)) {
+      // Element IDs with a single name part are ambiguous since adapter config types and builtin types
+      // both have just one name part. we identify this case by checking for the builtin types specifically
+      // since that is a hard coded list of possibilities
+      return new ElemID(GLOBAL_ADAPTER, adapter)
+    }
     if (idType === undefined) {
       return new ElemID(adapter, typeName)
     }

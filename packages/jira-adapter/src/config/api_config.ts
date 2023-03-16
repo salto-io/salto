@@ -143,6 +143,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       standaloneFields: [
         {
           fieldName: 'gadgets',
+          nestFiles: true,
         },
       ],
       serviceUrl: '/jira/dashboards/{id}',
@@ -787,6 +788,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       standaloneFields: [
         {
           fieldName: 'components',
+          nestFiles: true,
         },
       ],
       serviceUrl: '/secure/project/EditProject!default.jspa?pid={id}',
@@ -1103,6 +1105,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       standaloneFields: [
         {
           fieldName: 'levels',
+          nestFiles: true,
         },
       ],
       serviceUrl: '/secure/admin/EditIssueSecurityScheme!default.jspa?=&schemeId={id}',

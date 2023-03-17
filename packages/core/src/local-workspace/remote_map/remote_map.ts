@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import path from 'path'
 import { promisify } from 'util'
 import AsyncLock from 'async-lock'
@@ -175,7 +176,7 @@ AsyncIterable<remoteMap.RemoteMapEntry<string>[]> {
 
 const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const readonlyDBConnectionsPerRemoteMap: Record<string, Record<string, Promise<rocksdb>>> = {}
-
+const remoteMapsByLocation: Record<string, remoteMap.RemoteMap<unknown>[]> = {}
 
 const closeConnection = async (
   location: string, connection: Promise<rocksdb>, connPool: Record<string, Promise<rocksdb>>
@@ -186,7 +187,6 @@ const closeConnection = async (
 }
 
 export const closeRemoteMapsOfLocation = async (location: string): Promise<void> => {
-  await dbConnectionPool.putAll(location)
   const readOnlyConnection = readonlyDBConnections[location]
   if (await readOnlyConnection) {
     await closeConnection(location, readOnlyConnection, readonlyDBConnections)
@@ -199,7 +199,11 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  locationCaches.release(location)
+
+  await Promise.all(remoteMapsByLocation[location].map(map => map.close()))
+  if (remoteMapsByLocation[location].length) {
+    log.error('Not all remote maps for location %s were closed: %o', location, remoteMapsByLocation[location])
+  }
   counters.locationCounters(location).dump()
   counters.deleteLocation(location)
 }
@@ -318,7 +322,9 @@ export const createRemoteMapCreator = (location: string,
 remoteMap.RemoteMapCreator => {
   const statCounters = counters.locationCounters(location)
 
-  const locationCache = locationCaches.get(location)
+  if (!(location in remoteMapsByLocation)) {
+    remoteMapsByLocation[location] = []
+  }
 
   let persistentDB: DbConnection
   let tmpDB: DbConnection
@@ -331,6 +337,7 @@ remoteMap.RemoteMapCreator => {
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
     let wasClearCalled = false
+    const locationCache = locationCaches.get(location)
     const delKeys = new Set<string>()
     const locationTmpDir = getDBTmpDir(location)
     if (!await fileUtils.exists(location)) {
@@ -543,7 +550,7 @@ remoteMap.RemoteMapCreator => {
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     await withCreatorLock(createDBConnections)
     statCounters.RemoteMapCreated.inc()
-    return {
+    const newMap = {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
         withLimitedConcurrency(keys.map(k => () => getImpl(k)), GET_CONCURRENCY),
@@ -629,14 +636,15 @@ remoteMap.RemoteMapCreator => {
           || (!wasClearCalled && hasKeyImpl(keyToDBKey(key), persistentDB))
       },
       close: async (): Promise<void> => {
-        // Do nothing - we can not close the connection here
-        //  because we share the connection across multiple namespaces
-        log.warn(
-          'cannot close connection of remote map with close method - use closeRemoteMapsOfLocation'
-        )
+        await dbConnectionPool.put(tmpDB)
+        await dbConnectionPool.put(persistentDB)
+        locationCaches.release(locationCache)
+        _.pull(remoteMapsByLocation[location], newMap)
       },
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
     }
+    remoteMapsByLocation[location].push(newMap)
+    return newMap
   }
 }
 

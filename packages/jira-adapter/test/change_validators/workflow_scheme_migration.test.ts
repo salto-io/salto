@@ -23,7 +23,6 @@ import { getDefaultConfig, JiraConfig } from '../../src/config/config'
 import { workflowSchemeMigrationValidator } from '../../src/change_validators/workflow_scheme_migration'
 import { JIRA } from '../../src/constants'
 
-jest.setTimeout(100000)
 const ERROR_MESSAGE = `This workflow scheme change requires an issue migration, as some issue statuses do not exist in the new workflow. If you continue with the deployment, the changes will be pushed as a workflow scheme draft but will not be published. You will have to publish them manually from Jira. Alternatively, you can add the following NACL code to this workflow’s scheme code. Make sure to specific, for each issue type and status, what should its new status be. Learn more at https://help.salto.io/en/articles/6948228-migrating-issues-when-modifying-workflow-schemes .
 statusMigrations = [
   {

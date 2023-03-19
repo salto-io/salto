@@ -18,12 +18,11 @@ import { mockTypes } from '../mock_elements'
 import { FilterWith } from '../../src/filter'
 import filterCreator, { LAYOUT_ASSIGNMENTS_FIELD, LOGIN_IP_RANGES_FIELD } from '../../src/filters/minify_deploy'
 import { defaultFilterContext } from '../utils'
-import { INSTANCE_FULL_NAME_FIELD, LABEL } from '../../src/constants'
+import { INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
 describe('minifyDeployFilter', () => {
   describe('deploy flow', () => {
     const PROFILE_FULL_NAME = 'ProfileFullName'
-    const PERMISSION_SET_FULL_NAME = 'PermissionSetFullName'
     const AFTER_IP_RANGES = [
       {
         description: 'desc 2',
@@ -39,7 +38,6 @@ describe('minifyDeployFilter', () => {
 
     let filter: FilterWith<'preDeploy' | 'onDeploy'>
     let profileChange: Change<InstanceElement>
-    let permissionSetChange: Change<InstanceElement>
     let afterPreDeployChanges: Change<InstanceElement>[]
     let afterOnDeployChanges: Change<InstanceElement>[]
 
@@ -69,28 +67,6 @@ describe('minifyDeployFilter', () => {
           },
         }
       )
-      const beforePermissionSetInstance = new InstanceElement(
-        'TestPermissionSet',
-        mockTypes.PermissionSet,
-        {
-          [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
-          [LABEL]: PERMISSION_SET_FULL_NAME,
-          nonModifiedField: '1',
-          anotherNonModifiedField: '2',
-          modifiedField: 'before',
-          modifiedNestedField: {
-            modifiedAttr: 'before',
-            nonModifiedAttr: '1',
-          },
-          modifiedNestedNestedField: {
-            modifiedNestedAttr: {
-              modifiedAttr: 'before',
-              nonModifiedAttr: '1',
-            },
-            nonModifiedAttr: '1',
-          },
-        }
-      )
 
       const afterProfileInstance = beforeProfileInstance.clone()
       afterProfileInstance.value.modifiedField = 'after'
@@ -102,26 +78,18 @@ describe('minifyDeployFilter', () => {
         before: beforeProfileInstance,
         after: afterProfileInstance,
       })
-      const afterPermissionSetInstance = beforePermissionSetInstance.clone()
-      afterPermissionSetInstance.value.modifiedField = 'after'
-      afterPermissionSetInstance.value.modifiedNestedField.modifiedAttr = 'after'
-      afterPermissionSetInstance.value.modifiedNestedNestedField.modifiedNestedAttr.modifiedAttr = 'after'
-      permissionSetChange = toChange({
-        before: beforePermissionSetInstance,
-        after: afterPermissionSetInstance,
-      })
 
       filter = filterCreator({
         config: defaultFilterContext,
       }) as FilterWith<'preDeploy' | 'onDeploy'>
-      afterPreDeployChanges = [profileChange, permissionSetChange]
+      afterPreDeployChanges = [profileChange]
       await filter.preDeploy(afterPreDeployChanges)
       afterOnDeployChanges = [...afterPreDeployChanges]
       await filter.onDeploy(afterOnDeployChanges)
     })
     describe('on preDeploy', () => {
-      it('should have a minified Profile and PermissionSet changes', () => {
-        expect(afterPreDeployChanges).toHaveLength(2)
+      it('should have a minified Profile changes', () => {
+        expect(afterPreDeployChanges).toHaveLength(1)
         const [, afterProfile] = getAllChangeData(afterPreDeployChanges[0])
         expect(afterProfile.value).toEqual({
           [INSTANCE_FULL_NAME_FIELD]: PROFILE_FULL_NAME,
@@ -141,29 +109,12 @@ describe('minifyDeployFilter', () => {
             },
           },
         })
-        const [, afterPermissionSet] = getAllChangeData(afterPreDeployChanges[1])
-        expect(afterPermissionSet.value).toEqual({
-          [INSTANCE_FULL_NAME_FIELD]: PERMISSION_SET_FULL_NAME,
-          [LABEL]: PERMISSION_SET_FULL_NAME,
-          modifiedField: 'after',
-          modifiedNestedField: {
-            modifiedAttr: 'after',
-            nonModifiedAttr: '1',
-          },
-          modifiedNestedNestedField: {
-            modifiedNestedAttr: {
-              modifiedAttr: 'after',
-              nonModifiedAttr: '1',
-            },
-          },
-        })
       })
     })
     describe('on onDeploy', () => {
       it('should have the original change', () => {
-        expect(afterOnDeployChanges).toHaveLength(2)
+        expect(afterOnDeployChanges).toHaveLength(1)
         expect(afterOnDeployChanges[0]).toEqual(profileChange)
-        expect(afterOnDeployChanges[1]).toEqual(permissionSetChange)
       })
     })
   })

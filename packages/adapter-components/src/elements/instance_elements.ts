@@ -111,7 +111,7 @@ export const getInstanceFilePath = ({
       ...(nestedTypes ? nestedTypes.map(pathNaclCase) : [pathNaclCase(typeName)]),
       nameMapping
         ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
-    ]).filter(isDefined)
+    ])
 }
 
 export const generateInstanceNameFromConfig = (

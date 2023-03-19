@@ -239,7 +239,8 @@ const updateStateWithFetchResults = async (
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
-  fetchedAccounts: string[]
+  fetchedAccounts: string[],
+  partiallyFetchedAccounts: string[],
 ): Promise<void> => {
   const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
@@ -247,8 +248,11 @@ const updateStateWithFetchResults = async (
   await workspace.state()
     .override(awu(mergedElements)
       .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  await workspace.state().updatePathIndex(unmergedElements,
-    (await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
+  const accountsToMaintain = [
+    ...(await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)),
+    ...partiallyFetchedAccounts,
+  ]
+  await workspace.state().updatePathIndex(unmergedElements, accountsToMaintain)
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }
 
@@ -280,6 +284,7 @@ export const fetch: FetchFunc = async (
     const {
       changes, elements, mergeErrors, errors, updatedConfig,
       configChanges, accountNameToConfigMessage, unmergedElements,
+      partiallyFetchedAccounts,
     } = await fetchChanges(
       accountToAdapter,
       await workspace.elements(),
@@ -290,7 +295,13 @@ export const fetch: FetchFunc = async (
       withChangeDetection,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+    await updateStateWithFetchResults(
+      workspace,
+      elements,
+      unmergedElements,
+      fetchAccounts,
+      Array.from(partiallyFetchedAccounts),
+    )
     return {
       changes,
       fetchErrors: errors,
@@ -347,7 +358,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts)
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts, [])
   return {
     changes,
     fetchErrors: errors,

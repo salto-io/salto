@@ -726,7 +726,7 @@ export const fetchChanges = async (
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   withChangesDetection?: boolean
-): Promise<FetchChangesResult> => {
+): Promise<FetchChangesResult & { partiallyFetchedAccounts: Set<string>} > => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
@@ -750,19 +750,22 @@ export const fetchChanges = async (
   adaptersFirstFetchPartial.forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
-  return createFetchChanges({
-    unmergedElements: accountElements,
-    adapterNames: Object.keys(accountsToAdapters),
-    workspaceElements,
-    stateElements,
-    currentConfigs,
-    getChangesEmitter,
-    progressEmitter,
-    processErrorsResult,
-    errors,
-    updatedConfigs,
+  return {
+    ...(await createFetchChanges({
+      unmergedElements: accountElements,
+      adapterNames: Object.keys(accountsToAdapters),
+      workspaceElements,
+      stateElements,
+      currentConfigs,
+      getChangesEmitter,
+      progressEmitter,
+      processErrorsResult,
+      errors,
+      updatedConfigs,
+      partiallyFetchedAccounts,
+    })),
     partiallyFetchedAccounts,
-  })
+  }
 }
 
 const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult => {

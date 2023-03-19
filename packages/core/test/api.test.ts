@@ -157,6 +157,7 @@ describe('api.ts', () => {
         elements: fetchedElements,
         mergeErrors: [],
         accountNameToConfigMessage: {},
+        partiallyFetchedAccounts: new Set(),
       })
     })
 

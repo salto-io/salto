@@ -85,7 +85,7 @@ describe('appDeploymentFilter', () => {
     })
     it('should not create customName field for non custom applications and remain name field', async () => {
       const elements = [appType, orgSettingType, orgSettingInstance, appInstance]
-      await filter.onFetch?.(elements)
+      await filter.onFetch(elements)
       const app = elements.filter(isInstanceElement).find(e => e.elemID.name === 'regular app')
       expect(app?.value.name).toEqual('salesforce')
       expect(app?.value.customName).toBeUndefined()

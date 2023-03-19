@@ -339,7 +339,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       idFields: ['label'],
       serviceIdField: 'id',
       fieldsToHide: [
-        { fieldName: 'customName' },
+        { fieldName: CUSTOM_NAME_FIELD },
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],

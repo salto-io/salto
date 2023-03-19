@@ -29,7 +29,7 @@ import _ from 'lodash'
 import { detailedCompare, getPath } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isInstanceOfTypeChange } from './utils'
-import { PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, LABEL } from '../constants'
+import { PROFILE_METADATA_TYPE, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { apiName, metadataType } from '../transformers/transformer'
 
 export const LOGIN_IP_RANGES_FIELD = 'loginIpRanges'
@@ -42,10 +42,6 @@ const typeToRemainingFields: Record<string, Record<string, { default?: Value }>>
   [PROFILE_METADATA_TYPE]: {
     [INSTANCE_FULL_NAME_FIELD]: {},
     [LOGIN_IP_RANGES_FIELD]: { default: [] },
-  },
-  [PERMISSION_SET_METADATA_TYPE]: {
-    [INSTANCE_FULL_NAME_FIELD]: {},
-    [LABEL]: {},
   },
 }
 

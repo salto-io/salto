@@ -22,6 +22,7 @@ import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salt
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from '../constants'
+import { FETCH_CONFIG } from '../config'
 
 const log = logger(module)
 const { toArrayAsync, awu } = collections.asynciterable
@@ -115,16 +116,20 @@ export const replaceValuesForChanges = async (
 }
 
 /**
- * Replaces user ids with user login
+ * Replaces user ids with login name, when 'convertUsersIds' config flag is enabled
  */
-const filterCreator: FilterCreator = ({ paginator }) => {
+const filterCreator: FilterCreator = ({ paginator, config }) => {
   let userIdToLogin: Record<string, string> = {}
   return {
     name: 'usersFilter',
     onFetch: async elements => {
+      if (config[FETCH_CONFIG].convertUsersIds === false) {
+        log.debug('Converting user ids was disabled (onFetch)')
+        return
+      }
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
-        log.warn('In users filter onFetch, could not find any users')
+        log.warn('Could not find any users (onFetch)')
         return
       }
       const mapping = Object.fromEntries(
@@ -136,6 +141,10 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (config[FETCH_CONFIG].convertUsersIds === false) {
+        log.debug('Converting user ids was disabled (preDeploy)')
+        return
+      }
       const relevantChanges = changes
         .filter(change => isRelevantInstance(getChangeData(change)))
       if (_.isEmpty(relevantChanges)) {
@@ -143,7 +152,7 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       }
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
-        log.warn('In users filter preDeploy, could not find any users')
+        log.warn('Could not find any users (preDeploy)')
         return
       }
 
@@ -156,6 +165,10 @@ const filterCreator: FilterCreator = ({ paginator }) => {
       await replaceValuesForChanges(changes, loginToUserId)
     },
     onDeploy: async (changes: Change<InstanceElement>[]) => {
+      if (config[FETCH_CONFIG].convertUsersIds === false) {
+        log.debug('Converting user ids was disabled (onDeploy)')
+        return
+      }
       const relevantChanges = changes
         .filter(change => isRelevantInstance(getChangeData(change)))
       if (_.isEmpty(relevantChanges)) {

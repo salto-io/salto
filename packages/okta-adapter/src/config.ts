@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
@@ -28,7 +28,9 @@ export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
 export type OktaActionName = ActionName | 'activate' | 'deactivate'
-export type OktaFetchConfig = configUtils.UserFetchConfig
+export type OktaFetchConfig = configUtils.UserFetchConfig & {
+  convertUsersIds?: boolean
+}
 export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
 
 export type OktaConfig = {
@@ -916,6 +918,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+    convertUsersIds: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
@@ -929,6 +932,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
         OKTA,
+        {
+          convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
+        }
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
@@ -938,7 +944,12 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+      DEFAULT_CONFIG,
+      API_DEFINITIONS_CONFIG,
+      `${FETCH_CONFIG}.hideTypes`,
+      `${FETCH_CONFIG}.convertUsersIds`
+    ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

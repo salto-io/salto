@@ -16,6 +16,7 @@
 import { ObjectType, ElemID, InstanceElement, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
 import { client as clientUtils, filterUtils } from '@salto-io/adapter-components'
 import { mockFunction } from '@salto-io/test-utils'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, OKTA } from '../../src/constants'
 import userFilter from '../../src/filters/user'
 import { getFilterParams } from '../utils'
@@ -114,7 +115,7 @@ describe('user filter', () => {
         expect.anything(),
       )
     })
-    it('should not replace anything if the users response is invalid', async () => {
+    it('should not replace user ids that were missing from response', async () => {
       const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
         yield [
           { id: '111', profile: { login: 'a@a.com' } },
@@ -137,6 +138,35 @@ describe('user filter', () => {
           },
         },
       })
+    })
+    it('should not replace anything if convertUsersIds config option is disabled', async () => {
+      const mockPaginator = mockFunction<clientUtils.Paginator>().mockImplementation(async function *get() {
+        yield []
+      })
+      filter = userFilter(getFilterParams({
+        paginator: mockPaginator,
+        config: {
+          ...DEFAULT_CONFIG,
+          [FETCH_CONFIG]: {
+            include: [{
+              type: '.*',
+            }],
+            exclude: [],
+            convertUsersIds: false,
+          },
+        },
+      })) as FilterType
+      const elements = [groupRuleInstance.clone(), groupRuleType.clone()]
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const groupRule = instances.find(e => e.elemID.typeName === GROUP_RULE_TYPE_NAME)
+      expect(groupRule?.value).toEqual({
+        name: 'test',
+        conditions: {
+          people: { users: { exclude: ['111', '222'] } },
+        },
+      })
+      expect(mockPaginator).toHaveBeenCalledTimes(0)
     })
   })
   describe('preDeploy', () => {

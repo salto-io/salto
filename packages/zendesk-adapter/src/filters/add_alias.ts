@@ -204,7 +204,7 @@ const aliasMap: Record<string, AliasData> = {
       fieldName: 'name',
     }],
   },
-  tag: { // should we add alias? there is only id
+  tag: {
     aliasComponents: [{
       fieldName: 'id',
     }],
@@ -234,7 +234,7 @@ const aliasMap: Record<string, AliasData> = {
       fieldName: 'title',
     }],
   },
-  trigger_category: { // should we add alias? there is only name
+  trigger_category: {
     aliasComponents: [{
       fieldName: 'name',
     }],
@@ -420,7 +420,7 @@ const getFieldVal = ({ instance, component, elementPart, instById }:{
 }): string | undefined => {
   const fieldValue = _.get(instance[elementPart], component.fieldName)
   if (component.referenceFieldName === undefined) {
-    return fieldValue
+    return _.isString(fieldValue) ? fieldValue : undefined
   }
   if (!isReferenceExpression(fieldValue)) {
     log.error(`${component.fieldName} is treated as a reference expression but it is not`)

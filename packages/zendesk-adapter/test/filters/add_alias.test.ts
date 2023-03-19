@@ -55,6 +55,23 @@ describe('add alias filter', () => {
   const categoryTranslationType = new ObjectType({ elemID: new ElemID(ZENDESK, categoryTranslationTypeName) })
 
 
+  const localeInstance = new InstanceElement(
+    'instance4',
+    localeType,
+    {
+      locale: 'en-us', // will be used for category translation
+      presentation_name: 'en-us',
+    },
+  )
+
+  const categoryInstance = new InstanceElement(
+    'instance6',
+    categoryType,
+    {
+      name: 'category name',
+    },
+  )
+
   beforeEach(async () => {
     client = new ZendeskClient({
       credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
@@ -96,14 +113,6 @@ describe('add alias filter', () => {
           name: 'dynamic content name',
         },
       )
-      const localeInstance = new InstanceElement(
-        'instance4',
-        localeType,
-        {
-          locale: 'en-us', // will be used for category translation
-          presentation_name: 'en-us',
-        },
-      )
       const dynamicContentItemVariantsInstance = new InstanceElement(
         'instance5',
         dynamicContentItemVariantsType,
@@ -114,13 +123,6 @@ describe('add alias filter', () => {
         {
           _parent: [new ReferenceExpression(dynamicContentItemInstance.elemID, dynamicContentItemInstance)],
         }
-      )
-      const categoryInstance = new InstanceElement(
-        'instance6',
-        categoryType,
-        {
-          name: 'category name',
-        },
       )
       const categoryOrderInstance = new InstanceElement(
         'instance7',
@@ -172,6 +174,65 @@ describe('add alias filter', () => {
         'en-us - category name',
         undefined,
       ])
+    })
+    it('should not crush when one of the values is undefined', async () => {
+      const appInstallationInstanceInvalid = new InstanceElement(
+        'instance2',
+        appInstallationType,
+        { settings: { name: undefined } },
+      )
+      const elements = [
+        appInstallationInstanceInvalid,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+    })
+    it('should not crush when there is not parent', async () => {
+      const categoryTranslationInstance = new InstanceElement(
+        'instance8',
+        categoryTranslationType,
+        {
+          locale: new ReferenceExpression(localeInstance.elemID, localeInstance),
+        },
+        undefined,
+      )
+      const elements = [
+        categoryTranslationInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+    })
+    it('should not crush when there is a value instead of a reference', async () => {
+      const categoryTranslationInstance = new InstanceElement(
+        'instance8',
+        categoryTranslationType,
+        {
+          locale: 'en-US',
+        },
+        undefined,
+        {
+          _parent: [new ReferenceExpression(categoryInstance.elemID, categoryInstance)],
+        }
+      )
+      const elements = [
+        categoryTranslationInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+    })
+    it('should not crush when there is a reference instead of a value', async () => {
+      const dynamicContentItemInstance = new InstanceElement(
+        'instance3',
+        dynamicContentItemType,
+        {
+          name: new ReferenceExpression(localeInstance.elemID, localeInstance),
+        },
+      )
+      const elements = [
+        dynamicContentItemInstance,
+      ]
+      await filter.onFetch(elements)
+      expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
     })
   })
 })

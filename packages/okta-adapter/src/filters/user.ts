@@ -21,11 +21,9 @@ import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { paginate } from '../client/pagination'
 import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from '../constants'
 
 const log = logger(module)
-const { createPaginator } = clientUtils
 const { toArrayAsync, awu } = collections.asynciterable
 const { makeArray } = collections.array
 
@@ -119,15 +117,11 @@ export const replaceValuesForChanges = async (
 /**
  * Replaces user ids with user login
  */
-const filterCreator: FilterCreator = ({ client }) => {
+const filterCreator: FilterCreator = ({ paginator }) => {
   let userIdToLogin: Record<string, string> = {}
   return {
     name: 'usersFilter',
     onFetch: async elements => {
-      const paginator = createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      })
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         log.warn('In users filter onFetch, could not find any users')
@@ -147,10 +141,6 @@ const filterCreator: FilterCreator = ({ client }) => {
       if (_.isEmpty(relevantChanges)) {
         return
       }
-      const paginator = createPaginator({
-        client,
-        paginationFuncCreator: paginate,
-      })
       const users = await getUsers(paginator)
       if (_.isEmpty(users)) {
         log.warn('In users filter preDeploy, could not find any users')

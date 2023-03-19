@@ -37,7 +37,7 @@ export const getWithCursorHeaderPagination = (): clientUtils.PaginationFunc => {
   const nextPageCursorPagesByHeader: clientUtils.PaginationFunc = ({
     responseHeaders, getParams, currentParams,
   }) => {
-    const { url } = getParams
+    const { url, headers } = getParams
     if (responseHeaders !== undefined) {
       const linkHeader = _.get(responseHeaders, LINK_HEADER_NAME)
       if (_.isString(linkHeader)) {
@@ -50,6 +50,7 @@ export const getWithCursorHeaderPagination = (): clientUtils.PaginationFunc => {
           return [{
             ...currentParams,
             ...Object.fromEntries(nextPage.searchParams.entries()),
+            ...headers,
           }]
         }
       }

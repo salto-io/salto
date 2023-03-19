@@ -56,7 +56,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
   const adapterConfig: { [K in keyof Required<StripeConfig>]: StripeConfig[K] } = {
     client: config?.value?.client,
-    fetch: config?.value?.fetch,
+    fetch,
     apiDefinitions,
   }
   Object.keys(config?.value ?? {})

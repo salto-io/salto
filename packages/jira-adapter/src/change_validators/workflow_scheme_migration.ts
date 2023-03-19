@@ -95,8 +95,8 @@ const getDefaultWorkflowIssueTypes = (
   workflowScheme: InstanceElement,
   assignedIssueTypes: ReferenceExpression[]
 ): ReferenceExpression[] => {
-  workflowScheme.value.items
-    .filter(isWorkflowSchemeItem)
+  workflowScheme.value.item
+    ?.filter(isWorkflowSchemeItem)
     .forEach((item: WorkflowSchemeItem) =>
       _.remove(assignedIssueTypes, issueType => issueType.elemID.isEqual(item.issueType.elemID)))
   return assignedIssueTypes

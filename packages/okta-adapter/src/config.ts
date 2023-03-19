@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ActionName } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { ACCESS_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
+import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
 const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -328,7 +328,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'name', fieldType: 'string' },
-        { fieldName: 'customName', fieldType: 'string' },
+        { fieldName: CUSTOM_NAME_FIELD, fieldType: 'string' },
         { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
         { fieldName: 'CSRs', fieldType: 'list<Csr>' },

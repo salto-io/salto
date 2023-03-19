@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
+import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME } from '../constants'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
@@ -29,7 +29,6 @@ const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
 const SAML_2_0_APP = 'SAML_2_0'
-const CUSTOM_NAME_FIELD = 'customName'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
     add: {
@@ -72,7 +71,8 @@ export const isAppResponse = createSchemeGuard<Application>(EXPECTED_APP_SCHEMA,
 const isCustomApp = (value: Values, subdomain: string): boolean => (
   [AUTO_LOGIN_APP, SAML_2_0_APP].includes(value.signOnMode)
   && value.name !== undefined
-  && _.startsWith(value.name, subdomain)
+  // custom app names starts with subdomain and '_'
+  && _.startsWith(value.name, `${subdomain}_`)
 )
 
 // Set fields that are created by the service to the returned app instance
@@ -115,7 +115,7 @@ const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
   config: OktaConfig,
-  elementsSource: ReadOnlyElementsSource,
+  subdomain?: string,
 ): Promise<void> => {
   const fieldsToIgnore = [
     ...Object.keys(APP_ASSIGNMENT_FIELDS),
@@ -134,7 +134,6 @@ const deployApp = async (
 
   if (isAdditionOrModificationChange(change)) {
     if (isAdditionChange(change) && isAppResponse(response)) {
-      const subdomain = await getSubdomainFromElementsSource(elementsSource)
       assignCreatedFieldsToApp(change, response, subdomain)
     }
     await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
@@ -168,11 +167,12 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
+      .filter(isModificationChange)
       .map(getChangeData)
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
       .forEach(
-        async instance => {
+        instance => {
           const { customName } = instance.value
           if (customName !== undefined) {
             instance.value.name = customName
@@ -186,10 +186,10 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
       change => isInstanceChange(change)
             && getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME
     )
-
+    const subdomain = await getSubdomainFromElementsSource(elementsSource)
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployApp(change, client, config, elementsSource)
+      async change => deployApp(change, client, config, subdomain)
     )
 
     return {
@@ -203,7 +203,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
       .forEach(
-        async instance => {
+        instance => {
           const { customName } = instance.value
           if (customName !== undefined) {
             delete instance.value.name

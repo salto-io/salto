@@ -75,7 +75,7 @@ describe('appDeploymentFilter', () => {
   describe('fetch', () => {
     it('should create customName field for custom applications', async () => {
       const elements = [appType, orgSettingType, orgSettingInstance, customSamlAppInstance, customSwaInstance]
-      await filter.onFetch?.(elements)
+      await filter.onFetch(elements)
       const saml = elements.filter(isInstanceElement).find(e => e.elemID.name === 'custom saml app')
       expect(saml?.value.name).toBeUndefined()
       expect(saml?.value.customName).toEqual('oktaSubdomain-saml-link')

@@ -23,16 +23,21 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isPicklistField } from '../filters/value_set'
 
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
 
-const createUnknownPicklistValueChangeError = ({ elemID, annotations }: Field, unknownValue: string): ChangeError => ({
-  elemID,
-  message: `Unknown picklist value ${unknownValue}`,
-  detailedMessage: `Supported values are ${annotations[CORE_ANNOTATIONS.RESTRICTION]?.values}`,
+const createUnknownPicklistValueChangeError = (
+  instance: InstanceElement,
+  field: Field,
+  unknownValue: string
+): ChangeError => ({
+  elemID: instance.elemID,
+  message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name} of instance ${instance.elemID.getFullName()}`,
+  detailedMessage: `Supported values are ${safeJsonStringify(field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values)}`,
   severity: 'Error',
 })
 
@@ -46,9 +51,9 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
       const field = fields[picklistFieldName]
       const fieldValue = instance.value[picklistFieldName]
       const allowedValues = field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values
-      return !_.isArray(allowedValues) || allowedValues.includes(fieldValue)
+      return fieldValue === undefined || !_.isArray(allowedValues) || allowedValues.includes(fieldValue)
         ? undefined
-        : createUnknownPicklistValueChangeError(field, fieldValue)
+        : createUnknownPicklistValueChangeError(instance, field, fieldValue)
     })
     .filter(isDefined)
 }

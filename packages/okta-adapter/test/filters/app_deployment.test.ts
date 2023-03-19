@@ -44,22 +44,22 @@ describe('appDeploymentFilter', () => {
   const customSamlAppInstance = new InstanceElement(
     'custom saml app',
     appType,
-    { name: 'oktaSubdomain-saml-link', signOnMode: 'SAML_2_0' },
+    { name: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
   )
   const customSwaInstance = new InstanceElement(
     'custom swa app',
     appType,
-    { name: 'oktaSubdomain-swa-link', signOnMode: 'AUTO_LOGIN' },
+    { name: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
   )
   const customSamlAfterFetch = new InstanceElement(
     'custom saml app',
     appType,
-    { customName: 'oktaSubdomain-saml-link', signOnMode: 'SAML_2_0' },
+    { customName: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
   )
   const customSwaAfterFetch = new InstanceElement(
     'custom swa app',
     appType,
-    { customName: 'oktaSubdomain-swa-link', signOnMode: 'AUTO_LOGIN' },
+    { customName: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
   )
 
   beforeEach(() => {
@@ -78,10 +78,10 @@ describe('appDeploymentFilter', () => {
       await filter.onFetch(elements)
       const saml = elements.filter(isInstanceElement).find(e => e.elemID.name === 'custom saml app')
       expect(saml?.value.name).toBeUndefined()
-      expect(saml?.value.customName).toEqual('oktaSubdomain-saml-link')
+      expect(saml?.value.customName).toEqual('oktaSubdomain_saml_link')
       const swa = elements.filter(isInstanceElement).find(e => e.elemID.name === 'custom swa app')
       expect(swa?.value.name).toBeUndefined()
-      expect(swa?.value.customName).toEqual('oktaSubdomain-swa-link')
+      expect(swa?.value.customName).toEqual('oktaSubdomain_swa_link')
     })
     it('should not create customName field for non custom applications and remain name field', async () => {
       const elements = [appType, orgSettingType, orgSettingInstance, appInstance]
@@ -102,8 +102,8 @@ describe('appDeploymentFilter', () => {
       const instances = changes.map(getChangeData).filter(isInstanceElement)
       const samlApp = instances.find(i => i.elemID.name === 'custom saml app')
       const swaApp = instances.find(i => i.elemID.name === 'custom swa app')
-      expect(samlApp?.value.name).toEqual('oktaSubdomain-saml-link')
-      expect(swaApp?.value.name).toEqual('oktaSubdomain-swa-link')
+      expect(samlApp?.value.name).toEqual('oktaSubdomain_saml_link')
+      expect(swaApp?.value.name).toEqual('oktaSubdomain_swa_link')
     })
     it('should do nothing if customName field does not exist', async () => {
       const customAppAddition = new InstanceElement(
@@ -127,7 +127,7 @@ describe('appDeploymentFilter', () => {
         status: 200,
         data: {
           id: '1',
-          name: 'oktaSubdomain-link',
+          name: 'oktaSubdomain_link',
           signOnMode: 'SAML_2_0',
         },
       })
@@ -142,7 +142,7 @@ describe('appDeploymentFilter', () => {
       const customAppInstance = res.deployResult.appliedChanges
         .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'custom app')
       expect(customAppInstance?.value.id).toEqual('1')
-      expect(customAppInstance?.value.customName).toEqual('oktaSubdomain-link')
+      expect(customAppInstance?.value.customName).toEqual('oktaSubdomain_link')
     })
   })
 
@@ -151,12 +151,12 @@ describe('appDeploymentFilter', () => {
       const customSamlAfterDeploy = new InstanceElement(
         'custom saml app',
         appType,
-        { customName: 'oktaSubdomain-saml-link', name: 'oktaSubdomain-saml-link', signOnMode: 'SAML_2_0' },
+        { customName: 'oktaSubdomain_saml_link', name: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' },
       )
       const customSwaAfterDeploy = new InstanceElement(
         'custom swa app',
         appType,
-        { customName: 'oktaSubdomain-swa-link', name: 'oktaSubdomain-swa-link', signOnMode: 'AUTO_LOGIN' },
+        { customName: 'oktaSubdomain_swa_link', name: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' },
       )
       const changes = [
         toChange({ before: customSamlAfterDeploy, after: customSamlAfterDeploy }),
@@ -166,8 +166,8 @@ describe('appDeploymentFilter', () => {
       const instances = changes.map(getChangeData).filter(isInstanceElement)
       const customApp = instances.find(i => i.elemID.name === 'custom saml app')
       const customSwa = instances.find(i => i.elemID.name === 'custom swa app')
-      expect(customSwa?.value).toEqual({ customName: 'oktaSubdomain-swa-link', signOnMode: 'AUTO_LOGIN' })
-      expect(customApp?.value).toEqual({ customName: 'oktaSubdomain-saml-link', signOnMode: 'SAML_2_0' })
+      expect(customSwa?.value).toEqual({ customName: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' })
+      expect(customApp?.value).toEqual({ customName: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' })
     })
   })
 })

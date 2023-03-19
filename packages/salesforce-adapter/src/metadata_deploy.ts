@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import util from 'util'
 import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -188,9 +189,13 @@ const processDeployResponse = (
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
   const testErrors = testFailures
-    .map(failure => new Error(
-      `Test failed for class ${failure.name} method ${failure.methodName} with error:\n${failure.message}\n${failure.stackTrace}`
-    ))
+    .map(failure => new Error(util.format(
+      'Test failed for class %s method %s with error:\n%s\n%o',
+      failure.name,
+      failure.methodName,
+      failure.message,
+      failure.stackTrace
+    )))
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)

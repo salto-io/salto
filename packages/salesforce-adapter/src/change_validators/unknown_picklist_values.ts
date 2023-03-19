@@ -23,6 +23,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isPicklistField } from '../filters/value_set'
 
 
@@ -35,8 +36,8 @@ const createUnknownPicklistValueChangeError = (
   unknownValue: string
 ): ChangeError => ({
   elemID: instance.elemID,
-  message: `Unknown picklist value ${unknownValue} on field ${field.elemID.name} of instance `,
-  detailedMessage: `Supported values are ${field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values}`,
+  message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name} of instance ${instance.elemID.getFullName()}`,
+  detailedMessage: `Supported values are ${safeJsonStringify(field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values)}`,
   severity: 'Error',
 })
 

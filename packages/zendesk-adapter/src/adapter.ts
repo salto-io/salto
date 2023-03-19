@@ -130,6 +130,7 @@ import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import { isCurrentUserResponse } from './user_utils'
+import addAliasFilter from './filters/add_alias'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -198,6 +199,7 @@ export const DEFAULT_FILTERS = [
   guideLocalesFilter, // Needs to be after guideServiceUrl
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
   fieldReferencesFilter,
+  addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,

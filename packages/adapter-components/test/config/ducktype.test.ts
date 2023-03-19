@@ -14,24 +14,9 @@
 * limitations under the License.
 */
 import { ObjectType, BuiltinTypes, MapType } from '@salto-io/adapter-api'
-import { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig, validateDuckTypeApiDefinitionConfig, shouldNestFiles } from '../../src/config'
+import { createDucktypeAdapterApiConfigType, validateDuckTypeFetchConfig, validateDuckTypeApiDefinitionConfig } from '../../src/config'
 
 describe('config_ducktype', () => {
-  describe('shouldNestFiles', () => {
-    it('should return if field should be nested under parent', () => {
-      expect(shouldNestFiles({
-        fieldName: 'something',
-        nestFiles: true,
-      })).toBeTruthy()
-      expect(shouldNestFiles({
-        fieldName: 'something',
-        nestFiles: false,
-      })).not.toBeTruthy()
-      expect(shouldNestFiles({
-        fieldName: 'something',
-      })).not.toBeTruthy()
-    })
-  })
   describe('createAdapterApiConfigType', () => {
     it('should return default config type when no custom fields were added', async () => {
       const configType = createDucktypeAdapterApiConfigType({ adapter: 'myAdapter' })

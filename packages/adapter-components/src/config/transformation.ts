@@ -287,3 +287,10 @@ export const dereferenceFieldName = (
 ): string => (isReferencedIdField(fieldName)
   ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX)
   : fieldName)
+
+export const shouldNestFiles = (
+  standaloneField: StandaloneFieldConfigType | undefined
+): boolean =>
+  values.isDefined(standaloneField)
+    && values.isDefined(standaloneField.nestFiles)
+    && standaloneField.nestFiles

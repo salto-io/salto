@@ -14,7 +14,24 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName } from '../../src/config'
+import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName, shouldNestFiles } from '../../src/config'
+
+
+describe('shouldNestFiles', () => {
+  it('should return if field should be nested under parent', () => {
+    expect(shouldNestFiles({
+      fieldName: 'something',
+      nestFiles: true,
+    })).toBeTruthy()
+    expect(shouldNestFiles({
+      fieldName: 'something',
+      nestFiles: false,
+    })).not.toBeTruthy()
+    expect(shouldNestFiles({
+      fieldName: 'something',
+    })).not.toBeTruthy()
+  })
+})
 
 describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {

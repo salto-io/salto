@@ -139,7 +139,7 @@ describe('api.ts', () => {
   describe('fetch', () => {
     const mockFetchChanges = fetch.fetchChanges as jest.MockedFunction<typeof fetch.fetchChanges>
     const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
-    let partiallyFetchedAccounts = new Set<string>()
+    const mockPartiallyFetchedAccounts = jest.fn()
 
     const fetchedElements = [
       objType,
@@ -149,6 +149,7 @@ describe('api.ts', () => {
     ]
 
     beforeAll(() => {
+      mockPartiallyFetchedAccounts.mockReturnValue(new Set())
       mockFetchChanges.mockImplementation(async () => ({
         changes: [],
         errors: [],
@@ -158,8 +159,11 @@ describe('api.ts', () => {
         elements: fetchedElements,
         mergeErrors: [],
         accountNameToConfigMessage: {},
-        partiallyFetchedAccounts,
+        partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
       }))
+    })
+    beforeEach(() => {
+      mockPartiallyFetchedAccounts.mockReturnValue(new Set())
     })
 
     describe('Full fetch', () => {
@@ -201,22 +205,21 @@ describe('api.ts', () => {
       let stateElements: InstanceElement[]
       let mockStateUpdatePathIndex: jest.SpyInstance
       beforeAll(async () => {
-        partiallyFetchedAccounts = new Set(['salto'])
         stateElements = [
           new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
         mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
-        await api.fetch(ws, undefined, [mockService])
       })
-      afterAll(() => {
-        partiallyFetchedAccounts = new Set<string>()
+      beforeEach(async () => {
+        mockPartiallyFetchedAccounts.mockReturnValue(new Set([mockService]))
+        await api.fetch(ws, undefined, [mockService])
       })
       it('should maintain path index entries', async () => {
         expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
           fetchedElements,
-          ['salto', 'salto2'],
+          [mockService, 'salto2'],
         )
       })
     })

@@ -74,8 +74,8 @@ describe('projectCategoryValidator', () => {
       {
         elemID: afterInstance.elemID,
         severity: 'Warning',
-        message: 'Cannot remove project Category from a project',
-        detailedMessage: 'Removing a project category from a project is not supported, the project will retain its previous category in the service.',
+        message: 'Can\'t remove an existing project\'s category',
+        detailedMessage: 'Jira Data Center does not support removing an existing project\'s category. The existing category will be retained.',
       },
     ])
   })

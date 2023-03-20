@@ -73,7 +73,11 @@ export const reorderDeployXml = (
   const { objects, files } = deployXml.deploy
 
   if (customTypeInfos.length > 0) {
-    log.debug('Deploying %d objects in the following order: %o', customTypeInfos.length, customTypeInfos.filter(isCustomTypeInfo).map(custTypeInfo => custTypeInfo.scriptId))
+    log.debug(
+      'Deploying %d objects in the following order: %o',
+      customTypeInfos.length,
+      customTypeInfos.filter(isCustomTypeInfo).map(custTypeInfo => custTypeInfo.scriptId)
+    )
     objects.path = customTypeInfos
       .filter(isCustomTypeInfo)
       .map(custTypeInfo => getCustomTypeInfoPath(PROJECT_ROOT_TILDE_PREFIX, custTypeInfo))
@@ -81,7 +85,11 @@ export const reorderDeployXml = (
     objects.path.push(['~', OBJECTS_DIR, '*'].join(osPath.sep))
   }
   if (fileCabinetCustInfos.length > 0) {
-    log.debug('Deploying %d file cabinet objects in the following order: %o', fileCabinetCustInfos.length, fileCabinetCustInfos.map(custTypeInfo => custTypeInfo.path))
+    log.debug(
+      'Deploying %d file cabinet objects in the following order: %o',
+      fileCabinetCustInfos.length,
+      fileCabinetCustInfos.map(custTypeInfo => custTypeInfo.path.join(osPath.sep))
+    )
     files.path = fileCabinetCustInfos
       .map(custInfo => getFileOrFolderString(custInfo))
       .map(path => path.slice(1))

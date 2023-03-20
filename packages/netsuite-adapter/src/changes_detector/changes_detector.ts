@@ -23,7 +23,7 @@ import scriptDetector from './changes_detectors/script'
 import roleDetector from './changes_detectors/role'
 import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
-import { ChangedObject, ChangedType, DateRange } from './types'
+import { ChangedObject, ChangedType, DateRange, FileCabinetChangesDetector } from './types'
 import NetsuiteClient from '../client/client'
 import { convertSavedSearchStringToDate } from './date_formats'
 import { getChangedCustomRecords } from './changes_detectors/custom_records'
@@ -127,6 +127,7 @@ export const getChangedObjects = async (
   const {
     isTypeMatch,
     isFileMatch,
+    areSomeFilesMatch,
     isParentFolderMatch,
     isCustomRecordTypeMatch,
   } = query
@@ -136,6 +137,18 @@ export const getChangedObjects = async (
       .filter(detector => detector.getTypes().some(isTypeMatch))
       .map(detector => detector.getChanges(client, dateRange))
   ).then(output => output.flat())
+
+  const changedFileCabinetPromises: [
+    ReturnType<FileCabinetChangesDetector>,
+    ReturnType<FileCabinetChangesDetector>
+  ] = areSomeFilesMatch() ? [
+    getChangedFiles(client, dateRange),
+    getChangedFolders(client, dateRange),
+  ] : [
+    Promise.resolve([]),
+    Promise.resolve([]),
+  ]
+
   const [
     systemNoteChanges,
     changedInstances,
@@ -145,8 +158,7 @@ export const getChangedObjects = async (
   ] = await Promise.all([
     getSystemNoteChanges(client, dateRange),
     instancesChangesPromise,
-    getChangedFiles(client, dateRange),
-    getChangedFolders(client, dateRange),
+    ...changedFileCabinetPromises,
     getChangedCustomRecords(client, dateRange, { isCustomRecordTypeMatch }),
   ])
 

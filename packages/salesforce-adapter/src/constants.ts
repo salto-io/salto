@@ -378,6 +378,7 @@ export const GLOBAL_VALUE_SET_METADATA_TYPE = 'GlobalValueSet'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
+export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 
 // Standard Object Types
 export const ORGANIZATION_SETTINGS = 'Organization'

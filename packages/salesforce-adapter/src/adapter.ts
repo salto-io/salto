@@ -81,6 +81,7 @@ import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import createChangedAtSingletonInstanceFilter from './filters/create_changed_at_singleton_instance_filter'
 import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -173,6 +174,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
+  // createChangedAtSingletonInstanceFilter should run last
+  { creator: createChangedAtSingletonInstanceFilter },
 ]
 
 // By default we run all filters and provide a client

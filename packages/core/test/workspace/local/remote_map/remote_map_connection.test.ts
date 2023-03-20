@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { remoteMap as rm } from '@salto-io/workspace'
-import { createRemoteMapCreator, createReadOnlyRemoteMapCreator, MAX_CONNECTIONS, closeAllRemoteMaps } from '../../../src/local-workspace/remote_map'
+import { createRemoteMapCreator, createReadOnlyRemoteMapCreator, MAX_CONNECTIONS, closeAllRemoteMaps } from '../../../../src/local-workspace/remote_map/remote_map'
 
 describe('connection creation', () => {
   const DB_LOCATION = '/tmp/test_db'
@@ -29,7 +29,7 @@ describe('connection creation', () => {
       status: 'open',
     })
     mockedRocksdb.destroy = jest.fn().mockImplementation((_loc, cb) => { cb() })
-    jest.mock('../../../src/local-workspace/rocksdb', () => ({
+    jest.mock('../../../../src/local-workspace/rocksdb', () => ({
       default: mockedRocksdb,
     }))
 

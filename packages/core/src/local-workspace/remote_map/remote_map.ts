@@ -57,7 +57,7 @@ let rocksdbImpl: any
 const getRemoteDbImpl = (): any => {
   if (rocksdbImpl === undefined) {
     // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
-    rocksdbImpl = require('./rocksdb').default
+    rocksdbImpl = require('../rocksdb').default
   }
   return rocksdbImpl
 }

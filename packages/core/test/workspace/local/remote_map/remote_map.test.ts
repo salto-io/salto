@@ -29,10 +29,10 @@ import {
   TMP_DB_DIR,
   closeRemoteMapsOfLocation,
   cleanDatabases,
-} from '../../../src/local-workspace/remote_map'
+} from '../../../../src/local-workspace/remote_map/remote_map'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const rocksdbImpl = require('../../../src/local-workspace/rocksdb').default
+const rocksdbImpl = require('../../../../src/local-workspace/rocksdb').default
 
 const { serialize, deserialize } = serialization
 const { awu } = collections.asynciterable

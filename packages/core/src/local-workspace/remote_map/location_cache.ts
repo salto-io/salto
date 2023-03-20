@@ -40,6 +40,7 @@ export type LocationCachePool = {
 export const createLocationCachePool = (): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
   const pool = new Map<string, { cache: LocationCache; refcnt: number }>()
+  let maxPoolSize = 0
   return {
     get: (location, cacheSize) => {
       const cachePoolEntry = pool.get(location)
@@ -51,6 +52,9 @@ export const createLocationCachePool = (): LocationCachePool => {
       counterInc(location, 'LocationCacheCreated')
       const newCache: LocationCache = new LocationCache(location, cacheSize)
       pool.set(location, { cache: newCache, refcnt: 1 })
+      if (pool.size > maxPoolSize) {
+        maxPoolSize = pool.size
+      }
       return newCache
     },
     put: cacheOrLocation => {
@@ -64,6 +68,10 @@ export const createLocationCachePool = (): LocationCachePool => {
 
       if (poolEntry.refcnt === 0) {
         pool.delete(location)
+        if (pool.size === 0) {
+          log.debug('Max location cache pool size: %o', maxPoolSize)
+          maxPoolSize = 0
+        }
       }
     },
   }

@@ -262,6 +262,7 @@ export type FetchChangesResult = {
   updatedConfig: Record<string, InstanceElement[]>
   configChanges?: Plan
   accountNameToConfigMessage?: Record<string, string>
+  partiallyFetchedAccounts: Set<string>
 }
 
 type ProcessMergeErrorsResult = {
@@ -715,6 +716,7 @@ const createFetchChanges = async ({
     configChanges,
     updatedConfig: _.mapValues(accountNameToConfig, config => config.config),
     accountNameToConfigMessage,
+    partiallyFetchedAccounts,
   }
 }
 export const fetchChanges = async (
@@ -726,7 +728,7 @@ export const fetchChanges = async (
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
   withChangesDetection?: boolean
-): Promise<FetchChangesResult & { partiallyFetchedAccounts: Set<string>} > => {
+): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
   if (progressEmitter) {
@@ -750,22 +752,19 @@ export const fetchChanges = async (
   adaptersFirstFetchPartial.forEach(
     adapter => log.warn('Received partial results from %s before full fetch', adapter)
   )
-  return {
-    ...(await createFetchChanges({
-      unmergedElements: accountElements,
-      adapterNames: Object.keys(accountsToAdapters),
-      workspaceElements,
-      stateElements,
-      currentConfigs,
-      getChangesEmitter,
-      progressEmitter,
-      processErrorsResult,
-      errors,
-      updatedConfigs,
-      partiallyFetchedAccounts,
-    })),
+  return createFetchChanges({
+    unmergedElements: accountElements,
+    adapterNames: Object.keys(accountsToAdapters),
+    workspaceElements,
+    stateElements,
+    currentConfigs,
+    getChangesEmitter,
+    progressEmitter,
+    processErrorsResult,
+    errors,
+    updatedConfigs,
     partiallyFetchedAccounts,
-  }
+  })
 }
 
 const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult => {
@@ -780,6 +779,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
       message: errMsg,
       severity: 'Error',
     }],
+    partiallyFetchedAccounts: new Set(),
   }
 }
 

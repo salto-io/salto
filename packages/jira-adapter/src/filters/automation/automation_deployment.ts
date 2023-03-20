@@ -125,8 +125,13 @@ const importAutomation = async (
   })
 }
 
+const sortProjects = (projects: Values[]): Values[] => (
+  _.sortBy(projects, project => project.projectId)
+)
+
 const getAutomationIdentifier = (values: Values): string =>
-  [values.name, ...(values.projects ?? []).map((project: Values) => project.projectId)].join('_')
+  [values.name, ...(sortProjects(values.projects ?? [])).map((project: Values) => project.projectId)].join('_')
+
 
 const setInstanceId = async (
   instance: InstanceElement,

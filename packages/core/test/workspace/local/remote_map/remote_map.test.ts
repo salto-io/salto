@@ -26,10 +26,10 @@ import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
   RocksDBValue,
-  TMP_DB_DIR,
   closeRemoteMapsOfLocation,
   cleanDatabases,
 } from '../../../../src/local-workspace/remote_map/remote_map'
+import { getDBTmpDir } from '../../../../src/local-workspace/remote_map/db_connection_pool'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb').default
@@ -773,7 +773,7 @@ describe('test operations on remote db', () => {
 
 describe('tmp db deletion', () => {
   const DB_LOCATION_TMP = path.join(DB_LOCATION, 'tmp')
-  const TMP_DIR = path.join(DB_LOCATION_TMP, TMP_DB_DIR)
+  const TMP_DIR = getDBTmpDir(DB_LOCATION_TMP)
   const EXISTING_LOCATION = path.join(TMP_DIR, 'existing')
   it('should delete existing tmp dbs on startup', async () => {
     // Ensure no leftovers from previous tests.
@@ -804,7 +804,7 @@ describe('non persistent mode', () => {
   })
 
   it('should destroy the tmp storage dirs after the connection is closed', async () => {
-    const tmpDir = path.join(DB_LOCATION_TMP, TMP_DB_DIR)
+    const tmpDir = getDBTmpDir(DB_LOCATION_TMP)
     await createMap(DB_LOCATION_TMP, false, DB_LOCATION_TMP)
     expect(readdirSync(tmpDir)).not.toEqual([])
     await closeRemoteMapsOfLocation(DB_LOCATION_TMP)

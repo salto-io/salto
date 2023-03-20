@@ -53,10 +53,6 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
     notificationSchemeEvents: ['eventType'],
   },
   [WORKFLOW_RULES_TYPE_NAME]: {
-    postFunctions: ['type', 'configuration.event.id', 'configuration.fieldId', 'configuration.sourceFieldId', 'configuration.destinationFieldId',
-      'configuration.copyType', 'configuration.projectRole.id', 'configuration.issueSecurityLevel.id', 'configuration.webhook.id',
-      'configuration.mode', 'configuration.fieldValue', 'configuration.value'],
-
     validators: ['type', 'configuration.comparator', 'configuration.date1', 'configuration.date2', 'configuration.expression',
       'configuration.includeTime', 'configuration.windowsDays', 'configuration.ignoreContext', 'configuration.errorMessage',
       'configuration.fieldId', 'configuration.excludeSubtasks', 'configuration.permissionKey', 'configuration.mostRecentStatusOnly',

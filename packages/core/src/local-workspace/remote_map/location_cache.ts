@@ -30,14 +30,14 @@ class LocationCache extends LRU<string, any> {
   }
 }
 
-type LocationCachePool = {
+export type LocationCachePool = {
   get: (location: string, cacheSize: number) => LocationCache
 
   // The 'string' overload is temporary to allow the implementation of closeRemoteMapsOfLocation.
   // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
   put: (cache: LocationCache | string) => void
 }
-const createLocationCachePool = (): LocationCachePool => {
+export const createLocationCachePool = (): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
   const pool = new Map<string, { cache: LocationCache; refcnt: number }>()
   return {

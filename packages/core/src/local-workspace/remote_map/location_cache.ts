@@ -57,7 +57,7 @@ export const createLocationCachePool = (): LocationCachePool => {
       const location = _.isString(cacheOrLocation) ? cacheOrLocation : cacheOrLocation.location
       const poolEntry = pool.get(location)
       if (!poolEntry || poolEntry.refcnt === 0) {
-        log.error('Bug in LocationCachePool refcounting!')
+        log.error('Returning a locationCache for an unknown location %s. poolEntry=%o', location, poolEntry)
         return
       }
       poolEntry.refcnt -= 1

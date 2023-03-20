@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { applyFunctionToChangeData, resolvePath, setPath } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSchemeGuard, resolvePath, setPath } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
@@ -44,21 +44,16 @@ const USER_SCHEMA = Joi.object({
 
 const USERS_RESPONSE_SCHEMA = Joi.array().items(USER_SCHEMA).required()
 
-const areUsers = (values: unknown): values is User[] => {
-  const { error } = USERS_RESPONSE_SCHEMA.validate(values)
-  if (error !== undefined) {
-    log.warn(`Received an invalid response for the users: ${error.message}`)
-    return false
-  }
-  return true
-}
+const areUsers = createSchemeGuard<User[]>(
+  USERS_RESPONSE_SCHEMA, 'Received an invalid response for the users'
+)
 
 const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
-const INCLUDE_USES_PATH = ['conditions', 'people', 'users', 'include']
+const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
 
 const USER_MAPPING: Record<string, string[][]> = {
   [GROUP_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
-  [ACCESS_POLICY_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH, INCLUDE_USES_PATH],
+  [ACCESS_POLICY_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH, INCLUDE_USERS_PATH],
   [PASSWORD_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],

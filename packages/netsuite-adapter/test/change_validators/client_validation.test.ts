@@ -21,6 +21,8 @@ import NetsuiteClient from '../../src/client/client'
 import { AdditionalDependencies } from '../../src/config'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
+import { fileType } from '../../src/types/file_cabinet_types'
+import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 
 describe('client validation', () => {
   let changes: Change[]
@@ -281,5 +283,69 @@ If so, please make sure that all the bundles from the source account are install
       message: 'SDF Settings Validation Error',
       severity: 'Error',
     })))
+  })
+  describe('validate file cabinet instances', () => {
+    let fileChange: Change<InstanceElement>
+    beforeEach(() => {
+      fileChange = toChange({
+        after: new InstanceElement('file', fileType(), {
+          path: '/SuiteScripts/a.txt',
+        }),
+      })
+    })
+    it('should call validate with SDF groupId and additional file cabinet change', async () => {
+      const changesToValidate = changes.concat(fileChange)
+      await clientValidation(
+        changesToValidate,
+        client,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(mockValidate).toHaveBeenCalledWith(
+        expect.arrayContaining(changesToValidate),
+        SDF_CREATE_OR_UPDATE_GROUP_ID,
+        {}
+      )
+    })
+    it('should call validate with SDF groupId and file cabinet change that in SDF group', async () => {
+      getChangeData(fileChange).value.generateurltimestamp = true
+      await clientValidation(
+        [fileChange],
+        client,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(mockValidate).toHaveBeenCalledWith(
+        [fileChange],
+        SDF_CREATE_OR_UPDATE_GROUP_ID,
+        {}
+      )
+    })
+    it('should call validate with SDF groupID when the is no suiteapp configured', async () => {
+      const noSuiteAppClient = {
+        isSuiteAppConfigured: () => false,
+        validate: mockValidate,
+      } as unknown as NetsuiteClient
+      await clientValidation(
+        [fileChange],
+        noSuiteAppClient,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(mockValidate).toHaveBeenCalledWith(
+        [fileChange],
+        SDF_CREATE_OR_UPDATE_GROUP_ID,
+        {}
+      )
+    })
+    it('should not call validate when there are only file cabinet instances that are in suiteapp group', async () => {
+      await clientValidation(
+        [fileChange],
+        client,
+        {} as unknown as AdditionalDependencies,
+        mockFiltersRunner,
+      )
+      expect(mockValidate).not.toHaveBeenCalled()
+    })
   })
 })

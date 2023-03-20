@@ -29,7 +29,7 @@ describe('file changes validator', () => {
       'valid',
       file,
       {
-        path: '/Templates/valid',
+        path: '/Templates/Marketing Templates/valid',
         content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )
@@ -38,7 +38,7 @@ describe('file changes validator', () => {
       'valid',
       file,
       {
-        path: '/Templates/valid',
+        path: '/Templates/Marketing Templates/valid',
         description: 'aaa',
         content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
@@ -48,7 +48,7 @@ describe('file changes validator', () => {
       'valid2',
       file,
       {
-        path: '/Templates/valid2',
+        path: '/Templates/E-mail Templates/valid2',
         generateurltimestamp: false,
         content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
@@ -58,7 +58,7 @@ describe('file changes validator', () => {
       'valid2',
       file,
       {
-        path: '/Templates/valid2',
+        path: '/Templates/E-mail Templates/valid2',
         generateurltimestamp: true,
         content: new StaticFile({ filepath: 'somePath', content: Buffer.from('aaa') }),
       },
@@ -125,7 +125,7 @@ describe('file changes validator', () => {
       'invalid1',
       file,
       {
-        path: '/Templates/valid1',
+        path: '/Images/invalid1',
         content: new StaticFile({ filepath: 'somePath', content: BigBuffer }),
       },
     )

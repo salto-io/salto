@@ -68,8 +68,8 @@ const getChangeError = async (instance: InstanceElement): Promise<ChangeError> =
     return ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Can\'t deploy partial changes to Saved Searches, Financial Layouts, and Report Definitions',
-      detailedMessage: `Can't deploy partial changes to this ${instance.elemID.typeName} element. Modify it from NetSuite UI, and select the whole element for deployment.`,
+      message: `Can't deploy partial changes to ${typeNameToPluralName[instance.elemID.typeName]}`,
+      detailedMessage: `Can't deploy partial changes to this ${typeNameToName[instance.elemID.typeName]} element. Modify it from NetSuite UI, and select the whole element for deployment.`,
     } as ChangeError)
   }
   return ({

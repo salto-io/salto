@@ -69,8 +69,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
       elemID: instance.elemID,
       severity: 'Error',
       message: 'This instance has a missing ID and therefore it can\'t be deployed',
-      detailedMessage: 'The missing ID is replaced by Salto with ‘ACCOUNT_SPECIFIC_VALUE.\n'
-      + 'In order to deploy this instance, please edit it in Salto and either replace ‘ACCOUNT_SPECIFIC_VALUE’ with the actual value in the environment you are deploying to or remove the field with that value.\n'
+      detailedMessage: 'The missing ID is replaced by Salto with \'ACCOUNT_SPECIFIC_VALUE\'.\n'
+      + 'In order to deploy this instance, please edit it in Salto and either replace \'ACCOUNT_SPECIFIC_VALUE\' with the actual value in the environment you are deploying to or remove the field with that value.\n'
       + 'If you choose to remove that field, after a successful deploy you can assign the correct value in the NetSuite UI.',
     }))
     .toArray()

@@ -14,33 +14,28 @@
 * limitations under the License.
 */
 import {
-  getChangeData, Change, ChangeError, InstanceElement, isInstanceChange,
+  getChangeData, ChangeError, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { fileCabinetTopLevelFolders } from '../client/constants'
 import { isFileCabinetType } from '../types'
 import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
 import { NetsuiteChangeValidator } from './types'
-import { FILE_CABINET_PATH_SEPARATOR } from '../constants'
+import { isPathAllowedBySdf } from '../types/file_cabinet_types'
 
 
 const { awu } = collections.asynciterable
-
-const isFileCabinetChangeSupportedWithSdf = async (
-  change: Change<InstanceElement>
-): Promise<boolean> =>
-  fileCabinetTopLevelFolders.some(folder => getChangeData(change).value.path.startsWith(`${folder}${FILE_CABINET_PATH_SEPARATOR}`))
 
 const changeValidator: NetsuiteChangeValidator = async changes => {
   const notSupportedChanges = await awu(changes)
     .filter(isInstanceChange)
     .filter(async change => isFileCabinetType(getChangeData(change).refType))
-    .filter(async change => !await isFileCabinetChangeSupportedWithSdf(change))
+    .filter(async change => !isPathAllowedBySdf(getChangeData(change)))
     .filter(async change => !await suiteAppFileCabinet.isChangeDeployable(change))
     .toArray()
 
-  const largeFileErrors = awu(notSupportedChanges)
-    .filter(async change => suiteAppFileCabinet.isTooBigFileForSuiteApp(change, getChangeData(change)))
+  const largeFileErrors = await awu(notSupportedChanges)
+    .filter(async change => suiteAppFileCabinet.isTooBigFileForSuiteApp(change))
     .map(getChangeData)
     .map((inst): ChangeError => ({
       elemID: inst.elemID,
@@ -61,7 +56,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       detailedMessage: `The generateUrlTimestamp field can't be deployed since it is outside of the folders ${fileCabinetTopLevelFolders.join(', ')}.\n`
         + 'To deploy this field, you can edit it in Salto. If it\'s a new field, set its value to false. If it\'s an existing field, please set it to the original value (false / true). Alternatively, you can edit the file in Salto, remove this field and do the change directly in the NetSuite UI.',
     }))
-  return [...disallowedModificationErrors, ...(await largeFileErrors)]
+  return [...disallowedModificationErrors, ...largeFileErrors]
 }
 
 export default changeValidator

@@ -13,7 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile, StaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isStaticFile,
+  StaticFile,
+  isAdditionChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
@@ -171,20 +182,17 @@ const getContent = async (content: unknown): Promise<Buffer> => {
 
 export const isTooBigFileForSuiteApp = async (
   change: Change<InstanceElement>,
-  changedInstance: InstanceElement,
 ): Promise<boolean> => isAdditionOrModificationChange(change)
-    && isFileInstance(changedInstance)
-    && (await getContent(changedInstance.value.content)).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE
+    && isFileInstance(getChangeData(change))
+    && (await getContent(getChangeData(change).value.content)).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE
 
 // SuiteApp can't change generateurltimestamp.
 export const hasDisallowedValueModification = (change: Change<InstanceElement>): boolean => {
-  if (change.action === 'add' && change.data.after.value.generateurltimestamp === true) {
+  if (isAdditionChange(change) && change.data.after.value.generateurltimestamp === true) {
     return true
   }
-  if (change.action === 'modify' && change.data.before.value.generateurltimestamp !== change.data.after.value.generateurltimestamp) {
-    return true
-  }
-  return false
+  return isModificationChange(change)
+    && change.data.before.value.generateurltimestamp !== change.data.after.value.generateurltimestamp
 }
 
 export const isChangeDeployable = async (
@@ -199,7 +207,7 @@ export const isChangeDeployable = async (
   }
 
   // SuiteApp can't modify files bigger than 10mb
-  if (await isTooBigFileForSuiteApp(change, changedInstance)) {
+  if (await isTooBigFileForSuiteApp(change)) {
     return false
   }
 

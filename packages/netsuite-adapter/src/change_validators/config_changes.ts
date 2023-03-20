@@ -54,8 +54,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
       elemID,
       severity: 'Error',
       message: 'Can\'t deploy removal of values in a Settings instance',
-      detailedMessage: 'Removal of values in a Settings instance is not supported due to an SDF limitation. You can only add or modify these values.\n'
-        + 'You can delete this change in Salto and remove these values directly in the NetSuite UI.',
+      detailedMessage: 'Removal of values in a Settings instance is not supported. You can only add or modify these values.',
     }))
 
   const valuesAdditionWarnings: ChangeError[] = modificationChanges

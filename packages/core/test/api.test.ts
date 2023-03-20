@@ -139,6 +139,7 @@ describe('api.ts', () => {
   describe('fetch', () => {
     const mockFetchChanges = fetch.fetchChanges as jest.MockedFunction<typeof fetch.fetchChanges>
     const objType = new ObjectType({ elemID: new ElemID(mockService, 'dummy') })
+    let partiallyFetchedAccounts = new Set<string>()
 
     const fetchedElements = [
       objType,
@@ -148,7 +149,7 @@ describe('api.ts', () => {
     ]
 
     beforeAll(() => {
-      mockFetchChanges.mockResolvedValue({
+      mockFetchChanges.mockImplementation(async () => ({
         changes: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
@@ -157,8 +158,8 @@ describe('api.ts', () => {
         elements: fetchedElements,
         mergeErrors: [],
         accountNameToConfigMessage: {},
-        partiallyFetchedAccounts: new Set(),
-      })
+        partiallyFetchedAccounts,
+      }))
     })
 
     describe('Full fetch', () => {
@@ -195,7 +196,30 @@ describe('api.ts', () => {
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
       })
     })
-
+    describe('Partial fetch', () => {
+      let ws: workspace.Workspace
+      let stateElements: InstanceElement[]
+      let mockStateUpdatePathIndex: jest.SpyInstance
+      beforeAll(async () => {
+        partiallyFetchedAccounts = new Set(['salto'])
+        stateElements = [
+          new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
+          new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
+        ]
+        ws = mockWorkspace({ stateElements })
+        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
+        await api.fetch(ws, undefined, [mockService])
+      })
+      afterAll(() => {
+        partiallyFetchedAccounts = new Set<string>()
+      })
+      it('should maintain path index entries', async () => {
+        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
+          fetchedElements,
+          ['salto', 'salto2'],
+        )
+      })
+    })
     describe('Fetch one service out of two.', () => {
       let ws: workspace.Workspace
       let stateElements: InstanceElement[]

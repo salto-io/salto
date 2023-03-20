@@ -16,12 +16,9 @@
 import { isObjectType, Element, isField, Field, isType, isReferenceExpression, ElemID, isInstanceElement } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
-import { CUSTOM_METADATA_SUFFIX, PATH_ASSISTANT } from '../constants'
-
-const log = logger(module)
+import { CUSTOM_METADATA_SUFFIX, PATH_ASSISTANT_METADATA_TYPE } from '../constants'
 
 
 const { isDefined } = values
@@ -167,16 +164,13 @@ const customObjectSubInstanceResolver: UrlResolver = async (element, baseUrl, el
   const internalId = getInternalId(element)
   const [parentRef] = getParents(element)
 
-  if (internalId !== undefined
-      && isReferenceExpression(parentRef)) {
-    const parent = await elementIDResolver(parentRef.elemID)
-    const parentIdentifier = await getTypeIdentifier(parent)
-    if (parentIdentifier !== undefined) {
-      if (instanceUri !== undefined) {
-        return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)
-      }
-      log.debug(`Unable to resolve ${instanceType} to valid URI`)
-    }
+  if (instanceUri === undefined || internalId === undefined || !isReferenceExpression(parentRef)) {
+    return undefined
+  }
+  const parent = await elementIDResolver(parentRef.elemID)
+  const parentIdentifier = await getTypeIdentifier(parent)
+  if (parentIdentifier !== undefined) {
+    return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)
   }
   return undefined
 }
@@ -190,7 +184,7 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
 }
 
 const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
-  if (await isInstanceOfType(PATH_ASSISTANT)(element)) {
+  if (await isInstanceOfType(PATH_ASSISTANT_METADATA_TYPE)(element)) {
     return new URL(`${baseUrl}lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1`)
   }
   return undefined

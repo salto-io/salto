@@ -30,6 +30,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE,
   ACTIVATE_RSS,
   INSTALLED_PACKAGE_METADATA,
+  PATH_ASSISTANT_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -430,6 +431,12 @@ export const mockTypes = {
       metadataType: 'AccountSettings',
     },
     isSettings: true,
+  }),
+  PathAssistant: new ObjectType({
+    elemID: new ElemID(SALESFORCE, PATH_ASSISTANT_METADATA_TYPE),
+    annotations: {
+      metadataType: 'PathAssistant',
+    },
   }),
 }
 

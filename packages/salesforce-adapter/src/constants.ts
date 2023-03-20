@@ -328,7 +328,7 @@ export const MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD = 20
 export const CURRENCY_ISO_CODE = 'CurrencyIsoCode'
 
 // Metadata types
-export const PATH_ASSISTANT = 'PathAssistant'
+export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'

@@ -15,6 +15,8 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { lightningElementsUrlRetriever } from '../src/elements_url_retreiver/elements_url_retreiver'
+import { mockTypes } from './mock_elements'
+import { PATH_ASSISTANT_METADATA_TYPE } from '../src/constants'
 
 
 describe('lightningElementsUrlRetriever', () => {
@@ -132,7 +134,7 @@ describe('lightningElementsUrlRetriever', () => {
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/Queues/page?address=%2Fp%2Fown%2FQueue%2Fd%3Fid%3DsomeId'))
       })
 
-      it('Object subtype', async () => {
+      it('Object subtype Layout', async () => {
         const element = new InstanceElement(
           'testLayout',
           new ObjectType({ elemID: new ElemID('salesforce', 'Layout'), annotations: { metadataType: 'Layout' } }),
@@ -141,6 +143,17 @@ describe('lightningElementsUrlRetriever', () => {
           { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Account'))] }
         )
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/PageLayouts/someId/view'))
+      })
+
+      it('Object subtype WebLink', async () => {
+        const element = new InstanceElement(
+          'testWebLink',
+          new ObjectType({ elemID: new ElemID('salesforce', 'WebLink'), annotations: { metadataType: 'WebLink' } }),
+          { internalId: 'someId' },
+          [],
+          { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(new ElemID('salesforce', 'Account'))] }
+        )
+        await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/ObjectManager/Account/ButtonsLinksActions/someId/view'))
       })
 
       it('Layout without parent', async () => {
@@ -155,7 +168,7 @@ describe('lightningElementsUrlRetriever', () => {
       })
 
       it('pathAssistantResolver', async () => {
-        const element = new InstanceElement('PathAssistant', new ObjectType({ elemID: new ElemID('salesforce', 'PathAssistant'), annotations: { metadataType: 'PathAssistant' } }))
+        const element = new InstanceElement(PATH_ASSISTANT_METADATA_TYPE, mockTypes.PathAssistant)
         await expect(elementUrlRetriever?.retrieveUrl(element)).resolves.toEqual(new URL('https://salto5-dev-ed.lightning.force.com/lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1'))
       })
 

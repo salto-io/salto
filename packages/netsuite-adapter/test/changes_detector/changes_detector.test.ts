@@ -28,6 +28,7 @@ describe('changes_detector', () => {
   const query = {
     isTypeMatch: (name: string) => name === 'customrecordtype',
     isFileMatch: () => true,
+    areSomeFilesMatch: () => true,
   } as unknown as NetsuiteQuery
   const getCustomRecordTypeChangesMock = jest.spyOn(customRecordTypeDetector, 'getChanges').mockResolvedValue([])
   const getScriptChangesMock = jest.spyOn(scriptDetector, 'getChanges')
@@ -140,6 +141,7 @@ describe('changes_detector', () => {
       {
         isTypeMatch: () => false,
         isFileMatch: () => false,
+        areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord1',
       } as unknown as NetsuiteQuery,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
@@ -164,6 +166,7 @@ describe('changes_detector', () => {
       {
         isTypeMatch: () => false,
         isFileMatch: () => false,
+        areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord_cseg1',
       } as unknown as NetsuiteQuery,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
@@ -226,6 +229,23 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeTruthy()
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeFalsy()
     expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
+  })
+
+  it('should not call file cabinet detectors when no files/folders included', async () => {
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      {
+        isTypeMatch: () => false,
+        isFileMatch: () => false,
+        areSomeFilesMatch: () => false,
+        isCustomRecordTypeMatch: () => false,
+      } as unknown as NetsuiteQuery,
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
+    expect(getChangedFilesMock).not.toHaveBeenCalled()
+    expect(getChangesFoldersMock).not.toHaveBeenCalled()
   })
 
   it('areSomeFilesMatch return false when no file changes were detected', async () => {

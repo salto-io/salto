@@ -60,6 +60,30 @@ const singlePathObject = new ObjectType({
   },
   path: ['salto', 'obj', 'simple'],
 })
+const oldPartiallyFetchedObject = new ObjectType({
+  elemID: new ElemID('salto', 'partial'),
+  fields: {
+    simple: {
+      refType: BuiltinTypes.STRING,
+    },
+    nested: {
+      refType: nestedType,
+    },
+  },
+  path: ['salto', 'obj', 'oldPartial'],
+})
+const updatedPartiallyFetchedObject = new ObjectType({
+  elemID: new ElemID('salto', 'partial'),
+  fields: {
+    simple: {
+      refType: BuiltinTypes.STRING,
+    },
+    nested: {
+      refType: nestedType,
+    },
+  },
+  path: ['salto', 'obj', 'newPartial'],
+})
 // multiPathObject
 // singlePathObject
 const multiPathObjID = new ElemID('salto', 'multiPathObj')
@@ -154,7 +178,7 @@ describe('topLevelPathIndex', () => {
   })
   it('should only add new top level elements paths to index', async () => {
     const topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
-    await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject]))
+    await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject, oldPartiallyFetchedObject]))
     await updatePathIndex({
       index: topLevelPathIndex,
       elements: [
@@ -162,6 +186,9 @@ describe('topLevelPathIndex', () => {
         multiPathFieldsObj,
         multiPathInstanceA,
         multiPathInstanceB,
+        // when there is a partial fetch, the adapter name will be in accountsToMaintain
+        // but there will also be elements of that adapter in the elements array
+        updatedPartiallyFetchedObject,
       ],
       accountsToMaintain: ['salto'],
       isTopLevel: true,
@@ -174,14 +201,10 @@ describe('topLevelPathIndex', () => {
             multiPathFieldsObj,
             multiPathInstanceA,
             multiPathInstanceB,
+            updatedPartiallyFetchedObject,
+            singlePathObject,
           ]
         ),
-        {
-          key: 'salto.singlePathObj',
-          value: [
-            ['salto', 'obj', 'simple'],
-          ],
-        },
       ]
     )
   })
@@ -191,7 +214,7 @@ describe('updatePathIndex', () => {
   let index: PathIndex
   beforeAll(async () => {
     index = new InMemoryRemoteMap<Path[]>()
-    await index.setAll(getElementsPathHints([singlePathObject]))
+    await index.setAll(getElementsPathHints([singlePathObject, oldPartiallyFetchedObject]))
     await updatePathIndex({
       index,
       elements: [
@@ -199,6 +222,9 @@ describe('updatePathIndex', () => {
         multiPathFieldsObj,
         multiPathInstanceA,
         multiPathInstanceB,
+        // when there is a partial fetch, the adapter name will be in accountsToMaintain
+        // but there will also be elements of that adapter in the elements array
+        updatedPartiallyFetchedObject,
       ],
       accountsToMaintain: ['salto'],
       isTopLevel: false,
@@ -242,6 +268,10 @@ describe('updatePathIndex', () => {
   it('should maintatin old elements', async () => {
     expect(await index.get(singlePathObject.elemID.getFullName()))
       .toEqual([singlePathObject.path])
+  })
+  it('partial fetch flow should update pathIndex', async () => {
+    expect(await index.get(updatedPartiallyFetchedObject.elemID.getFullName()))
+      .toEqual([updatedPartiallyFetchedObject.path])
   })
 })
 

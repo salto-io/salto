@@ -186,8 +186,8 @@ describe('topLevelPathIndex', () => {
         multiPathFieldsObj,
         multiPathInstanceA,
         multiPathInstanceB,
-        // when there is a partial fetch, the adapter name will be in accountsToMaintain
-        // but there will also be elements of that adapter in the elements array
+        // when there is a partial fetch, the account name will be in accountsToMaintain
+        // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
       ],
       accountsToMaintain: ['salto'],
@@ -222,8 +222,8 @@ describe('updatePathIndex', () => {
         multiPathFieldsObj,
         multiPathInstanceA,
         multiPathInstanceB,
-        // when there is a partial fetch, the adapter name will be in accountsToMaintain
-        // but there will also be elements of that adapter in the elements array
+        // when there is a partial fetch, the account name will be in accountsToMaintain
+        // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
       ],
       accountsToMaintain: ['salto'],
@@ -265,7 +265,7 @@ describe('updatePathIndex', () => {
     ])
   })
 
-  it('should maintatin old elements', async () => {
+  it('should maintain old elements', async () => {
     expect(await index.get(singlePathObject.elemID.getFullName()))
       .toEqual([singlePathObject.path])
   })

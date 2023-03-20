@@ -84,13 +84,7 @@ export const replaceReferenceValues = async <
         return undefined
       }
 
-      const referredElement = lookup.get(targetType, value)
-
-      if (referredElement === undefined) {
-        log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
-      }
-
-      return referredElement
+      return lookup.get(targetType, value)
     }
 
     const isValidContextFunc = (funcName?: string): boolean => (

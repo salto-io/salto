@@ -16,7 +16,6 @@
 import path from 'path'
 import { promisify } from 'util'
 import AsyncLock from 'async-lock'
-import LRU from 'lru-cache'
 import { v4 as uuidv4 } from 'uuid'
 import uniq from 'lodash/uniq'
 import * as fileUtils from '@salto-io/file'
@@ -25,6 +24,8 @@ import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { locationCaches } from './location_cache'
+import { counterInc, countersInit, countersDumpAndClose } from './counters'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -210,74 +211,6 @@ const readonlyDBConnectionsPerRemoteMap: Record<string, ConnectionPool> = {}
 let currentConnectionsCount = 0
 
 
-const COUNTER_TYPES = [
-  'LocationCacheCreated',
-  'LocationCacheReuse',
-  'LocationCacheHit',
-  'LocationCacheMiss',
-  'RemoteMapCreated',
-  'RemoteMapHit',
-  'RemoteMapMiss',
-  'PersistentDbConnectionCreated',
-  'PersistentDbConnectionReuse',
-  'TmpDbConnectionReuse',
-] as const
-type CounterType = typeof COUNTER_TYPES[number]
-const counters: Record<string, Record<CounterType, number>> = {}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-class LocationCache extends LRU<string, any> {
-  readonly location: string
-
-  constructor(location: string, cacheSize: number) {
-    super({ max: cacheSize })
-    this.location = location
-  }
-}
-
-type LocationCachePool = {
-  get: (location: string, cacheSize: number) => LocationCache
-
-  // The 'string' overload is temporary to allow the implementation of closeRemoteMapsOfLocation.
-  // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
-  put: (cache: LocationCache | string) => void
-}
-
-const createLocationCachePool = (): LocationCachePool => {
-  // TODO: LRU if we determine too many locationCaches are created.
-  const pool = new Map<string, {cache: LocationCache; refcnt: number}>()
-  return {
-    get: (location, cacheSize) => {
-      const cachePoolEntry = pool.get(location)
-      if (cachePoolEntry) {
-        counters[location].LocationCacheReuse += 1
-        cachePoolEntry.refcnt += 1
-        return cachePoolEntry.cache
-      }
-      counters[location].LocationCacheCreated += 1
-      const newCache:LocationCache = new LocationCache(location, cacheSize)
-      pool.set(location, { cache: newCache, refcnt: 1 })
-      return newCache
-    },
-    put: cacheOrLocation => {
-      const location = _.isString(cacheOrLocation) ? cacheOrLocation : cacheOrLocation.location
-      const poolEntry = pool.get(location)
-      if (!poolEntry || poolEntry.refcnt === 0) {
-        log.error('Bug in LocationCachePool refcounting!')
-        return
-      }
-      poolEntry.refcnt -= 1
-
-      if (poolEntry.refcnt === 0) {
-        pool.delete(location)
-      }
-    },
-  }
-}
-
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const locationCaches = createLocationCachePool()
-
 const deleteLocation = async (location: string): Promise<void> => {
   try {
     await promisify(getRemoteDbImpl().destroy.bind(getRemoteDbImpl(), location))()
@@ -341,8 +274,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     log.debug('closed read-only connections per remote map of location %s', location)
   }
   locationCaches.put(location)
-  log.debug('Remote Map Stats for location \'%s\': %o', location, counters[location])
-  delete counters[location]
+  countersDumpAndClose(location)
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
@@ -499,16 +431,7 @@ export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
   cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
-  const counterInc = (counter: CounterType): void => {
-    counters[location][counter] += 1
-  }
-  if (location in counters) {
-    log.debug('Expected one RemoteMapCreator per location, but looks like a more than one is being created')
-  } else {
-    counters[location] = Object.fromEntries(
-      COUNTER_TYPES.map(counterName => [counterName, 0])
-    ) as Record<CounterType, number>
-  }
+  countersInit(location)
 
   const locationCache = locationCaches.get(location, cacheSize)
 
@@ -687,11 +610,11 @@ remoteMap.RemoteMapCreator => {
         resolve(undefined)
       }
       if (locationCache.has(keyToTempDBKey(key))) {
-        counterInc('LocationCacheHit')
-        counterInc('RemoteMapHit')
+        counterInc(location, 'LocationCacheHit')
+        counterInc(location, 'RemoteMapHit')
         resolve(locationCache.get(keyToTempDBKey(key)) as T)
       } else {
-        counterInc('LocationCacheMiss')
+        counterInc(location, 'LocationCacheMiss')
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           const ret = (await deserialize(value.toString()))
           locationCache.set(keyToTempDBKey(key), ret)
@@ -700,21 +623,21 @@ remoteMap.RemoteMapCreator => {
         tmpDB.get(keyToTempDBKey(key), async (error, value) => {
           if (error) {
             if (wasClearCalled) {
-              counterInc('RemoteMapMiss')
+              counterInc(location, 'RemoteMapMiss')
               resolve(undefined)
             }
             persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {
-                counterInc('RemoteMapMiss')
+                counterInc(location, 'RemoteMapMiss')
                 resolve(undefined)
               } else {
                 await resolveRet(innerValue)
-                counterInc('RemoteMapHit')
+                counterInc(location, 'RemoteMapHit')
               }
             })
           } else {
             await resolveRet(value)
-            counterInc('RemoteMapHit')
+            counterInc(location, 'RemoteMapHit')
           }
         })
       }
@@ -750,11 +673,11 @@ remoteMap.RemoteMapCreator => {
         tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       } else {
-        counterInc('TmpDbConnectionReuse')
+        counterInc(location, 'TmpDbConnectionReuse')
       }
       const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections
       if (location in mainDBConnections) {
-        counterInc('PersistentDbConnectionReuse')
+        counterInc(location, 'PersistentDbConnectionReuse')
         persistentDB = await mainDBConnections[location]
         return
       }
@@ -767,7 +690,7 @@ remoteMap.RemoteMapCreator => {
           if (readOnly) {
             await createDBIfNotExist(location)
           }
-          counterInc('PersistentDbConnectionCreated')
+          counterInc(location, 'PersistentDbConnectionCreated')
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
           if (isDBLockErr(e)) {
@@ -781,7 +704,7 @@ remoteMap.RemoteMapCreator => {
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     await withCreatorLock(createDBConnections)
-    counterInc('RemoteMapCreated')
+    counterInc(location, 'RemoteMapCreated')
     return {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>

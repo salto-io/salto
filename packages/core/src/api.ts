@@ -248,10 +248,8 @@ const updateStateWithFetchResults = async (
   await workspace.state()
     .override(awu(mergedElements)
       .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  const accountsToMaintain = [
-    ...(await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)),
-    ...partiallyFetchedAccounts,
-  ]
+  const accountsToMaintain = partiallyFetchedAccounts
+    .concat((await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
   await workspace.state().updatePathIndex(unmergedElements, accountsToMaintain)
   log.debug(`finish to override state with ${mergedElements.length} elements`)
 }

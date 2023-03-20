@@ -37,6 +37,10 @@ export const counterInc = (location: string, counter: CounterType): void => {
   counters[location][counter] += 1
 }
 
+export const counterValue = (location: string, counter: CounterType): number => (
+  counters[location][counter]
+)
+
 export const countersInit = (location: string): void => {
   counters[location] = Object.fromEntries(
     COUNTER_TYPES.map(counterName => [counterName, 0])

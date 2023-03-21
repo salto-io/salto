@@ -32,7 +32,6 @@ import {
   transformFieldAnnotations,
 } from '../src/filters/custom_objects_to_object_type'
 import { STANDARD_VALUE_SET } from '../src/filters/standard_value_sets'
-import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 import {
   CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
   TopicsForObjectsInfo,
@@ -64,6 +63,7 @@ import {
   summaryFieldName, verifyElementsExist,
 } from './setup'
 import { testHelpers } from './jest_environment'
+import { GLOBAL_VALUE_SET_METADATA_TYPE } from '../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -1356,7 +1356,7 @@ describe('Salesforce adapter E2E with real account', () => {
               .toEqual(new ReferenceExpression(
                 new ElemID(
                   constants.SALESFORCE,
-                  naclCase(GLOBAL_VALUE_SET),
+                  naclCase(GLOBAL_VALUE_SET_METADATA_TYPE),
                   'instance',
                   naclCase(gvsName),
                 )

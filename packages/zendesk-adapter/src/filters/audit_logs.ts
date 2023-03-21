@@ -163,7 +163,7 @@ const addChangedAt = (instances: InstanceElement[], idByInstance: Record<string,
         }
         // eslint-disable-next-line no-empty
       } catch (e) {
-        log.error(`getParent returned an error: ${e}`)
+        log.warn(`getParent returned an error: ${e}`)
       }
     })
 }
@@ -190,7 +190,7 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
     .forEach(elem => {
       const id = elem.value.updated_by_id
       if (id === undefined) {
-        log.error(`updated_by_id for the translations ${elem.elemID.name} is undefined`)
+        log.warn(`updated_by_id for the translations ${elem.elemID.name} is undefined`)
         return
       }
       const name = idToName[elem.value.updated_by_id]
@@ -226,6 +226,7 @@ const addChangedByUsingAuditLog = async ({
       if (!isBeforeNewFetch) {
         // can happen for changes in ticket_fields, routing_attribute(_value), and user_fields for example
         log.debug(`There is a change that happened after the last audit time received for instance ${inst.elemID.getFullName()}`)
+        inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = undefined
       }
       return isAfterPrevFetch && isBeforeNewFetch
     })
@@ -245,6 +246,7 @@ const addChangedByUsingAuditLog = async ({
       })
       if (name === undefined) {
         // error was logged earlier
+        inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = undefined
         return
       }
       inst.annotations[CORE_ANNOTATIONS.CHANGED_BY] = name

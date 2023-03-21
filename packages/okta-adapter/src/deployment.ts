@@ -21,9 +21,12 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
+import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
+import { OktaActionName, OktaApiConfig } from './config'
 
 const log = logger(module)
 
+const { createUrl } = elementUtils
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
@@ -63,13 +66,50 @@ const getOktaError = (elemID: ElemID, error: Error): Error => {
   return new Error(`${baseErrorMessage} ${error}`)
 }
 
+const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+  const statusBefore = change.data.before.value.status
+  const statusAfter = change.data.after.value.status
+  return statusBefore === INACTIVE_STATUS && statusAfter === ACTIVE_STATUS
+}
+
+const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+  const statusBefore = change.data.before.value.status
+  const statusAfter = change.data.after.value.status
+  return statusBefore === ACTIVE_STATUS && statusAfter === INACTIVE_STATUS
+}
+
+const deployStatusChange = async (
+  change: ModificationChange<InstanceElement>,
+  client: OktaClient,
+  deployRequests?: Partial<Record<OktaActionName, configUtils.DeployRequestConfig>>
+): Promise<void> => {
+  const instance = getChangeData(change)
+  const endpoint = isActivationChange(change)
+    ? deployRequests?.activate
+    : deployRequests?.deactivate
+  if (endpoint === undefined) {
+    return
+  }
+  const url = createUrl({
+    instance,
+    baseUrl: endpoint.url,
+    urlParamsToFields: endpoint.urlParamsToFields,
+  })
+  try {
+    await client[endpoint.method]({ url, data: {} })
+  } catch (err) {
+    log.error(`Status could not be updated in instance: ${getChangeData(change).elemID.getFullName()}`, err)
+    throw err
+  }
+}
+
 /**
  * Deploy change with the standard "add", "modify", "remove" endpoints
  */
 export const defaultDeployChange = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: configUtils.AdapterApiConfig,
+  apiDefinitions: OktaApiConfig,
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
@@ -96,6 +136,12 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
+    // If the instance is deactivated,
+    // we should first change the status as some instances can not be changed in status 'ACTIVE'
+    if (isModificationChange(change) && isDeactivationChange(change)) {
+      await deployStatusChange(change, client, deployRequests)
+    }
+
     const response = await deployment.deployChange({
       change: changeToDeploy,
       client,
@@ -103,6 +149,11 @@ export const defaultDeployChange = async (
       fieldsToIgnore,
       queryParams,
     })
+
+    // If the instance is activated, we should first make the changes and then change the status
+    if (isModificationChange(change) && isActivationChange(change)) {
+      await deployStatusChange(change, client, deployRequests)
+    }
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {

@@ -62,14 +62,9 @@ okta {
 
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
-| [include](#fetch-entry-options)               | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
-| [exclude](#fetch-entry-options)               | []                                | List of entries to determine what instances to exclude in the fetch
-
-## Masking configuration options
-| Name                                        | Default when undefined            | Description
-|---------------------------------------------|-----------------------------------|------------
-| automationHeaders                           | []                                | List of regexes of header keys in Automations to mask their values
-| secretRegexps                               | []                                | List of regexes of strings to mask all across the workspace
+| [include](#fetch-entry-options)             | [{ type = ".*" }]                 | List of entries to determine what instances to include in the fetch
+| [exclude](#fetch-entry-options)             | []                                | List of entries to determine what instances to exclude in the fetch
+| convertUsersIds                             | true                              | When enabled, user IDs will be replaced with user login names
 
 ## Fetch entry options
 

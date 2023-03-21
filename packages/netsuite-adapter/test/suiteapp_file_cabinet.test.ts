@@ -24,7 +24,6 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import { customtransactiontypeType } from '../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../src/types/file_cabinet_types'
-import { ElementsSourceIndexes, LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 
 const { awu } = collections.asynciterable
 
@@ -264,14 +263,6 @@ describe('suiteapp_file_cabinet', () => {
       const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
       const { elements } = await suiteAppFileCabinet.importFileCabinet(query)
       expect(elements).toEqual(expectedResults)
-      expect(suiteAppFileCabinet.getPathToIdMap()).toEqual({
-        '/folder5': 5,
-        '/folder5/folder3': 3,
-        '/folder5/folder3/file1': 1,
-        '/folder5/folder4': 4,
-        '/folder5/folder4/file2': 2,
-        '/folder5/folder4/file6': 6,
-      })
     })
 
     it('should use SOAP if ReadFileEncodingError was thrown', async () => {
@@ -562,12 +553,6 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     describe('modifications', () => {
-      const elementsSourceIndexes: LazyElementsSourceIndexes = {
-        getIndexes: () => {
-          throw new Error('getIndexes should not be called!')
-        },
-      }
-
       let changes: Change<InstanceElement>[]
       beforeEach(() => {
         changes = Array.from(Array(100).keys()).map(id => toChange({
@@ -593,7 +578,7 @@ describe('suiteapp_file_cabinet', () => {
       it('should return only error if api calls fails', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([changes[0]], 'update', elementsSourceIndexes)
+          .deploy([changes[0]], 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(0)
       })
@@ -601,72 +586,16 @@ describe('suiteapp_file_cabinet', () => {
       it('should return applied changes for successful updates and errors for others', async () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes.slice(0, 2), 'update', elementsSourceIndexes)
+          .deploy(changes.slice(0, 2), 'update')
         expect(errors).toEqual([new Error('someError')])
         expect(appliedChanges).toHaveLength(1)
       })
 
-      it('should return an error if the id of the file is not found', async () => {
-        const change = toChange({
-          before: new InstanceElement(
-            'instance10000',
-            folder,
-            {
-              path: '/instance10000',
-            }
-          ),
-          after: new InstanceElement(
-            'instance10000',
-            folder,
-            {
-              path: '/instance10000',
-              description: 'aaa',
-            }
-          ),
-        })
-
-        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([change], 'update', elementsSourceIndexes)
-        expect(errors).toEqual([new Error('Failed to find the internal id of the file /instance10000')])
-        expect(appliedChanges).toHaveLength(0)
-        expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
-      })
-
-      it('should return both update errors and invalid instance errors', async () => {
-        const notExistsChange = toChange({
-          before: new InstanceElement(
-            'instance10000',
-            folder,
-            {
-              path: '/instance10000',
-            }
-          ),
-          after: new InstanceElement(
-            'instance10000',
-            folder,
-            {
-              path: '/instance10000',
-              description: 'aaa',
-            }
-          ),
-        })
-
-        mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
-        const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([changes[0], notExistsChange], 'update', elementsSourceIndexes)
-        expect(errors).toEqual([
-          new Error('someError'),
-          new Error('Failed to find the internal id of the file /instance10000'),
-        ])
-        expect(appliedChanges).toHaveLength(0)
-        expect(mockSuiteAppClient.updateFileCabinetInstances).not.toHaveBeenCalledWith()
-      })
-
       it('should deploy in chunks', async () => {
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'update', elementsSourceIndexes)
+          .deploy(changes, 'update')
         expect(errors).toHaveLength(0)
-        expect(appliedChanges).toEqual(changes)
+        expect(appliedChanges).toEqual(changes.map((change, id) => ({ ...change, id })))
         expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(50).keys()))
@@ -677,15 +606,6 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     describe('additions', () => {
-      const elementsSourceIndexes = {
-        getIndexes: async () => ({
-          pathToInternalIdsIndex: {
-            ...Object.fromEntries(_.range(100).map(i => [`/instance${i}`, i])),
-            '/instance1/instance101': 101,
-          },
-        } as unknown as ElementsSourceIndexes),
-      }
-
       it('should split by depths', async () => {
         const changes = [
           toChange({
@@ -729,7 +649,7 @@ describe('suiteapp_file_cabinet', () => {
         ]
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'add', elementsSourceIndexes)
+          .deploy(changes, 'add')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 
@@ -741,39 +661,91 @@ describe('suiteapp_file_cabinet', () => {
           .map((details: FileCabinetInstanceDetails) => details.path))
           .toEqual(['/instance1/newInstance2/newInstance3'])
       })
+      it('should add parent folder internal id to children', async () => {
+        const changes = [
+          toChange({
+            after: new InstanceElement(
+              'newInstance2',
+              folder,
+              {
+                path: '/instance1/newInstance2',
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            after: new InstanceElement(
+              'newInstance3',
+              file,
+              {
+                path: '/instance1/newInstance2/newInstance3',
+                description: 'aaa',
+                content: 'aaa',
+              }
+            ),
+          }),
+        ]
 
-      it('should return an error if file parent is not found', async () => {
-        const change = toChange({
-          before: new InstanceElement(
-            'instance1',
-            folder,
-            {
-              path: '/someFolder/instance1',
-            }
-          ),
-          after: new InstanceElement(
-            'instance1',
-            folder,
-            {
-              path: '/someFolder/instance1',
-              description: 'aaa',
-            }
-          ),
-        })
-
+        const { appliedChanges, errors, elemIdToInternalId } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+          .deploy(changes, 'add')
+        expect(errors).toHaveLength(0)
+        expect(appliedChanges).toHaveLength(2)
+        expect(Object.keys(elemIdToInternalId ?? {})).toEqual([
+          'netsuite.folder.instance.newInstance2',
+          'netsuite.file.instance.newInstance3',
+        ])
+        expect(mockSuiteAppClient.addFileCabinetInstances).toHaveBeenNthCalledWith(2, [
+          expect.objectContaining({
+            folder: parseInt(elemIdToInternalId?.['netsuite.folder.instance.newInstance2'] ?? '0', 10),
+          }),
+        ])
+      })
+      it('should skip children if parent folder deploy fails', async () => {
+        const changes = [
+          toChange({
+            after: new InstanceElement(
+              'newInstance2',
+              folder,
+              {
+                path: '/instance1/newInstance2',
+                bundleable: true,
+                isinactive: false,
+                isonline: false,
+                hideinbundle: false,
+              }
+            ),
+          }),
+          toChange({
+            after: new InstanceElement(
+              'newInstance3',
+              file,
+              {
+                path: '/instance1/newInstance2/newInstance3',
+                description: 'aaa',
+                content: 'aaa',
+              }
+            ),
+          }),
+        ]
+        mockSuiteAppClient.addFileCabinetInstances.mockImplementation(
+          async fileCabinetInstances => fileCabinetInstances
+            .map(() => new Error('some error'))
+        )
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy([change], 'add', elementsSourceIndexes)
-        expect(errors).toEqual([new Error('Directory /someFolder was not found when attempting to deploy a file with path /someFolder/instance1')])
+          .deploy(changes, 'add')
         expect(appliedChanges).toHaveLength(0)
+        expect(mockSuiteAppClient.addFileCabinetInstances).toHaveBeenCalledTimes(1)
+        expect(errors).toHaveLength(2)
+        expect(errors[0]).toEqual(new Error('some error'))
+        expect(errors[1].message).toEqual(expect.stringContaining('Can\'t deploy the following'))
+        expect(errors[1].message).toEqual(expect.stringContaining('/instance1/newInstance2/newInstance3'))
       })
     })
 
     describe('deletions', () => {
-      const elementsSourceIndexes: LazyElementsSourceIndexes = {
-        getIndexes: () => {
-          throw new Error('getIndexes should not be called!')
-        },
-      }
       it('should split by depths', async () => {
         const changes = [
           toChange({
@@ -824,7 +796,7 @@ describe('suiteapp_file_cabinet', () => {
         ]
 
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
-          .deploy(changes, 'delete', elementsSourceIndexes)
+          .deploy(changes, 'delete')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(3)
 

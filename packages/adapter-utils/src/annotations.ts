@@ -13,23 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export const CORE_ANNOTATIONS = {
-  DEFAULT: '_default',
-  REQUIRED: '_required',
-  RESTRICTION: '_restriction',
-  HIDDEN: '_hidden',
-  HIDDEN_VALUE: '_hidden_value',
-  DEPENDS_ON: '_depends_on',
-  PARENT: '_parent',
-  GENERATED_DEPENDENCIES: '_generated_dependencies',
-  SERVICE_URL: '_service_url',
-  SERVICE_ID: '_service_id',
-  CREATED_BY: '_created_by',
-  CREATED_AT: '_created_at',
-  CHANGED_BY: '_changed_by',
-  CHANGED_AT: '_changed_at',
-  CREATABLE: '_creatable',
-  UPDATABLE: '_updatable',
-  DELETABLE: '_deletable',
-  ADDITIONAL_PROPERTIES: '_additional_properties',
-}
+import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+
+export const isHidden = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
+)
+
+export const isHiddenValue = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
+)
+
+export const isUpdatable = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true
+)
+
+export const isRequired = (element: Element): boolean => (
+  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
+)

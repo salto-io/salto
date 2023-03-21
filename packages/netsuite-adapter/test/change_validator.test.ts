@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
@@ -21,8 +21,8 @@ import netsuiteClientValidation from '../src/change_validators/client_validation
 import { FetchByQueryFunc, FetchByQueryReturnType } from '../src/change_validators/safe_deploy'
 import { NetsuiteQuery } from '../src/query'
 import NetsuiteClient from '../src/client/client'
-import { LazyElementsSourceIndexes } from '../src/elements_source_index/types'
 import * as dependencies from '../src/change_validators/dependencies'
+import { INTERNAL_ID } from '../src/constants'
 
 const DEFAULT_OPTIONS = {
   withSuiteApp: false,
@@ -36,7 +36,7 @@ const DEFAULT_OPTIONS = {
   filtersRunner: () => ({
     preDeploy: jest.fn(),
   }) as unknown as Required<Filter>,
-  elementsSourceIndex: jest.fn() as unknown as LazyElementsSourceIndexes,
+  elementsSource: jest.fn() as unknown as ReadOnlyElementsSource,
   fetchByQuery: jest.fn(),
 }
 
@@ -70,6 +70,14 @@ describe('change validator', () => {
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(instance.elemID)
       })
+      it('should not have change error when modifying an file cabinet instance without internal id', async () => {
+        const changeValidator = getChangeValidator(
+          { ...DEFAULT_OPTIONS, client, fetchByQuery }
+        )
+        const instance = new InstanceElement('test', file)
+        const changeErrors = await changeValidator([toChange({ before: instance, after: instance })])
+        expect(changeErrors).toHaveLength(0)
+      })
     })
 
     describe('with SuiteApp', () => {
@@ -82,9 +90,24 @@ describe('change validator', () => {
             fetchByQuery,
           }
         )
-        const instance = new InstanceElement('test', file)
+        const instance = new InstanceElement('test', file, { [INTERNAL_ID]: '1' })
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(0)
+      })
+      it('should have change error when modifying an file cabinet instance without internal id', async () => {
+        const changeValidator = getChangeValidator(
+          {
+            ...DEFAULT_OPTIONS,
+            withSuiteApp: true,
+            client,
+            fetchByQuery,
+          }
+        )
+        const instance = new InstanceElement('test', file)
+        const changeErrors = await changeValidator([toChange({ before: instance, after: instance })])
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(instance.elemID)
       })
     })
   })
@@ -157,7 +180,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
     it('should call netsuiteClientValidation with only valid changes', async () => {
@@ -182,7 +204,6 @@ describe('change validator', () => {
         client,
         DEFAULT_OPTIONS.additionalDependencies,
         DEFAULT_OPTIONS.filtersRunner,
-        DEFAULT_OPTIONS.deployReferencedElements,
       )
     })
   })

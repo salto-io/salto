@@ -52,6 +52,7 @@ type JiraDeployConfig = configUtils.UserDeployConfig & {
 
 type JiraFetchFilters = {
   name?: string
+  type?: string
 }
 
 type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
@@ -144,7 +145,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   },
   masking: {
     automationHeaders: [],
-    secretRegexps: [],
+    secretRegexps: ['xoxb-.*'], // xoxb-.* is Slack token, used by script runner
   },
 }
 
@@ -179,6 +180,7 @@ const fetchFiltersType = createMatchingObjectType<JiraFetchFilters>({
   elemID: new ElemID(JIRA, 'FetchFilters'),
   fields: {
     name: { refType: BuiltinTypes.STRING },
+    type: { refType: BuiltinTypes.STRING },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

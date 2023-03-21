@@ -194,7 +194,7 @@ const createChangeErrorsForAccountIdIssues = (
       missingUsers,
       displayNameMismatches,
       missingDisplayNamePaths
-    )) })
+    ), config) })
 
   const changeErrors: ChangeError[] = []
 

@@ -13,9 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeDataType, InstanceElement, isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { isCustomRecordType } from '../types'
 import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
 
 export interface CustomizationInfo {
@@ -80,18 +79,22 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
-export type AdditionalSdfDeployDependencies = {
-  features: string[]
-  objects: string[]
-}
+type OptionalFeature = { status: 'optional'; canBeRequired: boolean }
+type RequiredFeature = { status: 'required' }
+type ExcludedFeature = { status: 'excluded' }
+type FeatureStatus = OptionalFeature | RequiredFeature | ExcludedFeature
+export type FeaturesMap = Record<string, FeatureStatus>
 
-export type AdditionalDependencies = {
-  include: AdditionalSdfDeployDependencies
-  exclude: AdditionalSdfDeployDependencies
+export type ManifestDependencies = {
+  optionalFeatures: string[]
+  requiredFeatures: string[]
+  excludedFeatures: string[]
+  includedObjects: string[]
+  excludedObjects: string[]
 }
 
 export type SdfDeployParams = {
-  additionalDependencies: AdditionalDependencies
+  manifestDependencies: ManifestDependencies
   validateOnly?: boolean
 }
 
@@ -101,12 +104,17 @@ export class InvalidSuiteAppCredentialsError extends Error {
   }
 }
 
-export const getOrTransformCustomRecordTypeToInstance = (element: ChangeDataType): InstanceElement | undefined => {
-  if (isInstanceElement(element)) {
-    return element
-  }
-  if (isObjectType(element) && isCustomRecordType(element)) {
-    return toCustomRecordTypeInstance(element)
-  }
-  return undefined
-}
+export const getDeployableChanges = (
+  changes: ReadonlyArray<Change>
+): Change<ObjectType | InstanceElement>[] =>
+  changes.filter(
+    change => isInstanceChange(change) || isObjectTypeChange(change)
+  ) as Change<InstanceElement | ObjectType>[]
+
+export const getOrTransformCustomRecordTypeToInstance = (
+  element: ObjectType | InstanceElement
+): InstanceElement => (
+  isObjectType(element)
+    ? toCustomRecordTypeInstance(element)
+    : element
+)

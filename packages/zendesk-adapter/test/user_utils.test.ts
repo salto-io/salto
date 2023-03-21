@@ -47,9 +47,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
-              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
             ] },
           ]
         })
@@ -57,9 +57,9 @@ describe('userUtils', () => {
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com', name: 'a' },
-          { id: 2, email: 'b@b.com', name: 'b' },
-          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+          { id: 2, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
         ]
       )
     })
@@ -68,23 +68,23 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
             ] },
           ]
         })
       const users = await userUtils.getUsers(mockPaginator)
       expect(users).toEqual(
         [
-          { id: 1, email: 'a@a.com', name: 'a' },
-          { id: 2, email: 'b@b.com', name: 'b' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
         ]
       )
       const getUsersAfterCache = await userUtils.getUsers(mockPaginator)
       expect(getUsersAfterCache).toEqual(
         [
-          { id: 1, email: 'a@a.com', name: 'a' },
-          { id: 2, email: 'b@b.com', name: 'b' },
+          { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+          { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
         ]
       )
       await userUtils.getUsers(mockPaginator)
@@ -120,9 +120,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
-              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
             ] },
           ]
         })
@@ -139,8 +139,8 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
             ] },
           ]
         })
@@ -187,9 +187,9 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
-              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
+              { id: 3, email: 'c@c.com', role: 'agent', custom_role_id: '123', name: 'c', locale: 'en-US' },
             ] },
           ]
         })
@@ -206,8 +206,8 @@ describe('userUtils', () => {
         .mockImplementation(async function *get() {
           yield [
             { users: [
-              { id: 1, email: 'a@a.com', name: 'a' },
-              { id: 2, email: 'b@b.com', name: 'b' },
+              { id: 1, email: 'a@a.com', name: 'a', locale: 'en-US' },
+              { id: 2, email: 'b@b.com', name: 'b', locale: 'en-US' },
             ] },
           ]
         })
@@ -787,7 +787,7 @@ describe('userUtils', () => {
     })
     it('should return deployer user email', async () => {
       mockGet
-        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234', name: 'saltoo' } } })
+        .mockResolvedValueOnce({ status: 200, data: { user: { id: 1, email: 'saltoo@io', role: 'admin', custom_role_id: '234234', name: 'saltoo', locale: 'en-US' } } })
       deployConfig = {
         defaultMissingUserFallback: '##DEPLOYER##',
       }

@@ -16,16 +16,36 @@
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME } from './constants'
 
+
+type OktaReferenceSerializationStrategyName = 'key'
+const OktaReferenceSerializationStrategyLookup: Record<
+  OktaReferenceSerializationStrategyName | referenceUtils.ReferenceSerializationStrategyName,
+  referenceUtils.ReferenceSerializationStrategy
+> = {
+  ...referenceUtils.ReferenceSerializationStrategyLookup,
+  key: {
+    serialize: ({ ref }) => ref.value.value.key,
+    lookup: val => val,
+    lookupIndexName: 'key',
+  },
+}
+
+type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
+  oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
+}
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
-  constructor(def: referenceUtils.FieldReferenceDefinition<never>) {
+  constructor(def: OktaFieldReferenceDefinition) {
     super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
+    this.serializationStrategy = OktaReferenceSerializationStrategyLookup[
+      def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
+    ]
   }
 }
 
-export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] = [
+export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'assignedGroups', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
@@ -101,10 +121,26 @@ export const referencesRules: referenceUtils.FieldReferenceDefinition<never>[] =
     serializationStrategy: 'id',
     target: { type: INLINE_HOOK_TYPE_NAME },
   },
+  {
+    src: { field: 'key', parentTypes: ['MultifactorEnrollmentPolicyAuthenticatorSettings'] },
+    oktaSerializationStrategy: 'key',
+    target: { type: AUTHENTICATOR_TYPE_NAME },
+  },
+  {
+    src: { field: 'behaviors', parentTypes: ['RiskPolicyRuleCondition'] },
+    serializationStrategy: 'id',
+    target: { type: BEHAVIOR_RULE_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: ['AppAndInstanceConditionEvaluatorAppOrInstance'] },
+    serializationStrategy: 'id',
+    target: { type: APPLICATION_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [
-  referenceUtils.generateLookupFunc(referencesRules),
+  // The second param is needed to resolve references by oktaSerializationStrategy
+  referenceUtils.generateLookupFunc(referencesRules, defs => new OktaFieldReferenceResolver(defs)),
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (

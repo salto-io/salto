@@ -67,9 +67,9 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
       .filter(isInstanceElement)
       .forEach(async element => {
         if (client.isDataCenter) {
-          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) })
+          walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) })
         } else {
-          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap,)) })
+          walkOnElement({ element, func: walkOnUsers(addDisplayName(userMap), config) })
         }
       })
   },
@@ -93,7 +93,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertUserNameToId(preDeployUserMap), config) }))
   },
   onDeploy: async changes => {
     if (!(config.fetch.convertUsersIds ?? true)
@@ -110,7 +110,7 @@ const filter: FilterCreator = ({ client, config, getUserMapFunc, elementsSource 
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName !== PROJECT_TYPE)
       .forEach(element =>
-        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap)) }))
+        walkOnElement({ element, func: walkOnUsers(convertIdToUsername(userMap), config) }))
   },
 })
 

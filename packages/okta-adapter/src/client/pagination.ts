@@ -19,7 +19,7 @@ import * as parse from 'parse-link-header'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
-const LINK_HEADER_NAME = 'link'
+export const LINK_HEADER_NAME = 'link'
 
 const getNextPage = (link: string): URL | undefined => {
   const parsedLinkHeader = parse.default(link)
@@ -37,7 +37,7 @@ export const getWithCursorHeaderPagination = (): clientUtils.PaginationFunc => {
   const nextPageCursorPagesByHeader: clientUtils.PaginationFunc = ({
     responseHeaders, getParams, currentParams,
   }) => {
-    const { url } = getParams
+    const { url, headers } = getParams
     if (responseHeaders !== undefined) {
       const linkHeader = _.get(responseHeaders, LINK_HEADER_NAME)
       if (_.isString(linkHeader)) {
@@ -50,6 +50,7 @@ export const getWithCursorHeaderPagination = (): clientUtils.PaginationFunc => {
           return [{
             ...currentParams,
             ...Object.fromEntries(nextPage.searchParams.entries()),
+            ...headers,
           }]
         }
       }

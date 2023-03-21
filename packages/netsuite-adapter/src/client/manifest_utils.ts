@@ -20,7 +20,7 @@ import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
-import { AdditionalDependencies, CustomizationInfo } from './types'
+import { ManifestDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
 
 const { makeArray } = collections.array
@@ -140,31 +140,32 @@ const fixDependenciesObject = (dependencies: Value): void => {
 const addRequiredDependencies = (
   dependencies: Value,
   customizationInfos: CustomizationInfo[],
-  additionalDependencies: AdditionalDependencies
+  additionalDependencies: ManifestDependencies
 ): void => {
-  const requiredFeatures = _(additionalDependencies.include.features)
+  const requiredFeatures = _(additionalDependencies.requiredFeatures)
     .union(getRequiredFeatures(customizationInfos))
+    // if a feature from getRequiredFeatures is in optionalFeatures - it should be optional
+    .difference(additionalDependencies.optionalFeatures)
     .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'true', [TEXT_ATTRIBUTE]: feature }))
     .value()
-  const requiredObjects = _(additionalDependencies.include.objects)
-    .union(getRequiredObjects(customizationInfos))
+  const optionalFeatures = _(additionalDependencies.optionalFeatures)
+    .map(feature => ({ [REQUIRED_ATTRIBUTE]: 'false', [TEXT_ATTRIBUTE]: feature }))
     .value()
-  if (requiredFeatures.length === 0 && requiredObjects.length === 0) {
-    return
-  }
+  const additionalFeatures = [...requiredFeatures, ...optionalFeatures]
 
   const { features, objects } = dependencies
   features.feature = _(makeArray(features.feature))
-    // remove all required features
-    .differenceBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
-    // re-add all required features with "required=true"
-    .unionBy(requiredFeatures, item => item[TEXT_ATTRIBUTE])
-    .filter(item => !additionalDependencies.exclude.features.includes(item[TEXT_ATTRIBUTE]))
+    // remove all additional features
+    .differenceBy(additionalFeatures, item => item[TEXT_ATTRIBUTE])
+    // re-add all additional features with the desired "required" value for each feature
+    .unionBy(additionalFeatures, item => item[TEXT_ATTRIBUTE])
+    .filter(item => !additionalDependencies.excludedFeatures.includes(item[TEXT_ATTRIBUTE]))
     .value()
 
   objects.object = _(makeArray(objects.object))
-    .union(requiredObjects)
-    .difference(additionalDependencies.exclude.objects)
+    .union(additionalDependencies.includedObjects)
+    .union(getRequiredObjects(customizationInfos))
+    .difference(additionalDependencies.excludedObjects)
     .value()
 }
 
@@ -178,7 +179,7 @@ const cleanInvalidDependencies = (dependencies: Value): void => {
 export const fixManifest = (
   manifestContent: string,
   customizationInfos: CustomizationInfo[],
-  additionalDependencies: AdditionalDependencies
+  additionalDependencies: ManifestDependencies
 ): string => {
   const manifestXml = xmlParser.parse(manifestContent, { ignoreAttributes: false })
 

@@ -46,7 +46,7 @@ import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, AdditionalDependencies, SdfDeployParams,
+  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -54,7 +54,9 @@ import {
   mergeTypeToInstances,
 } from './utils'
 import { fixManifest } from './manifest_utils'
-import { detectLanguage, FEATURE_NAME, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
+import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
+import { Graph, SDFObjectNode } from './graph_utils'
+import { reorderDeployXml, getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -88,12 +90,6 @@ export const COMMANDS = {
   IMPORT_CONFIGURATION: 'configuration:import',
 }
 
-
-export const ATTRIBUTES_FOLDER_NAME = '.attributes'
-export const ATTRIBUTES_FILE_SUFFIX = '.attr.xml'
-export const FOLDER_ATTRIBUTES_FILE_SUFFIX = '.folder.attr.xml'
-const FILE_CABINET_DIR = 'FileCabinet'
-const OBJECTS_DIR = 'Objects'
 const SRC_DIR = 'src'
 const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
@@ -176,7 +172,6 @@ export const convertToXmlContent = (customizationInfo: CustomizationInfo): strin
 const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):
   Promise<void> => {
   await mkdirp(folderPath)
-  osPath.resolve(folderPath, filename)
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
 
@@ -212,6 +207,8 @@ export default class SdfClient {
   private readonly setupAccountLock: AsyncLock
   private readonly baseCommandExecutor: CommandActionExecutor
   private readonly installedSuiteApps: string[]
+  private manifestXmlContent: string
+  private deployXmlContent: string
 
   constructor({
     credentials,
@@ -231,6 +228,8 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
+    this.manifestXmlContent = ''
+    this.deployXmlContent = ''
   }
 
   @SdfClient.logDecorator
@@ -700,7 +699,7 @@ export default class SdfClient {
 
     const unexpectedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
-        if (failedImport.customObject.result.message.includes('unexpected error')) {
+        if (fetchUnexpectedErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to SDF unexpected error',
             SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true
@@ -710,7 +709,7 @@ export default class SdfClient {
 
     const lockedError = SdfClient.createFailedImportsMap(importResult.failedImports
       .filter(failedImport => {
-        if (failedImport.customObject.result.message.includes('You cannot download the XML file for this object because it is locked')) {
+        if (fetchLockedObjectErrorRegex.test(failedImport.customObject.result.message)) {
           log.debug('Failed to fetch (%s) instance with id (%s) due to the instance being locked',
             SdfClient.fixTypeName(failedImport.customObject.type), failedImport.customObject.id)
           return true
@@ -872,13 +871,14 @@ export default class SdfClient {
 
   @SdfClient.logDecorator
   async deploy(
-    customizationInfos: CustomizationInfo[],
     suiteAppId: string | undefined,
-    { additionalDependencies, validateOnly = false }: SdfDeployParams
+    { manifestDependencies, validateOnly = false }: SdfDeployParams,
+    dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
-    const objectsDirPath = SdfClient.getObjectsDirPath(project.projectName)
+    const srcDirPath = SdfClient.getSrcDirPath(project.projectName)
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const customizationInfos = Array.from(dependencyGraph.nodes.values()).map(node => node.value.customizationInfo)
     // Delete the default FileCabinet folder to prevent permissions error
     await rm(fileCabinetDirPath)
     await Promise.all(customizationInfos.map(async customizationInfo => {
@@ -886,34 +886,35 @@ export default class SdfClient {
         return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectName)
       }
       if (isCustomTypeInfo(customizationInfo)) {
-        return SdfClient.addCustomTypeInfoToProject(customizationInfo, objectsDirPath)
+        return SdfClient.addCustomTypeInfoToProject(customizationInfo, srcDirPath)
       }
       if (isFileCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFileInfoToProject(customizationInfo, fileCabinetDirPath)
+        return SdfClient.addFileInfoToProject(customizationInfo, srcDirPath)
       }
       if (isFolderCustomizationInfo(customizationInfo)) {
-        return SdfClient.addFolderInfoToProject(customizationInfo, fileCabinetDirPath)
+        return SdfClient.addFolderInfoToProject(customizationInfo, srcDirPath)
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, additionalDependencies, validateOnly)
+    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly, dependencyGraph)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
-  private static async fixManifest(
+  private async fixManifest(
     projectName: string,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalDependencies
+    manifestDependencies: ManifestDependencies
   ): Promise<void> {
     const manifestPath = SdfClient.getManifestFilePath(projectName)
     const manifestContent = (await readFile(manifestPath)).toString()
+    this.manifestXmlContent = fixManifest(manifestContent, customizationInfos, manifestDependencies)
     await writeFile(
       manifestPath,
-      fixManifest(manifestContent, customizationInfos, additionalDependencies)
+      this.manifestXmlContent
     )
   }
 
-  private static customizeDeployError(error: Error): Error {
+  private customizeDeployError(error: Error): Error {
     if (error instanceof FeaturesDeployError) {
       return error
     }
@@ -923,60 +924,75 @@ export default class SdfClient {
     const {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
-      deployStartMessageRegex,
       objectValidationErrorRegex,
-      objectValidationFeatureErrorRegex,
+      missingFeatureErrorRegex,
       deployedObjectRegex,
       errorObjectRegex,
     } = multiLanguageErrorDetectors[sdfLanguage]
-    if (settingsValidationErrorRegex.test(errorMessage)) {
-      const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
-      if (manifestErrorScriptids.length > 0) {
-        return new ManifestValidationError(errorMessage, manifestErrorScriptids)
-      }
+    const manifestErrorScriptids = getGroupItemFromRegex(errorMessage, manifestErrorDetailsRegex, OBJECT_ID)
+    if (manifestErrorScriptids.length > 0) {
+      return new ManifestValidationError(errorMessage, manifestErrorScriptids)
+    }
+    const missingFeatureNames = missingFeatureErrorRegex
+      .flatMap(regex => getGroupItemFromRegex(errorMessage, regex, FEATURE_NAME))
+    if (missingFeatureNames.length > 0) {
+      return new MissingManifestFeaturesError(errorMessage, _.uniq(missingFeatureNames))
+    }
+    const validationErrorObjects = getGroupItemFromRegex(
+      errorMessage, objectValidationErrorRegex, OBJECT_ID
+    )
+    if (validationErrorObjects.length > 0) {
+      return new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
+    }
+    if (settingsValidationErrorRegex.test(errorMessage) && errorMessage.includes(FEATURES_XML)) {
       return new SettingsDeployError(errorMessage, new Set([CONFIG_FEATURES]))
     }
-    if (!deployStartMessageRegex.test(errorMessage)) {
-      // we'll get here when the deploy failed in the validation phase.
-      // in this case we're looking for validation error message lines.
-      const missingFeatureNames = getGroupItemFromRegex(errorMessage, objectValidationFeatureErrorRegex, FEATURE_NAME)
-      if (missingFeatureNames.length > 0) {
-        return new MissingManifestFeaturesError(errorMessage, missingFeatureNames)
-      }
-      const validationErrorObjects = getGroupItemFromRegex(
-        errorMessage, objectValidationErrorRegex, OBJECT_ID
-      )
-      return validationErrorObjects.length > 0
-        ? new ObjectsDeployError(errorMessage, new Set(validationErrorObjects))
-        : error
+    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
+    if (errorObject !== undefined) {
+      return new ObjectsDeployError(errorMessage, new Set([errorObject]))
     }
-
     const allDeployedObjects = getGroupItemFromRegex(
       errorMessage, deployedObjectRegex, OBJECT_ID
     )
-    const errorObject = errorMessage.match(errorObjectRegex)?.groups?.[OBJECT_ID]
-
-    if (allDeployedObjects.length === 0) {
-      return errorObject !== undefined
-        ? new ObjectsDeployError(errorMessage, new Set([errorObject]))
-        : error
+    if (allDeployedObjects.length > 0) {
+      // the last object in the error message is the one that failed the deploy
+      return new ObjectsDeployError(errorMessage, new Set([allDeployedObjects.slice(-1)[0]]))
     }
-    // if errorObject doesn't exists - the last object in the error message is the one
-    // that failed the deploy
-    return new ObjectsDeployError(
-      errorMessage,
-      new Set([errorObject ?? allDeployedObjects.slice(-1)[0]])
+
+    log.warn(`
+could not detect the reason for this sdf error.
+manifest.xml:
+${this.manifestXmlContent}
+
+deploy.xml:
+${this.deployXmlContent}
+`)
+    return error
+  }
+
+  private async fixDeployXml(
+    dependencyGraph: Graph<SDFObjectNode>,
+    projectName: string,
+  ): Promise<void> {
+    const deployFilePath = SdfClient.getDeployFilePath(projectName)
+    const deployXmlContent = (await readFile(deployFilePath)).toString()
+    this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
+    await writeFile(
+      deployFilePath,
+      this.deployXmlContent
     )
   }
 
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
-    additionalDependencies: AdditionalDependencies,
-    validateOnly: boolean
+    manifestDependencies: ManifestDependencies,
+    validateOnly: boolean,
+    dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await SdfClient.fixManifest(projectName, customizationInfos, additionalDependencies)
+    await this.fixManifest(projectName, customizationInfos, manifestDependencies)
+    await this.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -990,19 +1006,19 @@ export default class SdfClient {
         executor
       )
     } catch (e) {
-      throw SdfClient.customizeDeployError(toError(e))
+      throw this.customizeDeployError(toError(e))
     }
   }
 
   private static async addCustomTypeInfoToProject(customTypeInfo: CustomTypeInfo,
-    objectsDirPath: string): Promise<void> {
+    srcDirPath: string): Promise<void> {
     await writeFile(
-      osPath.resolve(objectsDirPath, `${customTypeInfo.scriptId}.xml`),
+      getCustomTypeInfoPath(srcDirPath, customTypeInfo),
       convertToXmlContent(customTypeInfo)
     )
     if (isTemplateCustomTypeInfo(customTypeInfo)) {
-      await writeFile(osPath.resolve(objectsDirPath,
-        `${customTypeInfo.scriptId}${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
+      await writeFile(getCustomTypeInfoPath(srcDirPath,
+        customTypeInfo, `${ADDITIONAL_FILE_PATTERN}${customTypeInfo.fileExtension}`),
       customTypeInfo.fileContent)
     }
   }
@@ -1022,15 +1038,13 @@ export default class SdfClient {
   }
 
   private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
-    fileCabinetDirPath: string): Promise<void> {
+    srcDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
-    const attrsFolderPath = osPath.resolve(fileCabinetDirPath,
-      ...fileCustomizationInfo.path.slice(0, -1), ATTRIBUTES_FOLDER_NAME)
-
+    const fileFolderPath = getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo)
+    const attrsFolderPath = osPath.resolve(
+      fileFolderPath, ATTRIBUTES_FOLDER_NAME
+    )
     const filename = fileCustomizationInfo.path.slice(-1)[0]
-    const fileFolderPath = osPath.resolve(fileCabinetDirPath,
-      ...fileCustomizationInfo.path.slice(0, -1))
-
     await Promise.all([
       writeFileInFolder(fileFolderPath, filename, fileCustomizationInfo.fileContent),
       writeFileInFolder(attrsFolderPath, attrsFilename, convertToXmlContent(fileCustomizationInfo)),
@@ -1038,15 +1052,20 @@ export default class SdfClient {
   }
 
   private static async addFolderInfoToProject(folderCustomizationInfo: FolderCustomizationInfo,
-    fileCabinetDirPath: string): Promise<void> {
-    const attrsFolderPath = osPath.resolve(fileCabinetDirPath, ...folderCustomizationInfo.path,
-      ATTRIBUTES_FOLDER_NAME)
+    srcDirPath: string): Promise<void> {
+    const attrsFolderPath = osPath.resolve(
+      getFileCabinetTypesPath(srcDirPath, folderCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+    )
     await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
       convertToXmlContent(folderCustomizationInfo))
   }
 
   private static getProjectPath(projectName: string): string {
     return osPath.resolve(baseExecutionPath, projectName)
+  }
+
+  private static getSrcDirPath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR)
   }
 
   private static getObjectsDirPath(projectName: string): string {
@@ -1059,6 +1078,10 @@ export default class SdfClient {
 
   private static getManifestFilePath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
+  }
+
+  private static getDeployFilePath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'deploy.xml')
   }
 
   private static getFeaturesXmlPath(projectName: string): string {

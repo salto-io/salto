@@ -96,7 +96,7 @@ export const traverseRequests: (
   pageSize,
   getParams,
 }) {
-  const { url, queryParams, recursiveQueryParams } = getParams
+  const { url, queryParams, recursiveQueryParams, headers } = getParams
   const requestQueryArgs: Record<string, string>[] = [{}]
   const usedParams = new Set<string>()
   let numResults = 0
@@ -114,6 +114,7 @@ export const traverseRequests: (
     const response = await client.getSinglePage({
       url,
       queryParams: Object.keys(params).length > 0 ? params : undefined,
+      headers,
     })
 
     if (response.status !== 200) {

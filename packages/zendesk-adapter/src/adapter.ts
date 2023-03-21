@@ -30,6 +30,7 @@ import {
   isInstanceElement,
   isReferenceExpression,
   ReadOnlyElementsSource,
+  SaltoError,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
@@ -129,6 +130,8 @@ import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
+import { isCurrentUserResponse } from './user_utils'
+import addAliasFilter from './filters/add_alias'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -198,6 +201,7 @@ export const DEFAULT_FILTERS = [
   guideLocalesFilter, // Needs to be after guideServiceUrl
   // fieldReferencesFilter should be after usersFilter, macroAttachmentsFilter, tagsFilter and guideLocalesFilter
   fieldReferencesFilter,
+  addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
   appsFilter,
@@ -563,6 +567,27 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
   }
 
+  private async isLocaleEnUs(): Promise<SaltoError | undefined> {
+    try {
+      const res = (await this.client.getSinglePage({
+        url: '/api/v2/users/me',
+      })).data
+      if (isCurrentUserResponse(res)) {
+        if (res.user.locale !== 'en-US') {
+          return {
+            message: 'You are fetching zendesk with a user whose locale is set to a language different than US English. This may affect Salto\'s behavior in some cases. Therefore, it is highly recommended to set the user\'s language to "English (United States)" or to create another user with English as its Zendesk language and change Salto‘s credentials to use it. For help on how to change a Zendesk user\'s language, go to https://support.zendesk.com/hc/en-us/articles/4408835022490-Viewing-and-editing-your-user-profile-in-Zendesk-Support',
+            severity: 'Warning',
+          }
+        }
+        return undefined
+      }
+      log.error('could not verify fetching user\'s locale is set to en-US. received invalid response')
+    } catch (e) {
+      log.error(`could not verify fetching user's locale is set to en-US'. error: ${e}`)
+    }
+    return undefined
+  }
+
   /**
    * Fetch configuration elements in the given account.
    * Account credentials were given in the constructor.
@@ -571,8 +596,8 @@ export default class ZendeskAdapter implements AdapterOperations {
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
     log.debug('going to fetch zendesk account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types and instances' })
+    const localeError = await this.isLocaleEnUs()
     const { elements, configChanges, errors } = await this.getElements()
-
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const brandsWithHelpCenter = elements
@@ -592,7 +617,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       ? getConfigFromConfigChanges(configChanges, this.configInstance)
       : undefined
 
-    const fetchErrors = (errors ?? []).concat(result.errors ?? [])
+    const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
     return { elements, errors: fetchErrors, updatedConfig }
   }
 

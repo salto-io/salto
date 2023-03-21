@@ -775,6 +775,7 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      nestStandaloneInstances: false,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

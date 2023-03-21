@@ -216,7 +216,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
           fieldsToHide: [{ fieldName: 'id' }],
           fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
-          standaloneFields: [{ fieldName: 'policyRules', nestFiles: true }],
+          standaloneFields: [{ fieldName: 'policyRules' }],
         },
         deployRequests: typeName !== IDP_POLICY_TYPE_NAME ? policyDeployRequests : undefined,
       },
@@ -515,7 +515,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
-      standaloneFields: [{ fieldName: 'policies', nestFiles: true }],
+      standaloneFields: [{ fieldName: 'policies' }],
     },
   },
   AuthorizationServerPolicy: {
@@ -526,7 +526,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      standaloneFields: [{ fieldName: 'policyRules', nestFiles: true }],
+      standaloneFields: [{ fieldName: 'policyRules' }],
     },
   },
   AuthorizationServerPolicyRule: {
@@ -904,6 +904,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

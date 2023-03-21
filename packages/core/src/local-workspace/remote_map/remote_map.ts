@@ -25,7 +25,7 @@ import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { locationCaches } from './location_cache'
-import { counterInc, countersInit, countersDumpAndClose } from './counters'
+import { counters } from './counters'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -274,7 +274,8 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     log.debug('closed read-only connections per remote map of location %s', location)
   }
   locationCaches.put(location)
-  countersDumpAndClose(location)
+  counters.locationCounters(location).dump()
+  counters.deleteLocation(location)
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
@@ -431,7 +432,7 @@ export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
   cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
-  countersInit(location)
+  const statCounters = counters.locationCounters(location)
 
   const locationCache = locationCaches.get(location, cacheSize)
 
@@ -610,11 +611,11 @@ remoteMap.RemoteMapCreator => {
         resolve(undefined)
       }
       if (locationCache.has(keyToTempDBKey(key))) {
-        counterInc(location, 'LocationCacheHit')
-        counterInc(location, 'RemoteMapHit')
+        statCounters.LocationCacheHit.inc()
+        statCounters.RemoteMapHit.inc()
         resolve(locationCache.get(keyToTempDBKey(key)) as T)
       } else {
-        counterInc(location, 'LocationCacheMiss')
+        statCounters.LocationCacheMiss.inc()
         const resolveRet = async (value: Buffer | string): Promise<void> => {
           const ret = (await deserialize(value.toString()))
           locationCache.set(keyToTempDBKey(key), ret)
@@ -623,21 +624,21 @@ remoteMap.RemoteMapCreator => {
         tmpDB.get(keyToTempDBKey(key), async (error, value) => {
           if (error) {
             if (wasClearCalled) {
-              counterInc(location, 'RemoteMapMiss')
+              statCounters.RemoteMapMiss.inc()
               resolve(undefined)
             }
             persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {
-                counterInc(location, 'RemoteMapMiss')
+                statCounters.RemoteMapMiss.inc()
                 resolve(undefined)
               } else {
                 await resolveRet(innerValue)
-                counterInc(location, 'RemoteMapHit')
+                statCounters.RemoteMapHit.inc()
               }
             })
           } else {
             await resolveRet(value)
-            counterInc(location, 'RemoteMapHit')
+            statCounters.RemoteMapHit.inc()
           }
         })
       }
@@ -673,11 +674,11 @@ remoteMap.RemoteMapCreator => {
         tmpDBConnections[location] = tmpDBConnections[location] ?? {}
         tmpDBConnections[location][tmpLocation] = tmpConnection
       } else {
-        counterInc(location, 'TmpDbConnectionReuse')
+        statCounters.TmpDbConnectionReuse.inc()
       }
       const mainDBConnections = persistent ? persistentDBConnections : readonlyDBConnections
       if (location in mainDBConnections) {
-        counterInc(location, 'PersistentDbConnectionReuse')
+        statCounters.PersistentDbConnectionReuse.inc()
         persistentDB = await mainDBConnections[location]
         return
       }
@@ -690,7 +691,7 @@ remoteMap.RemoteMapCreator => {
           if (readOnly) {
             await createDBIfNotExist(location)
           }
-          counterInc(location, 'PersistentDbConnectionCreated')
+          statCounters.PersistentDbConnectionCreated.inc()
           return await getOpenDBConnection(location, readOnly)
         } catch (e) {
           if (isDBLockErr(e)) {
@@ -704,7 +705,7 @@ remoteMap.RemoteMapCreator => {
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     await withCreatorLock(createDBConnections)
-    counterInc(location, 'RemoteMapCreated')
+    statCounters.RemoteMapCreated.inc()
     return {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>

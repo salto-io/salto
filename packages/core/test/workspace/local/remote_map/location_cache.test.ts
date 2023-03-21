@@ -16,7 +16,7 @@
 
 import _ from 'lodash'
 import { LocationCachePool, createLocationCachePool } from '../../../../src/local-workspace/remote_map/location_cache'
-import { countersDumpAndClose, countersInit, counterValue } from '../../../../src/local-workspace/remote_map/counters'
+import { counters } from '../../../../src/local-workspace/remote_map/counters'
 
 describe('remote map location cache pool', () => {
   let pool: LocationCachePool
@@ -24,26 +24,25 @@ describe('remote map location cache pool', () => {
   const LOCATION2 = 'SomeOtherLocation'
 
   beforeEach(() => {
-    [LOCATION1, LOCATION2].forEach(loc => countersInit(loc))
     pool = createLocationCachePool()
   })
 
   afterEach(() => {
-    [LOCATION1, LOCATION2].forEach(loc => countersDumpAndClose(loc))
+    [LOCATION1, LOCATION2].forEach(loc => counters.deleteLocation(loc))
   })
 
   it('should create a location cache for the right location', () => {
     const cache = pool.get(LOCATION1, 5000)
     expect(cache.location).toEqual(LOCATION1)
-    expect(counterValue(LOCATION1, 'LocationCacheCreated')).toEqual(1)
-    expect(counterValue(LOCATION1, 'LocationCacheReuse')).toEqual(0)
+    expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
+    expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
     pool.put(cache)
   })
 
   it('should reuse caches where possible', () => {
     const caches = _.times(10, () => pool.get(LOCATION1, 5000))
-    expect(counterValue(LOCATION1, 'LocationCacheCreated')).toEqual(1)
-    expect(counterValue(LOCATION1, 'LocationCacheReuse')).toEqual(caches.length - 1)
+    expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
+    expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(caches.length - 1)
     caches.forEach(cache => pool.put(cache))
   })
 
@@ -52,9 +51,9 @@ describe('remote map location cache pool', () => {
     const anotherCache = pool.get(LOCATION2, 5000)
     expect(cache.location).toEqual(LOCATION1)
     expect(anotherCache.location).toEqual(LOCATION2)
-    expect(counterValue(LOCATION1, 'LocationCacheCreated')).toEqual(1)
-    expect(counterValue(LOCATION2, 'LocationCacheCreated')).toEqual(1)
-    expect(counterValue(LOCATION1, 'LocationCacheReuse')).toEqual(0)
+    expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
+    expect(counters.locationCounters(LOCATION2).LocationCacheCreated.value()).toEqual(1)
+    expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
     pool.put(cache)
     pool.put(anotherCache)
   })
@@ -63,8 +62,8 @@ describe('remote map location cache pool', () => {
     const cache = pool.get(LOCATION1, 5000)
     pool.put(cache)
     const anotherCache = pool.get(LOCATION1, 5000)
-    expect(counterValue(LOCATION1, 'LocationCacheCreated')).toEqual(2)
-    expect(counterValue(LOCATION1, 'LocationCacheReuse')).toEqual(0)
+    expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(2)
+    expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
     pool.put(anotherCache)
   })
 })

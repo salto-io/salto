@@ -69,13 +69,13 @@ const extractStandaloneFields = async (
     values,
     parent,
     objType,
-    nestedPath: updatedNestedPath,
+    updatedNestedPath,
     fieldExtractionDefinition,
   }: {
     values: Values[]
     parent: InstanceElement
     objType: ObjectType
-    nestedPath: string[]
+    updatedNestedPath: string[]
     fieldExtractionDefinition: StandaloneFieldConfigType
   }): Promise<ReferenceExpression[]> => {
     // eslint-disable-next-line no-use-before-define

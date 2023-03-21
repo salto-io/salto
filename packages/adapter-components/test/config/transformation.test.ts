@@ -14,22 +14,61 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName, shouldNestFiles } from '../../src/config'
+import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName, shouldNestFiles, TransformationConfig } from '../../src/config'
 
 
 describe('shouldNestFiles', () => {
-  it('should return if field should be nested under parent', () => {
-    expect(shouldNestFiles({
-      fieldName: 'something',
-      nestFiles: true,
-    })).toBeTruthy()
-    expect(shouldNestFiles({
-      fieldName: 'something',
-      nestFiles: false,
-    })).not.toBeTruthy()
-    expect(shouldNestFiles({
-      fieldName: 'something',
-    })).not.toBeTruthy()
+  describe('adapter default is true', () => {
+    const transformationConfig: TransformationConfig = {
+      nestStandaloneInstances: true,
+    }
+    it('should return true if field is missing', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+        })).toBeTruthy()
+      expect(shouldNestFiles(transformationConfig)).toBeTruthy()
+    })
+    it('should return true if field is true', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+          nestFiles: true,
+        })).toBeTruthy()
+    })
+    it('should return false if field is false', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+          nestFiles: false,
+        })).toBeFalsy()
+    })
+  })
+  describe('adapter default is false', () => {
+    const transformationConfig: TransformationConfig = {
+      nestStandaloneInstances: false,
+    }
+    it('should return false if field is missing', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+        })).toBeFalsy()
+      expect(shouldNestFiles(transformationConfig)).toBeFalsy()
+    })
+    it('should return true if field is true', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+          nestFiles: true,
+        })).toBeTruthy()
+    })
+    it('should return false if field is false', () => {
+      expect(shouldNestFiles(transformationConfig,
+        {
+          fieldName: 'something',
+          nestFiles: false,
+        })).toBeFalsy()
+    })
   })
 })
 

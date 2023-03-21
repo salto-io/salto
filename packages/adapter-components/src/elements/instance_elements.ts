@@ -253,9 +253,10 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
-    nestedPaths: shouldNestFiles(fieldExtractionDefinition) ? nestedPath : undefined,
+    nestedPaths: shouldNestFiles(transformationDefaultConfig, fieldExtractionDefinition) ? nestedPath : undefined,
   })
-  if (transformationConfigByType[type.elemID.name]?.standaloneFields?.some(shouldNestFiles)) {
+  if (transformationConfigByType[type.elemID.name]?.standaloneFields
+    ?.some(standaloneField => shouldNestFiles(transformationDefaultConfig, standaloneField))) {
     // If at least one standalone field is nested, we need to make the instance name into a folder with itself.
     filePath.push(filePath[filePath.length - 1])
   }

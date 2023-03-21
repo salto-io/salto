@@ -26,6 +26,7 @@ import { configType, JiraConfig, getApiDefinitions, getDefaultConfig } from './c
 import { createConnection, validateCredentials } from './client/connection'
 import { AUTOMATION_TYPE, WEBHOOK_TYPE } from './constants'
 import { getProductSettings } from './product_settings'
+import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
@@ -146,4 +147,5 @@ export const adapter: Adapter = {
     },
   },
   configType,
+  configCreator,
 }

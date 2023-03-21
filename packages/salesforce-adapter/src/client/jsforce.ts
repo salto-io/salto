@@ -102,7 +102,7 @@ export interface RunTestFailure {
   name: string
   namespace?: string
   seeAllData?: boolean
-  stackTrace: string
+  stackTrace: string | object
   time: number
 }
 

@@ -87,4 +87,15 @@ describe('unknownPicklistValues ChangeValidator', () => {
       expect(changeErrors).toBeEmpty()
     })
   })
+
+  describe('when picklist field has no value', () => {
+    beforeEach(async () => {
+      const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2')
+      delete instance.value.field1__c
+      changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+    })
+    it('should not create errors', async () => {
+      expect(changeErrors).toBeEmpty()
+    })
+  })
 })

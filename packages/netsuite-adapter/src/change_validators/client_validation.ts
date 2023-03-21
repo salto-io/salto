@@ -75,7 +75,6 @@ export type ClientChangeValidator = (
   client: NetsuiteClient,
   additionalDependencies: AdditionalDependencies,
   filtersRunner: (groupID: string) => Required<Filter>,
-  deployReferencedElements?: boolean
 ) => Promise<ReadonlyArray<ChangeError>>
 
 const changeValidator: ClientChangeValidator = async (
@@ -84,20 +83,28 @@ const changeValidator: ClientChangeValidator = async (
   additionalDependencies,
   filtersRunner,
 ) => {
+  const changesMap = new Map(changes.map(change => [changeId(change), change]))
   // SALTO-3016 we can validate only SDF elements because
   // we need FileCabinet references to be included in the SDF project
-  const getChangeGroupIds = getChangeGroupIdsFunc(false)
-  const { changeGroupIdMap } = await getChangeGroupIds(
-    new Map(changes.map(change => [changeId(change), change]))
-  )
+  const { changeGroupIdMap } = await getChangeGroupIdsFunc(false)(changesMap)
   const changesByGroupId = _(changes)
     .filter(change => changeGroupIdMap.has(changeId(change)))
     .groupBy(change => changeGroupIdMap.get(changeId(change)))
     .entries()
     .value()
 
+  const {
+    changeGroupIdMap: realChangesGroupIdMap,
+  } = await getChangeGroupIdsFunc(client.isSuiteAppConfigured())(changesMap)
+
   return awu(changesByGroupId)
     .flatMap(async ([groupId, groupChanges]) => {
+      // SALTO-3016 if the real change group of all changes is different than the one used for validation
+      // (e.g. only FileCabinet instances) we should skip the validation.
+      if (groupChanges.every(change => realChangesGroupIdMap.get(changeId(change)) !== groupId)) {
+        return []
+      }
+
       const clonedChanges = groupChanges.map(cloneChange)
       await filtersRunner(groupId).preDeploy(clonedChanges)
       const errors = await client.validate(

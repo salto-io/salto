@@ -18,7 +18,8 @@ import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { apiName, metadataType, isCustomObject, isFieldOfCustomObject, isInstanceOfCustomObject } from '../transformers/transformer'
 import { getInternalId, isInstanceOfType } from '../filters/utils'
-import { CUSTOM_METADATA_SUFFIX } from '../constants'
+import { CUSTOM_METADATA_SUFFIX, PATH_ASSISTANT_METADATA_TYPE } from '../constants'
+
 
 const { isDefined } = values
 
@@ -56,13 +57,22 @@ const SETTINGS_URLS_MAP: Record<string, string> = {
   ApexSettings: 'lightning/setup/ApexSettings/home',
 }
 
+const METADATA_TYPE_TO_URI: Record<string, string> = {
+  Layout: 'PageLayouts',
+  RecordType: 'RecordTypes',
+  WebLink: 'ButtonsLinksActions',
+  ValidationRule: 'ValidationRules',
+  LightningPage: 'LightningPages',
+  FieldSet: 'FieldSets',
+}
+
 const getTypeIdentifier = async (element?: Element): Promise<string | undefined> =>
   (element === undefined ? undefined : (getInternalId(element) ?? apiName(element)))
 
 const getFieldIdentifier = async (element: Field): Promise<string> =>
   (getInternalId(element) ?? element.annotations.relationshipName ?? apiName(element, true))
 
-const genernalConstantsResolver: UrlResolver = async (element, baseUrl) => {
+const generalConstantsResolver: UrlResolver = async (element, baseUrl) => {
   if (isObjectType(element) && await metadataType(element) in GENERAL_URLS_MAP) {
     return new URL(`${baseUrl}${GENERAL_URLS_MAP[await metadataType(element)]}`)
   }
@@ -143,18 +153,24 @@ const queueResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-const layoutResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
+const customObjectSubInstanceResolver: UrlResolver = async (element, baseUrl, elementIDResolver) => {
+  if (!isInstanceElement(element)) {
+    return undefined
+  }
+
+  const instanceType = await apiName(await element.getType())
+  const instanceUri = METADATA_TYPE_TO_URI[instanceType]
+
   const internalId = getInternalId(element)
   const [parentRef] = getParents(element)
 
-  if (await isInstanceOfType('Layout')(element)
-      && internalId !== undefined
-      && isReferenceExpression(parentRef)) {
-    const parent = await elementIDResolver(parentRef.elemID)
-    const parentIdentifier = await getTypeIdentifier(parent)
-    if (parentIdentifier !== undefined) {
-      return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/PageLayouts/${internalId}/view`)
-    }
+  if (instanceUri === undefined || internalId === undefined || !isReferenceExpression(parentRef)) {
+    return undefined
+  }
+  const parent = await elementIDResolver(parentRef.elemID)
+  const parentIdentifier = await getTypeIdentifier(parent)
+  if (parentIdentifier !== undefined) {
+    return new URL(`${baseUrl}lightning/setup/ObjectManager/${parentIdentifier}/${instanceUri}/${internalId}/view`)
   }
   return undefined
 }
@@ -167,6 +183,12 @@ const internalIdResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
+const pathAssistantResolver: UrlResolver = async (element, baseUrl) => {
+  if (await isInstanceOfType(PATH_ASSISTANT_METADATA_TYPE)(element)) {
+    return new URL(`${baseUrl}lightning/setup/PathAssistantSetupHome/page?address=%2Fui%2Fsetup%2Fpathassistant%2FPathAssistantSetupPage%3Fisdtp%3Dp1`)
+  }
+  return undefined
+}
 
 const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
   if (await isInstanceOfCustomObject(element)) {
@@ -177,7 +199,8 @@ const instanceCustomObjectResolver: UrlResolver = async (element, baseUrl) => {
   return undefined
 }
 
-export const resolvers: UrlResolver[] = [genernalConstantsResolver,
+export const resolvers: UrlResolver[] = [generalConstantsResolver,
   settingsConstantsResolver, assignmentRulesResolver, metadataTypeResolver,
-  objectResolver, fieldResolver, flowResolver, workflowResolver, layoutResolver, queueResolver,
+  objectResolver, fieldResolver, flowResolver, workflowResolver,
+  customObjectSubInstanceResolver, queueResolver, pathAssistantResolver,
   internalIdResolver, instanceCustomObjectResolver]

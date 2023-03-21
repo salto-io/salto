@@ -34,3 +34,18 @@ export const CORE_ANNOTATIONS = {
   ADDITIONAL_PROPERTIES: '_additional_properties',
   ALIAS: '_alias',
 }
+
+export const BUILTIN_TYPE_NAMES = {
+  STRING: 'string',
+  NUMBER: 'number',
+  BOOLEAN: 'boolean',
+  SERVICEID: 'serviceid',
+  SERVICEID_NUMBER: 'serviceid_number',
+  JSON: 'json',
+  UNKNOWN: 'unknown',
+  RESTRICTION: 'restriction',
+  DEPENDENCY_OCCURRENCE: 'dependencyOccurrence',
+  DEPENDENCY: 'dependency',
+  HIDDEN_STRING: 'hidden_string',
+  HIDDEN_BOOLEAN: 'hidden_boolean',
+}

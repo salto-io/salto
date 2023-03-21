@@ -19,6 +19,7 @@ import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
   InstanceElement, getChangeData, Values,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/utils'
 import SalesforceClient from '../client/client'
@@ -89,12 +90,26 @@ const getFolderShareUser: GetUserField = (instance, fieldName) => {
   return [instance.value.sharedTo]
 }
 
-const getEmailRecepients: GetUserField = (instance, fieldName) => {
+type EmailRecipientValue = {
+  type: string
+  recipient: string
+}
+
+const isEmailRecipientsValue = (recipients: Values): recipients is EmailRecipientValue[] => (
+  _.isArray(recipients)
+  && recipients.every(recipient => _.isString(recipient.type) && _.isString(recipient.recipient))
+)
+
+const getEmailRecipients: GetUserField = (instance, fieldName) => {
   if (fieldName !== 'recipients') {
     log.error(`Unexpected field name: ${fieldName}.`)
     return []
   }
-  return instance.value.recipients
+  const { recipients } = instance.value
+  if (!isEmailRecipientsValue(recipients)) {
+    return []
+  }
+  return recipients
     .filter((recipient: Values) => recipient.type === 'user')
     .map((recipient: Values) => recipient.recipient)
 }
@@ -119,7 +134,7 @@ const USER_GETTERS: TypesWithUserFields = {
   WorkflowAlert: [
     {
       field: 'recipients',
-      getter: getEmailRecepients,
+      getter: getEmailRecipients,
     },
   ],
 }

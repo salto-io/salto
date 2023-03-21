@@ -125,7 +125,7 @@ const getChangeValidator: ({
   warnStaleData: boolean
   validate: boolean
   fetchByQuery: FetchByQueryFunc
-  deployReferencedElements?: boolean
+  deployReferencedElements: boolean
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
@@ -170,7 +170,6 @@ const getChangeValidator: ({
         client,
         additionalDependencies,
         filtersRunner,
-        deployReferencedElements,
       ) : []
 
       return changeErrors.concat(netsuiteValidatorErrors)

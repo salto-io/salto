@@ -16,6 +16,7 @@
 import {
   BuiltinTypes,
   Change,
+  ChangeError,
   ChangeValidator,
   ElemID,
   getChangeData,
@@ -25,7 +26,7 @@ import {
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
 import { createInstanceElement } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT, SALESFORCE_OBJECT_ID_FIELD, SALESFORCE } from '../../src/constants'
+import { CUSTOM_OBJECT, SALESFORCE_OBJECT_ID_FIELD, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
@@ -233,6 +234,21 @@ describe('unknown user change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
       expect(changeErrors[0].detailedMessage).toContain(ANOTHER_TEST_USERNAME)
+    })
+  })
+  describe('WorkflowAlert', () => {
+    let changeErrors: readonly ChangeError[]
+    describe('when the recipients field has no value', () => {
+      beforeEach(async () => {
+        const instance = createInstanceElement(
+          { [INSTANCE_FULL_NAME_FIELD]: 'TestWorkflowAlert' },
+          mockTypes.WorkflowAlert
+        )
+        changeErrors = await validator([toChange({ after: instance })])
+      })
+      it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
     })
   })
 })

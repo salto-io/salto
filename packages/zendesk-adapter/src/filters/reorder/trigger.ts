@@ -171,7 +171,6 @@ const filterCreator: FilterCreator = ({
     elements.push(type, entryOrderType, instance)
   },
   deploy: createReorderFilterCreator({
-    // todoadi fix this reuse of the name
     filterName: 'triggerOrderFilter',
     typeName: TYPE_NAME,
     orderFieldName: 'order',

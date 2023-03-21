@@ -21,6 +21,9 @@ import { FilterCreator } from '../filter'
 
 const log = logger(module)
 
+/**
+ * Filter instances by the query criteria, while removing recipe__code instances whose associated recipe was removed.
+ */
 const filter: FilterCreator = ({ fetchQuery }) => ({
   name: 'queryFilter',
   onFetch: async elements => {

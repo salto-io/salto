@@ -13,14 +13,40 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement } from '@salto-io/adapter-api'
-import { filter } from '@salto-io/adapter-utils'
+import { isInstanceElement, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { filter, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { DAG } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter_utils'
 import { ElementQuery } from '../elements/query'
 
 const log = logger(module)
+
+/*
+ * Create a graph with instance ids as nodes and parent annotations as edges
+ */
+const createGraph = (
+  instances: InstanceElement[],
+  additionalParentFields?: Record<string, string[]>,
+): DAG<InstanceElement> => {
+  const graph = new DAG<InstanceElement>()
+  instances.forEach(instance => {
+    const parents = getParents(instance)
+    const additionalParents = additionalParentFields?.[instance.elemID.typeName]
+      ?.map(fieldName => instance.value[fieldName]) ?? []
+    const parentIDs = (parents.concat(additionalParents))
+      .filter(isReferenceExpression)
+      .filter(ref => ref.elemID.idType === 'instance')
+      .map(ref => ref.elemID.getFullName())
+    graph.addNode(
+      instance.elemID.getFullName(),
+      parentIDs,
+      instance,
+    )
+  })
+  return graph
+}
 
 /**
  * A filter to filter out instances by the fetchQuery of the adapter
@@ -29,17 +55,36 @@ export const queryFilterCreator: <
   TClient,
   TContext,
   TResult extends void | filter.FilterResult,
-  TAdditional extends { fetchQuery: ElementQuery }
->() => FilterCreator<TClient, TContext, TResult, TAdditional> = () => ({ fetchQuery }) => ({
+  TAdditional extends { fetchQuery: ElementQuery},
+>({ additionalParentFields, typesToIgnore }: {
+  additionalParentFields?: Record<string, string[]>
+  typesToIgnore?: string[]
+}) => FilterCreator<TClient, TContext, TResult, TAdditional> = ({ additionalParentFields, typesToIgnore }) => ({
+  fetchQuery,
+}) => ({
   name: 'queryFilter',
   onFetch: async elements => {
-    const removedInstances = _.remove(
-      elements,
-      element => isInstanceElement(element) && !fetchQuery.isInstanceMatch(element)
-    )
+    const removedInstances = _.remove(elements, element => (
+      isInstanceElement(element)
+      && !(typesToIgnore ?? []).includes(element.elemID.typeName)
+      && !fetchQuery.isInstanceMatch(element)
+    ))
+    if (removedInstances.length === 0) {
+      return
+    }
+    log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch criteria. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
 
-    if (removedInstances.length > 0) {
-      log.debug(`Omitted ${removedInstances.length} instances that did not match the fetch criteria. The first 100 ids that were removed are: ${removedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
+    const graph = createGraph(elements.filter(isInstanceElement), additionalParentFields)
+    const additionalIDsToRemove = graph.getComponent({
+      roots: removedInstances.map(e => e.elemID.getFullName()),
+      reverse: true,
+    })
+    const dependentRemovedInstances = _.remove(
+      elements,
+      element => additionalIDsToRemove.has(element.elemID.getFullName())
+    )
+    if (dependentRemovedInstances.length > 0) {
+      log.debug(`Omitted ${removedInstances.length} instances whose parents did not match the fetch criteria. The first 100 ids that were removed are: ${dependentRemovedInstances.slice(0, 100).map(e => e.elemID.getFullName()).join(', ')}`)
     }
   },
 })

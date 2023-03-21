@@ -15,6 +15,13 @@
 */
 import { filters } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
+import { FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, RECIPE_CODE_TYPE } from '../constants'
+
+const ADDITIONAL_PARENT_FIELDS: Record<string, string[]> = {
+  [FOLDER_TYPE]: ['parent_id'],
+  [RECIPE_TYPE]: ['folder_id'],
+  [CONNECTION_TYPE]: ['folder_id'],
+}
 
 /**
  * Filter creators of all the common filters
@@ -22,7 +29,10 @@ import { FilterCreator } from '../filter'
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
-  // query filter is implemented separately in workato for now
+  query: filters.queryFilterCreator({
+    additionalParentFields: ADDITIONAL_PARENT_FIELDS,
+    typesToIgnore: [RECIPE_CODE_TYPE],
+  }),
 }
 
 export default filterCreators

@@ -19,7 +19,6 @@ import { logger } from '@salto-io/logging'
 import {
   ACCOUNT_FEATURES_TYPE_NAME,
   MACRO_TYPE_NAME,
-  SLA_POLICY_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
 } from '../constants'
@@ -34,7 +33,7 @@ const SIDE_CONVERSATION_MAP: Record<string, string> = {
   side_conversation_ticket: 'side_conversations_tickets',
 }
 
-const TYPES_WITH_SIDE_CONVERSATIONS = [MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, SLA_POLICY_TYPE_NAME]
+const TYPES_WITH_SIDE_CONVERSATIONS = [MACRO_TYPE_NAME, TRIGGER_TYPE_NAME]
 
 const getSideConversationFields = (instance: InstanceElement): string[] => (
   (instance.value.actions ?? [])

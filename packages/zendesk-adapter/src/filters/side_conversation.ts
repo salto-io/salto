@@ -18,12 +18,15 @@ import {
   InstanceElement,
   isInstanceElement,
   ReferenceExpression,
-  TemplateExpression, Value,
+  TemplateExpression,
+  Value,
 } from '@salto-io/adapter-api'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
-import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
+import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../constants'
+import { createMissingInstance } from './references/missing_references'
+import { FETCH_CONFIG } from '../config'
 
 const { isDefined } = lowerdashValues
 
@@ -39,7 +42,7 @@ const isSideConversationTicketAction = (action: Value): action is SideConversati
   isDefined(action) && action.field === SIDE_CONVERSATION_FIELD_NAME && Array.isArray(action.value)
 
 
-const filterCreator: FilterCreator = () => ({
+const filterCreator: FilterCreator = ({ config }) => ({
   name: 'sideConversationFilter',
   onFetch: async (elements: Element[]) => {
     const relevantInstances = elements.filter(isInstanceElement)
@@ -58,7 +61,21 @@ const filterCreator: FilterCreator = () => ({
         }
 
         const { prefix, groupId } = action.value[2].match(valueWithGroupRegex)?.groups ?? {}
-        if (prefix === undefined || !isInstanceElement(groupsById[groupId])) {
+        if (prefix === undefined || groupId === undefined) {
+          return
+        }
+
+        if (!isInstanceElement(groupsById[groupId])) {
+          if (config[FETCH_CONFIG].enableMissingReferences) {
+            const missingInstance = createMissingInstance(ZENDESK, GROUP_TYPE_NAME, groupId)
+            // Replace the group part with a missing reference
+            action.value[2] = new TemplateExpression({
+              parts: [
+                prefix,
+                new ReferenceExpression(missingInstance.elemID, missingInstance),
+              ],
+            })
+          }
           return
         }
 

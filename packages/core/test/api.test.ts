@@ -209,8 +209,6 @@ describe('api.ts', () => {
         ws = mockWorkspace({ stateElements })
         mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
         mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
-      })
-      beforeEach(async () => {
         await api.fetch(ws, undefined, [mockService])
       })
       it('should maintain path index entries', async () => {

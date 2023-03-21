@@ -73,7 +73,6 @@ describe('validation and quick deploy e2e', () => {
       credentials: new UsernamePasswordCredentials(credLease.value),
     }, ValidationConfig)
     adapter = adapterValidation.adapter
-
     const validationResult = await adapter.validate({ changeGroup })
     const groupResult = validationResult.extraProperties?.groups === undefined
       ? {} : validationResult.extraProperties?.groups[0]
@@ -91,11 +90,11 @@ describe('validation and quick deploy e2e', () => {
         },
       },
     }
-    const adapterDeploy = realAdapter({
+    const adapterQuickDeploy = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
     }, quickDeployConfig)
-    adapter = adapterDeploy.adapter
-    const { client } = adapterDeploy
+    adapter = adapterQuickDeploy.adapter
+    const { client } = adapterQuickDeploy
     quickDeploySpy = jest.spyOn(client, 'quickDeploy')
   })
 
@@ -107,6 +106,10 @@ describe('validation and quick deploy e2e', () => {
 
   afterAll(async () => {
     jest.clearAllMocks()
+    const adapterDeploy = realAdapter({
+      credentials: new UsernamePasswordCredentials(credLease.value),
+    })
+    adapter = adapterDeploy.adapter
     try {
       await removeElement(adapter, apexClassInstance)
       await removeElement(adapter, apexTestInstance)

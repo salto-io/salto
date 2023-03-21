@@ -15,8 +15,8 @@
 */
 import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
+import { PROJECT_TYPE } from '../constants'
 
-const PROJECT_TYPE_NAME = 'Project'
 export const DELETED_CATEGORY = -1
 
 export const isNeedToDeleteCategory = (change: Change<InstanceElement>): boolean =>
@@ -28,16 +28,14 @@ const convertProjectCategoryToCategoryId = async (
   instance: InstanceElement,
   projectIdToCategory: Record<string, unknown>
 ): Promise<void> => {
-  if (instance.value.projectCategory !== undefined) {
-    if (isReferenceExpression(instance.value.projectCategory)) {
-      const category = await instance.value.projectCategory.getResolvedValue()
-      instance.value.categoryId = category.value.id
-    } else {
-      instance.value.categoryId = instance.value.projectCategory
-    }
-    projectIdToCategory[instance.value.id] = instance.value.projectCategory
-    delete instance.value.projectCategory
+  if (instance.value.projectCategory === undefined) {
+    return
   }
+  instance.value.categoryId = isReferenceExpression(instance.value.projectCategory)
+    ? (await instance.value.projectCategory.getResolvedValue()).value.id
+    : instance.value.projectCategory
+  projectIdToCategory[instance.value.id] = instance.value.projectCategory
+  delete instance.value.projectCategory
 }
 
 /**
@@ -52,7 +50,7 @@ const filter: FilterCreator = ({ client }) => {
         changes
           .filter(isAdditionOrModificationChange)
           .filter(isInstanceChange)
-          .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE_NAME)
+          .filter(change => change.data.after.elemID.typeName === PROJECT_TYPE)
           .map(async change => {
             const instance = getChangeData(change)
             if (isNeedToDeleteCategory(change) && !client.isDataCenter) {
@@ -69,7 +67,7 @@ const filter: FilterCreator = ({ client }) => {
         .filter(isAdditionOrModificationChange)
         .filter(isInstanceChange)
         .map(getChangeData)
-        .filter(instance => instance.elemID.typeName === PROJECT_TYPE_NAME)
+        .filter(instance => instance.elemID.typeName === PROJECT_TYPE)
         .forEach(instance => {
           if (instance.value.categoryId !== undefined) {
             // if somehow the category not in the Record, we will at least keep the id

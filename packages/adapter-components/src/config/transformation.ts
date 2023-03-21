@@ -289,7 +289,7 @@ export const dereferenceFieldName = (
   : fieldName)
 
 export const shouldNestFiles = (
-  standaloneField: StandaloneFieldConfigType | undefined
+  standaloneField?: StandaloneFieldConfigType
 ): boolean =>
   values.isDefined(standaloneField)
     && values.isDefined(standaloneField.nestFiles)

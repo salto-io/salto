@@ -52,6 +52,7 @@ import { unresolvedReferenceValidator } from './unresolved_references'
 import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
+import { projectCategoryValidator } from './project_category'
 
 const {
   deployTypesNotSupportedValidator,
@@ -99,6 +100,7 @@ export default (
     accountIdValidator(client, config),
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
+    projectCategoryValidator(client),
   ]
 
   return createChangeValidator(validators)

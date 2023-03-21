@@ -18,8 +18,9 @@ import {
   ChangeValidator, Change, isAdditionChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES, SYSTEM_FIELDS } from '../constants'
+import { CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES } from '../constants'
 import { isFieldOfCustomObject, fieldTypeName } from '../transformers/transformer'
+import { SYSTEM_FIELDS } from '../adapter'
 
 const { awu } = collections.asynciterable
 

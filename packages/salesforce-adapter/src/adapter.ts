@@ -35,7 +35,7 @@ import { logger } from '@salto-io/logging'
 import { collections, objects, promises, values } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE, SYSTEM_FIELDS } from './constants'
+import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 import { apiName, isMetadataObjectType, Types } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
@@ -110,7 +110,7 @@ import { fetchMetadataInstances, fetchMetadataType, listMetadataObjects, retriev
 import { deployCustomObjectInstancesGroup, isCustomObjectInstanceChanges } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
-import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
+import { buildFetchProfile, FetchProfile } from './fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -273,6 +273,26 @@ const METADATA_TO_RETRIEVE = [
 export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastReferencedDate',
   'LastViewedDate',
+]
+
+// See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
+export const SYSTEM_FIELDS = [
+  'ConnectionReceivedId',
+  'ConnectionSentId',
+  'CreatedById',
+  'CreatedDate',
+  'Id',
+  'IsDeleted',
+  'LastActivityDate',
+  'LastModifiedDate',
+  'LastModifiedById',
+  'LastReferencedDate',
+  'LastViewedDate',
+  'Name',
+  'RecordTypeId',
+  'SystemModstamp',
+  'OwnerId',
+  'SetupOwnerId',
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {

@@ -29,7 +29,7 @@ import {
 import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
-import { SYSTEM_FIELDS } from '../src/constants'
+import { SYSTEM_FIELDS } from '../src/adapter'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,

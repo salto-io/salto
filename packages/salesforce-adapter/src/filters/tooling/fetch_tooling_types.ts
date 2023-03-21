@@ -22,7 +22,6 @@ import SalesforceClient from '../../client/client'
 import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../../tooling/types'
 import { createToolingObject } from '../../tooling/utils'
 import { SupportedToolingObject } from '../../tooling/constants'
-import { SYSTEM_FIELDS } from '../../constants'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -32,10 +31,11 @@ const WARNING_MESSAGE = 'Encountered an error while trying to fetch info about t
 const createToolingObjectTypeFromDescribe = async (
   client: SalesforceClient,
   objectName: SupportedToolingObjectName,
+  systemFields: string[],
 ): Promise<ToolingObjectType | undefined> => {
   const sobject = await client.describeToolingObject(objectName)
   const toolingType = createToolingObject(objectName)
-  const fields = await getFieldsFromDescribeResult(sobject, SYSTEM_FIELDS, toolingType)
+  const fields = await getFieldsFromDescribeResult(sobject, systemFields, toolingType)
   const toolingFields = fields
     .map(field => Object.assign(field, { annotations: _.omitBy(field.annotations, _.isNil) }))
     .filter(isToolingField)
@@ -50,9 +50,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
+      const systemFields = config.systemFields ?? []
       await awu(Object.values(SupportedToolingObject))
         .filter(objectName => config.fetchProfile.metadataQuery.isTypeMatch(objectName))
-        .map(objectName => createToolingObjectTypeFromDescribe(client, objectName))
+        .map(objectName => createToolingObjectTypeFromDescribe(client, objectName, systemFields))
         .filter(isDefined)
         .forEach(toolingType => elements.push(toolingType))
     },

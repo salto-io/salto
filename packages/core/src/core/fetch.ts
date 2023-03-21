@@ -448,6 +448,9 @@ const fetchAndProcessMergeErrors = async (
             withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
+          if (updatedConfig !== undefined) {
+            log.debug(`Salto got config suggestions in ${accountName} account: ${updatedConfig.message}`)
+          }
           if (
             fetchResult.elements.length > 0 && accountName !== accountToServiceNameMap[accountName]
           ) {

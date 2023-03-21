@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import {
-  ChangeGroup, DeployResult,
+  ChangeGroup,
   StaticFile,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import SalesforceAdapter, { SalesforceClient } from '../index'
-import realAdapter, { Reals } from './adapter'
+import SalesforceAdapter from '../index'
+import realAdapter from './adapter'
 import { API_VERSION } from '../src/client/client'
 import { UsernamePasswordCredentials } from '../src/types'
 import { testHelpers } from './jest_environment'
@@ -31,11 +31,8 @@ describe('validation and quick deploy e2e', () => {
   // Set long timeout as we communicate with salesforce API
   jest.setTimeout(1000000)
 
-  let adapterParams: Reals
-  let client: SalesforceClient
   let adapter: SalesforceAdapter
   let credLease: CredsLease<UsernamePasswordCredentials>
-  let sfResult: DeployResult
   let changeGroup: ChangeGroup
   let quickDeploySpy: jest.SpyInstance
   let apexClassInstance: MetadataInstanceElement
@@ -72,13 +69,14 @@ describe('validation and quick deploy e2e', () => {
     }
 
     credLease = await testHelpers().credentials()
-    adapterParams = realAdapter({
+    const adapterValidation = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
     }, ValidationConfig)
-    adapter = adapterParams.adapter
+    adapter = adapterValidation.adapter
 
-    sfResult = await adapter.validate({ changeGroup })
-    const groupResult = sfResult.extraProperties?.groups === undefined ? {} : sfResult.extraProperties?.groups[0]
+    const validationResult = await adapter.validate({ changeGroup })
+    const groupResult = validationResult.extraProperties?.groups === undefined
+      ? {} : validationResult.extraProperties?.groups[0]
     const { requestId } = groupResult
     const { hash } = groupResult
     expect(requestId).toBeDefined()
@@ -93,26 +91,29 @@ describe('validation and quick deploy e2e', () => {
         },
       },
     }
-    adapterParams = realAdapter({
+    const adapterDeploy = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
     }, quickDeployConfig)
-    adapter = adapterParams.adapter
-    client = adapterParams.client
+    adapter = adapterDeploy.adapter
+    const { client } = adapterDeploy
     quickDeploySpy = jest.spyOn(client, 'quickDeploy')
   })
 
-  it('should preform quick deploy with the requestId and hash from the validation', async () => {
-    sfResult = await adapter.deploy({ changeGroup })
-    expect(sfResult.appliedChanges).toHaveLength(2)
-    expect(quickDeploySpy).toHaveBeenCalledTimes(1)
+  it('should perform quick deploy', async () => {
+    const deployResult = await adapter.deploy({ changeGroup })
+    expect(deployResult.appliedChanges).toHaveLength(changeGroup.changes.length)
+    expect(quickDeploySpy).toHaveBeenCalledOnce()
   })
 
   afterAll(async () => {
-    quickDeploySpy.mockClear()
-    await removeElement(adapter, apexClassInstance)
-    await removeElement(adapter, apexTestInstance)
-    if (credLease.return) {
-      await credLease.return()
+    jest.clearAllMocks()
+    try {
+      await removeElement(adapter, apexClassInstance)
+      await removeElement(adapter, apexTestInstance)
+    } finally {
+      if (credLease.return) {
+        await credLease.return()
+      }
     }
   })
 })

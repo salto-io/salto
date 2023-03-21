@@ -36,6 +36,7 @@ import standardRolesFilter from './filters/standard_roles'
 import fetchUserSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
+import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -56,6 +57,7 @@ export const DEFAULT_FILTERS = [
   urlReferencesFilter,
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
+  userFilter,
   oktaExpressionLanguageFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,

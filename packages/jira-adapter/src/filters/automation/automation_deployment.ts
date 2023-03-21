@@ -126,7 +126,7 @@ const importAutomation = async (
 }
 
 const getAutomationIdentifier = (values: Values): string =>
-  [values.name, ...(values.projects ?? []).map((project: Values) => project.projectId)].join('_')
+  [values.name, ...(_.sortBy((values.projects ?? []).map((project: Values) => project.projectId)))].join('_')
 
 const setInstanceId = async (
   instance: InstanceElement,
@@ -141,6 +141,9 @@ const setInstanceId = async (
   const instanceIdentifier = getAutomationIdentifier(
     (await resolveValues(instance, getLookUpName)).value
   )
+
+  log.info('Automations identifiers: %o', Object.keys(automationById))
+  log.info('Deployed Automation identifier: %o', instanceIdentifier)
 
   if (automationById[instanceIdentifier] === undefined) {
     throw new Error(`Deployment failed for automation: ${instance.elemID.getFullName()}`)

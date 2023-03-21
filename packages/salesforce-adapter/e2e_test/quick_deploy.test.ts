@@ -105,7 +105,6 @@ describe('validation and quick deploy e2e', () => {
     sfResult = await adapter.deploy({ changeGroup })
     expect(sfResult.appliedChanges).toHaveLength(2)
     expect(quickDeploySpy).toHaveBeenCalledTimes(1)
-    quickDeploySpy.mockClear()
   })
 
   afterAll(async () => {

@@ -15,7 +15,7 @@
 */
 import { Change, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { defaultDeployChange, deployChanges } from '../deployment'
+import { defaultDeployWithStatus, deployChanges } from '../deployment'
 
 /**
  * Deploys all the changes that were not deployed by the previous filters
@@ -26,7 +26,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),
       async change => {
-        await defaultDeployChange(change, client, config.apiDefinitions)
+        await defaultDeployWithStatus(change, client, config.apiDefinitions)
       }
     )
     return { deployResult, leftoverChanges: [] }

@@ -23,7 +23,7 @@ import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CU
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
+import { deployChanges, defaultDeployChange, deployEdges, isActivationChange, isDeactivationChange, deployStatusChange, getOktaError } from '../deployment'
 
 const log = logger(module)
 
@@ -114,20 +114,33 @@ const deployApp = async (
     ...(fieldsToHide ?? []).map(f => f.fieldName),
   ]
 
-  const response = await defaultDeployChange(
-    change,
-    client,
-    apiDefinitions,
-    fieldsToIgnore,
-    // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
-    isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
-  )
-
-  if (isAdditionOrModificationChange(change)) {
-    if (isAdditionChange(change) && isAppResponse(response)) {
-      assignNameToCustomApp(change, response, subdomain)
+  try {
+    // Custom app must be activated before applying any other changes
+    if (isModificationChange(change) && isActivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
     }
-    await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
+
+    const response = await defaultDeployChange(
+      change,
+      client,
+      apiDefinitions,
+      fieldsToIgnore,
+      // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
+      isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
+    )
+
+    if (isModificationChange(change) && isDeactivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
+    }
+
+    if (isAdditionOrModificationChange(change)) {
+      if (isAdditionChange(change) && isAppResponse(response)) {
+        assignNameToCustomApp(change, response, subdomain)
+      }
+      await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
+    }
+  } catch (err) {
+    throw getOktaError(getChangeData(change).elemID, err)
   }
 }
 

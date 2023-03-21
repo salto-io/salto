@@ -19,7 +19,7 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
 import { GROUP_RULE_TYPE_NAME, OKTA } from '../src/constants'
-import { defaultDeployChange } from '../src/deployment'
+import { defaultDeployChange, defaultDeployWithStatus } from '../src/deployment'
 import { DEFAULT_API_DEFINITIONS } from '../src/config'
 
 describe('defaultDeployChange', () => {
@@ -142,7 +142,7 @@ describe('defaultDeployChange', () => {
             status: 'INACTIVE',
           },
         })
-      const result = await defaultDeployChange(
+      const result = await defaultDeployWithStatus(
         toChange({ before: instance, after: instance2 }),
         client,
         DEFAULT_API_DEFINITIONS,

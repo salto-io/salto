@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import LRU from 'lru-cache'
-import { counterInc } from './counters'
+import { counters } from './counters'
 
 const log = logger(module)
 
@@ -45,11 +45,11 @@ export const createLocationCachePool = (): LocationCachePool => {
     get: (location, cacheSize) => {
       const cachePoolEntry = pool.get(location)
       if (cachePoolEntry) {
-        counterInc(location, 'LocationCacheReuse')
+        counters.locationCounters(location).LocationCacheReuse.inc()
         cachePoolEntry.refcnt += 1
         return cachePoolEntry.cache
       }
-      counterInc(location, 'LocationCacheCreated')
+      counters.locationCounters(location).LocationCacheCreated.inc()
       const newCache: LocationCache = new LocationCache(location, cacheSize)
       pool.set(location, { cache: newCache, refcnt: 1 })
       if (pool.size > maxPoolSize) {

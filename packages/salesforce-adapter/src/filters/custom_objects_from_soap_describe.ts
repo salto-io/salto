@@ -80,9 +80,6 @@ const addSObjectInformationToInstance = async (
   const fieldsFromMetadataApi = _.keyBy(instance.value.fields, field => field.fullName)
 
   const getCompoundTypeName = (nestedFields: SObjField[], compoundName: string): string => {
-    if (nestedFields.length === 1 && nestedFields[0].name === compoundName) {
-      return nestedFields[0].type
-    }
     if (compoundName === COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME) {
       return nestedFields.some(field => field.name === NAME_FIELDS.SALUTATION)
         ? COMPOUND_FIELD_TYPE_NAMES.FIELD_NAME
@@ -91,7 +88,7 @@ const addSObjectInformationToInstance = async (
     return compoundName
   }
 
-  // Only fields that have a child referring to a field as its compoundField
+  // Only fields that have another field referring to them as a compoundField
   // should be regarded as compound.
   const objCompoundFieldNames = _.mapValues(
     _.groupBy(

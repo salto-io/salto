@@ -22,7 +22,7 @@ import { types } from '@salto-io/lowerdash'
 import mockReplies from './mock_replies.json'
 import { adapter } from '../src/adapter_creator'
 import { usernameTokenCredentialsType } from '../src/auth'
-import { configType, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
+import { configType, DEFAULT_CONFIG, FETCH_CONFIG, DEFAULT_TYPES, API_DEFINITIONS_CONFIG } from '../src/config'
 import { RECIPE_CODE_TYPE } from '../src/constants'
 
 type MockReply = {
@@ -64,14 +64,7 @@ describe('adapter', () => {
           config: new InstanceElement(
             'config',
             configType,
-            {
-              [FETCH_CONFIG]: {
-                include: [...Object.keys(DEFAULT_TYPES)].sort()
-                  .filter(type => type !== RECIPE_CODE_TYPE)
-                  .map(type => ({ type })),
-                exclude: [],
-              },
-            }
+            DEFAULT_CONFIG,
           ),
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
@@ -244,6 +237,40 @@ describe('adapter', () => {
           block: expect.anything(),
           uuid: '12345678-1234-1234-1234-1234567890ab',
         })
+      })
+      it('should filter elements by type+name on fetch', async () => {
+        const { elements } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernameTokenCredentialsType,
+            { token: 'token456' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              ...DEFAULT_CONFIG,
+              fetch: {
+                ...DEFAULT_CONFIG.fetch,
+                include: [
+                  { type: 'folder' },
+                  { type: 'recipe', criteria: { name: 'test.*' } },
+                ],
+              },
+            },
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+
+        expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+          'workato.folder.instance.Root',
+          'workato.folder.instance.basedir1_Root',
+          'workato.folder.instance.f1_nested1_basedir1_Root',
+          'workato.folder.instance.f1_nested2_basedir1_Root@vuu',
+          'workato.folder.instance.f1n2_leaf1_f1_nested2_basedir1_Root_vuu@suuuum',
+          'workato.recipe.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu@ssuuuum',
+          'workato.recipe__code.instance.test_recipe_321_f1_nested2_basedir1_Root_vuu_ssuuuum@uuuuuuum',
+        ])
       })
     })
 

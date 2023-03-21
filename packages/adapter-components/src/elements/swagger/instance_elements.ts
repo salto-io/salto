@@ -125,7 +125,7 @@ const extractStandaloneFields = async (
         values: value,
         parent: inst,
         objType: refType,
-        nestedPath: [...nestedPath, field.name],
+        updatedNestedPath: [...nestedPath, field.name],
         fieldExtractionDefinition,
       })
     }
@@ -133,7 +133,7 @@ const extractStandaloneFields = async (
       values: [value],
       parent: inst,
       objType: refType,
-      nestedPath: [...nestedPath, field.name],
+      updatedNestedPath: [...nestedPath, field.name],
       fieldExtractionDefinition,
     }))[0]
   }

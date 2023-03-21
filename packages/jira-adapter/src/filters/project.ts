@@ -34,6 +34,7 @@ const FIELD_CONFIG_SCHEME_FIELD = 'fieldConfigurationScheme'
 const ISSUE_TYPE_SCHEME = 'issueTypeScheme'
 const PRIORITY_SCHEME = 'priorityScheme'
 const PERMISSION_SCHEME_FIELD = 'permissionScheme'
+const PROJECT_CATEGORY_FIELD = 'projectCategory'
 
 const log = logger(module)
 
@@ -192,6 +193,7 @@ const filter: FilterCreator = ({ config, client, elementsSource }) => ({
       setFieldDeploymentAnnotations(projectType, ISSUE_TYPE_SCHEME)
       setFieldDeploymentAnnotations(projectType, COMPONENTS_FIELD)
       setFieldDeploymentAnnotations(projectType, PROJECT_CONTEXTS_FIELD)
+      setFieldDeploymentAnnotations(projectType, PROJECT_CATEGORY_FIELD)
 
       if (client.isDataCenter) {
         setFieldDeploymentAnnotations(projectType, PRIORITY_SCHEME)

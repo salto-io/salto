@@ -123,6 +123,7 @@ import pluginVersionFliter from './filters/data_center/plugin_version'
 import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
 import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
 import storeUsersFilter from './filters/store_users'
+import projectCategoryFilter from './filters/project_category'
 
 const {
   generateTypes,
@@ -193,6 +194,7 @@ export const DEFAULT_FILTERS = [
   dashboardFilter,
   dashboardLayoutFilter,
   gadgetFilter,
+  projectCategoryFilter,
   projectFilter,
   projectComponentFilter,
   archivedProjectComponentsFilter,

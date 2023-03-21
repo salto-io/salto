@@ -162,9 +162,6 @@ describe('api.ts', () => {
         partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
       }))
     })
-    beforeEach(() => {
-      mockPartiallyFetchedAccounts.mockReturnValue(new Set())
-    })
 
     describe('Full fetch', () => {
       let ws: workspace.Workspace
@@ -210,10 +207,10 @@ describe('api.ts', () => {
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
+        mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
         mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
       })
       beforeEach(async () => {
-        mockPartiallyFetchedAccounts.mockReturnValue(new Set([mockService]))
         await api.fetch(ws, undefined, [mockService])
       })
       it('should maintain path index entries', async () => {

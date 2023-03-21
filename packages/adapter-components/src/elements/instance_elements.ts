@@ -78,7 +78,7 @@ export const getInstanceFilePath = ({
   isSettingType,
   nameMapping,
   adapterName,
-  nestedTypes,
+  nestedPaths,
 }: {
   fileNameFields: string[] | undefined
   entry: Values
@@ -87,7 +87,7 @@ export const getInstanceFilePath = ({
   isSettingType: boolean
   nameMapping?: NameMappingOptions
   adapterName: string
-  nestedTypes?: string[]
+  nestedPaths?: string[]
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))
@@ -106,7 +106,7 @@ export const getInstanceFilePath = ({
     : [
       adapterName,
       RECORDS_PATH,
-      ...(nestedTypes ? nestedTypes.map(pathNaclCase) : [pathNaclCase(typeName)]),
+      ...(nestedPaths ? nestedPaths.map(pathNaclCase) : [pathNaclCase(typeName)]),
       nameMapping
         ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
     ])
@@ -253,7 +253,7 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
-    nestedTypes: shouldNestFiles(fieldExtractionDefinition) ? nestedPath : undefined,
+    nestedPaths: shouldNestFiles(fieldExtractionDefinition) ? nestedPath : undefined,
   })
   if (transformationConfigByType[type.elemID.name]?.standaloneFields?.some(shouldNestFiles)) {
     // If at least one standalone field is nested, we need to make the instance name into a folder with itself.

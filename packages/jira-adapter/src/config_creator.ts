@@ -46,14 +46,8 @@ export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options === undefined || !isOptionsTypeInstance(options)) {
-    return defaultConf
-  }
-  if (options.value.enableScripRunnerAddon === true) {
-    const configWithScriptRunner = defaultConf.clone()
-    configWithScriptRunner.value.fetch = { ...configWithScriptRunner.value.fetch,
-      enableScripRunnerAddon: true }
-    return configWithScriptRunner
+  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableScripRunnerAddon) {
+    defaultConf.value.fetch.enableScripRunnerAddon = true
   }
   return defaultConf
 }

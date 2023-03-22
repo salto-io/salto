@@ -51,7 +51,6 @@ export const DEFAULT_FILTERS = [
   queryFilter,
   // objectDefsFilter should run before everything else
   objectDefsFilter,
-  queryFilter,
   // unorderedLists should run before references are created
   unorderedListsFilter,
   workflowAndTaskReferencesFilter,

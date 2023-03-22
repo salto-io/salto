@@ -71,7 +71,7 @@ export type TransformationConfig = {
   serviceUrl?: string
   // if provided, instance id and file name change, otherwise there’s no change
   nameMapping?: NameMappingOptions
-  // if provided, the types listed here will nest their standalone instances under the parent instance.
+  // if provided and true, types that are standalone fields will nest their instances under parent instances folders.
   nestStandaloneInstances?: boolean
 }
 

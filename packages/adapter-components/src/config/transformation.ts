@@ -291,12 +291,6 @@ export const dereferenceFieldName = (
   : fieldName)
 
 export const shouldNestFiles = (
-  transformationDefaultConfig: TransformationConfig,
-  standaloneField?: StandaloneFieldConfigType,
-): boolean => {
-  if (standaloneField === undefined || standaloneField.nestFiles === undefined) {
-    // Default for missing field is true
-    return transformationDefaultConfig.nestStandaloneInstances ?? true
-  }
-  return standaloneField.nestFiles
-}
+  transformationDefaultConfig: TransformationDefaultConfig,
+  transformationConfig: TransformationConfig,
+): boolean => getConfigWithDefault(transformationConfig, transformationDefaultConfig).nestStandaloneInstances ?? true

@@ -83,7 +83,7 @@ export const deployStatusChange = async (
   client: OktaClient,
   apiDefinitions: OktaApiConfig,
 ): Promise<void> => {
-  const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
+  const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
   const endpoint = isActivationChange(change)
     ? deployRequests?.activate

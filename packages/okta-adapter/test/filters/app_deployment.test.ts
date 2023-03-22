@@ -213,6 +213,45 @@ describe('appDeploymentFilter', () => {
         { params: { activate: 'false' } },
       )
     })
+    it('should change application status for modification changes', async () => {
+      const activeApp = new InstanceElement(
+        'deploy app',
+        appType,
+        {
+          id: 'appId',
+          signOnMode: 'SAML_2_0',
+          label: 'app name',
+          customName: 'app',
+          status: 'ACTIVE',
+          settings: {
+            app: {
+              companySubDomain: 'subdomain',
+            },
+          },
+        }
+      )
+      const inactiveApp = activeApp.clone()
+      inactiveApp.value.status = 'INACTIVE'
+      const changes = [
+        toChange({ before: activeApp, after: inactiveApp }),
+        toChange({ before: inactiveApp, after: activeApp }),
+      ]
+      mockConnection.post.mockResolvedValue({ status: 200, data: {} })
+      const res = await filter.deploy(changes)
+      expect(mockConnection.post).toHaveBeenNthCalledWith(
+        1,
+        '/api/v1/apps/appId/lifecycle/activate',
+        {},
+        undefined,
+      )
+      expect(mockConnection.post).toHaveBeenNthCalledWith(
+        2,
+        '/api/v1/apps/appId/lifecycle/deactivate',
+        {},
+        undefined,
+      )
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
+    })
     it('should assign customName field to custom app on addition change', async () => {
       mockConnection.post.mockResolvedValue({
         status: 200,

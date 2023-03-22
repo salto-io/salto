@@ -25,7 +25,7 @@ import {
 } from '../../tooling/types'
 import { SalesforceRecord } from '../../client/types'
 import { createToolingInstance, toolingFieldApiName, toolingObjectApiName } from '../../tooling/utils'
-import { SupportedToolingObject, ToolingObjectInfo } from '../../tooling/constants'
+import { ToolingObjectInfo } from '../../tooling/constants'
 
 const { awu, toArrayAsync } = collections.asynciterable
 
@@ -57,18 +57,18 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     warningMessage: WARNING_MESSAGE,
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
-      const isIncluded = (subscriberPackageInstance: InstanceElement): boolean => (
+      const isIncluded = (installedPackageInstance: InstanceElement): boolean => (
         config.fetchProfile.metadataQuery.isInstanceMatch({
-          metadataType: SupportedToolingObject.SubscriberPackage,
-          namespace: subscriberPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.NamespacePrefix],
-          name: subscriberPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.Name],
+          metadataType: 'InstalledPackage',
+          namespace: installedPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.NamespacePrefix],
+          name: installedPackageInstance.value[ToolingObjectInfo.SubscriberPackage.Field.Name],
           isFolderType: false,
         })
       )
-      const toolingObjects = elements
+      const subscriberPackageType = elements
         .filter(isObjectType)
         .filter(isToolingObject)
-      const subscriberPackageType = toolingObjects.find(isSubscriberPackage)
+        .find(isSubscriberPackage)
       if (subscriberPackageType === undefined) {
         return
       }

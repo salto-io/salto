@@ -23,7 +23,12 @@ import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, E
 import { readTextFile, readFile } from '@salto-io/file'
 import { allFilters, SYSTEM_FIELDS, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
 import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
-import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectType, MetadataValues } from '../transformers/transformer'
+import {
+  createInstanceElement,
+  createMetadataObjectType,
+  getRenamedTypeName,
+  MetadataValues,
+} from '../transformers/transformer'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
 import { isLocalFilterCreator } from '../filter'
@@ -173,7 +178,7 @@ const getElementTypesForSFDX = async (
 ): Promise<Record<string, ObjectType>> => {
   const typeNames = Object.fromEntries(
     SUPPORTED_TYPE_NAMES
-      .map(typeName => [typeName, METADATA_TYPES_TO_RENAME.get(typeName) ?? typeName])
+      .map(typeName => [typeName, getRenamedTypeName(typeName)])
   )
   const types = _.pickBy(
     await promises.object.mapValuesAsync(

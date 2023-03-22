@@ -15,7 +15,7 @@
 */
 import { Field, ObjectType } from '@salto-io/adapter-api'
 import { types, values } from '@salto-io/lowerdash'
-import { SupportedToolingObject, TOOLING_PATH, ToolingObjectAnnotation, ToolingObjectInfo } from './constants'
+import { SupportedToolingObject, ToolingObjectAnnotation, ToolingObjectInfo } from './constants'
 import { API_NAME } from '../constants'
 
 const { isDefined } = values
@@ -23,7 +23,6 @@ const { isDefined } = values
 export type SupportedToolingObjectName = typeof SupportedToolingObject[keyof typeof SupportedToolingObject]
 
 export type ToolingObjectType = ObjectType & {
-  path: readonly [...typeof TOOLING_PATH, SupportedToolingObjectName]
   annotations: ObjectType['annotations'] & {
     [API_NAME]: SupportedToolingObjectName
     [ToolingObjectAnnotation.isToolingObject]: true

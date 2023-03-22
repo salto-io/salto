@@ -236,6 +236,11 @@ export interface SalesforceAdapterParams {
   elementsSource: ReadOnlyElementsSource
 }
 
+const UNSUPPORTED_METADATA_TYPES = [
+  // We retrieve info about installed packages from the Tooling API
+  'InstalledPackage',
+]
+
 const METADATA_TO_RETRIEVE = [
   // Metadata with content - we use retrieve to get the StaticFiles properly
   'ApexClass', // contains encoded zip content
@@ -508,6 +513,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async listMetadataTypes(): Promise<MetadataObject[]> {
     return (await this.client.listMetadataTypes())
       .filter(info => this.fetchProfile.metadataQuery.isTypeMatch(info.xmlName))
+      .filter(info => !UNSUPPORTED_METADATA_TYPES.includes(info.xmlName))
   }
 
   @logDuration('fetching metadata types')

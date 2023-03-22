@@ -16,18 +16,37 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
-  isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
-  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
+  BuiltinTypes,
+  Change,
+  ChangeData,
+  ChangeDataType,
+  CORE_ANNOTATIONS,
+  CoreAnnotationTypes,
   createRefToElmWithValue,
+  Element,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isField,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+  isRemovalOrModificationChange,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  TypeElement,
+  TypeMap,
+  Value,
 } from '@salto-io/adapter-api'
 import {
-  getParents,
   buildElementsSourceFromElements,
   createSchemeGuard,
-  isHiddenValue,
+  getParents,
   isHidden,
+  isHiddenValue,
   isUpdatable as isCoreUpdatable,
 } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
@@ -38,21 +57,35 @@ import { Field as SObjField } from 'jsforce-types/describe-result'
 import SalesforceClient from '../client/client'
 import { OptionalFeatures } from '../types'
 import {
-  API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, FIELD_ANNOTATIONS, PLURAL_LABEL,
-  SALESFORCE_OBJECT_ID_FIELD, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS,
+  API_NAME,
+  API_NAME_SEPARATOR,
+  COMPOUND_FIELD_TYPE_NAMES,
+  CUSTOM_METADATA_SUFFIX,
+  CUSTOM_OBJECT,
+  FIELD_ANNOTATIONS,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_ID_ANNOTATION,
+  INTERNAL_ID_FIELD,
+  KEY_PREFIX,
+  LABEL,
+  MAX_QUERY_LENGTH,
+  METADATA_TYPE,
+  NAME_FIELDS,
+  NAMESPACE_SEPARATOR,
+  PLURAL_LABEL,
+  SALESFORCE,
+  SALESFORCE_OBJECT_ID_FIELD,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import {
-  metadataType,
   apiName,
   defaultApiName,
-  Types,
-  isCustomObject,
-  MetadataValues,
-  isNameField,
   getSObjectFieldElement,
+  isCustomObject,
+  isNameField,
+  metadataType,
+  MetadataValues,
+  Types,
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 

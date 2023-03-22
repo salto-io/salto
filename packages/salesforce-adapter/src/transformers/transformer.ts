@@ -15,31 +15,107 @@
 */
 /* eslint-disable camelcase */
 import _ from 'lodash'
-import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-
-import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
-  API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
-  METADATA_TYPE, FIELD_ANNOTATIONS, SALESFORCE_CUSTOM_SUFFIX, DEFAULT_VALUE_FORMULA,
-  LOOKUP_FILTER_FIELDS, ADDRESS_FIELDS, NAME_FIELDS, GEOLOCATION_FIELDS, INSTANCE_FULL_NAME_FIELD,
-  FIELD_DEPENDENCY_FIELDS, VALUE_SETTINGS_FIELDS, FILTER_ITEM_FIELDS, DESCRIPTION,
-  HELP_TEXT, BUSINESS_STATUS, FORMULA_TYPE_NAME,
-  SECURITY_CLASSIFICATION, BUSINESS_OWNER_GROUP, BUSINESS_OWNER_USER, COMPLIANCE_GROUP,
-  CUSTOM_VALUE, API_NAME_SEPARATOR, MAX_METADATA_RESTRICTION_VALUES,
-  VALUE_SET_FIELDS, COMPOUND_FIELD_TYPE_NAMES, ANNOTATION_TYPE_NAMES, FIELD_SOAP_TYPE_NAMES,
-  RECORDS_PATH, SETTINGS_PATH, TYPES_PATH, SUBTYPES_PATH, INSTALLED_PACKAGES_PATH,
-  VALUE_SET_DEFINITION_FIELDS, CUSTOM_FIELD, CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
-  COMPOUND_FIELDS_SOAP_TYPE_NAMES, SALESFORCE_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
-  XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
-  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
+  DefaultValueWithType,
+  Field as SalesforceField,
+  FileProperties,
+  MetadataInfo,
+  PicklistEntry,
+  ValueTypeField,
+} from 'jsforce'
+import {
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  createRefToElmWithValue,
+  createRestriction,
+  Element,
+  ElemID,
+  ElemIdGetter,
+  Field,
+  InstanceElement,
+  isContainerType,
+  isField,
+  isInstanceElement,
+  isObjectType,
+  isPrimitiveType,
+  isPrimitiveValue,
+  ListType,
+  OBJECT_SERVICE_ID,
+  ObjectType,
+  PrimitiveType,
+  PrimitiveTypes,
+  PrimitiveValue,
+  ServiceIds,
+  toServiceIdsString,
+  TypeElement,
+  TypeMap,
+  TypeReference,
+  Value,
+  Values,
+} from '@salto-io/adapter-api'
+import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
+import { naclCase, pathNaclCase, transformElement, TransformFunc } from '@salto-io/adapter-utils'
+
+import { CustomField, CustomObject, SalesforceRecord } from '../client/types'
+import {
+  ADDRESS_FIELDS,
+  ALL_FIELD_TYPE_NAMES,
+  ANNOTATION_TYPE_NAMES,
+  API_NAME,
+  API_NAME_SEPARATOR,
+  BUSINESS_OWNER_GROUP,
+  BUSINESS_OWNER_USER,
+  BUSINESS_STATUS,
+  COMPLIANCE_GROUP,
+  COMPOUND_FIELD_TYPE_NAMES,
+  COMPOUND_FIELDS_SOAP_TYPE_NAMES,
+  CUSTOM_FIELD,
+  CUSTOM_FIELD_UPDATE_CREATE_ALLOWED_TYPES,
+  CUSTOM_OBJECT,
+  CUSTOM_SETTINGS_TYPE,
+  CUSTOM_VALUE,
+  DEFAULT_VALUE_FORMULA,
+  DESCRIPTION,
+  FIELD_ANNOTATIONS,
+  FIELD_DEPENDENCY_FIELDS,
+  FIELD_SOAP_TYPE_NAMES,
+  FIELD_TYPE_NAMES,
+  FILTER_ITEM_FIELDS,
+  FOREIGN_KEY_DOMAIN,
+  FORMULA,
+  FORMULA_TYPE_NAME,
+  GEOLOCATION_FIELDS,
+  HELP_TEXT,
+  INSTALLED_PACKAGES_PATH,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_FIELD_TYPE_NAMES,
+  INTERNAL_ID_ANNOTATION,
+  INTERNAL_ID_FIELD,
+  KEY_PREFIX,
+  LABEL,
+  LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME,
+  LOOKUP_FILTER_FIELDS,
+  MAX_METADATA_RESTRICTION_VALUES,
+  METADATA_TYPE,
+  NAME_FIELDS,
+  RECORDS_PATH,
+  SALESFORCE,
+  SALESFORCE_CUSTOM_SUFFIX,
   SALESFORCE_DATE_PLACEHOLDER,
+  SALESFORCE_OBJECT_ID_FIELD,
+  SECURITY_CLASSIFICATION,
+  SETTINGS_PATH,
+  SUBTYPES_PATH,
+  TYPES_PATH,
+  VALUE_SET_DEFINITION_FIELDS,
+  VALUE_SET_FIELDS,
+  VALUE_SETTINGS_FIELDS,
+  XML_ATTRIBUTE_PREFIX,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
+import { SupportedToolingObject } from '../tooling/constants'
 
 const { mapValuesAsync, pickAsync } = promises.object
 const { awu } = collections.asynciterable
@@ -193,7 +269,11 @@ export const METADATA_TYPES_TO_RENAME: Map<string, string> = new Map([
   ['FlexiPageTemplateInstance', 'LightningPageTemplateInstance'],
   ['Territory2', 'Territory2Metadata'],
   ['Territory2Model', 'Territory2ModelMetadata'],
+  [SupportedToolingObject.SubscriberPackage, 'InstalledPackage'],
 ])
+export const getRenamedTypeName = (typeName: string): string => (
+  METADATA_TYPES_TO_RENAME.get(typeName) ?? typeName
+)
 
 export class Types {
   private static getElemIdFunc: ElemIdGetter
@@ -848,7 +928,7 @@ export class Types {
   public static getElemId(name: string, customObject: boolean, serviceIds?: ServiceIds): ElemID {
     const updatedName = customObject
       ? name
-      : METADATA_TYPES_TO_RENAME.get(name) ?? name
+      : getRenamedTypeName(name)
     return (customObject && this.getElemIdFunc && serviceIds)
       ? this.getElemIdFunc(SALESFORCE, serviceIds, naclCase(updatedName))
       : new ElemID(SALESFORCE, naclCase(updatedName))

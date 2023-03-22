@@ -22,6 +22,7 @@ import SalesforceClient from '../../client/client'
 import { isToolingField, SupportedToolingObjectName, ToolingObjectType } from '../../tooling/types'
 import { createToolingObject } from '../../tooling/utils'
 import { SupportedToolingObject } from '../../tooling/constants'
+import { getRenamedTypeName } from '../../transformers/transformer'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -51,8 +52,11 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     config,
     fetchFilterFunc: async (elements: Element[]): Promise<void | FilterResult> => {
       const systemFields = config.systemFields ?? []
+      const isTypeIncluded = (objectName: SupportedToolingObjectName): boolean => (
+        config.fetchProfile.metadataQuery.isTypeMatch(getRenamedTypeName(objectName))
+      )
       await awu(Object.values(SupportedToolingObject))
-        .filter(objectName => config.fetchProfile.metadataQuery.isTypeMatch(objectName))
+        .filter(isTypeIncluded)
         .map(objectName => createToolingObjectTypeFromDescribe(client, objectName, systemFields))
         .filter(isDefined)
         .forEach(toolingType => elements.push(toolingType))

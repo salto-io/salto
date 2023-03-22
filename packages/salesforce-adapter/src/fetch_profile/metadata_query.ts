@@ -23,7 +23,6 @@ import {
   MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
-  INSTALLED_PACKAGE_METADATA,
 } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
@@ -53,8 +52,6 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   { metadataType: 'EscalationRule' },
   // May conflict with the MetadataType ForecastingCategoryMapping
   { metadataType: 'CustomObject', name: 'ForecastingCategoryMapping' },
-  // We retrieve info about the installed packages from the Tooling API
-  { metadataType: INSTALLED_PACKAGE_METADATA },
 ]
 
 const getPaths = (regexString: string): string[] => (

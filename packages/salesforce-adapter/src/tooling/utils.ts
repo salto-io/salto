@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { types, values } from '@salto-io/lowerdash'
-import { TOOLING_PATH, ToolingObjectAnnotation } from './constants'
-import { API_NAME, RECORDS_PATH, SALESFORCE } from '../constants'
+import { ToolingObjectAnnotation } from './constants'
+import { API_NAME, RECORDS_PATH, SALESFORCE, TYPES_PATH } from '../constants'
 import { SupportedToolingObjectName, ToolingField, ToolingObjectType } from './types'
 import { SalesforceRecord } from '../client/types'
 import { omitDefaultKeys } from '../filters/utils'
+import { getRenamedTypeName, Types } from '../transformers/transformer'
 
 const { isDefined } = values
 
@@ -39,10 +40,10 @@ export const createToolingObject = (
 ): ToolingObjectType => (
   Object.assign(
     new ObjectType({
-      elemID: new ElemID(SALESFORCE, objectName),
+      elemID: Types.getElemId(objectName, false),
     }),
     {
-      path: [...TOOLING_PATH, objectName] as const,
+      path: [SALESFORCE, TYPES_PATH, getRenamedTypeName(objectName)] as const,
       annotations: {
         [CORE_ANNOTATIONS.CREATABLE]: false,
         [CORE_ANNOTATIONS.UPDATABLE]: false,
@@ -60,7 +61,6 @@ export const createToolingInstance = async (
   toolingObject: ToolingObjectType,
   idFields: types.NonEmptyArray<string>,
 ): Promise<InstanceElement> => {
-  const typeName = toolingObjectApiName(toolingObject)
   const instanceName = Object.values(_.pick(salesforceRecord, idFields))
     .filter(isDefined)
     .join('_')
@@ -68,6 +68,6 @@ export const createToolingInstance = async (
     naclCase(instanceName),
     toolingObject,
     omitDefaultKeys(salesforceRecord),
-    [SALESFORCE, RECORDS_PATH, typeName, pathNaclCase(instanceName)],
+    [SALESFORCE, RECORDS_PATH, toolingObject.elemID.name, pathNaclCase(instanceName)],
   )
 }

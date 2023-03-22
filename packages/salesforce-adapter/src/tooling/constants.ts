@@ -13,9 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SALESFORCE, TYPES_PATH } from '../constants'
-
-export const TOOLING_PATH = [SALESFORCE, TYPES_PATH] as const
 
 export const SupportedToolingObject = {
   SubscriberPackage: 'SubscriberPackage',

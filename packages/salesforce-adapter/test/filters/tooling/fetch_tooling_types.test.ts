@@ -21,8 +21,9 @@ import filterCreator from '../../../src/filters/tooling/fetch_tooling_types'
 import mockClient from '../../client'
 import { defaultFilterContext } from '../../utils'
 import { FilterWith } from '../../../src/filter'
-import { SupportedToolingObject, TOOLING_PATH, ToolingObjectAnnotation } from '../../../src/tooling/constants'
-import { API_NAME } from '../../../src/constants'
+import { SupportedToolingObject, ToolingObjectAnnotation } from '../../../src/tooling/constants'
+import { API_NAME, SALESFORCE, TYPES_PATH } from '../../../src/constants'
+import { getRenamedTypeName } from '../../../src/transformers/transformer'
 
 describe('fetchToolingTypesFilter', () => {
   describe('onFetch', () => {
@@ -168,9 +169,10 @@ describe('fetchToolingTypesFilter', () => {
       it('should create ObjectType per supported tooling type', () => {
         expect(elements.length).toEqual(Object.keys(SupportedToolingObject).length)
         Object.keys(SupportedToolingObject).forEach(toolingObjectName => {
+          const typeName = getRenamedTypeName(toolingObjectName)
           expect(elements).toContainEqual(expect.objectContaining({
-            elemID: expect.objectContaining({ typeName: toolingObjectName }),
-            path: [...TOOLING_PATH, toolingObjectName],
+            elemID: expect.objectContaining({ typeName }),
+            path: [SALESFORCE, TYPES_PATH, typeName],
             fields: expect.toContainAllKeys(FIELD_NAMES),
             annotations: expect.objectContaining({
               [CORE_ANNOTATIONS.CREATABLE]: false,
@@ -191,6 +193,7 @@ describe('fetchToolingTypesFilter', () => {
           fetchProfile: buildFetchProfile({
             metadata: {
               exclude: Object.keys(SupportedToolingObject)
+                .map(toolingObjectName => getRenamedTypeName(toolingObjectName))
                 .map(typeName => ({ metadataType: typeName })),
             },
           }),

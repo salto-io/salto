@@ -24,7 +24,6 @@ import { createToolingObject } from '../../../src/tooling/utils'
 import { API_NAME } from '../../../src/constants'
 import { ToolingField, ToolingObject } from '../../../src/tooling/types'
 import { buildFetchProfile } from '../../../src/fetch_profile/fetch_profile'
-import { SupportedToolingObject } from '../../../src/tooling/constants'
 import { SalesforceClient } from '../../../index'
 
 const { awu } = collections.asynciterable
@@ -126,7 +125,7 @@ describe('fetchSubscriberPackageInstancesFilter', () => {
             metadata: {
               exclude: [
                 {
-                  metadataType: SupportedToolingObject.SubscriberPackage,
+                  metadataType: 'InstalledPackage',
                   namespace: EXCLUDED_NAMESPACE,
                 },
               ],
@@ -165,7 +164,7 @@ describe('fetchSubscriberPackageInstancesFilter', () => {
             metadata: {
               exclude: [
                 {
-                  metadataType: SupportedToolingObject.SubscriberPackage,
+                  metadataType: 'InstalledPackage',
                   name: EXCLUDED_NAME,
                 },
               ],

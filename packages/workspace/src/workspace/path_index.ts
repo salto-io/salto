@@ -198,7 +198,7 @@ export const overrideTopLevelPathIndex = async (
   await current.setAll(entries)
 }
 
-type UpdateIndexParms = {
+type UpdateIndexParams = {
   index: PathIndex
   elements: Element[]
   accountsToMaintain: string[]
@@ -209,7 +209,7 @@ export const updatePathIndex = async (
   { index,
     elements,
     accountsToMaintain,
-    isTopLevel }: UpdateIndexParms
+    isTopLevel }: UpdateIndexParams
 ): Promise<void> => {
   if (accountsToMaintain.length === 0) {
     if (isTopLevel) {
@@ -222,10 +222,10 @@ export const updatePathIndex = async (
   const entries = isTopLevel ? getTopLevelPathHints(elements) : getElementsPathHints(elements)
   const oldPathHintsToMaintain = await awu(index.entries())
     .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
-    .concat(entries)
     .toArray()
+  const updatedEntries = _.unionBy(entries, oldPathHintsToMaintain, e => e.key)
   await index.clear()
-  await index.setAll(awu(oldPathHintsToMaintain))
+  await index.setAll(awu(updatedEntries))
 }
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

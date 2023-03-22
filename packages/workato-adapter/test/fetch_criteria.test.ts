@@ -13,15 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { elements as elementUtils } from '@salto-io/adapter-components'
-import { regex } from '@salto-io/lowerdash'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import fetchCriteria from '../src/fetch_criteria'
 
-const typeCriterion: elementUtils.query.QueryCriterion = ({
-  instance,
-  value,
-}): boolean => regex.isFullRegexMatch(instance.value.schema?.custom ?? instance.value.schema?.type, value)
+describe('fetch_criteria', () => {
+  describe('name', () => {
+    it('should match element name', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+        }
+      )
 
-export default {
-  name: elementUtils.query.nameCriterion,
-  type: typeCriterion,
-}
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+})

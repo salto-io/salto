@@ -74,3 +74,10 @@ workato {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
+| [criteria](#fetch-entry-criteria)             |                                   | A List of criteria to filter specific instance of certain types
+
+## Fetch entry criteria
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| name                                        | .*                                | A regex used to filter instances by matching the regex to their name value

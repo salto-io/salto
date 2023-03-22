@@ -14,14 +14,7 @@
 * limitations under the License.
 */
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { regex } from '@salto-io/lowerdash'
-
-const typeCriterion: elementUtils.query.QueryCriterion = ({
-  instance,
-  value,
-}): boolean => regex.isFullRegexMatch(instance.value.schema?.custom ?? instance.value.schema?.type, value)
 
 export default {
   name: elementUtils.query.nameCriterion,
-  type: typeCriterion,
 }

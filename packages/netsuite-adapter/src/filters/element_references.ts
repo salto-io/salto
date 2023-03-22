@@ -18,7 +18,7 @@ import { extendGeneratedDependencies, resolveValues, transformElement, Transform
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
-import { SCRIPT_ID, PATH } from '../constants'
+import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
@@ -34,11 +34,11 @@ const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
-const semanticReferenceRegex = new RegExp(`(?<![a-zA-Z])("|')(?<${OPTIONAL_REFS}>.*?)\\1[\\s,\\]]`, 'gm')
+const semanticReferenceRegex = new RegExp(`("|')(?<${OPTIONAL_REFS}>.*?)\\1`, 'gm')
 // matches lines which start with '*' than a string with '@N' prefix
 // followed by a space and another string , e.g: "* @NAmdConfig ./utils/ToastDalConfig.json"'
-const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s*(?<${OPTIONAL_REFS}>.*)`, 'gm')
-const pathPrefixRegex = new RegExp(`^${osPath.sep}|^.${osPath.sep}|^..\\${osPath.sep}`, 'm')
+const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s+(?<${OPTIONAL_REFS}>.*)`, 'gm')
+const pathPrefixRegex = new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`, 'm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -130,10 +130,10 @@ const getServiceElemIDsFromPaths = (
   element: InstanceElement,
 ): ElemID[] =>
   foundReferences
-    .map(ref => (pathPrefixRegex.test(ref) ? resolveRelativePath(element.value.path, ref) : ref))
+    .map(ref => (pathPrefixRegex.test(ref) ? resolveRelativePath(element.value[PATH], ref) : ref))
     .map(ref => {
       const serviceIdRecord = serviceIdToElemID[ref]
-      if (isDefined(serviceIdRecord) && typeof serviceIdRecord !== 'function') {
+      if (_.isPlainObject(serviceIdRecord)) {
         return serviceIdRecord.elemID
       }
       return undefined

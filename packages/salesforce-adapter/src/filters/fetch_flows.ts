@@ -88,7 +88,7 @@ const getFlowInstances = async (
   flowType: ObjectType,
   flowDefinitionType: ObjectType | undefined,
 ): Promise<FetchElements<InstanceElement[]>> => {
-  const { elements: fileProps } = await listMetadataObjects(
+  const { elements: fileProps, configChanges } = await listMetadataObjects(
     client, FLOW_METADATA_TYPE
   )
   if (fetchProfile.preferActiveFlowVersions && isUndefined(flowDefinitionType)) {
@@ -105,7 +105,7 @@ const getFlowInstances = async (
     metadataQuery: fetchProfile.metadataQuery,
     maxInstancesPerType: fetchProfile.maxInstancesPerType,
   })
-  return { configChanges: instances.configChanges,
+  return { configChanges: instances.configChanges.concat(configChanges),
     elements: instances.elements.map(e =>
       (fetchProfile.preferActiveFlowVersions ? getFlowWithoutVersion(e, flowType) : e)) }
 }

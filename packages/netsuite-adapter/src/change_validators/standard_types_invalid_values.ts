@@ -38,6 +38,7 @@ type InvalidValue = {
   value: Value
   error: {
     severity: SeverityLevel
+    message: string
     detailedMessage: string
   }
 }
@@ -49,7 +50,10 @@ const invalidValues: InvalidValue[] = [
     value: 'SELECTED',
     error: {
       severity: 'Error',
-      detailedMessage: 'role.subsidiaryoption cannot be deployed with value "SELECTED", please set a different value and manually edit it via the NetSuite UI',
+      message: 'Can\'t deploy a role with a \'subsidiary option\' value set to \'SELECTED\'ֿ',
+      detailedMessage: 'Can\'t deploy a role with a \'subsidiary option\' value set to \'SELECTED\', due to NetSuite\'s SDF restrictions.\n'
+        + 'To continue with this deployment, you can edit this change in Salto and remove the whole row or replace \'SELECTED\' with a valid value.\n'
+        + 'After the Salto deployment succeeds, change the value back directly in the NetSuite UI.',
     },
   },
 ]
@@ -73,7 +77,6 @@ const getInvalidValuesChangeErrors = (
     return {
       ...error,
       elemID,
-      message: `Invalid value in ${elemID.getFullName()}`,
     }
   }).filter(isDefined)
 }

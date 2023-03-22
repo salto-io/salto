@@ -45,10 +45,17 @@ Record<string, (definition: string) => Promise<ReportTypes>> = {
 }
 
 const typeNameToName: Record<string, string> = {
-  [FINANCIAL_LAYOUT]: 'financial layout',
-  [REPORT_DEFINITION]: 'report definition',
-  [SAVED_SEARCH]: 'saved search',
+  [FINANCIAL_LAYOUT]: 'Financial Layout',
+  [REPORT_DEFINITION]: 'Report Definition',
+  [SAVED_SEARCH]: 'Saved Search',
 }
+
+const typeNameToPluralName: Record<string, string> = {
+  [FINANCIAL_LAYOUT]: 'Financial Layouts',
+  [REPORT_DEFINITION]: 'Report Definitions',
+  [SAVED_SEARCH]: 'Saved Searches',
+}
+
 const wasModified = async (instance: InstanceElement): Promise<boolean> => {
   const definitionOrLayout = instance.value[mapTypeToLayoutOrDefinition[instance.elemID.typeName]]
   const parserFunction = typeNameToParser[instance.elemID.typeName]
@@ -57,20 +64,19 @@ const wasModified = async (instance: InstanceElement): Promise<boolean> => {
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {
-  const instanceName = typeNameToName[instance.elemID.typeName]
   if (await wasModified(instance)) {
     return ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Modified ${instanceName} cannot be deployed.`,
-      detailedMessage: `Changing (${instance.elemID.getFullName()}) is not supported`,
+      message: `Can't deploy partial changes to ${typeNameToPluralName[instance.elemID.typeName]}`,
+      detailedMessage: `Can't deploy partial changes to this ${typeNameToName[instance.elemID.typeName]} element. Modify it from NetSuite UI, and select the whole element for deployment.`,
     } as ChangeError)
   }
   return ({
     elemID: instance.elemID,
     severity: 'Warning',
-    message: `Beware that ${instanceName} might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.`,
-    detailedMessage: `Instance (${instance.elemID.getFullName()}) should be reviewed in NetSuite UI to make sure internal ids did not mix between environments`,
+    message: `${typeNameToPluralName[instance.elemID.typeName]} might reference internal IDs that are specific to their source NetSuite account. It is recommended to review the deployment in the target NetSuite account.`,
+    detailedMessage: `This ${typeNameToName[instance.elemID.typeName]} might reference internal IDs that are specific to their source NetSuite account. It is recommended to review the referenced internal IDs in the target NetSuite account, in NetSuite's UI, after the deployment succeeds.`,
   } as ChangeError)
 }
 

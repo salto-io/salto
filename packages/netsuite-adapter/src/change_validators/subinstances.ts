@@ -28,8 +28,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Sub-instances are read only',
-      detailedMessage: `Changing sub-instance (${elemID.getFullName()}) is not supported`,
+      message: 'Can\'t deploy changes to some elements',
+      detailedMessage: 'Can\'t deploy changes to this element because it’s not a deployable instance.',
     }))
 )
 

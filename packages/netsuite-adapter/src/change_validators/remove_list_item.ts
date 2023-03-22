@@ -73,8 +73,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .map(({ elemID, removedListItems }: {removedListItems: string[]; elemID: ElemID}) => ({
       elemID,
       severity: 'Error',
-      message: 'Removing inner elements from custom types is forbidden',
-      detailedMessage: `Unable to remove the following inner element scriptids from ${elemID.name}: ${removedListItems}`,
+      message: 'Can\'t remove inner elements',
+      detailedMessage: `Can't remove the inner element${removedListItems.length > 1 ? 's' : ''} ${removedListItems.join(', ')}. NetSuite supports the removal of inner elements only from their UI.`,
     }))
     .toArray() as Promise<ChangeError[]>
 }

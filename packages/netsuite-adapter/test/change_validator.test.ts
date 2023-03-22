@@ -64,7 +64,7 @@ describe('change validator', () => {
         const changeValidator = getChangeValidator(
           { ...DEFAULT_OPTIONS, client, fetchByQuery }
         )
-        const instance = new InstanceElement('test', file)
+        const instance = new InstanceElement('test', file, { path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -74,7 +74,7 @@ describe('change validator', () => {
         const changeValidator = getChangeValidator(
           { ...DEFAULT_OPTIONS, client, fetchByQuery }
         )
-        const instance = new InstanceElement('test', file)
+        const instance = new InstanceElement('test', file, { path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance, after: instance })])
         expect(changeErrors).toHaveLength(0)
       })
@@ -90,7 +90,7 @@ describe('change validator', () => {
             fetchByQuery,
           }
         )
-        const instance = new InstanceElement('test', file, { [INTERNAL_ID]: '1' })
+        const instance = new InstanceElement('test', file, { [INTERNAL_ID]: '1', path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance })])
         expect(changeErrors).toHaveLength(0)
       })
@@ -103,7 +103,7 @@ describe('change validator', () => {
             fetchByQuery,
           }
         )
-        const instance = new InstanceElement('test', file)
+        const instance = new InstanceElement('test', file, { path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance, after: instance })])
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
@@ -163,11 +163,11 @@ describe('change validator', () => {
           ...DEFAULT_OPTIONS,
           client,
         }
-      )([toChange({ after: new InstanceElement('test', file) })])
+      )([toChange({ after: new InstanceElement('test', file, { path: 'somePath' }) })])
       expect(netsuiteClientValidationMock).not.toHaveBeenCalled()
     })
     it('should call netsuiteClientValidation when validate=true', async () => {
-      const changes = [toChange({ after: new InstanceElement('test', file) })]
+      const changes = [toChange({ after: new InstanceElement('test', file, { path: 'somePath' }) })]
       await getChangeValidator(
         {
           ...DEFAULT_OPTIONS,
@@ -183,8 +183,8 @@ describe('change validator', () => {
       )
     })
     it('should call netsuiteClientValidation with only valid changes', async () => {
-      const validChange = toChange({ after: new InstanceElement('valid_change', file) })
-      const invalidChange = toChange({ after: new InstanceElement('invalid_dependencies_change', file) })
+      const validChange = toChange({ after: new InstanceElement('valid_change', file, { path: 'somePath' }) })
+      const invalidChange = toChange({ after: new InstanceElement('invalid_dependencies_change', file, { path: 'somePath' }) })
       const changeErrors: ReadonlyArray<ChangeError> = [{
         elemID: getChangeData(invalidChange).elemID,
         severity: 'Error' as SeverityLevel,

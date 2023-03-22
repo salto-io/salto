@@ -13,7 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isStaticFile, StaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  Change,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isStaticFile,
+  StaticFile,
+  isAdditionChange,
+  isModificationChange,
+} from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { chunks, promises, values } from '@salto-io/lowerdash'
@@ -169,34 +180,38 @@ const getContent = async (content: unknown): Promise<Buffer> => {
   throw new Error(`Got invalid content value: ${safeJsonStringify(content, undefined, 2)}`)
 }
 
+export const isTooBigFileForSuiteApp = async (
+  change: Change<InstanceElement>,
+): Promise<boolean> => isAdditionOrModificationChange(change)
+    && isFileInstance(getChangeData(change))
+    && (await getContent(getChangeData(change).value.content)).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE
+
+// SuiteApp can't change generateurltimestamp.
+export const hasDisallowedValueModification = (change: Change<InstanceElement>): boolean => {
+  if (isAdditionChange(change) && change.data.after.value.generateurltimestamp === true) {
+    return true
+  }
+  return isModificationChange(change)
+    && change.data.before.value.generateurltimestamp !== change.data.after.value.generateurltimestamp
+}
+
 export const isChangeDeployable = async (
   change: Change
 ): Promise<boolean> => {
   if (!isInstanceChange(change)) {
     return false
   }
-
-  const changedElement = getChangeData(change)
-  if (!isFileCabinetType(changedElement.refType)) {
+  const changedInstance = getChangeData(change)
+  if (!isFileCabinetType(changedInstance.refType)) {
     return false
   }
 
   // SuiteApp can't modify files bigger than 10mb
-  if (isAdditionOrModificationChange(change)
-  && isFileInstance(changedElement)
-  && (await getContent(changedElement.value.content)).toString('base64').length > MAX_DEPLOYABLE_FILE_SIZE) {
+  if (await isTooBigFileForSuiteApp(change)) {
     return false
   }
 
-  // SuiteApp can't change generateurltimestamp.
-  if (change.action === 'add' && change.data.after.value.generateurltimestamp === true) {
-    return false
-  }
-  if (change.action === 'modify' && change.data.before.value.generateurltimestamp !== change.data.after.value.generateurltimestamp) {
-    return false
-  }
-
-  return true
+  return !hasDisallowedValueModification(change)
 }
 
 const groupChangesByDepth = (

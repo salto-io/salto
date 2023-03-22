@@ -645,6 +645,43 @@ describe('adapter', () => {
         })
         expect(supportAddress?.value.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.myBrand')
       })
+      it('should filter elements by type+name on fetch', async () => {
+        mockAxiosAdapter.onGet().reply(callbackResponseFunc)
+        const { elements } = await adapter.operations({
+          credentials: new InstanceElement(
+            'config',
+            usernamePasswordCredentialsType,
+            { username: 'user123', password: 'token456', subdomain: 'myBrand' },
+          ),
+          config: new InstanceElement(
+            'config',
+            configType,
+            {
+              [FETCH_CONFIG]: {
+                include: [
+                  { type: 'automation' },
+                  { type: 'custom_role', criteria: { name: 'A.*' } },
+                ],
+                exclude: [],
+                guide: {
+                  brands: ['.*'],
+                },
+              },
+            }
+          ),
+          elementsSource: buildElementsSourceFromElements([]),
+        }).fetch({ progressReporter: { reportProgress: () => null } })
+        expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+          'zendesk.automation.instance.Close_ticket_4_days_after_status_is_set_to_solved@s',
+          'zendesk.automation.instance.Close_ticket_5_days_after_status_is_set_to_solved@s',
+          'zendesk.automation.instance.Pending_notification_24_hours@s',
+          'zendesk.automation.instance.Pending_notification_5_days@s',
+          'zendesk.automation.instance.Tag_tickets_from_Social@s',
+          'zendesk.automation_order.instance',
+          'zendesk.custom_role.instance.Advisor',
+          'zendesk.tag.instance.Social',
+        ])
+      })
       it('should return an 403 error for custom statuses', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFuncWith403)
         const { elements, errors } = await adapter.operations({

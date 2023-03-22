@@ -83,7 +83,6 @@ import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
-import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
 import priorityFilter from './filters/priority'
@@ -133,6 +132,8 @@ const {
 } = elementUtils.swagger
 const { createPaginator } = clientUtils
 const log = logger(module)
+
+const { query: queryFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
@@ -248,7 +249,7 @@ export const DEFAULT_FILTERS = [
   deployDcIssueEventsFilter,
   // Must be last
   defaultInstancesDeployFilter,
-  ...Object.values(commonFilters),
+  ...Object.values(otherCommonFilters),
 ]
 
 export interface JiraAdapterParams {

@@ -189,6 +189,7 @@ describe('stripe swagger adapter', () => {
         'stripe.country_spec.instance.AR',
         'stripe.coupon.instance.testCoupon_forever_S8nceGxL',
         'stripe.product.instance.sfdsfsf_prod_JMpOpTpdX5rDKx',
+        'stripe.product.instance.abc_prod_JMpOpTpdX5rDKx',
         'stripe.reporting_report_type.instance.balance_summary_1@v',
         'stripe.tax_rate.instance.Sales_tax_txr_1Jwt1JHipyrr1EYi3coTN5Y9_AL_3@suuuu',
         'stripe.webhook_endpoint.instance.we_1IcrkHHipyrr1EYiSGhlscV7',
@@ -318,6 +319,27 @@ describe('stripe swagger adapter', () => {
         )
         const fetchedTypes = (await fetchInstances(config)).map(i => i.elemID.typeName)
         expect(fetchedTypes).toContain('product')
+      })
+      it('should filter elements by type+name on fetch', async () => {
+        const config = new InstanceElement(
+          'config',
+          configType,
+          {
+            ...DEFAULT_CONFIG,
+            fetch: {
+              ...DEFAULT_CONFIG.fetch,
+              include: [
+                { type: 'coupon' },
+                { type: 'product', criteria: { name: 'a.*' } },
+              ],
+            },
+          },
+        )
+        const instances = (await fetchInstances(config)).filter(isInstanceElement)
+        expect(instances.map(e => e.elemID.getFullName()).sort()).toEqual([
+          'stripe.coupon.instance.testCoupon_forever_S8nceGxL',
+          'stripe.product.instance.abc_prod_JMpOpTpdX5rDKx',
+        ])
       })
     })
   })

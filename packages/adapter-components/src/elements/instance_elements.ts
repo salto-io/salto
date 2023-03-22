@@ -254,7 +254,7 @@ export const toBasicInstance = async ({
     nestedPaths:
     shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name]) ? nestedPath : undefined,
   })
-  if (transformationConfigByType[type.elemID.name].standaloneFields !== undefined
+  if (transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined
     && shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name])) {
     // if there are standalone fields and they should be nested, we nest the instance in its own folder.
     filePath.push(filePath[filePath.length - 1])

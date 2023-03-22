@@ -39,7 +39,7 @@ type SideConversationTicketAction = {
 const sideConversationTicketActionSchema = joi.object({
   field: joi.string().valid(SIDE_CONVERSATION_FIELD_NAME).required(),
   value: joi.array().required(),
-})
+}).unknown(true)
 
 const isSideConversationTicketAction = (action: Value): action is SideConversationTicketAction =>
   sideConversationTicketActionSchema.validate(action).error === undefined

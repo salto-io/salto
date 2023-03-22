@@ -291,5 +291,5 @@ export const dereferenceFieldName = (
 
 export const shouldNestFiles = (
   transformationDefaultConfig: TransformationDefaultConfig,
-  transformationConfig: TransformationConfig,
+  transformationConfig: TransformationConfig | undefined,
 ): boolean => getConfigWithDefault(transformationConfig, transformationDefaultConfig).nestStandaloneInstances ?? true

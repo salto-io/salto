@@ -123,8 +123,15 @@ describe('SalesforceAdapter fetch', () => {
         connection.metadata.list.mockResolvedValue(
           instances.map(inst => mockFileProperties({ type: typeDef.xmlName, ...inst.props }))
         )
-        connection.metadata.read.mockResolvedValue(
-          instances.map(inst => inst.values)
+        connection.metadata.read.mockImplementation(
+          async (type, fullNames) => (
+            type === typeDef.xmlName
+              ? makeArray(fullNames)
+                .map(name => instances.find(inst => inst.props.fullName === name))
+                .filter(values.isDefined)
+                .map(inst => inst.values)
+              : []
+          )
         )
         const zipFiles = instances.map(inst => inst.zipFiles).filter(values.isDefined)
         if (!_.isEmpty(zipFiles)) {
@@ -951,6 +958,29 @@ public class MyClass${index} {
         [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespaceName,
           constants.RECORDS_PATH, 'Test', 'asd__Test']
       )
+    })
+
+    describe('when there are duplicate fullNames in the response from listMetadataObjects', () => {
+      it('should fetch only the element once', async () => {
+        mockMetadataType(
+          { xmlName: 'Test2' },
+          { valueTypeFields: [] },
+          [
+            {
+              props: { fullName: 'Test' },
+              values: { fullName: 'Test' },
+            },
+            {
+              props: { fullName: 'Test' },
+              values: { fullName: 'Test' },
+            },
+          ]
+        )
+        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const testInstances = findElements(result, 'Test2', 'Test')
+        expect(connection.metadata.read).toHaveBeenCalled()
+        expect(testInstances).toHaveLength(1)
+      })
     })
 
     it('should not fail the fetch on instances too large', async () => {

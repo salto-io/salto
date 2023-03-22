@@ -101,6 +101,20 @@ const withFullPath = (props: FileProperties, folderPathByName: Record<string, st
     : props
 }
 
+const splitDuplicates = <T>(array: T[], keyFunc: (t: T) => string | number): { duplicates: T[][]; uniques: T[] } => {
+  const groupedInput = Object.values(_.groupBy(array, keyFunc))
+  const [duplicates, uniques] = _.partition(groupedInput, group => group.length > 1)
+  return { duplicates, uniques: uniques.flat() }
+}
+
+const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => {
+  const { duplicates, uniques } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
+  duplicates.forEach(props => {
+    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+  })
+  return uniques.concat(duplicates.map(props => props[0]))
+}
+
 export const listMetadataObjects = async (
   client: SalesforceClient,
   metadataTypeName: string,
@@ -110,8 +124,12 @@ export const listMetadataObjects = async (
     { type: metadataTypeName },
     isUnhandledError,
   )
+
+  // Salesforce quirk, we sometimes get the same metadata fullName more than once
+  const elements = removeDuplicateFileProps(result)
+
   return {
-    elements: result,
+    elements,
     configChanges: errors
       .map(e => e.input)
       .map(createListMetadataObjectsConfigChange),

@@ -131,6 +131,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: BEHAVIOR_RULE_TYPE_NAME },
   },
+  {
+    src: { field: 'id', parentTypes: ['AppAndInstanceConditionEvaluatorAppOrInstance'] },
+    serializationStrategy: 'id',
+    target: { type: APPLICATION_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

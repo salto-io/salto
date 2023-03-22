@@ -26,6 +26,7 @@ import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
 import JiraClient from '../../../src/client/client'
 import { CLOUD_RESOURCE_FIELD } from '../../../src/filters/automation/cloud_id'
 
+
 describe('automationDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let type: ObjectType
@@ -214,6 +215,75 @@ describe('automationDeploymentFilter', () => {
         }
       )
     })
+    it('should create automation with unsorted many projects', async () => {
+      connection.post.mockImplementation(async url => {
+        if (url === '/rest/webResources/1.0/resources') {
+          return {
+            status: 200,
+            data: {
+              unparsedData: {
+                [CLOUD_RESOURCE_FIELD]: safeJsonStringify({
+                  tenantId: 'cloudId',
+                }),
+              },
+            },
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule/import') {
+          return {
+            status: 200,
+            data: null,
+          }
+        }
+
+        if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules') {
+          return {
+            status: 200,
+            data: {
+              total: 2,
+              values: [
+                existingAutomationValues,
+                {
+                  name: 'someName',
+                  id: 3,
+                  created: 1,
+                  projects: [
+                    {
+                      projectId: '1',
+                    },
+                    {
+                      projectId: '3',
+                    },
+                    {
+                      projectId: '2',
+                    },
+                  ],
+                },
+              ],
+            },
+          }
+        }
+        throw new Error(`Unexpected url ${url}`)
+      })
+
+      instance.value.projects = [
+        {
+          projectId: '3',
+        },
+        {
+          projectId: '1',
+        },
+        {
+          projectId: '2',
+        },
+      ]
+      await filter.deploy([toChange({ after: instance })])
+
+      expect(instance.value.id).toBe(3)
+      expect(instance.value.created).toBe(1)
+    })
+
 
     it('should create automation in jira DC', async () => {
       const { client: cli, connection: conn } = mockClient(true)

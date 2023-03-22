@@ -38,7 +38,6 @@ export type Group = {
 }
 
 export type DeployExtraProperties = {
-  deploymentUrls?: string[]
   groups?: Group[]
 }
 

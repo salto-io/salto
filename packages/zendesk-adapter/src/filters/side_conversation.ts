@@ -21,14 +21,12 @@ import {
   TemplateExpression,
   Value,
 } from '@salto-io/adapter-api'
-import { values as lowerdashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import joi from 'joi'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../constants'
 import { createMissingInstance } from './references/missing_references'
 import { FETCH_CONFIG } from '../config'
-
-const { isDefined } = lowerdashValues
 
 const SIDE_CONVERSATION_FIELD_NAME = 'side_conversation_ticket'
 const valueWithGroupRegex = /(?<prefix>.+\/group\/)(?<groupId>\d+)/
@@ -38,8 +36,13 @@ type SideConversationTicketAction = {
     value: unknown[]
 }
 
+const sideConversationTicketActionSchema = joi.object({
+  field: joi.string().valid(SIDE_CONVERSATION_FIELD_NAME).required(),
+  value: joi.array().required(),
+})
+
 const isSideConversationTicketAction = (action: Value): action is SideConversationTicketAction =>
-  isDefined(action) && action.field === SIDE_CONVERSATION_FIELD_NAME && Array.isArray(action.value)
+  sideConversationTicketActionSchema.validate(action).error === undefined
 
 
 const filterCreator: FilterCreator = ({ config }) => ({
@@ -55,11 +58,12 @@ const filterCreator: FilterCreator = ({ config }) => ({
     relevantInstances.forEach(instance => {
       const actions = instance.value.actions ?? []
       actions.filter(isSideConversationTicketAction).forEach((action: SideConversationTicketAction) => {
-        // Avoid bugs
+        // Handle cases of invalid array structure
         if (typeof action.value[2] !== 'string') {
           return
         }
 
+        // Split the value to the rest of the string and just the groupId
         const { prefix, groupId } = action.value[2].match(valueWithGroupRegex)?.groups ?? {}
         if (prefix === undefined || groupId === undefined) {
           return

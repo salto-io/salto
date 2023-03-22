@@ -25,8 +25,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Can\'t deploy changes to Type definitions',
-      detailedMessage: 'Can\'t deploy changes to this element because it\'s a Type definition. Type definitions are read-only.',
+      message: 'Can\'t deploy changes to type definitions',
+      detailedMessage: 'Can\'t deploy changes to this element because it\'s a type definition. Type definitions are read-only.',
     }))
 )
 

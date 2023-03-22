@@ -33,11 +33,15 @@ const getReferenceIdentifier = (val: unknown): unknown =>
   (isReferenceExpression(val) ? val.elemID.getFullName() : val)
 
 
-const toModifiedAnnotationChangeError = (after: Field | ObjectType): ChangeError => ({
+const toModifiedAnnotationChangeError = (
+  after: Field | ObjectType,
+  modifiedAnno: string
+): ChangeError => ({
   elemID: after.elemID,
   severity: 'Error',
   message: 'Can\'t deploy a modification to an immutable annotation',
-  detailedMessage: 'This annotation is immutable. In order to proceed with this deployment, please edit the element in Salto and remove this annotation change.',
+  detailedMessage: `This ${modifiedAnno} annotation is immutable.\n`
+    + 'In order to proceed with this deployment, please edit the element in Salto and remove this annotation change.',
 })
 
 const toTypeErrors = async (change: ModificationChange<ObjectType>): Promise<ChangeError[]> => {
@@ -51,14 +55,14 @@ const toTypeErrors = async (change: ModificationChange<ObjectType>): Promise<Cha
   if (before.annotations[APPLICATION_ID] !== after.annotations[APPLICATION_ID]) {
     modifiedImmutableAnnotations.push(APPLICATION_ID)
   }
-  return modifiedImmutableAnnotations.map(_modifiedAnno => toModifiedAnnotationChangeError(after))
+  return modifiedImmutableAnnotations.map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
 }
 
 const toFieldErrors = (change: ModificationChange<Field>): ChangeError[] => {
   const { before, after } = change.data
   return [SCRIPT_ID]
     .filter(annoName => before.annotations[annoName] !== after.annotations[annoName])
-    .map(_modifiedAnno => toModifiedAnnotationChangeError(after))
+    .map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
 }
 
 const toInstanceErrors = async (
@@ -96,12 +100,12 @@ const toInstanceErrors = async (
       after.elemID.createNestedID(APPLICATION_ID).getFullName()
     )
   }
-  return modifiedImmutableFields.map(_modifiedField => ({
+  return modifiedImmutableFields.map(modifiedField => ({
     elemID: after.elemID,
     severity: 'Error',
     message: 'Can\'t deploy a modification to an immutable field',
-    detailedMessage: 'This field is immutable.\n'
-      + 'In order to proceed with this deployment, please edit the element in Salto and remove this field change.',
+    detailedMessage: `The ${modifiedField} field is immutable.\n`
+    + 'In order to proceed with this deployment, please edit the element in Salto and remove this field change.',
   } as ChangeError))
 }
 

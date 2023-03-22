@@ -147,7 +147,7 @@ const toAdditionalElementWarning = (
   elemID: referer.elemID,
   severity: 'Warning',
   message: 'The changes you are about to deploy are based on an outdated version',
-  detailedMessage: `This element is ${dependency} in ${referer.elemID.name} and will be deployed with it. Since ${element.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
+  detailedMessage: `The ${element.elemID.typeName} ${element.elemID.name} is ${dependency} in this element and will be deployed with it. Since ${element.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
   + 'Alternatively, you can go back and fetch your source environment, then, the deployment preview will include the most recent changes from your NetSuite account.',
 })
 

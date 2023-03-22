@@ -378,7 +378,8 @@ describe('safe deploy change validator', () => {
           fetchByQuery
         )
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].detailedMessage).toEqual(`This element is required in ${customRecordType.elemID.name} and will be deployed with it. Since ${customSegmentInstance.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
+        expect(changeErrors[0].elemID.getFullName()).toEqual(customRecordType.elemID.getFullName())
+        expect(changeErrors[0].detailedMessage).toEqual(`The ${customSegmentInstance.elemID.typeName} ${customSegmentInstance.elemID.name} is required in this element and will be deployed with it. Since ${customSegmentInstance.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
           + 'Alternatively, you can go back and fetch your source environment, then, the deployment preview will include the most recent changes from your NetSuite account.')
       })
       it('should have a warning when referenced instance changed in the service', async () => {
@@ -400,7 +401,8 @@ describe('safe deploy change validator', () => {
           true
         )
         expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].detailedMessage).toEqual(`This element is referenced in ${customRecordType.elemID.name} and will be deployed with it. Since ${roleInstance.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
+        expect(changeErrors[0].elemID.getFullName()).toEqual(customRecordType.elemID.getFullName())
+        expect(changeErrors[0].detailedMessage).toEqual(`The ${roleInstance.elemID.typeName} ${roleInstance.elemID.name} is referenced in this element and will be deployed with it. Since ${roleInstance.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
           + 'Alternatively, you can go back and fetch your source environment, then, the deployment preview will include the most recent changes from your NetSuite account.')
       })
     })

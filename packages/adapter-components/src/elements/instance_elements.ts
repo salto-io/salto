@@ -22,7 +22,7 @@ import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-i
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
 import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault, shouldNestFiles,
-  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions, StandaloneFieldConfigType } from '../config'
+  RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
 
 const log = logger(module)
 
@@ -38,7 +38,6 @@ export type InstanceCreationParams = {
   nestedPath?: string[]
   parent?: InstanceElement
   normalized?: boolean
-  fieldExtractionDefinition?: StandaloneFieldConfigType
   getElemIdFunc?: ElemIdGetter
 }
 
@@ -199,7 +198,6 @@ export const toBasicInstance = async ({
   nestedPath,
   parent,
   defaultName,
-  fieldExtractionDefinition,
   getElemIdFunc,
 }: InstanceCreationParams): Promise<InstanceElement> => {
   const omitFields: TransformFunc = ({ value, field }) => {

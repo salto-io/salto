@@ -338,6 +338,7 @@ describe('swagger_instance_elements', () => {
           typeDefaults: {
             transformation: {
               idFields: ['id'],
+              nestStandaloneInstances: true,
             },
           },
           types: {
@@ -358,8 +359,8 @@ describe('swagger_instance_elements', () => {
               },
               transformation: {
                 standaloneFields: [
-                  { fieldName: 'owners', nestFiles: true },
-                  { fieldName: 'primaryOwner', nestFiles: false },
+                  { fieldName: 'owners' },
+                  { fieldName: 'primaryOwner' },
                 ],
               },
             },
@@ -395,7 +396,7 @@ describe('swagger_instance_elements', () => {
         [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
         [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'dog'],
         [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'owners', 'dog__o1'],
-        [ADAPTER_NAME, 'Records', 'Owner', 'dog__primary'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog', 'primaryOwner', 'dog__primary'],
         [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'cat'],
         [ADAPTER_NAME, 'Records', 'Pet', 'cat', 'owners', 'cat__o2'],
         [ADAPTER_NAME, 'Records', 'Pet', 'mouse', 'mouse'],

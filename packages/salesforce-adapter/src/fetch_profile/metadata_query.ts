@@ -15,15 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import {
-  DEFAULT_NAMESPACE,
-  SETTINGS_METADATA_TYPE,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE,
-  CUSTOM_OBJECT,
-  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
-  FLOW_DEFINITION_METADATA_TYPE,
-  FLOW_METADATA_TYPE,
-} from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -54,6 +46,18 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
   { metadataType: 'CustomObject', name: 'ForecastingCategoryMapping' },
 ]
 
+// Instances of these types will match all namespaces
+// and not just standard if '' (aka default) is provided in the namespace filter
+const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
+  'InstalledPackage',
+]
+
+
+const getDefaultNamespace = (metadataType: string): string =>
+  (DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST.includes(metadataType)
+    ? '.*'
+    : DEFAULT_NAMESPACE)
+
 const getPaths = (regexString: string): string[] => (
   regexString
     .replace(/[()^$]/g, '')
@@ -83,7 +87,7 @@ export const buildMetadataQuery = (
     }: MetadataQueryParams
   ): boolean => {
     const realNamespace = namespace === ''
-      ? DEFAULT_NAMESPACE
+      ? getDefaultNamespace(instance.metadataType)
       : namespace
     if (!regex.isFullRegexMatch(instance.metadataType, metadataType)
       || !regex.isFullRegexMatch(instance.namespace, realNamespace)) {

@@ -28,8 +28,6 @@ import {
   CUSTOM_OBJECT,
   CPQ_QUOTE,
   DUPLICATE_RULE_METADATA_TYPE,
-  ACTIVATE_RSS,
-  INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
@@ -259,14 +257,6 @@ export const mockTypes = {
     },
     fields: {
       enableFlowDeployAsActiveEnabled: { refType: BuiltinTypes.BOOLEAN },
-    },
-  }),
-  [INSTALLED_PACKAGE_METADATA]: createMetadataObjectType({
-    annotations: {
-      metadataType: INSTALLED_PACKAGE_METADATA,
-    },
-    fields: {
-      [ACTIVATE_RSS]: { refType: BuiltinTypes.BOOLEAN },
     },
   }),
   Product2: new ObjectType({

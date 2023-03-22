@@ -53,7 +53,6 @@ const SUPPORTED_TYPE_NAMES = [
   // 'FieldSet', // TODO: handle instances that are nested under custom object
   'FlexiPage',
   'Flow',
-  'InstalledPackage',
   // 'LanguageSettings', // TODO: generally handle settings
   'Layout',
   'LightningComponentBundle',

@@ -43,7 +43,7 @@ import { fromRetrieveResult, toRetrieveRequest, getManifestTypeName } from './tr
 import { MetadataQuery } from './fetch_profile/metadata_query'
 
 const { isDefined } = lowerDashValues
-const { makeArray } = collections.array
+const { makeArray, splitDuplicates } = collections.array
 const { awu, keyByAsync } = collections.asynciterable
 const log = logger(module)
 
@@ -101,6 +101,14 @@ const withFullPath = (props: FileProperties, folderPathByName: Record<string, st
     : props
 }
 
+const removeDuplicateFileProps = (files: FileProperties[]): FileProperties[] => {
+  const { duplicates, uniques } = splitDuplicates(files, fileProps => `${fileProps.namespacePrefix}__${fileProps.fullName}`)
+  duplicates.forEach(props => {
+    log.warn('Found duplicate file props with the same name in response to listMetadataObjects: %o', props)
+  })
+  return uniques.concat(duplicates.map(props => props[0]))
+}
+
 export const listMetadataObjects = async (
   client: SalesforceClient,
   metadataTypeName: string,
@@ -110,8 +118,12 @@ export const listMetadataObjects = async (
     { type: metadataTypeName },
     isUnhandledError,
   )
+
+  // Salesforce quirk, we sometimes get the same metadata fullName more than once
+  const elements = removeDuplicateFileProps(result)
+
   return {
-    elements: result,
+    elements,
     configChanges: errors
       .map(e => e.input)
       .map(createListMetadataObjectsConfigChange),

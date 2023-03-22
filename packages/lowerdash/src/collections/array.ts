@@ -38,3 +38,12 @@ export const findDuplicates = (items: string[]): string[] => (
     .map(([str]) => str)
     .sort()
 )
+
+export const splitDuplicates = <T>(
+  array: T[],
+  keyFunc: (t: T) => string | number
+): { duplicates: T[][]; uniques: T[] } => {
+  const groupedInput = Object.values(_.groupBy(array, keyFunc))
+  const [duplicates, uniques] = _.partition(groupedInput, group => group.length > 1)
+  return { duplicates, uniques: uniques.flat() }
+}

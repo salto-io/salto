@@ -275,11 +275,6 @@ const METADATA_TO_RETRIEVE = [
   'Layout', // retrieve returns more information about relatedLists
 ]
 
-export const UNSUPPORTED_SYSTEM_FIELDS = [
-  'LastReferencedDate',
-  'LastViewedDate',
-]
-
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
 export const SYSTEM_FIELDS = [
   'ConnectionReceivedId',
@@ -298,6 +293,11 @@ export const SYSTEM_FIELDS = [
   'SystemModstamp',
   'OwnerId',
   'SetupOwnerId',
+]
+
+export const UNSUPPORTED_SYSTEM_FIELDS = [
+  'LastReferencedDate',
+  'LastViewedDate',
 ]
 
 export default class SalesforceAdapter implements AdapterOperations {

@@ -16,7 +16,7 @@
 const path = require('path');
 const webpack = require('webpack');
 module.exports = {
-  mode: 'development', // production minifaction results in bad error stacks
+  mode: 'development', // production minification results in bad error stacks
   target: 'node',
   entry: './dist/src/index.js',
   output: {

@@ -13,5 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * as formatter from './formatter'
-export { default as Prompts } from './prompts'
+export * from './src'

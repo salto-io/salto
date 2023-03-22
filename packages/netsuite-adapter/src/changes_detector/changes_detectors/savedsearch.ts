@@ -42,8 +42,8 @@ const changesDetector: TypeChangesDetector = {
       })
       .map(res => ({
         type: 'object',
-        externalId: res.id,
-        time: convertSavedSearchStringToDate(res.datemodified),
+        objectId: res.id,
+        time: convertSavedSearchStringToDate(res.datemodified, dateRange.end),
       }))
   },
   getTypes: () => ([

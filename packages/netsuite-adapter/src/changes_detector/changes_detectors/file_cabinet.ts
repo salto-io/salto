@@ -16,15 +16,15 @@
 import path from 'path'
 import { logger } from '@salto-io/logging'
 import { FileCabinetChangesDetector } from '../types'
+import { convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
 
 const log = logger(module)
-
 
 export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRange) => {
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
-    SELECT mediaitemfolder.appfolder, file.name, file.id
+    SELECT mediaitemfolder.appfolder, file.name, ${toSuiteQLSelectDateString('file.lastmodifieddate')} as time
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
     WHERE file.lastmodifieddate BETWEEN ${startDate} AND ${endDate}
@@ -36,8 +36,8 @@ export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRa
     return []
   }
   return results
-    .filter((res): res is { name: string; appfolder: string; id: string } => {
-      if ([res.appfolder, res.name, res.id].some(val => typeof val !== 'string')) {
+    .filter((res): res is { name: string; appfolder: string; time: string } => {
+      if ([res.appfolder, res.name, res.time].some(val => typeof val !== 'string')) {
         log.warn('Got invalid result from file changes query, %o', res)
         return false
       }
@@ -45,8 +45,8 @@ export const getChangedFiles: FileCabinetChangesDetector = async (client, dateRa
     })
     .map(res => ({
       type: 'object',
-      externalId: path.join('/', ...res.appfolder.split(' : '), res.name),
-      internalId: parseInt(res.id, 10),
+      objectId: path.join('/', ...res.appfolder.split(' : '), res.name),
+      time: convertSuiteQLStringToDate(res.time, dateRange.end),
     }))
 }
 
@@ -54,7 +54,7 @@ export const getChangedFolders: FileCabinetChangesDetector = async (client, date
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
-    SELECT appfolder, id
+    SELECT appfolder, ${toSuiteQLSelectDateString('lastmodifieddate')} as time
     FROM mediaitemfolder
     WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
     ORDER BY id ASC
@@ -66,8 +66,8 @@ export const getChangedFolders: FileCabinetChangesDetector = async (client, date
   }
 
   return results
-    .filter((res): res is { appfolder: string; id: string } => {
-      if ([res.appfolder, res.id].some(val => typeof val !== 'string')) {
+    .filter((res): res is { appfolder: string; time: string } => {
+      if ([res.appfolder, res.time].some(val => typeof val !== 'string')) {
         log.warn('Got invalid result from folders changes query, %o', res)
         return false
       }
@@ -75,7 +75,7 @@ export const getChangedFolders: FileCabinetChangesDetector = async (client, date
     })
     .map(res => ({
       type: 'object',
-      externalId: path.join('/', ...res.appfolder.split(' : ')),
-      internalId: parseInt(res.id, 10),
+      objectId: path.join('/', ...res.appfolder.split(' : ')),
+      time: convertSuiteQLStringToDate(res.time, dateRange.end),
     }))
 }

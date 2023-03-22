@@ -15,25 +15,27 @@
 */
 import { convertSavedSearchStringToDate, convertSuiteQLStringToDate } from '../../src/changes_detector/date_formats'
 
+const fallback = new Date(Date.UTC(2023, 2, 2, 13, 6))
+
 describe('convertSavedSearchStringToDate', () => {
   it('convert correctly', () => {
-    expect(convertSavedSearchStringToDate('03/02/2020 1:05 pm')).toEqual(new Date(Date.UTC(2020, 2, 2, 13, 6)))
-    expect(convertSavedSearchStringToDate('03/02/2020 12:05 pm')).toEqual(new Date(Date.UTC(2020, 2, 2, 12, 6)))
-    expect(convertSavedSearchStringToDate('03/02/2020 8:05 am')).toEqual(new Date(Date.UTC(2020, 2, 2, 8, 6)))
-    expect(convertSavedSearchStringToDate('03/02/2020 12:05 am')).toEqual(new Date(Date.UTC(2020, 2, 2, 0, 6)))
+    expect(convertSavedSearchStringToDate('03/02/2020 1:05 pm', fallback)).toEqual(new Date(Date.UTC(2020, 2, 2, 13, 6)))
+    expect(convertSavedSearchStringToDate('03/02/2020 12:05 pm', fallback)).toEqual(new Date(Date.UTC(2020, 2, 2, 12, 6)))
+    expect(convertSavedSearchStringToDate('03/02/2020 8:05 am', fallback)).toEqual(new Date(Date.UTC(2020, 2, 2, 8, 6)))
+    expect(convertSavedSearchStringToDate('03/02/2020 12:05 am', fallback)).toEqual(new Date(Date.UTC(2020, 2, 2, 0, 6)))
   })
 
   it('should return undefined for invalid date', () => {
-    expect(convertSavedSearchStringToDate('invalid')).toBeUndefined()
+    expect(convertSavedSearchStringToDate('invalid', fallback)).toEqual(fallback)
   })
 })
 
 describe('convertSuiteQLStringToDate', () => {
   it('convert correctly', () => {
-    expect(convertSuiteQLStringToDate('03/02/2020')).toEqual(new Date(Date.UTC(2020, 2, 3)))
+    expect(convertSuiteQLStringToDate('2020-03-02 13:05:20', fallback)).toEqual(new Date(Date.UTC(2020, 2, 2, 13, 5, 20)))
   })
 
   it('should return undefined for invalid date', () => {
-    expect(convertSuiteQLStringToDate('invalid')).toBeUndefined()
+    expect(convertSuiteQLStringToDate('invalid', fallback)).toEqual(fallback)
   })
 })

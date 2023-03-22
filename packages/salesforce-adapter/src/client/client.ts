@@ -824,6 +824,7 @@ export default class SalesforceClient {
     return this.getQueryAllIterable(queryString, useToolingApi)
   }
 
+  @mapToUserFriendlyErrorMessages
   @throttle<ClientRateLimitConfig>({ bucketName: 'deploy' })
   @logDecorator()
   @requiresLogin()

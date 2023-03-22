@@ -76,13 +76,13 @@ describe('badFormatWebhookActionValidator', () => {
       {
         elemID: inValidAutomation.elemID,
         severity: 'Warning',
-        message: `${inValidAutomation.elemID.typeName} instance might not work properly`,
+        message: `${inValidAutomation.elemID.typeName} has unexpected structure and might not work properly`,
         detailedMessage: `The instance have an action of notification_webhook with a value in a bad format. This might cause the ${inValidAutomation.elemID.typeName} to not work properly.`,
       },
       {
         elemID: inValidAutomation.elemID,
         severity: 'Warning',
-        message: `${inValidAutomation.elemID.typeName} instance might not work properly`,
+        message: `${inValidAutomation.elemID.typeName} has unexpected structure and might not work properly`,
         detailedMessage: `The instance have an action of notification_webhook with a value in a bad format. This might cause the ${inValidAutomation.elemID.typeName} to not work properly.`,
       },
     ])

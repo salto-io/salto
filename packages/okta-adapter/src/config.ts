@@ -844,6 +844,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/behaviors',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'put',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'delete',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+    },
   },
 }
 

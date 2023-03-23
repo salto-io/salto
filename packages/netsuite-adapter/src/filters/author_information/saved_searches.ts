@@ -167,14 +167,15 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
       return
     }
     const timeZoneAndFormat = await getZoneAndFormat(elements, elementsSource, isPartial)
+    const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
     if (timeZoneAndFormat.format === undefined) {
+      savedSearchesInstances.forEach(instance => {
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: elemIdToChangeByIndex[instance.elemID.getFullName()] })
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: elemIdToChangeAtIndex[instance.elemID.getFullName()] })
+      })
       return
     }
     const savedSearchesMap = await getSavedSearchesMap(client, timeZoneAndFormat)
-    const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
-    if (_.isEmpty(savedSearchesMap) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
-      return
-    }
     savedSearchesInstances.forEach(instance => {
       const result = savedSearchesMap[instance.value[SCRIPT_ID]]
       if (result !== undefined) {

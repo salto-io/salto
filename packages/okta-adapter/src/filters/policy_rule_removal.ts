@@ -15,14 +15,13 @@
 */
 import _ from 'lodash'
 import { Change, InstanceElement, isInstanceChange, getChangeData, isRemovalChange } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
 import { POLICY_RULE_TYPE_NAMES } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange } from '../deployment'
 
-const RULE_NOT_FOUND_ERROR = 'Resource not found'
+const RULE_NOT_FOUND_ERROR = 'Resource not found:'
 
 const deployPolicyRuleRemoval = async (
   change: Change<InstanceElement>,
@@ -33,7 +32,7 @@ const deployPolicyRuleRemoval = async (
     await defaultDeployChange(change, client, config[API_DEFINITIONS_CONFIG])
     return
   } catch (error) {
-    if (error instanceof clientUtils.HTTPError && error.message.includes(RULE_NOT_FOUND_ERROR)) {
+    if (error instanceof Error && error.message.includes(RULE_NOT_FOUND_ERROR)) {
       return
     }
     throw error

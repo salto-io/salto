@@ -16,22 +16,19 @@
 import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
-import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import moment from 'moment-timezone'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
-import { NETSUITE, SAVED_SEARCH } from '../../constants'
+import { NETSUITE, SAVED_SEARCH, SCRIPT_ID } from '../../constants'
 import { FilterCreator, FilterWith } from '../../filter'
 import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation } from './constants'
 
 const log = logger(module)
-const { isDefined } = values
 
 type TimeZoneAndFormat = {
-  timeZone: string
-  timeFormat: string
-  dateFormat: string
+  timeZone?: string
+  format?: string | moment.MomentBuiltinFormat
 }
 
 const TIMEZONE = 'TIMEZONE'
@@ -41,7 +38,9 @@ const DATEFORMAT = 'DATEFORMAT'
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
 
-const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearchesResult[]> => {
+const fetchSavedSearches = async (
+  client: NetsuiteClient,
+): Promise<SavedSearchesResult[]> => {
   const savedSearches = await client.runSavedSearchQuery({
     type: 'savedsearch',
     columns: ['modifiedby', 'id', 'datemodified'],
@@ -58,29 +57,38 @@ const fetchSavedSearches = async (client: NetsuiteClient): Promise<SavedSearches
   return savedSearches
 }
 
-const getSavedSearchesMap = async (
-  client: NetsuiteClient,
-  timeZone: string,
-): Promise<Record<string, ModificationInformation>> => {
-  const savedSearches = await fetchSavedSearches(client)
-  const now = moment.tz(timeZone)
-  return Object.fromEntries(savedSearches
-    .filter(savedSearch =>
-      isDefined(savedSearch.datemodified)
-      && !now.isBefore(moment.tz(savedSearch.datemodified, timeZone)))
-    .map(savedSearch => [
-      savedSearch.id,
-      {
-        name: savedSearch.modifiedby[0]?.text, date: savedSearch.datemodified,
-      },
-    ]))
+export const toMomentDate = (date: string, timeAndFormat: TimeZoneAndFormat): moment.Moment => {
+  const { timeZone, format } = timeAndFormat
+  if (!timeZone) {
+    return moment.utc(date, format)
+  }
+  if (!format) {
+    return moment.tz(date, timeZone).utc()
+  }
+  return moment.tz(date, format, timeZone).utc()
 }
 
-export const changeDateFormat = (date: string, timeAndFormat: TimeZoneAndFormat): string => {
-  const { timeZone, timeFormat, dateFormat } = timeAndFormat
-  // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
-  const utcDate = moment.tz(date, [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' '), timeZone)
-  return utcDate.utc().format()
+const getSavedSearchesMap = async (
+  client: NetsuiteClient,
+  { timeZone, format }: TimeZoneAndFormat,
+): Promise<Record<string, ModificationInformation>> => {
+  const savedSearches = await fetchSavedSearches(client)
+  const now = timeZone ? moment.tz(timeZone).utc() : moment().utc()
+  return Object.fromEntries(
+    savedSearches
+      .map(({ datemodified, ...item }) => ({
+        ...item,
+        datemodified: toMomentDate(datemodified, { timeZone, format }),
+      }))
+      .filter(({ modifiedby, datemodified }) => modifiedby.length > 0 && !now.isBefore(datemodified))
+      .map(savedSearch => [
+        savedSearch.id,
+        {
+          lastModifiedBy: savedSearch.modifiedby[0].text,
+          lastModifiedAt: savedSearch.datemodified.format(),
+        },
+      ])
+  )
 }
 
 const isUserPreference = (instance: InstanceElement): boolean =>
@@ -106,7 +114,7 @@ const getTimeAndDateValue = async (
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
   userPreferencesInstance: InstanceElement | undefined
-): Promise<string> => {
+): Promise<string | undefined> => {
   const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field] ?? (
     isPartial ? await getFieldFromElemSource(elementsSource, field) : undefined
   )
@@ -119,14 +127,18 @@ export const getZoneAndFormat = async (
   isPartial: boolean
 ): Promise<TimeZoneAndFormat> => {
   const userPreferencesInstance = elements.filter(isInstanceElement).find(isUserPreference)
-  return {
-    timeZone: await getTimeAndDateValue(TIMEZONE, elementsSource, isPartial, userPreferencesInstance),
-    timeFormat: await getTimeAndDateValue(TIMEFORMAT, elementsSource, isPartial, userPreferencesInstance),
-    dateFormat: await getTimeAndDateValue(DATEFORMAT, elementsSource, isPartial, userPreferencesInstance),
-  }
+  const timeZone = await getTimeAndDateValue(TIMEZONE, elementsSource, isPartial, userPreferencesInstance)
+  const timeFormat = await getTimeAndDateValue(TIMEFORMAT, elementsSource, isPartial, userPreferencesInstance)
+  const dateFormat = await getTimeAndDateValue(DATEFORMAT, elementsSource, isPartial, userPreferencesInstance)
+  const format = dateFormat && timeFormat
+    // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
+    ? [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' ')
+    : undefined
+
+  return { timeZone, format }
 }
 
-const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial }): FilterWith<'onFetch'> => ({
+const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial, elementsSourceIndex }): FilterWith<'onFetch'> => ({
   name: 'savedSearchesAuthorInformation',
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
@@ -134,7 +146,6 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
       log.debug('Author information fetching is disabled')
       return
     }
-
     if (!client.isSuiteAppConfigured()) {
       return
     }
@@ -144,25 +155,23 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartia
     if (_.isEmpty(savedSearchesInstances)) {
       return
     }
-    const { timeZone, timeFormat, dateFormat } = await getZoneAndFormat(elements, elementsSource, isPartial)
-    const savedSearchesMap = await getSavedSearchesMap(client, timeZone)
-    if (_.isEmpty(savedSearchesMap)) {
+    const timeZoneAndFormat = await getZoneAndFormat(elements, elementsSource, isPartial)
+    if (timeZoneAndFormat.format === undefined) {
       return
     }
-    savedSearchesInstances.forEach(search => {
-      if (isDefined(savedSearchesMap[search.value.scriptid])) {
-        const { name, date } = savedSearchesMap[search.value.scriptid]
-        if (isDefined(name)) {
-          search.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_BY]: name }
-          )
-        }
-        if (isDefined(date) && isDefined(dateFormat)) {
-          const annotationDate = changeDateFormat(date, { dateFormat, timeZone, timeFormat })
-          search.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_AT]: annotationDate }
-          )
-        }
+    const savedSearchesMap = await getSavedSearchesMap(client, timeZoneAndFormat)
+    const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
+    if (_.isEmpty(savedSearchesMap) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
+      return
+    }
+    savedSearchesInstances.forEach(instance => {
+      const result = savedSearchesMap[instance.value[SCRIPT_ID]]
+      if (result !== undefined) {
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: result.lastModifiedBy })
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: result.lastModifiedAt })
+      } else {
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: elemIdToChangeByIndex[instance.elemID.getFullName()] })
+        instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: elemIdToChangeAtIndex[instance.elemID.getFullName()] })
       }
     })
   },

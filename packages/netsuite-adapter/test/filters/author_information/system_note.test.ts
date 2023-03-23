@@ -51,19 +51,19 @@ describe('netsuite system note author information', () => {
   beforeEach(async () => {
     runSuiteQLMock.mockReset()
     runSuiteQLMock.mockResolvedValueOnce([
-      { id: '1', entityid: 'user 1 name', date: '2022-01-01' },
-      { id: '2', entityid: 'user 2 name', date: '2022-01-01' },
-      { id: '3', entityid: 'user 3 name', date: '2022-01-01' },
+      { id: '1', entityid: 'user 1 name', date: '2022-01-01 00:00:00' },
+      { id: '2', entityid: 'user 2 name', date: '2022-01-01 00:00:00' },
+      { id: '3', entityid: 'user 3 name', date: '2022-01-01 00:00:00' },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
-      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01' },
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01 00:00:00' },
       // Should ignore this record because it has a date in the future
-      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01' },
-      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01' },
-      { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01' },
-      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01' },
-      { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
-      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01 00:00:00' },
+      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01 00:00:00' },
+      { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
@@ -136,7 +136,7 @@ describe('netsuite system note author information', () => {
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
     expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
-    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(missingInstance.annotations).toEqual({})
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
   })
@@ -145,7 +145,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2022-01-01T00:00:00Z')
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
-    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(missingInstance.annotations).toEqual({})
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
   })

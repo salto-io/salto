@@ -78,9 +78,20 @@ const getSavedSearchesMap = async (
     savedSearches
       .map(({ datemodified, ...item }) => ({
         ...item,
+        dateString: datemodified,
         datemodified: toMomentDate(datemodified, { timeZone, format }),
       }))
-      .filter(({ modifiedby, datemodified }) => modifiedby.length > 0 && !now.isBefore(datemodified))
+      .filter(({ modifiedby, datemodified, dateString }) => {
+        if (!datemodified.isValid()) {
+          log.warn('dropping invalid date: %s', dateString)
+          return false
+        }
+        if (now.isBefore(datemodified)) {
+          log.warn('dropping future date: %s > %s (now)', datemodified.format(), now.format())
+          return false
+        }
+        return modifiedby.length > 0
+      })
       .map(savedSearch => [
         savedSearch.id,
         {

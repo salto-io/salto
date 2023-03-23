@@ -203,9 +203,20 @@ const fetchSystemNotes = async (
         .map(({ date, name, ...item }) => ({
           ...item,
           name: employeeNames[name],
+          dateString: date,
           date: toMomentDate(date, { format: moment.ISO_8601, timeZone }),
         }))
-        .filter(({ date, name }) => !now.isBefore(date) && name !== undefined)
+        .filter(({ date, dateString, name }) => {
+          if (!date.isValid()) {
+            log.warn('dropping invalid date: %s', dateString)
+            return false
+          }
+          if (now.isBefore(date)) {
+            log.warn('dropping future date: %s > %s (now)', date.format(), now.format())
+            return false
+          }
+          return name !== undefined
+        })
         .map(({ date, ...item }) => ({
           ...item,
           date: date.format(),

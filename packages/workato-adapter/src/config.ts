@@ -215,6 +215,7 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
         idFields: DEFAULT_ID_FIELDS,
         fieldsToOmit: FIELDS_TO_OMIT,
         serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+        // TODO: change this to true for SALTO-3884.
         nestStandaloneInstances: false,
       },
     },

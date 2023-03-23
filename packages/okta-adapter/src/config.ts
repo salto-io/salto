@@ -841,6 +841,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   BehaviorRule: {
     transformation: {
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },

@@ -58,7 +58,7 @@ let rocksdbImpl: any
 const getRemoteDbImpl = (): any => {
   if (rocksdbImpl === undefined) {
     // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
-    rocksdbImpl = require('../rocksdb').default
+    rocksdbImpl = require('./rocksdb').default
   }
   return rocksdbImpl
 }
@@ -273,7 +273,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  locationCaches.put(location)
+  locationCaches.release(location)
   counters.locationCounters(location).dump()
   counters.deleteLocation(location)
 }

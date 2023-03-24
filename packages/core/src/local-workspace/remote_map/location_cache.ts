@@ -21,7 +21,7 @@ import { counters } from './counters'
 const log = logger(module)
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-class LocationCache extends LRU<string, any> {
+class LocationCache extends LRU<string, unknown> {
   readonly location: string
 
   constructor(location: string, cacheSize: number) {
@@ -35,16 +35,16 @@ export type LocationCachePool = {
 
   // The 'string' overload is temporary to allow the implementation of closeRemoteMapsOfLocation.
   // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
-  put: (cache: LocationCache | string) => void
+  release: (cache: LocationCache | string) => void
 }
 export const createLocationCachePool = (): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
   const pool = new Map<string, { cache: LocationCache; refcnt: number }>()
-  let maxPoolSize = 0
+  let poolSizeWatermark = 0
   return {
     get: (location, cacheSize) => {
       const cachePoolEntry = pool.get(location)
-      if (cachePoolEntry) {
+      if (cachePoolEntry !== undefined) {
         counters.locationCounters(location).LocationCacheReuse.inc()
         cachePoolEntry.refcnt += 1
         return cachePoolEntry.cache
@@ -52,15 +52,15 @@ export const createLocationCachePool = (): LocationCachePool => {
       counters.locationCounters(location).LocationCacheCreated.inc()
       const newCache: LocationCache = new LocationCache(location, cacheSize)
       pool.set(location, { cache: newCache, refcnt: 1 })
-      if (pool.size > maxPoolSize) {
-        maxPoolSize = pool.size
+      if (pool.size > poolSizeWatermark) {
+        poolSizeWatermark = pool.size
       }
       return newCache
     },
-    put: cacheOrLocation => {
+    release: cacheOrLocation => {
       const location = _.isString(cacheOrLocation) ? cacheOrLocation : cacheOrLocation.location
       const poolEntry = pool.get(location)
-      if (!poolEntry || poolEntry.refcnt === 0) {
+      if (poolEntry === undefined || poolEntry.refcnt === 0) {
         log.error('Returning a locationCache for an unknown location %s. poolEntry=%o', location, poolEntry)
         return
       }
@@ -69,8 +69,8 @@ export const createLocationCachePool = (): LocationCachePool => {
       if (poolEntry.refcnt === 0) {
         pool.delete(location)
         if (pool.size === 0) {
-          log.debug('Max location cache pool size: %o', maxPoolSize)
-          maxPoolSize = 0
+          log.debug('Max location cache pool size: %o', poolSizeWatermark)
+          poolSizeWatermark = 0
         }
       }
     },

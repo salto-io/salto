@@ -36,14 +36,14 @@ describe('remote map location cache pool', () => {
     expect(cache.location).toEqual(LOCATION1)
     expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
     expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
-    pool.put(cache)
+    pool.release(cache)
   })
 
   it('should reuse caches where possible', () => {
     const caches = _.times(10, () => pool.get(LOCATION1, 5000))
     expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
     expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(caches.length - 1)
-    caches.forEach(cache => pool.put(cache))
+    caches.forEach(cache => pool.release(cache))
   })
 
   it('should not reuse caches of a different location', () => {
@@ -54,16 +54,16 @@ describe('remote map location cache pool', () => {
     expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(1)
     expect(counters.locationCounters(LOCATION2).LocationCacheCreated.value()).toEqual(1)
     expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
-    pool.put(cache)
-    pool.put(anotherCache)
+    pool.release(cache)
+    pool.release(anotherCache)
   })
 
   it('should destroy cache when the last reference to it is returned', () => {
     const cache = pool.get(LOCATION1, 5000)
-    pool.put(cache)
+    pool.release(cache)
     const anotherCache = pool.get(LOCATION1, 5000)
     expect(counters.locationCounters(LOCATION1).LocationCacheCreated.value()).toEqual(2)
     expect(counters.locationCounters(LOCATION1).LocationCacheReuse.value()).toEqual(0)
-    pool.put(anotherCache)
+    pool.release(anotherCache)
   })
 })

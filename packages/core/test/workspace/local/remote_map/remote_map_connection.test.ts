@@ -29,7 +29,7 @@ describe('connection creation', () => {
       status: 'open',
     })
     mockedRocksdb.destroy = jest.fn().mockImplementation((_loc, cb) => { cb() })
-    jest.mock('../../../../src/local-workspace/rocksdb', () => ({
+    jest.mock('../../../../src/local-workspace/remote_map/rocksdb', () => ({
       default: mockedRocksdb,
     }))
 

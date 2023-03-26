@@ -27,7 +27,7 @@ import { AUTOMATION_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
 
-type notificationWebhookAction = {
+type NotificationWebhookAction = {
     field: string
     value: unknown
 }
@@ -37,7 +37,7 @@ const notificationWebhookAction = joi.object({
   value: joi.any().required(),
 }).unknown(true)
 
-const isNotificationWebhookAction = (value: unknown): value is notificationWebhookAction =>
+const isNotificationWebhookAction = (value: unknown): value is NotificationWebhookAction =>
   notificationWebhookAction.validate(value).error === undefined
 
 const POTENTIAL_BAD_FORMAT_TYPES = [AUTOMATION_TYPE_NAME, TRIGGER_TYPE_NAME]
@@ -51,7 +51,7 @@ export const badFormatWebhookActionValidator : ChangeValidator = async changes =
     .filter(instance => _.isArray(instance.value.actions))
     .map((instance) : ChangeError | undefined => {
       const webhookActions = instance.value.actions.filter(isNotificationWebhookAction)
-      if (webhookActions.some((action: notificationWebhookAction) => !_.isArray(action.value))) {
+      if (webhookActions.some((action: NotificationWebhookAction) => !_.isArray(action.value))) {
         const { typeName } = instance.elemID
         return {
           elemID: instance.elemID,

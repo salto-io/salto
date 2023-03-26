@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
-import { INACTIVE_STATUS, APPLICATION_TYPE_NAME } from '../constants'
+import { INACTIVE_STATUS, APPLICATION_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
 
 const isDeactivatedCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
   change.data.before.value.status === INACTIVE_STATUS
     && change.data.after.value.status === INACTIVE_STATUS
     // customName field only exist in custom applications
-    && getChangeData(change).value.customName !== undefined
+    && getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
 
 /**
  * Modification of custom application in status 'INACTIVE' is not supported via the Okta API

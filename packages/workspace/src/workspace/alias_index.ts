@@ -21,7 +21,7 @@ import {
   CORE_ANNOTATIONS,
   isAdditionChange,
   isModificationChange,
-  ObjectType, isObjectTypeChange, ModificationChange, isField, isInstanceChange,
+  ObjectType, isObjectTypeChange, ModificationChange, isField, isInstanceChange, ElemID,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -33,10 +33,14 @@ import { RemoteMap } from './remote_map'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
-export const ALIAS_INDEX_VERSION = 1
+export const ALIAS_INDEX_VERSION = 2
 const ALIAS_INDEX_KEY = 'alias_index'
 
-const calcAlias = (elem: Element): string => elem.annotations[CORE_ANNOTATIONS.ALIAS] ?? prettifyName(elem.elemID.name)
+const isSetting = (elemId: ElemID | undefined): boolean =>
+  elemId?.name === ElemID.CONFIG_NAME
+
+const calcAlias = (elem: Element): string => elem.annotations[CORE_ANNOTATIONS.ALIAS]
+  ?? prettifyName(isSetting(elem.elemID) ? elem.elemID.typeName : elem.elemID.name)
 
 const getChangedFields = (change: ModificationChange<ObjectType>): Change<Element>[] => {
   const afterFields = Object.values(change.data.after.fields)

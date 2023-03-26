@@ -25,10 +25,28 @@ import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isPicklistField } from '../filters/value_set'
+import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD } from '../constants'
 
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
+
+type ValueSetValue = {
+  [INSTANCE_FULL_NAME_FIELD]: string
+}[]
+
+const isValueSetValue = (value: unknown): value is ValueSetValue => (
+  _.isArray(value) && value.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
+)
+
+const getAllowedValues = (field: Field): string[] | undefined => {
+  const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  if (isValueSetValue(valueSet)) {
+    return valueSet.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+  }
+  // TODO: Global Value Set support
+  return undefined
+}
 
 const createUnknownPicklistValueChangeError = (
   instance: InstanceElement,
@@ -50,10 +68,13 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
     .map(picklistFieldName => {
       const field = fields[picklistFieldName]
       const fieldValue = instance.value[picklistFieldName]
-      const allowedValues = field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values
-      return fieldValue === undefined || !_.isArray(allowedValues) || allowedValues.includes(fieldValue)
-        ? undefined
-        : createUnknownPicklistValueChangeError(instance, field, fieldValue)
+      if (fieldValue === undefined) {
+        return undefined
+      }
+      const allowedValues = getAllowedValues(field)
+      return allowedValues !== undefined && !allowedValues.includes(fieldValue)
+        ? createUnknownPicklistValueChangeError(instance, field, fieldValue)
+        : undefined
     })
     .filter(isDefined)
 }

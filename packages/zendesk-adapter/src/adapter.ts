@@ -132,6 +132,7 @@ import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
+import urlReferenceExpressionFilter from './filters/url_reference_expression'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -159,6 +160,7 @@ export const DEFAULT_FILTERS = [
   // omitInactiveFilter should be before:
   //  order filters, collisionErrorsFilter and fieldReferencesFilter
   omitInactiveFilter,
+  urlReferenceExpressionFilter,
   ticketFormOrderFilter,
   userFieldOrderFilter,
   organizationFieldOrderFilter,

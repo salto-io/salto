@@ -41,17 +41,17 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (_.isEmpty(listResult)) {
       return
     }
-    const existingInstalledPackageNamespaces = await awu(elements)
-      .filter(isInstanceElement)
-      .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
-      .map(instance => apiName(instance))
-      .toArray()
     const installedPackageType = await awu(elements)
       .filter(isObjectType)
       .find(async objectType => await apiName(objectType) === INSTALLED_PACKAGE_METADATA)
     if (installedPackageType === undefined) {
       return
     }
+    const existingInstalledPackageNamespaces = await awu(elements)
+      .filter(isInstanceElement)
+      .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
+      .map(instance => apiName(instance))
+      .toArray()
     listResult
       .filter(file => notInSkipList(config.fetchProfile.metadataQuery, file, false))
       .filter(file => !existingInstalledPackageNamespaces.includes(file.fullName))

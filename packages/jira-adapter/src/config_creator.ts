@@ -25,12 +25,12 @@ const log = logger(module)
 const optionsElemId = new ElemID(constants.JIRA, 'configOptionsType')
 
 type ConfigOptionsType = {
-  enableScriptRunnerAddon?: boolean
+  enableScripRunnerAddon?: boolean
 }
 export const optionsType = createMatchingObjectType<ConfigOptionsType>({
   elemID: optionsElemId,
   fields: {
-    enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
+    enableScripRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
   },
 })
 const isOptionsTypeInstance = (instance: InstanceElement):
@@ -46,8 +46,8 @@ export const getConfig = async (
   options?: InstanceElement
 ): Promise<InstanceElement> => {
   const defaultConf = await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType)
-  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableScriptRunnerAddon) {
-    defaultConf.value.fetch.enableScriptRunnerAddon = true
+  if (options !== undefined && isOptionsTypeInstance(options) && options.value.enableScripRunnerAddon) {
+    defaultConf.value.fetch.enableScripRunnerAddon = true
   }
   return defaultConf
 }

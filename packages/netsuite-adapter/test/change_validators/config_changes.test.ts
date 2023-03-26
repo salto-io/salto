@@ -47,8 +47,8 @@ describe('config elements changes validator', () => {
     expect(result[0]).toEqual({
       elemID: after.elemID,
       severity: 'Error',
-      message: 'Addition or removal of a config instance is not supported',
-      detailedMessage: 'Addition or removal of a config instance is not supported. This instance can only be modified.',
+      message: 'Can\'t deploy an addition or a removal of a Settings instance',
+      detailedMessage: 'Addition or removal of a Settings instance is not supported. You can only modify this instance and edit the value of specific fields in it.',
     })
     expect(result[1]).toEqual(result[0])
   })
@@ -61,14 +61,15 @@ describe('config elements changes validator', () => {
     expect(result[0]).toEqual({
       elemID: after.elemID.createNestedID('field'),
       severity: 'Error',
-      message: 'Removal of values in a config instance is not supported',
-      detailedMessage: 'Removal of values in a config instance is not supported. Values can only be added or modified.',
+      message: 'Can\'t deploy removal of values in a Settings instance',
+      detailedMessage: 'Removal of values in a Settings instance is not supported. You can only add or modify these values.',
     })
     expect(result[1]).toEqual({
       elemID: after.elemID.createNestedID('changed'),
       severity: 'Warning',
-      message: 'Addition of values in a config instance may be ignored by NetSuite',
-      detailedMessage: 'Addition of values in a config instance may be ignored by NetSuite. In this case they will be deleted in the next fetch.',
+      message: 'Addition of values in a Settings instance may be ignored by NetSuite',
+      detailedMessage: 'Addition of values in a Settings instance may be ignored by NetSuite. In such a case these additions will be deleted in Salto in the next fetch.\n'
+        + 'Consider doing this change directly in the NetSuite UI.',
     })
   })
 })

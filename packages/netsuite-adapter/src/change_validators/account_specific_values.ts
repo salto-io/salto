@@ -38,8 +38,10 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
       return {
         elemID: element.elemID,
         severity: 'Warning',
-        message: 'Element contains fields with account specific values. These fields will be skipped from the deployment.',
-        detailedMessage: 'Fields with account specific values (ACCOUNT_SPECIFIC_VALUE) will be skipped from the deployment. After deploying this element, please make sure these fields are mapped correctly in NetSuite.',
+        message: 'Values containing ACCOUNT_SPECIFIC_VALUE are ignored by NetSuite',
+        detailedMessage: 'This element contains values with ACCOUNT_SPECIFIC_VALUE.\n'
+          + 'These values are ignored by NetSuite and therefore will be skipped from the deployment.\n'
+          + 'You can either edit the element in Salto and replace ACCOUNT_SPECIFIC_VALUE with the real value and deploy it or after a successful deploy, set the correct value directly in the NetSuite UI.',
       } as ChangeError
     })
     .filter(isDefined)

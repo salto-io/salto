@@ -119,26 +119,26 @@ describe('mapped lists indexes validator', () => {
     expect(changeErrors[0]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow1'),
       severity: 'Warning',
-      message: 'Invalid index attribute in a mapped list',
-      detailedMessage: 'custworkflow1 has no \'index\' attribute. It is going to be located at the end of the list (index = 5).',
+      message: 'The missing index value will be set to the end of the list in the next fetch. No action item is required.',
+      detailedMessage: 'The index value of custworkflow1 is missing, we will set it to 5 in the next fetch. No action item is required.',
     })
     expect(changeErrors[1]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow2'),
       severity: 'Warning',
-      message: 'Invalid index attribute in a mapped list',
-      detailedMessage: 'Index is not an integer. It will be override by an integer value in the next fetch.',
+      message: 'The index value will be changed in the next fetch. No action item is required.',
+      detailedMessage: 'The index value of custworkflow2 is not an integer, we will change it in the next fetch to a valid integer value. No action item is required.',
     })
     expect(changeErrors[2]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield', 'custworkflow3'),
       severity: 'Warning',
-      message: 'Invalid index attribute in a mapped list',
-      detailedMessage: 'Index is out of range. It will be override by an in-range value in the next fetch.',
+      message: 'The index value will be changed in the next fetch. No action item is required.',
+      detailedMessage: 'The index value of custworkflow3 is out of range, we will change it in the next fetch to a valid integer value. No action item is required.',
     })
     expect(changeErrors[3]).toEqual({
       elemID: after.elemID.createNestedID('workflowcustomfields', 'workflowcustomfield'),
       severity: 'Warning',
-      message: 'Invalid index attribute in a mapped list',
-      detailedMessage: 'Some items has the same index value (index = 2). They will be sorted by their key name (custworkflow5).',
+      message: 'The index value is not unique and will be changed in the next fetch. No action item is required.',
+      detailedMessage: 'The index value of custworkflow5 is not unique. We will sort the elements in workflowcustomfield that share the index 2 by their key name, and change their index in the next fetch. No action item is required.',
     })
   })
 })

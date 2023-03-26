@@ -377,7 +377,6 @@ export const deployMetadata = async (
     appliedChanges: validChanges.filter(isSuccessfulChange),
     errors: [...validationErrors, ...errors],
     extraProperties: {
-      deploymentUrls: deploymentUrl ? [deploymentUrl] : undefined,
       groups: isQuickDeployable(sfDeployRes)
         ? [{ id: groupId, requestId: sfDeployRes.id, hash: planHash, url: deploymentUrl }]
         : [{ id: groupId, url: deploymentUrl }],

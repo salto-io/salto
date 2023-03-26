@@ -70,7 +70,7 @@ describe('remove item from customlist change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(instance.elemID)
-      expect(changeErrors[0].detailedMessage).toContain(`Unable to remove the following inner element scriptids from ${instance.elemID.name}`)
+      expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element val_1. NetSuite supports the removal of inner elements only from their UI.')
     })
 
     it('should not have change errors when modifiying a customvalue', async () => {
@@ -99,6 +99,10 @@ describe('removing inner items from customtypes', () => {
             scriptid: 'customdeploy_2',
             status: 'Test',
           },
+          customdeploy3: {
+            scriptid: 'customdeploy_3',
+            status: 'Test',
+          },
         },
       },
     }
@@ -118,7 +122,21 @@ describe('removing inner items from customtypes', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain(`Unable to remove the following inner element scriptids from ${instance.elemID.name}`)
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
+  })
+
+  it('should have an Error when removing few customdeploys', async () => {
+    const after = instance.clone()
+    delete after.value.scriptdeployments.scriptdeployment.customdeploy2
+    delete after.value.scriptdeployments.scriptdeployment.customdeploy3
+
+    const changeErrors = await removeListItemValidator(
+      [toChange({ before: instance, after })]
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0].severity).toEqual('Error')
+    expect(changeErrors[0].elemID).toEqual(instance.elemID)
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner elements customdeploy_2, customdeploy_3. NetSuite supports the removal of inner elements only from their UI.')
   })
 
   it('sohuld have an Error when removing scriptid from a customdeploy', async () => {
@@ -131,6 +149,6 @@ describe('removing inner items from customtypes', () => {
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0].severity).toEqual('Error')
     expect(changeErrors[0].elemID).toEqual(instance.elemID)
-    expect(changeErrors[0].detailedMessage).toContain(`Unable to remove the following inner element scriptids from ${instance.elemID.name}`)
+    expect(changeErrors[0].detailedMessage).toEqual('Can\'t remove the inner element customdeploy_2. NetSuite supports the removal of inner elements only from their UI.')
   })
 })

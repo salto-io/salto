@@ -466,6 +466,93 @@ describe('instance_references filter', () => {
 
       expect(instanceWithRefs.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
+
+    it('should add extracted element to generated dependencies', async () => {
+      const fileContent = `
+      define(['N/record', '../SuiteScripts/oauth_1.js'], function(record) {
+        return{
+          post: function(requestBody){
+          // Convert JSON string to JSON  object
+          var requestBody = JSON.parse(requestBody);
+          form.clientScriptModulePath = './innerFileRef.name'
+          var semanticRef = 'customrecord1'
+          log.debug('salesRep', requestBody.salesRep);
+          // Load employee record
+          var salesRep = record.load({
+            type: 'employee',
+            id: requestBody.salesRep,
+            isDynamic: true
+          });
+          return JSON.stringify(salesRep);
+          }
+        }
+      });`
+      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      const syntacticFileInstance = new InstanceElement('syntacticFileInstance', fileType(), {
+        [PATH]: '/SuiteScripts/oauth_1.js',
+      })
+      const innerFileInstance = new InstanceElement('innferRefFile', fileType(), {
+        [PATH]: '/Templates/innerFileRef.name',
+      })
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([fileInstance, syntacticFileInstance, innerFileInstance, customRecordType])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(3)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
+        {
+          reference: new ReferenceExpression(
+            innerFileInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            syntacticFileInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            customRecordType.elemID.createNestedID('attr', SCRIPT_ID)
+          ),
+          occurrences: undefined,
+        },
+      ]))
+    })
+
+    it('should add generated dependency from comment', async () => {
+      const fileContent = `/**
+      * @NApiVersion 2.1
+      * @NAmdConfig ./utils/ToastDalConfig.json
+      * @NScriptType Suitelet
+      * @NModuleScope SameAccount
+      */
+     `
+      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      const commentRefFileInstance = new InstanceElement('commentFileInstance', fileType(), {
+        [PATH]: '/Templates/utils/ToastDalConfig.json',
+      })
+      await filterCreator({
+        client: {} as NetsuiteClient,
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([fileInstance, commentRefFileInstance])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toContainEqual(
+        {
+          reference: new ReferenceExpression(
+            commentRefFileInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        }
+      )
+    })
   })
   describe('preDeploy', () => {
     let instanceWithReferences: InstanceElement

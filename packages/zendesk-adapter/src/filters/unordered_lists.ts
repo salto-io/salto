@@ -13,27 +13,64 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isArray, isString } from 'lodash'
 import {
-  Element, InstanceElement, isInstanceElement, isReferenceExpression,
+  Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
+import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
+import {
+  GROUP_TYPE_NAME,
+  MACRO_TYPE_NAME,
+  TICKET_FIELD_CUSTOM_FIELD_OPTION,
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+} from '../constants'
+
+const log = logger(module)
+
+type ChildField = {id: ReferenceExpression}
+// eslint-disable-next-line camelcase
+type Condition = { child_fields: ChildField[]; value: ReferenceExpression | string }
+
+
+const getInstanceByFullName = (type: string, instances: InstanceElement[]): Record<string, InstanceElement> => _.keyBy(
+  instances.filter(e => e.refType.elemID.name === type),
+  inst => inst.elemID.getFullName()
+)
+
+const idValidVariants = (variants: unknown, dynamicContentItemVariantInstancesById: Record<string, InstanceElement>)
+  : variants is ReferenceExpression[] =>
+  _.isArray(variants) && variants.every(variant => {
+    const variantInstance = isReferenceExpression(variant)
+      ? dynamicContentItemVariantInstancesById[variant.elemID.getFullName()]
+      : undefined
+    return (variantInstance !== undefined)
+    && isReferenceExpression(variantInstance.value.locale_id)
+    && isInstanceElement(variantInstance.value.locale_id.value)
+  })
 
 
 const orderDynamicContentItems = (instances: InstanceElement[]): void => {
   const dynamicContentItemInstances = instances
     .filter(e => e.refType.elemID.name === 'dynamic_content_item')
 
+  const dynamicContentItemVariantInstancesById = getInstanceByFullName(
+    DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME, instances
+  )
+
   dynamicContentItemInstances.forEach(inst => {
-    if (Array.isArray(inst.value.variants) && inst.value.variants.every(variant =>
-      isReferenceExpression(variant.locale_id) && isInstanceElement(variant.locale_id.value))
-    ) {
+    const { variants } = inst.value
+    if (idValidVariants(variants, dynamicContentItemVariantInstancesById)) {
       inst.value.variants = _.sortBy(
-        inst.value.variants,
+        variants,
         // at most one variant is allowed per locale
-        variant => ([variant.locale_id.value.value?.locale])
+        variant =>
+          ([dynamicContentItemVariantInstancesById[variant.elemID.getFullName()].value.locale_id.value.value?.locale])
       )
     }
+    log.error(`could not sort variants for ${inst.elemID.getFullName()}`)
   })
 }
 
@@ -54,6 +91,101 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
   })
 }
 
+const isValidMacroIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>)
+  : ids is ReferenceExpression[] =>
+  isArray(ids) && ids.every(
+    id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()]?.value.name !== undefined)
+  )
+
+const orderMacros = (instances: InstanceElement[]): void => {
+  const macroInstances = instances.filter(e => e.refType.elemID.name === MACRO_TYPE_NAME)
+  const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
+  macroInstances.forEach(macro => {
+    const ids = macro.value.restriction?.ids
+    if (isValidMacroIds(ids, groupInstancesById)) {
+      macro.value.restriction.ids = _.sortBy(
+        ids,
+        // at most one variant is allowed per locale
+        id => ([groupInstancesById[id.elemID.getFullName()].value.name])
+      )
+    }
+  })
+}
+
+const isValidConditions = (conditions: unknown, customFieldById: Record<string, InstanceElement>)
+  : conditions is Condition[] =>
+  isArray(conditions) && conditions.every(condition =>
+    (
+      isReferenceExpression(condition.value)
+      && (customFieldById[condition.value.elemID.getFullName()]?.value.value !== undefined)
+    )
+    || (isString(condition.value)))
+
+const sortConditions = (
+  formInstances: InstanceElement[],
+  conditionType: string,
+  customFieldById: Record<string, InstanceElement>
+): void => {
+  formInstances.forEach(form => {
+    const conditions = form.value[conditionType]
+    if (isValidConditions(conditions, customFieldById)) {
+      form.value[conditionType] = _.sortBy(
+        conditions,
+        condition => (isString(condition.value)
+          ? condition.value
+          : [customFieldById[condition.value.elemID.getFullName()].value.value])
+      )
+    }
+  })
+}
+
+
+const isValidChildFields = (condition: unknown, ticketFieldById: Record<string, InstanceElement>)
+  : condition is Condition => {
+  if (!(_.isObject(condition) && ('child_fields' in condition))) {
+    return false
+  }
+  const val = _.get(condition, 'child_fields')
+  return _.isArray(val) && val.every(field =>
+    isReferenceExpression(field.id)
+    && (ticketFieldById[field.id.elemID.getFullName()]?.value.raw_title !== undefined))
+}
+
+const sortChildFields = (
+  formInstances: InstanceElement[],
+  ticketFieldById: Record<string, InstanceElement>
+): void => {
+  formInstances.forEach(form => {
+    const conditions = (form.value.agent_conditions ?? []).concat(form.value.end_user_conditions ?? [])
+    // eslint-disable-next-line camelcase
+    conditions.forEach((condition: Condition) => {
+      if (isValidChildFields(condition, ticketFieldById)) {
+        condition.child_fields = _.sortBy(
+          condition.child_fields,
+          // at most one variant is allowed per locale
+          field => ([ticketFieldById[field.id.elemID.getFullName()].value.raw_title])
+        )
+      }
+    })
+  })
+}
+
+const orderFormCondition = (instances: InstanceElement[]): void => {
+  const formInstances = instances
+    .filter(e => e.refType.elemID.name === TICKET_FORM_TYPE_NAME)
+  const formAgentInstances = formInstances
+    .filter(form => !_.isEmpty(form.value.agent_conditions))
+  const formUserInstances = formInstances
+    .filter(form => !_.isEmpty(form.value.end_user_conditions))
+
+  const customFieldById = getInstanceByFullName(TICKET_FIELD_CUSTOM_FIELD_OPTION, instances)
+  const ticketFieldById = getInstanceByFullName(TICKET_FIELD_TYPE_NAME, instances)
+
+  sortConditions(formAgentInstances, 'agent_conditions', customFieldById)
+  sortConditions(formUserInstances, 'end_user_conditions', customFieldById)
+  sortChildFields(formInstances, ticketFieldById)
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -63,6 +195,8 @@ const filterCreator: FilterCreator = () => ({
     const instances = elements.filter(isInstanceElement)
     orderDynamicContentItems(instances)
     orderTriggerDefinitions(instances)
+    orderMacros(instances)
+    orderFormCondition(instances)
   },
 })
 

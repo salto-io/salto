@@ -61,8 +61,9 @@ export const validateDependsOnInvalidElement = async (
     .map(element => ({
       elemID: element.elemID,
       severity: 'Error' as SeverityLevel,
-      message: 'Depends on an element that has errors',
-      detailedMessage: `(${element.elemID.getFullName()}) depends on an element that has errors`,
+      message: 'Can\'t deploy due to a dependency on an element with errors',
+      detailedMessage: 'This element can\'t be deployed since it depends on an element that has errors.\n'
+        + 'You can either resolve the errors or edit this element in Salto to remove the dependency and then try to deploy this change again. Alternatively, you can remove this change from Salto and change it directly in the NetSuite UI.',
     }))
     .toArray()
 }

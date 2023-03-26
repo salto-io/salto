@@ -26,8 +26,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: 'Removal of file cabinet instances is only supported when Salto SuiteApp is configured',
-      detailedMessage: `${elemID.name} cannot be removed`,
+      message: 'Can\'t remove file cabinet files and folders because the Salto SuiteApp is not installed',
+      detailedMessage: 'Can\'t remove this element because the Salto SuiteApp is not installed. In order to remove file cabinet files or folders, install the Salto SuiteApp, as instructed here: https://docs.salto.io/docs/netsuite#setup-instructions',
     }))
 )
 

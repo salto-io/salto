@@ -130,7 +130,17 @@ const getServiceElemIDsFromPaths = (
   element: InstanceElement,
 ): ElemID[] =>
   foundReferences
-    .map(ref => (pathPrefixRegex.test(ref) ? resolveRelativePath(element.value[PATH], ref) : ref))
+    .flatMap(ref => {
+      if (pathPrefixRegex.test(ref)) {
+        const absolutePath = resolveRelativePath(element.value[PATH], ref)
+        return [absolutePath].concat(
+          osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
+            ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+            : []
+        )
+      }
+      return [ref]
+    })
     .map(ref => {
       const serviceIdRecord = serviceIdToElemID[ref]
       if (_.isPlainObject(serviceIdRecord)) {

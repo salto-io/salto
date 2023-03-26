@@ -469,7 +469,7 @@ describe('instance_references filter', () => {
 
     it('should add extracted element to generated dependencies', async () => {
       const fileContent = `
-      define(['N/record', '../SuiteScripts/oauth_1.js'], function(record) {
+      define(['N/record', '../SuiteScripts/oauth_1.js', '../SuiteScripts/oauth_2'], function(record) {
         return{
           post: function(requestBody){
           // Convert JSON string to JSON  object
@@ -487,9 +487,13 @@ describe('instance_references filter', () => {
           }
         }
       });`
-      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      fileInstance.value[PATH] = '/Templates/file.js'
+      fileInstance.value.content = new StaticFile({ filepath: 'Templates/file.js', content: Buffer.from(fileContent) })
       const syntacticFileInstance = new InstanceElement('syntacticFileInstance', fileType(), {
         [PATH]: '/SuiteScripts/oauth_1.js',
+      })
+      const syntacticFileInstance2 = new InstanceElement('syntacticFileInstance2', fileType(), {
+        [PATH]: '/SuiteScripts/oauth_2.js',
       })
       const innerFileInstance = new InstanceElement('innferRefFile', fileType(), {
         [PATH]: '/Templates/innerFileRef.name',
@@ -500,8 +504,8 @@ describe('instance_references filter', () => {
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
         config: await getDefaultAdapterConfig(),
-      }).onFetch?.([fileInstance, syntacticFileInstance, innerFileInstance, customRecordType])
-      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(3)
+      }).onFetch?.([fileInstance, syntacticFileInstance, syntacticFileInstance2, innerFileInstance, customRecordType])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(4)
       expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual(expect.arrayContaining([
         {
           reference: new ReferenceExpression(
@@ -512,6 +516,12 @@ describe('instance_references filter', () => {
         {
           reference: new ReferenceExpression(
             syntacticFileInstance.elemID.createNestedID(PATH)
+          ),
+          occurrences: undefined,
+        },
+        {
+          reference: new ReferenceExpression(
+            syntacticFileInstance2.elemID.createNestedID(PATH)
           ),
           occurrences: undefined,
         },

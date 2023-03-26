@@ -25,7 +25,7 @@ describe('config creator', () => {
     options = new InstanceElement(
       'instance',
       optionsType,
-      { enableScripRunnerAddon: true }
+      { enableScriptRunnerAddon: true }
     )
   })
   it('should return config creator', async () => {
@@ -40,7 +40,7 @@ describe('config creator', () => {
     expect(config).toEqual(await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType))
   })
   it('get config should return default config when false', async () => {
-    options.value.enableScripRunnerAddon = false
+    options.value.enableScriptRunnerAddon = false
     const config = await getConfig(options)
     expect(config).toEqual(await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType))
   })
@@ -48,13 +48,13 @@ describe('config creator', () => {
     options = new InstanceElement(
       'instance',
       createEmptyType('empty'),
-      { enableScripRunnerAddon: true }
+      { enableScriptRunnerAddon: true }
     )
     const config = await getConfig(options)
     expect(config).toEqual(await createDefaultInstanceFromType(ElemID.CONFIG_NAME, configType))
   })
   it('get config should return return correctly when true', async () => {
     const config = await getConfig(options)
-    expect(config.value.fetch.enableScripRunnerAddon).toBeTrue()
+    expect(config.value.fetch.enableScriptRunnerAddon).toBeTrue()
   })
 })

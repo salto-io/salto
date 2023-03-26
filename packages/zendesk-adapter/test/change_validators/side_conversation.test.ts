@@ -45,10 +45,6 @@ describe('instance side conversation fields', () => {
           value: ['test', 'text/html'],
         },
         {
-          field: 'side_conversation',
-          value: ['test', 'text/html'],
-        },
-        {
           field: 'comment_value_html',
           value: '<p>Test</p>',
         },

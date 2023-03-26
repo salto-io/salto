@@ -13,71 +13,136 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ElemID, InstanceElement, toChange } from '@salto-io/adapter-api'
+import { ChangeError, ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { types } from '@salto-io/lowerdash'
 import changeValidator from '../../src/change_validators/unknown_picklist_values'
-import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
+import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, SALESFORCE, VALUE_SET_FIELDS } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { createCustomObjectType } from '../utils'
+import { mockTypes } from '../mock_elements'
 
 
 describe('unknownPicklistValues ChangeValidator', () => {
   const TEST_OBJECT_NAME = 'TestObject__c'
+  const PICKLIST_FIELD_NAME = 'field__c'
   const ELEMENTS_SOURCE = buildElementsSourceFromElements([])
 
   let changeErrors: readonly ChangeError[]
 
-  const createInstanceWithPicklistValues = (...values: string[]): InstanceElement => (
-    new InstanceElement(
-      'testInstance',
-      createCustomObjectType(TEST_OBJECT_NAME, {
-        elemID: new ElemID(SALESFORCE, TEST_OBJECT_NAME),
-        fields: Object.fromEntries(values.map((_value, i) => [
-          `field${i}__c`,
-          {
-            refType: Types.primitiveDataTypes.Picklist,
-            annotations: {
-              [FIELD_ANNOTATIONS.VALUE_SET]: [
-                { [INSTANCE_FULL_NAME_FIELD]: 'knownValue1' },
-                { [INSTANCE_FULL_NAME_FIELD]: 'knownValue2' },
-                { [INSTANCE_FULL_NAME_FIELD]: 'knownValue3' },
-              ],
+  describe('ValueSet', () => {
+    const createDataInstanceWithValueSet = (
+      allowedValues: types.NonEmptyArray<string>,
+      picklistFieldValue?: string
+    ): InstanceElement => (
+      new InstanceElement(
+        'testInstance',
+        createCustomObjectType(TEST_OBJECT_NAME, {
+          elemID: new ElemID(SALESFORCE, TEST_OBJECT_NAME),
+          fields: {
+            [PICKLIST_FIELD_NAME]: {
+              refType: Types.primitiveDataTypes.Picklist,
+              annotations: {
+                [FIELD_ANNOTATIONS.VALUE_SET]: allowedValues.map(allowedValue => (
+                  { [INSTANCE_FULL_NAME_FIELD]: allowedValue }
+                )),
+              },
             },
           },
-        ])),
-      }),
-      Object.fromEntries(values.map((value, i) => [`field${i}__c`, value]))
+        }),
+        {
+          [PICKLIST_FIELD_NAME]: picklistFieldValue,
+        },
+      )
     )
-  )
-  describe('when instances have unknown picklist values', () => {
-    const UNKNOWN_VALUES = ['unknownValue1', 'unknownValue2', 'unknownValue1']
-    beforeEach(async () => {
-      const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2', ...UNKNOWN_VALUES)
-      changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+    describe('when picklist field was set with unknown value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithValueSet(['knownValue1', 'knownValue2'], 'unknownValue')
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should create errors', () => {
+        expect(changeErrors).toHaveLength(1)
+      })
     })
-    it('should create errors', () => {
-      expect(changeErrors).toHaveLength(UNKNOWN_VALUES.length)
+    describe('when picklist field was set with known value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithValueSet(['knownValue1', 'knownValue2'], 'knownValue1')
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
+    })
+    describe('when picklist field has no value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithValueSet(['knownValue1', 'knownValue2'])
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
     })
   })
+  describe('GlobalValueSet', () => {
+    const createDataInstanceWithGlobalValueSet = (
+      allowedValues: types.NonEmptyArray<string>,
+      picklistFieldValue?: string
+    ): InstanceElement => {
+      const globalValueSetInstance = new InstanceElement(
+        'globalValueSetInstance',
+        mockTypes.GlobalValueSet,
+        {
+          customValue: allowedValues.map(allowedValue => ({
+            [INSTANCE_FULL_NAME_FIELD]: allowedValue,
+          })),
+        }
+      )
+      const globalValueSetInstanceRef = new ReferenceExpression(globalValueSetInstance.elemID, globalValueSetInstance)
+      return new InstanceElement(
+        'testInstance',
+        createCustomObjectType(TEST_OBJECT_NAME, {
+          elemID: new ElemID(SALESFORCE, TEST_OBJECT_NAME),
+          fields: {
+            [PICKLIST_FIELD_NAME]: {
+              refType: Types.primitiveDataTypes.Picklist,
+              annotations: {
+                [VALUE_SET_FIELDS.VALUE_SET_NAME]: globalValueSetInstanceRef,
+              },
+            },
+          },
+        }),
+        {
+          [PICKLIST_FIELD_NAME]: picklistFieldValue,
+        },
+      )
+    }
 
-  describe('when instances dont have unknown picklist values', () => {
-    beforeEach(async () => {
-      const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2', 'knownValue3', 'knownValue1')
-      changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+    describe('when picklist field was set with unknown value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithGlobalValueSet(['knownValue1', 'knownValue2'], 'unknownValue')
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should create errors', () => {
+        expect(changeErrors).toHaveLength(1)
+      })
     })
-    it('should not create errors', () => {
-      expect(changeErrors).toBeEmpty()
+    describe('when picklist field was set with known value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithGlobalValueSet(['knownValue1', 'knownValue2'], 'knownValue1')
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
     })
-  })
-
-  describe('when picklist field has no value', () => {
-    beforeEach(async () => {
-      const instance = createInstanceWithPicklistValues('knownValue1', 'knownValue2')
-      delete instance.value.field1__c
-      changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
-    })
-    it('should not create errors', async () => {
-      expect(changeErrors).toBeEmpty()
+    describe('when picklist field has no value', () => {
+      beforeEach(async () => {
+        const instance = createDataInstanceWithGlobalValueSet(['knownValue1', 'knownValue2'])
+        changeErrors = await changeValidator([toChange({ after: instance })], ELEMENTS_SOURCE)
+      })
+      it('should not create errors', () => {
+        expect(changeErrors).toBeEmpty()
+      })
     })
   })
 })

@@ -24,7 +24,7 @@ import {
   isInstanceElement,
   Values,
 } from '@salto-io/adapter-api'
-import { collections, multiIndex, types } from '@salto-io/lowerdash'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { isRequired } from '@salto-io/adapter-utils'
@@ -46,9 +46,9 @@ export const MASTER_LABEL = 'master_label'
 
 
 type GlobalValueSetValue = InstanceElement['value'] & {
-  [FIELD_ANNOTATIONS.CUSTOM_VALUE]: types.ArrayOrSingle<{
+  [FIELD_ANNOTATIONS.CUSTOM_VALUE]: {
     [INSTANCE_FULL_NAME_FIELD]: string
-  }>
+  }[]
 }
 
 const isGlobalValueSetValue = (value: Values): value is GlobalValueSetValue => (
@@ -78,7 +78,7 @@ const addRefAndRestrict = (
   if (isRestrictableField(field)) {
     field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
       enforce_value: isRequired(field),
-      values: makeArray(globalValueSetValue.customValue).map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
+      values: globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
     })
   }
 }

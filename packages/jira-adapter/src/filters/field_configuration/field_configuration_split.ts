@@ -20,7 +20,7 @@ import { FilterCreator } from '../../filter'
 import { findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
 
-const FIELD_CONFIGURATION_ITEMS_FOLDER_NAME = 'Field Configuration Items'
+const FIELD_CONFIGURATION_ITEMS_FOLDER_NAME = 'FieldConfigurationItems'
 const FIELD_CONFIGURATION_ITEMS_FILE_NAME = 'Items'
 
 const createFieldItemInstance = (

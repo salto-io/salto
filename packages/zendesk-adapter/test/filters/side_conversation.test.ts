@@ -19,6 +19,7 @@ import sideConversationFilter from '../../src/filters/side_conversation'
 import { createFilterCreatorParams } from '../utils'
 import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { createMissingInstance } from '../../src/filters/references/missing_references'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
 const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
 const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) })
@@ -49,24 +50,43 @@ describe('sideConversationFilter', () => {
 
     await filter.onFetch([group, trigger, macro])
 
-    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group)] })
-    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group)] })
+    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group), ''] })
+    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(group.elemID, group), ''] })
   })
   it('should replace group_id with missing reference when group does not exists', async () => {
     const instanceValue = createInstanceValue([
       'test',
       '<p>test</p>',
-      'SupportAssignable:support_assignable/group/124',
+      'SupportAssignable:support_assignable/group/124+sufix',
       'text/htmll',
     ])
     const trigger = new InstanceElement('trigger', triggerType, instanceValue)
     const macro = new InstanceElement('macro', macroType, instanceValue)
     const missingGroup = createMissingInstance(ZENDESK, GROUP_TYPE_NAME, '124')
+    missingGroup.value.id = '124'
 
     await filter.onFetch([group, trigger, macro])
 
-    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(missingGroup.elemID, missingGroup)] })
-    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(missingGroup.elemID, missingGroup)] })
+    expect(trigger.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(missingGroup.elemID, missingGroup), '+sufix'] })
+    expect(macro.value.actions[0].value[2]).toEqual({ parts: ['SupportAssignable:support_assignable/group/', new ReferenceExpression(missingGroup.elemID, missingGroup), '+sufix'] })
+  })
+  it('should not replace group_id with missing reference when group does not exists but enableMissingReference is false', async () => {
+    const config = { ...DEFAULT_CONFIG }
+    config[FETCH_CONFIG].enableMissingReferences = false
+    const filterWithoutMissingReference = sideConversationFilter(createFilterCreatorParams({ config })) as filterUtils.FilterWith<'onFetch'>
+    const instanceValue = createInstanceValue([
+      'test',
+      '<p>test</p>',
+      'SupportAssignable:support_assignable/group/124+sufix',
+      'text/htmll',
+    ])
+    const trigger = new InstanceElement('trigger', triggerType, instanceValue)
+    const macro = new InstanceElement('macro', macroType, instanceValue)
+
+    await filterWithoutMissingReference.onFetch([group, trigger, macro])
+
+    expect(trigger.value.actions[0].value[2]).toEqual('SupportAssignable:support_assignable/group/124+sufix')
+    expect(macro.value.actions[0].value[2]).toEqual('SupportAssignable:support_assignable/group/124+sufix')
   })
   it('should do nothing on incorrect string of the group', async () => {
     const instanceValue = createInstanceValue([

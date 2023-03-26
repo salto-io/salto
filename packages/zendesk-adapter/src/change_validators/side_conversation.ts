@@ -22,7 +22,7 @@ import {
   TRIGGER_TYPE_NAME,
   ZENDESK,
 } from '../constants'
-import { ActionsType, isAction } from './macro_actions'
+import { ActionsType, isAction } from './utils'
 
 const log = logger(module)
 
@@ -33,7 +33,7 @@ const SIDE_CONVERSATION_MAP: Record<string, string> = {
   side_conversation_ticket: 'side_conversations_tickets',
 }
 
-const TYPES_WITH_SIDE_CONVERSATIONS = [MACRO_TYPE_NAME, TRIGGER_TYPE_NAME]
+export const TYPES_WITH_SIDE_CONVERSATIONS = [MACRO_TYPE_NAME, TRIGGER_TYPE_NAME]
 
 const getSideConversationFields = (instance: InstanceElement): string[] => (
   (instance.value.actions ?? [])
@@ -44,7 +44,7 @@ const getSideConversationFields = (instance: InstanceElement): string[] => (
 )
 
 /**
- * Verify side_conversation features are enabled before deployment of a macro with side_conversation fields
+ * Verify side_conversation features are enabled before deployment of an instance with side_conversation fields
  */
 export const sideConversationsValidator: ChangeValidator = async (
   changes, elementSource

@@ -23,13 +23,17 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import joi from 'joi'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../constants'
+import { GROUP_TYPE_NAME, ZENDESK } from '../constants'
 import { createMissingInstance } from './references/missing_references'
 import { FETCH_CONFIG } from '../config'
+import { TYPES_WITH_SIDE_CONVERSATIONS } from '../change_validators/side_conversation'
+
+const log = logger(module)
 
 const SIDE_CONVERSATION_FIELD_NAME = 'side_conversation_ticket'
-const valueWithGroupRegex = /(?<prefix>.+\/group\/)(?<groupId>\d+)/
+const valueWithGroupRegex = /(?<prefix>.+\/group\/)(?<groupId>\d+)(?<suffix>.*)/
 
 type SideConversationTicketAction = {
     field: string
@@ -44,14 +48,18 @@ const sideConversationTicketActionSchema = joi.object({
 const isSideConversationTicketAction = (action: Value): action is SideConversationTicketAction =>
   sideConversationTicketActionSchema.validate(action).error === undefined
 
-
+/**
+ * Replaces groupId in side conversation ticket actions with a reference expression
+ */
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'sideConversationFilter',
   onFetch: async (elements: Element[]) => {
     const relevantInstances = elements.filter(isInstanceElement)
-      .filter(instance => [TRIGGER_TYPE_NAME, MACRO_TYPE_NAME].includes(instance.elemID.typeName))
+      .filter(instance => TYPES_WITH_SIDE_CONVERSATIONS.includes(instance.elemID.typeName))
     const groupsById = _.keyBy(
-      elements.filter(isInstanceElement).filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME),
+      elements.filter(isInstanceElement)
+        .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
+        .filter(instance => instance.value.id !== undefined),
       instance => instance.value.id
     )
 
@@ -59,12 +67,14 @@ const filterCreator: FilterCreator = ({ config }) => ({
       const actions = instance.value.actions ?? []
       actions.filter(isSideConversationTicketAction).forEach((action: SideConversationTicketAction) => {
         // Handle cases of invalid array structure
-        if (typeof action.value[2] !== 'string') {
+        if (!_.isString(action.value[2])) {
+          log.error('side conversation ticket action value is not a string', action.value[2])
           return
         }
 
         // Split the value to the rest of the string and just the groupId
-        const { prefix, groupId } = action.value[2].match(valueWithGroupRegex)?.groups ?? {}
+        // action.value[2] type check is done in the if statement above
+        const { prefix, groupId, suffix } = action.value[2].match(valueWithGroupRegex)?.groups ?? {}
         if (prefix === undefined || groupId === undefined) {
           return
         }
@@ -72,11 +82,13 @@ const filterCreator: FilterCreator = ({ config }) => ({
         if (!isInstanceElement(groupsById[groupId])) {
           if (config[FETCH_CONFIG].enableMissingReferences) {
             const missingInstance = createMissingInstance(ZENDESK, GROUP_TYPE_NAME, groupId)
+            missingInstance.value.id = groupId
             // Replace the group part with a missing reference
             action.value[2] = new TemplateExpression({
               parts: [
                 prefix,
                 new ReferenceExpression(missingInstance.elemID, missingInstance),
+                suffix,
               ],
             })
           }
@@ -89,6 +101,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
         action.value[2] = new TemplateExpression({ parts: [
           prefix,
           new ReferenceExpression(group.elemID, group),
+          suffix,
         ] })
       })
     })

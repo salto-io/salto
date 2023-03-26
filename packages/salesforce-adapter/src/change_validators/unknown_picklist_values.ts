@@ -19,13 +19,13 @@ import {
   CORE_ANNOTATIONS, Field, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isInstanceChange,
+  isInstanceChange, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isPicklistField } from '../filters/value_set'
-import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD } from '../constants'
+import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
 
 
 const { isDefined } = values
@@ -35,16 +35,41 @@ type ValueSetValue = {
   [INSTANCE_FULL_NAME_FIELD]: string
 }[]
 
+type GlobalValueSetValue = InstanceElement['value'] & {
+  customValue: {[INSTANCE_FULL_NAME_FIELD]: string}[]
+}
+
 const isValueSetValue = (value: unknown): value is ValueSetValue => (
   _.isArray(value) && value.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
 )
 
+const isGlobalValueSetValue = (value: unknown): value is GlobalValueSetValue => {
+  const customValue = _.get(value, 'customValue')
+  return _.isArray(customValue) && customValue.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
+}
+
+const getGlobalValueSetValue = (field: Field): GlobalValueSetValue | undefined => {
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (!isReferenceExpression(valueSetName)) {
+    return undefined
+  }
+  const globalValueSetInstance = valueSetName.value
+  return isInstanceElement(globalValueSetInstance) && isGlobalValueSetValue(globalValueSetInstance.value)
+    ? globalValueSetInstance.value
+    : undefined
+}
+
 const getAllowedValues = (field: Field): string[] | undefined => {
   const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  // ValueSet
   if (isValueSetValue(valueSet)) {
     return valueSet.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
   }
-  // TODO: Global Value Set support
+  // GlobalValueSet
+  const globalValueSetValue = getGlobalValueSetValue(field)
+  if (globalValueSetValue !== undefined) {
+    return globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+  }
   return undefined
 }
 

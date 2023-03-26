@@ -167,7 +167,7 @@ export type SuiteAppFileCabinetOperations = {
   ) => Promise<DeployResult>
 }
 
-const getContent = async (content: unknown): Promise<Buffer> => {
+export const getContent = async (content: unknown): Promise<Buffer> => {
   if (isStaticFile(content)) {
     return await content.getContent() ?? Buffer.from('')
   }

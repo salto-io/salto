@@ -34,7 +34,7 @@ const createFieldItemInstance = (
   instance.path && [
     ...instance.path,
     FIELD_CONFIGURATION_ITEMS_FOLDER_NAME,
-    FIELD_CONFIGURATION_ITEMS_FILE_NAME,
+    naclCase(`${instance.elemID.name}_${FIELD_CONFIGURATION_ITEMS_FILE_NAME}`),
   ],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, instance)],

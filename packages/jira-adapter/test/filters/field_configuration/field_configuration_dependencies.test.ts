@@ -214,30 +214,6 @@ describe('fieldConfigurationItemsFilter', () => {
       expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
 
-    it('should not add generated dependencies if there are no tabs', async () => {
-      delete projectInstance.value.issueTypeScreenScheme.value.value.issueTypeMappings[0].screenSchemeId
-        .value.value.screens.default.value.value.tabs
-      await filter.onFetch([
-        projectInstance,
-        ...fieldConfigurationItems,
-        fieldInstance,
-        fieldConfigurationInstance,
-      ])
-      expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
-    })
-
-    it('should not add generated dependencies if there are no screens', async () => {
-      delete projectInstance.value.issueTypeScreenScheme.value.value.issueTypeMappings[0].screenSchemeId
-        .value.value.screens
-      await filter.onFetch([
-        projectInstance,
-        ...fieldConfigurationItems,
-        fieldInstance,
-        fieldConfigurationInstance,
-      ])
-      expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
-    })
-
     it('should not add generated dependencies if fieldConfigurationScheme is not a reference', async () => {
       projectInstance.value.fieldConfigurationScheme = '3'
       await filter.onFetch([

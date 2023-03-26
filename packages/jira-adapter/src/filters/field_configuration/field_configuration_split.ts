@@ -15,7 +15,7 @@
 */
 
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ObjectType, ReferenceExpression, Values } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { findObject, setTypeDeploymentAnnotations } from '../../utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME } from '../../constants'
@@ -34,7 +34,7 @@ const createFieldItemInstance = (
   instance.path && [
     ...instance.path,
     FIELD_CONFIGURATION_ITEMS_FOLDER_NAME,
-    naclCase(`${instance.elemID.name}_${FIELD_CONFIGURATION_ITEMS_FILE_NAME}`),
+    pathNaclCase(naclCase(`${instance.value.name}_${FIELD_CONFIGURATION_ITEMS_FILE_NAME}`)),
   ],
   {
     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(instance.elemID, instance)],

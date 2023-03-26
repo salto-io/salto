@@ -207,7 +207,6 @@ describe('convert lists to maps filter', () => {
               workflowactions: {
                 ONENTRY: {
                   triggertype: 'ONENTRY',
-                  index: 0,
                 },
               },
             },

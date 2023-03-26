@@ -13,4 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src'
+export { formatWordsSeries } from './src/formatter'
+export { default as Prompts } from './src/prompts'

@@ -288,6 +288,8 @@ describe('Test elements.ts', () => {
     const typeAttrId = typeId.createNestedID('attr', 'anno')
     const configTypeId = new ElemID('adapter')
     const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
+    const configInstIdNormalType = typeId.createNestedID('instance', ElemID.CONFIG_NAME)
+    const instId = typeId.createNestedID('instance', 'someName')
     const variableId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'varName')
     const listId = new ListType(new TypeReference(typeId)).elemID
     const mapId = new MapType(new TypeReference(typeId)).elemID
@@ -506,17 +508,29 @@ describe('Test elements.ts', () => {
       })
     })
 
-    describe('isConfig', () => {
+    describe('isConfigType', () => {
       it('should return true for config type ID', () => {
-        expect(configTypeId.isConfig()).toBeTruthy()
+        expect(configTypeId.isConfigType()).toBeTruthy()
       })
 
       it('should return true for config instance ID', () => {
-        expect(configInstId.isConfig()).toBeTruthy()
+        expect(configInstId.isConfigType()).toBeTruthy()
       })
 
       it('should return false for other IDs', () => {
-        expect(typeId.isConfig()).toBeFalsy()
+        expect(typeId.isConfigType()).toBeFalsy()
+      })
+    })
+
+    describe('isConfigInstance', () => {
+      it('should return true for config instance ID', () => {
+        expect(configInstId.isConfigInstance()).toBeTruthy()
+      })
+      it('should return true for config instance ID when type is not config', () => {
+        expect(configInstIdNormalType.isConfigInstance()).toBeTruthy()
+      })
+      it('should return false for other IDs', () => {
+        expect(instId.isConfigInstance()).toBeFalsy()
       })
     })
 

@@ -61,7 +61,7 @@ const getElemIDUsages = async (
 const isTokenElemID = (token: string): boolean => {
   try {
     const refID = ElemID.fromFullName(token)
-    return !refID.isConfig() || !refID.isTopLevel()
+    return !refID.isConfigType() || !refID.isTopLevel()
   } catch (e) {
     return false
   }

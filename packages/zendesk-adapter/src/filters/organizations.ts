@@ -86,6 +86,10 @@ export const TYPE_NAME_TO_REPLACER: Record<string, ValueReplacer> = {
     { fieldName: ['relationship_filter', 'all'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
     { fieldName: ['relationship_filter', 'any'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
   ]),
+  view: replaceConditionsAndActionsCreator([
+    { fieldName: ['conditions', 'all'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
+    { fieldName: ['conditions', 'any'], fieldsToReplace: DEFAULT_ORGANIZATION_FIELDS },
+  ]),
   user_segment: fieldReplacer(['organization_ids']),
 }
 

@@ -47,7 +47,7 @@ const getPrimitiveTypeName = (primitiveType: PrimitiveTypes): string => {
 }
 
 export const dumpElemID = (id: ElemID): string => {
-  if (id.isConfig()) {
+  if (id.isConfigType()) {
     return id.adapter
   }
   if (id.idType === 'instance') {
@@ -154,7 +154,7 @@ const dumpElementBlock = (
   if (isInstanceElement(elem)) {
     return {
       type: dumpElemID(elem.refType.elemID),
-      labels: elem.elemID.isConfig() || elem.refType.elemID.isConfig()
+      labels: elem.elemID.isConfigType() || elem.refType.elemID.isConfigType()
       || elem.elemID.name === '_config' // TODO: should inject the correct type
         ? []
         : [elem.elemID.name],

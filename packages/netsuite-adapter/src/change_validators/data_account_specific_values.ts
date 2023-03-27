@@ -68,8 +68,10 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map((instance): ChangeError => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Instance has an ACCOUNT_SPECIFIC_VALUE that Salto cannot resolve',
-      detailedMessage: `Instance ${instance.elemID.getFullName()} has an ACCOUNT_SPECIFIC_VALUE that Salto cannot resolve. In order to deploy the instance, please either fill the ACCOUNT_SPECIFIC_VALUE with the real env-specific value or deploy the instance without it`,
+      message: 'This instance has a missing ID and therefore it can\'t be deployed',
+      detailedMessage: 'The missing ID is replaced by Salto with \'ACCOUNT_SPECIFIC_VALUE\'.\n'
+      + 'In order to deploy this instance, please edit it in Salto and either replace \'ACCOUNT_SPECIFIC_VALUE\' with the actual value in the environment you are deploying to or remove the field with that value.\n'
+      + 'If you choose to remove that field, after a successful deploy you can assign the correct value in the NetSuite UI.',
     }))
     .toArray()
 )

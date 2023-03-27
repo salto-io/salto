@@ -60,6 +60,7 @@ import { getBrandsForGuide } from './filters/utils'
 import { GUIDE_ORDER_TYPES } from './filters/guide_order/guide_order_utils'
 import createChangeValidator from './change_validator'
 import { paginate } from './client/pagination'
+import fetchCriteria from './fetch_criteria'
 import { getChangeGroupIds } from './group_change'
 import fieldReferencesFilter, { lookupFunc } from './filters/field_references'
 import listValuesMissingReferencesFilter from './filters/references/list_values_missing_references'
@@ -148,7 +149,10 @@ const { awu } = collections.asynciterable
 const { concatObjects } = objects
 const SECTIONS_TYPE_NAME = 'sections'
 
+const { query: queryFilter, ...otherCommonFilters } = commonFilters
+
 export const DEFAULT_FILTERS = [
+  queryFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
@@ -216,7 +220,7 @@ export const DEFAULT_FILTERS = [
   dynamicContentReferencesFilter,
   guideParentSection,
   serviceUrlFilter,
-  ...Object.values(commonFilters),
+  ...Object.values(otherCommonFilters),
   articleBodyFilter,
   handleAppInstallationsFilter,
   handleTemplateExpressionFilter,
@@ -456,7 +460,10 @@ export default class ZendeskAdapter implements AdapterOperations {
     }
 
 
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
 
     this.createFiltersRunner = async ({
       filterRunnerClient,

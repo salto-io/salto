@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils, strings } from '@salto-io/lowerdash'
+import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
 import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
@@ -51,7 +51,7 @@ import {
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
-  mergeTypeToInstances,
+  mergeTypeToInstances, getGroupItemFromRegex,
 } from './utils'
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
@@ -62,7 +62,6 @@ const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
 const { isDefined } = valuesUtils
 const { concatObjects } = lowerdashObjects
-const { matchAll } = strings
 const log = logger(module)
 
 const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
@@ -174,13 +173,6 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
   await mkdirp(folderPath)
   await writeFile(osPath.resolve(folderPath, filename), content)
 }
-
-export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
-  Array.from(matchAll(str, regex))
-    .map(r => r.groups)
-    .filter(isDefined)
-    .map(groups => groups[item])
-
 
 type Project = {
   projectName: string

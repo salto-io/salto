@@ -262,6 +262,7 @@ export type FetchChangesResult = {
   updatedConfig: Record<string, InstanceElement[]>
   configChanges?: Plan
   accountNameToConfigMessage?: Record<string, string>
+  partiallyFetchedAccounts: Set<string>
 }
 
 type ProcessMergeErrorsResult = {
@@ -448,6 +449,9 @@ const fetchAndProcessMergeErrors = async (
             withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
+          if (updatedConfig !== undefined) {
+            log.debug(`Salto got config suggestions in ${accountName} account: ${updatedConfig.message}`)
+          }
           if (
             fetchResult.elements.length > 0 && accountName !== accountToServiceNameMap[accountName]
           ) {
@@ -657,7 +661,7 @@ const createFetchChanges = async ({
   }
   const isFirstFetch = await awu(await workspaceElements.list())
     .concat(await stateElements.list())
-    .filter(e => !e.isConfig())
+    .filter(e => !e.isConfigType())
     .isEmpty()
   const changes = isFirstFetch
     ? unmergedElements.map(toAddFetchChange)
@@ -715,6 +719,7 @@ const createFetchChanges = async ({
     configChanges,
     updatedConfig: _.mapValues(accountNameToConfig, config => config.config),
     accountNameToConfigMessage,
+    partiallyFetchedAccounts,
   }
 }
 export const fetchChanges = async (
@@ -777,6 +782,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
       message: errMsg,
       severity: 'Error',
     }],
+    partiallyFetchedAccounts: new Set(),
   }
 }
 

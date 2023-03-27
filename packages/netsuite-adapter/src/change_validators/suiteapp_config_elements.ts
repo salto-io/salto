@@ -81,8 +81,9 @@ const changeValidator: NetsuiteChangeValidator = async changes =>
     .map((elemID): ChangeError => ({
       elemID,
       severity: 'Warning',
-      message: 'Modification of the \'text\' attribute in \'select\' type fields are ignored on deploy',
-      detailedMessage: 'Modification of the \'text\' attribute in \'select\' type fields are ignored on deploy. They will be restored in the next fetch.',
+      message: 'Modification of this attribute in certain type fields is ignored by NetSuite',
+      detailedMessage: 'This modification is ignored by NetSuite. If you deploy it, the change will be deleted in Salto in the next fetch.\n'
+        + 'Consider doing this change directly in the NetSuite UI.',
     }))
     .toArray()
 

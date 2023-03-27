@@ -14,9 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { strings, values } from '@salto-io/lowerdash'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
+
+const { matchAll } = strings
+const { isDefined } = values
+
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo
@@ -43,3 +48,9 @@ export const mergeTypeToInstances = (
       objValue ? [...objValue, ...srcValue] : srcValue
     )
   )
+
+export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string): string[] =>
+  Array.from(matchAll(str, regex))
+    .map(r => r.groups)
+    .filter(isDefined)
+    .map(groups => groups[item])

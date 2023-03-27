@@ -135,8 +135,9 @@ const toChangeWarning = (change: Change): ChangeError => (
   {
     elemID: getChangeData(change).elemID,
     severity: 'Warning',
-    message: 'Continuing the deploy process will override changes made in the service to this element.',
-    detailedMessage: `The element ${getChangeData(change).elemID.name}, which you are attempting to ${change.action}, has recently changed in the service.`,
+    message: 'The changes you are about to deploy are based on an outdated version',
+    detailedMessage: 'This element was changed in your NetSuite account but didn\'t update in Salto yet, continuing with the deployment will override that change.\n'
+      + 'Alternatively, you can go back and fetch your source environment, then, the deployment preview will include the most recent changes from your NetSuite account.',
   }
 )
 
@@ -145,8 +146,9 @@ const toAdditionalElementWarning = (
 ): ChangeError => ({
   elemID: referer.elemID,
   severity: 'Warning',
-  message: 'Continuing the deploy process will override changes made in the service to a referenced element.',
-  detailedMessage: `The element ${element.elemID.getFullName()}, which is ${dependency} in ${referer.elemID.name} and going to be deployed with it, has recently changed in the service.`,
+  message: 'The changes you are about to deploy are based on an outdated version',
+  detailedMessage: `The ${element.elemID.typeName} ${element.elemID.name} is ${dependency} in this element and will be deployed with it. Since ${element.elemID.name} was changed in your NetSuite account but didn't update in Salto yet, continuing with the deployment will override that change.\n`
+  + 'Alternatively, you can go back and fetch your source environment, then, the deployment preview will include the most recent changes from your NetSuite account.',
 })
 
 const hasChangedInService = (

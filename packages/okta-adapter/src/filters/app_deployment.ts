@@ -23,7 +23,7 @@ import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CU
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
+import { deployChanges, defaultDeployChange, deployEdges, isActivationChange, isDeactivationChange, deployStatusChange, getOktaError } from '../deployment'
 
 const log = logger(module)
 
@@ -75,27 +75,16 @@ const isCustomApp = (value: Values, subdomain: string): boolean => (
   && _.startsWith(value.name, `${subdomain}_`)
 )
 
-// Set fields that are created by the service to the returned app instance
-const assignCreatedFieldsToApp = (
+const assignNameToCustomApp = (
   change: AdditionChange<InstanceElement>,
   appResponse: Application,
   subdomain?: string,
 ): void => {
   const instance = getChangeData(change)
-  const signing = _.get(appResponse, ['credentials', 'signing'])
-  if (_.isPlainObject(signing)) {
-    _.set(instance, ['value', 'credentials', 'signing'], signing)
-  }
   // Assign created name field which is not multi-env in custom apps to customName field, which is hidden
   if (subdomain !== undefined && isCustomApp(appResponse, subdomain)) {
     const createdAppName = appResponse.name
     _.set(instance, ['value', CUSTOM_NAME_FIELD], createdAppName)
-  }
-  if (instance.value.licensing !== undefined) {
-    const licensing = _.get(appResponse, ['licensing'])
-    if (_.isPlainObject(licensing)) {
-      _.set(instance, ['value', 'licensing'], licensing)
-    }
   }
 }
 
@@ -110,33 +99,48 @@ const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSo
   return orgSettingInstance.value.subdomain
 }
 
-// TODO SALTO-2736 : adjust to support addition of more application types
 const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
   config: OktaConfig,
   subdomain?: string,
 ): Promise<void> => {
+  const apiDefinitions = config[API_DEFINITIONS_CONFIG]
+  const { fieldsToHide } = configUtils.getTypeTransformationConfig(
+    APPLICATION_TYPE_NAME, apiDefinitions.types, apiDefinitions.typeDefaults
+  )
   const fieldsToIgnore = [
     ...Object.keys(APP_ASSIGNMENT_FIELDS),
-    // TODO SALTO-2690: remove this once completed
-    'id', 'created', 'lastUpdated', 'licensing', '_links', '_embedded', CUSTOM_NAME_FIELD,
+    ...(fieldsToHide ?? []).map(f => f.fieldName),
   ]
 
-  const response = await defaultDeployChange(
-    change,
-    client,
-    config[API_DEFINITIONS_CONFIG],
-    fieldsToIgnore,
-    // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
-    isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
-  )
-
-  if (isAdditionOrModificationChange(change)) {
-    if (isAdditionChange(change) && isAppResponse(response)) {
-      assignCreatedFieldsToApp(change, response, subdomain)
+  try {
+    // Custom app must be activated before applying any other changes
+    if (isModificationChange(change) && isActivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
     }
-    await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
+
+    const response = await defaultDeployChange(
+      change,
+      client,
+      apiDefinitions,
+      fieldsToIgnore,
+      // Application is created with status 'ACTIVE' by default, unless we provide activate='false' as a query param
+      isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
+    )
+
+    if (isModificationChange(change) && isDeactivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
+    }
+
+    if (isAdditionOrModificationChange(change)) {
+      if (isAdditionChange(change) && isAppResponse(response)) {
+        assignNameToCustomApp(change, response, subdomain)
+      }
+      await deployEdges(change, APP_ASSIGNMENT_FIELDS, client)
+    }
+  } catch (err) {
+    throw getOktaError(getChangeData(change).elemID, err)
   }
 }
 

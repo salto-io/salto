@@ -47,12 +47,16 @@ export type AdapterApiConfig<
   supportedTypes: Record<string, string[]>
 }
 
+export type DefaultFetchCriteria = {
+  name?: string
+}
+
 type FetchEntry<T extends Record<string, unknown> | undefined> = {
   type: string
   criteria?: T
 }
 
-export type UserFetchConfig<T extends Record<string, unknown> | undefined = undefined> = {
+export type UserFetchConfig<T extends Record<string, unknown> | undefined = DefaultFetchCriteria> = {
   include: FetchEntry<T>[]
   exclude: FetchEntry<T>[]
   hideTypes?: boolean
@@ -137,12 +141,24 @@ export const createUserFetchConfigType = (
   additionalFields?: Record<string, FieldDefinition>,
   fetchCriteriaType?: ObjectType,
 ): ObjectType => {
-  const fetchEntryType = createMatchingObjectType<Omit<FetchEntry<undefined>, 'criteria'>>({
+  const defaultFetchCriteriaType = createMatchingObjectType<DefaultFetchCriteria>({
+    elemID: new ElemID(adapter, 'FetchFilters'),
+    fields: {
+      name: { refType: BuiltinTypes.STRING },
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+  const fetchEntryType = createMatchingObjectType<FetchEntry<DefaultFetchCriteria>>({
     elemID: new ElemID(adapter, 'FetchEntry'),
     fields: {
       type: {
         refType: BuiltinTypes.STRING,
         annotations: { _required: true },
+      },
+      criteria: {
+        refType: defaultFetchCriteriaType,
       },
     },
     annotations: {

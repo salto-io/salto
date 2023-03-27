@@ -21,10 +21,12 @@ import { client as clientUtils, elements as elementUtils } from '@salto-io/adapt
 import { logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import WorkatoClient from './client/client'
+import fetchCriteria from './fetch_criteria'
 import { FilterCreator, Filter, filtersRunner } from './filter'
 import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
+import queryFilter from './filters/query'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
@@ -39,6 +41,7 @@ const { getAllElements } = elementUtils.ducktype
 
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
+  queryFilter,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,
@@ -77,7 +80,10 @@ export default class WorkatoAdapter implements AdapterOperations {
       paginationFuncCreator: paginate,
     })
     this.paginator = paginator
-    this.fetchQuery = elementUtils.query.createElementQuery(this.userConfig[FETCH_CONFIG])
+    this.fetchQuery = elementUtils.query.createElementQuery(
+      this.userConfig[FETCH_CONFIG],
+      fetchCriteria,
+    )
     this.createFiltersRunner = () => filtersRunner(
       {
         client,

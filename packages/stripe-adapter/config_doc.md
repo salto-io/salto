@@ -6,7 +6,6 @@ stripe {
     retry = {
       maxAttempts = 5
       retryDelay = 5000
-      retryStrategy = "NetworkError"
     }
     rateLimit = {
       total = -1
@@ -45,7 +44,6 @@ stripe {
 |----------------|------------------------|------------
 | maxAttempts    | `5`                    | The number of attempts to make for each request
 | retryDelay     | `5000` (5 seconds)     | The time (milliseconds) to wait between attempts
-| retryStrategy  | `NetworkError`         | In which cases to retry. Supported choices: `NetworkError` (retry on network errors), `HttpError` (retry on HTTP 5xx errors), or `HTTPOrNetworkError` (both)
 
 ### Rate limit configuration options
 
@@ -68,3 +66,10 @@ stripe {
 | Name                                        | Default when undefined            | Description
 |---------------------------------------------|-----------------------------------|------------
 | type                                        | ""                                | A regex of the Salto type name to include in the entry
+| [criteria](#fetch-entry-criteria)             |                                   | A List of criteria to filter specific instance of certain types
+
+## Fetch entry criteria
+
+| Name                                        | Default when undefined            | Description
+|---------------------------------------------|-----------------------------------|------------
+| name                                        | .*                                | A regex used to filter instances by matching the regex to their name value

@@ -43,7 +43,7 @@ describe('move environment report types change validator', () => {
         toChange({ after: savedSearchInstance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
-      expect(changeErrors[0].message).toEqual('Beware that saved search might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.')
+      expect(changeErrors[0].message).toEqual('Saved Searches might reference internal IDs that are specific to their source NetSuite account. It is recommended to review the deployment in the target NetSuite account.')
       expect(changeErrors[0].elemID).toEqual(savedSearchInstance.elemID)
     })
 
@@ -52,7 +52,7 @@ describe('move environment report types change validator', () => {
         toChange({ after: reportDefinitionInstance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
-      expect(changeErrors[0].message).toEqual('Beware that report definition might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.')
+      expect(changeErrors[0].message).toEqual('Report Definitions might reference internal IDs that are specific to their source NetSuite account. It is recommended to review the deployment in the target NetSuite account.')
       expect(changeErrors[0].elemID).toEqual(reportDefinitionInstance.elemID)
     })
 
@@ -61,7 +61,7 @@ describe('move environment report types change validator', () => {
         toChange({ after: financialLayoutInstance })])
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Warning')
-      expect(changeErrors[0].message).toEqual('Beware that financial layout might reference internal ids that are not correct for the current environment. It is recommended that you verify the deployment in NetSuite UI.')
+      expect(changeErrors[0].message).toEqual('Financial Layouts might reference internal IDs that are specific to their source NetSuite account. It is recommended to review the deployment in the target NetSuite account.')
       expect(changeErrors[0].elemID).toEqual(financialLayoutInstance.elemID)
     })
     it('should have change error when moving an savedsearch instance with incorrect definition', async () => {

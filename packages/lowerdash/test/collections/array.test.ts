@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '../../src'
 
-const { makeArray, arrayOf, findDuplicates } = collections.array
+const { makeArray, arrayOf, findDuplicates, splitDuplicates } = collections.array
 
 describe('array', () => {
   describe('makeArray', () => {
@@ -91,6 +91,21 @@ describe('array', () => {
 
     it('should return sorted array with each duplicate appearing once when duplicates are found', () => {
       expect(findDuplicates(['def', 'abc', 'def', 'abd', 'aaa', 'def', 'abc'])).toEqual(['abc', 'def'])
+    })
+  })
+
+  describe('splitDuplicates', () => {
+    describe('with input array that contains some duplicates', () => {
+      let res: ReturnType<typeof splitDuplicates>
+      beforeEach(() => {
+        res = splitDuplicates(['a', 'b', 'cc', 'ddd'], item => item.length)
+      })
+      it('should return unique values as unique', () => {
+        expect(res.uniques).toEqual(['cc', 'ddd'])
+      })
+      it('should place duplicate values in groups according to the key function', () => {
+        expect(res.duplicates).toEqual([['a', 'b']])
+      })
     })
   })
 })

@@ -1036,9 +1036,7 @@ describe('SalesforceAdapter CRUD', () => {
           })
         })
         it('should return deployment URL containing the deployment ID in the extra properties', async () => {
-          const receivedUrls = result.extraProperties?.deploymentUrls
-          const receivedUrl = receivedUrls?.[0]
-          expect(receivedUrls).toHaveLength(1)
+          const receivedUrl = (result.extraProperties?.groups ?? [])[0].url
           expect(receivedUrl).toContain(DEPLOYMENT_ID)
         })
       })

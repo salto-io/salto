@@ -508,7 +508,7 @@ describe('Netsuite adapter E2E with real account', () => {
               .toArray()
 
             expect(changeErrors.length).toBe(1)
-            const changeError = changeErrors.find(e => e.message === 'Continuing the deploy process will override changes made in the service to this element.')
+            const changeError = changeErrors.find(e => e.message === 'The changes you are about to deploy are based on an outdated version')
             expect(changeError).toBeDefined()
           })
         })
@@ -565,7 +565,7 @@ describe('Netsuite adapter E2E with real account', () => {
               .toArray()
 
             expect(changeErrors.length).toBe(1)
-            const changeError = changeErrors.find(e => e.message === 'Continuing the deploy process will override changes made in the service to this element.')
+            const changeError = changeErrors.find(e => e.message === 'The changes you are about to deploy are based on an outdated version')
             expect(changeError).toBeDefined()
           })
         })

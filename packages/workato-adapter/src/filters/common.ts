@@ -22,6 +22,7 @@ import { FilterCreator } from '../filter'
 const filterCreators: Record<string, FilterCreator> = {
   hideTypes: filters.hideTypesFilterCreator(),
   referencedInstanceNames: filters.referencedInstanceNamesFilterCreator(),
+  // query filter is implemented separately in workato for now
 }
 
 export default filterCreators

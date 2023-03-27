@@ -51,7 +51,7 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
       apiName,
     )
     if (_.isEmpty(Object.keys(installedPackageInstanceByNamespace))) {
-
+      return
     }
     const customObjects = await awu(elements)
       .filter(isObjectType)

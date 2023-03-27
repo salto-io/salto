@@ -23,7 +23,7 @@ import {
   CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import {
-  addDefaults,
+  addDefaults, getNamespaceFromString,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
   isMetadataValues, isRestrictableField,
@@ -353,6 +353,36 @@ describe('utils', () => {
           expect(isRestrictableField(field)).toBeFalse()
         })
       })
+    })
+  })
+  describe('getNamespaceFromString', () => {
+    const NAMESPACE = 'ns'
+    type TestInput = {
+      received: string
+      expected: string | undefined
+    }
+    it.each<TestInput>([
+      { received: 'Instance', expected: undefined },
+      { received: 'CustomObject__c', expected: undefined },
+      { received: 'CustomMetadata__mdt', expected: undefined },
+      { received: 'Account.CustomField__c', expected: undefined },
+      { received: 'Account-Layout Name', expected: undefined },
+      {
+        received: 'https://test.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/CustomField__c',
+        expected: undefined,
+      },
+      { received: `${NAMESPACE}__Instance`, expected: NAMESPACE },
+      { received: `Account.${NAMESPACE}__CustomField__c`, expected: NAMESPACE },
+      { received: `${NAMESPACE}__CustomMetadata__mdt`, expected: NAMESPACE },
+      { received: `${NAMESPACE}__CustomMetadata__mdt`, expected: NAMESPACE },
+      { received: `Account-${NAMESPACE}__Layout Name`, expected: NAMESPACE },
+      { received: `${NAMESPACE}__configurationSummary`, expected: NAMESPACE },
+      {
+        received: `https://test.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/${NAMESPACE}__CustomField__c`,
+        expected: NAMESPACE,
+      },
+    ])('should return $expected for $received', ({ expected, received }) => {
+      expect(getNamespaceFromString(received)).toEqual(expected)
     })
   })
 })

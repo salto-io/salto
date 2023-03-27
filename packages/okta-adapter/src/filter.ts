@@ -33,6 +33,7 @@ export type FilterAdditionalParams = {
   // Note that deployment steps can be executed in parallel so use this cautiously
   // and only when needed.
   adapterContext: Values
+  adminClient: OktaClient
 }
 
 export type FilterCreator = filterUtils.FilterCreator<

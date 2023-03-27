@@ -69,6 +69,17 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   return adapterConfig
 }
 
+// In order to use private APIs, '-admin' should be added to the account subdomain
+const createAdminClient = (credentials: Credentials, config: OktaConfig): OktaClient => {
+  const { baseUrl } = credentials
+  const domainIndex = baseUrl.indexOf('.okta.com')
+  const adminUrl = baseUrl.substring(0, domainIndex).concat('-admin', baseUrl.substring(domainIndex))
+  return new OktaClient({
+    credentials: { ...credentials, baseUrl: adminUrl },
+    config: config[CLIENT_CONFIG],
+  })
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const config = adapterConfigFromConfig(
@@ -83,6 +94,7 @@ export const adapter: Adapter = {
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
+      adminClient: createAdminClient(credentials, config),
     })
 
     return {

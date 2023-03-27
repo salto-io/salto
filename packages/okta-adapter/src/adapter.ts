@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, DUCKTYPE_API_DEFINITIONS } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -40,17 +40,16 @@ import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
+import ducktypeDeployFilter from './filters/ducktype_deployment'
 import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
 const { awu } = collections.asynciterable
 
-const {
-  generateTypes,
-  getAllInstances,
-} = elementUtils.swagger
-
+const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllElements } = elementUtils.ducktype
+const { findDataField, computeGetArgs } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -75,9 +74,39 @@ export const DEFAULT_FILTERS = [
   policyRuleRemoval,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
+  ducktypeDeployFilter,
   // should run last
   defaultDeployFilter,
 ]
+
+const getPrivateApiElements = async ({
+  client,
+  fetchQuery,
+  getElemIdFunc,
+}:{
+  client: OktaClient
+  fetchQuery: elementUtils.query.ElementQuery
+  getElemIdFunc?: ElemIdGetter
+}): Promise<elementUtils.FetchElements<Element[]>> => {
+  const paginator = createPaginator({
+    client,
+    paginationFuncCreator: paginate,
+  })
+  // Get all elements defined with ducktype api definitions
+  const additionalDuckTypeElements = await getAllElements({
+    adapterName: OKTA,
+    types: DUCKTYPE_API_DEFINITIONS.types,
+    shouldAddRemainingTypes: false,
+    supportedTypes: DUCKTYPE_API_DEFINITIONS.supportedTypes,
+    fetchQuery,
+    paginator,
+    nestedFieldFinder: findDataField,
+    computeGetArgs,
+    typeDefaults: DUCKTYPE_API_DEFINITIONS.typeDefaults,
+    getElemIdFunc,
+  })
+  return additionalDuckTypeElements
+}
 
 export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
@@ -85,6 +114,7 @@ export interface OktaAdapterParams {
   config: OktaConfig
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  adminClient: OktaClient
 }
 
 export default class OktaAdapter implements AdapterOperations {
@@ -94,6 +124,7 @@ export default class OktaAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private adminClient: OktaClient
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -101,10 +132,12 @@ export default class OktaAdapter implements AdapterOperations {
     getElemIdFunc,
     config,
     elementsSource,
+    adminClient,
   }: OktaAdapterParams) {
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.adminClient = adminClient
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -128,6 +161,7 @@ export default class OktaAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
+          adminClient,
         },
         filterCreators,
         objects.concatObjects
@@ -178,10 +212,16 @@ export default class OktaAdapter implements AdapterOperations {
     const { allTypes, parsedConfigs } = await this.getAllTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
+    const privateApiElements = await getPrivateApiElements({
+      client: this.adminClient,
+      fetchQuery: this.fetchQuery,
+      getElemIdFunc: this.getElemIdFunc,
+    })
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
+      ...privateApiElements.elements,
     ]
 
     log.debug('going to run filters on %d fetched elements', elements.length)
@@ -190,7 +230,10 @@ export default class OktaAdapter implements AdapterOperations {
 
     // TODO SALTO-2690: addDeploymentAnnotations
 
-    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
+    return {
+      elements,
+      errors: (errors ?? []).concat(filterResult.errors ?? [], privateApiElements.errors ?? []),
+    }
   }
 
   /**

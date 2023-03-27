@@ -32,6 +32,8 @@ export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
 }
+export type OktaDuckTypeApiConfig = configUtils.AdapterApiConfig<configUtils.DuckTypeTransformationConfig>
+
 export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
 
 export type OktaConfig = {
@@ -47,6 +49,11 @@ const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy' },
   { fieldName: 'lastUpdatedBy' },
 ]
+const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+  nestStandaloneInstances: true,
+}
 
 // Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
@@ -677,6 +684,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       isSingleton: true,
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   OrgSetting: {
@@ -694,6 +702,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       dataField: '.',
       fieldTypeOverrides: [{ fieldName: 'contactTypes', fieldType: 'list<OrgContactTypeObj>' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/org',
+        method: 'put',
+        fieldsToIgnore: ['contactTypes'],
+      },
     },
   },
   api__v1__org__contacts: {
@@ -994,6 +1010,35 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
     },
   },
+  PerClientRateLimitSettings: {
+    request: {
+      url: '/api/v1/rate-limit-settings/per-client',
+    },
+    transformation: {
+      isSingleton: true,
+      dataField: '.',
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/rate-limit-settings/per-client',
+        method: 'put',
+      },
+    },
+  },
+  RateLimitAdminNotifications: {
+    request: {
+      url: '/api/v1/rate-limit-settings/admin-notifications',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/rate-limit-settings/admin-notifications',
+        method: 'put',
+      },
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
@@ -1047,17 +1092,150 @@ export const SUPPORTED_TYPES = {
   Domain: ['DomainListResponse'],
   Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
+  PerClientRateLimit: ['PerClientRateLimitSettings'],
+  RateLimitAdmin: ['RateLimitAdminNotifications'],
 }
 
+export const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
+  EmailNotifications: {
+    request: {
+      url: '/api/internal/email-notifications',
+    },
+    transformation: {
+      isSingleton: true,
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/email-notifications',
+        method: 'put',
+      },
+    },
+  },
+  EndUserSupport: {
+    request: {
+      url: '/api/internal/enduser-support',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/enduser-support',
+        method: 'post',
+      },
+    },
+  },
+  ThirdPartyAdmin: {
+    request: {
+      url: '/api/internal/orgSettings/thirdPartyAdminSetting',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/orgSettings/thirdPartyAdminSetting',
+        method: 'post',
+      },
+    },
+  },
+  EmbeddedSignInSuppport: {
+    request: {
+      url: '/admin/api/v1/embedded-login-settings',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/admin/api/v1/embedded-login-settings',
+        method: 'post',
+      },
+    },
+  },
+  SignOutPage: {
+    request: {
+      url: '/api/internal/org/settings/signout-page',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/signout-page',
+        method: 'post',
+      },
+    },
+  },
+  BrowserPlugin: {
+    request: {
+      url: '/api/internal/org/settings/browserplugin',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/browserplugin',
+        method: 'post',
+      },
+    },
+  },
+  DisplayLanguage: {
+    request: {
+      url: '/api/internal/org/settings/locale',
+    },
+    transformation: {
+      dataField: '.',
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/locale',
+        method: 'post',
+      },
+    },
+  },
+  Reauthentication: {
+    request: {
+      url: '/api/internal/org/settings/reauth-expiration',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/reauth-expiration',
+        method: 'post',
+      },
+    },
+  },
+}
+
+export const ADDITIONAL_SUPPORTED_TYPES = {
+  EmailNotificationSettings: ['EmailNotifications'],
+  EndUserSupportSettings: ['EndUserSupport'],
+  ThirdPartyAdminSettings: ['ThirdPartyAdmin'],
+  EmbeddedSignInSuppportSettings: ['EmbeddedSignInSuppport'],
+  SignOutPageSettings: ['SignOutPage'],
+  BrowserPluginSettings: ['BrowserPlugin'],
+  DisplayLanguageSettings: ['DisplayLanguage'],
+  ReauthenticationSettings: ['Reauthentication'],
+}
+
+export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
+  typeDefaults: {
+    transformation: TRANSFORMATION_DEFAULTS,
+  },
+  types: DUCKTYPE_TYPES,
+  supportedTypes: ADDITIONAL_SUPPORTED_TYPES,
+}
 
 export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
   typeDefaults: {
-    transformation: {
-      idFields: DEFAULT_ID_FIELDS,
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
-      nestStandaloneInstances: true,
-    },
+    transformation: TRANSFORMATION_DEFAULTS,
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
   supportedTypes: SUPPORTED_TYPES,

@@ -14,27 +14,45 @@
 * limitations under the License.
 */
 import { AccountId } from '@salto-io/adapter-api'
-import { client as clientUtils } from '@salto-io/adapter-components'
-import { Credentials, UsernamePasswordCredentials } from '../auth'
+import { auth as authUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
+import { Credentials } from '../auth'
 
-export const validateCredentials = async (): Promise<AccountId> => ''
+const log = logger(module)
 
-const usernamePasswordAuthParamsFunc = (
-  { username, password }: UsernamePasswordCredentials
-): clientUtils.AuthParams => ({
-  auth: {
-    username,
-    password,
-  },
-})
+const { oauthClientCredentialsBearerToken } = authUtils
+
+export const BASE_URL = 'https://srv-edom-mcm-test.cfapps.eu10.hana.ondemand.com/odata/v4/api/mcm/v1'
+
+export const validateCredentials = async ({ connection }: {
+  connection: clientUtils.APIConnection
+}): Promise<AccountId> => {
+  // oauth was already authenticated when the connection was created, but validating just in case
+  try {
+    const res = await connection.get('/', {})
+    if (res.status !== 200) {
+      throw new clientUtils.UnauthorizedError('Authentication failed')
+    }
+  } catch (e) {
+    log.error('Failed to validate credentials: %s', e)
+    throw new clientUtils.UnauthorizedError(e)
+  }
+
+  // default to empty to avoid preventing users from refreshing their credentials in the SaaS.
+  return ''
+}
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (
   clientUtils.axiosConnection({
     retryOptions,
     authParamsFunc: async (creds: Credentials) => (
-      usernamePasswordAuthParamsFunc(creds)
+      oauthClientCredentialsBearerToken({
+        ...creds,
+        retryOptions,
+        additionalData: { response_type: 'token' },
+      })
     ),
-    baseURLFunc: () => 'http://localhost', // TODO
+    baseURLFunc: () => BASE_URL,
     credValidateFunc: validateCredentials,
   })
 )

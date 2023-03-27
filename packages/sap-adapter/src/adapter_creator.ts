@@ -13,32 +13,29 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, ElemID,
+  InstanceElement, Adapter,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
-import SAPClient from './client/client'
-import SAPAdapter from './adapter'
-import { Credentials, usernamePasswordCredentialsType } from './auth'
+import SapClient from './client/client'
+import SapAdapter from './adapter'
+import { Credentials, oauthClientCredentialsType, AUTH_BASE_URL } from './auth'
 import {
   configType, SAPConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
   FETCH_CONFIG, DEFAULT_CONFIG, SAPApiConfig,
 } from './config'
 import { createConnection } from './client/connection'
 
-const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const { username, password, subdomain, domain } = config.value
+  const { clientId, clientSecret } = config.value
   return {
-    username,
-    password,
-    subdomain,
-    domain,
+    clientId,
+    clientSecret,
+    baseURL: AUTH_BASE_URL,
   }
 }
 
@@ -65,28 +62,16 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     fetch: config?.value?.fetch,
     apiDefinitions,
   }
-  Object.keys(config?.value ?? {})
-    .filter(k => !Object.keys(adapterConfig).includes(k))
-    .forEach(k => log.debug('Unknown config property was found: %s', k))
+
   return adapterConfig
 }
 
 export const adapter: Adapter = {
   operations: context => {
-    // This can be removed once all the workspaces configs were migrated
-    const updatedConfig = configUtils.configMigrations.migrateDeprecatedIncludeList(
-      // Creating new instance is required because the type is not resolved in context.config
-      new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        context.config?.value
-      ),
-      DEFAULT_CONFIG,
-    )
-    const config = adapterConfigFromConfig(updatedConfig?.config[0] ?? context.config)
+    const config = adapterConfigFromConfig(context.config)
     const credentials = credentialsFromConfig(context.credentials)
-    const adapterOperations = new SAPAdapter({
-      client: new SAPClient({
+    const adapterOperations = new SapAdapter({
+      client: new SapClient({
         credentials,
         config: config[CLIENT_CONFIG],
       }),
@@ -95,13 +80,7 @@ export const adapter: Adapter = {
 
     return {
       deploy: adapterOperations.deploy.bind(adapterOperations),
-      fetch: async args => {
-        const fetchRes = await adapterOperations.fetch(args)
-        return {
-          ...fetchRes,
-          updatedConfig: fetchRes.updatedConfig ?? updatedConfig,
-        }
-      },
+      fetch: adapterOperations.fetch.bind(adapterOperations),
       deployModifiers: adapterOperations.deployModifiers,
     }
   },
@@ -113,7 +92,7 @@ export const adapter: Adapter = {
   ),
   authenticationMethods: {
     basic: {
-      credentialsType: usernamePasswordCredentialsType,
+      credentialsType: oauthClientCredentialsType,
     },
   },
   configType,

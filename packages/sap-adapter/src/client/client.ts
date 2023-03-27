@@ -24,7 +24,7 @@ const {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  get: 15,
+  get: 15, // can increase, max is 20 / 40 depending on specific request
   deploy: 15,
 }
 
@@ -32,7 +32,7 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 100,
 }
 
-export default class SAPClient extends clientUtils.AdapterHTTPClient<
+export default class SapClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
   constructor(

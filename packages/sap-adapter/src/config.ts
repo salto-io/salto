@@ -49,11 +49,11 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {}
 
 const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
-  url: '/tmp/sap-swagger.json', // TODO
+  url: 'sap-swagger.json', // TODO
 }
 
 export const SUPPORTED_TYPES = { // TODO
-  MCMService_EnergySourceTypes: ['EnergySourceTypes'],
+  MCMService_EnergySourceTypes: ['*'],
 }
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {

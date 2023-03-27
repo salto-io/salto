@@ -13,48 +13,30 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, BuiltinTypes } from '@salto-io/adapter-api'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { ElemID, ObjectType, BuiltinTypes } from '@salto-io/adapter-api'
+import { auth as authUtils } from '@salto-io/adapter-components'
 import * as constants from './constants'
 
-const SUBDOMAIN_MESSAGE = 'subdomain (https://<your subdomain>.sap.com)'
-const DOMAIN_MESSAGE = 'domain (optional) - only fill in if your account is not under sap.com (https://<subdomain>.<your sap domain>)'
+const configID = new ElemID(constants.SAP)
 
-export type UsernamePasswordCredentials = {
-  username: string
-  password: string
-  subdomain: string
-  domain?: string
-}
-
-export const usernamePasswordCredentialsType = createMatchingObjectType<
-  UsernamePasswordCredentials
->({
-  elemID: new ElemID(constants.SAP),
+export const oauthClientCredentialsType = new ObjectType({
+  elemID: configID,
   fields: {
-    username: {
+    clientId: {
       refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
+      annotations: { message: 'OAuth client ID' },
     },
-    password: {
+    clientSecret: {
       refType: BuiltinTypes.STRING,
-      annotations: { _required: true },
-    },
-    subdomain: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        _required: true,
-        message: SUBDOMAIN_MESSAGE,
-      },
-    },
-    domain: {
-      refType: BuiltinTypes.STRING,
-      annotations: {
-        _required: false,
-        message: DOMAIN_MESSAGE,
-      },
+      annotations: { message: 'OAuth client secret' },
     },
   },
 })
 
-export type Credentials = UsernamePasswordCredentials
+export type OAuthClientCredentials = authUtils.OAuthClientCredentialsArgs & {
+  baseURL: string
+}
+
+export type Credentials = OAuthClientCredentials
+
+export const AUTH_BASE_URL = 'https://edom-mcm-prod.authentication.eu10.hana.ondemand.com'

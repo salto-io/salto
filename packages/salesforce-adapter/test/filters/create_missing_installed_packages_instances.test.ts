@@ -21,11 +21,11 @@ import { FilterWith } from '../../src/filter'
 import { SalesforceClient } from '../../index'
 import mockAdapter from '../adapter'
 import { defaultFilterContext } from '../utils'
-import * as fetchModule from '../../src/fetch'
 import { mockTypes } from '../mock_elements'
 import { apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { mockFileProperties } from '../connection'
 
 const { awu } = collections.asynciterable
 
@@ -40,23 +40,17 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
   describe('onFetch', () => {
     const EXISTING_NAMESPACES = ['namespace1', 'namespace2']
 
-    let listMetadataObjectsSpy: jest.SpyInstance
     let beforeElements: Element[]
     let afterElements: Element[]
 
-    const createInstalledPackageFileProperties = (namespace: string): FileProperties => ({
-      createdById: '0058d0000059MEVAA2',
-      createdByName: 'Test User',
-      createdDate: '2023-02-14T16:58:37.000Z',
-      fileName: `installedPackages/${namespace}.installedPackage`,
-      fullName: namespace,
-      id: '0A38d000000kaRoCAI',
-      lastModifiedById: '0058d0000059MEVAA2',
-      lastModifiedByName: 'Test User',
-      lastModifiedDate: '2023-02-14T16:58:38.000Z',
-      namespacePrefix: namespace,
-      type: 'InstalledPackage',
-    })
+    const createInstalledPackageFileProperties = (namespace: string): FileProperties => (
+      mockFileProperties({
+        fullName: namespace,
+        type: INSTALLED_PACKAGE_METADATA,
+        fileName: `installedPackages/${namespace}.installedPackage`,
+        namespacePrefix: namespace,
+      })
+    )
 
     const createInstalledPackageInstance = (namespace: string): InstanceElement => (
       createInstanceElement(
@@ -70,9 +64,9 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
 
 
     beforeEach(() => {
-      listMetadataObjectsSpy = jest.spyOn(fetchModule, 'listMetadataObjects')
-      listMetadataObjectsSpy.mockResolvedValue({
-        elements: EXISTING_NAMESPACES.map(createInstalledPackageFileProperties),
+      jest.spyOn(client, 'listMetadataObjects').mockResolvedValue({
+        result: EXISTING_NAMESPACES.map(createInstalledPackageFileProperties),
+        errors: [],
       })
       beforeElements = [
         mockTypes.InstalledPackage,
@@ -93,10 +87,11 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
     describe('when InstalledPackage is missing', () => {
       const MISSING_NAMESPACE = 'missingNamespace'
       beforeEach(async () => {
-        listMetadataObjectsSpy.mockResolvedValue({
-          elements: EXISTING_NAMESPACES
+        jest.spyOn(client, 'listMetadataObjects').mockResolvedValue({
+          result: EXISTING_NAMESPACES
             .concat(MISSING_NAMESPACE)
             .map(createInstalledPackageFileProperties),
+          errors: [],
         })
       })
       describe('when the missing InstalledPackage is excluded from the fetch config', () => {

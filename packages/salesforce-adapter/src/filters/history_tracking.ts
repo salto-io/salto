@@ -168,7 +168,7 @@ const filter: LocalFilterCreator = () => ({
       .forEach(objType => {
         delete objType.annotations[HISTORY_TRACKED_FIELDS]
       })
-    changes.push(...additionalChanges)
+    additionalChanges.forEach(change => changes.push(change))
   },
   onDeploy: async changes => {
     changes

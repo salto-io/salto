@@ -78,6 +78,7 @@ import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
+import installedPackageElementsFilter from './filters/installed_package_elements'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
@@ -169,6 +170,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
+  { creator: installedPackageElementsFilter, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero

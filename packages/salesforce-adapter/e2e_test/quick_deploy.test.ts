@@ -15,17 +15,16 @@
 */
 import {
   ChangeGroup,
-  StaticFile,
+  StaticFile, toChange,
 } from '@salto-io/adapter-api'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import SalesforceAdapter from '../index'
 import realAdapter from './adapter'
 import { API_VERSION } from '../src/client/client'
-import { UsernamePasswordCredentials } from '../src/types'
+import { SalesforceConfig, UsernamePasswordCredentials } from '../src/types'
 import { testHelpers } from './jest_environment'
 import { mockTypes } from '../test/mock_elements'
 import { createInstanceElement, MetadataInstanceElement } from '../src/transformers/transformer'
-import { removeElement } from './utils'
 
 describe('validation and quick deploy e2e', () => {
   // Set long timeout as we communicate with salesforce API
@@ -57,30 +56,28 @@ describe('validation and quick deploy e2e', () => {
 
     changeGroup = {
       groupID: 'add test elements',
-      changes: [{ action: 'add', data: { after: apexClassInstance } }, { action: 'add', data: { after: apexTestInstance } }],
+      changes: [toChange({ after: apexClassInstance }), toChange({ after: apexTestInstance })],
     }
-    const ValidationConfig = {
+    const validationConfig: SalesforceConfig = {
       client: {
         deploy: {
           runTests: ['myApexTest'],
-          testLevel: 'RunSpecifiedTests' as const,
+          testLevel: 'RunSpecifiedTests',
         },
       },
     }
 
     credLease = await testHelpers().credentials()
-    const adapterValidation = realAdapter({
-      credentials: new UsernamePasswordCredentials(credLease.value),
-    }, ValidationConfig)
-    adapter = adapterValidation.adapter
-    const validationResult = await adapter.validate({ changeGroup })
-    const groupResult = validationResult.extraProperties?.groups === undefined
-      ? {} : validationResult.extraProperties?.groups[0]
-    const { requestId } = groupResult
-    const { hash } = groupResult
+    const adapterValidation = realAdapter(
+      { credentials: new UsernamePasswordCredentials(credLease.value) },
+      validationConfig
+    )
+    const validationResult = await adapterValidation.adapter.validate({ changeGroup })
+    const groupResult = validationResult.extraProperties?.groups?.[0] ?? {}
+    const { requestId, hash } = groupResult
     expect(requestId).toBeDefined()
     expect(hash).toBeDefined()
-    const quickDeployConfig = {
+    const quickDeployConfig: SalesforceConfig = {
       client: {
         deploy: {
           quickDeployParams: {
@@ -90,10 +87,12 @@ describe('validation and quick deploy e2e', () => {
         },
       },
     }
-    const adapterQuickDeploy = realAdapter({
-      credentials: new UsernamePasswordCredentials(credLease.value),
-    }, quickDeployConfig)
+    const adapterQuickDeploy = realAdapter(
+      { credentials: new UsernamePasswordCredentials(credLease.value) },
+      quickDeployConfig
+    )
     adapter = adapterQuickDeploy.adapter
+
     const { client } = adapterQuickDeploy
     quickDeploySpy = jest.spyOn(client, 'quickDeploy')
   })
@@ -109,10 +108,12 @@ describe('validation and quick deploy e2e', () => {
     const adapterDeploy = realAdapter({
       credentials: new UsernamePasswordCredentials(credLease.value),
     })
-    adapter = adapterDeploy.adapter
     try {
-      await removeElement(adapter, apexClassInstance)
-      await removeElement(adapter, apexTestInstance)
+      const removeInstances: ChangeGroup = {
+        groupID: 'remove test elements',
+        changes: [toChange({ before: apexClassInstance }), toChange({ before: apexTestInstance })],
+      }
+      await adapterDeploy.adapter.deploy({ changeGroup: removeInstances })
     } finally {
       if (credLease.return) {
         await credLease.return()

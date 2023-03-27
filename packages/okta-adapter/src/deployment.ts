@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
-import { OktaActionName, OktaApiConfig } from './config'
+import { OktaApiConfig } from './config'
 
 const log = logger(module)
 
@@ -50,7 +50,7 @@ const OKTA_ERROR_SCHEMA = Joi.object({
 
 const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an invalid error')
 
-const getOktaError = (elemID: ElemID, error: Error): Error => {
+export const getOktaError = (elemID: ElemID, error: Error): Error => {
   if (!(error instanceof clientUtils.HTTPError)) {
     return error
   }
@@ -66,23 +66,24 @@ const getOktaError = (elemID: ElemID, error: Error): Error => {
   return new Error(`${baseErrorMessage} ${error}`)
 }
 
-const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+export const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
   const statusBefore = change.data.before.value.status
   const statusAfter = change.data.after.value.status
   return statusBefore === INACTIVE_STATUS && statusAfter === ACTIVE_STATUS
 }
 
-const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
+export const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
   const statusBefore = change.data.before.value.status
   const statusAfter = change.data.after.value.status
   return statusBefore === ACTIVE_STATUS && statusAfter === INACTIVE_STATUS
 }
 
-const deployStatusChange = async (
+export const deployStatusChange = async (
   change: ModificationChange<InstanceElement>,
   client: OktaClient,
-  deployRequests?: Partial<Record<OktaActionName, configUtils.DeployRequestConfig>>
+  apiDefinitions: OktaApiConfig,
 ): Promise<void> => {
+  const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
   const endpoint = isActivationChange(change)
     ? deployRequests?.activate
@@ -136,12 +137,6 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    // If the instance is deactivated,
-    // we should first change the status as some instances can not be changed in status 'ACTIVE'
-    if (isModificationChange(change) && isDeactivationChange(change)) {
-      await deployStatusChange(change, client, deployRequests)
-    }
-
     const response = await deployment.deployChange({
       change: changeToDeploy,
       client,
@@ -149,11 +144,6 @@ export const defaultDeployChange = async (
       fieldsToIgnore,
       queryParams,
     })
-
-    // If the instance is activated, we should first make the changes and then change the status
-    if (isModificationChange(change) && isActivationChange(change)) {
-      await deployStatusChange(change, client, deployRequests)
-    }
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
@@ -165,6 +155,40 @@ export const defaultDeployChange = async (
         log.warn('Received unexpected response from deployChange: %o', response)
       }
     }
+    return response
+  } catch (err) {
+    throw getOktaError(getChangeData(change).elemID, err)
+  }
+}
+
+/**
+ * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints
+ */
+export const defaultDeployWithStatus = async (
+  change: Change<InstanceElement>,
+  client: OktaClient,
+  apiDefinitions: OktaApiConfig,
+  fieldsToIgnore?: string[],
+  queryParams?: Record<string, string>,
+): Promise<deployment.ResponseResult> => {
+  try {
+    // If the instance is deactivated,
+    // we should first change the status as some instances can not be changed in status 'ACTIVE'
+    if (isModificationChange(change) && isDeactivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
+    }
+    const response = await defaultDeployChange(
+      change,
+      client,
+      apiDefinitions,
+      fieldsToIgnore,
+      queryParams
+    )
+    // If the instance is activated, we should first make the changes and then change the status
+    if (isModificationChange(change) && isActivationChange(change)) {
+      await deployStatusChange(change, client, apiDefinitions)
+    }
+
     return response
   } catch (err) {
     throw getOktaError(getChangeData(change).elemID, err)

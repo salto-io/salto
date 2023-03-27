@@ -13,14 +13,67 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element } from '@salto-io/adapter-api'
+import { Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
+import { INSTALLED_PACKAGE_METADATA } from '../constants'
+import { getNamespace, isCustomMetadataRecordType, isInstanceOfType, isStandardObject } from './utils'
+import { apiName, isCustomObject } from '../transformers/transformer'
 
+const { awu, keyByAsync } = collections.asynciterable
+
+const addInstalledPackageReference = async (
+  element: Element,
+  installedPackageInstanceByNamespace: Record<string, InstanceElement>
+): Promise<void> => {
+  const namespace = await getNamespace(element)
+  if (namespace === undefined) {
+    return
+  }
+  const installedPackageInstance = installedPackageInstanceByNamespace[namespace]
+  if (installedPackageInstance === undefined) {
+    return
+  }
+  const reference = new ReferenceExpression(installedPackageInstance.elemID, installedPackageInstance)
+  extendGeneratedDependencies(element, [{ reference }])
+}
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
   name: 'installedPackageElementsFilter',
   onFetch: async (elements: Element[]) => {
-    console.log(elements)
+    const installedPackageInstanceByNamespace = await keyByAsync(
+      await awu(elements)
+        .filter(isInstanceElement)
+        .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
+        .toArray(),
+      apiName,
+    )
+    if (_.isEmpty(Object.keys(installedPackageInstanceByNamespace))) {
+
+    }
+    const customObjects = await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomObject)
+      .toArray()
+    // CustomObjects
+    await awu(customObjects)
+      .forEach(customObject => addInstalledPackageReference(customObject, installedPackageInstanceByNamespace))
+    // CustomFields on StandardObjects
+    await awu(customObjects)
+      .filter(isStandardObject)
+      .flatMap(standardObject => Object.values(standardObject.fields))
+      .forEach(standardObject => addInstalledPackageReference(standardObject, installedPackageInstanceByNamespace))
+    // CustomMetadataTypes
+    await awu(elements)
+      .filter(isObjectType)
+      .filter(isCustomMetadataRecordType)
+      .forEach(customMetadata => addInstalledPackageReference(customMetadata, installedPackageInstanceByNamespace))
+    // Instances
+    await awu(elements)
+      .filter(isInstanceElement)
+      .forEach(instance => addInstalledPackageReference(instance, installedPackageInstanceByNamespace))
   },
 })
 

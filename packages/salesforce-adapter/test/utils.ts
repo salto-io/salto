@@ -77,6 +77,19 @@ export const createCustomObjectType = (
   elemID: new ElemID(constants.SALESFORCE, typeName),
 })
 
+export const createCustomMetadataType = (
+  typeName: string,
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    [constants.METADATA_TYPE]: constants.CUSTOM_METADATA,
+    [constants.API_NAME]: typeName,
+    ...(params.annotations ?? {}),
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
+
 export const createValueSetEntry = (
   name: string,
   defaultValue = false,

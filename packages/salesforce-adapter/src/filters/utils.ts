@@ -38,7 +38,7 @@ import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, FIELD_ANNOTATIONS, PLURAL_LABEL,
+  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, FIELD_ANNOTATIONS, PLURAL_LABEL, SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -155,15 +155,31 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
+/**
+ * Splitting by the following characters:
+ * '-' for Layout names
+ * '/' for Service Urls
+ * '.' for Relative Api Names
+ */
+const getRelativeName = (name: string): string => (
+  _.last(name.split(/[./-]/)) ?? name
+)
+
+const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`(${SALESFORCE_CUSTOM_SUFFIX}|${CUSTOM_METADATA_SUFFIX})$`)
+
 export const getNamespaceFromString = (name: string): string | undefined => {
-  const nameParts = name.split(NAMESPACE_SEPARATOR)
-  return nameParts.length === 3 ? nameParts[0] : undefined
+  const parts = getRelativeName(name)
+    .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+    .split(NAMESPACE_SEPARATOR)
+  return parts.length !== 1
+    ? parts[0]
+    : undefined
 }
 
 export const getNamespace = async (
-  customElement: Field | ObjectType
+  element: Element
 ): Promise<string | undefined> =>
-  getNamespaceFromString(await apiName(customElement, true))
+  getNamespaceFromString(await apiName(element, true))
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
@@ -385,4 +401,9 @@ export const isRestrictableField = (field: Field): boolean => (
   && isUpdatable(field)
   && !isHidden(field)
   && !isHidden(field.parent)
+)
+
+export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
+  await isCustomObject(objectType)
+  && !(await apiName(objectType)).includes(SALESFORCE_CUSTOM_SUFFIX)
 )

@@ -37,8 +37,8 @@ export const ALIAS_INDEX_VERSION = 2
 const ALIAS_INDEX_KEY = 'alias_index'
 
 
-const calcAlias = (elem: Element): string => elem.annotations[CORE_ANNOTATIONS.ALIAS]
-  ?? prettifyName(elem.elemID?.isConfigInstance() ? elem.elemID.typeName : elem.elemID.name)
+const getAlias = (element: Element): string => element.annotations[CORE_ANNOTATIONS.ALIAS]
+  ?? prettifyName(element.elemID.isConfigInstance() ? element.elemID.typeName : element.elemID.name)
 
 const getChangedFields = (change: ModificationChange<ObjectType>): Change<Element>[] => {
   const afterFields = Object.values(change.data.after.fields)
@@ -50,7 +50,7 @@ const getChangedFields = (change: ModificationChange<ObjectType>): Change<Elemen
   const removedFields = beforeFields.filter(beforeField => !afterFieldsNamesSet.has(beforeField.name))
   const aliasModifiedFields = afterFields.filter(afterField => {
     const field = change.data.before.fields[afterField.name]
-    return isField(field) && (calcAlias(afterField) !== calcAlias(field))
+    return isField(field) && (getAlias(afterField) !== getAlias(field))
   })
   return (addedFields.map(field => toChange({ after: field })))
     .concat(aliasModifiedFields.map(field => toChange({ after: field })))
@@ -62,13 +62,13 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
     if (isModificationChange(change)) {
       if (isObjectTypeChange(change)) {
         const changedFields = getChangedFields(change)
-        const objAliasModification = calcAlias(change.data.before) !== calcAlias(change.data.after)
+        const objAliasModification = getAlias(change.data.before) !== getAlias(change.data.after)
           ? [toChange({ after: change.data.after })]
           : []
         return changedFields.concat(objAliasModification)
       }
       if (isInstanceChange(change)) {
-        if (calcAlias(change.data.before) !== calcAlias(change.data.after)) {
+        if (getAlias(change.data.before) !== getAlias(change.data.after)) {
           return toChange({ after: change.data.after })
         }
       }
@@ -98,7 +98,7 @@ const getInfoForIndex = (changes: Change<Element>[]):
   const { additions, removals } = getRemovalsAndAdditions(changes)
   const additionsIdsToAlias = _.mapValues(
     _.keyBy(additions.map(getChangeData), elem => elem.elemID.getFullName()),
-    elem => calcAlias(elem)
+    elem => getAlias(elem)
   )
   const removalNames = removals.flatMap(getRelevantNamesFromChange)
   return { removalNames, additionsIdsToAlias }

@@ -30,10 +30,10 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
     ?.map((item: Values) => item.screenSchemeId)
     .filter(isReferenceExpression)
     .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
-      screenSchemeRef.value.value.screens
+      screenSchemeRef.value.value.screens ?? {}
     ))
     .filter(isReferenceExpression)
-    .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs))
+    .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
     .flatMap((tab: Values) => tab.fields)
     .filter(isReferenceExpression)
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []

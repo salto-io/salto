@@ -119,7 +119,7 @@ const ReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
-  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
+  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborSobjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
   | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
@@ -651,6 +651,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'links', parentTypes: ['HomePageComponent'] },
     target: { type: 'CustomPageWebLink' },
+  },
+  {
+    src: { field: 'recordTypeName', parentTypes: ['AnimationRule'] },
+    target: { typeContext: 'neighborSobjectLookup' },
   },
 ]
 

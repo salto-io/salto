@@ -187,8 +187,12 @@ export class ElemID {
       .filter((part, idx) => idx !== nameParts.length - 1 || part !== ElemID.CONFIG_NAME)
   }
 
-  isConfig(): boolean {
+  isConfigType(): boolean {
     return this.typeName === ElemID.CONFIG_NAME
+  }
+
+  isConfigInstance(): boolean {
+    return this.name === ElemID.CONFIG_NAME && this.idType === 'instance'
   }
 
   isTopLevel(): boolean {

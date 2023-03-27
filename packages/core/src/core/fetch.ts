@@ -661,7 +661,7 @@ const createFetchChanges = async ({
   }
   const isFirstFetch = await awu(await workspaceElements.list())
     .concat(await stateElements.list())
-    .filter(e => !e.isConfig())
+    .filter(e => !e.isConfigType())
     .isEmpty()
   const changes = isFirstFetch
     ? unmergedElements.map(toAddFetchChange)

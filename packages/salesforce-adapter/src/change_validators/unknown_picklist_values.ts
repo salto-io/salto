@@ -36,17 +36,16 @@ type ValueSetValue = {
 }[]
 
 type GlobalValueSetValue = InstanceElement['value'] & {
-  customValue: {[INSTANCE_FULL_NAME_FIELD]: string}[]
+  customValue: ValueSetValue
 }
 
 const isValueSetValue = (value: unknown): value is ValueSetValue => (
   _.isArray(value) && value.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
 )
 
-const isGlobalValueSetValue = (value: unknown): value is GlobalValueSetValue => {
-  const customValue = _.get(value, 'customValue')
-  return _.isArray(customValue) && customValue.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
-}
+const isGlobalValueSetValue = (value: unknown): value is GlobalValueSetValue => (
+  isValueSetValue(_.get(value, 'customValue'))
+)
 
 const getGlobalValueSetValue = (field: Field): GlobalValueSetValue | undefined => {
   const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]

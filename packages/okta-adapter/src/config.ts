@@ -308,20 +308,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/apps',
       recurseInto: [
         {
-          type: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu',
-          toField: 'CSRs',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
-        {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
-        },
-        {
-          type: 'api__v1__apps___appId___features@uuuuuu_00123_00125uu',
-          toField: 'appFeatures',
-          context: [{ name: 'appId', fromField: 'id' }],
-          skipOnError: true,
         },
       ],
     },
@@ -333,7 +322,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: CUSTOM_NAME_FIELD, fieldType: 'string' },
         { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
-        { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
@@ -345,10 +333,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
     },
     deployRequests: {
       add: {
@@ -394,6 +379,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'scheme', fieldType: 'string' },
         { fieldName: 'userName', fieldType: 'string' },
       ],
+      fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
     },
   },
   api__v1__meta__types__user: {
@@ -841,8 +827,43 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   BehaviorRule: {
     transformation: {
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/behaviors',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'put',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'delete',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
     },
   },
 }

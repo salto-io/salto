@@ -67,14 +67,6 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
         postFunctions: [
           {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
-          },
-          {
             type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
             configuration: {
               scriptRunner: {
@@ -86,6 +78,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
                 description: 'Assign Issue',
                 groupName: createReference(new ElemID(JIRA, 'Group', 'instance', 'system_administrators@b'), allElements, ['name']),
                 roleId: createReference(new ElemID(JIRA, 'ProjectRole', 'instance', 'Administrators'), allElements),
+              },
+            },
+          },
+          {
+            type: 'FireIssueEventFunction',
+            configuration: {
+              event: {
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
               },
             },
           },
@@ -108,15 +108,6 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
         postFunctions: [
           {
-            type: 'AssignToCurrentUserFunction',
-          },
-          {
-            type: 'AssignToLeadFunction',
-          },
-          {
-            type: 'AssignToReporterFunction',
-          },
-          {
             type: 'ClearFieldValuePostFunction',
             configuration: {
               fieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Environment__string'), allElements),
@@ -129,20 +120,6 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
               destinationFieldId: createReference(new ElemID(JIRA, 'Field', 'instance', 'Creator__user'), allElements),
               copyType: 'parent',
             },
-          },
-          {
-            type: 'CreateCommentFunction',
-          },
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
-              },
-            },
-          },
-          {
-            type: 'IssueStoreFunction',
           },
           {
             type: 'SetIssueSecurityFromRoleFunction',
@@ -169,6 +146,29 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
           },
           {
             type: 'UpdateIssueStatusFunction',
+          },
+          {
+            type: 'AssignToCurrentUserFunction',
+          },
+          {
+            type: 'AssignToLeadFunction',
+          },
+          {
+            type: 'AssignToReporterFunction',
+          },
+          {
+            type: 'CreateCommentFunction',
+          },
+          {
+            type: 'IssueStoreFunction',
+          },
+          {
+            type: 'FireIssueEventFunction',
+            configuration: {
+              event: {
+                id: createReference(new ElemID(JIRA, 'IssueEvent', 'instance', 'Issue_Assigned@s'), allElements),
+              },
+            },
           },
         ],
       },

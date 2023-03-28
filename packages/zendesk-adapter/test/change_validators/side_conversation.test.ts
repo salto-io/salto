@@ -15,55 +15,65 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ZENDESK, MACRO_TYPE_NAME, ACCOUNT_FEATURES_TYPE_NAME } from '../../src/constants'
+import { ZENDESK, MACRO_TYPE_NAME, ACCOUNT_FEATURES_TYPE_NAME, TRIGGER_TYPE_NAME } from '../../src/constants'
 import { sideConversationsValidator } from '../../src/change_validators'
 
-describe('macro side conversation fields', () => {
+describe('instance side conversation fields', () => {
   const macroType = new ObjectType({ elemID: new ElemID(ZENDESK, MACRO_TYPE_NAME) })
+  const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) })
   const featureType = new ObjectType({ elemID: new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME) })
 
-  it('should return an error when macro contains disabled side conversation fields', async () => {
-    const macroInstance1 = new InstanceElement(
+  it('should return an error when instance contains disabled side conversation fields', async () => {
+    const beforeValue = {
+      title: 'test',
+      actions: [
+        {
+          field: 'comment_value_html',
+          value: '<p>Test</p>',
+        },
+        {
+          field: 'side_conversation_ticket',
+          value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', 'text/html'],
+        },
+      ],
+    }
+    const afterValue = {
+      title: 'test',
+      actions: [
+        {
+          field: 'side_conversation',
+          value: ['test', 'text/html'],
+        },
+        {
+          field: 'comment_value_html',
+          value: '<p>Test</p>',
+        },
+        {
+          field: 'side_conversation_slack',
+          value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', '<p>test</p>'],
+        },
+      ],
+    }
+    const beforeMacro = new InstanceElement(
       'test',
       macroType,
-      {
-        title: 'test',
-        actions: [
-          {
-            field: 'comment_value_html',
-            value: '<p>Test</p>',
-          },
-          {
-            field: 'side_conversation_ticket',
-            value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', 'text/html'],
-          },
-        ],
-      }
+      beforeValue,
     )
-    const macroInstance2 = new InstanceElement(
+    const afterMacro = new InstanceElement(
       'test',
       macroType,
-      {
-        title: 'test',
-        actions: [
-          {
-            field: 'side_conversation',
-            value: ['test', 'text/html'],
-          },
-          {
-            field: 'side_conversation',
-            value: ['test', 'text/html'],
-          },
-          {
-            field: 'comment_value_html',
-            value: '<p>Test</p>',
-          },
-          {
-            field: 'side_conversation_slack',
-            value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', '<p>test</p>'],
-          },
-        ],
-      }
+      afterValue,
+    )
+    const beforeTrigger = new InstanceElement(
+      'test',
+      triggerType,
+      beforeValue,
+
+    )
+    const afterTrigger = new InstanceElement(
+      'test',
+      triggerType,
+      afterValue,
     )
     const featureInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -83,47 +93,68 @@ describe('macro side conversation fields', () => {
         },
       },
     )
-    const errors = await sideConversationsValidator(
-      [toChange({ after: macroInstance1 }), toChange({ after: macroInstance2 })],
-      buildElementsSourceFromElements([featureInstance])
-    )
-    expect(errors).toHaveLength(2)
+    const errors = await sideConversationsValidator([
+      toChange({ after: beforeMacro }), toChange({ after: afterMacro }),
+      toChange({ after: beforeTrigger }), toChange({ after: afterTrigger }),
+    ],
+    buildElementsSourceFromElements([featureInstance]))
+    expect(errors).toHaveLength(4)
     expect(errors[0]).toEqual({
-      elemID: macroInstance1.elemID,
+      elemID: beforeMacro.elemID,
       severity: 'Error',
       message: 'Cannot change a macro with side conversation actions since the feature is disabled in the account',
-      detailedMessage: `Macro contains the following side conversation actions which are disabled in the account: side_conversation_ticket.
+      detailedMessage: `macro contains the following side conversation actions which are disabled in the account: side_conversation_ticket.
 Please enable side conversations in your account or remove those actions from the macro in order to deploy.`,
     })
     expect(errors[1]).toEqual({
-      elemID: macroInstance2.elemID,
+      elemID: beforeMacro.elemID,
       severity: 'Error',
       message: 'Cannot change a macro with side conversation actions since the feature is disabled in the account',
-      detailedMessage: `Macro contains the following side conversation actions which are disabled in the account: side_conversation, side_conversation_slack.
+      detailedMessage: `macro contains the following side conversation actions which are disabled in the account: side_conversation, side_conversation_slack.
 Please enable side conversations in your account or remove those actions from the macro in order to deploy.`,
     })
+    expect(errors[2]).toEqual({
+      elemID: beforeTrigger.elemID,
+      severity: 'Error',
+      message: 'Cannot change a trigger with side conversation actions since the feature is disabled in the account',
+      detailedMessage: `trigger contains the following side conversation actions which are disabled in the account: side_conversation_ticket.
+Please enable side conversations in your account or remove those actions from the trigger in order to deploy.`,
+    })
+    expect(errors[3]).toEqual({
+      elemID: beforeTrigger.elemID,
+      severity: 'Error',
+      message: 'Cannot change a trigger with side conversation actions since the feature is disabled in the account',
+      detailedMessage: `trigger contains the following side conversation actions which are disabled in the account: side_conversation, side_conversation_slack.
+Please enable side conversations in your account or remove those actions from the trigger in order to deploy.`,
+    })
   })
-  it('should not return an error when all macro side conversation fields are enabled', async () => {
+  it('should not return an error when all instance side conversation fields are enabled', async () => {
+    const instanceValue = {
+      title: 'test',
+      actions: [
+        {
+          field: 'comment_value_html',
+          value: '<p>Test</p>',
+        },
+        {
+          field: 'side_conversation_ticket',
+          value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', 'text/html'],
+        },
+        {
+          field: 'side_conversation_slack',
+          value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', '<p>test</p>'],
+        },
+      ],
+    }
     const macroInstance = new InstanceElement(
       'test',
       macroType,
-      {
-        title: 'test',
-        actions: [
-          {
-            field: 'comment_value_html',
-            value: '<p>Test</p>',
-          },
-          {
-            field: 'side_conversation_ticket',
-            value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', 'text/html'],
-          },
-          {
-            field: 'side_conversation_slack',
-            value: ['fwd: {{ticket.title}} (Ticket #{{ticket.id}}', '<p>test</p>'],
-          },
-        ],
-      }
+      instanceValue
+    )
+    const triggerInstance = new InstanceElement(
+      'test',
+      triggerType,
+      instanceValue
     )
     const featureInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -143,25 +174,32 @@ Please enable side conversations in your account or remove those actions from th
         },
       },
     )
-    const errors = await sideConversationsValidator(
-      [toChange({ after: macroInstance })],
-      buildElementsSourceFromElements([featureInstance])
-    )
+    const errors = await sideConversationsValidator([
+      toChange({ after: macroInstance }),
+      toChange({ after: triggerInstance }),
+    ],
+    buildElementsSourceFromElements([featureInstance]))
     expect(errors).toHaveLength(0)
   })
-  it('should not return an error when macro has no side conversation fields', async () => {
+  it('should not return an error when instance has no side conversation fields', async () => {
+    const instanceValue = {
+      title: 'test',
+      actions: [
+        {
+          field: 'comment_value_html',
+          value: '<p>Test</p>',
+        },
+      ],
+    }
     const macroInstance = new InstanceElement(
       'test',
       macroType,
-      {
-        title: 'test',
-        actions: [
-          {
-            field: 'comment_value_html',
-            value: '<p>Test</p>',
-          },
-        ],
-      }
+      instanceValue
+    )
+    const triggerInstance = new InstanceElement(
+      'test',
+      triggerType,
+      instanceValue
     )
     const featureInstance = new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -181,10 +219,11 @@ Please enable side conversations in your account or remove those actions from th
         },
       },
     )
-    const errors = await sideConversationsValidator(
-      [toChange({ after: macroInstance })],
-      buildElementsSourceFromElements([featureInstance])
-    )
+    const errors = await sideConversationsValidator([
+      toChange({ after: macroInstance }),
+      toChange({ after: triggerInstance }),
+    ],
+    buildElementsSourceFromElements([featureInstance]))
     expect(errors).toHaveLength(0)
   })
   it('should return nothing if feature instance is missing', async () => {

@@ -106,16 +106,13 @@ export default class SAPAdapter implements AdapterOperations {
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>,
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
-    if (this.paginator === undefined) { // TODO temp
-      return getAllInstances({
-        paginator: this.paginator,
-        objectTypes: _.pickBy(allTypes, isObjectType),
-        apiConfig: this.apiDefinitions(parsedConfigs),
-        supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
-        fetchQuery: this.fetchQuery,
-      })
-    }
-    return { elements: [] }
+    return getAllInstances({
+      paginator: this.paginator,
+      objectTypes: _.pickBy(allTypes, isObjectType),
+      apiConfig: this.apiDefinitions(parsedConfigs),
+      supportedTypes: this.userConfig[API_DEFINITIONS_CONFIG].supportedTypes,
+      fetchQuery: this.fetchQuery,
+    })
   }
 
   /**

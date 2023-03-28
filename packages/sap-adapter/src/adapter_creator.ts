@@ -59,7 +59,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
   const adapterConfig: { [K in keyof Required<SAPConfig>]: SAPConfig[K] } = {
     client: config?.value?.client,
-    fetch: config?.value?.fetch,
+    fetch,
     apiDefinitions,
   }
 

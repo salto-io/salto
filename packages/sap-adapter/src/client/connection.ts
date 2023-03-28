@@ -22,7 +22,7 @@ const log = logger(module)
 
 const { oauthClientCredentialsBearerToken } = authUtils
 
-export const BASE_URL = 'https://srv-edom-mcm-test.cfapps.eu10.hana.ondemand.com/odata/v4/api/mcm/v1'
+export const BASE_URL = 'https://srv-edom-mcm-test.cfapps.eu10.hana.ondemand.com/odata/v4/api/mcm/v1/'
 
 export const validateCredentials = async ({ connection }: {
   connection: clientUtils.APIConnection

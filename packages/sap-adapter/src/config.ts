@@ -46,14 +46,23 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   // { fieldName: 'createdBy', fieldType: 'string' },
 ]
 
-const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {}
+const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
+  MCMService_EnergySourceTypes: {
+    transformation: {
+      dataField: '.',
+    },
+    request: {
+      url: 'EnergySourceTypes',
+    },
+  },
+}
 
 const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
   url: 'sap-swagger.json', // TODO
 }
 
 export const SUPPORTED_TYPES = { // TODO
-  MCMService_EnergySourceTypes: ['*'],
+  MCMService_EnergySourceTypes: ['EnergySourceTypes'],
 }
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {

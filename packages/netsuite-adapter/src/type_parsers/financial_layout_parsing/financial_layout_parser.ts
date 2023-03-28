@@ -49,7 +49,7 @@ const getRowRecords = (row: RowObject | undefined): RowRecordType[] =>
   collections.array.makeArray(row?.details?.values?.Record)
     .map(record => getObjectFromValues(record?.values?.Value))
 
-const getLayoutRows = (rows: RowObject[]): LayoutRowType[] =>
+const getLayoutRows = (rows: RowObject[] | undefined): LayoutRowType[] =>
   collections.array.makeArray(rows).map(row => {
     const parsedRow = getObjectFromValues(row.descriptor?.values?.Value)
     const records = getRowRecords(row)

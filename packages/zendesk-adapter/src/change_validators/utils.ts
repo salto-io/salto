@@ -15,7 +15,7 @@
 */
 import Joi from 'joi'
 import { InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuard, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { ARTICLES_FIELD, CATEGORIES_FIELD, SECTIONS_FIELD } from '../constants'
 
 type ArticlesOrderType = InstanceElement & { value: { articles: ReferenceExpression[] } }
@@ -37,3 +37,17 @@ export const validateOrderType = (orderInstance: InstanceElement, orderField: st
   const schemeGuard = fieldToSchemeGuard[orderField]
   return schemeGuard(orderInstance)
 }
+
+export type ActionsType = {
+  field: string | ReferenceExpression
+  value: unknown
+}
+
+const EXPECTED_ACTION_SCHEMA = Joi.object({
+  field: [Joi.string().required(), Joi.object().required()],
+  value: Joi.required(),
+}).unknown(true).required()
+
+export const isAction = createSchemeGuard<ActionsType>(
+  EXPECTED_ACTION_SCHEMA, 'Received an invalid value for macro actions'
+)

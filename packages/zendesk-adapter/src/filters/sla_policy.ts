@@ -20,8 +20,7 @@ import {
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-
-export const SLA_POLICY_TYPE_NAME = 'sla_policy'
+import { SLA_POLICY_TYPE_NAME } from '../constants'
 
 /**
  * Deploys sla policy

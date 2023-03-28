@@ -60,10 +60,12 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
     const { errorSummary, errorCauses } = data
     const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
     log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
-    return new Error(`${baseErrorMessage} ${oktaErrorMessage}`)
+    error.message = `${baseErrorMessage} ${oktaErrorMessage}`
+    return error
   }
-  log.error(`${baseErrorMessage} ${error}`)
-  return new Error(`${baseErrorMessage} ${error}`)
+  log.error(`${baseErrorMessage} ${error.message}`)
+  error.message = `${baseErrorMessage} ${error.message}`
+  return error
 }
 
 export const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {

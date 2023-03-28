@@ -14,37 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import {
-  Field,
-  getChangeData,
-  isField,
-  isModificationChange,
-  ChangeDataType,
-  InstanceElement,
-  isInstanceChange,
-  ModificationChange,
-  isFieldChange,
-  isReferenceExpression,
-  Element,
-  isObjectType,
-  CORE_ANNOTATIONS, createRestriction,
+  Field, getChangeData, isField, isModificationChange, ChangeDataType,
+  InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { isRequired } from '@salto-io/adapter-utils'
+
 import { FilterWith } from '../filter'
-import {
-  FIELD_ANNOTATIONS,
-  GLOBAL_VALUE_SET_METADATA_TYPE,
-  INSTANCE_FULL_NAME_FIELD,
-  VALUE_SET_FIELDS,
-} from '../constants'
+import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import { PicklistValue } from '../client/types'
-import { Types, metadataType, isCustomObject } from '../transformers/transformer'
-import { isRestrictableField } from './utils'
+import { Types, metadataType } from '../transformers/transformer'
+import { GLOBAL_VALUE_SET, CUSTOM_VALUE } from './global_value_sets'
 
 const { awu } = collections.asynciterable
+
 const { makeArray } = collections.array
-const { isDefined } = values
 
 export const isPicklistField = (changedElement: ChangeDataType): changedElement is Field =>
   isField(changedElement)
@@ -59,45 +43,13 @@ export const isValueSetReference = (field: Field): boolean =>
 export const hasValueSetNameAnnotation = (field: Field): boolean =>
   !_.isUndefined(field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME])
 
-type ValueSetFieldAnnotations = Field['annotations'] & {
-  [FIELD_ANNOTATIONS.VALUE_SET]: {
-    [INSTANCE_FULL_NAME_FIELD]: string
-  }[]
-}
-
-type ValueSetField = Field & {
-  annotations: ValueSetFieldAnnotations
-}
-
-const isFieldWithValueSet = (field: Field): field is ValueSetField => {
-  const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
-  return isDefined(valueSet) && makeArray(valueSet)
-    .every(entry => _.isString(_.get(entry, INSTANCE_FULL_NAME_FIELD)))
-}
-
-const restrictValueSet = (field: ValueSetField): void => {
-  field.annotations[CORE_ANNOTATIONS.RESTRICTION] = createRestriction({
-    enforce_value: isRequired(field),
-    values: field.annotations[FIELD_ANNOTATIONS.VALUE_SET].map(entry => entry[INSTANCE_FULL_NAME_FIELD]),
-  })
-}
-
 /**
  * Adds inactive values after the deletion of the values in the following cases:
  *  - Global value set
  *  - Restricted custom value set
  */
-const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
+const filterCreator = (): FilterWith<'onDeploy'> => ({
   name: 'valueSetFilter',
-  onFetch: async (elements: Element[]): Promise<void> => {
-    await awu(elements)
-      .filter(isObjectType)
-      .filter(isCustomObject)
-      .flatMap(customObject => Object.values(customObject.fields))
-      .filter(isFieldWithValueSet)
-      .filter(isRestrictableField)
-      .forEach(restrictValueSet)
-  },
   onDeploy: async changes => {
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType
@@ -108,7 +60,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
     const isGlobalValueSetInstanceChange = async (
       change: ModificationChange<ChangeDataType>
     ): Promise<boolean> => (
-      isInstanceChange(change) && await metadataType(getChangeData(change)) === GLOBAL_VALUE_SET_METADATA_TYPE
+      isInstanceChange(change) && await metadataType(getChangeData(change)) === GLOBAL_VALUE_SET
     )
 
     const withRemovedCustomValues = (beforeValues: PicklistValue[], afterValues: PicklistValue[]):
@@ -132,9 +84,9 @@ const filterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
       .filter(isGlobalValueSetInstanceChange)
       .forEach(change => {
         const instChange = change as ModificationChange<InstanceElement>
-        const beforeCustomValues = makeArray(instChange.data.before.value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
-        const afterCustomValues = makeArray(instChange.data.after.value[FIELD_ANNOTATIONS.CUSTOM_VALUE])
-        instChange.data.after.value[FIELD_ANNOTATIONS.CUSTOM_VALUE] = withRemovedCustomValues(
+        const beforeCustomValues = makeArray(instChange.data.before.value[CUSTOM_VALUE])
+        const afterCustomValues = makeArray(instChange.data.after.value[CUSTOM_VALUE])
+        instChange.data.after.value[CUSTOM_VALUE] = withRemovedCustomValues(
           beforeCustomValues, afterCustomValues
         )
       })

@@ -137,7 +137,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
-  // valueSetFilter and globalValueSetFilter should run after customObjectsToObjectTypeFilter
   { creator: valueSetFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },

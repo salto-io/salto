@@ -18,8 +18,9 @@ import { Change, ChangeError, Field, getAllChangeData, isModificationChange, Cha
 import { collections } from '@salto-io/lowerdash'
 import { apiName, isCustom } from '../transformers/transformer'
 import { isPicklistField, hasValueSetNameAnnotation } from '../filters/value_set'
-import { GLOBAL_VALUE_SET_METADATA_TYPE, VALUE_SET_FIELDS } from '../constants'
+import { VALUE_SET_FIELDS } from '../constants'
 import { isInstanceOfType } from '../filters/utils'
+import { GLOBAL_VALUE_SET } from '../filters/global_value_sets'
 
 const { awu } = collections.asynciterable
 
@@ -56,7 +57,7 @@ const referencedGvsElemID = async (
   const referencedGvs = getChangeData(change).annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
   if (isReferenceExpression(referencedGvs)) {
     const referencedValue = referencedGvs.value
-    if (await isInstanceOfType(GLOBAL_VALUE_SET_METADATA_TYPE)(referencedValue)) {
+    if (await isInstanceOfType(GLOBAL_VALUE_SET)(referencedValue)) {
       return referencedValue.elemID
     }
   }
@@ -67,7 +68,7 @@ const referencedGvsElemID = async (
  * Promoting picklist value-set to global is forbidden
  */
 const changeValidator: ChangeValidator = async changes => {
-  const isGVSInstance = isInstanceOfType(GLOBAL_VALUE_SET_METADATA_TYPE)
+  const isGVSInstance = isInstanceOfType(GLOBAL_VALUE_SET)
   const gvsIDs = new Set(await awu(changes)
     .map(getChangeData)
     .filter(isGVSInstance)

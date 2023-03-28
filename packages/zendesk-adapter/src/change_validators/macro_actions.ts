@@ -22,27 +22,12 @@ import {
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { MACRO_TYPE_NAME } from '../constants'
+import { ActionsType, isAction } from './utils'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
-export type ActionsType = {
-  field: string | ReferenceExpression
-  value: unknown
-}
-
-const EXPECTED_ACTION_SCHEMA = Joi.object({
-  field: [Joi.string().required(), Joi.object().required()],
-  value: Joi.required(),
-}).unknown(true).required()
-
-export const isAction = createSchemeGuard<ActionsType>(
-  EXPECTED_ACTION_SCHEMA, 'Received an invalid value for macro actions'
-)
 
 /**
  * returns a list of the names of all the inactive ticket_fields

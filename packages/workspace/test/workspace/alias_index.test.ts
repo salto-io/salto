@@ -98,6 +98,11 @@ describe('alias index', () => {
       },
     },
   })
+  const settingInstanceWithAlias = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    objectWithAnnotation,
+    {},
+  )
   const firstInstanceWithAlias = new InstanceElement(
     'instance1',
     objectWithAnnotation,
@@ -159,6 +164,7 @@ describe('alias index', () => {
     beforeEach(async () => {
       const changes = [
         toChange({ after: firstInstanceWithAlias }),
+        toChange({ after: settingInstanceWithAlias }),
         toChange({ after: secondInstanceNoAlias }),
         toChange({ before: thirdInstance, after: thirdInstance }),
         toChange({ after: objectWithAnnotation }),
@@ -178,6 +184,9 @@ describe('alias index', () => {
     it('should add all addition and alias modification elements to index', () => {
       expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
         [{ key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' }]
+      ))
+      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
+        [{ key: settingInstanceWithAlias.elemID.getFullName(), value: 'Object' }]
       ))
       expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
         [{ key: secondInstanceNoAlias.elemID.getFullName(), value: 'Instance2' }]

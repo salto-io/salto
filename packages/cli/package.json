@@ -18,7 +18,7 @@
     "dist",
     "src"
   ],
-  "main": "./bin/salto",
+  "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "clean-ts": "../../build_utils/clean-old-ts.sh",

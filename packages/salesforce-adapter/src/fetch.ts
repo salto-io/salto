@@ -134,7 +134,7 @@ const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
 
-const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
+export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
   metadataQuery.isInstanceMatch({
     namespace: getNamespace(file),
     metadataType: file.type,

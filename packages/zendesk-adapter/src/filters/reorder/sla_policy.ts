@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { SLA_POLICY_TYPE_NAME } from '../sla_policy'
 import { createReorderFilterCreator } from './creator'
+import { SLA_POLICY_TYPE_NAME } from '../../constants'
 
 export const TYPE_NAME = SLA_POLICY_TYPE_NAME
 

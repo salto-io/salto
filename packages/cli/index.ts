@@ -13,20 +13,5 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-
-export const isHidden = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
-)
-
-export const isHiddenValue = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
-)
-
-export const isUpdatable = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true
-)
-
-export const isRequired = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
-)
+export * as formatter from './src/formatter'
+export { default as Prompts } from './src/prompts'

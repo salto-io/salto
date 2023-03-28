@@ -61,6 +61,7 @@ import {
   customStatusActiveDefaultValidator,
   defaultGroupChangeValidator,
   organizationExistenceValidator,
+  badFormatWebhookActionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -134,6 +135,7 @@ export default ({
     externalSourceWebhook,
     defaultGroupChangeValidator,
     organizationExistenceValidator(client, fetchConfig),
+    badFormatWebhookActionValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

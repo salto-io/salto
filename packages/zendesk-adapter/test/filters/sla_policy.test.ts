@@ -18,8 +18,8 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { createFilterCreatorParams } from '../utils'
-import { ZENDESK } from '../../src/constants'
-import filterCreator, { SLA_POLICY_TYPE_NAME } from '../../src/filters/sla_policy'
+import { SLA_POLICY_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator from '../../src/filters/sla_policy'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {

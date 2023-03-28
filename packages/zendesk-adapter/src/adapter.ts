@@ -130,6 +130,7 @@ import customStatus from './filters/custom_statuses'
 import organizationsFilter from './filters/organizations'
 import hideAccountFeatures from './filters/hide_account_features'
 import auditTimeFilter from './filters/audit_logs'
+import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
 
@@ -185,6 +186,7 @@ export const DEFAULT_FILTERS = [
   guideAddBrandToArticleTranslation,
   macroAttachmentsFilter,
   ticketFormDeploy,
+  sideConversationsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
   removeBrandLogoFilter,

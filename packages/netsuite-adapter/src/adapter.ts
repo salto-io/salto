@@ -352,7 +352,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
     const hasFetchTarget = this.fetchTarget !== undefined
     if (hasFetchTarget && isFirstFetch) {
       throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')

@@ -17,6 +17,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
 import { parseDefinition as parseSavedSearchDefinition } from '../type_parsers/saved_search_parsing/saved_search_parser'
@@ -26,7 +27,6 @@ import { ParsedReportDefinition } from '../type_parsers/report_definition_parsin
 import { ParsedFinancialLayout } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { ParsedSavedSearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
 import { NetsuiteChangeValidator } from './types'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable

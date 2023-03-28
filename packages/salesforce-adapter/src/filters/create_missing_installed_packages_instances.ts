@@ -43,6 +43,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     if (installedPackageType === undefined) {
       return
     }
+    // Errors are not being handled, since they would have been handled before during the fetch
     const { elements: listResult } = await listMetadataObjects(client, INSTALLED_PACKAGE_METADATA)
     if (_.isEmpty(listResult)) {
       return

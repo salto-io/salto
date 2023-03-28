@@ -84,7 +84,9 @@ const potentialMacroFields = [
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
-const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target', 'side_conversation_ticket']
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
+
+const potentialTriggerFields = [...notificationTypes, 'side_conversation_ticket']
 
 type PotentialTemplateField = {
   instanceType: string
@@ -122,7 +124,7 @@ const potentialTemplates: PotentialTemplateField[] = [
     pathToContainer: ['actions'],
     fieldName: 'value',
     containerValidator: (container: Values): boolean =>
-      notificationTypes.includes(container.field),
+      potentialTriggerFields.includes(container.field),
   },
   {
     instanceType: 'automation',

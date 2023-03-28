@@ -123,6 +123,7 @@ import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_li
 import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
+import addAliasFilter from './filters/add_alias'
 
 const {
   generateTypes,
@@ -247,6 +248,7 @@ export const DEFAULT_FILTERS = [
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
+  addAliasFilter,
   // Must be last
   defaultInstancesDeployFilter,
   ...Object.values(otherCommonFilters),

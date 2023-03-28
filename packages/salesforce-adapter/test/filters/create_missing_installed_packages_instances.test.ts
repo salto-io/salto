@@ -16,26 +16,33 @@
 import { CORE_ANNOTATIONS, Element, InstanceElement } from '@salto-io/adapter-api'
 import { FileProperties } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
+import { MockInterface } from '@salto-io/test-utils'
 import filterCreator from '../../src/filters/create_missing_installed_packages_instances'
 import { FilterWith } from '../../src/filter'
 import { SalesforceClient } from '../../index'
-import mockAdapter from '../adapter'
+import Connection from '../../src/client/jsforce'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SALESFORCE } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../connection'
+import mockClient from '../client'
 
 const { awu } = collections.asynciterable
 
 describe('createMissingInstalledPackagesInstancesFilter', () => {
   let client: SalesforceClient
+  let connection: MockInterface<Connection>
   let filter: FilterWith<'onFetch'>
 
   beforeEach(() => {
-    client = mockAdapter().client
+    ({ connection, client } = mockClient())
     filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
+  })
+
+  afterEach(() => {
+    jest.clearAllMocks()
   })
   describe('onFetch', () => {
     const EXISTING_NAMESPACES = ['namespace1', 'namespace2']
@@ -64,10 +71,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
 
 
     beforeEach(() => {
-      jest.spyOn(client, 'listMetadataObjects').mockResolvedValue({
-        result: EXISTING_NAMESPACES.map(createInstalledPackageFileProperties),
-        errors: [],
-      })
+      connection.metadata.list.mockResolvedValue(EXISTING_NAMESPACES.map(createInstalledPackageFileProperties))
       beforeElements = [
         mockTypes.InstalledPackage,
         ...EXISTING_NAMESPACES.map(createInstalledPackageInstance),
@@ -87,12 +91,9 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
     describe('when InstalledPackage is missing', () => {
       const MISSING_NAMESPACE = 'missingNamespace'
       beforeEach(async () => {
-        jest.spyOn(client, 'listMetadataObjects').mockResolvedValue({
-          result: EXISTING_NAMESPACES
-            .concat(MISSING_NAMESPACE)
-            .map(createInstalledPackageFileProperties),
-          errors: [],
-        })
+        connection.metadata.list.mockResolvedValueOnce(
+          EXISTING_NAMESPACES.concat(MISSING_NAMESPACE).map(createInstalledPackageFileProperties)
+        )
       })
       describe('when the missing InstalledPackage is excluded from the fetch config', () => {
         beforeEach(async () => {

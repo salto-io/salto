@@ -17,24 +17,25 @@ import _ from 'lodash'
 import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { DUCKTYPE_API_DEFINITIONS } from '../config'
+import { API_DEFINITIONS_CONFIG } from '../config'
 import { deployChanges } from '../deployment'
 
 /**
  * Deploys changes of types defined with ducktype
  */
-const filterCreator: FilterCreator = ({ adminClient }) => ({
+const filterCreator: FilterCreator = ({ adminClient, config }) => ({
   name: 'ducktypeDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const { ducktypeApiConfig } = config[API_DEFINITIONS_CONFIG]
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-      && DUCKTYPE_API_DEFINITIONS.types[getChangeData(change).elemID.typeName] !== undefined
+      && ducktypeApiConfig.types[getChangeData(change).elemID.typeName] !== undefined
     )
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const { deployRequests } = DUCKTYPE_API_DEFINITIONS.types[getChangeData(change).elemID.typeName]
+        const { deployRequests } = ducktypeApiConfig.types[getChangeData(change).elemID.typeName]
         await deployment.deployChange({
           change,
           client: adminClient,

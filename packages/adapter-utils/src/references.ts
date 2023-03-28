@@ -15,7 +15,8 @@
 */
 
 import { ElemID, Element,
-  isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+  isReferenceExpression, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { TransformFunc } from './utils'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
@@ -59,3 +60,9 @@ export const getReferences = (
   walkOnElement({ element, func })
   return references
 }
+
+export const isArrayOfRefExprToInstances = (values: unknown): values is ReferenceExpression[] => (
+  _.isArray(values)
+  && values.every(isReferenceExpression)
+  && values.every(value => isInstanceElement(value.value))
+)

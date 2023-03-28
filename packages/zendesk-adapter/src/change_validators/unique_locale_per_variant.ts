@@ -19,11 +19,12 @@ import {
   isAdditionOrModificationChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { getParents } from '@salto-io/adapter-utils'
+import { getParents, references } from '@salto-io/adapter-utils'
 import { VARIANTS_FIELD_NAME, DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
-import { isArrayOfRefExprToInstances } from '../filters/utils'
+
 
 const log = logger(module)
+const { isArrayOfRefExprToInstances } = references
 
 const createEmptyLocaleIdErrorMessage = (): string =>
   'Can’t change an instance with an invalid locale'

@@ -40,10 +40,6 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
     ({ connection, client } = mockClient())
     filter = filterCreator({ client, config: defaultFilterContext }) as FilterWith<'onFetch'>
   })
-
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
   describe('onFetch', () => {
     const EXISTING_NAMESPACES = ['namespace1', 'namespace2']
 

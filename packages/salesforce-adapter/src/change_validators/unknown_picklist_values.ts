@@ -16,7 +16,8 @@
 import {
   ChangeError,
   ChangeValidator,
-  CORE_ANNOTATIONS, Field, getChangeData,
+  Field,
+  getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
   isInstanceChange, isInstanceElement, isReferenceExpression,
@@ -75,11 +76,12 @@ const getAllowedValues = (field: Field): string[] | undefined => {
 const createUnknownPicklistValueChangeError = (
   instance: InstanceElement,
   field: Field,
-  unknownValue: string
+  unknownValue: string,
+  allowedValues: string[],
 ): ChangeError => ({
   elemID: instance.elemID,
   message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name} of instance ${instance.elemID.getFullName()}`,
-  detailedMessage: `Supported values are ${safeJsonStringify(field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values)}`,
+  detailedMessage: `Supported values are ${safeJsonStringify(allowedValues)}`,
   severity: 'Error',
 })
 
@@ -97,7 +99,7 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
       }
       const allowedValues = getAllowedValues(field)
       return allowedValues !== undefined && !allowedValues.includes(fieldValue)
-        ? createUnknownPicklistValueChangeError(instance, field, fieldValue)
+        ? createUnknownPicklistValueChangeError(instance, field, fieldValue, allowedValues)
         : undefined
     })
     .filter(isDefined)

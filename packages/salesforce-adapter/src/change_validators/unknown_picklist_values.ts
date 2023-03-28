@@ -16,28 +16,72 @@
 import {
   ChangeError,
   ChangeValidator,
-  CORE_ANNOTATIONS, Field, getChangeData,
+  Field,
+  getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
-  isInstanceChange,
+  isInstanceChange, isInstanceElement, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { isPicklistField } from '../filters/value_set'
+import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
 
 
 const { isDefined } = values
 const { awu } = collections.asynciterable
 
+type ValueSetValue = {
+  [INSTANCE_FULL_NAME_FIELD]: string
+}[]
+
+type GlobalValueSetValue = InstanceElement['value'] & {
+  customValue: ValueSetValue
+}
+
+const isValueSetValue = (value: unknown): value is ValueSetValue => (
+  _.isArray(value) && value.every(entry => _.isString(entry[INSTANCE_FULL_NAME_FIELD]))
+)
+
+const isGlobalValueSetValue = (value: unknown): value is GlobalValueSetValue => (
+  isValueSetValue(_.get(value, 'customValue'))
+)
+
+const getGlobalValueSetValue = (field: Field): GlobalValueSetValue | undefined => {
+  const valueSetName = field.annotations[VALUE_SET_FIELDS.VALUE_SET_NAME]
+  if (!isReferenceExpression(valueSetName)) {
+    return undefined
+  }
+  const globalValueSetInstance = valueSetName.value
+  return isInstanceElement(globalValueSetInstance) && isGlobalValueSetValue(globalValueSetInstance.value)
+    ? globalValueSetInstance.value
+    : undefined
+}
+
+const getAllowedValues = (field: Field): string[] | undefined => {
+  const valueSet = field.annotations[FIELD_ANNOTATIONS.VALUE_SET]
+  // ValueSet
+  if (isValueSetValue(valueSet)) {
+    return valueSet.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+  }
+  // GlobalValueSet
+  const globalValueSetValue = getGlobalValueSetValue(field)
+  if (globalValueSetValue !== undefined) {
+    return globalValueSetValue.customValue.map(entry => entry[INSTANCE_FULL_NAME_FIELD])
+  }
+  return undefined
+}
+
 const createUnknownPicklistValueChangeError = (
   instance: InstanceElement,
   field: Field,
-  unknownValue: string
+  unknownValue: string,
+  allowedValues: string[],
 ): ChangeError => ({
   elemID: instance.elemID,
   message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name} of instance ${instance.elemID.getFullName()}`,
-  detailedMessage: `Supported values are ${safeJsonStringify(field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values)}`,
+  detailedMessage: `Supported values are ${safeJsonStringify(allowedValues)}`,
   severity: 'Error',
 })
 
@@ -50,10 +94,13 @@ const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement)
     .map(picklistFieldName => {
       const field = fields[picklistFieldName]
       const fieldValue = instance.value[picklistFieldName]
-      const allowedValues = field.annotations[CORE_ANNOTATIONS.RESTRICTION]?.values
-      return fieldValue === undefined || !_.isArray(allowedValues) || allowedValues.includes(fieldValue)
-        ? undefined
-        : createUnknownPicklistValueChangeError(instance, field, fieldValue)
+      if (fieldValue === undefined) {
+        return undefined
+      }
+      const allowedValues = getAllowedValues(field)
+      return allowedValues !== undefined && !allowedValues.includes(fieldValue)
+        ? createUnknownPicklistValueChangeError(instance, field, fieldValue, allowedValues)
+        : undefined
     })
     .filter(isDefined)
 }

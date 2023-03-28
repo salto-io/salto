@@ -648,6 +648,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     serializationStrategy: 'relativeApiName',
     target: { type: CUSTOM_OBJECT },
   },
+  {
+    src: { field: 'links', parentTypes: ['HomePageComponent'] },
+    target: { type: 'CustomPageWebLink' },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { toChange, ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
 import { defaultPoliciesValidator } from '../../src/change_validators/default_policies'
 import { OKTA, ACCESS_POLICY_TYPE_NAME, ACCESS_POLICY_RULE_TYPE_NAME, INACTIVE_STATUS } from '../../src/constants'
 
@@ -98,6 +98,25 @@ describe('defaultPoliciesValidator', () => {
     const changeErrors = await defaultPoliciesValidator([
       toChange({ before: nonDefaultInstance }),
       toChange({ before: nonDefaultRuleBefore, after: nonDefaultRuleAfter }),
+    ])
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('should not return an error when removing default rule with its parent', async () => {
+    const somePolicy = new InstanceElement(
+      'policy',
+      policyType,
+      { id: '123', status: 'ACTIVE', system: false },
+    )
+    const defaultRule = new InstanceElement(
+      'rule',
+      policyRuleType,
+      { id: '234', status: 'ACTIVE', system: true },
+      undefined,
+      { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(somePolicy.elemID, somePolicy)] }
+    )
+    const changeErrors = await defaultPoliciesValidator([
+      toChange({ before: somePolicy }),
+      toChange({ before: defaultRule }),
     ])
     expect(changeErrors).toHaveLength(0)
   })

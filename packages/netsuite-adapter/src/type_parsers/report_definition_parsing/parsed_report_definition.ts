@@ -144,8 +144,12 @@ type ReportDefinitionInnerFields = {
 type ReportCriteriaValuesType = {
   FIELD_DATE_FILTER_INDEX?: number
   SEQ_NUMBER?: number
-  FILED_VALUE?: string
+  FIELD_VALUE?: string
 }
+// TODO: use ReportCriteriaValuesType for the reportdefinition_criteria_values type-
+// It will change the FILED_VALUE field to FIELD_VALUE (which is the correct value that we see in instances).
+// This change requires a noise suppression.
+type ReportCriteriaValuesTypeForType = Omit<ReportCriteriaValuesType, 'FIELD_VALUE'> & { FILED_VALUE?: string }
 
 type ReportCriteriaDescriptor = {
   FIELD_ALIAS?: string
@@ -281,7 +285,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesType>({
+  const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesTypeForType>({
     elemID: reportCriteriaValuesElemID,
     annotations: {
     },

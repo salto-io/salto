@@ -85,12 +85,21 @@ const getReportParameters = (reportParameter: { Map?: ParameterObject[] } | unde
     return [i.key._text, i.value._text]
   }).filter(lowerdashValues.isDefined))
 
+const shouldOmitDates = ({ descriptor, values }: ReportCriteriaType): boolean =>
+  descriptor?.FILED_TYPE === 'DATE'
+  && values?.length === 3
+  && values[0].FIELD_VALUE !== undefined
+  && values[0].FIELD_VALUE !== 'CUSTOM'
+
 const getReportCriteria = (criteria: ReportCriteria | undefined): ReportCriteriaType[] =>
   collections.array.makeArray(criteria?.values?.ReportCriterion)
     .map(criterion => {
       const values = extractRecordsValues(criterion)
       const descriptor = getObjectFromValues(criterion.descriptor?.field?.values?.Value)
-      return _.omitBy({ descriptor, values }, _.isEmpty)
+      return _.omitBy({
+        descriptor,
+        values: shouldOmitDates({ descriptor, values }) ? values.slice(0, 1) : values,
+      }, _.isEmpty)
     })
 
 const getUiPreferences = (uiPref: ElementCompact | undefined): ReportUiPrefType =>

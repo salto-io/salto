@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getChangeData, InstanceElement,
   isInstanceChange, ChangeError, isAdditionOrModificationChange } from '@salto-io/adapter-api'
@@ -25,8 +26,9 @@ import { ParsedReportDefinition } from '../type_parsers/report_definition_parsin
 import { ParsedFinancialLayout } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { ParsedSavedSearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
 import { NetsuiteChangeValidator } from './types'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 
-
+const log = logger(module)
 const { awu } = collections.asynciterable
 
 export type ReportTypes = ParsedSavedSearchType | ParsedReportDefinition | ParsedFinancialLayout
@@ -60,7 +62,19 @@ const wasModified = async (instance: InstanceElement): Promise<boolean> => {
   const definitionOrLayout = instance.value[mapTypeToLayoutOrDefinition[instance.elemID.typeName]]
   const parserFunction = typeNameToParser[instance.elemID.typeName]
   const parsedDefinition = await parserFunction(definitionOrLayout)
-  return !_.isEqual(parsedDefinition, _.pick(instance.value, Object.keys(parsedDefinition)))
+  const existingValues = _.pick(instance.value, Object.keys(parsedDefinition))
+  if (!_.isEqual(parsedDefinition, existingValues)) {
+    log.debug(
+      'existing values don\'t match parsed definition in %s: %o',
+      instance.elemID.getFullName(),
+      {
+        parsedDefinition: safeJsonStringify(parsedDefinition),
+        existingValues: safeJsonStringify(existingValues),
+      }
+    )
+    return true
+  }
+  return false
 }
 
 const getChangeError = async (instance: InstanceElement): Promise<ChangeError> => {

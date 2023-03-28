@@ -27,7 +27,7 @@ import { createMissingInstance } from './references/missing_references'
 import {
   ZENDESK,
   TICKET_FIELD_TYPE_NAME,
-  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, GROUP_TYPE_NAME,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
 
@@ -84,7 +84,7 @@ const potentialMacroFields = [
 ]
 // triggers and automations notify users, webhooks
 // groups or targets with text that can include templates.
-const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target']
+const notificationTypes = ['notification_webhook', 'notification_user', 'notification_group', 'notification_target', 'side_conversation_ticket']
 
 type PotentialTemplateField = {
   instanceType: string
@@ -291,6 +291,9 @@ export const prepRef = (part: ReferenceExpression): TemplatePart => {
     && _.isString(part.value.value.placeholder)) {
     const placeholder = part.value.value.placeholder.match(DYNAMIC_CONTENT_REGEX)
     return placeholder?.pop() ?? part
+  }
+  if (part.elemID.typeName === GROUP_TYPE_NAME && part.value?.value?.id) {
+    return part.value.value.id.toString()
   }
   return part
 }

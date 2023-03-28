@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, DUCKTYPE_API_DEFINITIONS } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -81,10 +81,12 @@ export const DEFAULT_FILTERS = [
 
 const getPrivateApiElements = async ({
   client,
+  apiDefinitionsConfig,
   fetchQuery,
   getElemIdFunc,
 }:{
   client: OktaClient
+  apiDefinitionsConfig: OktaDuckTypeApiConfig
   fetchQuery: elementUtils.query.ElementQuery
   getElemIdFunc?: ElemIdGetter
 }): Promise<elementUtils.FetchElements<Element[]>> => {
@@ -95,14 +97,14 @@ const getPrivateApiElements = async ({
   // Get all elements defined with ducktype api definitions
   const additionalDuckTypeElements = await getAllElements({
     adapterName: OKTA,
-    types: DUCKTYPE_API_DEFINITIONS.types,
+    types: apiDefinitionsConfig.types,
     shouldAddRemainingTypes: false,
-    supportedTypes: DUCKTYPE_API_DEFINITIONS.supportedTypes,
+    supportedTypes: apiDefinitionsConfig.supportedTypes,
     fetchQuery,
     paginator,
     nestedFieldFinder: findDataField,
     computeGetArgs,
-    typeDefaults: DUCKTYPE_API_DEFINITIONS.typeDefaults,
+    typeDefaults: apiDefinitionsConfig.typeDefaults,
     getElemIdFunc,
   })
   return additionalDuckTypeElements
@@ -176,7 +178,7 @@ export default class OktaAdapter implements AdapterOperations {
   }> {
     return generateTypes(
       OKTA,
-      this.userConfig[API_DEFINITIONS_CONFIG],
+      this.userConfig[API_DEFINITIONS_CONFIG].swaggerApiConfig,
     )
   }
 
@@ -186,11 +188,11 @@ export default class OktaAdapter implements AdapterOperations {
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
-      ...this.userConfig.apiDefinitions,
+      ...this.userConfig.apiDefinitions.swaggerApiConfig,
       types: {
         ...parsedConfigs,
         ..._.mapValues(
-          this.userConfig.apiDefinitions.types,
+          this.userConfig.apiDefinitions.swaggerApiConfig.types,
           (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
         ),
       },
@@ -200,7 +202,7 @@ export default class OktaAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
+      supportedTypes: this.userConfig.apiDefinitions.swaggerApiConfig.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -212,8 +214,10 @@ export default class OktaAdapter implements AdapterOperations {
     const { allTypes, parsedConfigs } = await this.getAllTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
+
     const privateApiElements = await getPrivateApiElements({
       client: this.adminClient,
+      apiDefinitionsConfig: this.userConfig[API_DEFINITIONS_CONFIG].ducktypeApiConfig,
       fetchQuery: this.fetchQuery,
       getElemIdFunc: this.getElemIdFunc,
     })

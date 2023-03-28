@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, elements } from '@salto-i
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
 const { createClientConfigType } = clientUtils
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -32,14 +32,20 @@ export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
 }
-export type OktaDuckTypeApiConfig = configUtils.AdapterApiConfig<configUtils.DuckTypeTransformationConfig>
 
-export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
+
+export type OktaApiConfig = {
+  swaggerApiConfig: OktaSwaggerApiConfig
+  ducktypeApiConfig: OktaDuckTypeApiConfig
+}
 
 export type OktaConfig = {
   [CLIENT_CONFIG]?: OktaClientConfig
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaApiConfig
+
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -94,7 +100,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 
 const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string):string => (`${policyRuleName}s`)
-const getPolicyConfig = (): OktaApiConfig['types'] => {
+const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
       transformation: {
@@ -236,7 +242,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
   return Object.assign({}, ...policiesConfig)
 }
 
-const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
+const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
@@ -1041,7 +1047,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   },
 }
 
-const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
+const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml',
   additionalTypes: [
     ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
@@ -1096,7 +1102,7 @@ export const SUPPORTED_TYPES = {
   RateLimitAdmin: ['RateLimitAdminNotifications'],
 }
 
-export const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
+const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
   EmailNotifications: {
     request: {
       url: '/api/internal/email-notifications',
@@ -1232,7 +1238,7 @@ export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
   supportedTypes: ADDITIONAL_SUPPORTED_TYPES,
 }
 
-export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
+export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
   typeDefaults: {
     transformation: TRANSFORMATION_DEFAULTS,
@@ -1247,8 +1253,36 @@ export const DEFAULT_CONFIG: OktaConfig = {
     hideTypes: true,
     convertUsersIds: true,
   },
-  [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+  [API_DEFINITIONS_CONFIG]: {
+    swaggerApiConfig: DEFAULT_API_DEFINITIONS,
+    ducktypeApiConfig: DUCKTYPE_API_DEFINITIONS,
+  },
 }
+
+const oktaApiConfigType = createMatchingObjectType<OktaApiConfig>({
+  elemID: new ElemID(OKTA, 'OktaApiConfig'),
+  fields: {
+    swaggerApiConfig: {
+      refType: createSwaggerAdapterApiConfigType({
+        adapter: OKTA,
+      }),
+      annotations: {
+        _required: true,
+      },
+    },
+    ducktypeApiConfig: {
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: OKTA,
+      }),
+      annotations: {
+        _required: true,
+      },
+    },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
 
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
@@ -1265,9 +1299,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
-      refType: createSwaggerAdapterApiConfigType({
-        adapter: OKTA,
-      }),
+      refType: oktaApiConfigType,
     },
   },
   annotations: {

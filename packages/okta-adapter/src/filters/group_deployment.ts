@@ -18,7 +18,7 @@ import { Change, InstanceElement, isInstanceChange, getChangeData, isRemovalChan
 import { config as configUtils } from '@salto-io/adapter-components'
 import { GROUP_TYPE_NAME } from '../constants'
 import OktaClient from '../client/client'
-import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges } from '../deployment'
 
@@ -35,7 +35,7 @@ const GROUP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAc
 const deployGroup = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  config: OktaConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const fieldsToIgnore = [
     ...Object.keys(GROUP_ASSIGNMENT_FIELDS),
@@ -45,7 +45,7 @@ const deployGroup = async (
   if (isRemovalChange(change)) {
     fieldsToIgnore.push('profile')
   }
-  await defaultDeployChange(change, client, config[API_DEFINITIONS_CONFIG], fieldsToIgnore)
+  await defaultDeployChange(change, client, apiDefinitions, fieldsToIgnore)
   if (isAdditionOrModificationChange(change)) {
     await deployEdges(change, GROUP_ASSIGNMENT_FIELDS, client)
   }
@@ -65,7 +65,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployGroup(change, client, config)
+      async change => deployGroup(change, client, config[API_DEFINITIONS_CONFIG].swaggerApiConfig)
     )
 
     return {

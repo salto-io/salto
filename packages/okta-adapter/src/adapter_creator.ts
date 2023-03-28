@@ -26,7 +26,9 @@ import { OKTA } from './constants'
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
-const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
+const {
+  validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig, validateDuckTypeApiDefinitionConfig,
+} = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const { baseUrl, token } = config.value
@@ -51,12 +53,13 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.swaggerApiConfig)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     fetch,
-    apiDefinitions
+    apiDefinitions.swaggerApiConfig
   )
+  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.ducktypeApiConfig)
 
   const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {
     client: config?.value?.client,

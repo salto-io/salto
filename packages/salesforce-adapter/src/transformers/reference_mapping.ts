@@ -656,6 +656,10 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'recordTypeName', parentTypes: ['AnimationRule'] },
     target: { typeContext: 'neighborSobjectLookup' },
   },
+  {
+    src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
+    target: { type: CUSTOM_OBJECT },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

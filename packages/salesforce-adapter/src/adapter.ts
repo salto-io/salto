@@ -77,7 +77,7 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
-import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
+import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
@@ -99,7 +99,7 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
-  { creator: addDefaultActivateRSSFilter },
+  { creator: createMissingInstalledPackagesInstancesFilter, addsNewInformation: true },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },

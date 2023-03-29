@@ -58,7 +58,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
 }
 
 const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
-  url: 'sap-swagger.json', // TODO
+  url: 'https://raw.githubusercontent.com/hadard/salto/sap/packages/sap-adapter/swagger.json',
 }
 
 export const SUPPORTED_TYPES = { // TODO

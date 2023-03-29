@@ -31,7 +31,7 @@ export class LocationCache extends LRU<string, unknown> {
 }
 
 export type LocationCachePool = {
-  get: (location: string, cacheSize: number) => LocationCache
+  get: (location: string) => LocationCache
 
   // The 'string' overload is temporary to allow the implementation of closeRemoteMapsOfLocation.
   // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
@@ -40,12 +40,17 @@ export type LocationCachePool = {
 
 export type LocationCachePoolContents = Map<string, { cache: LocationCache; refcnt: number }>
 
-export const createLocationCachePool = (initialContents?: LocationCachePoolContents): LocationCachePool => {
+const DEFAULT_LOCATION_CACHE_SIZE = 5000
+
+export const createLocationCachePool = (
+  initialContents?: LocationCachePoolContents,
+  cacheSize: number = DEFAULT_LOCATION_CACHE_SIZE
+): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
   const pool: LocationCachePoolContents = initialContents ?? new Map<string, { cache: LocationCache; refcnt: number }>()
   let poolSizeWatermark = 0
   return {
-    get: (location, cacheSize) => {
+    get: location => {
       const cachePoolEntry = pool.get(location)
       if (cachePoolEntry !== undefined) {
         counters.locationCounters(location).LocationCacheReuse.inc()

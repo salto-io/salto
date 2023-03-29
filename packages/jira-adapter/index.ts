@@ -15,3 +15,4 @@
 */
 
 export { adapter } from './src/adapter_creator'
+export { configType } from './src/config/config'

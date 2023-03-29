@@ -18,3 +18,4 @@ export { adapter } from './src/adapter_creator'
 export {
   APP_MARKETPLACE_HEADERS as ZENDESK_SALTO_APP_MARKETPLACE_HEADERS,
 } from './src/client/connection'
+export { configType } from './src/config'

@@ -15,5 +15,5 @@
 */
 
 export { default } from './src/adapter'
-export { adapter } from './src/adapter_creator'
+export { adapter, configType } from './src/adapter_creator'
 export { GeneratorParams, generateElements, defaultParams } from './src/generator'

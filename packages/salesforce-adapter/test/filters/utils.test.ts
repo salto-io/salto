@@ -255,7 +255,6 @@ describe('addDefaults', () => {
         expect(getNamespaceFromString(name)).toBeUndefined()
       })
     })
-
     describe('with namespace', () => {
       const NAMESPACE = 'ns'
       it.each([

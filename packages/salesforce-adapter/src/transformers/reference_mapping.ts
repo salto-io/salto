@@ -658,6 +658,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { parentContext: 'neighborSobjectLookup', type: 'RecordType' },
   },
   {
+    src: { field: 'targetField', parentTypes: ['AnimationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborSobjectLookup', type: CUSTOM_FIELD },
+  },
+  {
     src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
     target: { type: CUSTOM_OBJECT },
   },

@@ -146,10 +146,6 @@ type ReportCriteriaValuesType = {
   SEQ_NUMBER?: number
   FIELD_VALUE?: string
 }
-// TODO: use ReportCriteriaValuesType for the reportdefinition_criteria_values type-
-// It will change the FILED_VALUE field to FIELD_VALUE (which is the correct value that we see in instances).
-// This change requires a noise suppression.
-type ReportCriteriaValuesTypeForType = Omit<ReportCriteriaValuesType, 'FIELD_VALUE'> & { FILED_VALUE?: string }
 
 type ReportCriteriaDescriptor = {
   FIELD_ALIAS?: string
@@ -285,14 +281,14 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesTypeForType>({
+  const reportCriteriaValues = createMatchingObjectType<ReportCriteriaValuesType>({
     elemID: reportCriteriaValuesElemID,
     annotations: {
     },
     fields: {
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
-      FILED_VALUE: { refType: BuiltinTypes.STRING },
+      FIELD_VALUE: { refType: BuiltinTypes.STRING },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })

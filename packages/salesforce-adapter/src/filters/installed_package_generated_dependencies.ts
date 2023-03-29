@@ -41,7 +41,7 @@ const addInstalledPackageReference = async (
 }
 
 const filterCreator = (): FilterWith<'onFetch'> => ({
-  name: 'installedPackageElementsFilter',
+  name: 'installedPackageGeneratedDependencies',
   onFetch: async (elements: Element[]) => {
     const installedPackageInstanceByNamespace = await keyByAsync(
       await awu(elements)

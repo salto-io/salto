@@ -14,17 +14,19 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { ObjectType, ElemID, isInstanceElement, InstanceElement, CORE_ANNOTATIONS, toChange, getChangeData } from '@salto-io/adapter-api'
+import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
+import { getParent } from '@salto-io/adapter-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import OktaClient from '../../src/client/client'
 import { OKTA, USERTYPE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
-import fetchUserSchemas from '../../src/filters/user_schema'
-import { getFilterParams } from '../utils'
+import userSchemaFilter from '../../src/filters/user_schema'
+import { getFilterParams, mockClient } from '../utils'
 
-describe('fetchUserSchemaInstancesFilter', () => {
-  let filter: filterUtils.FilterWith<'onFetch'>
+describe('userSchemaFilter', () => {
+  let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let client: OktaClient
-  let mockGet: jest.SpyInstance
+  let mockConnection: MockInterface<clientUtils.APIConnection>
   const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
   const userTypeType = new ObjectType({ elemID: new ElemID(OKTA, USERTYPE_TYPE_NAME) })
   const userTypeInstanceA = new InstanceElement(
@@ -79,7 +81,7 @@ describe('fetchUserSchemaInstancesFilter', () => {
   const userSchemaResponse = {
     status: 200,
     data: {
-      id: 'A123',
+      id: 'https://okta.com/api/v1/meta/schemas/user/A123',
       name: 'userSchema123',
       description: 'user schema',
     },
@@ -87,105 +89,203 @@ describe('fetchUserSchemaInstancesFilter', () => {
   const userSchemaResponse2 = {
     status: 200,
     data: {
-      id: 'B123',
+      id: 'https://okta.com/api/v1/meta/schemas/user/B123',
       name: 'userSchema234',
+      description: 'user schema',
+    },
+  }
+
+  const userSchemaResponse3 = {
+    status: 200,
+    data: {
+      id: 'https://okta.com/api/v1/meta/schemas/user/C123',
+      name: 'userSchema345',
       description: 'user schema',
     },
   }
   beforeEach(() => {
     jest.clearAllMocks()
-    client = new OktaClient({
-      credentials: { baseUrl: 'https://okta.com/', token: 'token' },
-    })
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    filter = fetchUserSchemas(getFilterParams({ client })) as typeof filter
+    const { client: cli, connection } = mockClient()
+    mockConnection = connection
+    client = cli
+    filter = userSchemaFilter(getFilterParams({ client })) as typeof filter
   })
 
-  it('should create userSchema instances', async () => {
-    mockGet.mockResolvedValueOnce(userSchemaResponse)
-    mockGet.mockResolvedValueOnce(userSchemaResponse2)
-    const elements = [userSchemaType, userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
-    await filter.onFetch(elements)
-    const createdInstance = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
-      .sort()
-    expect(createdInstance.length).toEqual(2)
-    expect(createdInstance.map(i => i.elemID.getFullName())).toEqual([
-      'okta.UserSchema.instance.userSchema123',
-      'okta.UserSchema.instance.userSchema234',
-    ])
-    expect(createdInstance.map(i => i.value)).toEqual([
-      { id: 'A123', name: 'userSchema123', description: 'user schema' },
-      { id: 'B123', name: 'userSchema234', description: 'user schema' },
-    ])
-    const userTypeInstances = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USERTYPE_TYPE_NAME)
-      .sort()
-    expect(userTypeInstances.length).toEqual(3)
-    expect(userTypeInstances.map(i => i.elemID.getFullName())).toEqual([
-      'okta.UserType.instance.test1',
-      'okta.UserType.instance.test2',
-      'okta.UserType.instance.test3',
-    ])
+  describe('onFetch', () => {
+    it('should create UserSchema instances and set UserType as parent', async () => {
+      mockConnection.get.mockResolvedValueOnce(userSchemaResponse)
+      mockConnection.get.mockResolvedValueOnce(userSchemaResponse2)
+      mockConnection.get.mockResolvedValue(userSchemaResponse3)
+      const elements = [userSchemaType, userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
+      await filter.onFetch(elements)
+      const createdInstance = elements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
+        .sort()
+      expect(createdInstance.length).toEqual(3)
+      expect(createdInstance.map(i => i.elemID.getFullName())).toEqual([
+        'okta.UserSchema.instance.userSchema123',
+        'okta.UserSchema.instance.userSchema234',
+        'okta.UserSchema.instance.userSchema345',
+      ])
+      expect(createdInstance.map(i => i.value)).toEqual([
+        { id: 'A123', name: 'userSchema123', description: 'user schema' },
+        { id: 'B123', name: 'userSchema234', description: 'user schema' },
+        { id: 'C123', name: 'userSchema345', description: 'user schema' },
+      ])
+      expect(createdInstance.map(i => getParent(i).elemID.getFullName())).toEqual([
+        'okta.UserType.instance.test1',
+        'okta.UserType.instance.test2',
+        'okta.UserType.instance.test3',
+      ])
+      const userTypeInstances = elements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === USERTYPE_TYPE_NAME)
+        .sort()
+      expect(userTypeInstances.length).toEqual(3)
+      expect(userTypeInstances.map(i => i.elemID.getFullName())).toEqual([
+        'okta.UserType.instance.test1',
+        'okta.UserType.instance.test2',
+        'okta.UserType.instance.test3',
+      ])
+    })
+
+    it('should do nothing if userSchema type is missing', async () => {
+      const elements = [userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
+      await filter.onFetch(elements)
+      const createdInstance = elements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
+        .sort()
+      expect(createdInstance.length).toEqual(0)
+    })
+
+    it('should skip UserSchema instance if the response is invalid', async () => {
+      mockConnection.get.mockRejectedValue({
+        response: { status: 404, data: {} },
+      })
+      const elements = [userSchemaType, userTypeType, userTypeInstanceA, defaultUserTypeInstance]
+      await filter.onFetch(elements)
+      const createdInstance = elements
+        .filter(isInstanceElement)
+        .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
+        .sort()
+      expect(createdInstance.length).toEqual(0)
+    })
   })
-  it('should skip userType instance if the matching userSchema id was not found', async () => {
-    mockGet.mockResolvedValue(userSchemaResponse)
-    const invalidUserTypeInst = new InstanceElement(
-      'test',
-      userTypeType,
-      {
-        id: 456,
-        name: 'D',
-        // incorrect path to href
-        _links: {
-          schema: {
-            href: 'https://okta.com/api/v1/meta/schemas/user/B123',
+
+  describe('preDeploy', () => {
+    it('should add get UserSchema id from the parent UserType Instance', async () => {
+      const userSchemaInstace = new InstanceElement(
+        'schema',
+        userSchemaType,
+        {
+          definitions: {
+            value: 'value',
           },
         },
-        default: false,
-      },
-    )
-    const elements = [userSchemaType, userTypeType, userTypeInstanceA, invalidUserTypeInst, defaultUserTypeInstance]
-    await filter.onFetch(elements)
-    const createdInstance = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
-      .sort()
-    expect(createdInstance.length).toEqual(1)
-    expect(createdInstance[0].elemID.getFullName()).toEqual('okta.UserSchema.instance.userSchema123')
-  })
-  it('should do nothing if userSchema type is missing', async () => {
-    const elements = [userTypeType, userTypeInstanceA, userTypeInstanceB, defaultUserTypeInstance]
-    await filter.onFetch(elements)
-    const createdInstance = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
-      .sort()
-    expect(createdInstance.length).toEqual(0)
-  })
-
-  it('should do nothing if there are no UserType instances except for the default user type', async () => {
-    const elements = [userSchemaType, userTypeType, defaultUserTypeInstance]
-    await filter.onFetch(elements)
-    const createdInstance = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
-      .sort()
-    expect(createdInstance.length).toEqual(0)
-  })
-
-  it('should skip UserSchema instance if the response is invalid', async () => {
-    mockGet.mockRejectedValue({
-      response: { status: 404, data: {} },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [
+          {
+            id: 'userType',
+            _links: {
+              schema: {
+                href: 'https://okta.com/api/v1/meta/schemas/user/555',
+              },
+            },
+          },
+        ] },
+      )
+      const changes = [toChange({ after: userSchemaInstace })]
+      await filter.preDeploy(changes)
+      expect(getChangeData(changes[0]).value.id).toEqual('555')
     })
-    const elements = [userSchemaType, userTypeType, userTypeInstanceA, defaultUserTypeInstance]
-    await filter.onFetch(elements)
-    const createdInstance = elements
-      .filter(isInstanceElement)
-      .filter(inst => inst.elemID.typeName === USER_SCHEMA_TYPE_NAME)
-      .sort()
-    expect(createdInstance.length).toEqual(0)
+    it('should do nothing if _link object in the parent UserTypeis not in the expected format', async () => {
+      const userSchemaInstace = new InstanceElement(
+        'schema',
+        userSchemaType,
+        {
+          definitions: {
+            value: 'value',
+          },
+        },
+        undefined,
+        { [CORE_ANNOTATIONS.PARENT]: [
+          {
+            id: 'userType',
+            _links: {
+              self: {
+                value: 'val',
+              },
+            },
+          },
+        ] },
+      )
+      const changes = [toChange({ after: userSchemaInstace })]
+      await filter.preDeploy(changes)
+      expect(getChangeData(changes[0]).value.id).toBeUndefined()
+    })
+  })
+
+  describe('deploy', () => {
+    const error = new clientUtils.HTTPError(
+      'error',
+      {
+        status: 404,
+        data: {
+          errorSummary: 'Not found: Resource not found: 123 (something)',
+          errorCauses: [],
+        },
+      }
+    )
+    it('should mark removals of UserSchema as deployed successfully if the instance no longer exists', async () => {
+      mockConnection.get.mockRejectedValue(error)
+      const userSchemaToRemove = new InstanceElement(
+        'schema',
+        userSchemaType,
+        {
+          id: '555',
+          definitions: { value: 'something' },
+        },
+      )
+      const changes = [toChange({ before: userSchemaToRemove })]
+      const res = await filter.deploy(changes)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
+    })
+    it('return an error if UserSchema instance still exists', async () => {
+      mockConnection.get.mockResolvedValue(userSchemaResponse)
+      const userSchemaToRemove = new InstanceElement(
+        'schema',
+        userSchemaType,
+        {
+          id: '555',
+          definitions: { value: 'something' },
+        },
+      )
+      const changes = [toChange({ before: userSchemaToRemove })]
+      const res = await filter.deploy(changes)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.errors[0]).toEqual('Could not remove instance schema of type UserSchema')
+      expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
+    })
+  })
+  describe('onDeploy', () => {
+    it('should fix UserSchema id after deploy', async () => {
+      const userSchemaInstace = new InstanceElement(
+        'schema',
+        userSchemaType,
+        {
+          id: 'https://okta.com/api/v1/meta/schemas/user/555',
+          definitions: {
+            value: 'value',
+          },
+        },
+      )
+      const changes = [toChange({ after: userSchemaInstace })]
+      await filter.onDeploy(changes)
+      expect(getChangeData(changes[0]).value.id).toEqual('555')
+    })
   })
 })

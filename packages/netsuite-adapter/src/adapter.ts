@@ -130,7 +130,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators = [
       customRecordTypesType,
       omitSdfUntypedValues,
-      omitFieldsFilter,
       dataInstancesIdentifiers,
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
@@ -167,6 +166,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
+      // omitFieldsFilter should be the last onFetch filter to run
+      omitFieldsFilter,
       // additionalChanges should be the first preDeploy filter to run
       additionalChanges,
     ],

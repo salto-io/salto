@@ -19,8 +19,8 @@ import _ from 'lodash'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
 import { FilterWith } from '../filter'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
-import { getNamespace, isCustomMetadataRecordType, isInstanceOfType, isStandardObject } from './utils'
-import { apiName, isCustomObject } from '../transformers/transformer'
+import { getNamespace, isInstanceOfType, isStandardObject } from './utils'
+import { apiName } from '../transformers/transformer'
 
 const { awu, keyByAsync } = collections.asynciterable
 
@@ -53,27 +53,14 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     if (_.isEmpty(Object.keys(installedPackageInstanceByNamespace))) {
       return
     }
-    const customObjects = await awu(elements)
+    await awu(elements)
+      .forEach(element => addInstalledPackageReference(element, installedPackageInstanceByNamespace))
+    // CustomFields of Standard Objects
+    await awu(elements)
       .filter(isObjectType)
-      .filter(isCustomObject)
-      .toArray()
-    // CustomObjects
-    await awu(customObjects)
-      .forEach(customObject => addInstalledPackageReference(customObject, installedPackageInstanceByNamespace))
-    // CustomFields on StandardObjects
-    await awu(customObjects)
       .filter(isStandardObject)
       .flatMap(standardObject => Object.values(standardObject.fields))
       .forEach(standardObject => addInstalledPackageReference(standardObject, installedPackageInstanceByNamespace))
-    // CustomMetadataTypes
-    await awu(elements)
-      .filter(isObjectType)
-      .filter(isCustomMetadataRecordType)
-      .forEach(customMetadata => addInstalledPackageReference(customMetadata, installedPackageInstanceByNamespace))
-    // Instances
-    await awu(elements)
-      .filter(isInstanceElement)
-      .forEach(instance => addInstalledPackageReference(instance, installedPackageInstanceByNamespace))
   },
 })
 

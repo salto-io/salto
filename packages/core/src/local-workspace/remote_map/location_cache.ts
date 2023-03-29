@@ -21,7 +21,7 @@ import { counters } from './counters'
 const log = logger(module)
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-class LocationCache extends LRU<string, unknown> {
+export class LocationCache extends LRU<string, unknown> {
   readonly location: string
 
   constructor(location: string, cacheSize: number) {
@@ -37,9 +37,12 @@ export type LocationCachePool = {
   // Once we remove closeRemoteMapOfLocation, the 'string' overload should be removed.
   release: (cache: LocationCache | string) => void
 }
-export const createLocationCachePool = (): LocationCachePool => {
+
+export type LocationCachePoolContents = Map<string, { cache: LocationCache; refcnt: number }>
+
+export const createLocationCachePool = (initialContents?: LocationCachePoolContents): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
-  const pool = new Map<string, { cache: LocationCache; refcnt: number }>()
+  const pool: LocationCachePoolContents = initialContents ?? new Map<string, { cache: LocationCache; refcnt: number }>()
   let poolSizeWatermark = 0
   return {
     get: (location, cacheSize) => {

@@ -95,9 +95,6 @@ export default class SAPAdapter implements AdapterOperations {
     return generateTypes(
       SAP,
       this.userConfig[API_DEFINITIONS_CONFIG],
-      undefined,
-      undefined,
-      true,
     )
   }
 

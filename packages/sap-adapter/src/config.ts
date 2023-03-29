@@ -48,11 +48,28 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
   MCMService_EnergySourceTypes: {
-    transformation: {
-      dataField: '.',
-    },
     request: {
       url: 'EnergySourceTypes',
+    },
+  },
+  MCMService_MeasuringTypes: {
+    request: {
+      url: 'MeasuringTypes',
+    },
+  },
+  MCMService_MCIRateTypes: {
+    request: {
+      url: 'MCIRateTypes',
+    },
+  },
+  MCMService_PowerRangeTypes: {
+    request: {
+      url: 'PowerRangeTypes',
+    },
+  },
+  MCMService_MCMFormulas: {
+    request: {
+      url: 'MCMFormulas',
     },
   },
 }
@@ -61,9 +78,14 @@ const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
   url: 'https://raw.githubusercontent.com/hadard/salto/sap/packages/sap-adapter/swagger.json',
 }
 
-export const SUPPORTED_TYPES = { // TODO
+export const SUPPORTED_TYPES = {
   MCMService_EnergySourceTypes: ['EnergySourceTypes'],
+  MCMService_MeasuringTypes: ['MeasuringTypes'],
+  MCMService_MCIRateTypes: ['MCIRateTypes'],
+  MCMService_PowerRangeTypes: ['PowerRangeTypes'],
+  MCMService_MCMFormulas: ['MCMFormulas'],
 }
+// TODO: figure what to do with EnergySourceTypes?$expand=texts,localized example (postman)
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
@@ -80,7 +102,6 @@ export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {
 export const DEFAULT_CONFIG: SAPConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
-    hideTypes: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }

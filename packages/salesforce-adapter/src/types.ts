@@ -76,8 +76,6 @@ export type OptionalFeatures = {
   addMissingIds?: boolean
   authorInformation?: boolean
   describeSObjects?: boolean
-  skipParsingFormulas?: boolean // Negative flag because we want it disabled by default and optional features are
-                                // enabled by default
   skipAliases?: boolean
 }
 
@@ -571,7 +569,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
-    skipParsingFormulas: { refType: BuiltinTypes.BOOLEAN },
     skipAliases: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {

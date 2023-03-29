@@ -53,11 +53,9 @@ describe('Formula dependencies', () => {
   let typeWithFormula: ObjectType
   let referredTypes: ObjectType[]
   let referredInstances: InstanceElement[]
-  let featureEnabledQuery: jest.SpyInstance
 
   beforeAll(() => {
     const config = { ...defaultFilterContext }
-    featureEnabledQuery = jest.spyOn(config.fetchProfile, 'isFeatureEnabled')
     filter = formulaDepsFilter({ config }) as FilterWith<'onFetch'>
 
     typeWithFormula = createCustomObjectType('Account',
@@ -140,21 +138,6 @@ describe('Formula dependencies', () => {
 
   afterAll(() => {
     jest.restoreAllMocks()
-  })
-
-  beforeEach(() => {
-    featureEnabledQuery.mockReturnValue(false)
-  })
-
-  describe('When the feature is disabled in adapter config', () => {
-    it('Should not run', async () => {
-      featureEnabledQuery.mockReturnValue(true)
-      const elements = [typeWithFormula.clone()]
-      await filter.onFetch(elements)
-      // eslint-disable-next-line no-underscore-dangle
-      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
-      expect(deps).not.toBeDefined()
-    })
   })
 
   describe('When the formula has a reference', () => {

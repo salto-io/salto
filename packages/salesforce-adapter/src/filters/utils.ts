@@ -22,14 +22,7 @@ import {
   isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import {
-  getParents,
-  buildElementsSourceFromElements,
-  createSchemeGuard,
-  isHiddenValue,
-  isHidden,
-  isUpdatable as isCoreUpdatable,
-} from '@salto-io/adapter-utils'
+import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -38,7 +31,7 @@ import { OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, FIELD_ANNOTATIONS, PLURAL_LABEL, SALESFORCE_CUSTOM_SUFFIX,
+  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, PLURAL_LABEL, SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
@@ -367,7 +360,7 @@ export const ensureSafeFilterFetch = ({
   warningMessage: string
   filterName: keyof OptionalFeatures
   config : FilterContext
-}): Required<Filter>['onFetch'] => (
+}): Required<Filter>['onFetch'] =>
   async elements => {
     if (!config.fetchProfile.isFeatureEnabled(filterName)) {
       log.debug('skipping %s filter due to configuration', filterName)
@@ -387,21 +380,6 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
-)
-
-/**
- * Remove after https://salto-io.atlassian.net/browse/SALTO-3626
- */
-export const isUpdatable = (element: Element): boolean => (
-  element.annotations[FIELD_ANNOTATIONS.UPDATEABLE] === true && isCoreUpdatable(element)
-)
-
-export const isRestrictableField = (field: Field): boolean => (
-  !isHiddenValue(field)
-  && isUpdatable(field)
-  && !isHidden(field)
-  && !isHidden(field.parent)
-)
 
 export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
   await isCustomObject(objectType)

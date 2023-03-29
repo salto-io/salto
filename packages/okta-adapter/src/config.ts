@@ -505,7 +505,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
-      standaloneFields: [{ fieldName: 'policies' }],
+      standaloneFields: [{ fieldName: 'policies' }, { fieldName: 'scopes' }, { fieldName: 'claims' }],
     },
   },
   AuthorizationServerPolicy: {
@@ -788,6 +788,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OAuth2Claim: {
@@ -795,6 +797,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   ProfileMapping: {

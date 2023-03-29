@@ -18,9 +18,10 @@ import {
 } from '@salto-io/adapter-api'
 import { Types } from '../../src/transformers/transformer'
 import picklistPromoteValidator from '../../src/change_validators/picklist_promote'
-import { API_NAME, GLOBAL_VALUE_SET_METADATA_TYPE, VALUE_SET_FIELDS } from '../../src/constants'
+import { API_NAME, VALUE_SET_FIELDS } from '../../src/constants'
 import { createField } from '../utils'
 import * as constants from '../../src/constants'
+import { GLOBAL_VALUE_SET } from '../../src/filters/global_value_sets'
 
 
 describe('picklist promote change validator', () => {
@@ -28,7 +29,7 @@ describe('picklist promote change validator', () => {
     const createGlobalValueSetInstanceElement = (): InstanceElement =>
       new InstanceElement('global_value_set_test', new ObjectType({
         elemID: new ElemID(constants.SALESFORCE, 'global_value_set'),
-        annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET_METADATA_TYPE },
+        annotations: { [constants.METADATA_TYPE]: GLOBAL_VALUE_SET },
       }))
     const gvs: InstanceElement = createGlobalValueSetInstanceElement()
     const createAfterField = (beforeField: Field): Field => {

@@ -24,35 +24,34 @@ import {
   AttributeObject,
   RecordObject,
   getDefinitionOrLayout,
-} from '../../report_types_parser_utils'
+} from '../report_types_parser_utils'
 import { LayoutRowType, ParsedFinancialLayout, RowRecordType } from './parsed_financial_layout'
 
 type RowObject = {
-  descriptor: {
-     values: {
-      Value: AttributeObject[]
+  descriptor?: {
+     values?: {
+      Value?: AttributeObject[]
     }
   }
   details?: {
-    values: {
-      Record: RecordObject | RecordObject[]
+    values?: {
+      Record?: RecordObject | RecordObject[]
     }
   }
 }
 
-const getLayoutParts = async (definition: string): Promise<ElementCompact> => {
+const getLayoutParts = async (definition: string): Promise<ElementCompact | undefined> => {
   const parsedXml = await getJson(definition)
   return getDefinitionOrLayout(parsedXml, FINANCIAL_LAYOUT)
 }
 
-const getRowRecords = (row: RowObject): RowRecordType[] =>
-  collections.array.makeArray(row.details?.values?.Record)
-    .map(record => getObjectFromValues(record.values.Value))
+const getRowRecords = (row: RowObject | undefined): RowRecordType[] =>
+  collections.array.makeArray(row?.details?.values?.Record)
+    .map(record => getObjectFromValues(record?.values?.Value))
 
-
-const getLayoutRows = (rows: RowObject[]): LayoutRowType[] =>
+const getLayoutRows = (rows: RowObject[] | undefined): LayoutRowType[] =>
   collections.array.makeArray(rows).map(row => {
-    const parsedRow = getObjectFromValues(row.descriptor.values.Value)
+    const parsedRow = getObjectFromValues(row.descriptor?.values?.Value)
     const records = getRowRecords(row)
     return {
       ...parsedRow,
@@ -62,9 +61,8 @@ const getLayoutRows = (rows: RowObject[]): LayoutRowType[] =>
 
 export const parseDefinition = async (layout: string): Promise<ParsedFinancialLayout> => {
   const financialLayout = await getLayoutParts(layout)
-  const returnInstance = {
-    rows: getLayoutRows(financialLayout.rows.values.FinancialRowElement),
+  return _.omitBy({
+    rows: getLayoutRows(financialLayout?.rows?.values?.FinancialRowElement),
     flags: getFlags(financialLayout),
-  }
-  return { ..._.omitBy(returnInstance, _.isEmpty) }
+  }, _.isEmpty)
 }

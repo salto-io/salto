@@ -27,7 +27,7 @@ import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
-import { OptionalFeatures } from '../types'
+import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
   INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
@@ -151,14 +151,13 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
 /**
  * Splitting by the following characters:
  * '-' for Layout names
- * '/' for Service Urls
  * '.' for Relative Api Names
  */
 const getRelativeName = (name: string): string => (
-  _.last(name.split(/[./-]/)) ?? name
+  _.last(name.split(/[.-]/)) ?? name
 )
 
-const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`(${SALESFORCE_CUSTOM_SUFFIX}|${CUSTOM_METADATA_SUFFIX})$`)
+const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`(${INSTANCE_SUFFIXES.map(suffix => `__${suffix}`).join('|')})$`)
 
 export const getNamespaceFromString = (name: string): string | undefined => {
   const parts = getRelativeName(name)

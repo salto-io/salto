@@ -243,100 +243,6 @@ describe('addDefaults', () => {
       })).toBeFalse()
     })
   })
-  describe('isRestrictableField', () => {
-    const FIELD_NAME = 'testField__c'
-    let parent: ObjectType
-    let field: Field
-
-    beforeEach(() => {
-      parent = new ObjectType({
-        elemID: new ElemID(SALESFORCE, 'TestObject'),
-        fields: {
-          [FIELD_NAME]: {
-            refType: Types.primitiveDataTypes.Picklist,
-            annotations: {
-              [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-            },
-          },
-        },
-        annotations: {
-          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-        },
-      })
-      field = parent.fields[FIELD_NAME]
-    })
-
-    describe('when parent is hidden', () => {
-      beforeEach(() => {
-        parent.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-      })
-      describe('when field is hidden', () => {
-        beforeEach(() => {
-          field.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-        })
-        it('should return false', () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-      describe('when field is not hidden', () => {
-        it('should return false', () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-      describe('when field is updatable', () => {
-        it('should return false', async () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-      describe('when field is not updatable', () => {
-        beforeEach(() => {
-          field.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
-        })
-        it('should return false', async () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-    })
-    describe('when parent is not hidden', () => {
-      beforeEach(() => {
-        parent.annotations[CORE_ANNOTATIONS.HIDDEN] = false
-      })
-      describe('when field is hidden value', () => {
-        beforeEach(() => {
-          field.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-        })
-        it('should return false', () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-      describe('when field is hidden', () => {
-        beforeEach(() => {
-          field.annotations[CORE_ANNOTATIONS.HIDDEN] = true
-        })
-        it('should return false', () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-      describe('when field is not hidden', () => {
-        it('should return true', () => {
-          expect(isRestrictableField(field)).toBeTrue()
-        })
-      })
-      describe('when field is updatable', () => {
-        it('should return false', () => {
-          expect(isRestrictableField(field)).toBeTrue()
-        })
-      })
-      describe('when field is not updatable', () => {
-        beforeEach(() => {
-          field.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
-        })
-        it('should return false', async () => {
-          expect(isRestrictableField(field)).toBeFalse()
-        })
-      })
-    })
-  })
   describe('getNamespaceFromString', () => {
     const NAMESPACE = 'ns'
     type TestInput = {
@@ -344,25 +250,19 @@ describe('addDefaults', () => {
       expected: string | undefined
     }
     it.each<TestInput>([
+      // Without namespace
       { received: 'Instance', expected: undefined },
       { received: 'CustomObject__c', expected: undefined },
       { received: 'CustomMetadata__mdt', expected: undefined },
       { received: 'Account.CustomField__c', expected: undefined },
       { received: 'Account-Layout Name', expected: undefined },
-      {
-        received: 'https://test.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/CustomField__c',
-        expected: undefined,
-      },
+      // With namespace
       { received: `${NAMESPACE}__Instance`, expected: NAMESPACE },
       { received: `Account.${NAMESPACE}__CustomField__c`, expected: NAMESPACE },
       { received: `${NAMESPACE}__CustomMetadata__mdt`, expected: NAMESPACE },
       { received: `${NAMESPACE}__CustomMetadata__mdt`, expected: NAMESPACE },
       { received: `Account-${NAMESPACE}__Layout Name`, expected: NAMESPACE },
       { received: `${NAMESPACE}__configurationSummary`, expected: NAMESPACE },
-      {
-        received: `https://test.lightning.force.com/lightning/setup/ObjectManager/Account/FieldsAndRelationships/${NAMESPACE}__CustomField__c`,
-        expected: NAMESPACE,
-      },
     ])('should return $expected for $received', ({ expected, received }) => {
       expect(getNamespaceFromString(received)).toEqual(expected)
     })

@@ -24,7 +24,7 @@ import { FilterCreator } from '../filter'
 const log = logger(module)
 
 
-const SECOND_ITERATION_TYPES = ['FieldConfigurationItem']
+const SECOND_ITERATION_TYPES = ['FieldConfigurationItem', 'CustomFieldContext']
 
 const aliasMap: Record<string, AliasData> = {
   Field: {
@@ -42,11 +42,19 @@ const aliasMap: Record<string, AliasData> = {
       fieldName: 'title',
     }],
   },
-  // CustomFieldContext: {
-  //   aliasComponents: [{
-  //     fieldName: '',
-  //   }],
-  // },
+  CustomFieldContext: {
+    aliasComponents: [
+      {
+        fieldName: '_parent.0',
+        referenceFieldName: '_alias',
+      },
+      {
+        constant: 'context in',
+      },
+      {
+        fieldName: 'name',
+      }],
+  },
   FieldConfigurationItem: {
     aliasComponents: [
       {
@@ -57,7 +65,7 @@ const aliasMap: Record<string, AliasData> = {
         fieldName: 'id',
         referenceFieldName: '_alias',
       }],
-    separator: '/',
+    separator: ':',
   },
   ProjectComponent: {
     aliasComponents: [
@@ -68,7 +76,7 @@ const aliasMap: Record<string, AliasData> = {
       {
         fieldName: 'name',
       }],
-    separator: '/',
+    separator: ':',
   },
 }
 

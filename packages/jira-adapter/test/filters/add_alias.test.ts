@@ -37,11 +37,13 @@ describe('add alias filter', () => {
   const dashboardGadgetTypeName = 'DashboardGadget'
   const fieldConfigurationTypeName = 'FieldConfiguration'
   const fieldConfigurationItemTypeName = 'FieldConfigurationItem'
+  const customFieldContextTypeName = 'CustomFieldContext'
 
   const fieldType = new ObjectType({ elemID: new ElemID(JIRA, fieldTypeName) })
   const dashboardGadgetType = new ObjectType({ elemID: new ElemID(JIRA, dashboardGadgetTypeName) })
   const fieldConfigurationType = new ObjectType({ elemID: new ElemID(JIRA, fieldConfigurationTypeName) })
   const fieldConfigurationItemType = new ObjectType({ elemID: new ElemID(JIRA, fieldConfigurationItemTypeName) })
+  const customFieldContextType = new ObjectType({ elemID: new ElemID(JIRA, customFieldContextTypeName) })
 
   const fieldInstance = new InstanceElement('instance1', fieldType, { name: 'field name alias' })
   const fieldConfigurationInstance = new InstanceElement('instance3', fieldConfigurationType, { name: 'field config' })
@@ -69,12 +71,24 @@ describe('add alias filter', () => {
           _parent: [new ReferenceExpression(fieldConfigurationInstance.elemID, fieldConfigurationInstance)],
         }
       )
+      const customFieldContextInstance = new InstanceElement(
+        'instance5',
+        customFieldContextType,
+        {
+          name: 'c name',
+        },
+        undefined,
+        {
+          _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)],
+        }
+      )
       const dashboardGadgetInstanceInvalid = new InstanceElement('instance5', dashboardGadgetType, {})
       const elements = [
         fieldInstance,
         dashboardGadgetInstance,
         fieldConfigurationInstance,
         fieldConfigurationItemInstance,
+        customFieldContextInstance,
         dashboardGadgetInstanceInvalid,
       ]
       await filter.onFetch(elements)
@@ -82,7 +96,8 @@ describe('add alias filter', () => {
         'field name alias',
         'gadget name alias',
         undefined,
-        'field config/field name alias',
+        'field config:field name alias',
+        'field name alias context in c name',
         undefined,
       ])
     })

@@ -171,8 +171,11 @@ export const getNamespaceFromString = (name: string): string | undefined => {
 export const getNamespace = async (
   element: Element
 ): Promise<string | undefined> => {
-  const elementApiName: string | undefined = await apiName(element, true)
-  return getNamespaceFromString(elementApiName)
+  // The casting is because the return type of `apiName` is incorrect. Can be safely removed after https://salto-io.atlassian.net/browse/SALTO-3635
+  const elementApiName = await apiName(element, true) as string | undefined
+  return elementApiName !== undefined
+    ? getNamespaceFromString(elementApiName)
+    : undefined
 }
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):

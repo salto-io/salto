@@ -95,8 +95,10 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     return acc
   }, new Set<string>())
 
+  const changesIds = new Set(changes.map(change => getChangeData(change).elemID.getFullName()))
+
   return [
     ...getUnreferencedContextErrors(fieldsToContexts, mergedContexts),
     ...getGlobalContextsUsedInProjectErrors(contexts, projectNamesToContexts),
-  ]
+  ].filter(change => changesIds.has(change.elemID.getFullName()))
 }

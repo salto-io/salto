@@ -157,6 +157,7 @@ salesforce {
 | profilePaths      | true                   | Update file names for profiles whose API name is different from their display name                                                     |
 | authorInformation | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                              |
 | describeSObjects  | true                   | Fetch additional information about CustomObjects from the soap API                                                                     |
+| formulaDeps       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                            |
 
 ### Data management configuration options
 

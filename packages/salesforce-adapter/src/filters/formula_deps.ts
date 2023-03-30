@@ -22,7 +22,7 @@ import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier, extractF
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
+import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomObjectFields } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -164,19 +164,20 @@ const FILTER_NAME = 'formulaDeps'
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: FILTER_NAME,
-  onFetch: async fetchedElements => {
-    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
-      log.info('Formula parsing is disabled. Skipping formula_deps filter.')
-      return
-    }
-    const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-    const fetchedFormulaFields = await awu(fetchedObjectTypes)
-      .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
-      .filter(isFormulaField)
-      .toArray()
-    const allElements = buildElementsSourceForFetch(fetchedElements, config)
-    await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
-  },
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: 'Error while parsing formulas',
+    config,
+    filterName: FILTER_NAME,
+    fetchFilterFunc: async fetchedElements => {
+      const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+      const fetchedFormulaFields = await awu(fetchedObjectTypes)
+        .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
+        .filter(isFormulaField)
+        .toArray()
+      const allElements = buildElementsSourceForFetch(fetchedElements, config)
+      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
+    },
+  }),
 })
 
 export default filter

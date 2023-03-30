@@ -638,6 +638,16 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'milestoneName', parentTypes: ['EntitlementProcessMilestoneItem'] },
     target: { type: 'MilestoneType' },
   },
+  {
+    src: { field: 'field', parentTypes: ['DuplicateRuleFilterItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborTableLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'table', parentTypes: ['DuplicateRuleFilterItem'] },
+    serializationStrategy: 'relativeApiName',
+    target: { type: CUSTOM_OBJECT },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on

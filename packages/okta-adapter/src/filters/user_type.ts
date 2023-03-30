@@ -20,7 +20,7 @@ import { applyFunctionToChangeData, createSchemeGuard } from '@salto-io/adapter-
 import { FilterCreator } from '../filter'
 import { USERTYPE_TYPE_NAME, LINKS_FIELD } from '../constants'
 import OktaClient from '../client/client'
-import { API_DEFINITIONS_CONFIG, OktaApiConfig } from '../config'
+import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { defaultDeployChange, deployChanges } from '../deployment'
 
 type UserType = {
@@ -44,7 +44,7 @@ export const isUserType = createSchemeGuard<UserType>(USER_TYPE_SCHEMA, 'Receive
 const deployUserType = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: OktaApiConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   const response = await defaultDeployChange(change, client, apiDefinitions)
   if (!isUserType(response)) {
@@ -75,7 +75,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployUserType(change, client, config[API_DEFINITIONS_CONFIG])
+      async change => deployUserType(change, client, config[API_DEFINITIONS_CONFIG].swaggerApiConfig)
     )
 
     return { leftoverChanges, deployResult }

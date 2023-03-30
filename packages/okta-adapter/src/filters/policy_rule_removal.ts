@@ -19,7 +19,7 @@ import { Change, InstanceElement, isInstanceChange, getChangeData, isRemovalChan
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { POLICY_RULE_TYPE_NAMES } from '../constants'
 import OktaClient from '../client/client'
-import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange } from '../deployment'
 
@@ -28,10 +28,10 @@ const log = logger(module)
 const deployPolicyRuleRemoval = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  config: OktaConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
 ): Promise<void> => {
   try {
-    await defaultDeployChange(change, client, config[API_DEFINITIONS_CONFIG])
+    await defaultDeployChange(change, client, apiDefinitions)
     return
   } catch (error) {
     if (error instanceof clientUtils.HTTPError && error.response?.status === 404) {
@@ -60,7 +60,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployPolicyRuleRemoval(change, client, config)
+      async change => deployPolicyRuleRemoval(change, client, config[API_DEFINITIONS_CONFIG].swaggerApiConfig)
     )
 
     return {

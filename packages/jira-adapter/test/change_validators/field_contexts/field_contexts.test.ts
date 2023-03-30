@@ -142,6 +142,14 @@ describe('Field contexts', () => {
       },
     ])
   })
+
+  it('should not about a context if it is not in the changed elements', async () => {
+    projectInstance.value[PROJECT_CONTEXTS_FIELD] = []
+    expect(await fieldContextValidator(
+      [toChange({ after: projectInstance })],
+      elementsSource
+    )).toEqual([])
+  })
   it('should not throw when one of the contexts is unresolved', async () => {
     fieldInstance.value.contexts.push(new ReferenceExpression(new ElemID(JIRA, 'unresolved'), undefined))
     await expect(fieldContextValidator(

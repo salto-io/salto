@@ -434,14 +434,33 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
   },
   UserSchema: {
-    request: {
-      url: '/api/v1/meta/schemas/user/default',
-    },
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'description', fieldType: 'string' }],
+      fieldTypeOverrides: [
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'userType', fieldType: 'string' },
+      ],
       serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT
+        .concat({ fieldName: '_links' }, { fieldName: '$schema' }, { fieldName: 'type' }, { fieldName: 'title' }, { fieldName: 'description' }, { fieldName: 'properties' }),
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/meta/schemas/user/{schemaId}',
+        method: 'post',
+        urlParamsToFields: {
+          schemaId: 'id',
+        },
+        fieldsToIgnore: ['id', 'name'],
+      },
+      modify: {
+        url: '/api/v1/meta/schemas/user/{schemaId}',
+        method: 'post',
+        urlParamsToFields: {
+          schemaId: 'id',
+        },
+        fieldsToIgnore: ['id', 'name'],
+      },
     },
   },
   OrgContactTypeObj: {
@@ -726,6 +745,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/meta/types/user',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'put',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
     },
   },
   GroupSchemaAttribute: {

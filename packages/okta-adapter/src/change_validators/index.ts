@@ -21,6 +21,7 @@ import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { defaultPoliciesValidator } from './default_policies'
 import { customApplicationStatusValidator } from './custom_application_status'
+import { userTypeAndSchemaValidator } from './user_type_and_schema'
 
 export default (
 ): ChangeValidator => {
@@ -31,6 +32,7 @@ export default (
     groupRuleActionsValidator,
     defaultPoliciesValidator,
     customApplicationStatusValidator,
+    userTypeAndSchemaValidator,
   ]
 
   return createChangeValidator(validators)

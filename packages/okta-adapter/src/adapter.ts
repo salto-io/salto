@@ -34,7 +34,8 @@ import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
-import fetchUserSchemaFilter from './filters/user_schema'
+import userTypeFilter from './filters/user_type'
+import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
@@ -57,7 +58,8 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   queryFilter,
   standardRolesFilter,
-  fetchUserSchemaFilter,
+  userTypeFilter,
+  userSchemaFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
   // should run before fieldReferencesFilter

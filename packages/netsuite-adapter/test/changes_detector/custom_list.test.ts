@@ -18,7 +18,7 @@ import { customListDetector as detector } from '../../src/changes_detector/chang
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_formats'
+import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
 
 describe('custom_list', () => {
   const runSuiteQLMock = jest.fn()
@@ -33,8 +33,8 @@ describe('custom_list', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValue([
-        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
-        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+        { scriptid: 'a', time: '2021-03-15 00:00:00' },
+        { scriptid: 'b', time: '2021-03-16 00:00:00' },
       ])
       results = await detector.getChanges(
         client,
@@ -43,16 +43,16 @@ describe('custom_list', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
-        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
+        { type: 'object', objectId: 'a', time: new Date('2021-03-15T00:00:00.000Z') },
+        { type: 'object', objectId: 'b', time: new Date('2021-03-16T00:00:00.000Z') },
       ])
     })
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledWith(`
-      SELECT scriptid, TO_CHAR(lastmodifieddate, 'MM/DD/YYYY') AS lastmodifieddate
+      SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
       FROM customlist
-      WHERE lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
+      WHERE lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
       ORDER BY scriptid ASC
     `)
     })
@@ -63,8 +63,8 @@ describe('custom_list', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValue([
-        { scriptid: 'a', lastmodifieddate: '03/15/2021' },
-        { scriptid: 'b', lastmodifieddate: '03/16/2021' },
+        { scriptid: 'a', time: '2021-03-15 00:00:00' },
+        { scriptid: 'b', time: '2021-03-16 00:00:00' },
         { qqq: 'b' },
         { scriptid: {} },
       ])
@@ -75,8 +75,8 @@ describe('custom_list', () => {
     })
     it('should return the changes without the invalid results', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', time: new Date('2021-03-16T00:00:00.000Z') },
-        { type: 'object', externalId: 'b', time: new Date('2021-03-17T00:00:00.000Z') },
+        { type: 'object', objectId: 'a', time: new Date('2021-03-15T00:00:00.000Z') },
+        { type: 'object', objectId: 'b', time: new Date('2021-03-16T00:00:00.000Z') },
       ])
     })
   })

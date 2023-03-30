@@ -17,9 +17,8 @@ import NetsuiteClient from '../client/client'
 
 export type ChangedObject = {
   type: 'object'
-  externalId: string
-  internalId?: number
-  time?: Date
+  objectId: string
+  time: Date
 }
 
 export type ChangedType = {
@@ -47,5 +46,7 @@ export type TypeChangesDetector = {
   getTypes: () => string[]
 }
 
-export type FileCabinetChangesDetector = (client: NetsuiteClient, dateRange: DateRange) =>
-  Promise<(ChangedObject & { internalId: number })[]>
+export type FileCabinetChangesDetector = (
+  client: NetsuiteClient,
+  dateRange: DateRange
+) => Promise<ChangedObject[]>

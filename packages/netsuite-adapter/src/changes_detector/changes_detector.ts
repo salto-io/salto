@@ -25,7 +25,6 @@ import workflowDetector from './changes_detectors/workflow'
 import savedSearchDetector from './changes_detectors/savedsearch'
 import { ChangedObject, ChangedType, DateRange, FileCabinetChangesDetector } from './types'
 import NetsuiteClient from '../client/client'
-import { convertSavedSearchStringToDate } from './date_formats'
 import { getChangedCustomRecords } from './changes_detectors/custom_records'
 import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
 import { addCustomRecordTypePrefix } from '../types'
@@ -44,77 +43,17 @@ export const DETECTORS = [
 
 const SUPPORTED_TYPES = new Set(DETECTORS.flatMap(detector => detector.getTypes()))
 
-const getSystemNoteChanges = async (client: NetsuiteClient, dateRange: DateRange):
-Promise<Record<number, Date | undefined> | undefined> => {
-  // Note that the internal id is NOT unique cross types and different instances
-  // of different type might have the same internal id. Due the a bug in the saved
-  // search api in Netsuite we can't get the type of the record from SystemNote.
-  // This might results fetching an instance that was not modified (but supposed to be pretty rare).
-  const results = await client.runSavedSearchQuery({
-    type: 'systemnote',
-    filters: [
-      ['date', 'within', ...dateRange.toSavedSearchRange()],
-    ],
-    columns: ['recordid', 'date'],
-  })
-
-  if (results === undefined) {
-    log.warn('file changes query failed')
-    return undefined
-  }
-
-  return _(results)
-    .filter((res): res is { recordid: string; date: string } => {
-      if ([res.recordid, res.date].some(val => typeof val !== 'string')) {
-        log.warn('Got invalid result from system note query, %o', res)
-        return false
-      }
-      return true
-    })
-    .map(res => ({
-      id: parseInt(res.recordid, 10),
-      time: convertSavedSearchStringToDate(res.date),
-    }))
-    .groupBy(res => res.id)
-    .entries()
-    .map(([id, group]) => [id, _.max(group.map(res => res.time))])
-    .fromPairs()
-    .value()
-}
-
-const getIdTime = (
-  changes: ChangedObject[],
-  systemNoteChanges: Record<string, Date | undefined> | undefined,
-): Date | undefined => {
-  if (changes[0].internalId !== undefined
-    && systemNoteChanges !== undefined
-    && systemNoteChanges[changes[0].internalId] !== undefined) {
-    return systemNoteChanges[changes[0].internalId]
-  }
-  return _.maxBy(changes, change => change.time)?.time
-}
-
 const getChangedIds = (
   changes: ChangedObject[],
   idToLastFetchDate: Record<string, Date>,
-  systemNoteChanges?: Record<number, Date | undefined>
-): Set<string> =>
-  new Set(_(changes)
-    .filter(change => (change.internalId === undefined
-      || systemNoteChanges === undefined
-      || change.internalId in systemNoteChanges))
-    .groupBy(changedObject => changedObject.externalId)
-    .entries()
-    .map(([externalId, changesGroup]): [string, Date | undefined] =>
-      [externalId, getIdTime(changesGroup, systemNoteChanges)])
-    .filter(([id, time]) => {
-      const lastFetchDate = idToLastFetchDate[id]
-      return time === undefined
-      || lastFetchDate === undefined
-      || time > lastFetchDate
-    })
-    .map(([id]) => id)
-    .value())
+  filterFunc: (id: string) => boolean = () => true
+): Set<string> => new Set(
+  changes
+    .map(item => ({ ...item, lastFetchDate: idToLastFetchDate[item.objectId] }))
+    .filter(({ time, lastFetchDate }) => lastFetchDate === undefined || time > lastFetchDate)
+    .map(change => change.objectId)
+    .filter(filterFunc)
+)
 
 export const getChangedObjects = async (
   client: NetsuiteClient,
@@ -150,13 +89,11 @@ export const getChangedObjects = async (
   ]
 
   const [
-    systemNoteChanges,
     changedInstances,
     changedFiles,
     changedFolders,
     changedCustomRecords,
   ] = await Promise.all([
-    getSystemNoteChanges(client, dateRange),
     instancesChangesPromise,
     ...changedFileCabinetPromises,
     getChangedCustomRecords(client, dateRange, { isCustomRecordTypeMatch }),
@@ -165,19 +102,12 @@ export const getChangedObjects = async (
   const [changedTypes, changedObjects] = _.partition(changedInstances, (change): change is ChangedType => change.type === 'type')
 
   const scriptIds = getChangedIds(
-    changedObjects.map(change => ({ ...change, externalId: change.externalId.toLowerCase() })),
+    changedObjects.map(({ objectId, ...change }) => ({ ...change, objectId: objectId.toLowerCase() })),
     serviceIdToLastFetchDate,
-    systemNoteChanges
   )
 
-  const filePaths = new Set([
-    ...getChangedIds(changedFiles, serviceIdToLastFetchDate, systemNoteChanges),
-  ].filter(isFileMatch))
-
-  const folderPaths = [
-    ...getChangedIds(changedFolders, serviceIdToLastFetchDate, systemNoteChanges),
-  ].filter(isFileMatch)
-
+  const filePaths = getChangedIds(changedFiles, serviceIdToLastFetchDate, isFileMatch)
+  const folderPaths = Array.from(getChangedIds(changedFolders, serviceIdToLastFetchDate, isFileMatch))
   const unresolvedFolderPaths = folderPaths
     .map(folder => `${folder}/`)
     .filter(folder => Array.from(filePaths).every(file => !file.startsWith(folder)))

@@ -14,32 +14,36 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { convertSavedSearchStringToDate } from '../date_formats'
-import { ChangedObject, TypeChangesDetector } from '../types'
+import { convertSavedSearchStringToDate, convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
+import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
-const parseGeneralRolesChanges = (changes?: Record<string, unknown>[]): ChangedObject[] => {
+const parseGeneralRolesChanges = (
+  changes: Record<string, unknown>[] | undefined,
+  dateRange: DateRange,
+): ChangedObject[] => {
   if (changes === undefined) {
     log.warn('general roles changes query failed')
     return []
   }
-  return changes.filter((res): res is { scriptid: string; id: string } => {
-    if ([res.scriptid, res.id].some(val => typeof val !== 'string')) {
+  return changes.filter((res): res is { scriptid: string; time: string } => {
+    if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
       log.warn('Got invalid result from roles changes query, %o', res)
       return false
     }
     return true
   }).map(res => ({
     type: 'object',
-    externalId: res.scriptid,
-    internalId: parseInt(res.id, 10),
+    objectId: res.scriptid,
+    time: convertSuiteQLStringToDate(res.time, dateRange.end),
   }))
 }
 
 const parsePermissionRolesChanges = (
-  permissionChanges?: Record<string, unknown>[],
-  allRoles?: Record<string, unknown>[]
+  permissionChanges: Record<string, unknown>[] | undefined,
+  allRoles: Record<string, unknown>[] | undefined,
+  dateRange: DateRange,
 ): ChangedObject[] => {
   if (permissionChanges === undefined) {
     log.warn('permission roles changes query failed')
@@ -74,12 +78,16 @@ const parsePermissionRolesChanges = (
       return true
     }).map(res => ({
       id: parseInt(res.internalid[0].value, 10),
-      time: convertSavedSearchStringToDate(res.permchangedate),
+      time: convertSavedSearchStringToDate(res.permchangedate, dateRange.end),
     }))
 
   return changesInternalIds
     .filter(({ id }) => id in internalToExternalId)
-    .map(({ id, time }) => ({ type: 'object', externalId: internalToExternalId[id], time }))
+    .map(({ id, time }) => ({
+      type: 'object',
+      objectId: internalToExternalId[id],
+      time,
+    }))
 }
 
 const changesDetector: TypeChangesDetector = {
@@ -87,11 +95,12 @@ const changesDetector: TypeChangesDetector = {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const rolesChangesPromise = client.runSuiteQL(`
-      SELECT role.scriptid, role.id
+      SELECT role.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
       WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -118
-      ORDER BY role.id ASC
+      GROUP BY role.scriptid
+      ORDER BY role.scriptid ASC
     `)
 
     const permissionChangesPromise = client.runSavedSearchQuery({
@@ -113,8 +122,8 @@ const changesDetector: TypeChangesDetector = {
     ] = await Promise.all([rolesChangesPromise, permissionChangesPromise, allRolesPromise])
 
     return [
-      ...parseGeneralRolesChanges(rolesChanges),
-      ...parsePermissionRolesChanges(permissionChanges, allRoles),
+      ...parseGeneralRolesChanges(rolesChanges, dateRange),
+      ...parsePermissionRolesChanges(permissionChanges, allRoles, dateRange),
     ]
   },
   getTypes: () => ([

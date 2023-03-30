@@ -47,7 +47,7 @@ export const createLocationCachePool = (
   cacheSize: number = DEFAULT_LOCATION_CACHE_SIZE
 ): LocationCachePool => {
   // TODO: LRU if we determine too many locationCaches are created.
-  const pool: LocationCachePoolContents = initialContents ?? new Map<string, { cache: LocationCache; refcnt: number }>()
+  const pool: LocationCachePoolContents = initialContents ?? new Map()
   let poolSizeWatermark = 0
   return {
     get: location => {

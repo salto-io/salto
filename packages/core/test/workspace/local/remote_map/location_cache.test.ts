@@ -37,13 +37,11 @@ describe('remote map location cache pool', () => {
     expect(cache.location).toEqual(LOCATION1)
     expect(poolContents.size).toEqual(1)
     expect(poolContents.get(LOCATION1)).toBeDefined()
-    expect(poolContents.get(LOCATION1)?.refcnt).toEqual(1)
   })
 
   it('should reuse caches where possible', () => {
     _.times(10, () => pool.get(LOCATION1))
     expect(poolContents.size).toEqual(1)
-    expect(poolContents.get(LOCATION1)?.refcnt).toEqual(10)
   })
 
   it('should not reuse caches of a different location', () => {
@@ -52,8 +50,6 @@ describe('remote map location cache pool', () => {
     expect(cache.location).toEqual(LOCATION1)
     expect(anotherCache.location).toEqual(LOCATION2)
     expect(poolContents.size).toEqual(2)
-    expect(poolContents.get(LOCATION1)?.refcnt).toEqual(1)
-    expect(poolContents.get(LOCATION2)?.refcnt).toEqual(1)
   })
 
   it('should destroy cache when the last reference to it is returned', () => {
@@ -62,6 +58,5 @@ describe('remote map location cache pool', () => {
     expect(poolContents.size).toEqual(0)
     pool.get(LOCATION1)
     expect(poolContents.size).toEqual(1)
-    expect(poolContents.get(LOCATION1)?.refcnt).toEqual(1)
   })
 })

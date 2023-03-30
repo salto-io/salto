@@ -76,6 +76,12 @@ export const isInstanceOfType = (...types: string[]) => (
   )
 )
 
+export const isInstanceOfTypeChange = (...types: string[]) => (
+  (change: Change): Promise<boolean> => (
+    isInstanceOfType(...types)(getChangeData(change))
+  )
+)
+
 export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string|undefined> => (
   apiName(elem, relative)
 )
@@ -368,12 +374,6 @@ export const getDataFromChanges = <T extends Change<unknown>>(
       .map(change => _.get(change.data, dataField))
   )
 
-export const isInstanceOfTypeChange = (...types: string[]) => (
-  (change: Change): Promise<boolean> => (
-    isInstanceOfType(...types)(getChangeData(change))
-  )
-)
-
 export const ensureSafeFilterFetch = ({
   fetchFilterFunc, warningMessage, config, filterName,
 }:{
@@ -404,5 +404,5 @@ export const ensureSafeFilterFetch = ({
 
 export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
   await isCustomObject(objectType)
-  && !(await safeApiName(objectType))?.includes('__')
+  && !(await safeApiName(objectType))?.includes('__') // Standard Objects should never have __ in their names.
 )

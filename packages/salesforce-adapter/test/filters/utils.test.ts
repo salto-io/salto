@@ -15,7 +15,7 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import {
-  addDefaults, getNamespaceFromString,
+  addDefaults, getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
   isMetadataValues,
@@ -244,27 +244,35 @@ describe('addDefaults', () => {
       })).toBeFalse()
     })
   })
-  describe('getNamespaceFromString', () => {
+  describe('getNamespace', () => {
     describe('without namespace', () => {
       it.each([
         'Instance',
-        'Account.CustomField__c',
-        'Account-Layout Name',
+        'Parent.Instance',
         ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
-      ])('%s', (name: string) => {
-        expect(getNamespaceFromString(name)).toBeUndefined()
+      ])('%s', async (name: string) => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        expect(await getNamespace(instance)).toBeUndefined()
+      })
+      it('Layout instance', async () => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
+        expect(await getNamespace(instance)).toBeUndefined()
       })
     })
     describe('with namespace', () => {
       const NAMESPACE = 'ns'
       it.each([
         `${NAMESPACE}__Instance`,
+        `Parent.${NAMESPACE}__Instance`,
         `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        `Account.${NAMESPACE}__CustomField__c`,
-        `Account-${NAMESPACE}__Layout Name`,
         ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
-      ])('%s', (name: string) => {
-        expect(getNamespaceFromString(name)).toEqual(NAMESPACE)
+      ])('%s', async (name: string) => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
+        expect(await getNamespace(instance)).toEqual(NAMESPACE)
+      })
+      it('Layout instance', async () => {
+        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
+        expect(await getNamespace(instance)).toEqual(NAMESPACE)
       })
     })
   })

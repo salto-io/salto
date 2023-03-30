@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { InstanceElement, isObjectType, isInstanceElement, Values, CORE_ANNOTATIONS, ReferenceExpression, isInstanceChange, getChangeData, Change, isRemovalChange, isAdditionChange, AdditionChange } from '@salto-io/adapter-api'
 import { elements as elementUtils, config as configUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
@@ -86,7 +86,9 @@ const filter: FilterCreator = ({ client, config }) => ({
       return
     }
 
-    const schemaIdToUserType = Object.fromEntries(userTypeInstances.map(type => [getUserSchemaId(type), type]))
+    const schemaIdToUserType = Object.fromEntries(
+      userTypeInstances.map(userType => [getUserSchemaId(userType), userType])
+    )
     const userSchemaIds = Object.keys(schemaIdToUserType)
     const userSchemaEntries = (await Promise.all(
       userSchemaIds.map(async userSchemaId => {
@@ -131,7 +133,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isAdditionChange)
       .filter(change => getChangeData(change).elemID.typeName === USER_SCHEMA_TYPE_NAME)
       .forEach(async change => {
-        const userTypeValues = getChangeData(change).annotations[CORE_ANNOTATIONS.PARENT]?.[0]
+        const userTypeValues = getParents(getChangeData(change))?.[0]
         if (!isUserType(userTypeValues)) {
           log.error(`Failed to find matching UserType instance for UserSchema: ${getChangeData(change).elemID.getFullName()}, can not updadate id`)
           return

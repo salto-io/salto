@@ -14,28 +14,37 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { getParent } from '@salto-io/adapter-utils'
 import { USERTYPE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+
+const log = logger(module)
 
 /**
  * When removing UserSchema, validate the parent UserType gets removed as well
  */
 export const userTypeAndSchemaValidator: ChangeValidator = async changes => {
-  const removedUserSchemaInstances = changes
+  const removalInstanceChanges = changes
     .filter(isInstanceChange)
     .filter(isRemovalChange)
     .map(getChangeData)
+
+  const removedUserSchemaInstances = removalInstanceChanges
     .filter(instance => instance.elemID.typeName === USER_SCHEMA_TYPE_NAME)
 
-  const removedUserTypeNames = new Set(changes
-    .filter(isInstanceChange)
-    .filter(isRemovalChange)
-    .map(getChangeData)
+  const removedUserTypeNames = new Set(removalInstanceChanges
     .filter(instance => instance.elemID.typeName === USERTYPE_TYPE_NAME)
     .map(instance => instance.elemID.getFullName()))
 
   return removedUserSchemaInstances
-    .filter(userSchema => !removedUserTypeNames.has(getParent(userSchema).elemID.getFullName()))
+    .filter(userSchema => {
+      try {
+        return !removedUserTypeNames.has(getParent(userSchema).elemID.getFullName())
+      } catch (e) {
+        log.error(`Could not run userTypeAndSchemaValidator validator for instance ${userSchema.elemID.getFullName}: ${e}`)
+        return false
+      }
+    })
     .map(userSchema => ({
       elemID: userSchema.elemID,
       severity: 'Error',

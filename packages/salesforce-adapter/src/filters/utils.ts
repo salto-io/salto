@@ -16,13 +16,32 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
-  isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
-  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
+  BuiltinTypes,
+  Change,
+  ChangeData,
+  ChangeDataType,
+  CORE_ANNOTATIONS,
+  CoreAnnotationTypes,
   createRefToElmWithValue,
+  Element,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isField,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+  isRemovalOrModificationChange,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  TypeElement,
+  TypeMap,
+  Value,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -30,30 +49,30 @@ import SalesforceClient from '../client/client'
 import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
   API_NAME,
-  LABEL,
+  API_NAME_SEPARATOR,
+  CUSTOM_METADATA_SUFFIX,
   CUSTOM_OBJECT,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_ID_ANNOTATION,
+  INTERNAL_ID_FIELD,
+  KEY_PREFIX,
+  LABEL,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  MAX_QUERY_LENGTH,
   METADATA_TYPE,
   NAMESPACE_SEPARATOR,
-  API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD,
-  SALESFORCE,
-  INTERNAL_ID_FIELD,
-  INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX,
-  MAX_QUERY_LENGTH,
-  CUSTOM_METADATA_SUFFIX,
   PLURAL_LABEL,
-  LAYOUT_TYPE_ID_METADATA_TYPE,
+  SALESFORCE,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
 import {
-  metadataType,
   apiName,
   defaultApiName,
-  Types,
   isCustomObject,
-  MetadataValues,
   isNameField,
+  metadataType,
+  MetadataValues,
+  Types,
 } from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
@@ -82,7 +101,7 @@ export const isInstanceOfTypeChange = (...types: string[]) => (
   )
 )
 
-export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string|undefined> => (
+export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string | undefined> => (
   apiName(elem, relative)
 )
 
@@ -189,8 +208,8 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
 
 const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
 
-const getNamespaceFromString = (name: string): string | undefined => {
-  const parts = name
+const getNamespaceFromString = (relativeApiName: string): string | undefined => {
+  const parts = relativeApiName
     .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
     .split(NAMESPACE_SEPARATOR)
   return parts.length !== 1
@@ -198,6 +217,16 @@ const getNamespaceFromString = (name: string): string | undefined => {
     : undefined
 }
 
+const specialLayoutObjects = new Map([
+  ['CaseClose', 'Case'],
+  ['UserAlt', 'User'],
+])
+
+// Layout full name starts with related sobject and then '-'
+export const layoutObjAndName = (layoutApiName: string): [string, string] => {
+  const [obj, ...name] = layoutApiName.split('-')
+  return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
+}
 export const getNamespace = async (
   element: Element,
 ): Promise<string | undefined> => {
@@ -205,8 +234,8 @@ export const getNamespace = async (
   if (elementApiName === undefined) {
     return undefined
   }
-  return await isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
-    ? getNamespaceFromString(elementApiName.split('-')[1])
+  return isInstanceElement(element) && await isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
+    ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
     : getNamespaceFromString(elementApiName)
 }
 

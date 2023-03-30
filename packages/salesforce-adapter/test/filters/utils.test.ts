@@ -18,7 +18,7 @@ import {
   addDefaults, getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
-  isMetadataValues, isStandardObject,
+  isMetadataValues, isStandardObject, layoutObjAndName,
 } from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
@@ -288,6 +288,16 @@ describe('addDefaults', () => {
         const customObject = createCustomObjectType(customObjectName, {})
         expect(await isStandardObject(customObject)).toBeFalse()
       })
+    })
+  })
+  describe('layoutObjAndName', () => {
+    it.each([
+      ['Account-Layout Name', 'Account', 'Layout Name'],
+      ['Account-SBQQ__Layout Name', 'Account', 'SBQQ__Layout Name'],
+      ['SBQQ__Account__c-Layout Name', 'SBQQ__Account__c', 'Layout Name'],
+      ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
+    ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
+      expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
     })
   })
 })

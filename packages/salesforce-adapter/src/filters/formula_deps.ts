@@ -154,6 +154,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
   }
 }
 
+const FILTER_NAME = 'formulaDeps'
 /**
  * Extract references from formulas
  * Formulas appear in the field definitions of types and may refer to fields in their parent type or in another type.
@@ -162,8 +163,12 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
  */
 const filter: LocalFilterCreator = ({ config }) => ({
-  name: 'formula_deps',
+  name: FILTER_NAME,
   onFetch: async fetchedElements => {
+    if (!config.fetchProfile.isFeatureEnabled(FILTER_NAME)) {
+      log.info('Formula parsing is disabled. Skipping formula_deps filter.')
+      return
+    }
     const fetchedObjectTypes = fetchedElements.filter(isObjectType)
     const fetchedFormulaFields = await awu(fetchedObjectTypes)
       .flatMap(extractFlatCustomObjectFields) // Get the types + their fields

@@ -77,6 +77,7 @@ export type OptionalFeatures = {
   authorInformation?: boolean
   describeSObjects?: boolean
   skipAliases?: boolean
+  formulaDeps?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -570,6 +571,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
     skipAliases: { refType: BuiltinTypes.BOOLEAN },
+    formulaDeps: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -138,8 +138,10 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
     logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
-    log.info(`Extracted ${validReferences.length} valid references`)
-    const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+    log.debug(`Extracted ${validReferences.length} valid references`)
+    const depsAsRefExpr = validReferences
+      .filter(elemId => !elemId.isEqual(field.parent.elemID))
+      .map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)
   } catch (e) {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, ChangeDataType, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
 import { NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
@@ -25,56 +25,127 @@ describe('customization type change validator', () => {
   const file = fileType()
   const entitycustomfield = entitycustomfieldType().type
   const addressForm = addressFormType().type
-  it('should have change error if custom type SCRIPT_ID has been modified', async () => {
-    const entityCustomFieldInstance = new InstanceElement('elementName',
-      entitycustomfield, {
-        [SCRIPT_ID]: 'custentity_my_script_id',
+  describe('SCRIPT_ID', () => {
+    describe('has been modified', () => {
+      it('should have change error for custom type', async () => {
+        const entityCustomFieldInstance = new InstanceElement('elementName',
+          entitycustomfield, {
+            [SCRIPT_ID]: 'custentity_my_script_id',
+          })
+        const after = entityCustomFieldInstance.clone()
+        after.value[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: entityCustomFieldInstance, after })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
       })
-    const after = entityCustomFieldInstance.clone()
-    after.value[SCRIPT_ID] = 'modified'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: entityCustomFieldInstance, after })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
-  })
 
-  it('should have change error if type SCRIPT_ID annotation has been modified', async () => {
-    const type = new ObjectType({
-      elemID: new ElemID(NETSUITE, 'customrecord1'),
-      annotationRefsOrTypes: {
-        [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
-      },
-      annotations: {
-        [SCRIPT_ID]: 'customrecord1',
-      },
+      it('should have change error for type', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord1'),
+          annotationRefsOrTypes: {
+            [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+          annotations: {
+            [SCRIPT_ID]: 'customrecord1',
+          },
+        })
+        const after = type.clone()
+        after.annotations[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: type, after })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(type.elemID)
+      })
+
+      it('should have change error for field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'custom_field',
+          BuiltinTypes.STRING,
+          { [SCRIPT_ID]: 'custom_field' },
+        )
+        const after = field.clone()
+        after.annotations[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: field, after })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(field.elemID)
+      })
     })
-    const after = type.clone()
-    after.annotations[SCRIPT_ID] = 'modified'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: type, after })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(type.elemID)
-  })
+    describe('is missing on added change', () => {
+      it('should have change error for custom type', async () => {
+        const entityCustomFieldInstance = new InstanceElement('elementName', entitycustomfield)
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: entityCustomFieldInstance })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
+      })
 
-  it('should have change error if field SCRIPT_ID annotation has been modified', async () => {
-    const field = new Field(
-      new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
-      'custom_field',
-      BuiltinTypes.STRING,
-      { [SCRIPT_ID]: 'custom_field' },
-    )
-    const after = field.clone()
-    after.annotations[SCRIPT_ID] = 'modified'
-    const changeErrors = await immutableChangesValidator(
-      [toChange({ before: field, after })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors[0].severity).toEqual('Error')
-    expect(changeErrors[0].elemID).toEqual(field.elemID)
+      it('should have change error for type', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord1'),
+          annotationRefsOrTypes: {
+            [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+        })
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: type })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(type.elemID)
+      })
+
+      it('should have change error for field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'custom_field',
+          BuiltinTypes.STRING,
+        )
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: field })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(field.elemID)
+      })
+    })
+
+    it('should not have errors for elements with SCRIPT_ID', async () => {
+      const entityCustomFieldInstance = new InstanceElement('elementName',
+        entitycustomfield, {
+          [SCRIPT_ID]: 'custentity_my_script_id',
+        })
+      const type = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotationRefsOrTypes: {
+          [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+        },
+        annotations: {
+          [SCRIPT_ID]: 'customrecord1',
+        },
+      })
+      const field = new Field(
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+        'custom_field',
+        BuiltinTypes.STRING,
+        { [SCRIPT_ID]: 'custom_field' },
+      )
+
+      new Array<ChangeDataType>(entityCustomFieldInstance, type, field).forEach(async element => {
+        const change = await immutableChangesValidator([toChange({ after: element })])
+        expect(change).toBeFalsy()
+      })
+    })
   })
 
   it('should have change error if file cabinet type PATH has been modified', async () => {

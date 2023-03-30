@@ -404,5 +404,5 @@ export const ensureSafeFilterFetch = ({
 
 export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
   await isCustomObject(objectType)
-  && !(await apiName(objectType)).includes('__')
+  && !(await safeApiName(objectType))?.includes('__')
 )

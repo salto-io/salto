@@ -18,7 +18,7 @@ import {
   addDefaults, getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
-  isMetadataValues,
+  isMetadataValues, isStandardObject,
 } from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
@@ -273,6 +273,20 @@ describe('addDefaults', () => {
       it('Layout instance', async () => {
         const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
         expect(await getNamespace(instance)).toEqual(NAMESPACE)
+      })
+    })
+  })
+  describe('isStandardObject', () => {
+    it('should return true for Standard CustomObject', async () => {
+      expect(await isStandardObject(mockTypes.Account)).toBeTrue()
+    })
+    it('should return false for object with no custom suffix that is not of type CustomObject', async () => {
+      expect(await isStandardObject(mockTypes.Profile)).toBeFalse()
+    })
+    describe('when CustomObject has a custom suffix', () => {
+      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', async (customObjectName: string) => {
+        const customObject = createCustomObjectType(customObjectName, {})
+        expect(await isStandardObject(customObject)).toBeFalse()
       })
     })
   })

@@ -178,7 +178,7 @@ export default class OktaAdapter implements AdapterOperations {
   }> {
     return generateTypes(
       OKTA,
-      this.userConfig[API_DEFINITIONS_CONFIG].swaggerApiConfig,
+      this.userConfig[API_DEFINITIONS_CONFIG].swagger,
     )
   }
 
@@ -188,11 +188,11 @@ export default class OktaAdapter implements AdapterOperations {
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
-      ...this.userConfig.apiDefinitions.swaggerApiConfig,
+      ...this.userConfig.apiDefinitions.swagger,
       types: {
         ...parsedConfigs,
         ..._.mapValues(
-          this.userConfig.apiDefinitions.swaggerApiConfig.types,
+          this.userConfig.apiDefinitions.swagger.types,
           (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
         ),
       },
@@ -202,7 +202,7 @@ export default class OktaAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.swaggerApiConfig.supportedTypes,
+      supportedTypes: this.userConfig.apiDefinitions.swagger.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
@@ -217,7 +217,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     const privateApiElements = await getPrivateApiElements({
       client: this.adminClient,
-      apiDefinitionsConfig: this.userConfig[API_DEFINITIONS_CONFIG].ducktypeApiConfig,
+      apiDefinitionsConfig: this.userConfig[API_DEFINITIONS_CONFIG].ducktype,
       fetchQuery: this.fetchQuery,
       getElemIdFunc: this.getElemIdFunc,
     })

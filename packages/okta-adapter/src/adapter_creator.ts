@@ -53,13 +53,13 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   )
 
   validateClientConfig(CLIENT_CONFIG, config?.value?.client)
-  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.swaggerApiConfig)
+  validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.swagger)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     fetch,
-    apiDefinitions.swaggerApiConfig
+    apiDefinitions.swagger
   )
-  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.ducktypeApiConfig)
+  validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions.ducktype)
 
   const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {
     client: config?.value?.client,

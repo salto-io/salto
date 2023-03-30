@@ -37,8 +37,8 @@ export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActio
 export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 export type OktaApiConfig = {
-  swaggerApiConfig: OktaSwaggerApiConfig
-  ducktypeApiConfig: OktaDuckTypeApiConfig
+  swagger: OktaSwaggerApiConfig
+  ducktype: OktaDuckTypeApiConfig
 }
 
 export type OktaConfig = {
@@ -1219,7 +1219,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
   },
 }
 
-export const ADDITIONAL_SUPPORTED_TYPES = {
+export const DUCKTYPE_SUPPORTED_TYPES = {
   EmailNotificationSettings: ['EmailNotifications'],
   EndUserSupportSettings: ['EndUserSupport'],
   ThirdPartyAdminSettings: ['ThirdPartyAdmin'],
@@ -1235,7 +1235,7 @@ export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
     transformation: TRANSFORMATION_DEFAULTS,
   },
   types: DUCKTYPE_TYPES,
-  supportedTypes: ADDITIONAL_SUPPORTED_TYPES,
+  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
 }
 
 export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
@@ -1254,29 +1254,23 @@ export const DEFAULT_CONFIG: OktaConfig = {
     convertUsersIds: true,
   },
   [API_DEFINITIONS_CONFIG]: {
-    swaggerApiConfig: DEFAULT_API_DEFINITIONS,
-    ducktypeApiConfig: DUCKTYPE_API_DEFINITIONS,
+    swagger: DEFAULT_API_DEFINITIONS,
+    ducktype: DUCKTYPE_API_DEFINITIONS,
   },
 }
 
-const oktaApiConfigType = createMatchingObjectType<OktaApiConfig>({
+const oktaApiConfigType = createMatchingObjectType<Partial<OktaApiConfig>>({
   elemID: new ElemID(OKTA, 'OktaApiConfig'),
   fields: {
-    swaggerApiConfig: {
+    swagger: {
       refType: createSwaggerAdapterApiConfigType({
         adapter: OKTA,
       }),
-      annotations: {
-        _required: true,
-      },
     },
-    ducktypeApiConfig: {
+    ducktype: {
       refType: createDucktypeAdapterApiConfigType({
         adapter: OKTA,
       }),
-      annotations: {
-        _required: true,
-      },
     },
   },
   annotations: {

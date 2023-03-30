@@ -3,7 +3,7 @@
 ```hcl
 okta {
   apiDefinitions = {
-    swaggerApiConfig = {
+    swagger = {
       swagger = {
         url = "https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml"
         additionalTypes = [
@@ -2645,7 +2645,7 @@ okta {
         ]
       }
     }
-    ducktypeApiConfig = {
+    ducktype = {
       typeDefaults = {
         transformation = {
           idFields = [

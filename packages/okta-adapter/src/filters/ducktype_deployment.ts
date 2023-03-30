@@ -26,16 +26,16 @@ import { deployChanges } from '../deployment'
 const filterCreator: FilterCreator = ({ adminClient, config }) => ({
   name: 'ducktypeDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const { ducktypeApiConfig } = config[API_DEFINITIONS_CONFIG]
+    const { ducktype } = config[API_DEFINITIONS_CONFIG]
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-      && ducktypeApiConfig.types[getChangeData(change).elemID.typeName] !== undefined
+      && ducktype.types[getChangeData(change).elemID.typeName] !== undefined
     )
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const { deployRequests } = ducktypeApiConfig.types[getChangeData(change).elemID.typeName]
+        const { deployRequests } = ducktype.types[getChangeData(change).elemID.typeName]
         await deployment.deployChange({
           change,
           client: adminClient,

@@ -65,7 +65,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployGroup(change, client, config[API_DEFINITIONS_CONFIG].swaggerApiConfig)
+      async change => deployGroup(change, client, config[API_DEFINITIONS_CONFIG].swagger)
     )
 
     return {

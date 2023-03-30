@@ -194,7 +194,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
     const subdomain = await getSubdomainFromElementsSource(elementsSource)
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployApp(change, client, config[API_DEFINITIONS_CONFIG].swaggerApiConfig, subdomain)
+      async change => deployApp(change, client, config[API_DEFINITIONS_CONFIG].swagger, subdomain)
     )
 
     return {

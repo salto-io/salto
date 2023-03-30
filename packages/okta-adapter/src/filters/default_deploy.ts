@@ -26,7 +26,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       changes.filter(isInstanceChange),
       async change => {
-        await defaultDeployWithStatus(change, client, config.apiDefinitions.swaggerApiConfig)
+        await defaultDeployWithStatus(change, client, config.apiDefinitions.swagger)
       }
     )
     return { deployResult, leftoverChanges: [] }

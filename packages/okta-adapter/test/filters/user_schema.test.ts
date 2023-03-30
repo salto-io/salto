@@ -267,7 +267,7 @@ describe('userSchemaFilter', () => {
       const changes = [toChange({ before: userSchemaToRemove })]
       const res = await filter.deploy(changes)
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0]).toEqual('Could not remove instance schema of type UserSchema')
+      expect(res.deployResult.errors[0].message).toEqual('Could not remove instance schema of type UserSchema')
       expect(mockConnection.get).toHaveBeenCalledWith('/api/v1/meta/schemas/user/555', undefined)
     })
   })

@@ -18,7 +18,7 @@ import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { createCustomMetadataType, createCustomObjectType } from '../utils'
 import { FilterWith } from '../../src/filter'
-import filterCreator from '../../src/filters/installed_package_elements'
+import filterCreator from '../../src/filters/installed_package_generated_dependencies'
 import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
 
 describe('installedPackageElementsFilter', () => {

@@ -19,15 +19,19 @@ import _ from 'lodash'
 import { getReferencedElements } from '../reference_dependencies'
 import { FilterCreator } from '../filter'
 import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'additionalChanges',
   preDeploy: async changes => {
-    const [fieldChanges, typeAndInstanceChanges] = _.partition(changes, isFieldChange)
+    const sdfChanges = changes
+      // SDF objects deletions are handled by SOAP
+      .filter(isAdditionOrModificationChange)
+      .filter(change => isStandardInstanceOrCustomRecordType(getChangeData(change)))
+
+    const [fieldChanges, typeAndInstanceChanges] = _.partition(sdfChanges, isFieldChange)
     const elemIdSet = new Set(changes.map(getChangeData).map(elem => elem.elemID.getFullName()))
     const fieldsParents = _(fieldChanges)
-      // field deletions should be handled by SOAP
-      .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .map(field => field.parent)
       .filter(parent => !elemIdSet.has(parent.elemID.getFullName()))

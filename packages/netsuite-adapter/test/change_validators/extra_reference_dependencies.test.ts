@@ -14,17 +14,18 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import extraReferenceDependenciesValidator from '../../src/change_validators/extra_reference_dependencies'
-import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
+import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 
 
 describe('extra reference changes', () => {
   const customsegment = customsegmentType().type
+  const entitycustomfield = entitycustomfieldType().type
 
-  const fileInstance = new InstanceElement('file_instance', fileType(), {
-    [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+  const entityFieldInstance = new InstanceElement('custentity_slt', entitycustomfield, {
+    [SCRIPT_ID]: 'custentity_slt',
   })
 
   const customRecordType = new ObjectType({
@@ -38,9 +39,9 @@ describe('extra reference changes', () => {
   const customSegmentInstance = new InstanceElement('custom_segment_instance', customsegment, {
     [SCRIPT_ID]: 'custom_segment_instance_script_id',
     description: new ReferenceExpression(
-      fileInstance.elemID.createNestedID(PATH),
-      fileInstance.value[PATH],
-      fileInstance
+      entityFieldInstance.elemID.createNestedID(SCRIPT_ID),
+      entityFieldInstance.value[SCRIPT_ID],
+      entityFieldInstance
     ),
   })
 
@@ -62,21 +63,21 @@ describe('extra reference changes', () => {
       customSegmentInstance
     ),
     description: new ReferenceExpression(
-      fileInstance.elemID.createNestedID(PATH),
-      fileInstance.value[PATH],
-      fileInstance
+      entityFieldInstance.elemID.createNestedID(SCRIPT_ID),
+      entityFieldInstance.value[SCRIPT_ID],
+      entityFieldInstance
     ),
   })
 
   // dependsOn2Instances ---> customSegmentInstance <---> customRecordType
   //        |                     |
-  //        '-->  fileInstance <--'
+  //        '-->  entityFieldInstance <--'
 
   it('should not have ChangeError when deploying an instance with its dependencies, when requesting to add only required references', async () => {
     const changeErrors = await extraReferenceDependenciesValidator([
       toChange({ before: customRecordType, after: customRecordType }),
       toChange({ after: customSegmentInstance }),
-      toChange({ before: fileInstance, after: fileInstance }),
+      toChange({ before: entityFieldInstance, after: entityFieldInstance }),
     ], false)
     expect(changeErrors).toHaveLength(0)
   })
@@ -85,7 +86,7 @@ describe('extra reference changes', () => {
     const changeErrors = await extraReferenceDependenciesValidator([
       toChange({ before: customRecordType, after: customRecordType }),
       toChange({ after: customSegmentInstance }),
-      toChange({ before: fileInstance, after: fileInstance }),
+      toChange({ before: entityFieldInstance, after: entityFieldInstance }),
     ], true)
     expect(changeErrors).toHaveLength(0)
   })
@@ -113,7 +114,7 @@ describe('extra reference changes', () => {
     ], true)
     expect(changeErrors).toHaveLength(2)
     const customSegmentInstanceElemId = customSegmentInstance.elemID.getFullName()
-    const fileInstanceElemId = fileInstance.elemID.getFullName()
+    const fileInstanceElemId = entityFieldInstance.elemID.getFullName()
     const missingReferences = `(.*${customSegmentInstanceElemId}, ${fileInstanceElemId}.*)|(.*${fileInstanceElemId}, ${customSegmentInstanceElemId}.*)`
     expect(changeErrors)
       .toEqual(expect.arrayContaining([

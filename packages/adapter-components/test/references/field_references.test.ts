@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, BuiltinTypes, isInstanceElement, ListType, createRefToElmWithValue, Field } from '@salto-io/adapter-api'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
-import { addReferences, generateLookupFunc } from '../../src/references/field_references'
+import { addReferences, createMissingInstance, generateLookupFunc, MISSING_ANNOTATION } from '../../src/references/field_references'
 import { FieldReferenceDefinition, FieldReferenceResolver, ReferenceSerializationStrategy, ReferenceSerializationStrategyLookup, ReferenceSerializationStrategyName } from '../../src/references/reference_mapping'
 import { ContextValueMapperFunc, ContextFunc, neighborContextGetter } from '../../src/references'
 
@@ -728,6 +728,15 @@ describe('Field references', () => {
         e => isInstanceElement(e) && e.elemID.name === 'inst1'
       )[0] as InstanceElement
       expect(inst.value.value).toEqual('fail')
+    })
+  })
+
+  describe('createMissingInstance', () => {
+    it('should create missing instance with the correct elemID, type and annotations', () => {
+      const result = createMissingInstance('adapterTest', 'someType', '123456')
+      expect(result.elemID.getFullName()).toEqual('adapterTest.someType.instance.missing_123456')
+      expect(result.refType.elemID.typeName).toEqual('someType')
+      expect(result.annotations[MISSING_ANNOTATION]).toEqual(true)
     })
   })
 })

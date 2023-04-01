@@ -18,12 +18,13 @@ import {
   toChange,
   ListType,
 } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/dynamic_content_references'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from '../../src/filters/dynamic_content'
-import { createMissingInstance } from '../../src/filters/references/missing_references'
 import { createFilterCreatorParams } from '../utils'
+
+const { createMissingInstance } = referencesUtils
 
 describe('dynamic content references filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

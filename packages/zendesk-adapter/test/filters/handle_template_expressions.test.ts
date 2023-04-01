@@ -15,15 +15,16 @@
 */
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import filterCreator, {
   TICKET_ORGANIZATION_FIELD,
   TICKET_TICKET_FIELD_OPTION_TITLE,
   TICKET_TICKET_FIELD, TICKET_USER_FIELD,
 } from '../../src/filters/handle_template_expressions'
 import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { createMissingInstance } from '../../src/filters/references/missing_references'
 import { createFilterCreatorParams } from '../utils'
+
+const { createMissingInstance } = referencesUtils
 
 describe('handle templates filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>

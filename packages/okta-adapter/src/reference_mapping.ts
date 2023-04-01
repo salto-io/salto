@@ -13,11 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME } from './constants'
 
+export const OktaMissingReferenceStrategyLookup: Record<
+referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return referenceUtils.createMissingInstance(adapter, typeName, value)
+    },
+  },
+}
 
 type OktaReferenceSerializationStrategyName = 'key'
 const OktaReferenceSerializationStrategyLookup: Record<
@@ -34,6 +47,7 @@ const OktaReferenceSerializationStrategyLookup: Record<
 
 type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
   oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
+  oktaMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
 export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
@@ -42,6 +56,9 @@ export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceRes
     this.serializationStrategy = OktaReferenceSerializationStrategyLookup[
       def.oktaSerializationStrategy ?? def.serializationStrategy ?? 'fullValue'
     ]
+    this.missingRefStrategy = def.oktaMissingRefStrategy
+      ? OktaMissingReferenceStrategyLookup[def.oktaMissingRefStrategy]
+      : undefined
   }
 }
 
@@ -64,11 +81,13 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'groupIds', parentTypes: ['GroupRuleGroupAssignment'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
     src: { field: 'include', parentTypes: ['UserTypeCondition'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: USERTYPE_TYPE_NAME },
   },
   {
@@ -134,6 +153,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['AppAndInstanceConditionEvaluatorAppOrInstance'] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
 ]

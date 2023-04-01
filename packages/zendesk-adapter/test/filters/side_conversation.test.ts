@@ -13,13 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Value } from '@salto-io/adapter-api'
 import sideConversationFilter from '../../src/filters/side_conversation'
 import { createFilterCreatorParams } from '../utils'
 import { GROUP_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { createMissingInstance } from '../../src/filters/references/missing_references'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
+
+const { createMissingInstance } = referencesUtils
 
 const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME) })
 const triggerType = new ObjectType({ elemID: new ElemID(ZENDESK, TRIGGER_TYPE_NAME) })

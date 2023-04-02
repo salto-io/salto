@@ -28,8 +28,8 @@ const log = logger(module)
 const getGroupsWithRoleByRuleId = async (groupRuleInstance: InstanceElement[]):
 Promise<Record<string, InstanceElement[]>> => {
   const groupsWithRoleByRuleId = (await Promise.all(groupRuleInstance.map(async instance => {
-    const elemID = instance.elemID.createNestedID(...GROUP_ID_PATH)
-    const TagetGroupReferences = resolvePath(instance, elemID)
+    const targetGroupsPath = instance.elemID.createNestedID(...GROUP_ID_PATH)
+    const TagetGroupReferences = resolvePath(instance, targetGroupsPath)
     if (!isArrayOfRefExprToInstances(TagetGroupReferences)) {
       log.debug('Could not find group references in %s', instance.elemID.getFullName())
       return undefined
@@ -46,7 +46,7 @@ Promise<Record<string, InstanceElement[]>> => {
 }
 
 /**
- * Verifies that Group target has no administrators.
+ * Verifies that the target groups for a GroupRule has no administrator roles.
  */
 export const groupRuleAdministratorValidator: ChangeValidator = async changes => {
   const groupRuleInstances = changes

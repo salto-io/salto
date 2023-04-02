@@ -80,9 +80,9 @@ const createUnknownPicklistValueChangeError = (
   allowedValues: string[],
 ): ChangeError => ({
   elemID: instance.elemID,
-  message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name} of instance ${instance.elemID.getFullName()}`,
-  detailedMessage: `Supported values are ${safeJsonStringify(allowedValues)}`,
-  severity: 'Error',
+  message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name}`,
+  detailedMessage: `Unknown picklist value "${unknownValue}" on ${instance.elemID.getFullName()}.${field.elemID.name}, Supported values are ${safeJsonStringify(allowedValues)}`,
+  severity: 'Warning',
 })
 
 const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement): Promise<ChangeError[]> => {

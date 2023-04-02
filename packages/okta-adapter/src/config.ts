@@ -972,6 +972,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

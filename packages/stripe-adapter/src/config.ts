@@ -122,6 +122,8 @@ export const DEFAULT_API_DEFINITIONS: StripeApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      // TODO: change this to true for SALTO-3885.
+      nestStandaloneInstances: false,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

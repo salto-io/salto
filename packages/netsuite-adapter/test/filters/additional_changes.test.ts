@@ -118,5 +118,12 @@ describe('additional changes filter', () => {
       expect(requiredInstanceChange.action).toEqual('add')
       expect(getChangeData(requiredInstanceChange)).toBe(customSegmentInstance)
     })
+    it('should not add required referenced element if it\'s a deletion change', async () => {
+      const changes: Change[] = [
+        toChange({ before: customRecordType }),
+      ]
+      await filterCreator(noParams).preDeploy?.(changes)
+      expect(changes).toHaveLength(1)
+    })
   })
 })

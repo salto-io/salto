@@ -42,9 +42,7 @@ export type SAPConfig = {
 }
 
 const DEFAULT_ID_FIELDS = ['name']
-export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
-  // { fieldName: 'createdBy', fieldType: 'string' },
-]
+export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = []
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
   MCMService_EnergySourceTypes: {
@@ -85,7 +83,6 @@ export const SUPPORTED_TYPES = {
   MCMService_PowerRangeTypes: ['PowerRangeTypes'],
   MCMService_MCMFormulas: ['MCMFormulas'],
 }
-// TODO: figure what to do with EnergySourceTypes?$expand=texts,localized example (postman)
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,

@@ -30,13 +30,20 @@ export const oauthClientCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'OAuth client secret' },
     },
+    authorizationUrl: { // SAP use the term authorization URL and not auth URL
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'Authorization url' },
+    },
+    baseUrl: {
+      refType: BuiltinTypes.STRING,
+      annotations: { message: 'Base service url' },
+    },
   },
 })
 
 export type OAuthClientCredentials = authUtils.OAuthClientCredentialsArgs & {
-  baseURL: string
+  authUrl: string
+  baseUrl: string
 }
 
 export type Credentials = OAuthClientCredentials
-
-export const AUTH_BASE_URL = 'https://edom-mcm-prod.authentication.eu10.hana.ondemand.com'

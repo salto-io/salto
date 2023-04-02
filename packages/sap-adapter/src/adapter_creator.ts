@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import _ from 'lodash'
 import SapClient from './client/client'
 import SapAdapter from './adapter'
-import { Credentials, oauthClientCredentialsType, AUTH_BASE_URL } from './auth'
+import { Credentials, oauthClientCredentialsType } from './auth'
 import {
   configType, SAPConfig, CLIENT_CONFIG, API_DEFINITIONS_CONFIG,
   FETCH_CONFIG, DEFAULT_CONFIG, SAPApiConfig,
@@ -31,11 +31,12 @@ const { validateCredentials, validateClientConfig } = clientUtils
 const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
-  const { clientId, clientSecret } = config.value
+  const { clientId, clientSecret, authorizationUrl, baseUrl } = config.value
   return {
     clientId,
     clientSecret,
-    baseURL: AUTH_BASE_URL,
+    authUrl: authorizationUrl,
+    baseUrl,
   }
 }
 

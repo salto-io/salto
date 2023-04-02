@@ -63,6 +63,7 @@ export default class SAPAdapter implements AdapterOperations {
   }: SAPAdapterParams) {
     this.userConfig = config
     this.client = client
+    // TODO: figure SAP pagination
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,

@@ -13,61 +13,59 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, isInstanceElement, InstanceElement, ChangeError, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, InstanceElement } from '@salto-io/adapter-api'
 import { resolvePath, references as referenceUtils } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { GROUP_RULE_TYPE_NAME } from '../constants'
 
+const { isDefined } = lowerDashValues
 const GROUP_ID_PATH = ['actions', 'assignUserToGroups', 'groupIds']
 const { isArrayOfRefExprToInstances } = referenceUtils
+const log = logger(module)
 
-const groupRefToGroupWithRoles = async (references: ReferenceExpression[]): Promise<InstanceElement[]> => (
-  await Promise.all(references.map(async reference => reference.getResolvedValue())))
-  .filter(isInstanceElement)
-  .filter(target => {
-    const roles = target.value?.roles
-    if (roles !== undefined && !(_.isEmpty(roles))) {
-      return true
-    }
-    return false
-  })
-
-const groupRulesToGroupsRecord = async (instances: InstanceElement[]): Promise<Record<string, InstanceElement[]>> => {
-  const record: Record<string, InstanceElement[]> = {}
-  await Promise.all(instances.map(async instance => {
+const getGroupsWithRoleByRuleId = async (groupRuleInstance: InstanceElement[]):
+Promise<Record<string, InstanceElement[]>> => {
+  const groupsWithRoleByRuleId = (await Promise.all(groupRuleInstance.map(async instance => {
     const elemID = instance.elemID.createNestedID(...GROUP_ID_PATH)
-    const references = resolvePath(instance, elemID)
-    if (!isArrayOfRefExprToInstances(references)) {
-      return
+    const TagetGroupReferences = resolvePath(instance, elemID)
+    if (!isArrayOfRefExprToInstances(TagetGroupReferences)) {
+      log.debug('Could not find group references in %s', instance.elemID.getFullName())
+      return undefined
     }
-    const targets = await groupRefToGroupWithRoles(references)
-    if (targets !== undefined && !(_.isEmpty(targets))) {
-      record[instance.elemID.getFullName()] = targets
+    const targetGroupWithRoles = TagetGroupReferences.map(groupReference => groupReference.value).filter(
+      targetGroupInstance => !(_.isEmpty(targetGroupInstance.value?.roles))
+    )
+    if (!(_.isEmpty(targetGroupWithRoles))) {
+      return [instance.elemID.getFullName(), targetGroupWithRoles]
     }
-  }))
-  return record
+    return undefined
+  }))).filter(isDefined)
+  return Object.fromEntries(groupsWithRoleByRuleId)
 }
 
 /**
  * Verifies that Group target has no administrators.
  */
 export const groupRuleAdministratorValidator: ChangeValidator = async changes => {
-  const relevantInstances = changes
+  const groupRuleInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === GROUP_RULE_TYPE_NAME)
-  if (_.isEmpty(relevantInstances)) {
+  if (_.isEmpty(groupRuleInstances)) {
     return []
   }
 
-  const record = await groupRulesToGroupsRecord(relevantInstances)
+  const groupsWithRoleByRuleId = await getGroupsWithRoleByRuleId(groupRuleInstances)
 
-  // eslint-disable-next-line max-len
-  return relevantInstances.filter(instance => instance.elemID.getFullName() in record).map((instance: InstanceElement): ChangeError => ({
-    elemID: instance.elemID,
-    severity: 'Error',
-    message: 'Group membership rules cannot be created for groups with administrator roles ',
-    detailedMessage: `This following groups contains administrator roles: ${(record[instance.elemID.getFullName()].map(group => group.elemID.name)).join(', ')}.`,
-  }))
+  return groupRuleInstances.filter(instance => groupsWithRoleByRuleId[instance.elemID.getFullName()] !== undefined).map(
+    instance => ({
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Group membership rules cannot be created for groups with administrator roles.',
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${(groupsWithRoleByRuleId[instance.elemID.getFullName()].map(group => group.elemID.name)).join(', ')}.`,
+    })
+  )
 }

@@ -22,6 +22,7 @@ describe('groupRuleAdministratorValidator', () => {
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
   const RoleType = new ObjectType({ elemID: new ElemID(OKTA, ROLE_TYPE_NAME) })
+  const msg = 'Group membership rules cannot be created for groups with administrator roles.'
 
   const role1 = new InstanceElement(
     'role1',
@@ -93,20 +94,20 @@ describe('groupRuleAdministratorValidator', () => {
     expect(changeErrors).toEqual([{
       elemID: groupRule1.elemID,
       severity: 'Error',
-      message: 'Group membership rules cannot be created for groups with administrator roles ',
-      detailedMessage: `This following groups contains administrator roles: ${[group1.elemID.name].join(', ')}.`,
+      message: msg,
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name].join(', ')}.`,
     },
     {
       elemID: groupRule2.elemID,
       severity: 'Error',
-      message: 'Group membership rules cannot be created for groups with administrator roles ',
-      detailedMessage: `This following groups contains administrator roles: ${[group1.elemID.name, group2.elemID.name].join(', ')}.`,
+      message: msg,
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name, group2.elemID.name].join(', ')}.`,
     },
     {
       elemID: groupRule4.elemID,
       severity: 'Error',
-      message: 'Group membership rules cannot be created for groups with administrator roles ',
-      detailedMessage: `This following groups contains administrator roles: ${[group1.elemID.name].join(', ')}.`,
+      message: msg,
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name].join(', ')}.`,
     }])
   })
 

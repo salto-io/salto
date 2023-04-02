@@ -21,7 +21,7 @@ import { collections } from '@salto-io/lowerdash'
 import { Change, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { ACCESS_POLICY_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from '../constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, AUTHORIZATION_POLICY_RULE, GROUP_RULE_TYPE_NAME, MFA_RULE_TYPE_NAME, PASSWORD_RULE_TYPE_NAME, SIGN_ON_RULE_TYPE_NAME } from '../constants'
 import { FETCH_CONFIG } from '../config'
 
 const log = logger(module)
@@ -57,6 +57,7 @@ const USER_MAPPING: Record<string, string[][]> = {
   [PASSWORD_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
+  [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
 }
 
 const isRelevantInstance = (instance: InstanceElement): boolean => (

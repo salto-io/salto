@@ -537,6 +537,47 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       standaloneFields: [{ fieldName: 'policyRules' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+    },
   },
   AuthorizationServerPolicyRule: {
     transformation: {
@@ -544,6 +585,52 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
     },
   },
   api__v1__brands: {

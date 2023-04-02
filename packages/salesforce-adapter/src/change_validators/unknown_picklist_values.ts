@@ -25,8 +25,8 @@ import {
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { isPicklistField } from '../filters/value_set'
 import { FIELD_ANNOTATIONS, INSTANCE_FULL_NAME_FIELD, VALUE_SET_FIELDS } from '../constants'
+import { Types } from '../transformers/transformer'
 
 
 const { isDefined } = values
@@ -88,7 +88,9 @@ const createUnknownPicklistValueChangeError = (
 const createUnknownPicklistValueChangeErrors = async (instance: InstanceElement): Promise<ChangeError[]> => {
   const { fields } = await instance.getType()
   const picklistFieldNames = Object.values(fields)
-    .filter(isPicklistField)
+    // Only checking picklist fields for now and not multi-picklist fields because multi-picklist
+    // fields require more manipulations
+    .filter(field => field.refType.elemID.isEqual(Types.primitiveDataTypes.Picklist.elemID))
     .map(field => field.name)
   return picklistFieldNames
     .map(picklistFieldName => {

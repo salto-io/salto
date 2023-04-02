@@ -555,7 +555,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
       remove: {
         url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
-        method: 'put',
+        method: 'delete',
         urlParamsToFields: {
           authorizationServerId: '_parent.0.id',
           policyId: 'id',

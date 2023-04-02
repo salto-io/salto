@@ -88,11 +88,11 @@ describe('references functions', () => {
   describe('isArrayOfRefExprToInstances', () => {
     const bookRef = new ReferenceExpression(mainBook.elemID, mainBook)
     const otherBookRef = new ReferenceExpression(mainBook.elemID, mainBook)
-    it('should return True becsue its elements are references or its an empty lilst', async () => {
+    it('should return True because elements are references or an empty list', () => {
       expect(isArrayOfRefExprToInstances([bookRef, otherBookRef])).toBe(true)
       expect(isArrayOfRefExprToInstances([])).toBe(true)
     })
-    it('should return False becsue its elements are not only references or not references at all', async () => {
+    it('should return False because its elements are not only references or not references at all', () => {
       const newElemID = new ElemID(ADAPTER_NAME, 'book', 'instance', 'very_new_book')
       expect(isArrayOfRefExprToInstances([bookRef, newElemID])).toBe(false)
       expect(isArrayOfRefExprToInstances(['hello', 3])).toBe(false)

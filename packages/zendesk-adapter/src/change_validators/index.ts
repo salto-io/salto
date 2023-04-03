@@ -60,3 +60,4 @@ export { customStatusActiveDefaultValidator } from './custom_status_active_defau
 export { defaultGroupChangeValidator } from './default_group_change'
 export { organizationExistenceValidator } from './organization_existence'
 export { badFormatWebhookActionValidator } from './bad_format_webhook_action'
+export { guideDisabledValidator } from './guide_disabled'

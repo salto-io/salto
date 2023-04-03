@@ -44,7 +44,7 @@ const toModifiedAnnotationChangeError = (
     + 'In order to proceed with this deployment, please edit the element in Salto and remove this annotation change.',
 })
 
-const typeServiceIdConditions = <T extends (AdditionChange<ObjectType> | ModificationChange<ObjectType>)>(
+const typeServiceIdConditions = <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
 ): Promise<string[]> => {

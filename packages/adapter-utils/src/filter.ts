@@ -16,6 +16,7 @@
 import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
+import { isUndefined } from 'lodash'
 
 const { awu } = collections.asynciterable
 const { concatObjects } = objects
@@ -76,11 +77,22 @@ export const filtersRunner = <
       types.filterHasMember<Filter<R, DeployInfo>, M>(m, allFilters)
     )
 
+  const printElementsBeforeAndAfterRun = async (
+    elements:Element[],
+    filter:Filter<R, DeployInfo>):
+      Promise<R|void> => {
+    log.debug(`PermissionSet elements before filter ${filter.name}: ${elements.filter(element => element.elemID.name.includes('PermissionSet'))}`)
+    if (isUndefined(filter)) { return undefined }
+    const filterResult = filter.onFetch(elements)
+    log.debug(`PermissionSet elements after filter ${filter.name}: ${elements.filter(element => element.elemID.name.includes('PermissionSet'))}`)
+    return filterResult
+  }
+
   return {
     name: '',
     onFetch: async elements => {
       const filterResults = (await promises.array.series(
-        filtersWith('onFetch').map(filter => () => log.time(() => filter.onFetch(elements), `(${filter.name}):onFetch`))
+        filtersWith('onFetch').map(filter => () => log.time(() => printElementsBeforeAndAfterRun(elements, filter), `(${filter.name}):onFetch`))
       )).filter(isDefined)
       return onFetchAggregator(filterResults)
     },

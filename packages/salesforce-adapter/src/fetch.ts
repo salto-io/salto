@@ -258,9 +258,14 @@ export const fetchMetadataInstances = async ({
   )
 
   const filePropertiesMap = _.keyBy(fileProps, getFullName)
-  const elements = metadataInfos
+  const nonEmptyElements = metadataInfos
     .filter(m => !_.isEmpty(m))
+  const unnamedElements = nonEmptyElements
+    .filter(m => m.fullName === undefined)
+  log.debug(`Elements with no full name: ${unnamedElements}`)
+  const namedElements = nonEmptyElements
     .filter(m => m.fullName !== undefined)
+  const elements = namedElements
     .map(m => getInstanceFromMetadataInformation(m, filePropertiesMap, metadataType))
   return {
     elements,

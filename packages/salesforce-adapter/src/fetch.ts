@@ -173,9 +173,11 @@ const listMetadataObjectsWithinFolders = async (
 }
 
 const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
+  if (!obj.namespacePrefix) {
+    return obj.fullName
+  }
+  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
   // <namespace>__<objectName>-<layoutName> where it should be
@@ -184,8 +186,11 @@ const getFullName = (obj: FileProperties): string => {
     if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
+    return obj.fullName
   }
-  return obj.fullName
+  // In some cases, obj.fullName does not contain the namespace prefix even though
+  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
 }
 
 const getPropsWithFullName = (obj: FileProperties): FileProperties => {

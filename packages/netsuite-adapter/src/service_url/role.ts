@@ -15,15 +15,15 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
+import { ROLE } from '../constants'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setElementsUrls({
+  setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,
-    filter: element => element.refType.elemID.name === 'role',
-    query: 'SELECT id, scriptid FROM role ORDER BY id ASC',
+    filter: element => element.refType.elemID.name === ROLE,
     generateUrl: id => `app/setup/role.nl?id=${id}`,
   })
 }

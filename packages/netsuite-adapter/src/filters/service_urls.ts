@@ -13,20 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { CORE_ANNOTATIONS, getChangeData } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
+import NetsuiteClient from '../client/client'
 import { FilterCreator, FilterWith } from '../filter'
-import setFileCabinetUrls from '../service_url/file_cabinet'
-import setScriptsUrls from '../service_url/script'
+import setConstantUrls from '../service_url/constant_urls'
 import setCustomFieldsUrls from '../service_url/custom_field'
 import setCustomRecordTypesUrls from '../service_url/custom_record_type'
 import setCustomTransactionTypesUrls from '../service_url/custom_transaction_type'
 import setEmailTemplatesUrls from '../service_url/emailtemplate'
+import setFileCabinetUrls from '../service_url/file_cabinet'
 import setRoleUrls from '../service_url/role'
-import setSublistsUrls from '../service_url/sublist'
 import setSavedSearchUrls from '../service_url/savedsearch'
-import setConstantUrls from '../service_url/constant_urls'
+import setScriptsUrls from '../service_url/script'
+import setSublistsUrls from '../service_url/sublist'
 import setSuiteAppUrls from '../service_url/suiteapp_elements_url'
 
 const log = logger(module)
@@ -41,9 +42,15 @@ const SERVICE_URL_SETTERS = {
   setEmailTemplatesUrls,
   setRoleUrls,
   setSublistsUrls,
-  setSavedSearchUrls,
+  setSavedSearchUrls, // Can't use setElementsUrls currently. Does query. Not in Map?
   setConstantUrls,
   setSuiteAppUrls,
+}
+
+const setServiceUrls = async (elements: Element[], client: NetsuiteClient): Promise<void> => {
+  await awu(Object.entries(SERVICE_URL_SETTERS)).forEach(
+    ([setterName, setter]) => log.time(() => setter(elements, client), `serviceUrls.${setterName}`)
+  )
 }
 
 const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
@@ -52,9 +59,7 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
     if (!client.isSuiteAppConfigured()) {
       return
     }
-    await awu(Object.entries(SERVICE_URL_SETTERS)).forEach(
-      ([setterName, setter]) => log.time(() => setter(elements, client), `serviceUrls.${setterName}`)
-    )
+    await setServiceUrls(elements, client)
   },
   preDeploy: async changes => {
     changes
@@ -62,6 +67,19 @@ const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
       .forEach(element => {
         delete element.annotations[CORE_ANNOTATIONS.SERVICE_URL]
       })
+  },
+  /**
+   * This assigns the service URLs for new instances created through Salto
+   */
+  onDeploy: async changes => {
+    if (!client.isSuiteAppConfigured()) {
+      return
+    }
+    const additionChanges = changes.filter(isAdditionChange).map(getChangeData)
+    if (additionChanges.length === 0) {
+      return
+    }
+    await setServiceUrls(additionChanges, client)
   },
 })
 

@@ -158,14 +158,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       currencyExchangeRate,
       // AuthorInformation filters must run after SDFInternalIds filter
       systemNoteAuthorInformation,
-      // savedSearchesAutorInformation must run before suiteAppConfigElementsFilter
+      // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
       suiteAppConfigElementsFilter,
       configFeaturesFilter,
       customRecordsFilter,
-      // serviceUrls must run after suiteAppInternalIds filter
+      // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
       serviceUrls,
       // additionalChanges should be the first preDeploy filter to run
       additionalChanges,

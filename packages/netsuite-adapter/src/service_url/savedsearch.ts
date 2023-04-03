@@ -16,6 +16,7 @@
 
 import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { SAVED_SEARCH } from '../constants'
 import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
 import { areSavedSearchResultsValid } from './validation'
@@ -37,7 +38,7 @@ const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<s
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
   const relevantElements = elements
     .filter(isInstanceElement)
-    .filter(element => element.refType.elemID.name === 'savedsearch')
+    .filter(element => element.refType.elemID.name === SAVED_SEARCH)
 
   if (relevantElements.length === 0) {
     return

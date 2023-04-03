@@ -32,11 +32,10 @@ const generateUrl = (id: number, element: InstanceElement):
 }
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setElementsUrls({
+  setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,
     filter: element => SUPPORTED_TYPES.includes(element.refType.elemID.name),
-    query: 'SELECT id, scriptid FROM script ORDER BY id ASC',
     generateUrl,
   })
 }

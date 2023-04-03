@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { CUSTOM_SEGMENT, SCRIPT_ID } from '../constants'
-import { addCustomRecordTypePrefix, isCustomRecordType } from '../types'
+import { CUSTOM_SEGMENT } from '../constants'
+import { isCustomRecordType } from '../types'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
 const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setElementsUrls({
+  setElementsUrls({
     elements,
     client,
     filter: element => (
@@ -28,13 +28,7 @@ const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
     ) || (
       isInstanceElement(element) && element.elemID.typeName === CUSTOM_SEGMENT
     ),
-    query: 'SELECT internalid AS id, scriptid FROM customrecordtype ORDER BY internalid ASC',
     generateUrl: id => `app/common/custom/custrecord.nl?id=${id}`,
-    elementToId: element => (
-      isInstanceElement(element) && element.elemID.typeName === CUSTOM_SEGMENT
-        ? addCustomRecordTypePrefix(element.value[SCRIPT_ID])
-        : element.annotations[SCRIPT_ID]
-    ),
   })
 }
 

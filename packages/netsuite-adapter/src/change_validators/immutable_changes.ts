@@ -81,7 +81,7 @@ const toModificationFieldErrors = (change: ModificationChange<Field>): ChangeErr
 }
 
 const instanceServiceIdConditions = async <
-  T extends (AdditionChange<InstanceElement> | ModificationChange<InstanceElement>)
+  T extends AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 >(
   change: T,
   condition: (change: T, annoName: string) => boolean

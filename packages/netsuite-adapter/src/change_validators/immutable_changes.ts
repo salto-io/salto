@@ -44,16 +44,29 @@ const toModifiedAnnotationChangeError = (
     + 'In order to proceed with this deployment, please edit the element in Salto and remove this annotation change.',
 })
 
-const typeServiceIdConditions = <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
+const toModifiedRefTypeChangeError = (
+  after: Field | ObjectType,
+): ChangeError => ({
+  elemID: after.elemID,
+  severity: 'Error',
+  message: 'Can\'t deploy a modification to an immutable annotation',
+  detailedMessage: 'This type is missing a service id annotation refType.\n'
+    + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
+})
+
+const typeServiceIdConditions = async <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
-): Promise<string[]> => {
+): Promise<{ type: 'missingRefType' | 'missingAnnotation'; value?: string }[]> => {
   const { after } = change.data
-  return awu(Object.entries(after.annotationRefTypes))
-    .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue()))
+  const serviceIdRefTypes = await awu(Object.entries(after.annotationRefTypes))
+    .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue())).toArray()
+  if (serviceIdRefTypes.length === 0) {
+    return [{ type: 'missingRefType' }]
+  }
+  return serviceIdRefTypes
     .filter(([annoName, _refType]) => condition(change, annoName))
-    .map(([annoName, _refType]) => annoName)
-    .toArray()
+    .map(([annoName, _refType]) => ({ type: 'missingAnnotation', value: annoName }))
 }
 
 const modificationServiceIdCondition = (change: ModificationChange<ChangeDataType>, annoName: string): boolean =>
@@ -64,9 +77,13 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
   const { after } = change.data
   const modifiedImmutableAnnotations = await typeServiceIdConditions(change, modificationServiceIdCondition)
   if (modificationServiceIdCondition(change, APPLICATION_ID)) {
-    modifiedImmutableAnnotations.push(APPLICATION_ID)
+    modifiedImmutableAnnotations.push({ type: 'missingAnnotation', value: APPLICATION_ID })
   }
-  return modifiedImmutableAnnotations.map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
+  return modifiedImmutableAnnotations.map(modifiedAnno => (
+    modifiedAnno.type === 'missingAnnotation' && modifiedAnno?.value
+      ? toModifiedAnnotationChangeError(after, modifiedAnno.value)
+      : toModifiedRefTypeChangeError(after)
+  ))
 }
 
 const fieldServiceIdConditions = <T extends AdditionChange<Field> | ModificationChange<Field>>(
@@ -158,6 +175,17 @@ const toAddedMissingAnnotationError = (
     + 'In order to proceed with this deployment, please edit the element in Salto and add a valid ServiceID.',
 })
 
+const toAddedRefTypeChangeError = (
+  after: Field | ObjectType,
+): ChangeError => ({
+  elemID: after.elemID,
+  severity: 'Error',
+  message: `Can't deploy a ${after.elemID.idType} without a service id annotation refType`,
+  detailedMessage: 'This type is missing a service id annotation refType.\n'
+    + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
+})
+
+
 const additionServiceIdCondition = (change: AdditionChange<ChangeDataType>, annoName: string): boolean =>
   getElementValueOrAnnotations(change.data.after)[annoName] === undefined
 
@@ -165,7 +193,11 @@ const toAdditionTypeErrors = async (change: AdditionChange<ObjectType>): Promise
   const { after } = change.data
   const missingServiceIdAnnotations = await typeServiceIdConditions(change, additionServiceIdCondition)
 
-  return missingServiceIdAnnotations.map(addedAnno => toAddedMissingAnnotationError(after, addedAnno))
+  return missingServiceIdAnnotations.map(addedAnno => (
+    addedAnno.type === 'missingAnnotation' && addedAnno?.value
+      ? toAddedMissingAnnotationError(after, addedAnno.value)
+      : toAddedRefTypeChangeError(after)
+  ))
 }
 
 const toAdditionFieldErrors = (change: AdditionChange<Field>): ChangeError[] => {

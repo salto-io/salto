@@ -120,6 +120,42 @@ describe('customization type change validator', () => {
       })
     })
 
+    describe('is missing refType', () => {
+      it('when modified, should have change error for type without refType', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord1'),
+          annotationRefsOrTypes: {
+            [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+          annotations: {
+            [SCRIPT_ID]: 'customrecord1',
+          },
+        })
+        const after = type.clone()
+        after.annotationRefTypes = {}
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: type, after })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(type.elemID)
+      })
+
+      it('when added, should have change error for type without refType', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord1'),
+          annotationRefsOrTypes: {
+          },
+        })
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: type })]
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toEqual(type.elemID)
+      })
+    })
+
     it('should not have errors for elements with SCRIPT_ID', async () => {
       const entityCustomFieldInstance = new InstanceElement('elementName',
         entitycustomfield, {
@@ -262,8 +298,16 @@ describe('customization type change validator', () => {
   })
 
   it('should have change error if type application_id was modified', async () => {
-    const before = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'), annotations: { application_id: 'a' } })
-    const after = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'), annotations: { application_id: 'b' } })
+    const before = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotationRefsOrTypes: {
+        [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+      },
+      annotations: { application_id: 'a' } })
+    const after = new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotationRefsOrTypes: {
+        [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+      },
+      annotations: { application_id: 'b' } })
 
     const changeErrors = await immutableChangesValidator(
       [toChange({ before, after })]

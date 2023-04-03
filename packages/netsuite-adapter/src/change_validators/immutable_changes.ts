@@ -180,7 +180,7 @@ const toAdditionInstanceErrors = async (
   const { after } = change.data
   const missingServiceIdAnnotations = await instanceServiceIdConditions(change, additionServiceIdCondition)
 
-  return missingServiceIdAnnotations.map(addedAnno => ({
+  return missingServiceIdFields.map(addedField => ({
     elemID: after.elemID,
     severity: 'Error',
     message: 'Can\'t deploy a field without a ServiceID',

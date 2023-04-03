@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 export { neighborContextGetter, ContextFunc, ContextValueMapperFunc, findParentPath } from './context'
-export { addReferences, replaceReferenceValues, generateLookupFunc, createMissingInstance } from './field_references'
+export { addReferences, replaceReferenceValues, generateLookupFunc } from './field_references'
+export { createMissingInstance } from './missing_references'
 export {
   ReferenceSerializationStrategy,
   ReferenceSerializationStrategyName,

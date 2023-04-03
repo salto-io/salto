@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs, isElement, ObjectType } from '@salto-io/adapter-api'
-import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify, resolvePath, naclCase } from '@salto-io/adapter-utils'
+import { Field, Element, isInstanceElement, Value, Values, ReferenceExpression, InstanceElement, ElemID, cloneDeepWithoutRefs, isElement } from '@salto-io/adapter-api'
+import { GetLookupNameFunc, GetLookupNameFuncArgs, TransformFunc, transformValues, safeJsonStringify, resolvePath } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerDashValues, collections, multiIndex } from '@salto-io/lowerdash'
 import {
@@ -27,6 +27,7 @@ import {
   ReferenceSourceTransformation,
 } from './reference_mapping'
 import { ContextFunc } from './context'
+import { checkMissingRef } from './missing_references'
 
 const { awu } = collections.asynciterable
 
@@ -36,26 +37,6 @@ const { isDefined } = lowerDashValues
 const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
-
-export const MISSING_ANNOTATION = 'salto_missing_ref'
-const MISSING_REF_PREFIX = 'missing_'
-
-const checkMissingRef = (element: Element): boolean =>
-  element.annotations?.[MISSING_ANNOTATION] === true
-
-export const createMissingInstance = (
-  adapter: string,
-  typeName: string,
-  refName: string
-): InstanceElement => (
-  new InstanceElement(
-    naclCase(`${MISSING_REF_PREFIX}${refName}`),
-    new ObjectType({ elemID: new ElemID(adapter, typeName) }),
-    {},
-    undefined,
-    { [MISSING_ANNOTATION]: true },
-  )
-)
 
 const isRelativeSerializer = (serializer: ReferenceSerializationStrategy)
   : serializer is ReferenceSerializationStrategy & { getReferenceId: GetReferenceIdFunc } =>

@@ -244,25 +244,32 @@ export const fetchMetadataInstances = async ({
 
   const metadataTypeName = await apiName(metadataType)
 
+  const filePropsToRead = fileProps
+    .map(prop => ({
+      name: getFullName(prop),
+      namespace: getNamespace(prop),
+      fileName: prop.fileName,
+    }))
+    .filter(({ name, namespace }) => metadataQuery.isInstanceMatch({
+      namespace,
+      metadataType: metadataTypeName,
+      name,
+      isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
+    }))
+
+
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    fileProps.map(
-      prop => ({
-        name: getFullName(prop),
-        namespace: getNamespace(prop),
-        fileName: prop.fileName,
-      })
-    ).filter(
-      ({ name, namespace }) => metadataQuery.isInstanceMatch({
-        namespace,
-        metadataType: metadataTypeName,
-        name,
-        isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
-      })
-    ).map(({ name }) => name)
+    filePropsToRead.map(({ name }) => name)
   )
 
+  const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))
   const filePropertiesMap = _.keyBy(fileProps, getFullName)
+  const missingMetadata = Object.keys(filePropertiesMap).filter(name => !fullNamesFromRead.has(name))
+  if (missingMetadata.length > 0) {
+    log.debug('Missing metadata with valid fileProps: %o', Object.values(filePropertiesMap).filter(fileProp => missingMetadata.includes(fileProp.fullName)))
+  }
+
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)

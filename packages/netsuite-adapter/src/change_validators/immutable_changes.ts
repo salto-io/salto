@@ -61,9 +61,9 @@ const modificationServiceIdCondition = (change: ModificationChange<ChangeDataTyp
   !== getElementValueOrAnnotations(change.data.after)[annoName]
 
 const toModificationTypeErrors = async (change: ModificationChange<ObjectType>): Promise<ChangeError[]> => {
-  const { before, after } = change.data
+  const { after } = change.data
   const modifiedImmutableAnnotations = await typeServiceIdConditions(change, modificationServiceIdCondition)
-  if (before.annotations[APPLICATION_ID] !== after.annotations[APPLICATION_ID]) {
+  if (modificationServiceIdCondition(change, APPLICATION_ID)) {
     modifiedImmutableAnnotations.push(APPLICATION_ID)
   }
   return modifiedImmutableAnnotations.map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
@@ -178,13 +178,13 @@ const toAdditionInstanceErrors = async (
   change: AdditionChange<InstanceElement>
 ): Promise<ChangeError[]> => {
   const { after } = change.data
-  const missingServiceIdAnnotations = await instanceServiceIdConditions(change, additionServiceIdCondition)
+  const missingServiceIdFields = await instanceServiceIdConditions(change, additionServiceIdCondition)
 
   return missingServiceIdFields.map(addedField => ({
     elemID: after.elemID,
     severity: 'Error',
     message: 'Can\'t deploy a field without a ServiceID',
-    detailedMessage: `The ${addedAnno} field is missing a ServiceID.\n`
+    detailedMessage: `The ${addedField} field is missing a ServiceID.\n`
       + 'In order to proceed with this deployment, please edit the element in Salto and add a valid ServiceID.',
   } as ChangeError))
 }

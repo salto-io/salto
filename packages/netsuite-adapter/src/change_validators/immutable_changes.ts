@@ -159,7 +159,7 @@ const toAddedMissingAnnotationError = (
 })
 
 const additionServiceIdCondition = (change: AdditionChange<ChangeDataType>, annoName: string): boolean =>
-  !getElementValueOrAnnotations(change.data.after)[annoName]
+  getElementValueOrAnnotations(change.data.after)[annoName] === undefined
 
 const toAdditionTypeErrors = async (change: AdditionChange<ObjectType>): Promise<ChangeError[]> => {
   const { after } = change.data

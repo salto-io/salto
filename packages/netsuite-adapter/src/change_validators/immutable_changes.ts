@@ -69,7 +69,7 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
   return modifiedImmutableAnnotations.map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
 }
 
-const fieldServiceIdConditions = <T extends (AdditionChange<Field> | ModificationChange<Field>)>(
+const fieldServiceIdConditions = <T extends AdditionChange<Field> | ModificationChange<Field>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
 ): string[] => ([SCRIPT_ID].filter(annoName => condition(change, annoName)))

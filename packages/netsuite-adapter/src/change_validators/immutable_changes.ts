@@ -72,7 +72,7 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
 const fieldServiceIdConditions = <T extends AdditionChange<Field> | ModificationChange<Field>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
-): string[] => ([SCRIPT_ID].filter(annoName => condition(change, annoName)))
+): string[] => [SCRIPT_ID].filter(annoName => condition(change, annoName))
 
 const toModificationFieldErrors = (change: ModificationChange<Field>): ChangeError[] => {
   const { after } = change.data

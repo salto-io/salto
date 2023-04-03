@@ -781,14 +781,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  RolePage: {
+  IamRoles: {
     request: {
       url: '/api/v1/iam/roles',
     },
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'roles', fieldType: 'Role' },
-      ],
       dataField: 'roles',
     },
   },
@@ -921,11 +918,10 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
-    // TODO SALTO-2735 this is not the right type to clone from
-    { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'IamRole', newName: 'Role' },
   ],
 }
 
@@ -961,7 +957,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
-  Role: ['RolePage'],
+  Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
 }
 

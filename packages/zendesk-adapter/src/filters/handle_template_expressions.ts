@@ -18,12 +18,12 @@ import {
   ReferenceExpression, TemplateExpression, TemplatePart, Values,
 } from '@salto-io/adapter-api'
 import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
-import { createMissingInstance } from './references/missing_references'
 import {
   ZENDESK,
   TICKET_FIELD_TYPE_NAME,
@@ -33,6 +33,7 @@ import { FETCH_CONFIG } from '../config'
 
 
 const { awu } = collections.asynciterable
+const { createMissingInstance } = referencesUtils
 const log = logger(module)
 const BRACKETS = [['{{', '}}'], ['{%', '%}']]
 const REFERENCE_MARKER_REGEX = /\$\{(.+?)}/

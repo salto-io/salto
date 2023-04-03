@@ -21,16 +21,17 @@ import {
   TemplateExpression,
   Value,
 } from '@salto-io/adapter-api'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { GROUP_TYPE_NAME, ZENDESK } from '../constants'
-import { createMissingInstance } from './references/missing_references'
 import { FETCH_CONFIG } from '../config'
 import { TYPES_WITH_SIDE_CONVERSATIONS } from '../change_validators/side_conversation'
 
 const log = logger(module)
+const { createMissingInstance } = referencesUtils
 
 const SIDE_CONVERSATION_FIELD_NAME = 'side_conversation_ticket'
 const valueWithGroupRegex = /(?<prefix>.+\/group\/)(?<groupId>\d+)(?<suffix>.*)/

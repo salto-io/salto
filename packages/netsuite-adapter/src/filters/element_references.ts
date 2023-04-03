@@ -211,11 +211,6 @@ const replaceReferenceValues = async (
 
     return returnValue
   }
-  if (isFileCabinetInstance(element) && isFileInstance(element)) {
-    dependenciesToAdd.push(
-      ...await getSuiteScriptReferences(element, serviceIdToElemID)
-    )
-  }
 
   const newElement = await transformElement({
     element,
@@ -223,9 +218,14 @@ const replaceReferenceValues = async (
     strict: false,
   })
 
+  const suiteScriptReferences = isFileCabinetInstance(element) && isFileInstance(element)
+    ? await getSuiteScriptReferences(element, serviceIdToElemID)
+    : []
+
   extendGeneratedDependencies(
     newElement,
-    dependenciesToAdd.map(elemID => ({ reference: new ReferenceExpression(elemID) }))
+    dependenciesToAdd.concat(suiteScriptReferences)
+      .map(elemID => ({ reference: new ReferenceExpression(elemID) }))
   )
 
   return newElement

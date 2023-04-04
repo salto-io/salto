@@ -259,6 +259,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
       idFields: ['profile.name'],
       serviceIdField: 'id',
+      serviceUrl: '/admin/group/{id}',
     },
     deployRequests: {
       add: {
@@ -335,6 +336,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: '_links' },
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
+      serviceUrl: '/admin/app/{name}/instance/{id}/#tab-assignments',
     },
     deployRequests: {
       add: {
@@ -731,6 +733,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'allGroupsValid', fieldType: 'boolean' }],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/groups#rules',
     },
     deployRequests: {
       add: {

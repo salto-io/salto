@@ -176,8 +176,8 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   if (!obj.namespacePrefix) {
     return obj.fullName
   }
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
+  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
@@ -256,30 +256,30 @@ export const fetchMetadataInstances = async ({
 
   const filePropsToRead = fileProps
     .map(prop => ({
-      name: getFullName(prop, addNamespacePrefixToFullName),
-      namespace: getNamespace(prop),
-      fileName: prop.fileName,
+      ...prop,
+      fullName: getFullName(prop, addNamespacePrefixToFullName),
+      namespacePrefix: getNamespace(prop),
     }))
-    .filter(({ name, namespace }) => metadataQuery.isInstanceMatch({
-      namespace,
+    .filter(({ fullName, namespacePrefix }) => metadataQuery.isInstanceMatch({
+      namespace: namespacePrefix,
       metadataType: metadataTypeName,
-      name,
+      name: fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
     }))
 
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    filePropsToRead.map(({ name }) => name)
+    filePropsToRead.map(({ fullName }) => fullName)
   )
 
   const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))
-  const filePropertiesMap = _.keyBy(fileProps, file => getFullName(file, addNamespacePrefixToFullName))
-  const missingMetadata = Object.keys(filePropertiesMap).filter(name => !fullNamesFromRead.has(name))
+  const missingMetadata = filePropsToRead.filter(prop => !fullNamesFromRead.has(prop.fullName))
   if (missingMetadata.length > 0) {
-    log.debug('Missing metadata with valid fileProps: %o', Object.values(filePropertiesMap).filter(fileProp => missingMetadata.includes(fileProp.fullName)))
+    log.debug('Missing metadata with valid fileProps: %o', missingMetadata)
   }
 
+  const filePropertiesMap = _.keyBy(filePropsToRead, 'fullName')
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)

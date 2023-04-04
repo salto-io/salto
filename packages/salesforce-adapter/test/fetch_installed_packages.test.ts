@@ -13,200 +13,208 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, isInstanceElement } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
-import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
-import * as constants from '../src/constants'
+import { ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import { makeArray } from '@salto-io/lowerdash/src/collections/array'
 import mockClient from './client'
 import { fetchMetadataInstances } from '../src/fetch'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
+import { mockFileProperties, MockFilePropertiesInput } from './connection'
+import { mockTypes } from './mock_elements'
 
 describe('Test fetching installed package metadata', () => {
-  describe('Test fetching PermissionSets of installed packages', () => {
-    const PERMISSION_SET_TYPE_ID = new ElemID(constants.SALESFORCE, constants.PERMISSION_SET_TYPE_ID_METADATA_TYPE)
-    const fetch = async ({
-      apiName,
-      namespacePrefix,
-      permissionSetNameIncludesPrefix,
-    }:
+  const fetch = async ({
+    fileProp,
+    mockType,
+    addNamespacePrefixToFullName,
+  }:
+    {
+        fileProp: MockFilePropertiesInput
+        mockType: ObjectType
+        addNamespacePrefixToFullName: boolean
+    }): Promise<InstanceElement> => {
+    const { client, connection } = mockClient()
+    connection.metadata.read.mockImplementation(async (_type, fullNames) => (
+      makeArray(fullNames).map(fullName => ({ fullName }))
+    ))
+
+    const metadataQuery = buildMetadataQuery(
       {
-          apiName: string
-          namespacePrefix?: string
-          permissionSetNameIncludesPrefix: boolean
+        include: [{ metadataType: '.*' }],
+      }
+    )
 
-      }): Promise<void> => {
-      const fileProps = [
-        {
-          createdById: 'aaaaaaaaa',
-          createdByName: 'aaaaaaaaa',
-          createdDate: '2020-08-25T11:39:01.000Z',
-          fileName: 'permissionsets/Sweep_Funnels_User.permissionset',
-          fullName: permissionSetNameIncludesPrefix ? `${namespacePrefix}__${apiName}` : apiName,
-          id: 'aaaaaaaaa',
-          lastModifiedById: 'aaaaaaaaa',
-          lastModifiedByName: 'aaaaaaaaa',
-          lastModifiedDate: '2020-08-25T11:40:45.000Z',
-          manageableState: 'unmanaged',
-          type: 'PermissionSet',
-          namespacePrefix,
-        },
-      ]
-      const testPermissionSetType = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE,
-          constants.PERMISSION_SET_TYPE_ID_METADATA_TYPE),
-        annotations: {
-          metadataType: constants.PERMISSION_SET_TYPE_ID_METADATA_TYPE,
-        },
-      })
-      const { client } = mockClient()
-      client.readMetadata = jest.fn()
-        .mockImplementation(async (_typeName: string, names: string[])
-          : Promise<{result: {}[]; errors: string[]}> => {
-          const result = names.map(name => {
-            const testPermissionSetMetadataInfo = {
-              [constants.INSTANCE_FULL_NAME_FIELD]: name,
-              label: 'aaaaaa',
-              hasActivationRequired: false,
-            }
-            return testPermissionSetMetadataInfo
-          })
-          return { result, errors: [] }
-        })
+    const { elements } = await fetchMetadataInstances({
+      client,
+      fileProps: [mockFileProperties(fileProp)],
+      metadataType: mockType,
+      metadataQuery,
+      addNamespacePrefixToFullName,
+    })
+    return elements
+      .filter(isInstanceElement)[0]
+  }
 
-      const metadataQuery = buildMetadataQuery(
-        {
-          include: [{ metadataType: '.*' }],
-        }
-      )
-
-      const { elements } = await fetchMetadataInstances({
-        client,
-        metadataType: testPermissionSetType,
-        fileProps,
-        metadataQuery,
-        addNamespacePrefixToFullName: true,
-      })
-      const instance = elements
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === constants.PERMISSION_SET_METADATA_TYPE)
-      const targetFullName = 'Test__TestPermissionSet'
-      expect(instance).toBeDefined()
-      expect(instance?.elemID).toEqual(PERMISSION_SET_TYPE_ID.createNestedID('instance', naclCase(targetFullName)))
-    }
+  describe('Test fetching PermissionSets of installed packages', () => {
     describe('if the API name already includes namespacePrefix', () => {
       it('should not add prefix to PermissionSet', async () => {
-        await fetch({ apiName: 'Test__TestPermissionSet', namespacePrefix: 'Test', permissionSetNameIncludesPrefix: false })
+        const fullNameFromList = 'Test__TestPermissionSet'
+        const expectedFullName = 'Test__TestPermissionSet'
+        const addNamespacePrefixToFullName = true
+        const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
+        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+
+        expect(instance).toBeDefined()
+        expect(instance?.value).toHaveProperty('fullName', expectedFullName)
       })
     })
     describe('if the API name does not include namespacePrefix', () => {
       it('should add prefix to the PermissionSet\'s name', async () => {
-        await fetch({ apiName: 'TestPermissionSet', namespacePrefix: 'Test', permissionSetNameIncludesPrefix: false })
+        const fullNameFromList = 'TestPermissionSet'
+        const expectedFullName = 'Test__TestPermissionSet'
+        const addNamespacePrefixToFullName = true
+        const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
+        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+
+        expect(instance).toBeDefined()
+        expect(instance?.value).toHaveProperty('fullName', expectedFullName)
       })
     })
   })
   describe('Test fetching layouts of installed packages', () => {
-    const fetch = async ({
-      apiName,
-      namespacePrefix,
-      layoutNameIncludesPrefix = false,
-    }:
-      {
-          apiName: string
-          namespacePrefix?: string
-          layoutNameIncludesPrefix?: boolean
-          customObject?: boolean
+    // const fetch = async ({
+    //   apiName,
+    //   namespacePrefix,
+    //   layoutNameIncludesPrefix = false,
+    // }:
+    //   {
+    //       apiName: string
+    //       namespacePrefix?: string
+    //       layoutNameIncludesPrefix?: boolean
+    //       customObject?: boolean
 
-      }): Promise<void> => {
-      const fileProps = [
-        {
-          createdById: 'aaaaaaaaa',
-          createdByName: 'aaaaaaaaa',
-          createdDate: '2020-08-25T11:39:01.000Z',
-          fileName: 'layouts/Test.layout',
-          fullName: layoutNameIncludesPrefix ? `${apiName}-SBQQ__Test Layout` : `${apiName}-Test Layout`,
-          id: 'aaaaaaaaa',
-          lastModifiedById: 'aaaaaaaaa',
-          lastModifiedByName: 'aaaaaaaaa',
-          lastModifiedDate: '2020-08-25T11:40:45.000Z',
-          manageableState: 'installed',
-          type: 'Layout',
-          namespacePrefix,
-        },
-      ]
-      const testLayoutType = new ObjectType({
-        elemID: new ElemID(constants.SALESFORCE,
-          constants.LAYOUT_TYPE_ID_METADATA_TYPE),
-        annotations: {
-          metadataType: constants.LAYOUT_TYPE_ID_METADATA_TYPE,
-        },
-      })
-      const { client } = mockClient()
-      client.readMetadata = jest.fn()
-        .mockImplementation(async (_typeName: string, names: string[])
-          : Promise<{result: {}[]; errors: string[]}> => {
-          const result = names.map(name => {
-            const testLayoutMetadataInfo = {
-              [constants.INSTANCE_FULL_NAME_FIELD]: name,
-              layoutSections: {
-                layoutColumns: {
-                  layoutItems: [{
-                    field: 'foo',
-                  }, {
-                    field: 'bar',
-                  }, {
-                    customLink: 'link',
-                  }, {
-                    field: 'moo',
-                  }],
-                },
-              },
-            }
-            return testLayoutMetadataInfo
-          })
+    //   }): Promise<void> => {
+    //   const fileProps = [
+    //     {
+    //       createdById: 'aaaaaaaaa',
+    //       createdByName: 'aaaaaaaaa',
+    //       createdDate: '2020-08-25T11:39:01.000Z',
+    //       fileName: 'layouts/Test.layout',
+    //       fullName: layoutNameIncludesPrefix ? `${apiName}-SBQQ__Test Layout` : `${apiName}-Test Layout`,
+    //       id: 'aaaaaaaaa',
+    //       lastModifiedById: 'aaaaaaaaa',
+    //       lastModifiedByName: 'aaaaaaaaa',
+    //       lastModifiedDate: '2020-08-25T11:40:45.000Z',
+    //       manageableState: 'installed',
+    //       type: 'Layout',
+    //       namespacePrefix,
+    //     },
+    //   ]
+    //   const testLayoutType = new ObjectType({
+    //     elemID: new ElemID(constants.SALESFORCE,
+    //       constants.LAYOUT_TYPE_ID_METADATA_TYPE),
+    //     annotations: {
+    //       metadataType: constants.LAYOUT_TYPE_ID_METADATA_TYPE,
+    //     },
+    //   })
+    //   const { client } = mockClient()
+    //   client.readMetadata = jest.fn()
+    //     .mockImplementation(async (_typeName: string, names: string[])
+    //       : Promise<{result: {}[]; errors: string[]}> => {
+    //       const result = names.map(name => {
+    //         const testLayoutMetadataInfo = {
+    //           [constants.INSTANCE_FULL_NAME_FIELD]: name,
+    //           layoutSections: {
+    //             layoutColumns: {
+    //               layoutItems: [{
+    //                 field: 'foo',
+    //               }, {
+    //                 field: 'bar',
+    //               }, {
+    //                 customLink: 'link',
+    //               }, {
+    //                 field: 'moo',
+    //               }],
+    //             },
+    //           },
+    //         }
+    //         return testLayoutMetadataInfo
+    //       })
 
-          return { result, errors: [] }
-        })
+    //       return { result, errors: [] }
+    //     })
 
-      const metadataQuery = buildMetadataQuery(
-        {
-          include: [{ metadataType: '.*' }],
-        }
-      )
+    //   const metadataQuery = buildMetadataQuery(
+    //     {
+    //       include: [{ metadataType: '.*' }],
+    //     }
+    //   )
 
-      const { elements } = await fetchMetadataInstances({
-        client,
-        metadataType: testLayoutType,
-        fileProps,
-        metadataQuery,
-      })
-      const instance = elements
-        .filter(isInstanceElement)
-        .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
-      const targetFullName = `${apiName}-SBQQ__Test Layout`
-      expect(instance).toBeDefined()
-      expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(targetFullName)))
-    }
+    //   const { elements } = await fetchMetadataInstances({
+    //     client,
+    //     metadataType: testLayoutType,
+    //     fileProps,
+    //     metadataQuery,
+    //   })
+    //   const instance = elements
+    //     .filter(isInstanceElement)
+    //     .find(inst => inst.elemID.typeName === constants.LAYOUT_TYPE_ID_METADATA_TYPE)
+    //   const targetFullName = `${apiName}-SBQQ__Test Layout`
+    //   expect(instance).toBeDefined()
+    //   expect(instance?.elemID).toEqual(LAYOUT_TYPE_ID.createNestedID('instance', naclCase(targetFullName)))
+    // }
     describe('if the API name already includes namespacePrefix', () => {
       describe('if layout name does not include prefix', () => {
         it('should add prefix to layout name', async () => {
-          await fetch({ apiName: 'SBQQ__TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+          const apiName = 'SBQQ__TestApiName__c'
+          const fullNameFromList = `${apiName}-Test Layout`
+          const expectedFullName = `${apiName}-SBQQ__Test Layout`
+          const addNamespacePrefixToFullName = true
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
       describe('if layout name already includes prefix', () => {
         it('should not add prefix to layout name', async () => {
-          await fetch({ apiName: 'SBQQ__TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+          const apiName = 'SBQQ__TestApiName__c'
+          const fullNameFromList = `${apiName}-SBQQ__Test Layout`
+          const expectedFullName = `${apiName}-SBQQ__Test Layout`
+          const addNamespacePrefixToFullName = true
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
     })
     describe('if the API name does not include namespacePrefix', () => {
       describe('if layout  name does not include prefix', () => {
         it('should add prefix to the layout\'s name', async () => {
-          await fetch({ apiName: 'TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: false })
+          const apiName = 'TestApiName__c'
+          const fullNameFromList = `${apiName}-Test Layout`
+          const expectedFullName = `${apiName}-SBQQ__Test Layout`
+          const addNamespacePrefixToFullName = true
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
       describe('if layout name already includes namespacePrefix', () => {
         it('should not add prefix to the layout\'s name', async () => {
-          await fetch({ apiName: 'TestApiName__c', namespacePrefix: 'SBQQ', layoutNameIncludesPrefix: true })
+          const apiName = 'TestApiName__c'
+          const fullNameFromList = `${apiName}-SBQQ__Test Layout`
+          const expectedFullName = `${apiName}-SBQQ__Test Layout`
+          const addNamespacePrefixToFullName = true
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
     })

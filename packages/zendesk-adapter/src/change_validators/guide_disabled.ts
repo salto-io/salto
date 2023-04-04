@@ -14,30 +14,36 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, InstanceElement, isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { BRAND_TYPE_NAME } from '../constants'
 import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
 
 const { isDefined } = lowerDashValues
+const log = logger(module)
+const { awu } = collections.asynciterable
 
-const getBrandsWithGuideByInstanceId = async (instances: InstanceElement[]):
+const getBrandsWithoutGuideByInstanceId = async (
+  instances: InstanceElement[], BrandsByBrandsId: Record<string, InstanceElement>):
 Promise<Record<string, InstanceElement>> => {
-  const BrandsWithGuideByInstanceId = (await Promise.all(instances.map(async instance => {
+  const BrandsWithoutGuideByInstanceId = (await Promise.all(instances.map(async instance => {
     const brandRef = instance.value.brand
     if (!isReferenceExpression(brandRef)) {
+      log.debug('brand is not a reference expression')
       return undefined
     }
-    const brand = await brandRef.getResolvedValue()
+    const brand = BrandsByBrandsId[brandRef.elemID.getFullName()]
     if (brand.value.has_help_center === false) {
       return [instance.elemID.getFullName(), brand]
     }
     return undefined
   }))).filter(isDefined)
-  return Object.fromEntries(BrandsWithGuideByInstanceId)
+  return Object.fromEntries(BrandsWithoutGuideByInstanceId)
 }
 
-export const guideDisabledValidator: ChangeValidator = async changes => {
+export const guideDisabledValidator: ChangeValidator = async (changes, elementSource) => {
   const relevantInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
@@ -46,14 +52,28 @@ export const guideDisabledValidator: ChangeValidator = async changes => {
   if (_.isEmpty(relevantInstances)) {
     return []
   }
+  if (elementSource === undefined) {
+    log.error('Failed to run guideDisabledValidator because no element source was provided')
+    return []
+  }
 
-  const brandsWithGuideByInstanceId = await getBrandsWithGuideByInstanceId(relevantInstances)
+  const BrandsByBrandsId = Object.fromEntries((await awu(await elementSource.list())
+    .filter(id => id.typeName === BRAND_TYPE_NAME)
+    .map(id => elementSource.get(id))
+    .filter(isInstanceElement)
+    .toArray()).map(instance => [instance.elemID.getFullName(), instance]))
+  if (_.isEmpty(BrandsByBrandsId)) {
+    return []
+  }
 
-  return relevantInstances.filter(instance =>
-    instance.elemID.getFullName() in brandsWithGuideByInstanceId).map(instance => ({
-    elemID: instance.elemID,
-    severity: 'Error',
-    message: 'Cannot add instance because its associated brand has help center disabled.',
-    detailedMessage: `The brand "${brandsWithGuideByInstanceId[instance.elemID.getFullName()].elemID.name}" associated with this instance has help center disabled.`,
-  }))
+  const brandsWithoutGuideByInstanceId = await getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandsId)
+
+  return relevantInstances
+    .filter(instance =>
+      instance.elemID.getFullName() in brandsWithoutGuideByInstanceId).map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Cannot add instance because its associated brand has help center disabled.',
+      detailedMessage: `The brand "${brandsWithoutGuideByInstanceId[instance.elemID.getFullName()].elemID.name}" associated with this instance has help center disabled.`,
+    }))
 }

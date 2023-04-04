@@ -15,6 +15,7 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { guideDisabledValidator } from '../../src/change_validators/guide_disabled'
 import { ZENDESK, CATEGORY_TYPE_NAME } from '../../src/constants'
 
@@ -40,7 +41,7 @@ describe('guideDisabledValidator', () => {
   )
 
   const categoryToBrandWithHelpCenterFalse = new InstanceElement(
-    'category',
+    'categoryToBrandWithHelpCenterFalse',
     categoryType,
     {
       brand: new ReferenceExpression(brandWithHelpCenterFalse.elemID, brandWithHelpCenterFalse),
@@ -48,7 +49,7 @@ describe('guideDisabledValidator', () => {
   )
 
   const categoryToBrandWithHelpCenterTrue = new InstanceElement(
-    'category',
+    'categoryToBrandWithHelpCenterTrue',
     categoryType,
     {
       brand: new ReferenceExpression(brandWithHelpCenterTrue.elemID, brandWithHelpCenterTrue),
@@ -56,8 +57,10 @@ describe('guideDisabledValidator', () => {
   )
 
   it('should return errors because the brand has no help center', async () => {
+    const clonedBrandWithHelpCenterFalse = brandWithHelpCenterFalse.clone()
     const changes = [toChange({ after: categoryToBrandWithHelpCenterFalse })]
-    const changesErrors = await guideDisabledValidator(changes)
+    const changesErrors = await guideDisabledValidator(changes,
+      buildElementsSourceFromElements([clonedBrandWithHelpCenterFalse]))
     expect(changesErrors).toHaveLength(1)
     expect(changesErrors).toEqual([{
       elemID: categoryToBrandWithHelpCenterFalse.elemID,
@@ -68,8 +71,43 @@ describe('guideDisabledValidator', () => {
   })
 
   it('should not return errors because the brand has help center', async () => {
+    const clonedBrandWithHelpCenterTrue = brandWithHelpCenterTrue.clone()
     const changes = [toChange({ after: categoryToBrandWithHelpCenterTrue })]
-    const changesErrors = await guideDisabledValidator(changes)
+    const changesErrors = await guideDisabledValidator(changes,
+      buildElementsSourceFromElements([clonedBrandWithHelpCenterTrue]))
+    expect(changesErrors).toHaveLength(0)
+  })
+  it('should not return errors for edge cases', async () => {
+    const brandWitouthHelpCenter = new InstanceElement(
+      'brandWitouthHelpCenter',
+      brandType,
+      {},
+    )
+    const categoryToBrandWitouthHelpCenter = new InstanceElement(
+      'categoryToBrandWitouthHelpCenter',
+      categoryType,
+      {
+        brand: new ReferenceExpression(brandWitouthHelpCenter.elemID, brandWitouthHelpCenter),
+      }
+    )
+    const categoryWithoutRefExpression = new InstanceElement(
+      'categoryWithoutRefExpression',
+      categoryType,
+      {
+        brand: 'not a reference expression',
+      }
+    )
+    const categoryWithoutBrand = new InstanceElement(
+      'categoryWithoutBrand',
+      categoryType,
+      {
+      },
+    )
+    const clonedBrandWitouthHelpCenter = brandWitouthHelpCenter.clone()
+    const changes = [toChange({ after: categoryToBrandWitouthHelpCenter }),
+      toChange({ after: categoryWithoutRefExpression }), toChange({ after: categoryWithoutBrand })]
+    const changesErrors = await guideDisabledValidator(changes,
+      buildElementsSourceFromElements([clonedBrandWitouthHelpCenter]))
     expect(changesErrors).toHaveLength(0)
   })
 })

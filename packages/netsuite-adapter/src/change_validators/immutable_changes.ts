@@ -139,7 +139,7 @@ const toModificationInstanceErrors = async (
     )
   }
 
-  if (before.value[APPLICATION_ID] !== after.value[APPLICATION_ID]) {
+  if (modificationServiceIdCondition(change, APPLICATION_ID)) {
     modifiedImmutableFields.push(
       after.elemID.createNestedID(APPLICATION_ID).getFullName()
     )

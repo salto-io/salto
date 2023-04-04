@@ -15,7 +15,7 @@
 */
 import { ElemID, BuiltinTypes, ObjectType, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { transformElement } from '../src/utils'
-import { getUpdatedReference, getReferences, createReferencesTransformFunc } from '../src/references'
+import { getUpdatedReference, getReferences, createReferencesTransformFunc, isArrayOfRefExprToInstances } from '../src/references'
 
 const ADAPTER_NAME = 'myAdapter'
 
@@ -84,5 +84,18 @@ describe('references functions', () => {
       strict: false,
     })
     expect(updatedInstance.value.book_id.elemID).toEqual(newElemID)
+  })
+  describe('isArrayOfRefExprToInstances', () => {
+    const bookRef = new ReferenceExpression(mainBook.elemID, mainBook)
+    const otherBookRef = new ReferenceExpression(mainBook.elemID, mainBook)
+    it('should return True because elements are references or an empty list', () => {
+      expect(isArrayOfRefExprToInstances([bookRef, otherBookRef])).toBe(true)
+      expect(isArrayOfRefExprToInstances([])).toBe(true)
+    })
+    it('should return False because its elements are not only references or not references at all', () => {
+      const newElemID = new ElemID(ADAPTER_NAME, 'book', 'instance', 'very_new_book')
+      expect(isArrayOfRefExprToInstances([bookRef, newElemID])).toBe(false)
+      expect(isArrayOfRefExprToInstances(['hello', 3])).toBe(false)
+    })
   })
 })

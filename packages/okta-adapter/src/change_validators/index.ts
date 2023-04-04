@@ -20,6 +20,7 @@ import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { defaultPoliciesValidator } from './default_policies'
+import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 
@@ -31,6 +32,7 @@ export default (
     groupRuleStatusValidator,
     groupRuleActionsValidator,
     defaultPoliciesValidator,
+    groupRuleAdministratorValidator,
     customApplicationStatusValidator,
     userTypeAndSchemaValidator,
   ]

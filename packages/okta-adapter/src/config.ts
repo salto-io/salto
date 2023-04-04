@@ -14,19 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
-const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
+export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig> & {
+  usePrivateAPI: boolean
+}
 export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
@@ -36,16 +38,11 @@ export type OktaFetchConfig = configUtils.UserFetchConfig & {
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
 export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 
-export type OktaApiConfig = {
-  swagger: OktaSwaggerApiConfig
-  ducktype: OktaDuckTypeApiConfig
-}
-
 export type OktaConfig = {
   [CLIENT_CONFIG]?: OktaClientConfig
   [FETCH_CONFIG]: OktaFetchConfig
-  [API_DEFINITIONS_CONFIG]: OktaApiConfig
-
+  [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
+  [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -1253,36 +1250,26 @@ export const DEFAULT_CONFIG: OktaConfig = {
     hideTypes: true,
     convertUsersIds: true,
   },
-  [API_DEFINITIONS_CONFIG]: {
-    swagger: DEFAULT_API_DEFINITIONS,
-    ducktype: DUCKTYPE_API_DEFINITIONS,
+  [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+  [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
+  [CLIENT_CONFIG]: {
+    usePrivateAPI: true,
   },
 }
 
-const oktaApiConfigType = createMatchingObjectType<Partial<OktaApiConfig>>({
-  elemID: new ElemID(OKTA, 'OktaApiConfig'),
-  fields: {
-    swagger: {
-      refType: createSwaggerAdapterApiConfigType({
-        adapter: OKTA,
-      }),
-    },
-    ducktype: {
-      refType: createDucktypeAdapterApiConfigType({
-        adapter: OKTA,
-      }),
-    },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
+const createClientConfigType = (): ObjectType => {
+  const configType = clientUtils.createClientConfigType(OKTA)
+  configType.fields.usePrivateAPI = new Field(
+    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
+  )
+  return configType
+}
 
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(OKTA),
+      refType: createClientConfigType(),
     },
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
@@ -1293,13 +1280,21 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
-      refType: oktaApiConfigType,
+      refType: createSwaggerAdapterApiConfigType({
+        adapter: OKTA,
+      }),
+    },
+    [PRIVATE_API_DEFINITIONS_CONFIG]: {
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: OKTA,
+      }),
     },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
       DEFAULT_CONFIG,
       API_DEFINITIONS_CONFIG,
+      PRIVATE_API_DEFINITIONS_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.convertUsersIds`
     ),
@@ -1309,5 +1304,6 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: OktaFetchConfig
-  [API_DEFINITIONS_CONFIG]: OktaApiConfig
+  [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
+  [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
 }

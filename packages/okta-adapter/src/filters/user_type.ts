@@ -75,7 +75,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployUserType(change, client, config[API_DEFINITIONS_CONFIG].swagger)
+      async change => deployUserType(change, client, config[API_DEFINITIONS_CONFIG])
     )
 
     return { leftoverChanges, deployResult }

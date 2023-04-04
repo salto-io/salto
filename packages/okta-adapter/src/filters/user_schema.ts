@@ -78,7 +78,6 @@ const deployUserSchemaRemoval = async (
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'userSchemaFilter',
   onFetch: async elements => {
-    const { swagger } = config[API_DEFINITIONS_CONFIG]
     const userTypeInstances = elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === USERTYPE_TYPE_NAME)
@@ -108,8 +107,8 @@ const filter: FilterCreator = ({ client, config }) => ({
     const userSchemaInstances = await Promise.all(userSchemaEntries.map(async (entry, index) => toBasicInstance({
       entry,
       type: userSchemaType,
-      transformationConfigByType: getTransformationConfigByType(swagger.types),
-      transformationDefaultConfig: swagger.typeDefaults.transformation,
+      transformationConfigByType: getTransformationConfigByType(config[API_DEFINITIONS_CONFIG].types),
+      transformationDefaultConfig: config[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
       nestName: undefined,
       parent: undefined,
       defaultName: `unnamed_${index}`,

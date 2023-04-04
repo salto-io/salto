@@ -14,28 +14,45 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
-import { API_DEFINITIONS_CONFIG } from '../config'
+import { CLIENT_CONFIG } from '../config'
 import { deployChanges } from '../deployment'
 
+const log = logger(module)
+
 /**
- * Deploys changes of types defined with ducktype
+ * Deploys changes of types defined with ducktype api definitions
  */
 const filterCreator: FilterCreator = ({ adminClient, config }) => ({
-  name: 'ducktypeDeployFilter',
+  name: 'privateAPIDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const { ducktype } = config[API_DEFINITIONS_CONFIG]
+    if (adminClient === undefined) {
+      log.error('Skip deployment of private API types because adminClient does not exist')
+      return {
+        leftoverChanges: changes,
+        deployResult: { appliedChanges: [], errors: [] },
+      }
+    }
+    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      log.debug('Skip deployment of private API types because private API is not enabled')
+      return {
+        leftoverChanges: changes,
+        deployResult: { appliedChanges: [], errors: [] },
+      }
+    }
+    const { privateApiDefinitions } = config
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-      && ducktype.types[getChangeData(change).elemID.typeName] !== undefined
+      && privateApiDefinitions.types[getChangeData(change).elemID.typeName] !== undefined
     )
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const { deployRequests } = ducktype.types[getChangeData(change).elemID.typeName]
+        const { deployRequests } = privateApiDefinitions.types[getChangeData(change).elemID.typeName]
         await deployment.deployChange({
           change,
           client: adminClient,

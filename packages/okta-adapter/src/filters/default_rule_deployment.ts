@@ -126,7 +126,7 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG].swagger)
+      async change => deployDefaultPolicy(change, client, config[API_DEFINITIONS_CONFIG])
     )
 
     return {

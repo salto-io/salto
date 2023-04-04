@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { createConnection } from './connection'
@@ -21,6 +22,7 @@ import { OKTA } from '../constants'
 import { Credentials } from '../auth'
 import { LINK_HEADER_NAME } from './pagination'
 
+const log = logger(module)
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
 } = clientUtils
@@ -94,4 +96,25 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       }
       : undefined
   }
+}
+
+/**
+ * Each Okta org has an administrator URL which is used to sign in to the admin console
+ * and used in order to fetch data from private APIs
+ * For more info: https://developer.okta.com/docs/concepts/okta-organizations/#org-urls
+ */
+export const getAdminUrl = (baseUrl: string): string | undefined => {
+  const ADMIN_SUFFIX = '-admin'
+  const urlParts = baseUrl.split('.')
+  if (urlParts.length < 2) {
+    log.error(`Could not add '-admin' to subdomain for baseUrl: ${baseUrl}`)
+    return undefined
+  }
+  const subdomain = urlParts[0]
+  if (subdomain.endsWith(ADMIN_SUFFIX)) {
+    log.warn(`Subdomain already includes '-admin', using original baseUrl: ${baseUrl}`)
+    return baseUrl
+  }
+  urlParts[0] = subdomain.concat(ADMIN_SUFFIX)
+  return urlParts.join('.')
 }

@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -40,7 +40,7 @@ import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
-import ducktypeDeployFilter from './filters/ducktype_deployment'
+import privateApiDeployFilter from './filters/private_api_deploy'
 import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
@@ -74,41 +74,10 @@ export const DEFAULT_FILTERS = [
   policyRuleRemoval,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
-  ducktypeDeployFilter,
+  privateApiDeployFilter,
   // should run last
   defaultDeployFilter,
 ]
-
-const getPrivateApiElements = async ({
-  client,
-  apiDefinitionsConfig,
-  fetchQuery,
-  getElemIdFunc,
-}:{
-  client: OktaClient
-  apiDefinitionsConfig: OktaDuckTypeApiConfig
-  fetchQuery: elementUtils.query.ElementQuery
-  getElemIdFunc?: ElemIdGetter
-}): Promise<elementUtils.FetchElements<Element[]>> => {
-  const paginator = createPaginator({
-    client,
-    paginationFuncCreator: paginate,
-  })
-  // Get all elements defined with ducktype api definitions
-  const additionalDuckTypeElements = await getAllElements({
-    adapterName: OKTA,
-    types: apiDefinitionsConfig.types,
-    shouldAddRemainingTypes: false,
-    supportedTypes: apiDefinitionsConfig.supportedTypes,
-    fetchQuery,
-    paginator,
-    nestedFieldFinder: findDataField,
-    computeGetArgs,
-    typeDefaults: apiDefinitionsConfig.typeDefaults,
-    getElemIdFunc,
-  })
-  return additionalDuckTypeElements
-}
 
 export interface OktaAdapterParams {
   filterCreators?: FilterCreator[]
@@ -116,7 +85,7 @@ export interface OktaAdapterParams {
   config: OktaConfig
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
-  adminClient: OktaClient
+  adminClient?: OktaClient
 }
 
 export default class OktaAdapter implements AdapterOperations {
@@ -126,7 +95,7 @@ export default class OktaAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
-  private adminClient: OktaClient
+  private adminClient?: OktaClient
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -172,27 +141,27 @@ export default class OktaAdapter implements AdapterOperations {
   }
 
   @logDuration('generating types from swagger')
-  private async getAllTypes(): Promise<{
+  private async getSwaggerTypes(): Promise<{
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
     return generateTypes(
       OKTA,
-      this.userConfig[API_DEFINITIONS_CONFIG].swagger,
+      this.userConfig[API_DEFINITIONS_CONFIG],
     )
   }
 
   @logDuration('generating instances from service')
-  private async getInstances(
+  private async getSwaggerInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
     const updatedApiDefinitionsConfig = {
-      ...this.userConfig.apiDefinitions.swagger,
+      ...this.userConfig.apiDefinitions,
       types: {
         ...parsedConfigs,
         ..._.mapValues(
-          this.userConfig.apiDefinitions.swagger.types,
+          this.userConfig.apiDefinitions.types,
           (def, typeName) => ({ ...parsedConfigs[typeName], ...def })
         ),
       },
@@ -202,31 +171,59 @@ export default class OktaAdapter implements AdapterOperations {
       objectTypes: _.pickBy(allTypes, isObjectType),
       apiConfig: updatedApiDefinitionsConfig,
       fetchQuery: this.fetchQuery,
-      supportedTypes: this.userConfig.apiDefinitions.swagger.supportedTypes,
+      supportedTypes: this.userConfig.apiDefinitions.supportedTypes,
       getElemIdFunc: this.getElemIdFunc,
     })
   }
 
-  @logDuration('fetching account configuration')
-  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    log.debug('going to fetch okta account configuration..')
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes()
-    progressReporter.reportProgress({ message: 'Fetching instances' })
-    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
+  private async getPrivateApiElements(): Promise<elementUtils.FetchElements<Element[]>> {
+    const { privateApiDefinitions } = this.userConfig
+    if (this.adminClient === undefined || this.userConfig[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      return { elements: [] }
+    }
 
-    const privateApiElements = await getPrivateApiElements({
+    const paginator = createPaginator({
       client: this.adminClient,
-      apiDefinitionsConfig: this.userConfig[API_DEFINITIONS_CONFIG].ducktype,
+      paginationFuncCreator: paginate,
+    })
+
+    return getAllElements({
+      adapterName: OKTA,
+      types: privateApiDefinitions.types,
+      shouldAddRemainingTypes: false,
+      supportedTypes: privateApiDefinitions.supportedTypes,
       fetchQuery: this.fetchQuery,
+      paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: privateApiDefinitions.typeDefaults,
       getElemIdFunc: this.getElemIdFunc,
     })
+  }
+
+  @logDuration('generating instances from service')
+  private async getAllElements(
+    progressReporter: ProgressReporter
+  ): Promise<elementUtils.FetchElements<Element[]>> {
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const { allTypes, parsedConfigs } = await this.getSwaggerTypes()
+    progressReporter.reportProgress({ message: 'Fetching instances' })
+    const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
+
+    const privateApiElements = await this.getPrivateApiElements()
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
       ...privateApiElements.elements,
     ]
+    return { elements, errors: (errors ?? []).concat(privateApiElements.errors ?? []) }
+  }
+
+  @logDuration('fetching account configuration')
+  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    log.debug('going to fetch okta account configuration..')
+    const { elements, errors } = await this.getAllElements(progressReporter)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -236,7 +233,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     return {
       elements,
-      errors: (errors ?? []).concat(filterResult.errors ?? [], privateApiElements.errors ?? []),
+      errors: (errors ?? []).concat(filterResult.errors ?? []),
     }
   }
 

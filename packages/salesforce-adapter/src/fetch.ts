@@ -133,10 +133,6 @@ export const listMetadataObjects = async (
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
-const getNamespaceFromNamespacePrefix = (namespacePrefix: string|undefined): string => (
-  namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
-)
-
 export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
   metadataQuery.isInstanceMatch({
     namespace: getNamespace(file),
@@ -262,10 +258,10 @@ export const fetchMetadataInstances = async ({
       ...prop,
       fullName: getFullName(prop, addNamespacePrefixToFullName),
     }))
-    .filter(({ fullName, namespacePrefix }) => metadataQuery.isInstanceMatch({
-      namespace: getNamespaceFromNamespacePrefix(namespacePrefix),
+    .filter(prop => metadataQuery.isInstanceMatch({
+      namespace: getNamespace(prop),
       metadataType: metadataTypeName,
-      name: fullName,
+      name: prop.fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
     }))
 

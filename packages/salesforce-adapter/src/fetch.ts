@@ -172,11 +172,12 @@ const listMetadataObjectsWithinFolders = async (
   return { elements, configChanges }
 }
 
-const getFullName = (obj: FileProperties): string => {
+const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): string => {
   if (!obj.namespacePrefix) {
     return obj.fullName
   }
-  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+  const namePrefix = obj.namespacePrefix
+    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
@@ -188,13 +189,21 @@ const getFullName = (obj: FileProperties): string => {
     }
     return obj.fullName
   }
-  // In some cases, obj.fullName does not contain the namespace prefix even though
-  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-  return obj.fullName.startsWith(namePrefix) ? obj.fullName : `${namePrefix}${obj.fullName}`
+  if (obj.fullName.startsWith(namePrefix)) {
+    return obj.fullName
+  }
+  if (addNamespacePrefixToFullName) {
+    // In some cases, obj.fullName does not contain the namespace prefix even though
+    // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+    return `${namePrefix}${obj.fullName}`
+  }
+  // todoadi fix text here
+  log.debug('bla')
+  return obj.fullName
 }
 
-const getPropsWithFullName = (obj: FileProperties): FileProperties => {
-  const correctFullName = getFullName(obj)
+const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): FileProperties => {
+  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
     fullName: correctFullName,
@@ -214,13 +223,15 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, metadataQuery, maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
+  client, metadataType, fileProps, metadataQuery,
+  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE, addNamespacePrefixToFullName,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
+  addNamespacePrefixToFullName?: boolean
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -246,7 +257,7 @@ export const fetchMetadataInstances = async ({
 
   const filePropsToRead = fileProps
     .map(prop => ({
-      name: getFullName(prop),
+      name: getFullName(prop, addNamespacePrefixToFullName),
       namespace: getNamespace(prop),
       fileName: prop.fileName,
     }))
@@ -264,7 +275,7 @@ export const fetchMetadataInstances = async ({
   )
 
   const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))
-  const filePropertiesMap = _.keyBy(fileProps, getFullName)
+  const filePropertiesMap = _.keyBy(fileProps, file => getFullName(file, addNamespacePrefixToFullName))
   const missingMetadata = Object.keys(filePropertiesMap).filter(name => !fullNamesFromRead.has(name))
   if (missingMetadata.length > 0) {
     log.debug('Missing metadata with valid fileProps: %o', Object.values(filePropertiesMap).filter(fileProp => missingMetadata.includes(fileProp.fullName)))
@@ -307,6 +318,7 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
+  addNamespacePrefixToFullName?: boolean
 }
 
 export const retrieveMetadataInstances = async ({
@@ -314,6 +326,7 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
+  addNamespacePrefixToFullName,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -326,7 +339,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(getPropsWithFullName)
+      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
       .value()
   }
 
@@ -335,7 +348,7 @@ export const retrieveMetadataInstances = async ({
   const typesWithContent = await getTypesWithContent(types)
 
   const retrieveInstances = async (
-    fileProps: ReadonlyArray<FileProperties>
+    fileProps: ReadonlyArray<FileProperties>,
   ): Promise<InstanceElement[]> => {
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = fileProps.map(inst => (
@@ -362,7 +375,7 @@ export const retrieveMetadataInstances = async ({
       const chunkSize = Math.ceil(fileProps.length / 2)
       log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
       configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
-      return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()
+      return (await Promise.all(_.chunk(fileProps, chunkSize).map(file => retrieveInstances(file)))).flat()
     }
 
     configChanges.push(...createRetrieveConfigChange(result))

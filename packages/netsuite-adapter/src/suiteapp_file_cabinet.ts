@@ -358,13 +358,18 @@ SuiteAppFileCabinetOperations => {
 
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
+      // console.log(foldersResults)
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+      // console.log(idToFolder)
       const folderIdAndPaths = foldersResults
-        .map(folderResult => ({ path: getFullPath(folderResult, idToFolder).join(FILE_CABINET_PATH_SEPARATOR),
-          id: folderResult.id }))
-        // .filter(folderIdAndPath => query.isFileMatch(folderIdAndPath.path))
+        .map(folderResult => ({
+          path: getFullPath(folderResult, idToFolder).join(FILE_CABINET_PATH_SEPARATOR),
+          id: folderResult.id,
+        }))
+        .filter(folderIdAndPath => query.isFileMatch(`/${folderIdAndPath.path}`))
+      // TODO: remove this timer when done
       const filesResults = await log.time(() => queryFiles(
-        folderIdAndPaths.filter(folder => query.isFileMatch(`${folder.path}/`)).map(folder => folder.id)
+        folderIdAndPaths.filter(folder => query.isFileMatch(`/${folder.path}/`)).map(folder => folder.id)
       ), 'shulikTest')
 
 
@@ -381,7 +386,7 @@ SuiteAppFileCabinetOperations => {
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
     const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-
+    console.log('got here1')
     const foldersCustomizationInfo = foldersResults.map(folder => ({
       path: getFullPath(folder, idToFolder),
       typeName: 'folder',
@@ -393,6 +398,7 @@ SuiteAppFileCabinetOperations => {
         internalId: folder.id,
       },
     })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+    console.log('###### got here #######')
 
     const filesCustomizations = filesResults.map(file => ({
       path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
@@ -410,7 +416,7 @@ SuiteAppFileCabinetOperations => {
       id: file.id,
       size: parseInt(file.filesize, 10),
     })).filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
-
+    // console.log(filesCustomizations)
     const [
       filesCustomizationWithoutContent,
       filesCustomizationsLinks,

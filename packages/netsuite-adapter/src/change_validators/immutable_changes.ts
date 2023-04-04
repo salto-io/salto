@@ -57,7 +57,7 @@ const toModifiedRefTypeChangeError = (
 const typeServiceIdConditions = async <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
-): Promise<{ type: 'missingRefType' | 'missingAnnotation'; value?: string }[]> => {
+): Promise<{ type: 'missingRefType' } | { type: 'missingAnnotation'; value: string }[]> => {
   const { after } = change.data
   const serviceIdRefTypes = await awu(Object.entries(after.annotationRefTypes))
     .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue())).toArray()
@@ -184,8 +184,6 @@ const toAddedRefTypeChangeError = (
   detailedMessage: 'This type is missing a service id annotation refType.\n'
     + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
 })
-
-
 const additionServiceIdCondition = (change: AdditionChange<ChangeDataType>, annoName: string): boolean =>
   getElementValueOrAnnotations(change.data.after)[annoName] === undefined
 

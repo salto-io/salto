@@ -84,6 +84,7 @@ describe('Test fetching installed package metadata', () => {
         metadataType: testPermissionSetType,
         fileProps,
         metadataQuery,
+        addNamespacePrefixToFullName: true,
       })
       const instance = elements
         .filter(isInstanceElement)

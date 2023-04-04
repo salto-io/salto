@@ -58,6 +58,12 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
+  public get baseUrlWithAdmin(): string {
+    const baseURL = (this.credentials.baseUrl).split('.')
+    baseURL[0] = `${baseURL[0]}-admin`
+    return baseURL.join('.')
+  }
+
   /**
   * Clear response data values might contain secrets, returns a new object
   */

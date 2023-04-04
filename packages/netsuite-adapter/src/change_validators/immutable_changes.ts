@@ -54,10 +54,12 @@ const toModifiedRefTypeChangeError = (
     + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
 })
 
+type TypeMissingServiceIdResponse = { type: 'missingRefType' } | { type: 'missingAnnotation'; value: string }
+
 const typeServiceIdConditions = async <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
-): Promise<{ type: 'missingRefType' } | { type: 'missingAnnotation'; value: string }[]> => {
+): Promise<TypeMissingServiceIdResponse[]> => {
   const { after } = change.data
   const serviceIdRefTypes = await awu(Object.entries(after.annotationRefTypes))
     .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue())).toArray()
@@ -80,7 +82,7 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
     modifiedImmutableAnnotations.push({ type: 'missingAnnotation', value: APPLICATION_ID })
   }
   return modifiedImmutableAnnotations.map(modifiedAnno => (
-    modifiedAnno.type === 'missingAnnotation' && modifiedAnno?.value
+    modifiedAnno.type === 'missingAnnotation'
       ? toModifiedAnnotationChangeError(after, modifiedAnno.value)
       : toModifiedRefTypeChangeError(after)
   ))
@@ -184,6 +186,7 @@ const toAddedRefTypeChangeError = (
   detailedMessage: 'This type is missing a service id annotation refType.\n'
     + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
 })
+
 const additionServiceIdCondition = (change: AdditionChange<ChangeDataType>, annoName: string): boolean =>
   getElementValueOrAnnotations(change.data.after)[annoName] === undefined
 
@@ -192,7 +195,7 @@ const toAdditionTypeErrors = async (change: AdditionChange<ObjectType>): Promise
   const missingServiceIdAnnotations = await typeServiceIdConditions(change, additionServiceIdCondition)
 
   return missingServiceIdAnnotations.map(addedAnno => (
-    addedAnno.type === 'missingAnnotation' && addedAnno?.value
+    addedAnno.type === 'missingAnnotation'
       ? toAddedMissingAnnotationError(after, addedAnno.value)
       : toAddedRefTypeChangeError(after)
   ))

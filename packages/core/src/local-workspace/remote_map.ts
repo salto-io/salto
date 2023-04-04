@@ -647,6 +647,7 @@ remoteMap.RemoteMapCreator => {
     const getImpl = (key: string): Promise<T | undefined> => new Promise(resolve => {
       if (delKeys.has(key)) {
         resolve(undefined)
+        return
       }
       if (locationCache.has(keyToTempDBKey(key))) {
         counterInc('LocationCacheHit')
@@ -664,6 +665,7 @@ remoteMap.RemoteMapCreator => {
             if (wasClearCalled) {
               counterInc('RemoteMapMiss')
               resolve(undefined)
+              return
             }
             persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
               if (innerError) {

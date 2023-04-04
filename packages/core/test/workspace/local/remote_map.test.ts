@@ -216,6 +216,11 @@ describe('test operations on remote db', () => {
         expect(vals).toHaveLength(1)
         expect(vals[0].isEqual(elements[1])).toBeTruthy()
       })
+      it('get should not return cleared values', async () => {
+        await expect(remoteMap.get(elements[0].elemID.getFullName())).resolves.toBeUndefined()
+        // We try this twice since we had a bug that in the second call it would return the wrong results
+        await expect(remoteMap.get(elements[0].elemID.getFullName())).resolves.toBeUndefined()
+      })
       it('should return entries that were only set after clear', async () => {
         const entries = await awu(remoteMap.entries()).toArray()
         expect(entries).toHaveLength(1)

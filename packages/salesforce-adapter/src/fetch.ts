@@ -133,6 +133,9 @@ export const listMetadataObjects = async (
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
+const getNamespaceFromNamespacePrefix = (namespacePrefix: string|undefined): string => (
+  namespacePrefix === undefined || namespacePrefix === '' ? DEFAULT_NAMESPACE : namespacePrefix
+)
 
 export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
   metadataQuery.isInstanceMatch({
@@ -184,7 +187,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   // <namespace>__<objectName>-<layoutName> where it should be
   // <namespace>__<objectName>-<namespace>__<layoutName>
     const [objectName, ...layoutName] = obj.fullName.split('-')
-    if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
     return obj.fullName
@@ -258,10 +261,9 @@ export const fetchMetadataInstances = async ({
     .map(prop => ({
       ...prop,
       fullName: getFullName(prop, addNamespacePrefixToFullName),
-      namespacePrefix: getNamespace(prop),
     }))
     .filter(({ fullName, namespacePrefix }) => metadataQuery.isInstanceMatch({
-      namespace: namespacePrefix,
+      namespace: getNamespaceFromNamespacePrefix(namespacePrefix),
       metadataType: metadataTypeName,
       name: fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
@@ -374,7 +376,7 @@ export const retrieveMetadataInstances = async ({
       const chunkSize = Math.ceil(fileProps.length / 2)
       log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
       configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
-      return (await Promise.all(_.chunk(fileProps, chunkSize).map(file => retrieveInstances(file)))).flat()
+      return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()
     }
 
     configChanges.push(...createRetrieveConfigChange(result))

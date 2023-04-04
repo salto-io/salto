@@ -653,35 +653,35 @@ remoteMap.RemoteMapCreator => {
         counterInc('LocationCacheHit')
         counterInc('RemoteMapHit')
         resolve(locationCache.get(keyToTempDBKey(key)) as T)
-      } else {
-        counterInc('LocationCacheMiss')
-        const resolveRet = async (value: Buffer | string): Promise<void> => {
-          const ret = (await deserialize(value.toString()))
-          locationCache.set(keyToTempDBKey(key), ret)
-          resolve(ret)
-        }
-        tmpDB.get(keyToTempDBKey(key), async (error, value) => {
-          if (error) {
-            if (wasClearCalled) {
+        return
+      }
+      counterInc('LocationCacheMiss')
+      const resolveRet = async (value: Buffer | string): Promise<void> => {
+        const ret = (await deserialize(value.toString()))
+        locationCache.set(keyToTempDBKey(key), ret)
+        resolve(ret)
+      }
+      tmpDB.get(keyToTempDBKey(key), async (error, value) => {
+        if (error) {
+          if (wasClearCalled) {
+            counterInc('RemoteMapMiss')
+            resolve(undefined)
+            return
+          }
+          persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
+            if (innerError) {
               counterInc('RemoteMapMiss')
               resolve(undefined)
               return
             }
-            persistentDB.get(keyToDBKey(key), async (innerError, innerValue) => {
-              if (innerError) {
-                counterInc('RemoteMapMiss')
-                resolve(undefined)
-              } else {
-                await resolveRet(innerValue)
-                counterInc('RemoteMapHit')
-              }
-            })
-          } else {
-            await resolveRet(value)
+            await resolveRet(innerValue)
             counterInc('RemoteMapHit')
-          }
-        })
-      }
+          })
+        } else {
+          await resolveRet(value)
+          counterInc('RemoteMapHit')
+        }
+      })
     })
     const deleteImpl = async (key: string): Promise<void> => {
       delKeys.add(key)

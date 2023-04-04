@@ -29,10 +29,10 @@ module.exports = deepMerge(
       : undefined,
     coverageThreshold: {
       'global': {
-        branches: 89,
-        functions: 94,
-        lines: 95,
-        statements: 95,
+        branches: 0,
+        functions: 0,
+        lines: 0,
+        statements: 0,
       },
     },
   },

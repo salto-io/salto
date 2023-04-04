@@ -29,12 +29,12 @@ const getGroupsWithRoleByRuleId = async (groupRuleInstance: InstanceElement[]):
 Promise<Record<string, InstanceElement[]>> => {
   const groupsWithRoleByRuleId = (await Promise.all(groupRuleInstance.map(async instance => {
     const targetGroupsPath = instance.elemID.createNestedID(...GROUP_ID_PATH)
-    const TagetGroupReferences = resolvePath(instance, targetGroupsPath)
-    if (!isArrayOfRefExprToInstances(TagetGroupReferences)) {
+    const targetGroupReferences = resolvePath(instance, targetGroupsPath)
+    if (!isArrayOfRefExprToInstances(targetGroupReferences)) {
       log.debug('Could not find group references in %s', instance.elemID.getFullName())
       return undefined
     }
-    const targetGroupWithRoles = TagetGroupReferences.map(groupReference => groupReference.value).filter(
+    const targetGroupWithRoles = targetGroupReferences.map(groupReference => groupReference.value).filter(
       targetGroupInstance => !(_.isEmpty(targetGroupInstance.value?.roles))
     )
     if (!(_.isEmpty(targetGroupWithRoles))) {

@@ -197,8 +197,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
     // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
     return `${namePrefix}${obj.fullName}`
   }
-  // todoadi fix text here
-  log.debug('bla')
+  log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false', obj.fullName, obj.namespacePrefix)
   return obj.fullName
 }
 

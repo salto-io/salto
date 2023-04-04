@@ -30,7 +30,7 @@ export const oauthClientCredentialsType = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { message: 'OAuth client secret' },
     },
-    authorizationUrl: { // SAP use the term authorization URL and not auth URL
+    authorizationUrl: {
       refType: BuiltinTypes.STRING,
       annotations: { message: 'Authorization url' },
     },

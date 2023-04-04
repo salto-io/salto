@@ -18,11 +18,6 @@ import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 
 const fieldNameToTypeMappingDefs: referenceUtils.FieldReferenceDefinition<never>[] = [
-  // {
-  //   src: { field: 'api_client_id', parentTypes: ['api_access_profile'] },
-  //   serializationStrategy: 'id',
-  //   target: { type: 'api_client' },
-  // },
 ]
 
 /**

@@ -34,13 +34,10 @@ const { createPaginator } = clientUtils
 const { generateTypes, getAllInstances } = elementUtils.swagger
 const log = logger(module)
 
-const { hideTypes, ...otherCommonFilters } = commonFilters
-
 export const DEFAULT_FILTERS = [
-  hideTypes,
   // fieldReferencesFilter should run after all elements were created
   fieldReferencesFilter,
-  ...Object.values(otherCommonFilters),
+  ...Object.values(commonFilters),
 ]
 
 export interface SAPAdapterParams {

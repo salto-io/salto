@@ -31,7 +31,7 @@ const generateUrl = (id: number, element: InstanceElement):
   return `app/common/scripting/plugintype.nl?scripttype=PLUGINTYPE&id=${id}`
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,

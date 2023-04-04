@@ -18,10 +18,10 @@ import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { RECORD_ID_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
+import { RECORD_ID_SCHEMA, SAVED_SEARCH_RESULTS_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
-import { CUSTOM_RECORD_TYPE, INTERNAL_ID, SCRIPT_ID } from '../../constants'
+import { CUSTOM_RECORD_TYPE, SAVED_SEARCH, INTERNAL_ID, SCRIPT_ID } from '../../constants'
 import { getCustomListValues, isCustomListInstance } from '../../elements_source_index/elements_source_index'
 
 const log = logger(module)
@@ -38,6 +38,15 @@ type QueryResponse = {
  } | {
   internalid: string
  })
+
+ type SavedSearchResult = {
+  id: string
+  internalid: [
+    {
+      value: string
+    }
+  ]
+}
 
 const CUSTOM_FIELD = 'customfield'
 
@@ -214,6 +223,47 @@ const addInternalIdToCustomListValues = async (
   })
 }
 
+const isSavedSearch = (element: InstanceElement): boolean => element.refType.elemID.name === SAVED_SEARCH
+
+const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: Element[]): Promise<void> => {
+  const queryScriptIdToInternalId = async (): Promise<Record<string, string>> => {
+    const results = await client.runSavedSearchQuery({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+    if (results === undefined) {
+      log.error('SavedSearch query failed')
+      return {}
+    }
+
+    const ajv = new Ajv({ allErrors: true })
+    if (!ajv.validate<SavedSearchResult[]>(SAVED_SEARCH_RESULTS_SCHEMA, results)) {
+      log.error(`Got invalid results from SavedSearch query: ${ajv.errorsText()}`)
+      return {}
+    }
+
+    return Object.fromEntries(
+      results.map(({ id, internalid }) => [id.toLowerCase(), internalid[0].value])
+    )
+  }
+
+  const savedSearchElements = elements
+    .filter(isInstanceElement)
+    .filter(isSavedSearch)
+
+  if (savedSearchElements.length === 0) {
+    return
+  }
+
+  const scriptIdToInternalId = await queryScriptIdToInternalId()
+
+  savedSearchElements.forEach(element => {
+    const id = scriptIdToInternalId[element.value.scriptid.toLowerCase()]
+    if (id !== undefined) {
+      element.value[INTERNAL_ID] = id
+    } else {
+      log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
+    }
+  })
+}
+
 /**
  * This filter adds the internal id to instances.
  * so we will be able to reference them in other instances
@@ -232,6 +282,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     await addInternalIdToInstances(client, instances)
     await addInternalIdToCustomRecordTypes(client, elements)
     await addInternalIdToCustomListValues(client, elements)
+    await addInternalIdToSavedSearches(client, elements)
   },
 
   /**
@@ -242,7 +293,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       return
     }
     const changesData = changes.filter(isAdditionOrModificationChange).map(getChangeData)
-    changesData.filter(isInstanceElement).filter(isSupportedInstance).forEach(inst => {
+    changesData.filter(isInstanceElement).filter(e => isSupportedInstance(e) || isSavedSearch(e)).forEach(inst => {
       delete inst.value[INTERNAL_ID]
     })
     changesData.filter(isObjectType).filter(isCustomRecordType).forEach(type => {
@@ -255,7 +306,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
     })
   },
   /**
-   * This assign the internal id for new instances created through Salto
+   * This assigns the internal id for new instances created through Salto
    */
   onDeploy: async changes => {
     if (!client.isSuiteAppConfigured()) {
@@ -272,6 +323,10 @@ const filterCreator: FilterCreator = ({ client }) => ({
     await addInternalIdToCustomListValues(
       client,
       changes.filter(isAdditionOrModificationChange).map(getChangeData)
+    )
+    await addInternalIdToSavedSearches(
+      client,
+      changes.filter(isAdditionChange).map(getChangeData)
     )
   },
 })

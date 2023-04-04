@@ -42,7 +42,7 @@ const SERVICE_URL_SETTERS = {
   setEmailTemplatesUrls,
   setRoleUrls,
   setSublistsUrls,
-  setSavedSearchUrls, // Can't use setElementsUrls currently. Does query. Not in Map?
+  setSavedSearchUrls,
   setConstantUrls,
   setSuiteAppUrls,
 }

@@ -23,12 +23,12 @@ import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import { clientscriptType } from '../../../src/autogen/types/standard_types/clientscript'
+import { savedsearchType } from '../../../src/autogen/types/standard_types/savedsearch'
 
 describe('sdf internal ids tests', () => {
   let filterOpts: FilterOpts
   let elements: ChangeDataType[]
   let customRecordType: ObjectType
-  let clientScriptType: ObjectType
   let accountInstance: InstanceElement
   let customScriptInstance: InstanceElement
   let instanceWithoutScriptid: InstanceElement
@@ -41,6 +41,8 @@ describe('sdf internal ids tests', () => {
     runSuiteQL: runSuiteQLMock,
     runSavedSearchQuery: runSavedSearchQueryMock,
   } as unknown as SuiteAppClient
+  const savedsearch = savedsearchType().type
+  const clientScriptType = clientscriptType().type
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
   beforeEach(async () => {
@@ -55,14 +57,12 @@ describe('sdf internal ids tests', () => {
       },
     })
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
-    clientScriptType = clientscriptType().type
     customScriptInstance = new InstanceElement('customScript', clientScriptType)
     instanceWithoutScriptid = new InstanceElement('customScript', clientScriptType)
-    savedSearchInstance = new InstanceElement('savedSearch', new ObjectType({ elemID: new ElemID(NETSUITE, 'savedseach') }))
+    savedSearchInstance = new InstanceElement('savedSearch', savedsearch, { scriptid: 'scriptId4' })
     otherCustomFieldInstance = new InstanceElement('othercustomfield', new ObjectType({ elemID: new ElemID(NETSUITE, 'othercustomfield') }))
     accountInstance.value.internalId = '1'
     customScriptInstance.value.scriptid = 'scriptId3'
-    savedSearchInstance.value.scriptid = 'scriptId4'
     otherCustomFieldInstance.value.scriptid = 'scriptid5'
 
     elements = [
@@ -150,17 +150,29 @@ describe('sdf internal ids tests', () => {
     })
   })
   describe('bad schema', () => {
-    it('bad record id schema', async () => {
+    beforeEach(async () => {
       runSuiteQLMock.mockReset()
+      runSavedSearchQueryMock.mockReset()
+    })
+    it('bad record id schema', async () => {
       runSuiteQLMock.mockResolvedValueOnce({ scriptid: 'scriptId3' })
+      runSavedSearchQueryMock.mockResolvedValue([{ id: 'scriptId4' }])
       await filterCreator(filterOpts).onFetch?.(elements)
       expect(customRecordType.annotations.internalId).not.toBeDefined()
       expect(customScriptInstance.value.internalId).not.toBeDefined()
+      expect(savedSearchInstance.value.internalId).not.toBeDefined()
+    })
+
+    it('saved search query failure', async () => {
+      runSavedSearchQueryMock.mockResolvedValue(undefined)
+      await filterCreator(filterOpts).onFetch?.(elements)
+      expect(savedSearchInstance.value.internalId).not.toBeDefined()
     })
   })
   describe('fetch', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
+      runSavedSearchQueryMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
         { scriptid: 'scriptId3', id: '3' },
       ])
@@ -170,6 +182,9 @@ describe('sdf internal ids tests', () => {
       runSuiteQLMock.mockResolvedValueOnce([
         { scriptid: 'customrecord1', id: '2' },
       ])
+      runSavedSearchQueryMock.mockResolvedValueOnce([
+        { id: 'scriptId4', internalid: [{ value: '4' }] },
+      ])
       await filterCreator(filterOpts).onFetch?.(elements.concat(clientScriptType))
     })
     it('should query information from api', () => {
@@ -177,12 +192,14 @@ describe('sdf internal ids tests', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customfield ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
       expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
+      expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+      expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
     })
     it('should add internal ids to elements', () => {
       expect(accountInstance.value.internalId).toBe('1')
       expect(customRecordType.annotations.internalId).toBe('2')
       expect(customScriptInstance.value.internalId).toBe('3')
-      expect(savedSearchInstance.value.internalId).not.toBeDefined()
+      expect(savedSearchInstance.value.internalId).toBe('4')
       expect(otherCustomFieldInstance.value.internalId).toBe('5')
     })
     it('should add field to object', () => {
@@ -194,29 +211,36 @@ describe('sdf internal ids tests', () => {
     it('should remove internal ids from elements', async () => {
       customRecordType.annotations.internalId = '2'
       customScriptInstance.value.internalId = '3'
+      savedSearchInstance.value.internalId = '4'
       await filterCreator(filterOpts).preDeploy?.(
         elements.map(element => toChange({ after: element }))
       )
       expect(accountInstance.value.internalId).toBe('1')
       expect(customRecordType.annotations.internalId).toBe(undefined)
       expect(customScriptInstance.value.internalId).toBe(undefined)
+      expect(savedSearchInstance.value.internalId).toBe(undefined)
     })
   })
   describe('deploy', () => {
     describe('success', () => {
       beforeEach(async () => {
         runSuiteQLMock.mockReset()
+        runSavedSearchQueryMock.mockReset()
         runSuiteQLMock.mockResolvedValueOnce([
           { scriptid: 'scriptId3', id: '3' },
         ])
         runSuiteQLMock.mockResolvedValueOnce([
           { scriptid: 'customrecord1', id: '2' },
         ])
+        runSavedSearchQueryMock.mockResolvedValueOnce([
+          { id: 'scriptId4', internalid: [{ value: '4' }] },
+        ])
         await filterCreator(filterOpts).onDeploy?.(
           [
             toChange({ before: accountInstance, after: accountInstance }),
             toChange({ after: customRecordType }),
             toChange({ after: customScriptInstance }),
+            toChange({ after: savedSearchInstance }),
           ],
           {
             appliedChanges: [],
@@ -228,10 +252,13 @@ describe('sdf internal ids tests', () => {
         expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid, id FROM clientscript ORDER BY id ASC')
         expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid, internalid FROM customrecordtype ORDER BY internalid ASC')
         expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
+        expect(runSavedSearchQueryMock).toHaveBeenCalledWith({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+        expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(1)
       })
       it('should add internal ids to new elements', () => {
         expect(customRecordType.annotations.internalId).toBe('2')
         expect(customScriptInstance.value.internalId).toBe('3')
+        expect(savedSearchInstance.value.internalId).toBe('4')
       })
       it('should do nothing to modified elements', () => {
         expect(accountInstance.value.internalId).toBe('1')
@@ -244,6 +271,7 @@ describe('sdf internal ids tests', () => {
             toChange({ before: accountInstance, after: accountInstance }),
             toChange({ before: customRecordType, after: customRecordType }),
             toChange({ before: customScriptInstance, after: customScriptInstance }),
+            toChange({ after: savedSearchInstance }),
           ],
           {
             appliedChanges: [],
@@ -252,6 +280,7 @@ describe('sdf internal ids tests', () => {
         )
         expect(customRecordType.annotations.internalId).not.toBeDefined()
         expect(customScriptInstance.value.internalId).not.toBeDefined()
+        expect(savedSearchInstance.value.internalId).not.toBeDefined()
       })
     })
   })

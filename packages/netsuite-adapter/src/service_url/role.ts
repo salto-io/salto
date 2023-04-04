@@ -19,7 +19,7 @@ import { ROLE } from '../constants'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,

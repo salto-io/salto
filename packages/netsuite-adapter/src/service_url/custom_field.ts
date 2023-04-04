@@ -43,7 +43,7 @@ const generateUrl = (id: number, element: InstanceElement):
   return url
 }
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,

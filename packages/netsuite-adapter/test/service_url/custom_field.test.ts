@@ -24,12 +24,11 @@ import { itemoptioncustomfieldType } from '../../src/autogen/types/standard_type
 import { othercustomfieldType } from '../../src/autogen/types/standard_types/othercustomfield'
 import { transactionbodycustomfieldType } from '../../src/autogen/types/standard_types/transactionbodycustomfield'
 import { transactioncolumncustomfieldType } from '../../src/autogen/types/standard_types/transactioncolumncustomfield'
+import { INTERNAL_ID } from '../../src/constants'
 
 
 describe('setCustomFieldsUrls', () => {
-  const runSuiteQlMock = jest.fn()
   const client = {
-    runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
   const crmcustomfield = crmcustomfieldType().type
@@ -41,33 +40,17 @@ describe('setCustomFieldsUrls', () => {
   const transactionbodycustomfield = transactionbodycustomfieldType().type
   const transactioncolumncustomfield = transactioncolumncustomfieldType().type
 
-  let elements: InstanceElement[]
-
-  beforeEach(() => {
-    jest.resetAllMocks()
-    runSuiteQlMock.mockResolvedValue([
-      { scriptid: 'CRMCUSTOMFIELDID', id: '1' },
-      { scriptid: 'ENTITYCUSTOMFIELDID', id: '2' },
-      { scriptid: 'ITEMCUSTOMFIELDID', id: '3' },
-      { scriptid: 'ITEMNUMBERCUSTOMFIELDID', id: '4' },
-      { scriptid: 'ITEMOPTIONCUSTOMFIELDID', id: '5' },
-      { scriptid: 'OTHERCUSTOMFIELDID', id: '6' },
-      { scriptid: 'TRANSACTIONBODYCUSTOMFIELDID', id: '7' },
-      { scriptid: 'TRANSACTIONCOLUMNCUSTOMFIELDID', id: '8' },
-    ])
-    elements = [
-      new InstanceElement('A', crmcustomfield, { scriptid: 'crmcustomfieldid' }),
-      new InstanceElement('B', entitycustomfield, { scriptid: 'entitycustomfieldid' }),
-      new InstanceElement('C', itemcustomfield, { scriptid: 'itemcustomfieldid' }),
-      new InstanceElement('D', itemnumbercustomfield, { scriptid: 'itemnumbercustomfieldid' }),
-      new InstanceElement('E', itemoptioncustomfield, { scriptid: 'itemoptioncustomfieldid' }),
-      new InstanceElement('F', othercustomfield, { scriptid: 'othercustomfieldid' }),
-      new InstanceElement('G', transactionbodycustomfield, { scriptid: 'transactionbodycustomfieldid' }),
-      new InstanceElement('H', transactioncolumncustomfield, { scriptid: 'transactioncolumncustomfieldid' }),
-    ]
-  })
-
   it('should set the right url', async () => {
+    const elements = [
+      new InstanceElement('A', crmcustomfield, { scriptid: 'crmcustomfieldid', [INTERNAL_ID]: '1' }),
+      new InstanceElement('B', entitycustomfield, { scriptid: 'entitycustomfieldid', [INTERNAL_ID]: '2' }),
+      new InstanceElement('C', itemcustomfield, { scriptid: 'itemcustomfieldid', [INTERNAL_ID]: '3' }),
+      new InstanceElement('D', itemnumbercustomfield, { scriptid: 'itemnumbercustomfieldid', [INTERNAL_ID]: '4' }),
+      new InstanceElement('E', itemoptioncustomfield, { scriptid: 'itemoptioncustomfieldid', [INTERNAL_ID]: '5' }),
+      new InstanceElement('F', othercustomfield, { scriptid: 'othercustomfieldid', [INTERNAL_ID]: '6' }),
+      new InstanceElement('G', transactionbodycustomfield, { scriptid: 'transactionbodycustomfieldid', [INTERNAL_ID]: '7' }),
+      new InstanceElement('H', transactioncolumncustomfield, { scriptid: 'transactioncolumncustomfieldid', [INTERNAL_ID]: '8' }),
+    ]
     await setServiceUrl(elements, client)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/eventcustfield.nl?id=1')
     expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/entitycustfield.nl?id=2')
@@ -83,10 +66,5 @@ describe('setCustomFieldsUrls', () => {
     const notFoundElement = new InstanceElement('A2', crmcustomfield, { scriptid: 'someScriptID2' })
     await setServiceUrl([notFoundElement], client)
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('invalid results should throw an error', async () => {
-    runSuiteQlMock.mockResolvedValue([{ scriptid: 'someScriptID' }])
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
   })
 })

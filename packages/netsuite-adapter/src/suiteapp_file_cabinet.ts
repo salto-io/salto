@@ -263,14 +263,13 @@ SuiteAppFileCabinetOperations => {
   }
 
   const queryFiles = (
-    foldersToQuery: FolderResult[]
+    folderIdsToQuery: string[]
   ): Promise<FileResult[]> => retryOnRetryableError(async () => {
     const fileCriteria = 'hideinbundle = \'F\''
-    const whereQueries = foldersToQuery.length > 0
-      ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-        `${fileCriteria} AND (${foldersToQueryChunk.map(folder => `folder = '${folder.id}'`).join(' OR ')})`)
+    const whereQueries = folderIdsToQuery.length > 0
+      ? _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
+        `${fileCriteria} AND folder IN(${foldersToQueryChunk.join(', ')})`)
       : [fileCriteria]
-
     const results = await Promise.all(whereQueries.map(async whereQuery => {
       const filesResults = await suiteAppClient.runSuiteQL(
         'SELECT name, id, filesize, bundleable, isinactive, isonline,'
@@ -330,6 +329,18 @@ SuiteAppFileCabinetOperations => {
     }
   }
 
+  const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
+  string[] => {
+    if (folder.parent === undefined) {
+      return [folder.name]
+    }
+    if (idToFolder[folder.parent] === undefined) {
+      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
+      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
+    }
+    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
+  }
+
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
       const topLevelFoldersResults = (await queryTopLevelFolders())
@@ -347,24 +358,21 @@ SuiteAppFileCabinetOperations => {
 
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
-      const filesResults = await queryFiles(foldersResults)
+      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+      const folderIdAndPaths = foldersResults
+        .map(folderResult => ({ path: getFullPath(folderResult, idToFolder).join(FILE_CABINET_PATH_SEPARATOR),
+          id: folderResult.id }))
+        // .filter(folderIdAndPath => query.isFileMatch(folderIdAndPath.path))
+      const filesResults = await log.time(() => queryFiles(
+        folderIdAndPaths.filter(folder => query.isFileMatch(`${folder.path}/`)).map(folder => folder.id)
+      ), 'shulikTest')
+
 
       fileCabinetResults = removeResultsWithoutParentFolder({ foldersResults, filesResults })
     }
     return fileCabinetResults
   }
 
-  const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
-  string[] => {
-    if (folder.parent === undefined) {
-      return [folder.name]
-    }
-    if (idToFolder[folder.parent] === undefined) {
-      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
-      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
-    }
-    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
-  }
 
   const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {

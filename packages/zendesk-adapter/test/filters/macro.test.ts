@@ -18,7 +18,7 @@ import { filterUtils } from '@salto-io/adapter-components'
 import {
   ElemID,
   InstanceElement,
-  ObjectType, ReferenceExpression,
+  ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/macro'

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, createRestriction, DeployResult, getChangeData, Values, Change, toChange, ChangeGroup, isAdditionOrModificationChange, isServiceId, INSTANCE_ANNOTATIONS, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
 import { MockInterface, stepManager } from '@salto-io/test-utils'
 import { Package, DeployResultLocator, DeployResult as JSForceDeployResult } from 'jsforce'
 import JSZip from 'jszip'
@@ -31,6 +31,7 @@ import { createElement, removeElement } from '../e2e_test/utils'
 import { mockTypes, mockDefaultValues } from './mock_elements'
 import { mockDeployResult, mockRunTestFailure, mockDeployResultComplete } from './connection'
 import { MAPPABLE_PROBLEM_TO_USER_FRIENDLY_MESSAGE, MappableSalesforceProblem } from '../src/client/user_facing_errors'
+import { GLOBAL_VALUE_SET } from '../src/filters/global_value_sets'
 
 const { makeArray } = collections.array
 
@@ -1723,6 +1724,58 @@ describe('SalesforceAdapter CRUD', () => {
       it('should return applied changes for both groups', () => {
         expect(resultValidationRule.appliedChanges).toHaveLength(1)
         expect(resultProfile.appliedChanges).toHaveLength(1)
+      })
+    })
+
+    describe('when deploying a global value set', () => {
+      const changesToFullNames = (changes: ReadonlyArray<Change>): string[] => (
+        changes.map(getChangeData).filter(isInstanceElement).map(inst => inst.value.fullName)
+      )
+      const createChangeGroup = (valueSetNames: string[]): ChangeGroup => ({
+        groupID: 'metadata',
+        changes: valueSetNames.map(fullName => toChange({
+          before: createInstanceElement({ fullName, customValue: [{ fullName: 'a' }] }, mockTypes.GlobalValueSet),
+          after: createInstanceElement({ fullName, customValue: [{ fullName: 'b' }] }, mockTypes.GlobalValueSet),
+        })),
+      })
+      describe.each([
+        { fullName: 'MyValueSet', testName: 'without __gvs suffix' },
+        { fullName: 'MyValueSet__gvs', testName: 'with __gvs suffix' },
+      ])('when result is $testName', ({ fullName }) => {
+        let changeGroup: ChangeGroup
+        beforeEach(async () => {
+          changeGroup = createChangeGroup(['MyValueSet'])
+          connection.metadata.deploy.mockReturnValue(mockDeployResult({
+            componentSuccess: [{ fullName, componentType: GLOBAL_VALUE_SET }],
+          }))
+          result = await adapter.deploy({ changeGroup })
+        })
+        it('should apply the change', () => {
+          expect(changesToFullNames(result.appliedChanges)).toEqual(
+            changesToFullNames(changeGroup.changes)
+          )
+        })
+      })
+      describe('when deploying both changes with and without __gvs suffix', () => {
+        let changeGroup: ChangeGroup
+        beforeEach(() => {
+          changeGroup = createChangeGroup(['MyValueSet', 'MyValueSet__gvs'])
+        })
+        describe.each([
+          { successFullNames: ['MyValueSet'] },
+          { successFullNames: ['MyValueSet__gvs'] },
+          { successFullNames: ['MyValueSet', 'MyValueSet__gvs'] },
+        ])('When the successful changes are for $successFullNames', ({ successFullNames }) => {
+          beforeEach(async () => {
+            connection.metadata.deploy.mockReturnValue(mockDeployResult({
+              componentSuccess: successFullNames.map(fullName => ({ fullName, componentType: GLOBAL_VALUE_SET })),
+            }))
+            result = await adapter.deploy({ changeGroup })
+          })
+          it('should apply changes only for successful instances', () => {
+            expect(changesToFullNames(result.appliedChanges)).toEqual(successFullNames)
+          })
+        })
       })
     })
   })

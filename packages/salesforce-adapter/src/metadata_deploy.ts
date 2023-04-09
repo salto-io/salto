@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import wu from 'wu'
 import _ from 'lodash'
 import util from 'util'
 import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
@@ -39,6 +40,7 @@ import { INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
+import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -255,6 +257,39 @@ const getChangeError = async (change: Change): Promise<string | undefined> => {
   return undefined
 }
 
+const addGlobalValueSetNameSuffix = (changeToDeployedIds: Record<string, MetadataIdsMap>): void => {
+  // Handle special case with global value sets - in version 57.0 salesforce changed the behavior
+  // of user-defined global value sets such that their name must end with __gvs. however, if there
+  // is a user defined global value set from before that time, the API behaves inconsistently, sometimes
+  // returning the result with the original name (without __gvs), and sometimes returning the result
+  // with the __gvs suffix appended.
+  // in order to handle that we add a __gvs suffix as if it was one of the deployed IDs for changes
+  // on global value sets. since we consider a deployment of a change successful if any of its related
+  // deployed IDs are successful, this means that we will consider the global value set change successful
+  // even if it came back with the __gvs suffix
+  const globalValueSetIDDeployedIds = Object.values(changeToDeployedIds)
+    .filter(deployedIds => deployedIds[GLOBAL_VALUE_SET] !== undefined)
+
+  const allDeployedGlobalValueSetIDs = new Set(
+    globalValueSetIDDeployedIds.flatMap(deployedIds => Array.from(deployedIds[GLOBAL_VALUE_SET]))
+  )
+
+  globalValueSetIDDeployedIds
+    .map(deployedIds => deployedIds[GLOBAL_VALUE_SET])
+    .filter(values.isDefined)
+    .forEach(valueSetIds => {
+      const idsToAdd = wu(valueSetIds)
+        .filter(id => !id.endsWith('__gvs'))
+        .map(id => `${id}__gvs`)
+        // If there is another global value set with the same name and the __gvs suffix
+        // in this deployment, it means the one we are currently looking at must be a "standard"
+        // global value set, and we should really not add the __gvs suffix to it
+        .filter(idWithSuffix => !allDeployedGlobalValueSetIDs.has(idWithSuffix))
+
+      idsToAdd.forEach(id => valueSetIds.add(id))
+    })
+}
+
 const validateChanges = async (
   changes: ReadonlyArray<Change>
 ): Promise<{
@@ -362,6 +397,11 @@ export const deployMetadata = async (
   const { errors, successfulFullNames } = processDeployResponse(
     sfDeployRes, pkg.getDeletionsPackageName(), checkOnly ?? false
   )
+
+  // Handle special SF behavior with global value set names before checking
+  // for which change is successful
+  addGlobalValueSetNameSuffix(changeToDeployedIds)
+
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)
     const changeDeployedIds = changeToDeployedIds[changeElem.elemID.getFullName()]

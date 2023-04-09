@@ -27,7 +27,8 @@ export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
-export type OktaActionName = ActionName | 'activate' | 'deactivate'
+export type OktaStatusActionName = 'activate' | 'deactivate'
+export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
 }

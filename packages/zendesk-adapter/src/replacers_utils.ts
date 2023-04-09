@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { conditionFieldValue, isCorrectConditions } from './filters/utils'
 
 const { awu } = collections.asynciterable
@@ -44,7 +44,7 @@ export const replaceConditionsAndActionsCreator = (
       .flatMap((condition, i) => {
         const fieldNamesToReplace = replacerParams.fieldsToReplace.map(f => f.name)
         const conditionValue = conditionFieldValue(condition, typeName)
-        if (!fieldNamesToReplace.includes(conditionValue)) {
+        if (isReferenceExpression(conditionValue) || !fieldNamesToReplace.includes(conditionValue)) {
           return []
         }
         const valueRelativePath = replacerParams.fieldsToReplace

@@ -62,10 +62,16 @@ describe('automationAllConditionsValidator', () => {
       id: 2,
       title: 'Test',
       active: true,
-      actions: [{
-        field: 'Test',
-        value: 'Test',
-      }],
+      actions: [
+        {
+          field: 'Test',
+          value: 'Test',
+        },
+        {
+          field: new ReferenceExpression(validAutomation.elemID),
+          value: 'Test',
+        },
+      ],
       conditions: {
         all: [
           {

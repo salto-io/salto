@@ -37,14 +37,17 @@ import {
   OBJECT_HISTORY_TRACKING_ENABLED,
 } from '../../src/constants'
 
-const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
-
-describe(filter.name, () => {
+describe('historyTracking', () => {
+  let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
   const createField = (parentType: ObjectType, fieldName: string): Field => (
     new Field(parentType, fieldName, Types.primitiveDataTypes.Text, {
       [API_NAME]: `${parentType.elemID.typeName}.${fieldName}`,
     })
   )
+
+  beforeEach(() => {
+    filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+  })
 
   describe('onFetch', () => {
     describe('When fetching an object with history tracking disabled', () => {
@@ -361,8 +364,8 @@ describe(filter.name, () => {
       await filter.onFetch(elements)
 
       const after = elements[0].clone()
-      const fieldApiName = after.fields.fieldWithoutHistoryTracking.annotations[API_NAME]
-      after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = fieldApiName
+      after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = (
+        new ReferenceExpression(after.fields.fieldWithoutHistoryTracking.elemID))
       const changes = [toChange({ before: elements[0], after })]
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
@@ -374,7 +377,7 @@ describe(filter.name, () => {
       await filter.onFetch(elements)
 
       const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS] = []
+      after.annotations[HISTORY_TRACKED_FIELDS] = {}
       const changes = [toChange({ before: elements[0], after })]
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
@@ -402,9 +405,9 @@ describe(filter.name, () => {
       await filter.onFetch(elements)
 
       const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS] = [
-        new ReferenceExpression(typeWithHistoryTrackedFields.fields.fieldWithoutHistoryTracking.elemID),
-      ]
+      after.annotations[HISTORY_TRACKED_FIELDS] = {
+        fieldWithoutHistoryTracking: new ReferenceExpression(type.fields.fieldWithoutHistoryTracking.elemID),
+      }
 
       const changes = [toChange({ before: elements[0], after })]
       await filter.preDeploy(changes)

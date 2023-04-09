@@ -70,10 +70,11 @@ export const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
+  // should run before appDeploymentFilter and after userSchemaFilter
+  serviceUrlFilter,
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
-  serviceUrlFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,

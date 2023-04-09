@@ -25,9 +25,10 @@ const { isDefined } = lowerDashValues
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const getBrandsWithoutGuideByInstanceId = async (
-  instances: InstanceElement[], BrandsByBrandsId: Record<string, InstanceElement>):
-Promise<Record<string, InstanceElement>> => {
+const getBrandsWithoutGuideByInstanceId = (
+  instances: InstanceElement[], BrandsByBrandsId: Record<string, InstanceElement>
+):
+Record<string, InstanceElement> => {
   const BrandsWithoutGuideByInstanceId = instances.map(instance => {
     const brandRef = instance.value.brand
     if (!isReferenceExpression(brandRef)) {
@@ -71,7 +72,7 @@ export const guideDisabledValidator: ChangeValidator = async (changes, elementSo
     return []
   }
 
-  const brandsWithoutGuideByInstanceId = await getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandId)
+  const brandsWithoutGuideByInstanceId = getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandId)
 
   return relevantInstances
     .filter(instance => instance.elemID.getFullName() in brandsWithoutGuideByInstanceId)

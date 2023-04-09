@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
-import { OktaApiConfig } from './config'
+import { OktaApiConfig, OktaStatusActionName } from './config'
 
 const log = logger(module)
 
@@ -68,26 +68,20 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
   return error
 }
 
-export const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const statusBefore = change.data.before.value.status
-  const statusAfter = change.data.after.value.status
-  return statusBefore === INACTIVE_STATUS && statusAfter === ACTIVE_STATUS
-}
-
-export const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const statusBefore = change.data.before.value.status
-  const statusAfter = change.data.after.value.status
-  return statusBefore === ACTIVE_STATUS && statusAfter === INACTIVE_STATUS
-}
+export const isActivationChange = ({ before, after }: {before: string; after: string}): boolean =>
+  before === INACTIVE_STATUS && after === ACTIVE_STATUS
+export const isDeactivationChange = ({ before, after }: {before: string; after: string}): boolean =>
+  before === ACTIVE_STATUS && after === INACTIVE_STATUS
 
 export const deployStatusChange = async (
-  change: ModificationChange<InstanceElement>,
+  change: Change<InstanceElement>,
   client: OktaClient,
   apiDefinitions: OktaApiConfig,
+  operation: OktaStatusActionName,
 ): Promise<void> => {
   const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
-  const endpoint = isActivationChange(change)
+  const endpoint = operation === 'activate'
     ? deployRequests?.activate
     : deployRequests?.deactivate
   if (endpoint === undefined) {
@@ -176,8 +170,9 @@ export const defaultDeployWithStatus = async (
   try {
     // If the instance is deactivated,
     // we should first change the status as some instances can not be changed in status 'ACTIVE'
-    if (isModificationChange(change) && isDeactivationChange(change)) {
-      await deployStatusChange(change, client, apiDefinitions)
+    if (isModificationChange(change)
+      && isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
     const response = await defaultDeployChange(
       change,
@@ -186,9 +181,25 @@ export const defaultDeployWithStatus = async (
       fieldsToIgnore,
       queryParams
     )
+
+    // Update status for the created instance if necessary
+    if (isAdditionChange(change) && !Array.isArray(response)) {
+      const returnedStatus = response?.status
+      if (typeof returnedStatus !== 'string') {
+        return response
+      }
+      const changeStatus = getChangeData(change).value.status
+      if (isActivationChange({ before: returnedStatus, after: changeStatus })) {
+        await deployStatusChange(change, client, apiDefinitions, 'activate')
+      } else if (isDeactivationChange({ before: returnedStatus, after: changeStatus })) {
+        await deployStatusChange(change, client, apiDefinitions, 'deactivate')
+      }
+    }
+
     // If the instance is activated, we should first make the changes and then change the status
-    if (isModificationChange(change) && isActivationChange(change)) {
-      await deployStatusChange(change, client, apiDefinitions)
+    if (isModificationChange(change)
+      && isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'activate')
     }
 
     return response

@@ -18,31 +18,30 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ModificationChange, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
-import { GROUP_RULE_TYPE_NAME, OKTA } from '../src/constants'
+import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
 import { defaultDeployChange, defaultDeployWithStatus, deployStatusChange, getOktaError } from '../src/deployment'
 import { DEFAULT_API_DEFINITIONS, OktaApiConfig } from '../src/config'
 
 describe('deployment.ts', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
   let client: OktaClient
-  let type: ObjectType
   let instance: InstanceElement
   let instance2: InstanceElement
+  const type = new ObjectType({
+    elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
+  })
 
   beforeEach(() => {
     const { client: cli, connection } = mockClient()
     mockConnection = connection
     client = cli
-    type = new ObjectType({
-      elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME),
-    })
     instance = new InstanceElement(
       'instance',
       type,
       { name: 'val' }
     )
   })
-  describe('deploy change', () => {
+  describe('defaultDeployChange', () => {
     describe('addition changes', () => {
       it('successful deploy should add id to the element', async () => {
         mockConnection.post.mockResolvedValueOnce({
@@ -125,6 +124,134 @@ describe('deployment.ts', () => {
         )
       })
 
+      it('should return undefined if before and after values are equal', async () => {
+        const result = await defaultDeployChange(
+          toChange({ before: instance, after: instance }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+          [],
+        )
+        expect(result).toEqual(undefined)
+        expect(mockConnection.put).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('removal changes', () => {
+      beforeEach(() => {
+        instance.value.id = '1'
+      })
+      it('successful deploy should return the response', async () => {
+        mockConnection.delete.mockResolvedValueOnce({
+          status: 200,
+          data: {},
+        })
+        const result = await defaultDeployChange(
+          toChange({ before: instance }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+          [],
+        )
+        expect(result).toEqual({})
+        expect(mockConnection.delete).toHaveBeenCalledWith(
+          '/api/v1/groups/rules/1',
+          { id: '1', name: 'val' },
+          undefined,
+        )
+      })
+    })
+  })
+
+  describe('defaultDeployWithStatus', () => {
+    describe('addition changes', () => {
+      const ruleInstance = new InstanceElement(
+        'test',
+        type,
+        {
+          name: 'group rule',
+          status: 'ACTIVE',
+        }
+      )
+      it('Should update status if instance was created by default with another status', async () => {
+        mockConnection.post
+          .mockResolvedValueOnce({
+            status: 204,
+            data: {
+              id: '123',
+              status: 'INACTIVE',
+            },
+          })
+          .mockResolvedValueOnce({
+            status: 204, data: {},
+          })
+        await defaultDeployWithStatus(
+          toChange({ after: ruleInstance.clone() }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+          [],
+        )
+        expect(mockConnection.post).toHaveBeenNthCalledWith(
+          1,
+          '/api/v1/groups/rules',
+          { name: 'group rule' },
+          undefined,
+        )
+        expect(mockConnection.post).toHaveBeenNthCalledWith(
+          2,
+          '/api/v1/groups/rules/123/lifecycle/activate',
+          {},
+          undefined,
+        )
+      })
+      it('Should not try to change status if response does not contain status', async () => {
+        mockConnection.post
+          .mockResolvedValueOnce({
+            status: 204,
+            data: {
+              id: '123',
+            },
+          })
+        await defaultDeployWithStatus(
+          toChange({ after: ruleInstance.clone() }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+          [],
+        )
+        expect(mockConnection.post).toHaveBeenCalledTimes(1)
+        expect(mockConnection.post).toHaveBeenCalledWith(
+          '/api/v1/groups/rules',
+          { name: 'group rule' },
+          undefined,
+        )
+      })
+      it('Should not try to change status if change doesn\'t have status field', async () => {
+        mockConnection.post
+          .mockResolvedValueOnce({
+            status: 204,
+            data: {
+              id: '123',
+            },
+          })
+        const groupInstance = new InstanceElement(
+          'group',
+          new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) }),
+          { name: 'group' },
+        )
+        await defaultDeployWithStatus(
+          toChange({ after: groupInstance.clone() }),
+          client,
+          DEFAULT_API_DEFINITIONS,
+          [],
+        )
+        expect(mockConnection.post).toHaveBeenCalledTimes(1)
+        expect(mockConnection.post).toHaveBeenCalledWith(
+          '/api/v1/groups',
+          { name: 'group' },
+          undefined,
+        )
+      })
+    })
+
+    describe('modification changes', () => {
       it('Should change status if the status changed', async () => {
         instance.value.status = 'ACTIVE'
         instance2.value.status = 'INACTIVE'
@@ -160,41 +287,6 @@ describe('deployment.ts', () => {
         expect(mockConnection.put).toHaveBeenCalledWith(
           '/api/v1/groups/rules/1',
           { id: '1', name: 'changed val' },
-          undefined,
-        )
-      })
-
-      it('should return undefined if before and after values are equal', async () => {
-        const result = await defaultDeployChange(
-          toChange({ before: instance, after: instance }),
-          client,
-          DEFAULT_API_DEFINITIONS,
-          [],
-        )
-        expect(result).toEqual(undefined)
-        expect(mockConnection.put).not.toHaveBeenCalled()
-      })
-    })
-
-    describe('removal changes', () => {
-      beforeEach(() => {
-        instance.value.id = '1'
-      })
-      it('successful deploy should return the response', async () => {
-        mockConnection.delete.mockResolvedValueOnce({
-          status: 200,
-          data: {},
-        })
-        const result = await defaultDeployChange(
-          toChange({ before: instance }),
-          client,
-          DEFAULT_API_DEFINITIONS,
-          [],
-        )
-        expect(result).toEqual({})
-        expect(mockConnection.delete).toHaveBeenCalledWith(
-          '/api/v1/groups/rules/1',
-          { id: '1', name: 'val' },
           undefined,
         )
       })
@@ -248,19 +340,27 @@ describe('deployment.ts', () => {
         },
       },
     }
-    it('should do nothing if "activated" and "inactivated" endpoint are missing', async () => {
+    it('should do nothing if "activated" or "deactivated" endpoint are missing', async () => {
       await deployStatusChange(
         toChange({ before: instanceA, after: instanceB }) as ModificationChange<InstanceElement>,
         client,
         DEFAULT_API_DEFINITIONS,
+        'activate',
+      )
+      await deployStatusChange(
+        toChange({ before: instanceA, after: instanceB }) as ModificationChange<InstanceElement>,
+        client,
+        DEFAULT_API_DEFINITIONS,
+        'deactivate',
       )
       expect(mockConnection.post).toHaveBeenCalledTimes(0)
     })
-    it('should activate instance if status changed from inactive to active', async () => {
+    it('should deactivate instance if action is `deactivate`', async () => {
       await deployStatusChange(
         toChange({ before: instanceA, after: instanceB }) as ModificationChange<InstanceElement>,
         client,
         apiDefsWithStatusChange as OktaApiConfig,
+        'deactivate'
       )
       expect(mockConnection.post).toHaveBeenCalledWith(
         '/api/v1/apps/123/lifecycle/deactivate',
@@ -269,11 +369,12 @@ describe('deployment.ts', () => {
       )
     })
 
-    it('should deactivate instance if status changed from active to inactive', async () => {
+    it('should activate instance if action is `activate`', async () => {
       await deployStatusChange(
         toChange({ before: instanceB, after: instanceA }) as ModificationChange<InstanceElement>,
         client,
         apiDefsWithStatusChange as OktaApiConfig,
+        'activate',
       )
       expect(mockConnection.post).toHaveBeenCalledWith(
         '/api/v1/apps/123/lifecycle/activate',

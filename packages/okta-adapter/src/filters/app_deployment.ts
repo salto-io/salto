@@ -116,8 +116,9 @@ const deployApp = async (
 
   try {
     // Custom app must be activated before applying any other changes
-    if (isModificationChange(change) && isActivationChange(change)) {
-      await deployStatusChange(change, client, apiDefinitions)
+    if (isModificationChange(change)
+      && isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'activate')
     }
 
     const response = await defaultDeployChange(
@@ -129,8 +130,9 @@ const deployApp = async (
       isAdditionChange(change) && getChangeData(change).value?.status === INACTIVE_STATUS ? { activate: 'false' } : undefined
     )
 
-    if (isModificationChange(change) && isDeactivationChange(change)) {
-      await deployStatusChange(change, client, apiDefinitions)
+    if (isModificationChange(change)
+      && isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
 
     if (isAdditionOrModificationChange(change)) {

@@ -14,27 +14,62 @@
 * limitations under the License.
 */
 
-// import { Element, isInstanceElement } from '@salto-io/adapter-api'
+
+import { isInstanceElement,
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+  Change,
+  isInstanceChange,
+  isAdditionChange,
+  getChangeData } from '@salto-io/adapter-api'
 import { filters } from '@salto-io/adapter-components'
-import { FilterCreator, FilterResult } from '../filter'
-import OktaClient from '../client/client'
-import { OktaConfig } from '../config'
+import { getParent } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { FilterCreator } from '../filter'
+import {
+  USER_SCHEMA_TYPE_NAME,
+} from '../constants'
 
+const log = logger(module)
+const { addUrlToInstance } = filters
+const createServiceUrlUserSchema = (instance: InstanceElement, baseUrl:string): void => {
+  try {
+    const userTypeId = getParent(instance).value.id
+    const url = `/admin/universaldirectory#okta/${userTypeId}`
+    instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
+  } catch {
+    log.warn(`Failed to create serviceUrl for ${instance.elemID.name}`)
+  }
+}
 
-// const filter: FilterCreator = () => ({
-//   name: 'serviceUrlFilter',
-//   onFetch: async (elements: Element[]) => {
-//     elements
-//       .filter(isInstanceElement)
-//       .forEach(() => 'https://api.service.com')
-//   },
-// })
+const serviceUrlFilterCreator: FilterCreator = ({ client, config }) => ({
+  name: 'serviceUrlFilter',
+  onFetch: async (elements: Element[]) => {
+    const baseUrl = client.baseUrlWithAdmin
+    elements
+      .filter(isInstanceElement)
+      .forEach(instance => {
+        if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
+          createServiceUrlUserSchema(instance, baseUrl)
+          return
+        }
+        addUrlToInstance(instance, baseUrl, config)
+      })
+  },
+  onDeploy: async (changes: Change<InstanceElement>[]) => {
+    const baseUrl = client.baseUrlWithAdmin
+    const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
+    relevantChanges
+      .map(getChangeData)
+      .forEach(instance => {
+        if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
+          createServiceUrlUserSchema(instance, baseUrl)
+          return
+        }
+        addUrlToInstance(instance, baseUrl, config)
+      })
+  },
+})
 
-// export default filter
-
-const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<OktaClient, OktaConfig, FilterResult>(
-    params.client.baseUrlWithAdmin
-  )(params)
-
-export default filter
+export default serviceUrlFilterCreator

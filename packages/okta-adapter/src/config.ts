@@ -66,32 +66,41 @@ type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorE
 type PolicyParams = {
   queryParam: string
   ruleName: string
+  policyUrl: string
+  policyRuleUrl?: string
 }
 
 const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
   [ACCESS_POLICY_TYPE_NAME]: {
     queryParam: 'ACCESS_POLICY',
     ruleName: 'AccessPolicyRule',
+    policyUrl: '/admin/authn/authentication-policies#authentication-policies/policy/{id}/',
   },
   [IDP_POLICY_TYPE_NAME]: {
     queryParam: 'IDP_DISCOVERY',
     ruleName: 'IdentityProviderPolicyRule',
+    policyUrl: '/admin/access/identity-providers#',
+    policyRuleUrl: '/admin/access/identity-providers#rules',
   },
   [MFA_POLICY_TYPE_NAME]: {
     queryParam: 'MFA_ENROLL',
     ruleName: 'MultifactorEnrollmentPolicyRule',
+    policyUrl: '/admin/access/multifactor#policies',
   },
   [SIGN_ON_POLICY_TYPE_NAME]: {
     queryParam: 'OKTA_SIGN_ON',
     ruleName: 'OktaSignOnPolicyRule',
+    policyUrl: '/admin/access/policies',
   },
   [PASSWORD_POLICY_TYPE_NAME]: {
     queryParam: 'PASSWORD',
     ruleName: 'PasswordPolicyRule',
+    policyUrl: '/admin/access/authenticators/password',
   },
   [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
     queryParam: 'PROFILE_ENROLLMENT',
     ruleName: 'ProfileEnrollmentPolicyRule',
+    policyUrl: '/admin/authn/policies',
   },
 }
 
@@ -105,6 +114,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         fieldsToHide: [{ fieldName: 'id' }],
         fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
         fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+        serviceUrl: details.policyRuleUrl ?? details.policyUrl,
       },
       deployRequests: {
         add: {
@@ -230,6 +240,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
           fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
           standaloneFields: [{ fieldName: 'policyRules' }],
+          serviceUrl: details.policyUrl,
         },
         deployRequests: typeName !== IDP_POLICY_TYPE_NAME ? policyDeployRequests : undefined,
       },
@@ -421,6 +432,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/access/identity-providers/edit/{id}',
     },
   },
   api__v1__features: {
@@ -538,6 +550,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
       standaloneFields: [{ fieldName: 'policies' }, { fieldName: 'scopes' }, { fieldName: 'claims' }],
+      serviceUrl: '/admin/oauth2/as/{id}',
     },
   },
   AuthorizationServerPolicy: {
@@ -738,6 +751,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/access/multifactor#policies',
     },
   },
   EventHook: {
@@ -745,6 +759,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/workflow/eventhooks',
     },
   },
   GroupRule: {
@@ -798,6 +813,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/workflow/inlinehooks#view/{id}',
     },
   },
   NetworkZone: {
@@ -805,6 +821,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/access/networks',
     },
     deployRequests: {
       add: {
@@ -846,6 +863,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceUrl: '/admin/access/api/trusted_origins',
     },
   },
   UserType: {
@@ -855,6 +873,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],
+      serviceUrl: 'admin/universaldirectory#okta/{id}',
     },
     deployRequests: {
       add: {
@@ -980,6 +999,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      serviceUrl: '/admin/access/behaviors',
     },
     deployRequests: {
       add: {

@@ -79,15 +79,20 @@ const getPropertiesKeys = async (
 ): Promise<string[]> => {
   const dashboardId = getParents(instance)[0].value.value.id
 
-  const response = await client.getSinglePage({
-    url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties`,
-  })
-  if (Array.isArray(response.data) || !Array.isArray(response.data.keys)) {
-    log.error(`Invalid response from server when fetching property keys for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
+  try {
+    const response = await client.getSinglePage({
+      url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties`,
+    })
+    if (Array.isArray(response.data) || !Array.isArray(response.data.keys)) {
+      log.error(`Invalid response from server when fetching property keys for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
+      return []
+    }
+
+    return response.data.keys.map(key => key.key).filter(key => !_.isEmpty(key))
+  } catch (err) {
+    log.warn(`Failed to fetch properties for ${instance.elemID.getFullName()}: ${err}`)
     return []
   }
-
-  return response.data.keys.map(key => key.key).filter(key => !_.isEmpty(key))
 }
 
 const getPropertyValue = async (
@@ -97,15 +102,21 @@ const getPropertyValue = async (
 ): Promise<unknown> => {
   const dashboardId = getParents(instance)[0].value.value.id
 
-  const response = await client.getSinglePage({
-    url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties/${key}`,
-  })
-  if (Array.isArray(response.data)) {
-    log.error(`Invalid response from server when fetching property '${key}' value for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
+  try {
+    const response = await client.getSinglePage({
+      url: `/rest/api/3/dashboard/${dashboardId}/items/${instance.value.id}/properties/${key}`,
+    })
+
+    if (Array.isArray(response.data)) {
+      log.error(`Invalid response from server when fetching property '${key}' value for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
+      return undefined
+    }
+
+    return response.data.value
+  } catch (err) {
+    log.warn(`Failed to fetch property '${key}' value for ${instance.elemID.getFullName()}: ${err}`)
     return undefined
   }
-
-  return response.data.value
 }
 
 const filter: FilterCreator = ({ client, config }) => ({

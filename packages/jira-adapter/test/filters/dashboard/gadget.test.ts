@@ -201,6 +201,14 @@ describe('gadgetFilter', () => {
       expect(instance.value.properties).toEqual({})
     })
 
+    it('should not add properties when keys request failed', async () => {
+      connection.get.mockRejectedValue(new Error('Failed to get keys'))
+      await filter.onFetch?.([instance])
+
+      expect(instance.value.properties).toEqual({})
+    })
+
+
     it('should not add properties when got invalid response from values request', async () => {
       connection.get.mockImplementation(async (url: string) => {
         if (url.endsWith('/properties')) {
@@ -224,6 +232,46 @@ describe('gadgetFilter', () => {
             status: 200,
             data: [],
           }
+        }
+
+        if (url.endsWith('/key2')) {
+          return {
+            status: 200,
+            data: {
+              value: 'value2',
+            },
+          }
+        }
+
+        throw new Error('Unexpected url')
+      })
+      await filter.onFetch?.([instance])
+
+      expect(instance.value.properties).toEqual({
+        key2: 'value2',
+      })
+    })
+
+    it('should not add properties when values request failed', async () => {
+      connection.get.mockImplementation(async (url: string) => {
+        if (url.endsWith('/properties')) {
+          return {
+            status: 200,
+            data: {
+              keys: [
+                {
+                  key: 'key1',
+                },
+                {
+                  key: 'key2',
+                },
+              ],
+            },
+          }
+        }
+
+        if (url.endsWith('/key1')) {
+          throw new Error('Failed to get value')
         }
 
         if (url.endsWith('/key2')) {

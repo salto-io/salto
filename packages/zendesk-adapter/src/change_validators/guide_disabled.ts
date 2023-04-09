@@ -28,18 +28,22 @@ const { awu } = collections.asynciterable
 const getBrandsWithoutGuideByInstanceId = async (
   instances: InstanceElement[], BrandsByBrandsId: Record<string, InstanceElement>):
 Promise<Record<string, InstanceElement>> => {
-  const BrandsWithoutGuideByInstanceId = (await Promise.all(instances.map(async instance => {
+  const BrandsWithoutGuideByInstanceId = instances.map(instance => {
     const brandRef = instance.value.brand
     if (!isReferenceExpression(brandRef)) {
       log.debug('brand is not a reference expression')
       return undefined
     }
     const brand = BrandsByBrandsId[brandRef.elemID.getFullName()]
+    if (brand === undefined) {
+      log.debug('brand is not found in the element source')
+      return undefined
+    }
     if (brand.value.has_help_center === false) {
       return [instance.elemID.getFullName(), brand]
     }
     return undefined
-  }))).filter(isDefined)
+  }).filter(isDefined)
   return Object.fromEntries(BrandsWithoutGuideByInstanceId)
 }
 
@@ -57,23 +61,24 @@ export const guideDisabledValidator: ChangeValidator = async (changes, elementSo
     return []
   }
 
-  const BrandsByBrandsId = Object.fromEntries((await awu(await elementSource.list())
+  const BrandsByBrandId = Object.fromEntries((await awu(await elementSource.list())
     .filter(id => id.typeName === BRAND_TYPE_NAME)
     .map(id => elementSource.get(id))
     .filter(isInstanceElement)
-    .toArray()).map(instance => [instance.elemID.getFullName(), instance]))
-  if (_.isEmpty(BrandsByBrandsId)) {
+    .toArray())
+    .map(instance => [instance.elemID.getFullName(), instance]))
+  if (_.isEmpty(BrandsByBrandId)) {
     return []
   }
 
-  const brandsWithoutGuideByInstanceId = await getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandsId)
+  const brandsWithoutGuideByInstanceId = await getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandId)
 
   return relevantInstances
-    .filter(instance =>
-      instance.elemID.getFullName() in brandsWithoutGuideByInstanceId).map(instance => ({
+    .filter(instance => instance.elemID.getFullName() in brandsWithoutGuideByInstanceId)
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'Cannot add instance because its associated brand has help center disabled.',
-      detailedMessage: `The brand "${brandsWithoutGuideByInstanceId[instance.elemID.getFullName()].elemID.name}" associated with this instance has help center disabled.`,
+      message: 'Cannot add this element because help center is not enabled for its associated brand.',
+      detailedMessage: `please enable help center for brand "${brandsWithoutGuideByInstanceId[instance.elemID.getFullName()].elemID.name}" in order to add this element.`,
     }))
 }

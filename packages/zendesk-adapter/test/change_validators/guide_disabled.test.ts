@@ -65,8 +65,8 @@ describe('guideDisabledValidator', () => {
     expect(changesErrors).toEqual([{
       elemID: categoryToBrandWithHelpCenterFalse.elemID,
       severity: 'Error',
-      message: 'Cannot add instance because its associated brand has help center disabled.',
-      detailedMessage: `The brand "${brandWithHelpCenterFalse.elemID.name}" associated with this instance has help center disabled.`,
+      message: 'Cannot add this element because help center is not enabled for its associated brand.',
+      detailedMessage: `please enable help center for brand "${brandWithHelpCenterFalse.elemID.name}" in order to add this element.`,
     }])
   })
 

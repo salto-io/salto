@@ -24,11 +24,11 @@ import { PERMISSION_SCHEME_TYPE_NAME, PERMISSIONS, JIRA } from '../constants'
 const { awu } = collections.asynciterable
 
 const log = logger(module)
-const ADDITIONAL_PERMISSION_SCHEME = Joi.object({
+const PERMISSION_ITEM_SCHEME = Joi.object({
   key: Joi.string().required(),
 }).unknown(true)
 
-export const isAdditionalPermissionScheme = createSchemeGuard<{key: string}>(ADDITIONAL_PERMISSION_SCHEME, 'Found an invalid additional permission scheme')
+const isPermissionItemScheme = createSchemeGuard<{key: string}>(PERMISSION_ITEM_SCHEME, 'Found an invalid permission item scheme')
 
 export const getAllowedPermissionTypes = async (
   elementSource: ReadOnlyElementsSource,
@@ -39,8 +39,8 @@ export const getAllowedPermissionTypes = async (
   }
   if (isInstanceElement(permissionListElementId)) {
     return new Set(
-      Object.values(permissionListElementId.value.additionalProperties)
-        .filter(isAdditionalPermissionScheme)
+      Object.values(permissionListElementId.value.permissions)
+        .filter(isPermissionItemScheme)
         .map(({ key }) => key)
     )
   }

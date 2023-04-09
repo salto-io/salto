@@ -41,6 +41,10 @@ type OktaError = {
   }[]
 }
 
+type ResponseWithStatus = {
+  status: string
+}
+
 const OKTA_ERROR_SCHEMA = Joi.object({
   errorSummary: Joi.string().required(),
   errorCauses: Joi.array().items(Joi.object({
@@ -48,7 +52,13 @@ const OKTA_ERROR_SCHEMA = Joi.object({
   }).unknown(true).optional()),
 }).unknown(true)
 
+const RESPONSE_WITH_STATUS = Joi.object({
+  status: Joi.string().valid(ACTIVE_STATUS, INACTIVE_STATUS).allow(),
+}).unknown(true)
+
 const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an invalid error')
+
+const isResponseWithStatus = createSchemeGuard<ResponseWithStatus>(RESPONSE_WITH_STATUS, 'Response does not have a valid status field')
 
 export const getOktaError = (elemID: ElemID, error: Error): Error => {
   if (!(error instanceof clientUtils.HTTPError)) {
@@ -70,6 +80,7 @@ export const getOktaError = (elemID: ElemID, error: Error): Error => {
 
 export const isActivationChange = ({ before, after }: {before: string; after: string}): boolean =>
   before === INACTIVE_STATUS && after === ACTIVE_STATUS
+
 export const isDeactivationChange = ({ before, after }: {before: string; after: string}): boolean =>
   before === ACTIVE_STATUS && after === INACTIVE_STATUS
 
@@ -183,15 +194,13 @@ export const defaultDeployWithStatus = async (
     )
 
     // Update status for the created instance if necessary
-    if (isAdditionChange(change) && !Array.isArray(response)) {
-      const returnedStatus = response?.status
-      if (typeof returnedStatus !== 'string') {
-        return response
-      }
+    if (isAdditionChange(change) && isResponseWithStatus(response)) {
       const changeStatus = getChangeData(change).value.status
-      if (isActivationChange({ before: returnedStatus, after: changeStatus })) {
+      if (isActivationChange({ before: response.status, after: changeStatus })) {
+        log.debug(`Instance ${getChangeData(change).elemID.getFullName()} created in status ${INACTIVE_STATUS}, changing to ${ACTIVE_STATUS}`)
         await deployStatusChange(change, client, apiDefinitions, 'activate')
-      } else if (isDeactivationChange({ before: returnedStatus, after: changeStatus })) {
+      } else if (isDeactivationChange({ before: response.status, after: changeStatus })) {
+        log.debug(`Instance ${getChangeData(change).elemID.getFullName()} created in status ${ACTIVE_STATUS}, changing to ${INACTIVE_STATUS}`)
         await deployStatusChange(change, client, apiDefinitions, 'deactivate')
       }
     }

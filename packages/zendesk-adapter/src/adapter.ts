@@ -133,6 +133,7 @@ import auditTimeFilter from './filters/audit_logs'
 import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
+import macroFilter from './filters/macro'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -184,6 +185,7 @@ export const DEFAULT_FILTERS = [
   supportAddress,
   customStatus,
   guideAddBrandToArticleTranslation,
+  macroFilter,
   macroAttachmentsFilter,
   ticketFormDeploy,
   sideConversationsFilter,

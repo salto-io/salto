@@ -103,4 +103,9 @@ describe('client', () => {
       expect(extractHeadersFunc).toHaveNthReturnedWith(2, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
     })
   })
+  describe('get baseurl', () => {
+    it('should return the base url', () => {
+      expect(client.baseUrl).toEqual('http://my.okta.net')
+    })
+  })
 })

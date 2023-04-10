@@ -468,6 +468,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT
         .concat({ fieldName: '_links' }, { fieldName: '$schema' }, { fieldName: 'type' }, { fieldName: 'title' }, { fieldName: 'description' }, { fieldName: 'properties' }),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+      // serviceUrl is created in service_url filter
     },
     deployRequests: {
       add: {

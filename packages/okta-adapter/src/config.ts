@@ -357,7 +357,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: '_links' },
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
-      serviceUrl: '/admin/app/{name}/instance/{id}/#tab-assignments',
+      serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
     },
     deployRequests: {
       add: {

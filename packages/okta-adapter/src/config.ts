@@ -1291,7 +1291,14 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_CONFIG,
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+      DEFAULT_CONFIG,
+      API_DEFINITIONS_CONFIG,
+      PRIVATE_API_DEFINITIONS_CONFIG,
+      CLIENT_CONFIG,
+      `${FETCH_CONFIG}.hideTypes`,
+      `${FETCH_CONFIG}.convertUsersIds`
+    ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

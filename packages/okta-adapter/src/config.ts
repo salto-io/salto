@@ -27,7 +27,8 @@ export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
-export type OktaActionName = ActionName | 'activate' | 'deactivate'
+export type OktaStatusActionName = 'activate' | 'deactivate'
+export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
 }
@@ -537,6 +538,47 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       standaloneFields: [{ fieldName: 'policyRules' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'delete',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+    },
   },
   AuthorizationServerPolicyRule: {
     transformation: {
@@ -544,6 +586,52 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
     },
   },
   api__v1__brands: {
@@ -781,14 +869,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  RolePage: {
+  IamRoles: {
     request: {
       url: '/api/v1/iam/roles',
     },
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'roles', fieldType: 'Role' },
-      ],
       dataField: 'roles',
     },
   },
@@ -921,11 +1006,10 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
-    // TODO SALTO-2735 this is not the right type to clone from
-    { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'IamRole', newName: 'Role' },
   ],
 }
 
@@ -961,7 +1045,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
-  Role: ['RolePage'],
+  Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
 }
 
@@ -972,6 +1056,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

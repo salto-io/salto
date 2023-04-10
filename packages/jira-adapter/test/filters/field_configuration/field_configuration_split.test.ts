@@ -74,7 +74,8 @@ describe('fieldConfigurationItemsFilter', () => {
               },
             },
           ],
-        }
+        },
+        ['Jira', 'Records', 'field_configuration', 'instance'],
       )
 
       const elements = [fieldConfigurationType, fieldConfigurationItemType, instance]

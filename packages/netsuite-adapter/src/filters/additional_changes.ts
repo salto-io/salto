@@ -14,28 +14,32 @@
 * limitations under the License.
 */
 
-import { getChangeData, isFieldChange, toChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, toChange, isAdditionOrModificationChange, isField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getReferencedElements } from '../reference_dependencies'
 import { FilterCreator } from '../filter'
 import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'additionalChanges',
   preDeploy: async changes => {
-    const [fieldChanges, typeAndInstanceChanges] = _.partition(changes, isFieldChange)
-    const elemIdSet = new Set(changes.map(getChangeData).map(elem => elem.elemID.getFullName()))
-    const fieldsParents = _(fieldChanges)
-      // field deletions should be handled by SOAP
+    const sdfChangesData = changes
+      // SDF objects deletions are handled by SOAP
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
+      .filter(isStandardInstanceOrCustomRecordType)
+
+    const [fields, typesAndInstances] = _.partition(sdfChangesData, isField)
+    const elemIdSet = new Set(changes.map(getChangeData).map(elem => elem.elemID.getFullName()))
+    const fieldsParents = _(fields)
       .map(field => field.parent)
       .filter(parent => !elemIdSet.has(parent.elemID.getFullName()))
       .uniqBy(parent => parent.elemID.getFullName())
       .value()
 
     const requiredElements = (await getReferencedElements(
-      typeAndInstanceChanges.map(getChangeData).concat(fieldsParents),
+      typesAndInstances.concat(fieldsParents),
       config.deploy?.deployReferencedElements ?? config.deployReferencedElements ?? DEFAULT_DEPLOY_REFERENCED_ELEMENTS
     )).map(elem => elem.clone())
 

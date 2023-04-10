@@ -17,7 +17,7 @@ import {
   Element,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { addAliasToInstance, AliasData } from '@salto-io/adapter-utils'
+import { addAliasToInstance, AliasData } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 

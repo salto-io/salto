@@ -26,15 +26,16 @@ import {
   TemplatePart,
 } from '@salto-io/adapter-api'
 import { extractTemplate, transformValues } from '@salto-io/adapter-utils'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_TYPE_NAME } from './dynamic_content'
-import { createMissingInstance } from './references/missing_references'
 import { ZENDESK } from '../constants'
 import { FETCH_CONFIG } from '../config'
 
 const { awu } = collections.asynciterable
+const { createMissingInstance } = referencesUtils
 const PLACEHOLDER_REGEX = /({{.+?}})/g
 const INNER_PLACEHOLDER_REGEX = /{{(.+?)}}/g
 const OPEN_BRACKETS = '{{'

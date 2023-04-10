@@ -15,10 +15,11 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
-  ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import {
+  Change, ChangeDataType, getChangeData, InstanceElement,
+  isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, toChange,
+} from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement, references } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
@@ -27,9 +28,9 @@ import { BRAND_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
+const { isArrayOfRefExprToInstances } = references
 export type Condition = {
-  field: string
+  field: string | ReferenceExpression
   value?: unknown
 }
 export type SubjectCondition = {
@@ -54,12 +55,6 @@ export const applyforInstanceChangesOfType = async (
     ))
 }
 
-export const isArrayOfRefExprToInstances = (values: unknown): values is ReferenceExpression[] => (
-  _.isArray(values)
-  && values.every(isReferenceExpression)
-  && values.every(value => isInstanceElement(value.value))
-)
-
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],
   shouldResolve = true,
@@ -81,7 +76,7 @@ export const createAdditionalParentChanges = async (
 }
 
 const CONDITION_SCHEMA = Joi.array().items(Joi.object({
-  field: Joi.string().required(),
+  field: [Joi.string().required(), Joi.object().required()],
   value: Joi.optional(),
 }).unknown(true)).required()
 
@@ -94,7 +89,7 @@ export const isConditions = createSchemeGuard<Condition[]>(CONDITION_SCHEMA, 'Fo
 export const isSubjectConditions = createSchemeGuard<SubjectCondition[]>(CONDITION_SUBJECT_SCHEMA, 'Found invalid values for subject conditions')
 export const conditionFieldValue = (
   condition: Condition | SubjectCondition, typeName: string
-): string => (
+): string | ReferenceExpression => (
   TYPES_WITH_SUBJECT_CONDITIONS.includes(typeName)
     ? (condition as SubjectCondition).subject
     : (condition as Condition).field

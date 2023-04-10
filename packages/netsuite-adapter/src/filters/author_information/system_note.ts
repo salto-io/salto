@@ -28,6 +28,7 @@ import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult,
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { changeDateFormat, getZoneAndFormat } from './saved_searches'
+import { SUITEQL_DATE_FORMAT, SUITEQL_TIME_FORMAT, toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
@@ -35,7 +36,6 @@ const log = logger(module)
 const UNDERSCORE = '_'
 export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
-export const QUERY_DATE_FORMAT = 'YYYY-MM-DD HH:MI:SS'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
 
@@ -45,8 +45,6 @@ const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   file: FILE_TYPE,
   folder: FOLDER_TYPE,
 }, (_value, key) => key.toLowerCase())
-
-const toDateString = (date: Date): string => date.toISOString().slice(0, 10)
 
 const getRecordIdAndTypeStringKey = (recordId: string, recordTypeId: string): string =>
   `${recordId}${UNDERSCORE}${recordTypeId}`
@@ -66,7 +64,7 @@ Promise<EmployeeResult[]> => {
 }
 
 const toDateQuery = (lastFetchTime: Date): string =>
-  `date >= TO_DATE('${toDateString(lastFetchTime)}', '${QUERY_DATE_FORMAT}')`
+  `date >= ${toSuiteQLWhereDateString(lastFetchTime)}`
 
 const toRecordTypeWhereQuery = (recordType: string): string =>
   `recordtypeid = '${recordType}'`
@@ -87,7 +85,7 @@ const buildRecordTypeSystemNotesQuery = (
     .map(toRecordTypeWhereQuery)
     .join(' OR ')
   return 'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,'
-    + ` TO_CHAR(MAX(date), '${QUERY_DATE_FORMAT}') as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
+    + ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
     + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
 }
 
@@ -98,7 +96,7 @@ const buildFieldSystemNotesQuery = (
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
-  return `SELECT name, field, recordid, date from (SELECT name, field, recordid, TO_CHAR(MAX(date), '${QUERY_DATE_FORMAT}') AS date`
+  return `SELECT name, field, recordid, date from (SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`
     + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
     + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
     + ' GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC'
@@ -146,7 +144,7 @@ const querySystemNotes = async (
   log.debug(
     'queried %d new system notes since last fetch (%s)',
     systemNoteResults.length,
-    toDateString(lastFetchTime)
+    lastFetchTime.toUTCString()
   )
   return systemNoteResults
 }
@@ -293,9 +291,8 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
 
     const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
       if (isDefined(lastModifiedDate)) {
-        const [systemNotesDateFormat, systemNotesTimeFormat] = QUERY_DATE_FORMAT.split(' ')
         const formatedDate = changeDateFormat(
-          lastModifiedDate, { dateFormat: systemNotesDateFormat, timeZone, timeFormat: systemNotesTimeFormat }
+          lastModifiedDate, { dateFormat: SUITEQL_DATE_FORMAT, timeZone, timeFormat: SUITEQL_TIME_FORMAT }
         )
         element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
       } else {

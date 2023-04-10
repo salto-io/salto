@@ -144,7 +144,7 @@ type ReportDefinitionInnerFields = {
 type ReportCriteriaValuesType = {
   FIELD_DATE_FILTER_INDEX?: number
   SEQ_NUMBER?: number
-  FILED_VALUE?: string
+  FIELD_VALUE?: string
 }
 
 type ReportCriteriaDescriptor = {
@@ -288,7 +288,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     fields: {
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
-      FILED_VALUE: { refType: BuiltinTypes.STRING },
+      FIELD_VALUE: { refType: BuiltinTypes.STRING },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })

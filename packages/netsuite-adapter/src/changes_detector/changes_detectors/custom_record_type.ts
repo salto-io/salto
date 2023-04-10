@@ -16,7 +16,7 @@
 */
 import { logger } from '@salto-io/logging'
 import { removeCustomRecordTypePrefix } from '../../types'
-import { convertSuiteQLStringToDate, SUITEQL_DATE_FORMAT } from '../date_formats'
+import { convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
 import { ChangedObject, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -26,7 +26,7 @@ const changesDetector: TypeChangesDetector = {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const results = await client.runSuiteQL(`
-        SELECT scriptid, TO_CHAR(lastmodifieddate, '${SUITEQL_DATE_FORMAT}') AS lastmodifieddate
+        SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
         FROM customrecordtype
         WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
         ORDER BY scriptid ASC
@@ -38,8 +38,8 @@ const changesDetector: TypeChangesDetector = {
     }
 
     const changes: ChangedObject[] = results
-      .filter((res): res is { scriptid: string; lastmodifieddate: string } => {
-        if ([res.scriptid, res.lastmodifieddate].some(val => typeof val !== 'string')) {
+      .filter((res): res is { scriptid: string; time: string } => {
+        if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
           log.warn('Got invalid result from customrecordtype query, %o', res)
           return false
         }
@@ -47,15 +47,15 @@ const changesDetector: TypeChangesDetector = {
       })
       .map(res => ({
         type: 'object',
-        externalId: res.scriptid,
-        time: convertSuiteQLStringToDate(res.lastmodifieddate),
+        objectId: res.scriptid,
+        time: convertSuiteQLStringToDate(res.time, dateRange.end),
       }))
 
     // the script ids of the custom segments that are returned from the SDF
     // are returned without the 'customrecord_' prefix.
     const changesForCustomSegments: ChangedObject[] = changes.map(change => ({
       type: 'object',
-      externalId: removeCustomRecordTypePrefix(change.externalId),
+      objectId: removeCustomRecordTypePrefix(change.objectId),
       time: change.time,
     }))
 

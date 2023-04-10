@@ -39,6 +39,7 @@ export const IDP_RULE_TYPE_NAME = 'IdentityProviderPolicyRule'
 export const MFA_RULE_TYPE_NAME = 'MultifactorEnrollmentPolicyRule'
 export const SIGN_ON_RULE_TYPE_NAME = 'OktaSignOnPolicyRule'
 export const PASSWORD_RULE_TYPE_NAME = 'PasswordPolicyRule'
+export const AUTHORIZATION_POLICY_RULE = 'AuthorizationServerPolicyRule'
 export const ACTIVE_STATUS = 'ACTIVE'
 export const INACTIVE_STATUS = 'INACTIVE'
 export const POLICY_TYPE_NAMES = [ACCESS_POLICY_TYPE_NAME, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME,

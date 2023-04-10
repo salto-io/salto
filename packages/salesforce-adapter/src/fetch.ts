@@ -133,7 +133,6 @@ export const listMetadataObjects = async (
 const getNamespace = (obj: FileProperties): string => (
   obj.namespacePrefix === undefined || obj.namespacePrefix === '' ? DEFAULT_NAMESPACE : obj.namespacePrefix
 )
-
 export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties, isFolderType: boolean): boolean => (
   metadataQuery.isInstanceMatch({
     namespace: getNamespace(file),
@@ -172,24 +171,37 @@ const listMetadataObjectsWithinFolders = async (
   return { elements, configChanges }
 }
 
-const getFullName = (obj: FileProperties): string => {
-  const namePrefix = obj.namespacePrefix
-    ? `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}` : ''
-  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE && obj.namespacePrefix) {
+const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): string => {
+  if (!obj.namespacePrefix) {
+    return obj.fullName
+  }
+  const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
+
+  if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
   // Ensure layout name starts with the namespace prefix if there is one.
   // needed due to a SF quirk where sometimes layout metadata instances fullNames return as
   // <namespace>__<objectName>-<layoutName> where it should be
   // <namespace>__<objectName>-<namespace>__<layoutName>
     const [objectName, ...layoutName] = obj.fullName.split('-')
-    if (layoutName.length !== 0 && !layoutName[0].startsWith(obj.namespacePrefix)) {
+    if (layoutName.length !== 0 && !layoutName[0].startsWith(namePrefix)) {
       return `${objectName}-${namePrefix}${layoutName.join('-')}`
     }
+    return obj.fullName
   }
+  if (obj.fullName.startsWith(namePrefix)) {
+    return obj.fullName
+  }
+  if (addNamespacePrefixToFullName) {
+    // In some cases, obj.fullName does not contain the namespace prefix even though
+    // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+    return `${namePrefix}${obj.fullName}`
+  }
+  log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false', obj.fullName, obj.namespacePrefix)
   return obj.fullName
 }
 
-const getPropsWithFullName = (obj: FileProperties): FileProperties => {
-  const correctFullName = getFullName(obj)
+const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): FileProperties => {
+  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
     fullName: correctFullName,
@@ -209,13 +221,15 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 }
 
 export const fetchMetadataInstances = async ({
-  client, metadataType, fileProps, metadataQuery, maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
+  client, metadataType, fileProps, metadataQuery,
+  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE, addNamespacePrefixToFullName,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
+  addNamespacePrefixToFullName?: boolean
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -239,25 +253,31 @@ export const fetchMetadataInstances = async ({
 
   const metadataTypeName = await apiName(metadataType)
 
+  const filePropsToRead = fileProps
+    .map(prop => ({
+      ...prop,
+      fullName: getFullName(prop, addNamespacePrefixToFullName),
+    }))
+    .filter(prop => metadataQuery.isInstanceMatch({
+      namespace: getNamespace(prop),
+      metadataType: metadataTypeName,
+      name: prop.fullName,
+      isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
+    }))
+
+
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
-    fileProps.map(
-      prop => ({
-        name: getFullName(prop),
-        namespace: getNamespace(prop),
-        fileName: prop.fileName,
-      })
-    ).filter(
-      ({ name, namespace }) => metadataQuery.isInstanceMatch({
-        namespace,
-        metadataType: metadataTypeName,
-        name,
-        isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
-      })
-    ).map(({ name }) => name)
+    filePropsToRead.map(({ fullName }) => fullName)
   )
 
-  const filePropertiesMap = _.keyBy(fileProps, getFullName)
+  const fullNamesFromRead = new Set(metadataInfos.map(info => info?.fullName))
+  const missingMetadata = filePropsToRead.filter(prop => !fullNamesFromRead.has(prop.fullName))
+  if (missingMetadata.length > 0) {
+    log.debug('Missing metadata with valid fileProps: %o', missingMetadata)
+  }
+
+  const filePropertiesMap = _.keyBy(filePropsToRead, 'fullName')
   const elements = metadataInfos
     .filter(m => !_.isEmpty(m))
     .filter(m => m.fullName !== undefined)
@@ -295,6 +315,7 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
+  addNamespacePrefixToFullName?: boolean
 }
 
 export const retrieveMetadataInstances = async ({
@@ -302,6 +323,7 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
+  addNamespacePrefixToFullName,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -314,7 +336,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(getPropsWithFullName)
+      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
       .value()
   }
 
@@ -323,7 +345,7 @@ export const retrieveMetadataInstances = async ({
   const typesWithContent = await getTypesWithContent(types)
 
   const retrieveInstances = async (
-    fileProps: ReadonlyArray<FileProperties>
+    fileProps: ReadonlyArray<FileProperties>,
   ): Promise<InstanceElement[]> => {
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = fileProps.map(inst => (

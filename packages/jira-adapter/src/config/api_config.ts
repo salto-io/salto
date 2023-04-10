@@ -1787,6 +1787,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
       serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

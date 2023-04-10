@@ -18,7 +18,7 @@ import detector, { SUPPORTED_TYPES } from '../../src/changes_detector/changes_de
 import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
-import { createDateRange } from '../../src/changes_detector/date_formats'
+import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
 
 describe('script', () => {
   const runSuiteQLMock = jest.fn()
@@ -65,13 +65,13 @@ describe('script', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'a', id: '1' },
-        { scriptid: 'b', id: '2' },
+        { scriptid: 'a', time: '2021-01-14 18:55:15' },
+        { scriptid: 'b', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'c', id: '3' },
-        { scriptid: 'd', id: '4' },
+        { scriptid: 'c', time: '2021-01-14 18:55:15' },
+        { scriptid: 'd', time: '2021-01-14 18:55:15' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([])
@@ -83,35 +83,37 @@ describe('script', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', internalId: 1 },
-        { type: 'object', externalId: 'b', internalId: 2 },
-        { type: 'object', externalId: 'c', internalId: 3 },
-        { type: 'object', externalId: 'd', internalId: 4 },
+        { type: 'object', objectId: 'a', time: new Date('2021-01-14T18:55:15.000Z') },
+        { type: 'object', objectId: 'b', time: new Date('2021-01-14T18:55:15.000Z') },
+        { type: 'object', objectId: 'c', time: new Date('2021-01-14T18:55:15.000Z') },
+        { type: 'object', objectId: 'd', time: new Date('2021-01-14T18:55:15.000Z') },
       ])
     })
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, `
-      SELECT script.scriptid, script.id
+      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -417
-      ORDER BY script.id ASC
+      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -417
+      GROUP BY script.scriptid
+      ORDER BY script.scriptid ASC
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `
-      SELECT script.scriptid, scriptdeployment.primarykey AS id
+      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
-      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -418
-      ORDER BY scriptdeployment.primarykey ASC
+      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -418
+      GROUP BY script.scriptid
+      ORDER BY script.scriptid ASC
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, `
       SELECT internalid
       FROM customfield
-      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
+      WHERE fieldtype = 'SCRIPT' AND lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
       ORDER BY internalid ASC
     `)
     })

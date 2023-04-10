@@ -15,7 +15,7 @@
 */
 import { ElemID, InstanceElement, ObjectType,
   BuiltinTypes, toChange, isInstanceElement, TemplateExpression, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/article/article_body'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENTS_FIELD,
@@ -28,8 +28,9 @@ import {
 } from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
-import { createMissingInstance } from '../../../src/filters/references/missing_references'
 import { FilterResult } from '../../../src/filter'
+
+const { createMissingInstance } = referencesUtils
 
 describe('article body filter', () => {
   type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy', FilterResult>

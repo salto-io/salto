@@ -775,6 +775,8 @@ export const DEFAULT_API_DEFINITIONS: ZuoraApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      // TODO: change this to true for SALTO-3886.
+      nestStandaloneInstances: false,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

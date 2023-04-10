@@ -15,10 +15,12 @@
 */
 import _ from 'lodash'
 import { Element, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { FETCH_CONFIG } from '../../config'
 import { FilterCreator } from '../../filter'
-import { createMissingInstance, VALUES_TO_SKIP_BY_TYPE } from './missing_references'
+import { VALUES_TO_SKIP_BY_TYPE } from './missing_references'
 
+const { createMissingInstance } = referencesUtils
 
 type FieldMissingReferenceDefinition = {
   instanceType: string

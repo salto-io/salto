@@ -15,12 +15,10 @@
 */
 
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { naclCase } from '@salto-io/adapter-utils'
 import { ORG_FIELD_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../../constants'
 
-const MISSING_REF_PREFIX = 'missing_'
+export type ZendeskMissingReferenceStrategyName = referenceUtils.MissingReferenceStrategyName | 'startsWith'
 
 export const VALUES_TO_SKIP_BY_TYPE: Record<string, string[]> = {
   group: ['current_groups', 'group_id'],
@@ -33,29 +31,15 @@ const VALUE_BY_TYPE: Record<string, string> = {
   [ORG_FIELD_TYPE_NAME]: 'organization.custom_fields.',
 }
 
-export const createMissingInstance = (
-  adapter: string,
-  typeName: string,
-  refName: string
-): InstanceElement => (
-  new InstanceElement(
-    naclCase(`${MISSING_REF_PREFIX}${refName}`),
-    new ObjectType({ elemID: new ElemID(adapter, typeName) }),
-    {},
-    undefined,
-    { [referenceUtils.MISSING_ANNOTATION]: true },
-  )
-)
-
 export const ZendeskMissingReferenceStrategyLookup: Record<
-referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+ZendeskMissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
 > = {
   typeAndValue: {
     create: ({ value, adapter, typeName }) => {
       if (!_.isString(typeName) || !value || VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)) {
         return undefined
       }
-      return createMissingInstance(adapter, typeName, value)
+      return referenceUtils.createMissingInstance(adapter, typeName, value)
     },
   },
   startsWith: {
@@ -65,7 +49,7 @@ referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStra
         && !VALUES_TO_SKIP_BY_TYPE[typeName]?.includes(value)
         && value.startsWith(VALUE_BY_TYPE[typeName])
       ) {
-        return createMissingInstance(adapter, typeName, value)
+        return referenceUtils.createMissingInstance(adapter, typeName, value)
       }
       return undefined
     },

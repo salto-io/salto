@@ -19,6 +19,7 @@ import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificati
   isInstanceChange, isInstanceElement, isReferenceExpression, ReferenceExpression,
   SaltoError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, extractTemplate, getParent, replaceTemplatesWithValues, resolveTemplates, safeJsonStringify } from '@salto-io/adapter-utils'
+import { references as referencesUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { FilterCreator } from '../../filter'
@@ -31,13 +32,13 @@ import {
   CATEGORY_TYPE_NAME,
   SECTION_TYPE_NAME, SECTIONS_FIELD, ZENDESK,
 } from '../../constants'
-import { createMissingInstance } from '../references/missing_references'
 import { FETCH_CONFIG } from '../../config'
 import { getBrandsForGuide } from '../utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
+const { createMissingInstance } = referencesUtils
 
 
 const BODY_FIELD = 'body'

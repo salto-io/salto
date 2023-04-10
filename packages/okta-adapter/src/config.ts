@@ -66,41 +66,41 @@ type PolicyTypeNames = 'AccessPolicy' | 'IdentityProviderPolicy' | 'MultifactorE
 type PolicyParams = {
   queryParam: string
   ruleName: string
-  policyUrl: string
-  policyRuleUrl?: string
+  policyServiceUrl: string
+  ruleServiceUrl?: string
 }
 
 const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
   [ACCESS_POLICY_TYPE_NAME]: {
     queryParam: 'ACCESS_POLICY',
     ruleName: 'AccessPolicyRule',
-    policyUrl: '/admin/authn/authentication-policies#authentication-policies/policy/{id}/',
+    policyServiceUrl: '/admin/authn/authentication-policies#authentication-policies/policy/{id}/',
   },
   [IDP_POLICY_TYPE_NAME]: {
     queryParam: 'IDP_DISCOVERY',
     ruleName: 'IdentityProviderPolicyRule',
-    policyUrl: '/admin/access/identity-providers#',
-    policyRuleUrl: '/admin/access/identity-providers#rules',
+    policyServiceUrl: '/admin/access/identity-providers#',
+    ruleServiceUrl: '/admin/access/identity-providers#rules',
   },
   [MFA_POLICY_TYPE_NAME]: {
     queryParam: 'MFA_ENROLL',
     ruleName: 'MultifactorEnrollmentPolicyRule',
-    policyUrl: '/admin/access/multifactor#policies',
+    policyServiceUrl: '/admin/access/multifactor#policies',
   },
   [SIGN_ON_POLICY_TYPE_NAME]: {
     queryParam: 'OKTA_SIGN_ON',
     ruleName: 'OktaSignOnPolicyRule',
-    policyUrl: '/admin/access/policies',
+    policyServiceUrl: '/admin/access/policies',
   },
   [PASSWORD_POLICY_TYPE_NAME]: {
     queryParam: 'PASSWORD',
     ruleName: 'PasswordPolicyRule',
-    policyUrl: '/admin/access/authenticators/password',
+    policyServiceUrl: '/admin/access/authenticators/password',
   },
   [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
     queryParam: 'PROFILE_ENROLLMENT',
     ruleName: 'ProfileEnrollmentPolicyRule',
-    policyUrl: '/admin/authn/policies',
+    policyServiceUrl: '/admin/authn/policies',
   },
 }
 
@@ -114,7 +114,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         fieldsToHide: [{ fieldName: 'id' }],
         fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
         fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-        serviceUrl: details.policyRuleUrl ?? details.policyUrl,
+        serviceUrl: details.ruleServiceUrl ?? details.policyServiceUrl,
       },
       deployRequests: {
         add: {
@@ -240,7 +240,7 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
           fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
           fieldTypeOverrides: [{ fieldName: 'policyRules', fieldType: `list<${details.ruleName}>` }],
           standaloneFields: [{ fieldName: 'policyRules' }],
-          serviceUrl: details.policyUrl,
+          serviceUrl: details.policyServiceUrl,
         },
         deployRequests: typeName !== IDP_POLICY_TYPE_NAME ? policyDeployRequests : undefined,
       },

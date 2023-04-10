@@ -17,13 +17,13 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, isRemovalChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, State } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -235,7 +235,35 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
+const updateStateFromChanges = async ({ state, changes, elements, additionalElements, accounts } :
+ {
+      state: State
+      changes: DetailedChange[]
+      elements: Element[]
+      additionalElements: Element[]
+      accounts: string[]
+ }): Promise<void> => {
+  const [removalChanges, updateChanges] = _.partition(changes, isRemovalChange)
+  const elementsToUpdateFullNames = new Set<string>()
+  updateChanges.forEach(change => {
+    elementsToUpdateFullNames.add(getChangeData(change).elemID.createTopLevelParentID().parent.getFullName())
+  })
+
+  const elementsToUpdate = elements.filter(elem =>
+    elementsToUpdateFullNames.has(elem.elemID.getFullName()))
+    .concat(additionalElements)
+
+  await log.time(async () => {
+    await state.deleteAll(removalChanges.map(change => change.id))
+    await state.setAll(elementsToUpdate)
+    await state.updateAccounts(accounts)
+  }, 'state update')
+  log.debug('updated state with %d elements and %d removals', elementsToUpdate.length, removalChanges.length)
+}
+
+
 const updateStateWithFetchResults = async (
+  changes: DetailedChange[],
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
@@ -245,9 +273,22 @@ const updateStateWithFetchResults = async (
   const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
     .filter(element => !fetchElementsFilter(element.elemID)).toArray()
-  await workspace.state()
-    .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
+
+  // If the number of changes matches the number of elements, this is the first fetch, and it is faster to just override
+  if (changes.length === mergedElements.length) {
+    await workspace.state()
+      .override(awu(mergedElements)
+        .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
+  } else {
+    await updateStateFromChanges({
+      state: workspace.state(),
+      changes,
+      elements: mergedElements,
+      additionalElements: stateElementsNotCoveredByFetch,
+      accounts: fetchedAccounts,
+    })
+  }
+
   const accountsToMaintain = partiallyFetchedAccounts
     .concat((await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
   await workspace.state().updatePathIndex(unmergedElements, accountsToMaintain)
@@ -294,6 +335,7 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await updateStateWithFetchResults(
+      await awu(changes).map(change => change.change).toArray(),
       workspace,
       elements,
       unmergedElements,
@@ -356,7 +398,8 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts, [])
+  const detailedChanges = await awu(changes).map(change => change.change).toArray()
+  await updateStateWithFetchResults(detailedChanges, workspace, elements, unmergedElements, fetchAccounts, [])
   return {
     changes,
     fetchErrors: errors,

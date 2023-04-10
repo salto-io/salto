@@ -71,6 +71,14 @@ export const buildInMemState = (
     await (await stateData()).elements.delete(id)
   }
 
+  const updateAccounts = async (accounts?: string[]): Promise<void> => {
+    const data = await stateData()
+    const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
+    return getUpdateDate(data).setAll(
+      awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+    )
+  }
+
   return {
     getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
     list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
@@ -89,18 +97,16 @@ export const buildInMemState = (
       (await stateData()).elements.setAll(elements),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
+    updateAccounts,
     override: (elements: AsyncIterable<Element>, accounts?: string[])
       : Promise<void> => log.time(
       async () => {
         const data = await stateData()
-        const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
 
         await data.staticFilesSource.clear()
 
         await data.elements.overide(elements)
-        return getUpdateDate(data).setAll(
-          awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
-        )
+        return updateAccounts(accounts)
       },
       'state override'
     ),
@@ -148,7 +154,8 @@ export const buildInMemState = (
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },
-    flush: async () => {
+    flush: async () => log.time(async () => {
+      const time1 = new Date().getTime()
       if (!persistent) {
         throw new Error('can not flush a non persistent state')
       }
@@ -159,7 +166,9 @@ export const buildInMemState = (
       await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
-    },
+      // eslint-disable-next-line no-console
+      console.log(new Date().getTime() - time1)
+    }, 'state flush'),
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),
     setHash: async newHash => (await stateData()).saltoMetadata.set('hash', newHash),

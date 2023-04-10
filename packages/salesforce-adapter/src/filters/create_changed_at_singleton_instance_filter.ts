@@ -37,7 +37,7 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
     instanceValues[metadataType] = {}
     instances.forEach(instance => {
       const instanceName = instance.value[INSTANCE_FULL_NAME_FIELD]
-      instanceValues[metadataType][instanceName] = instance.value[CORE_ANNOTATIONS.CHANGED_AT]
+      instanceValues[metadataType][instanceName] = instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]
     })
   })
   return instanceValues
@@ -54,19 +54,20 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .toArray(),
       async instance => apiName(await instance.getType())
     )
+    const changedAtType = new ObjectType({
+      elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
+      isSettings: true,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    })
     const changedAtInstance = new InstanceElement(
-      CHANGED_AT_SINGLETON,
-      new ObjectType({
-        elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
-        isSettings: true,
-        annotations: {
-          [CORE_ANNOTATIONS.HIDDEN]: false,
-          [CORE_ANNOTATIONS.HIDDEN_VALUE]: false,
-        },
-      }),
+      ElemID.CONFIG_NAME,
+      changedAtType,
       createChangedAtSingletonInstanceValues(metadataInstancesByType),
     )
-    elements.push(changedAtInstance)
+    elements.push(changedAtType, changedAtInstance)
   },
 })
 

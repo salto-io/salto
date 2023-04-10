@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
-import { OktaApiConfig, OktaStatusActionName, OktaSwaggerApiConfig } from './config'
+import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
 
 const log = logger(module)
 

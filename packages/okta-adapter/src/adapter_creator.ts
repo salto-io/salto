@@ -17,12 +17,13 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
-import OktaClient, { getAdminUrl } from './client/client'
+import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
 import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, CLIENT_CONFIG, OktaClientConfig, OktaSwaggerApiConfig, PRIVATE_API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig } from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
+import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils

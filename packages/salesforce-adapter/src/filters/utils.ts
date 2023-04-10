@@ -433,5 +433,5 @@ export const ensureSafeFilterFetch = ({
 
 export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
   await isCustomObject(objectType)
-  && !(await safeApiName(objectType))?.includes('__') // Standard Objects should never have __ in their names.
+  && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(await safeApiName(objectType) ?? '')
 )

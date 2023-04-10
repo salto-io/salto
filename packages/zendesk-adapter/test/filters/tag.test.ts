@@ -70,6 +70,11 @@ describe('tags filter', () => {
             operator: 'includes',
             value: '',
           },
+          {
+            field: new ReferenceExpression(triggerType.elemID),
+            operator: 'includes',
+            value: '',
+          },
         ],
         any: [
           {
@@ -198,6 +203,7 @@ describe('tags filter', () => {
         conditions: {
           all: [
             { field: 'current_tags', operator: 'includes', value: [] },
+            { field: new ReferenceExpression(triggerType.elemID), operator: 'includes', value: '' },
           ],
           any: [
             { field: 'current_tags', operator: 'includes', value: [tagRef('t5'), tagRef('t6')] },

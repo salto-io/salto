@@ -49,7 +49,6 @@ describe('serviceProviderConnectionValidator', () => {
     appType,
     { signOnMode: 'SAML_2_0' }
   )
-
   it('should return message with app name if app has Saml sign on mode and name field', async () => {
     const changes = [toChange({ after: appInstance })]
     const changeErrors = await serviceProviderConnectionValidator(client)(changes)

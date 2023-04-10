@@ -241,6 +241,7 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
+
   public get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
       changeValidator: changeValidator({

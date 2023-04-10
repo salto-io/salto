@@ -44,7 +44,6 @@ const createChangeError = (instance: InstanceElement, baseUrl: string): ChangeEr
   }
 }
 
-
 export const serviceProviderConnectionValidator: (client: OktaClient) =>
   ChangeValidator = client => async changes => (
     changes

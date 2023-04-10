@@ -46,7 +46,7 @@ describe('serviceUrlFilterCreator', () => {
           await filter.onFetch(elements)
           const [instance] = elements
           expect(instance.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toEqual(
-            `${client.baseUrlWithAdmin}/admin/app/${appInstance.value.name}/instance/${appInstance.value.id}/#tab-assignments`,
+            `${client.baseUrlWithAdmin}/admin/app/${appInstance.value.name}/instance/${appInstance.value.id}/#tab-general`,
           )
         })
       })
@@ -56,7 +56,7 @@ describe('serviceUrlFilterCreator', () => {
           await filter.onDeploy(changes)
           const instance = getChangeData(changes[0])
           expect(instance.annotations?.[CORE_ANNOTATIONS.SERVICE_URL]).toEqual(
-            `${client.baseUrlWithAdmin}/admin/app/${appInstance.value.name}/instance/${appInstance.value.id}/#tab-assignments`,
+            `${client.baseUrlWithAdmin}/admin/app/${appInstance.value.name}/instance/${appInstance.value.id}/#tab-general`,
           )
         })
       })

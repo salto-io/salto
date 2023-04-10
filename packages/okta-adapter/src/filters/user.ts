@@ -58,6 +58,7 @@ const USER_MAPPING: Record<string, string[][]> = {
   [SIGN_ON_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [MFA_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [AUTHORIZATION_POLICY_RULE]: [INCLUDE_USERS_PATH],
+  EndUserSupport: [['technicalContactId']],
 }
 
 const isRelevantInstance = (instance: InstanceElement): boolean => (
@@ -84,12 +85,17 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
   const paths = USER_MAPPING[instance.elemID.typeName]
   paths.forEach(
     path => {
-      const valuesPath = instance.elemID.createNestedID(...path)
-      const values = resolvePath(instance, valuesPath) ?? []
-      values.forEach((value: string, i: number) => {
+      const usersPath = instance.elemID.createNestedID(...path)
+      const pathValues = resolvePath(instance, usersPath) ?? []
+      const userValues = _.isArray(pathValues) ? pathValues : [pathValues]
+      userValues.forEach((value: string, i: number) => {
         const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
         if (newValue !== undefined) {
-          setPath(instance, valuesPath.createNestedID(i.toString()), newValue)
+          setPath(
+            instance,
+            _.isArray(pathValues) ? usersPath.createNestedID(i.toString()) : usersPath,
+            newValue
+          )
         }
       })
     }

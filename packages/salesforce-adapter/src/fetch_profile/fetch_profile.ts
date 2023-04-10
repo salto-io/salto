@@ -15,6 +15,7 @@
 */
 
 import { values } from '@salto-io/lowerdash'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { DATA_CONFIGURATION, FetchParameters, METADATA_CONFIG, OptionalFeatures } from '../types'
 import { buildDataManagement, DataManagement, validateDataManagementConfig } from './data_management'
 import { buildMetadataQuery, MetadataQuery, validateMetadataParams } from './metadata_query'
@@ -40,8 +41,9 @@ export const buildFetchProfile = ({
   target,
   maxInstancesPerType,
   preferActiveFlowVersions,
-}: FetchParameters): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, isDefined(target)
+}: FetchParameters,
+changedAtSingleton?: InstanceElement): FetchProfile => ({
+  metadataQuery: buildMetadataQuery(metadata, changedAtSingleton, isDefined(target)
     ? getFetchTargets(target as SupportedMetadataType[])
     : undefined),
   dataManagement: data && buildDataManagement(data),

@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
-  Values,
+  Values, ElemID,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
@@ -35,6 +35,7 @@ import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
+import { CHANGED_AT_SINGLETON, SALESFORCE } from './constants'
 
 const log = logger(module)
 
@@ -174,15 +175,20 @@ export const adapter: Adapter = {
     const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const client = new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] })
-    const salesforceAdapter = new SalesforceAdapter({
-      client,
-      config,
-      getElemIdFunc: context.getElemIdFunc,
-      elementsSource: context.elementsSource,
-    })
-
+    const createAdapter = async (): Promise<SalesforceAdapter> => {
+      const { elementsSource, getElemIdFunc } = context
+      const changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+      return new SalesforceAdapter({
+        client,
+        config,
+        getElemIdFunc,
+        elementsSource,
+        changedAtSingleton,
+      })
+    }
     return {
       fetch: async opts => {
+        const salesforceAdapter = await createAdapter()
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(
           fetchResults.updatedConfig,
@@ -194,8 +200,14 @@ export const adapter: Adapter = {
         return fetchResults
       },
 
-      deploy: salesforceAdapter.deploy.bind(salesforceAdapter),
-      validate: salesforceAdapter.validate.bind(salesforceAdapter),
+      deploy: async opts => {
+        const salesforceAdapter = await createAdapter()
+        return salesforceAdapter.deploy(opts)
+      },
+      validate: async opts => {
+        const salesforceAdapter = await createAdapter()
+        return salesforceAdapter.validate(opts)
+      },
       deployModifiers: {
         changeValidator: createChangeValidator(
           { config, isSandbox: credentials.isSandbox, checkOnly: false, client }

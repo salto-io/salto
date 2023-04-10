@@ -215,6 +215,8 @@ export interface SalesforceAdapterParams {
   config: SalesforceConfig
 
   elementsSource: ReadOnlyElementsSource
+
+  changedAtSingleton?: InstanceElement
 }
 
 const METADATA_TO_RETRIEVE = [
@@ -337,6 +339,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     systemFields = SYSTEM_FIELDS,
     unsupportedSystemFields = UNSUPPORTED_SYSTEM_FIELDS,
     config,
+    changedAtSingleton,
   }: SalesforceAdapterParams) {
     this.maxItemsInRetrieveRequest = config.maxItemsInRetrieveRequest ?? maxItemsInRetrieveRequest
     this.metadataToRetrieve = metadataToRetrieve
@@ -345,7 +348,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
 
-    const fetchProfile = buildFetchProfile(config.fetch ?? {})
+    const fetchProfile = buildFetchProfile(config.fetch ?? {}, changedAtSingleton)
     this.fetchProfile = fetchProfile
     this.createFiltersRunner = () => filter.filtersRunner(
       {

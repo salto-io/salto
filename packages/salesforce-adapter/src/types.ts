@@ -59,6 +59,7 @@ export type MetadataInstance = {
   namespace: string
   name: string
   isFolderType: boolean
+  changedAt: string | undefined
 }
 
 export type MetadataQueryParams = Partial<Omit<MetadataInstance, 'isFolderType'>>

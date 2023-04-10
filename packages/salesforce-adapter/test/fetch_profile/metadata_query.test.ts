@@ -91,9 +91,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'cccc', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaaa', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'cccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('filter with metadataType', () => {
@@ -106,9 +106,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ metadataType: 'aaabbb', namespace: '', name: '', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ metadataType: 'cccc', namespace: '', name: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ metadataType: 'aaaa', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ metadataType: 'aaabbb', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ metadataType: 'cccc', namespace: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('filter with name', () => {
@@ -121,9 +121,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ name: 'aaabbb', namespace: '', metadataType: '', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ name: 'cccc', namespace: '', metadataType: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ name: 'aaaa', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ name: 'aaabbb', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ name: 'cccc', namespace: '', metadataType: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('filter with multiple fields', () => {
@@ -136,9 +136,9 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: 'bbbccc', name: 'cccddd', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('filter with multiple queries', () => {
@@ -153,11 +153,11 @@ describe('buildMetadataQuery', () => {
         ],
       })
 
-      expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'bbbccc', metadataType: '', name: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
-      expect(query.isInstanceMatch({ namespace: 'bbb', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaaccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'bbbccc', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'aaa', metadataType: 'bbb', name: 'ccc', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'aaabbb', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'bbb', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('empty namespace should be tread as "standard"', () => {
@@ -166,8 +166,8 @@ describe('buildMetadataQuery', () => {
           { namespace: '' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', isFolderType: false })).toBeTruthy()
-      expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'standard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'notstandard', metadataType: '', name: '', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
 
     it('should return InstalledPackage with namespace if \'\' namespace is provided', () => {
@@ -176,7 +176,7 @@ describe('buildMetadataQuery', () => {
           { namespace: '' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false })).toBeTruthy()
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeTruthy()
     })
 
     it('should not return InstalledPackage with a different namespace then one specifically provided', () => {
@@ -185,7 +185,7 @@ describe('buildMetadataQuery', () => {
           { namespace: 'SBAA' },
         ],
       })
-      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false })).toBeFalsy()
+      expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeFalsy()
     })
   })
 
@@ -213,6 +213,7 @@ describe('buildMetadataQuery', () => {
           include: [{ metadataType: '.*' }],
           exclude: [{ metadataType: 'exclude' }],
         },
+        undefined,
         ['target', 'exclude', CUSTOM_OBJECT],
       )
     })
@@ -300,6 +301,7 @@ describe('buildMetadataQuery', () => {
           namespace: '',
           name: folderName,
           isFolderType: true,
+          changedAt: undefined,
         })).toBeTrue()
       })
 
@@ -312,6 +314,7 @@ describe('buildMetadataQuery', () => {
           namespace: '',
           name: folderName,
           isFolderType: true,
+          changedAt: undefined,
         })).toBeFalse()
       })
     })
@@ -335,6 +338,7 @@ describe('buildMetadataQuery', () => {
           namespace: '',
           name: folderName,
           isFolderType: true,
+          changedAt: undefined,
         })).toBeTrue()
       })
     })
@@ -360,6 +364,7 @@ describe('buildMetadataQuery', () => {
           namespace: '',
           name: folderName,
           isFolderType: true,
+          changedAt: undefined,
         })).toBeTrue()
       })
 
@@ -372,6 +377,7 @@ describe('buildMetadataQuery', () => {
           namespace: '',
           name: folderName,
           isFolderType: true,
+          changedAt: undefined,
         })).toBeFalse()
       })
     })

@@ -139,6 +139,7 @@ export const notInSkipList = (metadataQuery: MetadataQuery, file: FileProperties
     metadataType: file.type,
     name: file.fullName,
     isFolderType,
+    changedAt: file.lastModifiedDate,
   })
 )
 
@@ -263,6 +264,7 @@ export const fetchMetadataInstances = async ({
       metadataType: metadataTypeName,
       name: prop.fullName,
       isFolderType: isDefined(metadataType.annotations[FOLDER_CONTENT_TYPE]),
+      changedAt: prop.lastModifiedDate,
     }))
 
 

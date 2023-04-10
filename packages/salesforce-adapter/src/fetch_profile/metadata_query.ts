@@ -15,6 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { InstanceElement } from '@salto-io/adapter-api'
 import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
@@ -74,6 +75,7 @@ const isFolderMetadataTypeNameMatch = ({ name: instanceName }: MetadataInstance,
 
 export const buildMetadataQuery = (
   { include = [{}], exclude = [] }: MetadataParams,
+  changedAtSingleton?: InstanceElement,
   target?: string[],
 ): MetadataQuery => {
   const fullExcludeList = [...exclude, ...PERMANENT_SKIP_LIST]
@@ -115,6 +117,15 @@ export const buildMetadataQuery = (
     }
     return false
   }
+  const wasUpdated = (instance: MetadataInstance): boolean => {
+    if (changedAtSingleton === undefined || instance.changedAt === undefined) {
+      return true
+    }
+    const lastChangedAt = _.get(changedAtSingleton.value, [instance.metadataType, instance.name])
+    return _.isString(lastChangedAt)
+      ? new Date(lastChangedAt).getTime() < new Date(instance.changedAt).getTime()
+      : true
+  }
   const isTypeIncluded = (type: string): boolean => (
     include.some(({ metadataType = '.*' }) => new RegExp(`^${metadataType}$`).test(type))
     && isIncludedInPartialFetch(type)
@@ -131,6 +142,7 @@ export const buildMetadataQuery = (
     isInstanceMatch: instance => (
       include.some(params => isInstanceMatchQueryParams(instance, params))
       && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
+      && wasUpdated(instance)
     ),
 
     isPartialFetch: () => target !== undefined,

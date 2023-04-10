@@ -39,7 +39,7 @@ export const getAllowedPermissionTypes = async (
   }
   if (isInstanceElement(permissionListElementId)) {
     return new Set(
-      Object.values(permissionListElementId.value.permissions)
+      Object.values(permissionListElementId.value.permissions ?? {})
         .filter(isPermissionItemScheme)
         .map(({ key }) => key)
     )

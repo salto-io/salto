@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
-import { OktaActionName, OktaApiConfig } from './config'
+import { OktaApiConfig, OktaStatusActionName } from './config'
 
 const log = logger(module)
 
@@ -41,6 +41,10 @@ type OktaError = {
   }[]
 }
 
+type ResponseWithStatus = {
+  status: string
+}
+
 const OKTA_ERROR_SCHEMA = Joi.object({
   errorSummary: Joi.string().required(),
   errorCauses: Joi.array().items(Joi.object({
@@ -48,9 +52,15 @@ const OKTA_ERROR_SCHEMA = Joi.object({
   }).unknown(true).optional()),
 }).unknown(true)
 
+const RESPONSE_WITH_STATUS = Joi.object({
+  status: Joi.string().valid(ACTIVE_STATUS, INACTIVE_STATUS).allow(),
+}).unknown(true)
+
 const isOktaError = createSchemeGuard<OktaError>(OKTA_ERROR_SCHEMA, 'Received an invalid error')
 
-const getOktaError = (elemID: ElemID, error: Error): Error => {
+const isResponseWithStatus = createSchemeGuard<ResponseWithStatus>(RESPONSE_WITH_STATUS, 'Response does not have a valid status field')
+
+export const getOktaError = (elemID: ElemID, error: Error): Error => {
   if (!(error instanceof clientUtils.HTTPError)) {
     return error
   }
@@ -60,31 +70,29 @@ const getOktaError = (elemID: ElemID, error: Error): Error => {
     const { errorSummary, errorCauses } = data
     const oktaErrorMessage = _.isEmpty(errorCauses) ? errorSummary : `${errorSummary}. More info: ${errorCauses.map(c => c.errorSummary).join(',')}`
     log.error(`${baseErrorMessage} ${oktaErrorMessage}`)
-    return new Error(`${baseErrorMessage} ${oktaErrorMessage}`)
+    error.message = `${baseErrorMessage} ${oktaErrorMessage}`
+    return error
   }
-  log.error(`${baseErrorMessage} ${error}`)
-  return new Error(`${baseErrorMessage} ${error}`)
+  log.error(`${baseErrorMessage} ${error.message}`)
+  error.message = `${baseErrorMessage} ${error.message}`
+  return error
 }
 
-const isActivationChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const statusBefore = change.data.before.value.status
-  const statusAfter = change.data.after.value.status
-  return statusBefore === INACTIVE_STATUS && statusAfter === ACTIVE_STATUS
-}
+export const isActivationChange = ({ before, after }: {before: string; after: string}): boolean =>
+  before === INACTIVE_STATUS && after === ACTIVE_STATUS
 
-const isDeactivationChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const statusBefore = change.data.before.value.status
-  const statusAfter = change.data.after.value.status
-  return statusBefore === ACTIVE_STATUS && statusAfter === INACTIVE_STATUS
-}
+export const isDeactivationChange = ({ before, after }: {before: string; after: string}): boolean =>
+  before === ACTIVE_STATUS && after === INACTIVE_STATUS
 
-const deployStatusChange = async (
-  change: ModificationChange<InstanceElement>,
+export const deployStatusChange = async (
+  change: Change<InstanceElement>,
   client: OktaClient,
-  deployRequests?: Partial<Record<OktaActionName, configUtils.DeployRequestConfig>>
+  apiDefinitions: OktaApiConfig,
+  operation: OktaStatusActionName,
 ): Promise<void> => {
+  const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
   const instance = getChangeData(change)
-  const endpoint = isActivationChange(change)
+  const endpoint = operation === 'activate'
     ? deployRequests?.activate
     : deployRequests?.deactivate
   if (endpoint === undefined) {
@@ -136,12 +144,6 @@ export const defaultDeployChange = async (
 
   const { deployRequests } = apiDefinitions.types[getChangeData(change).elemID.typeName]
   try {
-    // If the instance is deactivated,
-    // we should first change the status as some instances can not be changed in status 'ACTIVE'
-    if (isModificationChange(change) && isDeactivationChange(change)) {
-      await deployStatusChange(change, client, deployRequests)
-    }
-
     const response = await deployment.deployChange({
       change: changeToDeploy,
       client,
@@ -149,11 +151,6 @@ export const defaultDeployChange = async (
       fieldsToIgnore,
       queryParams,
     })
-
-    // If the instance is activated, we should first make the changes and then change the status
-    if (isModificationChange(change) && isActivationChange(change)) {
-      await deployStatusChange(change, client, deployRequests)
-    }
 
     if (isAdditionChange(change)) {
       if (!Array.isArray(response)) {
@@ -165,6 +162,55 @@ export const defaultDeployChange = async (
         log.warn('Received unexpected response from deployChange: %o', response)
       }
     }
+    return response
+  } catch (err) {
+    throw getOktaError(getChangeData(change).elemID, err)
+  }
+}
+
+/**
+ * Deploy change with "add", "modify", "remove", "activation" and "deactivation" endpoints
+ */
+export const defaultDeployWithStatus = async (
+  change: Change<InstanceElement>,
+  client: OktaClient,
+  apiDefinitions: OktaApiConfig,
+  fieldsToIgnore?: string[],
+  queryParams?: Record<string, string>,
+): Promise<deployment.ResponseResult> => {
+  try {
+    // If the instance is deactivated,
+    // we should first change the status as some instances can not be changed in status 'ACTIVE'
+    if (isModificationChange(change)
+      && isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'deactivate')
+    }
+    const response = await defaultDeployChange(
+      change,
+      client,
+      apiDefinitions,
+      fieldsToIgnore,
+      queryParams
+    )
+
+    // Update status for the created instance if necessary
+    if (isAdditionChange(change) && isResponseWithStatus(response)) {
+      const changeStatus = getChangeData(change).value.status
+      if (isActivationChange({ before: response.status, after: changeStatus })) {
+        log.debug(`Instance ${getChangeData(change).elemID.getFullName()} created in status ${INACTIVE_STATUS}, changing to ${ACTIVE_STATUS}`)
+        await deployStatusChange(change, client, apiDefinitions, 'activate')
+      } else if (isDeactivationChange({ before: response.status, after: changeStatus })) {
+        log.debug(`Instance ${getChangeData(change).elemID.getFullName()} created in status ${ACTIVE_STATUS}, changing to ${INACTIVE_STATUS}`)
+        await deployStatusChange(change, client, apiDefinitions, 'deactivate')
+      }
+    }
+
+    // If the instance is activated, we should first make the changes and then change the status
+    if (isModificationChange(change)
+      && isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      await deployStatusChange(change, client, apiDefinitions, 'activate')
+    }
+
     return response
   } catch (err) {
     throw getOktaError(getChangeData(change).elemID, err)

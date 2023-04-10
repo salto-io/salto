@@ -73,9 +73,8 @@ const filterCreator: FilterCreator = ({ elementsSource }) => ({
       const parsedInstance = await parser(instance.value[layoutOrDefinition])
       Object.assign(instance.value, parsedInstance)
       if (oldInstance?.value[layoutOrDefinition] !== undefined) {
-        const oldType = typeNameToOldType[instance.elemID.typeName]
-        const oldParsedInstance = _.omitBy(oldInstance.value, (_val, key) => oldType.fields[key] !== undefined)
-        if (_.isEqual(oldParsedInstance, parsedInstance)) {
+        if (_.isEqual(await parser(oldInstance.value[layoutOrDefinition]),
+          parsedInstance)) {
           // In case the parsed definitions are equal that mean there is no reason
           // to change the definition string and create a change in the file.
           instance.value[layoutOrDefinition] = oldInstance.value[layoutOrDefinition]

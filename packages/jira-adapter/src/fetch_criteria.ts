@@ -16,17 +16,12 @@
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { regex } from '@salto-io/lowerdash'
 
-const nameCriterion: elementUtils.query.QueryCriterion = ({
-  instance,
-  value,
-}): boolean => regex.isFullRegexMatch(instance.value.name, value)
-
 const typeCriterion: elementUtils.query.QueryCriterion = ({
   instance,
   value,
 }): boolean => regex.isFullRegexMatch(instance.value.schema?.custom ?? instance.value.schema?.type, value)
 
 export default {
-  name: nameCriterion,
+  name: elementUtils.query.nameCriterion,
   type: typeCriterion,
 }

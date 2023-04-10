@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange, isAdditionChange } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, ChangeError, isModificationChange, Change, isRemovalChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { ACTIVE_STATUS, GROUP_RULE_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
@@ -49,16 +49,6 @@ const getGroupRuleStatusError = (
         severity: 'Error',
         message: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
         detailedMessage: `Cannot modify ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}. Please change instance status to ${INACTIVE_STATUS} and try again.`,
-      }
-    }
-  }
-  if (isAdditionChange(change)) {
-    if (instance.value.status === ACTIVE_STATUS) {
-      return {
-        elemID: instance.elemID,
-        severity: 'Warning',
-        message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ${ACTIVE_STATUS}`,
-        detailedMessage: `${GROUP_RULE_TYPE_NAME} will be created with status ${INACTIVE_STATUS}`,
       }
     }
   }

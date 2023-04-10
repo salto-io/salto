@@ -325,6 +325,36 @@ describe('adapter', () => {
         expect(elements.filter(isInstanceElement).filter(inst => inst.elemID.typeName === 'WorkflowExport')).toHaveLength(6)
       })
     })
+    it('should filter elements by type+name on fetch', async () => {
+      const { elements } = await adapter.operations({
+        credentials: new InstanceElement(
+          'config',
+          oauthClientCredentialsType,
+          { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+        ),
+        config: new InstanceElement(
+          'config',
+          configType,
+          {
+            ...DEFAULT_CONFIG,
+            fetch: {
+              ...DEFAULT_CONFIG.fetch,
+              include: [
+                { type: 'Settings_TaxEngine' },
+                { type: 'Settings_TaxCode', criteria: { name: 'A.*' } },
+              ],
+            },
+          },
+        ),
+        elementsSource: buildElementsSourceFromElements([]),
+      }).fetch({ progressReporter: { reportProgress: () => null } })
+
+      expect(elements.filter(isInstanceElement).map(e => e.elemID.getFullName()).sort()).toEqual([
+        'zuora_billing.Settings_TaxCode.instance.Avalara_Sales_Tax@s',
+        'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_SE@uuus',
+        'zuora_billing.Settings_TaxEngine.instance.unnamed_0__Zuora_Tax@uuus',
+      ])
+    })
     it('should not update the fetch config when not needed', async () => {
       mockGetUpdatedConfig.mockReturnValueOnce(undefined)
       const { updatedConfig } = await adapter.operations({

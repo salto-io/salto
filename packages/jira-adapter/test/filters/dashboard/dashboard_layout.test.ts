@@ -102,5 +102,12 @@ describe('dashboardLayoutFilter', () => {
 
       expect(instance.value.layout).toBeUndefined()
     })
+
+    it('should not add layout if request threw an error', async () => {
+      connection.get.mockRejectedValue(new Error('error'))
+      await filter.onFetch([instance])
+
+      expect(instance.value.layout).toBeUndefined()
+    })
   })
 })

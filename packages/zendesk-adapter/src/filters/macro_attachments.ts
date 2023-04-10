@@ -21,7 +21,7 @@ import {
   isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
-  resolveChangeElement, safeJsonStringify, pathNaclCase } from '@salto-io/adapter-utils'
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -31,10 +31,11 @@ import { addId, deployChange, deployChanges } from '../deployment'
 import { getZendeskError } from '../errors'
 import { lookupFunc } from './field_references'
 import ZendeskClient from '../client/client'
-import { createAdditionalParentChanges, isArrayOfRefExprToInstances } from './utils'
+import { createAdditionalParentChanges } from './utils'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { isArrayOfRefExprToInstances } = references
 
 const { RECORDS_PATH, SUBTYPES_PATH, TYPES_PATH } = elementsUtils
 

@@ -21,7 +21,7 @@ import {
 import { pathNaclCase, naclCase, transformValues, TransformFunc } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { RECORDS_PATH, SETTINGS_NESTED_PATH } from './constants'
-import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault,
+import { TransformationConfig, TransformationDefaultConfig, getConfigWithDefault, shouldNestFiles,
   RecurseIntoCondition, isRecurseIntoConditionByField, AdapterApiConfig, dereferenceFieldName, NameMappingOptions } from '../config'
 
 const log = logger(module)
@@ -35,6 +35,7 @@ export type InstanceCreationParams = {
   transformationDefaultConfig: TransformationDefaultConfig
   defaultName: string
   nestName?: boolean
+  nestedPath?: string[]
   parent?: InstanceElement
   normalized?: boolean
   getElemIdFunc?: ElemIdGetter
@@ -76,6 +77,7 @@ export const getInstanceFilePath = ({
   isSettingType,
   nameMapping,
   adapterName,
+  nestedPaths,
 }: {
   fileNameFields: string[] | undefined
   entry: Values
@@ -84,6 +86,7 @@ export const getInstanceFilePath = ({
   isSettingType: boolean
   nameMapping?: NameMappingOptions
   adapterName: string
+  nestedPaths?: string[]
 }): string[] => {
   const fileNameParts = (fileNameFields !== undefined
     ? fileNameFields.map(field => _.get(entry, field))
@@ -92,7 +95,7 @@ export const getInstanceFilePath = ({
     ? fileNameParts.join('_')
     : undefined))
   const naclCaseFileName = fileName ? pathNaclCase(naclCase(fileName)) : pathNaclCase(naclName)
-  return isSettingType
+  return (isSettingType
     ? [
       adapterName,
       RECORDS_PATH,
@@ -102,10 +105,10 @@ export const getInstanceFilePath = ({
     : [
       adapterName,
       RECORDS_PATH,
-      pathNaclCase(typeName),
+      ...(nestedPaths ? nestedPaths.map(pathNaclCase) : [pathNaclCase(typeName)]),
       nameMapping
         ? getNameMapping(naclCaseFileName, nameMapping) : naclCaseFileName,
-    ]
+    ])
 }
 
 export const generateInstanceNameFromConfig = (
@@ -192,6 +195,7 @@ export const toBasicInstance = async ({
   transformationConfigByType,
   transformationDefaultConfig,
   nestName,
+  nestedPath,
   parent,
   defaultName,
   getElemIdFunc,
@@ -239,7 +243,6 @@ export const toBasicInstance = async ({
     typeElemId: type.elemID,
     nameMapping,
   })
-
   const filePath = getInstanceFilePath({
     fileNameFields,
     entry,
@@ -248,7 +251,14 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
+    nestedPaths:
+    shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name]) ? nestedPath : undefined,
   })
+  if (transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined
+    && shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name])) {
+    // if there are standalone fields and they should be nested, we nest the instance in its own folder.
+    filePath.push(filePath[filePath.length - 1])
+  }
 
   return new InstanceElement(
     type.isSettings ? ElemID.CONFIG_NAME : naclName,

@@ -32,7 +32,7 @@ import {
   HOLD_CATEGORY, SOLVED_CATEGORY,
 } from '../constants'
 import { FETCH_CONFIG } from '../config'
-import { ZendeskMissingReferenceStrategyLookup } from './references/missing_references'
+import { ZendeskMissingReferenceStrategyLookup, ZendeskMissingReferenceStrategyName } from './references/missing_references'
 
 const { neighborContextGetter } = referenceUtils
 
@@ -274,7 +274,7 @@ type ZendeskFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 > & {
   zendeskSerializationStrategy?: ZendeskReferenceSerializationStrategyName
   // Strategy for non-list values. For list values please check listValuesMissingRefereces filter
-  zendeskMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
+  zendeskMissingRefStrategy?: ZendeskMissingReferenceStrategyName
 }
 
 export class ZendeskFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<

@@ -55,7 +55,7 @@ describe('custom records', () => {
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, 'SELECT scriptid FROM customrecordtype  ORDER BY scriptid ASC')
-      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid FROM customrecord1 WHERE lastmodified BETWEEN TO_DATE(\'1/11/2021\', \'MM/DD/YYYY\') AND TO_DATE(\'2/23/2021\', \'MM/DD/YYYY\') ORDER BY scriptid ASC')
+      expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, 'SELECT scriptid FROM customrecord1 WHERE lastmodified BETWEEN TO_DATE(\'2021-1-11\', \'YYYY-MM-DD\') AND TO_DATE(\'2021-2-23\', \'YYYY-MM-DD\') ORDER BY scriptid ASC')
     })
   })
   it('return nothing when custom record types query fails', async () => {

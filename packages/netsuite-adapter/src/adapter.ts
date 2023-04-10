@@ -26,7 +26,7 @@ import {
   createInstanceElement,
 } from './transformer'
 import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from './constants'
+import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -130,7 +130,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     filtersCreators = [
       customRecordTypesType,
       omitSdfUntypedValues,
-      omitFieldsFilter,
       dataInstancesIdentifiers,
       dataInstancesDiff,
       // addParentFolder must run before replaceInstanceReferencesFilter
@@ -167,6 +166,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       customRecordsFilter,
       // serviceUrls must run after suiteAppInternalIds filter
       serviceUrls,
+      // omitFieldsFilter should be the last onFetch filter to run
+      omitFieldsFilter,
       // additionalChanges should be the first preDeploy filter to run
       additionalChanges,
     ],
@@ -352,16 +353,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
    */
 
   public async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
-    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfig()))
+    const isFirstFetch = !(await awu(await this.elementsSource.list()).find(e => !e.isConfigType()))
     const hasFetchTarget = this.fetchTarget !== undefined
     if (hasFetchTarget && isFirstFetch) {
       throw new Error('Can\'t define fetchTarget for the first fetch. Remove fetchTarget from adapter config file')
     }
 
-    const explicitIncludeTypeList = [REPORT_DEFINITION, FINANCIAL_LAYOUT]
-      .filter(typeName => !this.fetchInclude?.types.some(type => type.name === typeName))
     const deprecatedSkipList = buildNetsuiteQuery(convertToQueryParams({
-      types: Object.fromEntries(this.typesToSkip.concat(explicitIncludeTypeList).map(typeName => [typeName, ['.*']])),
+      types: Object.fromEntries(this.typesToSkip.map(typeName => [typeName, ['.*']])),
       filePaths: this.filePathRegexSkipList.map(reg => `.*${reg}.*`),
     }))
     const fetchQuery = [

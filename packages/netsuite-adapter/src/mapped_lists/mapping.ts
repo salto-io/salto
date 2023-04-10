@@ -81,80 +81,23 @@ const unorderedListMappedByFieldMapping = {
   customtransactiontype_links_link: 'linkcategory',
   suitelet_scriptdeployments_scriptdeployment_links_link: 'linkcategory',
   transactionForm_linkedForms_linkedForm: 'type',
-}
 
-export const listMappedByFieldMapping: Record<string, string | string[]> = {
-  ...unorderedListMappedByFieldMapping,
-
-  // addressForm
-  addressForm_mainFields_defaultFieldGroup_fields: 'position',
-  addressForm_mainFields_defaultFieldGroup_fields_field: 'id',
-  addressForm_mainFields_fieldGroup_fields: 'position',
-  addressForm_mainFields_fieldGroup_fields_field: 'id',
-
-  // centercategory
-  // NOTE: Instances of this type would have the first OR the second fields lists here.
-  // On the transformation from lists to maps there is a check of which field to use for each item.
-  centercategory_links_link: ['linkid', 'linkobject'],
-
-  // clientscript
-  clientscript_buttons_button: 'buttonlabel',
-
-  // entryForm
-  entryForm_actionbar_buttons_button: 'id',
-  entryForm_actionbar_customButtons_customButton: 'label',
-  entryForm_actionbar_customMenu_customMenuItem: 'label',
+  // form standard actions
   entryForm_actionbar_menu_menuitem: 'id',
-  entryForm_buttons_standardButtons_button: 'id',
-  entryForm_mainFields_fieldGroup_fields: 'position',
-  entryForm_mainFields_fieldGroup_fields_field: 'id',
-  entryForm_mainFields_defaultFieldGroup_fields: 'position',
-  entryForm_mainFields_defaultFieldGroup_fields_field: 'id',
-  entryForm_quickViewFields_field: 'id',
-  entryForm_tabs_tab: 'id',
-  entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields: 'position',
-  entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-  entryForm_tabs_tab_fieldGroups_fieldGroup_fields: 'position',
-  entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
-  entryForm_tabs_tab_subItems_subList: 'id',
-  entryForm_tabs_tab_subItems_subLists_subList: 'id',
-  entryForm_tabs_tab_subItems_subTab: 'id',
-  entryForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
-  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
-  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
-  entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
-  entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-
-  // transactionForm
-  transactionForm_mainFields_defaultFieldGroup_fields: 'position',
-  transactionForm_mainFields_defaultFieldGroup_fields_field: 'id',
-  transactionForm_mainFields_fieldGroup_fields: 'position',
-  transactionForm_mainFields_fieldGroup_fields_field: 'id',
-  transactionForm_actionbar_buttons_button: 'id',
+  entryForm_actionbar_buttons_button: 'id',
   transactionForm_actionbar_menu_menuitem: 'id',
-  transactionForm_actionbar_customButtons_customButton: 'label',
-  transactionForm_actionbar_customMenu_customMenuItem: 'label',
-  transactionForm_buttons_standardButtons_button: 'id',
-  transactionForm_quickViewFields_field: 'id',
+  transactionForm_actionbar_buttons_button: 'id',
+
+  // preferred form for role
   transactionForm_roles_role: 'id',
-  transactionForm_tabs_tab: 'id',
-  transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields: 'position',
-  transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-  transactionForm_tabs_tab_fieldGroups_fieldGroup_fields: 'position',
-  transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
-  transactionForm_tabs_tab_subItems_subList: 'id',
-  transactionForm_tabs_tab_subItems_subList_columns_column: 'id',
-  transactionForm_tabs_tab_subItems_subLists_subList: 'id',
-  transactionForm_tabs_tab_subItems_subTab: 'id',
-  transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
-  transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
-  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
-  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
-  transactionForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
-  transactionForm_totalBox_totalBoxField: 'id',
+
+  // forms preferences
   transactionForm_preferences_preference: 'id',
 
-  // workflow parameters
+  // workflow actions trigger type
+  workflow_workflowstates_workflowstate_workflowactions: 'triggertype',
+
+  // workflow init condition parameters
   workflow_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_addbuttonaction_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_lockrecordaction_initcondition_parameters_parameter: 'name',
@@ -184,12 +127,83 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowtransitions_workflowtransition_initcondition_parameters_parameter: 'name',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initcondition_parameters_parameter: 'name',
 
-  // workflow actions
-  workflow_workflowstates_workflowstate_workflowactions: 'triggertype',
+  // workflow custom action parameters
+  workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting: 'targetparameter',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting: 'targetparameter',
+
+  // workflow initiate workflow action parameters
+  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
+  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
+}
+
+export const listMappedByFieldMapping: Record<string, string | string[]> = {
+  ...unorderedListMappedByFieldMapping,
+
+  // addressForm
+  addressForm_mainFields_defaultFieldGroup_fields: 'position',
+  addressForm_mainFields_defaultFieldGroup_fields_field: 'id',
+  addressForm_mainFields_fieldGroup_fields: 'position',
+  addressForm_mainFields_fieldGroup_fields_field: 'id',
+
+  // centercategory
+  // NOTE: Instances of this type would have the first OR the second fields lists here.
+  // On the transformation from lists to maps there is a check of which field to use for each item.
+  centercategory_links_link: ['linkid', 'linkobject'],
+
+  // clientscript
+  clientscript_buttons_button: 'buttonlabel',
+
+  // entryForm
+  entryForm_buttons_standardButtons_button: 'id',
+  entryForm_mainFields_fieldGroup_fields: 'position',
+  entryForm_mainFields_fieldGroup_fields_field: 'id',
+  entryForm_mainFields_defaultFieldGroup_fields: 'position',
+  entryForm_mainFields_defaultFieldGroup_fields_field: 'id',
+  entryForm_quickViewFields_field: 'id',
+  entryForm_tabs_tab: 'id',
+  entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields: 'position',
+  entryForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field: 'id',
+  entryForm_tabs_tab_fieldGroups_fieldGroup_fields: 'position',
+  entryForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
+  entryForm_tabs_tab_subItems_subList: 'id',
+  entryForm_tabs_tab_subItems_subLists_subList: 'id',
+  entryForm_tabs_tab_subItems_subTab: 'id',
+  entryForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
+  entryForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
+
+  // transactionForm
+  transactionForm_buttons_standardButtons_button: 'id',
+  transactionForm_mainFields_defaultFieldGroup_fields: 'position',
+  transactionForm_mainFields_defaultFieldGroup_fields_field: 'id',
+  transactionForm_mainFields_fieldGroup_fields: 'position',
+  transactionForm_mainFields_fieldGroup_fields_field: 'id',
+  transactionForm_quickViewFields_field: 'id',
+  transactionForm_tabs_tab: 'id',
+  transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields: 'position',
+  transactionForm_tabs_tab_fieldGroups_defaultFieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_fieldGroups_fieldGroup_fields: 'position',
+  transactionForm_tabs_tab_fieldGroups_fieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_subItems_subList: 'id',
+  transactionForm_tabs_tab_subItems_subList_columns_column: 'id',
+  transactionForm_tabs_tab_subItems_subLists_subList: 'id',
+  transactionForm_tabs_tab_subItems_subTab: 'id',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields: 'position',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_defaultFieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields: 'position',
+  transactionForm_tabs_tab_subItems_subTab_fieldGroups_fieldGroup_fields_field: 'id',
+  transactionForm_tabs_tab_subItems_subTab_subLists_subList: 'id',
+  transactionForm_totalBox_totalBoxField: 'id',
+
+  // form custom actions
+  entryForm_actionbar_customMenu_customMenuItem: 'label',
+  entryForm_actionbar_customButtons_customButton: 'label',
+  transactionForm_actionbar_customMenu_customMenuItem: 'label',
+  transactionForm_actionbar_customButtons_customButton: 'label',
 
   // workflow settings
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
-  workflow_workflowstates_workflowstate_workflowactions_initiateworkflowaction_workflowfieldsettings_workflowfieldsetting: 'targetworkflowfield',
   workflow_workflowstates_workflowstate_workflowactions_transformrecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_gotorecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
@@ -199,8 +213,6 @@ export const listMappedByFieldMapping: Record<string, string | string[]> = {
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_createlineaction_fieldsettings_fieldsetting: 'targetfield',
   workflow_workflowstates_workflowstate_workflowactions_workflowsublistactiongroup_createrecordaction_fieldsettings_fieldsetting: 'targetfield',
-  workflow_workflowstates_workflowstate_workflowactions_customaction_parametersettings_parametersetting: 'targetparameter',
-  workflow_workflowstates_workflowstate_workflowactions_workflowactiongroup_customaction_parametersettings_parametersetting: 'targetparameter',
 
   // custom field filters
   bundleinstallationscript_scriptcustomfields_scriptcustomfield_customfieldfilters_customfieldfilter: 'fldfilter',

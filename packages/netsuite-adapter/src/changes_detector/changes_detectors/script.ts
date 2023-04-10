@@ -15,27 +15,32 @@
 */
 import { logger } from '@salto-io/logging'
 import { PLUGIN_IMPLEMENTATION_TYPES, SCRIPT_TYPES } from '../../types'
-import { ChangedObject, TypeChangesDetector } from '../types'
+import { convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
+import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
 
 export const SUPPORTED_TYPES = [...SCRIPT_TYPES, ...PLUGIN_IMPLEMENTATION_TYPES, 'plugintype']
 
-const parseChanges = (queryName: string, changes?: Record<string, unknown>[]): ChangedObject[] => {
+const parseChanges = (
+  queryName: string,
+  changes: Record<string, unknown>[] | undefined,
+  dateRange: DateRange,
+): ChangedObject[] => {
   if (changes === undefined) {
     log.warn(`${queryName} changes query failed`)
     return []
   }
-  return changes.filter((res): res is { scriptid: string; id: string } => {
-    if ([res.scriptid, res.id].some(val => typeof val !== 'string')) {
+  return changes.filter((res): res is { scriptid: string; time: string } => {
+    if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
       log.warn(`Got invalid result from ${queryName} changes query, %o`, res)
       return false
     }
     return true
   }).map(res => ({
     type: 'object',
-    externalId: res.scriptid,
-    internalId: parseInt(res.id, 10),
+    objectId: res.scriptid,
+    time: convertSuiteQLStringToDate(res.time, dateRange.end),
   }))
 }
 
@@ -53,20 +58,22 @@ const changesDetector: TypeChangesDetector = {
     const [startDate, endDate] = dateRange.toSuiteQLRange()
 
     const scriptChangesPromise = client.runSuiteQL(`
-      SELECT script.scriptid, script.id
+      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM script
       JOIN systemnote ON systemnote.recordid = script.id
       WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -417
-      ORDER BY script.id ASC
+      GROUP BY script.scriptid
+      ORDER BY script.scriptid ASC
     `)
 
     const scriptDeploymentChangesPromise = client.runSuiteQL(`
-      SELECT script.scriptid, scriptdeployment.primarykey AS id
+      SELECT script.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM scriptdeployment 
       JOIN systemnote ON systemnote.recordid = scriptdeployment.primarykey
       JOIN script ON scriptdeployment.script = script.id
       WHERE systemnote.date BETWEEN ${startDate} AND ${endDate} AND systemnote.recordtypeid = -418
-      ORDER BY scriptdeployment.primarykey ASC
+      GROUP BY script.scriptid
+      ORDER BY script.scriptid ASC
     `)
 
     const scriptFieldsChangesPromise = client.runSuiteQL(`
@@ -91,8 +98,8 @@ const changesDetector: TypeChangesDetector = {
     }
 
     return [
-      ...parseChanges('script', scriptChanges),
-      ...parseChanges('script deployment', scriptDeploymentChanges),
+      ...parseChanges('script', scriptChanges, dateRange),
+      ...parseChanges('script deployment', scriptDeploymentChanges, dateRange),
     ]
   },
   getTypes: () => SUPPORTED_TYPES,

@@ -454,6 +454,33 @@ describe('Custom Objects from describe filter', () => {
             )
           })
         })
+        describe('when instance has field with the same compoundFieldName', () => {
+          beforeEach(async () => {
+            mockSingleSObject({
+              name: 'Lead',
+              fields: [
+                {
+                  name: 'Name',
+                  type: 'string',
+                  label: 'Account Name',
+                  nameField: true,
+                  compoundFieldName: 'Name',
+                },
+              ],
+            })
+            const elements = [customObjectType, testInstanceElement]
+            await filter.onFetch(elements)
+          })
+          it('should give the name field a type of Text', () => {
+            const expectedField = {
+              [INSTANCE_FULL_NAME_FIELD]: 'Name',
+              [INSTANCE_TYPE_FIELD]: 'Text',
+            }
+            expect(testInstanceElement.value.fields).toContainEqual(
+              expect.objectContaining(expectedField)
+            )
+          })
+        })
       })
     })
   })

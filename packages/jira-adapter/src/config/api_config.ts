@@ -220,6 +220,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       ],
     },
   },
+  PageBeanIssueTypeToContextMapping: {
+    request: {
+      url: '/rest/api/3/field/{fieldId}/context/issuetypemapping',
+      paginationField: 'startAt',
+    },
+  },
+  PageBeanCustomFieldContextProjectMapping: {
+    request: {
+      url: '/rest/api/3/field/{fieldId}/context/projectmapping',
+      paginationField: 'startAt',
+    },
+  },
   Field: {
     transformation: {
       fieldsToHide: [
@@ -1775,6 +1787,7 @@ export const DEFAULT_API_DEFINITIONS: JiraApiConfig = {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
       serviceIdField: DEFAULT_SERVICE_ID_FIELD,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

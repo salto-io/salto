@@ -19,7 +19,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
-import { getSObjectFieldElement, apiName, toCustomField } from '../transformers/transformer'
+import { getSObjectFieldElement, apiName, toCustomField, isSubfieldOfCompound } from '../transformers/transformer'
 import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
 import { createSkippedListConfigChangeFromError } from '../config_change'
@@ -88,11 +88,11 @@ const addSObjectInformationToInstance = async (
     return compoundName
   }
 
-  // Only fields with "child's" referring to a field as it's compoundField
+  // Only fields that have another field referring to them as a compoundField
   // should be regarded as compound.
   const objCompoundFieldNames = _.mapValues(
     _.groupBy(
-      sobject.fields.filter(field => field.compoundFieldName !== undefined),
+      sobject.fields.filter(isSubfieldOfCompound),
       field => field.compoundFieldName,
     ),
     getCompoundTypeName,
@@ -100,7 +100,7 @@ const addSObjectInformationToInstance = async (
 
   const sobjectFields = await Promise.all(
     sobject.fields
-      .filter(field => !field.compoundFieldName) // Filter out nested fields of compound fields
+      .filter(field => !isSubfieldOfCompound(field)) // Filter out nested fields of compound fields
       .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
   )
 

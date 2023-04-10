@@ -28,7 +28,6 @@ import {
   CUSTOM_OBJECT,
   CPQ_QUOTE,
   DUPLICATE_RULE_METADATA_TYPE,
-  ACTIVATE_RSS,
   INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
 } from '../src/constants'
@@ -265,9 +264,6 @@ export const mockTypes = {
     annotations: {
       metadataType: INSTALLED_PACKAGE_METADATA,
     },
-    fields: {
-      [ACTIVATE_RSS]: { refType: BuiltinTypes.BOOLEAN },
-    },
   }),
   Product2: new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Product2'),
@@ -436,6 +432,20 @@ export const mockTypes = {
     elemID: new ElemID(SALESFORCE, PATH_ASSISTANT_METADATA_TYPE),
     annotations: {
       metadataType: 'PathAssistant',
+    },
+  }),
+  GlobalValueSet: createMetadataObjectType({
+    annotations: {
+      [METADATA_TYPE]: 'GlobalValueSet',
+    },
+    fields: {
+      customValue: {
+        refType: new ListType(createMetadataObjectType({
+          annotations: {
+            [METADATA_TYPE]: 'CustomValue',
+          },
+        })),
+      },
     },
   }),
 }

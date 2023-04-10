@@ -70,6 +70,8 @@ export type TransformationConfig = {
   serviceUrl?: string
   // if provided, instance id and file name change, otherwise there’s no change
   nameMapping?: NameMappingOptions
+  // if provided and true, types that are standalone fields will nest their instances under parent instances folders.
+  nestStandaloneInstances?: boolean
 }
 
 export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<TransformationConfig, 'isSingleton'>>, 'idFields'>
@@ -286,3 +288,8 @@ export const dereferenceFieldName = (
 ): string => (isReferencedIdField(fieldName)
   ? _.trimStart(fieldName, FIELD_REFERENCE_PREFIX)
   : fieldName)
+
+export const shouldNestFiles = (
+  transformationDefaultConfig: TransformationDefaultConfig,
+  transformationConfig: TransformationConfig | undefined,
+): boolean => getConfigWithDefault(transformationConfig, transformationDefaultConfig).nestStandaloneInstances ?? true

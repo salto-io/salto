@@ -13,20 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import fetchCriteria from '../src/fetch_criteria'
 
-export const isHidden = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.HIDDEN] === true
-)
+describe('fetch_criteria', () => {
+  describe('name', () => {
+    it('should match element name', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+        }
+      )
 
-export const isHiddenValue = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] === true
-)
-
-export const isUpdatable = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.UPDATABLE] ?? true
-)
-
-export const isRequired = (element: Element): boolean => (
-  element.annotations[CORE_ANNOTATIONS.REQUIRED] === true
-)
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+})

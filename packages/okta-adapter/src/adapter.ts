@@ -22,6 +22,7 @@ import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
+import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
 import { FilterCreator, Filter, filtersRunner } from './filter'
@@ -33,9 +34,13 @@ import defaultDeployFilter from './filters/default_deploy'
 import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
-import fetchUserSchemaFilter from './filters/user_schema'
+import userTypeFilter from './filters/user_type'
+import userSchemaFilter from './filters/user_schema'
 import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
+import policyRuleRemoval from './filters/policy_rule_removal'
+import authorizationRuleFilter from './filters/authorization_server_rule'
+import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -49,20 +54,27 @@ const {
 const { createPaginator } = clientUtils
 const log = logger(module)
 
+const { query: queryFilter, ...otherCommonFilters } = commonFilters
+
 export const DEFAULT_FILTERS = [
+  queryFilter,
   standardRolesFilter,
-  fetchUserSchemaFilter,
+  userTypeFilter,
+  userSchemaFilter,
+  authorizationRuleFilter,
   // should run before fieldReferencesFilter
   urlReferencesFilter,
   // should run before fieldReferencesFilter
   replaceObjectWithIdFilter,
+  userFilter,
   oktaExpressionLanguageFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
+  policyRuleRemoval,
   // should run after fieldReferences
-  ...Object.values(commonFilters),
+  ...Object.values(otherCommonFilters),
   // should run last
   defaultDeployFilter,
 ]
@@ -100,6 +112,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     this.fetchQuery = elementUtils.query.createElementQuery(
       this.userConfig.fetch,
+      fetchCriteria,
     )
 
     this.paginator = paginator

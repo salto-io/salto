@@ -18,7 +18,7 @@ import { getChangedFiles, getChangedFolders } from '../../src/changes_detector/c
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_formats'
+import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
 
 describe('file_cabinet', () => {
   const runSuiteQLMock = jest.fn()
@@ -32,7 +32,10 @@ describe('file_cabinet', () => {
       let results: Change[]
       beforeEach(async () => {
         runSuiteQLMock.mockReset()
-        runSuiteQLMock.mockResolvedValue([{ appfolder: 'a : b', name: 'c', id: '1' }, { appfolder: 'd : e', name: 'f', id: '2' }])
+        runSuiteQLMock.mockResolvedValue([
+          { appfolder: 'a : b', name: 'c', time: '2021-01-20 20:10:20' },
+          { appfolder: 'd : e', name: 'f', time: '2021-01-20 20:10:20' },
+        ])
         results = await getChangedFiles(
           client,
           createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
@@ -40,17 +43,17 @@ describe('file_cabinet', () => {
       })
       it('should return the changes', () => {
         expect(results).toEqual([
-          { type: 'object', externalId: '/a/b/c', internalId: 1 },
-          { type: 'object', externalId: '/d/e/f', internalId: 2 },
+          { type: 'object', objectId: '/a/b/c', time: new Date('2021-01-20T20:10:20.000Z') },
+          { type: 'object', objectId: '/d/e/f', time: new Date('2021-01-20T20:10:20.000Z') },
         ])
       })
 
       it('should make the right query', () => {
         expect(runSuiteQLMock).toHaveBeenCalledWith(`
-    SELECT mediaitemfolder.appfolder, file.name, file.id
+    SELECT mediaitemfolder.appfolder, file.name, ${toSuiteQLSelectDateString('file.lastmodifieddate')} as time
     FROM file
     JOIN mediaitemfolder ON mediaitemfolder.id = file.folder
-    WHERE file.lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
+    WHERE file.lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
     ORDER BY file.id ASC
   `)
       })
@@ -61,8 +64,8 @@ describe('file_cabinet', () => {
       beforeEach(async () => {
         runSuiteQLMock.mockReset()
         runSuiteQLMock.mockResolvedValue([
-          { appfolder: 'a : b', name: 'c', id: '1' },
-          { appfolder: 'd : e', name: 'f', id: '2' },
+          { appfolder: 'a : b', name: 'c', time: '2021-01-20 20:10:20' },
+          { appfolder: 'd : e', name: 'f', time: '2021-01-20 20:10:20' },
           { appfolder: 'g', name: {} },
         ])
         results = await getChangedFiles(
@@ -72,8 +75,8 @@ describe('file_cabinet', () => {
       })
       it('should return the changes', () => {
         expect(results).toEqual([
-          { type: 'object', externalId: '/a/b/c', internalId: 1 },
-          { type: 'object', externalId: '/d/e/f', internalId: 2 },
+          { type: 'object', objectId: '/a/b/c', time: new Date('2021-01-20T20:10:20.000Z') },
+          { type: 'object', objectId: '/d/e/f', time: new Date('2021-01-20T20:10:20.000Z') },
         ])
       })
     })
@@ -90,7 +93,10 @@ describe('file_cabinet', () => {
       let results: Change[]
       beforeEach(async () => {
         runSuiteQLMock.mockReset()
-        runSuiteQLMock.mockResolvedValue([{ appfolder: 'a : b', id: '1' }, { appfolder: 'd : e', id: '2' }])
+        runSuiteQLMock.mockResolvedValue([
+          { appfolder: 'a : b', time: '2021-01-20 20:10:20' },
+          { appfolder: 'd : e', time: '2021-01-20 20:10:20' },
+        ])
         results = await getChangedFolders(
           client,
           createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
@@ -98,16 +104,16 @@ describe('file_cabinet', () => {
       })
       it('should return the changes', () => {
         expect(results).toEqual([
-          { type: 'object', externalId: '/a/b', internalId: 1 },
-          { type: 'object', externalId: '/d/e', internalId: 2 },
+          { type: 'object', objectId: '/a/b', time: new Date('2021-01-20T20:10:20.000Z') },
+          { type: 'object', objectId: '/d/e', time: new Date('2021-01-20T20:10:20.000Z') },
         ])
       })
 
       it('should make the right query', () => {
         expect(runSuiteQLMock).toHaveBeenCalledWith(`
-    SELECT appfolder, id
+    SELECT appfolder, ${toSuiteQLSelectDateString('lastmodifieddate')} as time
     FROM mediaitemfolder
-    WHERE lastmodifieddate BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY')
+    WHERE lastmodifieddate BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD')
     ORDER BY id ASC
   `)
       })
@@ -118,8 +124,8 @@ describe('file_cabinet', () => {
       beforeEach(async () => {
         runSuiteQLMock.mockReset()
         runSuiteQLMock.mockResolvedValue([
-          { appfolder: 'a : b', id: '1' },
-          { appfolder: 'd : e', id: '2' },
+          { appfolder: 'a : b', time: '2021-01-20 20:10:20' },
+          { appfolder: 'd : e', time: '2021-01-20 20:10:20' },
           { appfolder: 'g' },
         ])
         results = await getChangedFolders(
@@ -129,8 +135,8 @@ describe('file_cabinet', () => {
       })
       it('should return the changes', () => {
         expect(results).toEqual([
-          { type: 'object', externalId: '/a/b', internalId: 1 },
-          { type: 'object', externalId: '/d/e', internalId: 2 },
+          { type: 'object', objectId: '/a/b', time: new Date('2021-01-20T20:10:20.000Z') },
+          { type: 'object', objectId: '/d/e', time: new Date('2021-01-20T20:10:20.000Z') },
         ])
       })
     })

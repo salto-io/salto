@@ -23,7 +23,7 @@ import { ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME } from 
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange } from '../deployment'
+import { deployChanges, defaultDeployWithStatus } from '../deployment'
 
 const log = logger(module)
 
@@ -100,7 +100,7 @@ const deployDefaultPolicy = async (
   // Assign the id created by the service to the default policy rule
   defaultRuleInstance.value.id = createdPolicyRuleEntry.id
   const createdPolicyRuleInstance = getCreatedPolicyRuleInstance(createdPolicyRuleEntry, defaultRuleInstance, config)
-  await defaultDeployChange(
+  await defaultDeployWithStatus(
     toChange({ before: createdPolicyRuleInstance, after: defaultRuleInstance }),
     client,
     config[API_DEFINITIONS_CONFIG]

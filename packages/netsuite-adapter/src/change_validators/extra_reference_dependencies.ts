@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 
-import { ChangeDataType, ElemID, getChangeData } from '@salto-io/adapter-api'
+import { ChangeDataType, ElemID, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 import { getReferencedElements } from '../reference_dependencies'
 import { NetsuiteChangeValidator } from './types'
 
@@ -55,8 +56,13 @@ export const getReferencedElementsForReferrers = async (
 }
 
 const changeValidator: NetsuiteChangeValidator = async (changes, deployReferencedElements = false) => {
+  const sdfChangesData = changes
+    .filter(isAdditionOrModificationChange)
+    .map(getChangeData)
+    .filter(isStandardInstanceOrCustomRecordType)
+
   const refererToReferenceElements = await getReferencedElementsForReferrers(
-    changes.map(getChangeData), deployReferencedElements
+    sdfChangesData, deployReferencedElements
   )
 
   return refererToReferenceElements.map(refererToReferenceElement => {

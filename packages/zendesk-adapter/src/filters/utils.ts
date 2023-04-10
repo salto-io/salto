@@ -16,9 +16,8 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import { Change, ChangeDataType, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression,
-  ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+  isAdditionOrModificationChange, isInstanceChange, toChange } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, createSchemeGuard, getParents, resolveChangeElement, references } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { lookupFunc } from './field_references'
@@ -27,7 +26,7 @@ import { BRAND_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
+const { isArrayOfRefExprToInstances } = references
 export type Condition = {
   field: string
   value?: unknown
@@ -53,12 +52,6 @@ export const applyforInstanceChangesOfType = async (
       func,
     ))
 }
-
-export const isArrayOfRefExprToInstances = (values: unknown): values is ReferenceExpression[] => (
-  _.isArray(values)
-  && values.every(isReferenceExpression)
-  && values.every(value => isInstanceElement(value.value))
-)
 
 export const createAdditionalParentChanges = async (
   childrenChanges: Change<InstanceElement>[],

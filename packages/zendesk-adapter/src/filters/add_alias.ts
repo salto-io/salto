@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import {
-  CORE_ANNOTATIONS,
-  Element, ElemID, INSTANCE_ANNOTATIONS, InstanceElement,
-  isInstanceElement, isReferenceExpression,
+  Element,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { addAliasToInstance, AliasData } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from './dynamic_content'
 import {
@@ -55,19 +54,6 @@ const ARTICLE_ORDER = 'Article Order'
 const LANGUAGE_SETTINGS = 'language settings'
 const SETTINGS = 'Settings'
 
-type AliasComponent = {
-  fieldName: string
-  referenceFieldName?: string
-}
-
-type ConstantComponent = {
-  constant: string
-}
-
-type AliasData = {
-  aliasComponents: (AliasComponent | ConstantComponent)[]
-  separator?: string
-}
 
 const SECOND_ITERATION_TYPES = [
   DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME,
@@ -400,69 +386,6 @@ const aliasMap: Record<string, AliasData> = {
   },
 }
 
-const isInstanceAnnotation = (field: string): boolean =>
-  Object.values(INSTANCE_ANNOTATIONS).includes(field?.split(ElemID.NAMESPACE_SEPARATOR)[0])
-
-const isValidAlias = (aliasParts: (string | undefined)[], instance: InstanceElement): boolean =>
-  aliasParts.every((val, index) => {
-    if (val === undefined) {
-      log.debug(`for instance ${instance.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
-      return false
-    }
-    return true
-  })
-
-const getFieldVal = ({ instance, component, elementPart, instById }:{
-  instance: InstanceElement
-  component: AliasComponent
-  elementPart: 'value'|'annotations'
-  instById: Record<string, InstanceElement>
-}): string | undefined => {
-  const fieldValue = _.get(instance[elementPart], component.fieldName)
-  if (component.referenceFieldName === undefined) {
-    return _.isString(fieldValue) ? fieldValue : undefined
-  }
-  if (!isReferenceExpression(fieldValue)) {
-    log.error(`${component.fieldName} is treated as a reference expression but it is not`)
-    return undefined
-  }
-  const referencedInstance = instById[fieldValue.elemID.getFullName()]
-  if (referencedInstance === undefined) {
-    log.error(`could not find ${fieldValue.elemID.getFullName()} in instById`)
-    return undefined
-  }
-  return isInstanceAnnotation(component.referenceFieldName)
-    ? _.get(referencedInstance.annotations, component.referenceFieldName)
-    : _.get(referencedInstance.value, component.referenceFieldName)
-}
-
-const isConstantComponent = (component: AliasComponent | ConstantComponent): component is ConstantComponent => 'constant' in component
-
-const isAliasComponent = (component: AliasComponent | ConstantComponent): component is AliasComponent => 'fieldName' in component
-
-
-const calculateAlias = (
-  instance: InstanceElement, instById: Record<string, InstanceElement>,
-): string | undefined => {
-  const currentType = instance.elemID.typeName
-  const { aliasComponents } = aliasMap[currentType]
-  const separator = aliasMap[currentType].separator ?? ' '
-  const aliasParts = aliasComponents
-    .map(component => {
-      if (isConstantComponent(component)) {
-        return component.constant
-      }
-      if (isAliasComponent(component) && isInstanceAnnotation(component.fieldName)) {
-        return getFieldVal({ instance, component, elementPart: 'annotations', instById })
-      }
-      return getFieldVal({ instance, component, elementPart: 'value', instById })
-    })
-  if (!isValidAlias(aliasParts, instance)) {
-    return undefined
-  }
-  return aliasParts.join(separator)
-}
-
 const filterCreator: FilterCreator = ({ config }) => ({
   name: 'addAlias',
   onFetch: async (elements: Element[]): Promise<void> => {
@@ -471,29 +394,11 @@ const filterCreator: FilterCreator = ({ config }) => ({
       return
     }
     const instances = elements.filter(isInstanceElement)
-    const elementById = _.keyBy(instances, elem => elem.elemID.getFullName())
-    const relevantInstancesByType = _.groupBy(
-      instances.filter(inst => aliasMap[inst.elemID.typeName] !== undefined),
-      inst => inst.elemID.typeName
-    )
-
-    const addAlias = (typeName: string): void => {
-      relevantInstancesByType[typeName].forEach(inst => {
-        const alias = calculateAlias(inst, elementById)
-        if (alias !== undefined) {
-          inst.annotations[CORE_ANNOTATIONS.ALIAS] = alias
-        }
-      })
-    }
-    const [firstIterationTypes, secondIterationTypes] = _.partition(
-      Object.keys(relevantInstancesByType),
-      typeName => !SECOND_ITERATION_TYPES.includes(typeName)
-    )
-    // first iteration
-    firstIterationTypes.forEach(addAlias)
-
-    // second iteration
-    secondIterationTypes.forEach(addAlias)
+    addAliasToInstance({
+      instances,
+      aliasMap,
+      secondIterationTypeNames: SECOND_ITERATION_TYPES,
+    })
   },
 })
 

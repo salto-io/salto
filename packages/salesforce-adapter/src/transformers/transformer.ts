@@ -1195,6 +1195,10 @@ const getDefaultValue = (field: SalesforceField): PrimitiveValue | undefined => 
     ? valueFromXsdType(field.defaultValue) : field.defaultValue
 }
 
+export const isSubfieldOfCompound = (field: SalesforceField): boolean => (
+  field.compoundFieldName !== undefined && field.compoundFieldName !== field.name
+)
+
 // The following method is used during the fetchy process and is used in building the objects
 // and their fields described in the Nacl file
 export const getSObjectFieldElement = (
@@ -1241,9 +1245,9 @@ export const getSObjectFieldElement = (
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.AUTONUMBER)
   } else if (field.idLookup && field.type === 'id') {
     naclFieldType = BuiltinTypes.SERVICE_ID
-  } else if (field.type === 'string' && !field.compoundFieldName) { // string
+  } else if (field.type === 'string' && !isSubfieldOfCompound(field)) { // string
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.TEXT)
-  } else if ((field.type === 'double' && !field.compoundFieldName)) {
+  } else if (field.type === 'double' && !isSubfieldOfCompound(field)) {
     naclFieldType = getFieldType(FIELD_TYPE_NAMES.NUMBER)
     annotations[FIELD_ANNOTATIONS.PRECISION] = field.precision
     annotations[FIELD_ANNOTATIONS.SCALE] = field.scale

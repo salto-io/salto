@@ -18,7 +18,7 @@ import detector from '../../src/changes_detector/changes_detectors/role'
 import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
-import { createDateRange } from '../../src/changes_detector/date_formats'
+import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
@@ -32,8 +32,8 @@ describe('role', () => {
 
   it('should not return permission changes on permission query error', async () => {
     runSuiteQLMock.mockResolvedValueOnce([
-      { scriptid: 'a', id: '1' },
-      { scriptid: 'b', id: '2' },
+      { scriptid: 'a', time: '2021-01-11 20:55:17' },
+      { scriptid: 'b', time: '2021-01-11 21:55:17' },
       { invalid: 0 },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
@@ -48,8 +48,8 @@ describe('role', () => {
       client,
       createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
     )).toEqual([
-      { type: 'object', externalId: 'a', internalId: 1 },
-      { type: 'object', externalId: 'b', internalId: 2 },
+      { type: 'object', objectId: 'a', time: new Date('2021-01-11T20:55:17.000Z') },
+      { type: 'object', objectId: 'b', time: new Date('2021-01-11T21:55:17.000Z') },
     ])
   })
 
@@ -58,8 +58,8 @@ describe('role', () => {
     beforeEach(async () => {
       runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
-        { scriptid: 'a', id: '1' },
-        { scriptid: 'b', id: '2' },
+        { scriptid: 'a', time: '2021-01-11 20:55:17' },
+        { scriptid: 'b', time: '2021-01-11 21:55:17' },
         { invalid: 0 },
       ])
       runSuiteQLMock.mockResolvedValueOnce([
@@ -82,19 +82,20 @@ describe('role', () => {
     })
     it('should return the changes', () => {
       expect(results).toEqual([
-        { type: 'object', externalId: 'a', internalId: 1 },
-        { type: 'object', externalId: 'b', internalId: 2 },
-        { type: 'object', externalId: 'c', time: new Date('2021-03-09T15:05:00.000Z') },
+        { type: 'object', objectId: 'a', time: new Date('2021-01-11T20:55:17.000Z') },
+        { type: 'object', objectId: 'b', time: new Date('2021-01-11T21:55:17.000Z') },
+        { type: 'object', objectId: 'c', time: new Date('2021-03-09T15:05:00.000Z') },
       ])
     })
 
     it('should make the right query', () => {
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, `
-      SELECT role.scriptid, role.id
+      SELECT role.scriptid, ${toSuiteQLSelectDateString('MAX(systemnote.date)')} as time
       FROM role
       JOIN systemnote ON systemnote.recordid = role.id
-      WHERE systemnote.date BETWEEN TO_DATE('1/11/2021', 'MM/DD/YYYY') AND TO_DATE('2/23/2021', 'MM/DD/YYYY') AND systemnote.recordtypeid = -118
-      ORDER BY role.id ASC
+      WHERE systemnote.date BETWEEN TO_DATE('2021-1-11', 'YYYY-MM-DD') AND TO_DATE('2021-2-23', 'YYYY-MM-DD') AND systemnote.recordtypeid = -118
+      GROUP BY role.scriptid
+      ORDER BY role.scriptid ASC
     `)
 
       expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, `

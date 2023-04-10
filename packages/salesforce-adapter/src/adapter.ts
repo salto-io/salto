@@ -77,12 +77,13 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
-import addDefaultActivateRSSFilter from './filters/add_default_activate_rss'
+import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import createChangedAtSingletonInstanceFilter from './filters/create_changed_at_singleton_instance_filter'
 import { FetchElements, SalesforceConfig } from './types'
+import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
@@ -100,7 +101,7 @@ const { concatObjects } = objects
 const log = logger(module)
 
 export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition> = [
-  { creator: addDefaultActivateRSSFilter },
+  { creator: createMissingInstalledPackagesInstancesFilter, addsNewInformation: true },
   { creator: settingsFilter, addsNewInformation: true },
   // should run before customObjectsFilter
   { creator: workflowFilter },
@@ -138,7 +139,6 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: animationRulesFilter },
   { creator: samlInitMethodFilter },
   { creator: topicsForObjectsFilter },
-  // valueSetFilter and globalValueSetFilter should run after customObjectsToObjectTypeFilter
   { creator: valueSetFilter },
   { creator: globalValueSetFilter },
   { creator: staticResourceFileExtFilter },
@@ -554,6 +554,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
+        addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -580,6 +581,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
       maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
+      addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

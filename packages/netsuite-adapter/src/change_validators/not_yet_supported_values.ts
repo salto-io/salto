@@ -36,8 +36,10 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(element => ({
       elemID: element.elemID,
       severity: 'Error',
-      message: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed',
-      detailedMessage: 'Elements with values set to \'NOT_YET_SUPPORTED\' cannot be deployed. Please see https://help.salto.io/en/articles/6845063-deploying-elements-containing-not-yet-supported-values for more details.',
+      message: 'Can\'t deploy instances with the value \'NOT_YET_SUPPORTED\'',
+      detailedMessage: 'This element contains the value \'NOT_YET_SUPPORTED\', which can\'t be deployed due to NetSuite\'s SDF restrictions.\n'
+        + 'In Salto, remove or replace the value \'NOT_YET_SUPPORTED\' with a valid value, before deploying it, and after the deployment succeeds, change it back to the required value, in NetSuite\'s UI.\n'
+        + 'Learn more at https://docs.salto.io/docs/deploying-elements-containing-not-yet-supported-values',
     } as ChangeError))
     .toArray()
 )

@@ -27,6 +27,7 @@ import {
   ReferenceSourceTransformation,
 } from './reference_mapping'
 import { ContextFunc } from './context'
+import { checkMissingRef } from './missing_references'
 
 const { awu } = collections.asynciterable
 
@@ -36,10 +37,6 @@ const { isDefined } = lowerDashValues
 const doNothing: ContextFunc = async () => undefined
 
 const emptyContextStrategyLookup: Record<string, ContextFunc> = {}
-
-export const MISSING_ANNOTATION = 'salto_missing_ref'
-const checkMissingRef = (element: Element): boolean =>
-  element.annotations?.[MISSING_ANNOTATION] === true
 
 const isRelativeSerializer = (serializer: ReferenceSerializationStrategy)
   : serializer is ReferenceSerializationStrategy & { getReferenceId: GetReferenceIdFunc } =>
@@ -84,13 +81,7 @@ export const replaceReferenceValues = async <
         return undefined
       }
 
-      const referredElement = lookup.get(targetType, value)
-
-      if (referredElement === undefined) {
-        log.warn(`Can't locate referred entity for '${targetType}:${value}'`)
-      }
-
-      return referredElement
+      return lookup.get(targetType, value)
     }
 
     const isValidContextFunc = (funcName?: string): boolean => (

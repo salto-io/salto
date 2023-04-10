@@ -13,19 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
-import { SCRIPT_ID, PATH } from '../constants'
+import { collections, values } from '@salto-io/lowerdash'
+import osPath from 'path'
+import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { FilterCreator, FilterWith } from '../filter'
-import { isCustomRecordType, isStandardType, isFileCabinetType } from '../types'
+import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
+import { getGroupItemFromRegex } from '../client/utils'
+import { getContent } from '../suiteapp_file_cabinet'
 
 const { awu } = collections.asynciterable
+const { isDefined } = values
+const NETSUITE_MODULE_PREFIX = 'N/'
+const OPTIONAL_REFS = 'optionalReferences'
+// matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
+// e.g: 'custrecord1' "./someFolder/someScript.js"
+const semanticReferenceRegex = new RegExp(`("|')(?<${OPTIONAL_REFS}>.*?)\\1`, 'gm')
+// matches lines which start with '*' than a string with '@N' prefix
+// followed by a space and another string , e.g: "* @NAmdConfig ./utils/ToastDalConfig.json"'
+const nsConfigRegex = new RegExp(`\\*\\s@N\\w+\\s+(?<${OPTIONAL_REFS}>.*)`, 'gm')
+const pathPrefixRegex = new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}|^\\.${FILE_CABINET_PATH_SEPARATOR}|^\\.\\.${FILE_CABINET_PATH_SEPARATOR}`, 'm')
 
 const getServiceIdsToElemIds = async (
   element: Element,
@@ -108,10 +121,57 @@ const generateServiceIdToElemID = async (
   .map(elem => getElementServiceIdRecords(elem))
   .reduce<ServiceIdRecords>((acc, records) => Object.assign(acc, records), {})
 
+const resolveRelativePath = (absolutePath: string, relativePath: string): string =>
+  osPath.resolve(osPath.dirname(absolutePath), relativePath)
+
+const getServiceElemIDsFromPaths = (
+  foundReferences: string[],
+  serviceIdToElemID: ServiceIdRecords,
+  element: InstanceElement,
+): ElemID[] =>
+  foundReferences
+    .flatMap(ref => {
+      if (pathPrefixRegex.test(ref)) {
+        const absolutePath = resolveRelativePath(element.value[PATH], ref)
+        return [absolutePath].concat(
+          osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
+            ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+            : []
+        )
+      }
+      return [ref]
+    })
+    .map(ref => {
+      const serviceIdRecord = serviceIdToElemID[ref]
+      if (_.isPlainObject(serviceIdRecord)) {
+        return serviceIdRecord.elemID
+      }
+      return undefined
+    })
+    .filter(isDefined)
+
+
+const getSuiteScriptReferences = async (
+  element: InstanceElement,
+  serviceIdToElemID: ServiceIdRecords,
+): Promise<ElemID[]> => {
+  const content = (await getContent(element.value.content)).toString()
+
+  const nsConfigReferences = getGroupItemFromRegex(content, nsConfigRegex, OPTIONAL_REFS)
+  const semanticReferences = getGroupItemFromRegex(content, semanticReferenceRegex, OPTIONAL_REFS)
+    .filter(path => !path.startsWith(NETSUITE_MODULE_PREFIX))
+    .concat(nsConfigReferences)
+
+  return getServiceElemIDsFromPaths(
+    semanticReferences,
+    serviceIdToElemID,
+    element
+  )
+}
+
 const replaceReferenceValues = async (
   element: Element,
-  fetchedElementsServiceIdToElemID: ServiceIdRecords,
-  elementsSourceServiceIdToElemID: ServiceIdRecords,
+  serviceIdToElemID: ServiceIdRecords,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -122,8 +182,7 @@ const replaceReferenceValues = async (
     let returnValue: ReferenceExpression | string = value
     serviceIdInfo.forEach(serviceIdInfoRecord => {
       const { serviceId, type } = serviceIdInfoRecord
-      const serviceIdRecord = fetchedElementsServiceIdToElemID[serviceId]
-      ?? elementsSourceServiceIdToElemID[serviceId]
+      const serviceIdRecord = serviceIdToElemID[serviceId]
 
       if (serviceIdRecord === undefined) {
         return
@@ -159,9 +218,14 @@ const replaceReferenceValues = async (
     strict: false,
   })
 
+  const suiteScriptReferences = isFileCabinetInstance(element) && isFileInstance(element)
+    ? await getSuiteScriptReferences(element, serviceIdToElemID)
+    : []
+
   extendGeneratedDependencies(
     newElement,
-    dependenciesToAdd.map(elemID => ({ reference: new ReferenceExpression(elemID) }))
+    dependenciesToAdd.concat(suiteScriptReferences)
+      .map(elemID => ({ reference: new ReferenceExpression(elemID) }))
   )
 
   return newElement
@@ -197,18 +261,16 @@ const filterCreator: FilterCreator = ({
 }): FilterWith<'onFetch' | 'preDeploy'> => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
-    const fetchedElementsServiceIdToElemID = await generateServiceIdToElemID(elements)
-    const elementsSourceServiceIdToElemID = await createElementsSourceServiceIdToElemID(
-      elementsSourceIndex,
-      isPartial
+    const serviceIdToElemID = Object.assign(
+      await generateServiceIdToElemID(elements),
+      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
     )
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)
     )).forEach(async element => {
       const newElement = await replaceReferenceValues(
         element,
-        fetchedElementsServiceIdToElemID,
-        elementsSourceServiceIdToElemID
+        serviceIdToElemID
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

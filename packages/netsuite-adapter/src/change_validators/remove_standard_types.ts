@@ -27,8 +27,8 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .map(({ elemID }) => ({
       elemID,
       severity: 'Error',
-      message: `Removal of ${isStandardTypeName(elemID.typeName) ? 'standard' : 'custom record'} type ${elemID.idType}s is only supported when Salto SuiteApp is configured`,
-      detailedMessage: `${elemID.name} cannot be removed`,
+      message: 'Can\'t remove elements without the Salto SuiteApp configured',
+      detailedMessage: `Removal of ${isStandardTypeName(elemID.typeName) ? 'standard' : 'custom record'} type ${elemID.idType}s is only supported. Contact us to configure Salto SuiteApp`,
     }))
 )
 

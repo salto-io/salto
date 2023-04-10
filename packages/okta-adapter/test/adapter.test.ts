@@ -16,6 +16,8 @@
 import { AdapterOperations, ElemID, FetchResult, ElemIdGetter, ServiceIds, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { elements } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import MockAdapter from 'axios-mock-adapter'
+import axios from 'axios'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import { DEFAULT_CONFIG } from '../src/config'
 import { OKTA } from '../src/constants'
@@ -69,6 +71,7 @@ describe('Okta adapter', () => {
     let result: FetchResult
     let oktaTestType: ObjectType
     let testInstance: InstanceElement
+    let mockAxiosAdapter: MockAdapter
 
     beforeEach(async () => {
       oktaTestType = new ObjectType({
@@ -83,7 +86,9 @@ describe('Okta adapter', () => {
         });
       (getAllInstances as jest.MockedFunction<typeof getAllInstances>)
         .mockResolvedValue({ elements: [testInstance] })
-
+      mockAxiosAdapter = new MockAdapter(axios)
+      // mock as there are gets of users during fetch
+      mockAxiosAdapter.onGet().reply(200, { })
       result = await adapter.fetch({ progressReporter: { reportProgress: () => null } })
     })
 

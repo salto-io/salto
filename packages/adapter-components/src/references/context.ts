@@ -87,7 +87,7 @@ export const neighborContextGetter = ({
 
   try {
     const parent = findParentPath(fieldPath, levelsUp)
-    if (parent.isConfig()) {
+    if (parent.isConfigType()) {
       // went up too many levels, the current rule is irrelevant for this potential reference
       return undefined
     }

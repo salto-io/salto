@@ -60,8 +60,8 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
         isSettings: true,
         annotations: {
-          [CORE_ANNOTATIONS.HIDDEN]: true,
-          [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+          [CORE_ANNOTATIONS.HIDDEN]: false,
+          [CORE_ANNOTATIONS.HIDDEN_VALUE]: false,
         },
       }),
       createChangedAtSingletonInstanceValues(metadataInstancesByType),

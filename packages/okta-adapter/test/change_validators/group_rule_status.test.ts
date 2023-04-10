@@ -86,20 +86,6 @@ describe('groupRuleStatusValidator', () => {
       },
     ])
   })
-  it('should return an when add a new group rule with status ACTIVE', async () => {
-    const changeErrors = await groupRuleStatusValidator(
-      [toChange({ after: groupRule1 })]
-    )
-    expect(changeErrors).toHaveLength(1)
-    expect(changeErrors).toEqual([
-      {
-        elemID: groupRule1.elemID,
-        severity: 'Warning',
-        message: `Cannot add ${GROUP_RULE_TYPE_NAME} with status ACTIVE`,
-        detailedMessage: `${GROUP_RULE_TYPE_NAME} will be created with status INACTIVE`,
-      },
-    ])
-  })
   it('should not return errors when group rule status changed', async () => {
     const groupRule1After = groupRule1.clone()
     groupRule1After.value.status = 'INACTIVE'

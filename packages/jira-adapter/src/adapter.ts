@@ -83,7 +83,6 @@ import contextDeploymentFilter from './filters/fields/context_deployment_filter'
 import fieldTypeReferencesFilter from './filters/fields/field_type_references_filter'
 import contextReferencesFilter from './filters/fields/context_references_filter'
 import contextsProjectsFilter from './filters/fields/contexts_projects_filter'
-import queryFilter from './filters/query'
 import serviceUrlInformationFilter from './filters/service_url/service_url_information'
 import serviceUrlFilter from './filters/service_url/service_url'
 import priorityFilter from './filters/priority'
@@ -123,6 +122,8 @@ import pluginVersionFliter from './filters/data_center/plugin_version'
 import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
 import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
 import storeUsersFilter from './filters/store_users'
+import projectCategoryFilter from './filters/project_category'
+import addAliasFilter from './filters/add_alias'
 
 const {
   generateTypes,
@@ -132,6 +133,8 @@ const {
 } = elementUtils.swagger
 const { createPaginator } = clientUtils
 const log = logger(module)
+
+const { query: queryFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   accountInfoFilter,
@@ -193,6 +196,7 @@ export const DEFAULT_FILTERS = [
   dashboardFilter,
   dashboardLayoutFilter,
   gadgetFilter,
+  projectCategoryFilter,
   projectFilter,
   projectComponentFilter,
   archivedProjectComponentsFilter,
@@ -244,9 +248,10 @@ export const DEFAULT_FILTERS = [
   // Must run after accountIdFilter
   wrongUserPermissionSchemeFilter,
   deployDcIssueEventsFilter,
+  addAliasFilter,
   // Must be last
   defaultInstancesDeployFilter,
-  ...Object.values(commonFilters),
+  ...Object.values(otherCommonFilters),
 ]
 
 export interface JiraAdapterParams {

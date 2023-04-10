@@ -16,7 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { FIELD_TYPES } from '../../types'
 import NetsuiteClient from '../../client/client'
-import { convertSuiteQLStringToDate, SUITEQL_DATE_FORMAT } from '../date_formats'
+import { convertSuiteQLStringToDate, toSuiteQLSelectDateString } from '../date_formats'
 import { ChangedObject, DateRange, TypeChangesDetector } from '../types'
 
 const log = logger(module)
@@ -26,7 +26,7 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
   const [startDate, endDate] = dateRange.toSuiteQLRange()
 
   const results = await client.runSuiteQL(`
-      SELECT scriptid, TO_CHAR(lastmodifieddate, '${SUITEQL_DATE_FORMAT}') AS lastmodifieddate
+      SELECT scriptid, ${toSuiteQLSelectDateString('lastmodifieddate')} AS time
       FROM ${type}
       WHERE lastmodifieddate BETWEEN ${startDate} AND ${endDate}
       ORDER BY scriptid ASC
@@ -38,8 +38,8 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
   }
 
   return results
-    .filter((res): res is { scriptid: string; lastmodifieddate: string } => {
-      if ([res.scriptid, res.lastmodifieddate].some(val => typeof val !== 'string')) {
+    .filter((res): res is { scriptid: string; time: string } => {
+      if ([res.scriptid, res.time].some(val => typeof val !== 'string')) {
         log.warn(`Got invalid result from ${type} query, %o`, res)
         return false
       }
@@ -47,8 +47,8 @@ const getChanges = async (type: string, client: NetsuiteClient, dateRange: DateR
     })
     .map(res => ({
       type: 'object',
-      externalId: res.scriptid,
-      time: convertSuiteQLStringToDate(res.lastmodifieddate),
+      objectId: res.scriptid,
+      time: convertSuiteQLStringToDate(res.time, dateRange.end),
     }))
 }
 

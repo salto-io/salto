@@ -14,7 +14,52 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ListType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName } from '../../src/config'
+import { createTransformationConfigTypes, validateTransoformationConfig, dereferenceFieldName, shouldNestFiles, TransformationDefaultConfig } from '../../src/config'
+
+
+describe('shouldNestFiles', () => {
+  describe('adapter default is true', () => {
+    const defaultConfig: TransformationDefaultConfig = {
+      idFields: ['id'],
+      nestStandaloneInstances: true,
+    }
+    it('should return true if field is missing', () => {
+      expect(shouldNestFiles(defaultConfig, {})).toBeTruthy()
+    })
+    it('should return true if field is true', () => {
+      expect(shouldNestFiles(defaultConfig, {
+        nestStandaloneInstances: true,
+      })).toBeTruthy()
+    })
+    it('should return false if field is false', () => {
+      expect(shouldNestFiles(defaultConfig,
+        {
+          nestStandaloneInstances: false,
+        })).toBeFalsy()
+    })
+  })
+  describe('adapter default is false', () => {
+    const defaultConfig: TransformationDefaultConfig = {
+      idFields: ['id'],
+      nestStandaloneInstances: false,
+    }
+    it('should return false if field is missing', () => {
+      expect(shouldNestFiles(defaultConfig, {})).toBeFalsy()
+    })
+    it('should return true if field is true', () => {
+      expect(shouldNestFiles(defaultConfig,
+        {
+          nestStandaloneInstances: true,
+        })).toBeTruthy()
+    })
+    it('should return false if field is false', () => {
+      expect(shouldNestFiles(defaultConfig,
+        {
+          nestStandaloneInstances: false,
+        })).toBeFalsy()
+    })
+  })
+})
 
 describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {

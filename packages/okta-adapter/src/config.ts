@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
@@ -27,8 +27,11 @@ export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
-export type OktaActionName = ActionName | 'activate' | 'deactivate'
-export type OktaFetchConfig = configUtils.UserFetchConfig
+export type OktaStatusActionName = 'activate' | 'deactivate'
+export type OktaActionName = ActionName | OktaStatusActionName
+export type OktaFetchConfig = configUtils.UserFetchConfig & {
+  convertUsersIds?: boolean
+}
 export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
 
 export type OktaConfig = {
@@ -306,20 +309,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       url: '/api/v1/apps',
       recurseInto: [
         {
-          type: 'api__v1__apps___appId___credentials__csrs@uuuuuu_00123_00125uuuu',
-          toField: 'CSRs',
-          context: [{ name: 'appId', fromField: 'id' }],
-        },
-        {
           type: 'api__v1__apps___appId___groups@uuuuuu_00123_00125uu',
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
-        },
-        {
-          type: 'api__v1__apps___appId___features@uuuuuu_00123_00125uu',
-          toField: 'appFeatures',
-          context: [{ name: 'appId', fromField: 'id' }],
-          skipOnError: true,
         },
       ],
     },
@@ -331,7 +323,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: CUSTOM_NAME_FIELD, fieldType: 'string' },
         { fieldName: 'credentials', fieldType: 'ApplicationCredentials' },
         { fieldName: 'settings', fieldType: 'unknown' },
-        { fieldName: 'CSRs', fieldType: 'list<Csr>' },
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
@@ -343,10 +334,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'id' },
         { fieldName: '_links' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
-      ],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
     },
     deployRequests: {
       add: {
@@ -392,6 +380,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: 'scheme', fieldType: 'string' },
         { fieldName: 'userName', fieldType: 'string' },
       ],
+      fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
     },
   },
   api__v1__meta__types__user: {
@@ -446,14 +435,33 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
     },
   },
   UserSchema: {
-    request: {
-      url: '/api/v1/meta/schemas/user/default',
-    },
     transformation: {
-      fieldTypeOverrides: [{ fieldName: 'description', fieldType: 'string' }],
+      fieldTypeOverrides: [
+        { fieldName: 'description', fieldType: 'string' },
+        { fieldName: 'userType', fieldType: 'string' },
+      ],
       serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT
+        .concat({ fieldName: '_links' }, { fieldName: '$schema' }, { fieldName: 'type' }, { fieldName: 'title' }, { fieldName: 'description' }, { fieldName: 'properties' }),
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/meta/schemas/user/{schemaId}',
+        method: 'post',
+        urlParamsToFields: {
+          schemaId: 'id',
+        },
+        fieldsToIgnore: ['id', 'name'],
+      },
+      modify: {
+        url: '/api/v1/meta/schemas/user/{schemaId}',
+        method: 'post',
+        urlParamsToFields: {
+          schemaId: 'id',
+        },
+        fieldsToIgnore: ['id', 'name'],
+      },
     },
   },
   OrgContactTypeObj: {
@@ -517,7 +525,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceIdField: 'id',
-      standaloneFields: [{ fieldName: 'policies' }],
+      standaloneFields: [{ fieldName: 'policies' }, { fieldName: 'scopes' }, { fieldName: 'claims' }],
     },
   },
   AuthorizationServerPolicy: {
@@ -530,6 +538,47 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       standaloneFields: [{ fieldName: 'policyRules' }],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}',
+        method: 'delete',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.0.id',
+          policyId: 'id',
+        },
+      },
+    },
   },
   AuthorizationServerPolicyRule: {
     transformation: {
@@ -537,6 +586,52 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'put',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/authorizationServers/{authorizationServerId}/policies/{policyId}/rules/{ruleId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authorizationServerId: '_parent.1.id',
+          policyId: '_parent.0.id',
+          ruleId: 'id',
+        },
+      },
     },
   },
   api__v1__brands: {
@@ -739,6 +834,26 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
         { fieldName: '_links' },
       ],
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/meta/types/user',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'put',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/meta/types/user/{typeId}',
+        method: 'delete',
+        urlParamsToFields: {
+          typeId: 'id',
+        },
+      },
+    },
   },
   GroupSchemaAttribute: {
     transformation: {
@@ -754,14 +869,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       ],
     },
   },
-  RolePage: {
+  IamRoles: {
     request: {
       url: '/api/v1/iam/roles',
     },
     transformation: {
-      fieldTypeOverrides: [
-        { fieldName: 'roles', fieldType: 'Role' },
-      ],
       dataField: 'roles',
     },
   },
@@ -800,6 +912,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OAuth2Claim: {
@@ -807,6 +921,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToOmit: [
         { fieldName: '_links' },
       ],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   ProfileMapping: {
@@ -839,8 +955,43 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
   BehaviorRule: {
     transformation: {
       fieldsToHide: [{ fieldName: 'id' }],
+      serviceIdField: 'id',
       fieldTypeOverrides: [{ fieldName: '_links', fieldType: 'LinksSelf' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/behaviors',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'put',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/behaviors/{behaviorId}',
+        method: 'delete',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/behaviors/{behaviorId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          behaviorId: 'id',
+        },
+      },
     },
   },
 }
@@ -855,11 +1006,10 @@ const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
-    // TODO SALTO-2735 this is not the right type to clone from
-    { typeName: 'RolePage', cloneFrom: 'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'IamRole', newName: 'Role' },
   ],
 }
 
@@ -895,7 +1045,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
-  Role: ['RolePage'],
+  Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
 }
 
@@ -906,6 +1056,7 @@ export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
@@ -916,6 +1067,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
   [FETCH_CONFIG]: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+    convertUsersIds: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
 }
@@ -929,6 +1081,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
         OKTA,
+        {
+          convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
+        }
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
@@ -938,7 +1093,12 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(DEFAULT_CONFIG, API_DEFINITIONS_CONFIG, `${FETCH_CONFIG}.hideTypes`),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(
+      DEFAULT_CONFIG,
+      API_DEFINITIONS_CONFIG,
+      `${FETCH_CONFIG}.hideTypes`,
+      `${FETCH_CONFIG}.convertUsersIds`
+    ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

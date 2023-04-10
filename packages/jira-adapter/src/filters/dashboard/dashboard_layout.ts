@@ -81,14 +81,19 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
       .map(async instance => {
-        const response = await client.getSinglePage({
-          url: `/rest/dashboards/1.0/${instance.value.id}`,
-        })
-        if (Array.isArray(response.data)) {
-          log.error(`Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
-          return
+        try {
+          const response = await client.getSinglePage({
+            url: `/rest/dashboards/1.0/${instance.value.id}`,
+          })
+
+          if (Array.isArray(response.data)) {
+            log.error(`Invalid response from server when fetching dashboard layout for ${instance.elemID.getFullName()}: ${safeJsonStringify(response.data)}`)
+            return
+          }
+          instance.value.layout = response.data.layout
+        } catch (err) {
+          log.warn(`Failed to fetch dashboard layout for ${instance.elemID.getFullName()}: ${err}`)
         }
-        instance.value.layout = response.data.layout
       }))
   },
 })

@@ -13,13 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { filters } from '@salto-io/adapter-components'
-import { JiraConfig } from '../config/config'
-import JiraClient from '../client/client'
-import { FilterAdditionParams, FilterCreator, FilterResult } from '../filter'
+import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import fetchCriteria from '../src/fetch_criteria'
 
-const filter: FilterCreator = params =>
-  filters.queryFilterCreator<JiraClient, JiraConfig, FilterResult, FilterAdditionParams>(
-  )(params)
+describe('fetch_criteria', () => {
+  describe('name', () => {
+    it('should match element name', () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        {
+          name: 'name',
+        }
+      )
 
-export default filter
+      expect(fetchCriteria.name({ instance, value: '.ame' })).toBeTruthy()
+      expect(fetchCriteria.name({ instance, value: 'ame' })).toBeFalsy()
+    })
+  })
+})

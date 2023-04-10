@@ -35,10 +35,8 @@ describe('changes_detector', () => {
   const getChangedFilesMock = jest.spyOn(fileCabinetDetector, 'getChangedFiles').mockResolvedValue([])
   const getChangesFoldersMock = jest.spyOn(fileCabinetDetector, 'getChangedFolders').mockResolvedValue([])
 
-  const runSavedSearchQueryMock = jest.fn()
   const runSuiteQLMock = jest.fn()
   const suiteAppClient = {
-    runSavedSearchQuery: runSavedSearchQueryMock,
     runSuiteQL: runSuiteQLMock,
   } as unknown as SuiteAppClient
 
@@ -48,26 +46,19 @@ describe('changes_detector', () => {
   beforeEach(() => {
     jest.resetAllMocks()
     getCustomRecordTypeChangesMock.mockResolvedValue([
-      { type: 'object', externalId: 'A', internalId: 1 },
-      { type: 'object', externalId: 'B', time: new Date('03/15/2020 03:04 pm') },
-      { type: 'object', externalId: 'B', time: new Date('03/15/2023 03:04 pm') },
-      { type: 'object', externalId: 'C', internalId: 4 },
+      { type: 'object', objectId: 'A', time: new Date('03/15/2020 03:04 pm') },
+      { type: 'object', objectId: 'B', time: new Date('03/15/2020 03:04 pm') },
+      { type: 'object', objectId: 'B', time: new Date('03/15/2023 03:04 pm') },
+      { type: 'object', objectId: 'C', time: new Date('03/15/2020 03:04 pm') },
       { type: 'type', name: 'customrecordtype' },
     ])
     getChangedFilesMock.mockResolvedValue([
-      { type: 'object', externalId: '/Templates/path/to/file', internalId: 2 },
-      { type: 'object', externalId: '/Templates/path/to/file2', internalId: 5 },
-      { type: 'object', externalId: '/other/path/to/file', internalId: 6 },
+      { type: 'object', objectId: '/Templates/path/to/file', time: new Date('03/15/2020 03:04 pm') },
+      { type: 'object', objectId: '/Templates/path/to/file2', time: new Date('03/15/2023 03:04 pm') },
+      { type: 'object', objectId: '/other/path/to/file', time: new Date('03/15/2020 03:04 pm') },
     ])
-    getChangesFoldersMock.mockResolvedValue([{ type: 'object', externalId: '/Templates/path/to', internalId: 3 }])
-
-    runSavedSearchQueryMock.mockResolvedValue([
-      { recordid: '1', date: '03/15/2021 03:04 pm' },
-      { recordid: '2', date: '03/15/2021 03:04 am' },
-      { recordid: '3', date: '03/15/2021 03:04 pm' },
-      { recordid: '3', date: '03/15/2023 03:04 pm' },
-      { recordid: '6', date: '03/15/2023 03:04 pm' },
-      { invalid: {} },
+    getChangesFoldersMock.mockResolvedValue([
+      { type: 'object', objectId: '/Templates/path/to', time: new Date('03/15/2021 03:04 pm') },
     ])
   })
 
@@ -80,31 +71,6 @@ describe('changes_detector', () => {
     )
     expect(getCustomRecordTypeChangesMock).toHaveBeenCalled()
     expect(getScriptChangesMock).not.toHaveBeenCalled()
-  })
-
-  it('should use the system note results to filter the changes', async () => {
-    const changedObjectsQuery = await getChangedObjects(
-      client,
-      query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      serviceIdToLastFetchDate,
-    )
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file2')).toBeFalsy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/notExists')).toBeFalsy()
-    expect(changedObjectsQuery.isFileMatch('/other/path/to/file')).toBeTruthy()
-
-
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'c' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'd' })).toBeFalsy()
-    expect(changedObjectsQuery.isObjectMatch({ type: 'notSupported', instanceId: 'd' })).toBeTruthy()
-
-    expect(changedObjectsQuery.isObjectMatch({ type: 'customrecordtype', instanceId: 'anything' })).toBeTruthy()
-    expect(changedObjectsQuery.isTypeMatch('anything')).toBeTruthy()
-
-    expect(changedObjectsQuery.areSomeFilesMatch()).toBeTruthy()
   })
 
   it('should match any file under a directory if not other file under the directory was changed', async () => {
@@ -122,7 +88,6 @@ describe('changes_detector', () => {
     getCustomRecordTypeChangesMock.mockResolvedValue([])
     getChangedFilesMock.mockResolvedValue([])
     getChangesFoldersMock.mockResolvedValue([])
-    runSavedSearchQueryMock.mockResolvedValue([])
 
     const changedObjectsQuery = await getChangedObjects(
       client,
@@ -183,7 +148,6 @@ describe('changes_detector', () => {
   })
 
   it('should return all the results of system note query failed', async () => {
-    runSavedSearchQueryMock.mockResolvedValue(undefined)
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
@@ -204,14 +168,6 @@ describe('changes_detector', () => {
   })
 
   it('should not return results that there last fetch time is later than the query return time', async () => {
-    runSavedSearchQueryMock.mockResolvedValue([
-      { recordid: '1', date: '03/15/2021 03:04 pm' },
-      { recordid: '2', date: '03/15/2021 03:04 am' },
-      { recordid: '5', date: '03/15/2023 03:04 pm' },
-      { recordid: '3', date: '03/15/2023 03:04 pm' },
-      { recordid: '6', date: '03/15/2023 03:04 pm' },
-      { invalid: {} },
-    ])
     serviceIdToLastFetchDate = {
       '/Templates/path/to/file': new Date('2022-02-22T18:55:17.949Z'),
       '/Templates/path/to/file2': new Date('2022-02-22T18:55:17.949Z'),
@@ -258,36 +214,5 @@ describe('changes_detector', () => {
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
-  })
-
-  it('should return the results when SystemNote time is invalid', async () => {
-    runSavedSearchQueryMock.mockResolvedValue([
-      { recordid: '1', date: 'invalid' },
-    ])
-    const changedObjectsQuery = await getChangedObjects(
-      client,
-      query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      serviceIdToLastFetchDate,
-    )
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'a' })).toBeTruthy()
-    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeFalsy()
-  })
-
-  it('should return the results when the results time is invalid', async () => {
-    serviceIdToLastFetchDate = {
-      b: new Date('2022-02-22T18:55:17.949Z'),
-    }
-
-    getCustomRecordTypeChangesMock.mockResolvedValue([
-      { type: 'object', externalId: 'B', time: undefined },
-    ])
-    const changedObjectsQuery = await getChangedObjects(
-      client,
-      query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
-      serviceIdToLastFetchDate,
-    )
-    expect(changedObjectsQuery.isObjectMatch({ type: 'workflow', instanceId: 'b' })).toBeTruthy()
   })
 })

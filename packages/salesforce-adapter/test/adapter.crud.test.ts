@@ -1727,7 +1727,7 @@ describe('SalesforceAdapter CRUD', () => {
       })
     })
 
-    describe('when deploying a global value set', () => {
+    describe('when deploying a GlobalValueSet', () => {
       const changesToFullNames = (changes: ReadonlyArray<Change>): string[] => (
         changes.map(getChangeData).filter(isInstanceElement).map(inst => inst.value.fullName)
       )
@@ -1738,15 +1738,12 @@ describe('SalesforceAdapter CRUD', () => {
           after: createInstanceElement({ fullName, customValue: [{ fullName: 'b' }] }, mockTypes.GlobalValueSet),
         })),
       })
-      describe.each([
-        { fullName: 'MyValueSet', testName: 'without __gvs suffix' },
-        { fullName: 'MyValueSet__gvs', testName: 'with __gvs suffix' },
-      ])('when result is $testName', ({ fullName }) => {
+      describe('when instance fullName has __gvs suffix and result has __gvs suffix', () => {
         let changeGroup: ChangeGroup
         beforeEach(async () => {
-          changeGroup = createChangeGroup(['MyValueSet'])
+          changeGroup = createChangeGroup(['MyValueSet__gvs'])
           connection.metadata.deploy.mockReturnValue(mockDeployResult({
-            componentSuccess: [{ fullName, componentType: GLOBAL_VALUE_SET }],
+            componentSuccess: [{ fullName: 'MyValueSet__gvs', componentType: GLOBAL_VALUE_SET }],
           }))
           result = await adapter.deploy({ changeGroup })
         })
@@ -1756,24 +1753,35 @@ describe('SalesforceAdapter CRUD', () => {
           )
         })
       })
-      describe('when deploying both changes with and without __gvs suffix', () => {
+      describe('when instance fullName does not have a __gvs suffix', () => {
         let changeGroup: ChangeGroup
-        beforeEach(() => {
-          changeGroup = createChangeGroup(['MyValueSet', 'MyValueSet__gvs'])
+        beforeEach(async () => {
+          changeGroup = createChangeGroup(['MyValueSet'])
         })
-        describe.each([
-          { successFullNames: ['MyValueSet'] },
-          { successFullNames: ['MyValueSet__gvs'] },
-          { successFullNames: ['MyValueSet', 'MyValueSet__gvs'] },
-        ])('When the successful changes are for $successFullNames', ({ successFullNames }) => {
+        describe('when result returns without __gvs suffix', () => {
           beforeEach(async () => {
             connection.metadata.deploy.mockReturnValue(mockDeployResult({
-              componentSuccess: successFullNames.map(fullName => ({ fullName, componentType: GLOBAL_VALUE_SET })),
+              componentSuccess: [{ fullName: 'MyValueSet', componentType: GLOBAL_VALUE_SET }],
             }))
             result = await adapter.deploy({ changeGroup })
           })
-          it('should apply changes only for successful instances', () => {
-            expect(changesToFullNames(result.appliedChanges)).toEqual(successFullNames)
+          it('should apply the change', () => {
+            expect(changesToFullNames(result.appliedChanges)).toEqual(
+              changesToFullNames(changeGroup.changes)
+            )
+          })
+        })
+        describe('when result returns with __gvs suffix', () => {
+          beforeEach(async () => {
+            connection.metadata.deploy.mockReturnValue(mockDeployResult({
+              componentSuccess: [{ fullName: 'MyValueSet__gvs', componentType: GLOBAL_VALUE_SET }],
+            }))
+            result = await adapter.deploy({ changeGroup })
+          })
+          it('should apply the change', () => {
+            expect(changesToFullNames(result.appliedChanges)).toEqual(
+              changesToFullNames(changeGroup.changes)
+            )
           })
         })
       })

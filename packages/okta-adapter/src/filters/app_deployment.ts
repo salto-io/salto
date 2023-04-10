@@ -15,15 +15,15 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, ACTIVE_STATUS } from '../constants'
 import OktaClient from '../client/client'
 import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
-import { deployChanges, defaultDeployChange, deployEdges, isActivationChange, isDeactivationChange, deployStatusChange, getOktaError } from '../deployment'
+import { deployChanges, defaultDeployChange, deployEdges, deployStatusChange, getOktaError, isActivationChange, isDeactivationChange } from '../deployment'
 
 const log = logger(module)
 
@@ -99,6 +99,12 @@ const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSo
   return orgSettingInstance.value.subdomain
 }
 
+export const isInactiveCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
+  change.data.before.value.status === INACTIVE_STATUS
+    && change.data.after.value.status === INACTIVE_STATUS
+    // customName field only exist in custom applications
+    && getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
+
 const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
@@ -115,9 +121,13 @@ const deployApp = async (
   ]
 
   try {
-    // Custom app must be activated before applying any other changes
     if (isModificationChange(change)
-      && isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      && (
+        isActivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+        // Custom app must be activated before applying any other changes
+        || isInactiveCustomAppChange(change)
+      )) {
+      log.debug(`Changing status to ${ACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
       await deployStatusChange(change, client, apiDefinitions, 'activate')
     }
 
@@ -131,7 +141,11 @@ const deployApp = async (
     )
 
     if (isModificationChange(change)
-      && isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })) {
+      && (
+        isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status })
+        || isInactiveCustomAppChange(change)
+      )) {
+      log.debug(`Changing status to ${INACTIVE_STATUS}, for instance ${getChangeData(change).elemID.getFullName()}`)
       await deployStatusChange(change, client, apiDefinitions, 'deactivate')
     }
 

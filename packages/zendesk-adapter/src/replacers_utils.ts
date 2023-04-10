@@ -44,6 +44,7 @@ export const replaceConditionsAndActionsCreator = (
       .flatMap((condition, i) => {
         const fieldNamesToReplace = replacerParams.fieldsToReplace.map(f => f.name)
         const conditionValue = conditionFieldValue(condition, typeName)
+        // these are standard fields so they will never be references + this may change in SALTO-2283
         if (isReferenceExpression(conditionValue) || !fieldNamesToReplace.includes(conditionValue)) {
           return []
         }

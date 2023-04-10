@@ -77,7 +77,9 @@ const replaceTagsWithReferences = (instance: InstanceElement): string[] => {
         return
       }
       conditions.forEach(condition => {
-        if (RELEVANT_FIELD_NAMES.includes(condition.field) && _.isString(condition.value)) {
+        if (_.isString(condition.field)
+          && RELEVANT_FIELD_NAMES.includes(condition.field)
+          && _.isString(condition.value)) {
           const conditionTags = extractTags(condition.value)
           conditionTags.forEach(tag => { tags.push(tag) })
           condition.value = conditionTags
@@ -111,7 +113,7 @@ const serializeReferencesToTags = (instance: InstanceElement): void => {
         return
       }
       conditions.forEach(condition => {
-        if (RELEVANT_FIELD_NAMES.includes(condition.field)) {
+        if (_.isString(condition.field) && RELEVANT_FIELD_NAMES.includes(condition.field)) {
           if (_.isArray(condition.value) && condition.value.every(_.isString)) {
             condition.value = condition.value.join(TAG_SEPERATOR)
           } else {

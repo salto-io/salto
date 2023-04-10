@@ -17,11 +17,12 @@
 
 import {
   ChangeValidator, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceElement,
+  isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 
 import { resolveValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { isConditions } from '../filters/utils'
 import { lookupFunc } from '../filters/field_references'
 import { AUTOMATION_TYPE_NAME } from '../constants'
@@ -29,14 +30,15 @@ import { AUTOMATION_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 
-const fieldExist = (field: string): boolean =>
-  ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
+const fieldExists = (field: string | ReferenceExpression): boolean =>
+  // these are standard fields so they will never be references + this may change in SALTO-2283
+  _.isString(field) && ['status', 'type', 'group_id', 'assignee_id', 'requester_id'].includes(field)
 
 
 const isNotValidData = (instance: InstanceElement): boolean => {
   const allConditions = instance.value.conditions?.all ?? []
   return !(isConditions(allConditions)
-      && allConditions.some(condition => fieldExist(condition.field)))
+      && allConditions.some(condition => fieldExists(condition.field)))
 }
 
 export const automationAllConditionsValidator: ChangeValidator = async changes => {

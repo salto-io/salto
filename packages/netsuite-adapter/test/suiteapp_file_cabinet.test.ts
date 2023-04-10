@@ -465,6 +465,17 @@ describe('suiteapp_file_cabinet', () => {
       await expect(createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)).rejects.toThrow()
     })
+
+    it('should remove excluded folder before creating the file cabinet query', async () => {
+      query.isFileMatch.mockImplementation(path => !path.includes('folder4'))
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query)
+      expect(elements).toEqual([
+        expectedResults[0],
+        expectedResults[1],
+        expectedResults[3],
+      ])
+    })
   })
 
   describe('isChangeDeployable', () => {

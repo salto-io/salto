@@ -35,10 +35,11 @@ import SalesforceClient from './client/client'
 import { createDeployPackage, DeployPackage } from './transformers/xml_transformer'
 import { isMetadataInstanceElement, apiName, metadataType, isMetadataObjectType, MetadataInstanceElement, assertMetadataObjectType } from './transformers/transformer'
 import { fullApiName } from './filters/utils'
-import { INSTANCE_FULL_NAME_FIELD } from './constants'
+import { GLOBAL_VALUE_SET_SUFFIX, INSTANCE_FULL_NAME_FIELD } from './constants'
 import { RunTestsResult } from './client/jsforce'
 import { getUserFriendlyDeployMessage } from './client/user_facing_errors'
 import { QuickDeployParams } from './types'
+import { GLOBAL_VALUE_SET } from './filters/global_value_sets'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -129,13 +130,15 @@ const addChangeToPackage = async (
 ): Promise<MetadataIdsMap> => {
   const instance = getChangeData(change)
   const isWrapperInstance = _.get(instance.value, DEPLOY_WRAPPER_INSTANCE_MARKER) === true
+  const instanceMetadataType = await metadataType(instance)
+  const instanceApiName = await apiName(instance)
 
   const addInstanceToManifest = !isWrapperInstance
   const addedIds = addInstanceToManifest
-    ? { [await metadataType(instance)]: new Set([await apiName(instance)]) }
+    ? { [instanceMetadataType]: new Set([instanceApiName]) }
     : {}
   if (isRemovalChange(change)) {
-    pkg.delete(assertMetadataObjectType(await instance.getType()), await apiName(instance))
+    pkg.delete(assertMetadataObjectType(await instance.getType()), instanceApiName)
   } else {
     await pkg.add(instance, addInstanceToManifest)
   }
@@ -151,6 +154,17 @@ const addChangeToPackage = async (
       addChildInstancesToManifest,
     )
     Object.assign(addedIds, nestedInstanceIds)
+  }
+
+  // Handle special case with global value sets - in version 57.0 salesforce changed the behavior
+  // of user-defined global value sets such that their name must end with __gvs. however, it is still possible
+  // to address existing value sets and create new ones without the suffix.
+  // this causes some confusion and the API will sometimes return the fullName differently from how it was sent.
+  // adding the __gvs suffix to the deployedIds works because we consider a deployment of a change successful if
+  // any of its related deployed IDs are successful, this means that we will consider the global value set change
+  // successful even if it came back with the __gvs suffix
+  if (instanceMetadataType === GLOBAL_VALUE_SET && !instanceApiName.endsWith(GLOBAL_VALUE_SET_SUFFIX)) {
+    addedIds[instanceMetadataType].add(`${instanceApiName}${GLOBAL_VALUE_SET_SUFFIX}`)
   }
 
   return addedIds

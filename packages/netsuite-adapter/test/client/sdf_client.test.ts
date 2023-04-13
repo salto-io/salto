@@ -1288,7 +1288,7 @@ describe('sdf client', () => {
         customTypeInfo.scriptId = scriptId
         testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1306,7 +1306,7 @@ describe('sdf client', () => {
         testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: customTypeInfo })])
         await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1330,7 +1330,7 @@ describe('sdf client', () => {
         } as TemplateCustomTypeInfo
         testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: templateCustomTypeInfo })])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(4)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
         expect(writeFileMock)
@@ -1729,7 +1729,7 @@ File: ~/AccountConfiguration/features.xml`
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1760,7 +1760,7 @@ File: ~/AccountConfiguration/features.xml`
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(4)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
@@ -1790,7 +1790,7 @@ File: ~/AccountConfiguration/features.xml`
         testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(2)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(2)
@@ -1838,7 +1838,7 @@ File: ~/AccountConfiguration/features.xml`
         new GraphNode({ serviceid: scriptId2, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: customTypeInfo2 } as SDFObjectNode),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(4)
+      expect(writeFileMock).toHaveBeenCalledTimes(3)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),

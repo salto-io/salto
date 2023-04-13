@@ -16,8 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
-  Values, ElemID,
+  InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse, Values,
 } from '@salto-io/adapter-api'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
@@ -35,7 +34,7 @@ import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
-import { CHANGED_AT_SINGLETON, SALESFORCE } from './constants'
+import { getChangedAtSingleton } from './filters/utils'
 
 const log = logger(module)
 
@@ -186,7 +185,7 @@ export const adapter: Adapter = {
     ): Promise<SalesforceAdapter> => {
       const { elementsSource, getElemIdFunc } = context
       const changedAtSingleton = withChangedAtSingleton
-        ? await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+        ? await getChangedAtSingleton(elementsSource)
         : undefined
       return new SalesforceAdapter({
         client,

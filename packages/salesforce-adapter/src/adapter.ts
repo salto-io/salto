@@ -81,7 +81,7 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import createChangedAtSingletonInstanceFilter from './filters/create_changed_at_singleton_instance_filter'
+import createChangedAtSingletonInstanceFilter from './filters/create_changed_at_singleton_instance'
 import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'

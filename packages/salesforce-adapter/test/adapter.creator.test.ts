@@ -13,7 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, ObjectType, OAuthMethod, FetchOptions, ProgressReporter } from '@salto-io/adapter-api'
+import {
+  InstanceElement,
+  ElemID,
+  ObjectType,
+  OAuthMethod,
+  FetchOptions,
+  ProgressReporter,
+  AdapterOperations,
+} from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { adapter, getConfigChange } from '../src/adapter_creator'
@@ -21,6 +29,7 @@ import SalesforceClient, { validateCredentials } from '../src/client/client'
 import SalesforceAdapter from '../src/adapter'
 import { usernamePasswordCredentialsType, UsernamePasswordCredentials, oauthRequestParameters, OauthAccessTokenCredentials, accessTokenCredentialsType, METADATA_TYPES_SKIPPED_LIST } from '../src/types'
 import { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } from '../src/constants'
+import { mockInstances } from './mock_elements'
 
 jest.mock('../src/client/client')
 jest.mock('../src/adapter')
@@ -80,6 +89,10 @@ describe('SalesforceAdapter creator', () => {
   const mockFetchOpts: MockInterface<FetchOptions> = {
     progressReporter: { reportProgress: mockFunction<ProgressReporter['reportProgress']>() },
   }
+
+  afterEach(() => {
+    jest.clearAllMocks()
+  })
   describe('when validateCredentials is called with username/password credentials', () => {
     beforeEach(async () => {
       await adapter.validateCredentials(credentials)
@@ -682,6 +695,43 @@ In order to complete the fetch operation, Salto needs to stop managing these ite
       )
       it('return undefined', () => {
         expect(updatedConfig).toBe(undefined)
+      })
+    })
+  })
+
+  describe('fetch withChangesDetection', () => {
+    let changedAtSingleton: InstanceElement
+    let adapterOperations: AdapterOperations
+    beforeEach(() => {
+      changedAtSingleton = mockInstances().ChangedAtSingleton
+      adapterOperations = adapter.operations({
+        credentials,
+        config,
+        elementsSource: buildElementsSourceFromElements([changedAtSingleton]),
+      })
+    })
+    describe('when withChangesDetection is true', () => {
+      it('should create the adapter with the ChangedAtSingleton', async () => {
+        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(SalesforceAdapter).toHaveBeenCalledWith(expect.objectContaining({
+          changedAtSingleton,
+        }))
+      })
+    })
+    describe('when withChangesDetection is undefined', () => {
+      it('should create the adapter with the ChangedAtSingleton', async () => {
+        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: undefined })
+        expect(SalesforceAdapter).not.toHaveBeenCalledWith(expect.objectContaining({
+          changedAtSingleton,
+        }))
+      })
+    })
+    describe('when withChangesDetection is false', () => {
+      it('should create the adapter with the ChangedAtSingleton', async () => {
+        await adapterOperations.fetch({ ...mockFetchOpts, withChangesDetection: false })
+        expect(SalesforceAdapter).not.toHaveBeenCalledWith(expect.objectContaining({
+          changedAtSingleton,
+        }))
       })
     })
   })

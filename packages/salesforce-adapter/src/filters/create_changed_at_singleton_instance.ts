@@ -19,16 +19,17 @@ import {
   ElemID,
   InstanceElement,
   isInstanceElement,
-  ObjectType,
+  ObjectType, ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import { FilterWith } from '../filter'
+import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { FilterWith, LocalFilterCreator } from '../filter'
 import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
 import { CHANGED_AT_SINGLETON, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+import { getChangedAtSingleton } from './utils'
 
 const { groupByAsync, awu } = collections.asynciterable
-const { isDefined } = values
 
 
 const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<string, InstanceElement[]>): Values => {
@@ -43,14 +44,37 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
   return instanceValues
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
+  new InstanceElement(
+    ElemID.CONFIG_NAME,
+    new ObjectType({
+      elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
+      isSettings: true,
+      annotations: {
+        [CORE_ANNOTATIONS.HIDDEN]: true,
+        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+      },
+    }),
+  )
+)
+
+const getChangedAtSingletonInstance = async (
+  elementsSource: ReadOnlyElementsSource | undefined
+): Promise<InstanceElement> => {
+  const changedAtSingleton = elementsSource !== undefined
+    ? await getChangedAtSingleton(elementsSource)
+    : undefined
+  return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
+}
+
+const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   name: 'createChangedAtSingletonInstanceFilter',
   onFetch: async (elements: Element[]) => {
     const metadataInstancesByType = await groupByAsync(
       await awu(elements)
         .filter(isInstanceElement)
         .filter(isMetadataInstanceElement)
-        .filter(instance => isDefined(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
+        .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
         .toArray(),
       async instance => apiName(await instance.getType())
     )
@@ -58,20 +82,13 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
     if (Object.values(metadataInstancesByType).flat().length === 0) {
       return
     }
-    const changedAtType = new ObjectType({
-      elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
-      isSettings: true,
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    })
-    const changedAtInstance = new InstanceElement(
-      ElemID.CONFIG_NAME,
-      changedAtType,
+
+    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
+    changedAtInstance.value = _.defaultsDeep(
       createChangedAtSingletonInstanceValues(metadataInstancesByType),
+      changedAtInstance.value,
     )
-    elements.push(changedAtType, changedAtInstance)
+    elements.push(await changedAtInstance.getType(), changedAtInstance)
   },
 })
 

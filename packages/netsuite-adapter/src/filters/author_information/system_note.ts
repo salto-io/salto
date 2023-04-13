@@ -66,9 +66,6 @@ Promise<EmployeeResult[]> => {
 const toDateQuery = (lastFetchTime: Date): string =>
   `date >= ${toSuiteQLWhereDateString(lastFetchTime)}`
 
-const toRecordTypeWhereQuery = (recordType: string): string =>
-  `recordtypeid = '${recordType}'`
-
 // File and folder types have system notes without record type ids,
 // But they have a prefix in the field column.
 const toFieldWhereQuery = (recordType: string): string => (
@@ -81,11 +78,9 @@ const buildRecordTypeSystemNotesQuery = (
   recordTypeIds: string[],
   lastFetchTime: Date
 ): string => {
-  const whereQuery = recordTypeIds
-    .map(toRecordTypeWhereQuery)
-    .join(' OR ')
+  const recordTypeMatchClause = `recordtypeid IN (${recordTypeIds.join(', ')})`
   return 'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,'
-    + ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
+    + ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND ${recordTypeMatchClause}`
     + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
 }
 

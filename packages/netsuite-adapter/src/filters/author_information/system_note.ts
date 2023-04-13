@@ -78,10 +78,9 @@ const buildRecordTypeSystemNotesQuery = (
   recordTypeIds: string[],
   lastFetchTime: Date
 ): string => {
-  const whereQuery = recordTypeIds
-    .join(', ')
+  const recordTypeMatchClause = `recordtypeid IN (${recordTypeIds.join(', ')})`
   return 'SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid,'
-    + ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND recordtypeid IN (${whereQuery})`
+    + ` ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND ${recordTypeMatchClause}`
     + ' GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC'
 }
 

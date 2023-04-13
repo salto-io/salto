@@ -267,6 +267,9 @@ export const fetchMetadataInstances = async ({
       changedAt: prop.lastModifiedDate,
     }))
 
+  if (filePropsToRead.length === 0) {
+    return { elements: [], configChanges: [] }
+  }
 
   const { result: metadataInfos, errors } = await client.readMetadata(
     metadataTypeName,
@@ -404,6 +407,11 @@ export const retrieveMetadataInstances = async ({
       .filter(type => type.annotations.folderContentType === undefined)
       .map(listFilesOfType)
   )).filter(props => notInSkipList(metadataQuery, props, false))
+
+  if (filesToRetrieve.length === 0) {
+    log.debug('No files to retrieve, skipping')
+    return { elements: [], configChanges }
+  }
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 

@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, isObjectType } from '@salto-io/adapter-api'
-import { CUSTOM_SEGMENT } from '../constants'
+import { isObjectType } from '@salto-io/adapter-api'
 import { isCustomRecordType } from '../types'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
@@ -23,11 +22,7 @@ const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   setElementsUrls({
     elements,
     client,
-    filter: element => (
-      isObjectType(element) && isCustomRecordType(element)
-    ) || (
-      isInstanceElement(element) && element.elemID.typeName === CUSTOM_SEGMENT
-    ),
+    filter: element => isObjectType(element) && isCustomRecordType(element),
     generateUrl: id => `app/common/custom/custrecord.nl?id=${id}`,
   })
 }

@@ -265,19 +265,25 @@ describe('sdf internal ids tests', () => {
       })
     })
     describe('failure', () => {
+      beforeEach(async () => {
+        runSuiteQLMock.mockReset()
+        runSavedSearchQueryMock.mockReset()
+      })
       it('No addition instances', async () => {
         await filterCreator(filterOpts).onDeploy?.(
           [
             toChange({ before: accountInstance, after: accountInstance }),
             toChange({ before: customRecordType, after: customRecordType }),
             toChange({ before: customScriptInstance, after: customScriptInstance }),
-            toChange({ after: savedSearchInstance }),
+            toChange({ before: savedSearchInstance, after: savedSearchInstance }),
           ],
           {
             appliedChanges: [],
             errors: [],
           },
         )
+        expect(runSavedSearchQueryMock).toHaveBeenCalledTimes(0)
+        expect(runSuiteQLMock).toHaveBeenCalledTimes(0)
         expect(customRecordType.annotations.internalId).not.toBeDefined()
         expect(customScriptInstance.value.internalId).not.toBeDefined()
         expect(savedSearchInstance.value.internalId).not.toBeDefined()

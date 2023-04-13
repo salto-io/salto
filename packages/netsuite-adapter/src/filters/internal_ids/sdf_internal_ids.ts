@@ -255,11 +255,9 @@ const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: El
   const scriptIdToInternalId = await queryScriptIdToInternalId()
 
   savedSearchElements.forEach(element => {
-    const id = scriptIdToInternalId[element.value.scriptid.toLowerCase()]
+    const id = scriptIdToInternalId[element.value[SCRIPT_ID].toLowerCase()]
     if (id !== undefined) {
       element.value[INTERNAL_ID] = id
-    } else {
-      log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
     }
   })
 }

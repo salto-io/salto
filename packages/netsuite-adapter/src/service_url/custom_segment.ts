@@ -13,24 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
-import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { isFileCabinetInstance, isFileInstance } from '../types'
+import { isInstanceElement } from '@salto-io/adapter-api'
+import { CUSTOM_SEGMENT } from '../constants'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
-const generateUrl = (id: number, element: InstanceElement): string | undefined => (
-  isFileInstance(element)
-    ? `app/common/media/mediaitem.nl?id=${id}`
-    : `app/common/media/mediaitemfolder.nl?id=${id}`
-)
-
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   setElementsUrls({
-    elements: elements.filter(isInstanceElement),
+    elements,
     client,
-    filter: isFileCabinetInstance,
-    generateUrl,
+    filter: element => isInstanceElement(element) && element.elemID.typeName === CUSTOM_SEGMENT,
+    generateUrl: id => `app/common/custom/segments/segment.nl?id=${id}`,
   })
 }
 

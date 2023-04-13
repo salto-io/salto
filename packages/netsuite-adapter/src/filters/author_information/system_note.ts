@@ -90,10 +90,10 @@ const buildFieldSystemNotesQuery = (
   const whereQuery = fieldIds
     .map(toFieldWhereQuery)
     .join(' OR ')
-  return `SELECT name, field, recordid, date from (SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`
-    + ` FROM (SELECT name, REGEXP_SUBSTR(field, '^(${FOLDER_FIELD_IDENTIFIER}|${FILE_FIELD_IDENTIFIER})')`
-    + ` AS field, recordid, date FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery}))`
-    + ' GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC'
+  return `SELECT name, field, recordid, TO_CHAR(date, ${SUITEQL_DATE_FORMAT} ${SUITEQL_TIME_FORMAT}) AS date`
+    + ` From systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
+    + ` GROUP BY name, field, recordid, TO_CHAR(date, ${SUITEQL_DATE_FORMAT} ${SUITEQL_TIME_FORMAT})`
+    + ' ORDER BY name, field, recordid, date ASC'
 }
 
 const querySystemNotesByField = async (

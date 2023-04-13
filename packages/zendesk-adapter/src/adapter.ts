@@ -134,6 +134,7 @@ import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
+import customRoleDeployFilter from './filters/custom_role_deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -188,6 +189,7 @@ export const DEFAULT_FILTERS = [
   macroFilter,
   macroAttachmentsFilter,
   ticketFormDeploy,
+  customRoleDeployFilter,
   sideConversationsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter

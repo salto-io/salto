@@ -456,6 +456,13 @@ export const loadWorkspace = async (
     const stateToBuild = workspaceState !== undefined
       ? await workspaceState
       : await initState()
+
+    if (ignoreFileChanges) {
+      // Skip all updates to the state since this flag means we are operating under the assumption
+      // that everything is already up to date and no action is required
+      return stateToBuild
+    }
+
     const updateWorkspace = async (envName: string): Promise<void> => {
       const source = naclFilesSource
       const getElementsDependents = async (

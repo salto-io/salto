@@ -305,6 +305,49 @@ describe('client_pagination', () => {
         page: [{ something: 'a' }],
       })
     })
+    it('should continue querying while there are results even if extractor returns empty', async () => {
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{ a: 'a1' }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }])
+      customEntryExtractor.mockReturnValueOnce([])
+      const params = {
+        pageSize: 1,
+        getParams: {
+          url: '/ep',
+          paginationField: 'page',
+        },
+      }
+      const result = (await toArrayAsync(traverseRequests(
+        paginationFunc,
+        extractPageEntries,
+        customEntryExtractor
+      )({
+        client,
+        ...params,
+      }))).flat()
+      expect(result).toEqual([])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(2)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
+      expect(paginationFunc).toHaveBeenCalledWith({
+        ...params,
+        currentParams: {},
+        responseData: { items: [{ a: 'a1' }] },
+        page: [],
+      })
+    })
     it('should fail gracefully on HTTP errors', async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {

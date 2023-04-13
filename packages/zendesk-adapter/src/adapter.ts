@@ -496,16 +496,17 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const isGuideDisabled = !isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
-    const supportedTypes = isGuideDisabled
-      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
-      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
+    const supportedTypes = isGuideEnabledInConfig
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
     const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: isGuideDisabled,
+      shouldAddRemainingTypes: !isGuideInFetch,
       supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
@@ -515,7 +516,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (isGuideDisabled || _.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)) {
+    if (!isGuideInFetch) {
       return defaultSubdomainResult
     }
 

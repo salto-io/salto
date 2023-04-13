@@ -25,13 +25,13 @@ const createAppSetupMsg = (instance: InstanceElement, baseUrl: string | undefine
     elemID: instance.elemID,
     severity: 'Info',
     message: 'New application integration setup required',
-    detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
+    detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the application integration',
     deployActions: {
       postAction: {
         title: 'New application integration setup required',
-        description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+        description: 'To complete the setup of the new application integration in Okta, follow these steps:',
         subActions: [
-          `Go to application page at ${url ?? 'Okta Admin console'}`,
+          `Go to application page at ${url ?? 'Okta admin console'}`,
           `Click on ${instance.value.label ?? 'the application'}.`,
           'Click on "Sign On" tab.',
           'On the right side, click on "View SAML setup instructions".',
@@ -42,7 +42,8 @@ const createAppSetupMsg = (instance: InstanceElement, baseUrl: string | undefine
   }
 }
 /**
- * Ensures that a service provider application integrates with Okta using the SAML 2.0 protocol.
+ * Integrating SAML application requires additional setup in the service provider.
+ * This validator provides instructions for the user on how to complete this setup
  */
 export const appIntegrationSetupValidator: (client: OktaClient) =>
   ChangeValidator = client => async changes => (

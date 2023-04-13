@@ -45,18 +45,18 @@ describe('appIntegrationSetupValidator', () => {
     { signOnMode: 'SAML_2_0' }
   )
 
-  it('should return message with app name if app has Saml sign on mode and name field', async () => {
+  it('should return message with app name if app has Saml sign on mode and label field', async () => {
     const changes = [toChange({ after: appInstance })]
     const changeErrors = await appIntegrationSetupValidator(client)(changes)
     expect(changeErrors).toEqual([{
       elemID: appInstance.elemID,
       severity: 'Info',
       message: 'New application integration setup required',
-      detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
+      detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the application integration',
       deployActions: {
         postAction: {
           title: 'New application integration setup required',
-          description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+          description: 'To complete the setup of the new application integration in Okta, follow these steps:',
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
             `Click on ${appInstance.value.name}.`,
@@ -68,7 +68,7 @@ describe('appIntegrationSetupValidator', () => {
       },
     }])
   })
-  it('should return empty array if app has not Saml sign on mode', async () => {
+  it('should return empty array if app has no Saml sign on mode', async () => {
     const changes = [toChange({ after: appInstanceWithoutSAML })]
     const changeErrors = await appIntegrationSetupValidator(client)(changes)
     expect(changeErrors).toEqual([])
@@ -80,11 +80,11 @@ describe('appIntegrationSetupValidator', () => {
       elemID: appInstanceWithoutLabel.elemID,
       severity: 'Info',
       message: 'New application integration setup required',
-      detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
+      detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the application integration',
       deployActions: {
         postAction: {
           title: 'New application integration setup required',
-          description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+          description: 'To complete the setup of the new application integration in Okta, follow these steps:',
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
             'Click on the application.',

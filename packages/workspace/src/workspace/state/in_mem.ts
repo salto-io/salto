@@ -155,7 +155,6 @@ export const buildInMemState = (
       await currentStateData.staticFilesSource.clear()
     },
     flush: async () => log.time(async () => {
-      const time1 = new Date().getTime()
       if (!persistent) {
         throw new Error('can not flush a non persistent state')
       }
@@ -166,8 +165,6 @@ export const buildInMemState = (
       await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
-      // eslint-disable-next-line no-console
-      console.log(new Date().getTime() - time1)
     }, 'state flush'),
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),

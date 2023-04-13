@@ -263,31 +263,24 @@ const updateStateFromChanges = async ({ state, changes, elements, additionalElem
 
 
 const updateStateWithFetchResults = async (
-  changes: DetailedChange[],
   workspace: Workspace,
   mergedElements: Element[],
   unmergedElements: Element[],
   fetchedAccounts: string[],
   partiallyFetchedAccounts: string[],
+  changes: DetailedChange[],
 ): Promise<void> => {
   const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
   const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
     .filter(element => !fetchElementsFilter(element.elemID)).toArray()
 
-  // If the number of changes matches the number of elements, this is the first fetch, and it is faster to just override
-  if (changes.length === mergedElements.length) {
-    await workspace.state()
-      .override(awu(mergedElements)
-        .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  } else {
-    await updateStateFromChanges({
-      state: workspace.state(),
-      changes,
-      elements: mergedElements,
-      additionalElements: stateElementsNotCoveredByFetch,
-      accounts: fetchedAccounts,
-    })
-  }
+  await updateStateFromChanges({
+    state: workspace.state(),
+    changes,
+    elements: mergedElements,
+    additionalElements: stateElementsNotCoveredByFetch,
+    accounts: fetchedAccounts,
+  })
 
   const accountsToMaintain = partiallyFetchedAccounts
     .concat((await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
@@ -335,12 +328,12 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await updateStateWithFetchResults(
-      await awu(changes).map(change => change.change).toArray(),
       workspace,
       elements,
       unmergedElements,
       fetchAccounts,
       Array.from(partiallyFetchedAccounts),
+      await awu(changes).map(change => change.change).toArray(),
     )
     return {
       changes,
@@ -399,7 +392,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
   const detailedChanges = await awu(changes).map(change => change.change).toArray()
-  await updateStateWithFetchResults(detailedChanges, workspace, elements, unmergedElements, fetchAccounts, [])
+  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts, [], detailedChanges)
   return {
     changes,
     fetchErrors: errors,

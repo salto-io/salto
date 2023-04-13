@@ -24,7 +24,7 @@ import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 
 
-const returnEditedInstanceFromChange = (change: ModificationChange<InstanceElement>): InstanceElement => {
+const createDiffOnlyInstance = (change: ModificationChange<InstanceElement>): InstanceElement => {
   const relevantChangesInstance = change.data.after.clone()
   relevantChangesInstance.value = {}
   // we need to keep the id for the api call
@@ -34,18 +34,21 @@ const returnEditedInstanceFromChange = (change: ModificationChange<InstanceEleme
   return relevantChangesInstance
 }
 
-const editCustomRoleModificationChange = (change: ModificationChange<InstanceElement>)
+const createDiffOnlyChange = (change: ModificationChange<InstanceElement>)
   : ModificationChange<InstanceElement> => ({
+  // the changes created here should not be used outside the context of this filter
+  // (the before and after cannot be compared)
   ...change,
   data: {
     before: change.data.before,
-    after: returnEditedInstanceFromChange(change),
+    after: createDiffOnlyInstance(change),
   },
 })
 
 
 /**
- * This filter makes sure that only the modified fields in custom role modification changes are sent in the request.
+ * This filter makes sure that only the modified fields in custom role modification changes are sent in the request. If
+ * other fields are sent it may cause an "Unprocessable Entity" error.
  */
 const filterCreator: FilterCreator = ({ client, config }) => ({
   name: 'customRoleFilter',
@@ -56,9 +59,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
         && getChangeData(change).elemID.typeName === CUSTOM_ROLE_TYPE_NAME,
     )
 
+    // the changes created here should not be used outside the context of this filter
+    // (the before and after cannot be compared)
     const editedCustomRoleModificationChanges = customRoleModificationChanges
       .filter(isModificationChange)
-      .map(editCustomRoleModificationChange)
+      .map(createDiffOnlyChange)
 
     const tempDeployResult = await deployChanges(
       editedCustomRoleModificationChanges,

@@ -23,7 +23,7 @@ import { defaultPoliciesValidator } from './default_policies'
 import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
-import { serviceProviderConnectionValidator } from './service_provider_connection'
+import { appIntegrationSetupValidator } from './app_integration_setup'
 import OktaClient from '../client/client'
 
 export default ({
@@ -40,7 +40,7 @@ export default ({
     groupRuleAdministratorValidator,
     customApplicationStatusValidator,
     userTypeAndSchemaValidator,
-    serviceProviderConnectionValidator(client),
+    appIntegrationSetupValidator(client),
   ]
 
   return createChangeValidator(validators)

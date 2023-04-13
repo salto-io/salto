@@ -18,9 +18,9 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import { OKTA, APPLICATION_TYPE_NAME } from '../../src/constants'
 import OktaClient, { getAdminUrl } from '../../src/client/client'
 import { mockClient } from '../utils'
-import { serviceProviderConnectionValidator } from '../../src/change_validators/service_provider_connection'
+import { appIntegrationSetupValidator } from '../../src/change_validators/app_integration_setup'
 
-describe('serviceProviderConnectionValidator', () => {
+describe('appIntegrationSetupValidator', () => {
   let client: OktaClient
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -32,19 +32,14 @@ describe('serviceProviderConnectionValidator', () => {
   const appInstance = new InstanceElement(
     'appInstance',
     appType,
-    { name: 'appInstance', signOnMode: 'SAML_2_0' }
+    { name: 'appInstance', label: 'appInstance', signOnMode: 'SAML_2_0' }
   )
   const appInstanceWithoutSAML = new InstanceElement(
     'appInstanceWithoutSAML',
     appType,
-    { name: 'appInstanceWithoutSAML', signOnMode: 'AUTO_LOGIN' }
+    { name: 'appInstanceWithoutSAML', label: 'appInstanceWithoutSAML', signOnMode: 'AUTO_LOGIN' }
   )
-  const appInstanceWithCustomName = new InstanceElement(
-    'appInstanceWithCustomName',
-    appType,
-    { customName: 'appInstanceWithCustomName', signOnMode: 'SAML_2_0' }
-  )
-  const appInstanceWithoutName = new InstanceElement(
+  const appInstanceWithoutLabel = new InstanceElement(
     'appInstanceWithoutName',
     appType,
     { signOnMode: 'SAML_2_0' }
@@ -52,15 +47,15 @@ describe('serviceProviderConnectionValidator', () => {
 
   it('should return message with app name if app has Saml sign on mode and name field', async () => {
     const changes = [toChange({ after: appInstance })]
-    const changeErrors = await serviceProviderConnectionValidator(client)(changes)
+    const changeErrors = await appIntegrationSetupValidator(client)(changes)
     expect(changeErrors).toEqual([{
       elemID: appInstance.elemID,
       severity: 'Info',
-      message: 'New app integration setup required',
+      message: 'New application integration setup required',
       detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
       deployActions: {
         postAction: {
-          title: 'New app integration setup required',
+          title: 'New application integration setup required',
           description: 'To complete the setup of the new app integration in Okta, follow these steps:',
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
@@ -75,43 +70,20 @@ describe('serviceProviderConnectionValidator', () => {
   })
   it('should return empty array if app has not Saml sign on mode', async () => {
     const changes = [toChange({ after: appInstanceWithoutSAML })]
-    const changeErrors = await serviceProviderConnectionValidator(client)(changes)
+    const changeErrors = await appIntegrationSetupValidator(client)(changes)
     expect(changeErrors).toEqual([])
   })
-  it('should return message if app has Saml sign on mode and customName field', async () => {
-    const changes = [toChange({ after: appInstanceWithCustomName })]
-    const changeErrors = await serviceProviderConnectionValidator(client)(changes)
+  it('should return message if app has Saml sign on mode and no label field', async () => {
+    const changes = [toChange({ after: appInstanceWithoutLabel })]
+    const changeErrors = await appIntegrationSetupValidator(client)(changes)
     expect(changeErrors).toEqual([{
-      elemID: appInstanceWithCustomName.elemID,
+      elemID: appInstanceWithoutLabel.elemID,
       severity: 'Info',
-      message: 'New app integration setup required',
+      message: 'New application integration setup required',
       detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
       deployActions: {
         postAction: {
-          title: 'New app integration setup required',
-          description: 'To complete the setup of the new app integration in Okta, follow these steps:',
-          subActions: [
-            `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
-            `Click on ${appInstanceWithCustomName.value.customName}.`,
-            'Click on "Sign On" tab.',
-            'On the right side, click on "View SAML setup instructions".',
-            'Follow the instructions to complete the setup.',
-          ],
-        },
-      },
-    }])
-  })
-  it('should return message if app has Saml sign on mode and no name field', async () => {
-    const changes = [toChange({ after: appInstanceWithoutName })]
-    const changeErrors = await serviceProviderConnectionValidator(client)(changes)
-    expect(changeErrors).toEqual([{
-      elemID: appInstanceWithoutName.elemID,
-      severity: 'Info',
-      message: 'New app integration setup required',
-      detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
-      deployActions: {
-        postAction: {
-          title: 'New app integration setup required',
+          title: 'New application integration setup required',
           description: 'To complete the setup of the new app integration in Okta, follow these steps:',
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,

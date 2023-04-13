@@ -86,18 +86,16 @@ const replaceValues = (instance: InstanceElement, mapping: Record<string, string
   paths.forEach(
     path => {
       const usersPath = instance.elemID.createNestedID(...path)
-      const pathValues = resolvePath(instance, usersPath) ?? []
-      const userValues = _.isArray(pathValues) ? pathValues : [pathValues]
-      userValues.forEach((value: string, i: number) => {
+      const resolvedPath = resolvePath(instance, usersPath)
+      const userValues = makeArray(resolvedPath)
+      if (resolvedPath === undefined) {
+        return
+      }
+      const newValues = userValues.map(value => {
         const newValue = Object.prototype.hasOwnProperty.call(mapping, value) ? mapping[value] : undefined
-        if (newValue !== undefined) {
-          setPath(
-            instance,
-            _.isArray(pathValues) ? usersPath.createNestedID(i.toString()) : usersPath,
-            newValue
-          )
-        }
+        return newValue ?? value
       })
+      setPath(instance, usersPath, _.isArray(resolvedPath) ? newValues : newValues[0])
     }
   )
 }

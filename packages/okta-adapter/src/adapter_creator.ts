@@ -85,11 +85,16 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 }
 
 const createAdminClient = (credentials: Credentials, config: OktaConfig): OktaClient | undefined => {
+  const clientConfig = config[CLIENT_CONFIG]
+  if (clientConfig?.usePrivateAPI !== true) {
+    // we use admin client for private api calls only
+    return undefined
+  }
   const adminUrl = getAdminUrl(credentials.baseUrl)
   return adminUrl !== undefined
     ? new OktaClient({
       credentials: { ...credentials, baseUrl: adminUrl },
-      config: config[CLIENT_CONFIG],
+      config: clientConfig,
     })
     : undefined
 }

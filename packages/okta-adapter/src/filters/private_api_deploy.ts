@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ adminClient, config }) => ({
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
-      && privateApiDefinitions.types[getChangeData(change).elemID.typeName] !== undefined
+        && privateApiDefinitions.types[getChangeData(change).elemID.typeName] !== undefined
     )
     if (relevantChanges.length === 0) {
       return {
@@ -41,17 +41,17 @@ const filterCreator: FilterCreator = ({ adminClient, config }) => ({
         deployResult: { errors: [], appliedChanges: [] },
       }
     }
-    if (adminClient === undefined) {
-      log.error('Skip deployment of private API types because adminClient does not exist')
-      const error = new Error(`The following changes were not deployed, due to error with the private API client: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
+    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      log.debug('Skip deployment of private API types because private API is not enabled')
+      const error = new Error(`The following changes were not deployed, because usePrivateApi config option is disabled: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
       return {
         leftoverChanges,
         deployResult: { appliedChanges: [], errors: [error] },
       }
     }
-    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
-      log.debug('Skip deployment of private API types because private API is not enabled')
-      const error = new Error(`The following changes were not deployed, beacause usePrivateApi config option is disabled: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
+    if (adminClient === undefined) {
+      log.error('Skip deployment of private API types because adminClient does not exist')
+      const error = new Error(`The following changes were not deployed, due to error with the private API client: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
       return {
         leftoverChanges,
         deployResult: { appliedChanges: [], errors: [error] },

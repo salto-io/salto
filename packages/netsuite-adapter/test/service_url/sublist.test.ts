@@ -14,32 +14,22 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
+import { INTERNAL_ID } from '../../src/constants'
 import { sublistType } from '../../src/autogen/types/standard_types/sublist'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/sublist'
 
 
 describe('setSublistsUrls', () => {
-  const runSuiteQlMock = jest.fn()
   const client = {
-    runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
   const sublist = sublistType().type
 
-  let elements: InstanceElement[]
-
-  beforeEach(() => {
-    jest.resetAllMocks()
-    runSuiteQlMock.mockResolvedValue([
-      { scriptid: 'someScriptId', id: '1' },
-    ])
-    elements = [
-      new InstanceElement('A', sublist, { scriptid: 'someScriptId' }),
-    ]
-  })
-
   it('should set the right url', async () => {
+    const elements = [
+      new InstanceElement('A', sublist, { scriptid: 'someScriptId', [INTERNAL_ID]: '1' }),
+    ]
     await setServiceUrl(elements, client)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/sublist.nl?id=1')
   })
@@ -48,10 +38,5 @@ describe('setSublistsUrls', () => {
     const notFoundElement = new InstanceElement('A2', sublist, { scriptid: 'someScriptID2' })
     await setServiceUrl([notFoundElement], client)
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('invalid results should throw an error', async () => {
-    runSuiteQlMock.mockResolvedValue([{ scriptid: 'someScriptID' }])
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
   })
 })

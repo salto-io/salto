@@ -19,36 +19,24 @@ import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/script'
 import { emailcapturepluginType } from '../../src/autogen/types/standard_types/emailcaptureplugin'
 import { plugintypeType } from '../../src/autogen/types/standard_types/plugintype'
+import { INTERNAL_ID } from '../../src/constants'
 
 
 describe('setScriptsUrls', () => {
-  const runSuiteQlMock = jest.fn()
   const client = {
-    runSuiteQL: runSuiteQlMock,
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
   const restlet = restletType().type
   const emailcaptureplugin = emailcapturepluginType().type
   const plugintype = plugintypeType().type
 
-  let elements: InstanceElement[]
-
-  beforeEach(() => {
-    jest.resetAllMocks()
-    runSuiteQlMock.mockResolvedValue([
-      { scriptid: 'someScriptID', id: '1' },
-      { scriptid: 'somePluginID', id: '2' },
-      { scriptid: 'somePluginTypeID', id: '3' },
-    ])
-    elements = [
-      new InstanceElement('A', restlet, { scriptid: 'someScriptID' }),
-      new InstanceElement('B', emailcaptureplugin, { scriptid: 'somePluginID' }),
-      new InstanceElement('C', plugintype, { scriptid: 'somePluginTypeID' }),
-
-    ]
-  })
 
   it('should set the right url', async () => {
+    const elements = [
+      new InstanceElement('A', restlet, { scriptid: 'someScriptID', [INTERNAL_ID]: '1' }),
+      new InstanceElement('B', emailcaptureplugin, { scriptid: 'somePluginID', [INTERNAL_ID]: '2' }),
+      new InstanceElement('C', plugintype, { scriptid: 'somePluginTypeID', [INTERNAL_ID]: '3' }),
+    ]
     await setServiceUrl(elements, client)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/scripting/script.nl?id=1')
     expect(elements[1].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/scripting/plugin.nl?id=2')
@@ -59,15 +47,5 @@ describe('setScriptsUrls', () => {
     const notFoundElement = new InstanceElement('A2', restlet, { scriptid: 'someScriptID2' })
     await setServiceUrl([notFoundElement], client)
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('invalid results should throw an error', async () => {
-    runSuiteQlMock.mockResolvedValue([{ scriptid: 'someScriptID' }])
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
-  })
-
-  it('query failure should throw an error', async () => {
-    runSuiteQlMock.mockResolvedValue(undefined)
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
   })
 })

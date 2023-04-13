@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import NetsuiteClient from '../../src/client/client'
 import setServiceUrl from '../../src/service_url/savedsearch'
 import { savedsearchType } from '../../src/autogen/types/standard_types/savedsearch'
-
+import { INTERNAL_ID } from '../../src/constants'
 
 describe('setSavedSearchUrls', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -27,19 +27,10 @@ describe('setSavedSearchUrls', () => {
   } as unknown as NetsuiteClient
   const savedsearch = savedsearchType().type
 
-  let elements: InstanceElement[]
-
-  beforeEach(() => {
-    jest.resetAllMocks()
-    runSavedSearchQueryMock.mockResolvedValue([
-      { id: 'someScriptId', internalid: [{ value: '1' }] },
-    ])
-    elements = [
-      new InstanceElement('A', savedsearch, { scriptid: 'someScriptId' }),
-    ]
-  })
-
   it('should set the right url', async () => {
+    const elements = [
+      new InstanceElement('A', savedsearch, { scriptid: 'someScriptId', [INTERNAL_ID]: '1' }),
+    ]
     await setServiceUrl(elements, client)
     expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/search/search.nl?cu=T&id=1')
   })
@@ -48,15 +39,5 @@ describe('setSavedSearchUrls', () => {
     const notFoundElement = new InstanceElement('A2', savedsearch, { scriptid: 'someScriptID2' })
     await setServiceUrl([notFoundElement], client)
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
-  })
-
-  it('invalid results should throw an error', async () => {
-    runSavedSearchQueryMock.mockResolvedValue([{ id: 'someScriptID' }])
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
-  })
-
-  it('query failure should throw an error', async () => {
-    runSavedSearchQueryMock.mockResolvedValue(undefined)
-    await expect(setServiceUrl(elements, client)).rejects.toThrow()
   })
 })

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+import { InstanceElement } from '@salto-io/adapter-api'
 import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
 import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
 
@@ -186,6 +187,53 @@ describe('buildMetadataQuery', () => {
         ],
       })
       expect(query.isInstanceMatch({ namespace: 'SBQQ', metadataType: 'InstalledPackage', name: 'lala', isFolderType: false, changedAt: undefined })).toBeFalsy()
+    })
+
+    describe('with changedAtSingleton', () => {
+      const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
+      let query: MetadataQuery
+      beforeEach(() => {
+        const changedAtSingletonMock = {
+          value: {
+            Report: {
+              testReport: LAST_MODIFIED_DATE,
+            },
+          },
+        } as unknown as InstanceElement
+        query = buildMetadataQuery(
+          {
+            include: [
+              {
+                metadataType: 'Report',
+              },
+            ],
+          },
+          changedAtSingletonMock,
+        )
+      })
+      describe('when the instance was not updated from the previous fetch', () => {
+        it('should return false', () => {
+          expect(query.isInstanceMatch({
+            metadataType: 'Report',
+            namespace: '',
+            name: 'testReport',
+            isFolderType: false,
+            changedAt: LAST_MODIFIED_DATE,
+          })).toBeFalse()
+        })
+      })
+
+      describe('when the instance was updated from the previous fetch', () => {
+        it('should return true', () => {
+          expect(query.isInstanceMatch({
+            metadataType: 'Report',
+            namespace: '',
+            name: 'testReport',
+            isFolderType: false,
+            changedAt: '2023-01-12T15:51:58.000Z',
+          })).toBeTrue()
+        })
+      })
     })
   })
 

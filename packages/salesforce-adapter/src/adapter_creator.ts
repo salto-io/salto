@@ -169,15 +169,25 @@ In Addition, ${configFromFetch.message}`,
   return configFromFetch
 }
 
+type CreateSalesforceAdapterParams = {
+  withChangedAtSingleton?: boolean
+}
+
 export const adapter: Adapter = {
   operations: context => {
     const updatedConfig = context.config && updateDeprecatedConfiguration(context.config)
     const config = adapterConfigFromConfig(updatedConfig?.config ?? context.config)
     const credentials = credentialsFromConfig(context.credentials)
     const client = new SalesforceClient({ credentials, config: config[CLIENT_CONFIG] })
-    const createAdapter = async (): Promise<SalesforceAdapter> => {
+
+    const createSalesforceAdapter = async ({
+      withChangedAtSingleton = false,
+    }: CreateSalesforceAdapterParams = {}
+    ): Promise<SalesforceAdapter> => {
       const { elementsSource, getElemIdFunc } = context
-      const changedAtSingleton = await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+      const changedAtSingleton = withChangedAtSingleton
+        ? await elementsSource.get(new ElemID(SALESFORCE, CHANGED_AT_SINGLETON, 'instance', ElemID.CONFIG_NAME))
+        : undefined
       return new SalesforceAdapter({
         client,
         config,
@@ -186,9 +196,12 @@ export const adapter: Adapter = {
         changedAtSingleton,
       })
     }
+
     return {
       fetch: async opts => {
-        const salesforceAdapter = await createAdapter()
+        const salesforceAdapter = await createSalesforceAdapter({
+          withChangedAtSingleton: opts.withChangesDetection ?? false,
+        })
         const fetchResults = await salesforceAdapter.fetch(opts)
         fetchResults.updatedConfig = getConfigChange(
           fetchResults.updatedConfig,
@@ -201,11 +214,11 @@ export const adapter: Adapter = {
       },
 
       deploy: async opts => {
-        const salesforceAdapter = await createAdapter()
+        const salesforceAdapter = await createSalesforceAdapter()
         return salesforceAdapter.deploy(opts)
       },
       validate: async opts => {
-        const salesforceAdapter = await createAdapter()
+        const salesforceAdapter = await createSalesforceAdapter()
         return salesforceAdapter.validate(opts)
       },
       deployModifiers: {

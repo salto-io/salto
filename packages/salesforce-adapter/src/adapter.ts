@@ -81,7 +81,7 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import createChangedAtSingletonInstanceFilter from './filters/create_changed_at_singleton_instance'
+import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
@@ -174,7 +174,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
   // createChangedAtSingletonInstanceFilter should run last
-  { creator: createChangedAtSingletonInstanceFilter },
+  { creator: changedAtSingletonFilter },
 ]
 
 // By default we run all filters and provide a client

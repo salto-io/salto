@@ -68,7 +68,7 @@ const getChangedAtSingletonInstance = async (
 }
 
 const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
-  name: 'createChangedAtSingletonInstanceFilter',
+  name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
     const metadataInstancesByType = await groupByAsync(
       await awu(elements)

@@ -76,6 +76,10 @@ describe('SalesforceAdapter creator', () => {
       },
     }
   )
+
+  const mockFetchOpts: MockInterface<FetchOptions> = {
+    progressReporter: { reportProgress: mockFunction<ProgressReporter['reportProgress']>() },
+  }
   describe('when validateCredentials is called with username/password credentials', () => {
     beforeEach(async () => {
       await adapter.validateCredentials(credentials)
@@ -168,12 +172,12 @@ describe('SalesforceAdapter creator', () => {
       })
     })
 
-    it('creates the adapter correctly', () => {
-      adapter.operations({
+    it('creates the adapter correctly', async () => {
+      await adapter.operations({
         credentials,
         config,
         elementsSource: buildElementsSourceFromElements([]),
-      })
+      }).fetch(mockFetchOpts)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -580,7 +584,8 @@ describe('SalesforceAdapter creator', () => {
       config: deprecatedConfig,
       elementsSource: buildElementsSourceFromElements([]),
     })
-    it('pass to the adapter operation configuration without deprecated fields', () => {
+    it('pass to the adapter operation configuration without deprecated fields', async () => {
+      await operations.fetch(mockFetchOpts)
       expect(SalesforceAdapter).toHaveBeenCalledWith({
         config: {
           fetch: {
@@ -609,10 +614,6 @@ describe('SalesforceAdapter creator', () => {
     })
 
     it('return update from fetch', async () => {
-      const mockReportProgress = mockFunction<ProgressReporter['reportProgress']>()
-      const mockFetchOpts: MockInterface<FetchOptions> = {
-        progressReporter: { reportProgress: mockReportProgress },
-      }
       expect((await operations.fetch(mockFetchOpts)).updatedConfig).toBeDefined()
     })
   })

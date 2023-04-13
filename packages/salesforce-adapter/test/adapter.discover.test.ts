@@ -1324,7 +1324,7 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn(),
+        isInstanceMatch: () => true,
         isPartialFetch: jest.fn(),
         getFolderPathsByName: jest.fn(),
       }

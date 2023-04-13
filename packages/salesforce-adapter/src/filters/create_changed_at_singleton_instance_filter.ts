@@ -54,6 +54,10 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
         .toArray(),
       async instance => apiName(await instance.getType())
     )
+    // None of the Elements were annotated with changedAt
+    if (Object.values(metadataInstancesByType).flat().length === 0) {
+      return
+    }
     const changedAtType = new ObjectType({
       elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
       isSettings: true,

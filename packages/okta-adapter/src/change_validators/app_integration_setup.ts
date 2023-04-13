@@ -15,26 +15,25 @@
 */
 
 import { ChangeError, ChangeValidator, InstanceElement, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
-import OktaClient, { getAdminUrl } from '../client/client'
-import { APPLICATION_TYPE_NAME } from '../constants'
+import OktaClient from '../client/client'
+import { getAdminUrl } from '../client/admin'
+import { APPLICATION_TYPE_NAME, SAML_2_0_APP } from '../constants'
 
-const SAML_2_0_APP = 'SAML_2_0'
-
-const createChangeError = (instance: InstanceElement, baseUrl: string): ChangeError => {
+const createAppSetupMsg = (instance: InstanceElement, baseUrl: string | undefined): ChangeError => {
   const suffixUrl = '/admin/apps/active'
-  const url = (new URL(suffixUrl, baseUrl)).href
+  const url = baseUrl ? (new URL(suffixUrl, baseUrl)).href : undefined
   return {
     elemID: instance.elemID,
     severity: 'Info',
-    message: 'New app integration setup required',
+    message: 'New application integration setup required',
     detailedMessage: 'In the service provider, follow the instructions provided by Okta to configure the app integration',
     deployActions: {
       postAction: {
-        title: 'New app integration setup required',
+        title: 'New application integration setup required',
         description: 'To complete the setup of the new app integration in Okta, follow these steps:',
         subActions: [
-          `Go to application page at ${url}`,
-          `Click on ${instance.value.name ?? instance.value.customName ?? 'the application'}.`,
+          `Go to application page at ${url ?? 'Okta Admin console'}`,
+          `Click on ${instance.value.label ?? 'the application'}.`,
           'Click on "Sign On" tab.',
           'On the right side, click on "View SAML setup instructions".',
           'Follow the instructions to complete the setup.',
@@ -43,9 +42,10 @@ const createChangeError = (instance: InstanceElement, baseUrl: string): ChangeEr
     },
   }
 }
-
-
-export const serviceProviderConnectionValidator: (client: OktaClient) =>
+/**
+ * Ensures that a service provider application integrates with Okta using the SAML 2.0 protocol.
+ */
+export const appIntegrationSetupValidator: (client: OktaClient) =>
   ChangeValidator = client => async changes => (
     changes
       .filter(isAdditionChange)
@@ -53,5 +53,5 @@ export const serviceProviderConnectionValidator: (client: OktaClient) =>
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
       .filter(instance => instance.value.signOnMode === SAML_2_0_APP)
-      .flatMap(instance => ([createChangeError(instance, getAdminUrl(client.baseUrl) as string)]))
+      .map(instance => createAppSetupMsg(instance, getAdminUrl(client.baseUrl)))
   )

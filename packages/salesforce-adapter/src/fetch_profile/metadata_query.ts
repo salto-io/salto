@@ -145,7 +145,7 @@ export const buildMetadataQuery = (
       && wasUpdated(instance)
     ),
 
-    isPartialFetch: () => target !== undefined,
+    isPartialFetch: () => target !== undefined || changedAtSingleton !== undefined,
 
     getFolderPathsByName: (folderType: string) => {
       const folderPaths = include

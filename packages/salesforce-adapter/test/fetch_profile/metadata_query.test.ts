@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 
-import { InstanceElement } from '@salto-io/adapter-api'
 import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
 import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
+import { mockInstances } from '../mock_elements'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -193,13 +193,8 @@ describe('buildMetadataQuery', () => {
       const LAST_MODIFIED_DATE = '2023-01-12T15:51:47.000Z'
       let query: MetadataQuery
       beforeEach(() => {
-        const changedAtSingletonMock = {
-          value: {
-            Report: {
-              testReport: LAST_MODIFIED_DATE,
-            },
-          },
-        } as unknown as InstanceElement
+        const { ChangedAtSingleton: changedAtSingleton } = mockInstances()
+        changedAtSingleton.value.Report = { testReport: LAST_MODIFIED_DATE }
         query = buildMetadataQuery(
           {
             include: [
@@ -208,8 +203,13 @@ describe('buildMetadataQuery', () => {
               },
             ],
           },
-          changedAtSingletonMock,
+          changedAtSingleton,
         )
+      })
+      describe('isPartialFetch', () => {
+        it('should return true', () => {
+          expect(query.isPartialFetch()).toBeTrue()
+        })
       })
       describe('when the instance was not updated from the previous fetch', () => {
         it('should return false', () => {

@@ -82,5 +82,4 @@ export const getFilterParams = (params?: Partial<Parameters<FilterCreator>[0]>)
   fetchQuery: elementUtils.query.createMockQuery(),
   adapterContext: {},
   ...params ?? {},
-  adminClient: mockClient().client,
 })

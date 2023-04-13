@@ -29,34 +29,41 @@ const log = logger(module)
 const filterCreator: FilterCreator = ({ adminClient, config }) => ({
   name: 'privateAPIDeployFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    if (adminClient === undefined) {
-      log.error('Skip deployment of private API types because adminClient does not exist')
-      return {
-        leftoverChanges: changes,
-        deployResult: { appliedChanges: [], errors: [] },
-      }
-    }
-    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
-      log.debug('Skip deployment of private API types because private API is not enabled')
-      return {
-        leftoverChanges: changes,
-        deployResult: { appliedChanges: [], errors: [] },
-      }
-    }
     const { privateApiDefinitions } = config
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)
       && privateApiDefinitions.types[getChangeData(change).elemID.typeName] !== undefined
     )
+    if (relevantChanges.length === 0) {
+      return {
+        leftoverChanges,
+        deployResult: { errors: [], appliedChanges: [] },
+      }
+    }
+    if (adminClient === undefined) {
+      log.error('Skip deployment of private API types because adminClient does not exist')
+      const error = new Error(`The following changes were not deployed, due to error with the private API client: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
+      return {
+        leftoverChanges,
+        deployResult: { appliedChanges: [], errors: [error] },
+      }
+    }
+    if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      log.debug('Skip deployment of private API types because private API is not enabled')
+      const error = new Error(`The following changes were not deployed, beacause usePrivateApi config option is disabled: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`)
+      return {
+        leftoverChanges,
+        deployResult: { appliedChanges: [], errors: [error] },
+      }
+    }
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        const { deployRequests } = privateApiDefinitions.types[getChangeData(change).elemID.typeName]
         await deployment.deployChange({
           change,
           client: adminClient,
-          endpointDetails: deployRequests,
+          endpointDetails: privateApiDefinitions.types[getChangeData(change).elemID.typeName]?.deployRequests,
         })
       }
     )

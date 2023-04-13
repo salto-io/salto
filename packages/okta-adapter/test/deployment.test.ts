@@ -20,7 +20,7 @@ import { mockClient } from './utils'
 import OktaClient from '../src/client/client'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../src/constants'
 import { defaultDeployChange, defaultDeployWithStatus, deployStatusChange, getOktaError } from '../src/deployment'
-import { DEFAULT_API_DEFINITIONS, OktaApiConfig } from '../src/config'
+import { DEFAULT_API_DEFINITIONS, OktaSwaggerApiConfig } from '../src/config'
 
 describe('deployment.ts', () => {
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -359,7 +359,7 @@ describe('deployment.ts', () => {
       await deployStatusChange(
         toChange({ before: instanceA, after: instanceB }) as ModificationChange<InstanceElement>,
         client,
-        apiDefsWithStatusChange as OktaApiConfig,
+        apiDefsWithStatusChange as OktaSwaggerApiConfig,
         'deactivate'
       )
       expect(mockConnection.post).toHaveBeenCalledWith(
@@ -373,7 +373,7 @@ describe('deployment.ts', () => {
       await deployStatusChange(
         toChange({ before: instanceB, after: instanceA }) as ModificationChange<InstanceElement>,
         client,
-        apiDefsWithStatusChange as OktaApiConfig,
+        apiDefsWithStatusChange as OktaSwaggerApiConfig,
         'activate',
       )
       expect(mockConnection.post).toHaveBeenCalledWith(

@@ -26,6 +26,7 @@ describe('user filter', () => {
   let filter: FilterType
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const accessPolicyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
+  const endUserSupportType = new ObjectType({ elemID: new ElemID(OKTA, 'EndUserSupport') })
 
   const groupRuleInstance = new InstanceElement(
     'groupRuleTest',
@@ -47,6 +48,11 @@ describe('user filter', () => {
       },
     }
   )
+  const endUserInstance = new InstanceElement(
+    'settings',
+    endUserSupportType,
+    { technicalContactId: '222' }
+  )
   const afterFetchInstances = [
     new InstanceElement(
       'group',
@@ -66,6 +72,11 @@ describe('user filter', () => {
         },
       }
     ),
+    new InstanceElement(
+      'settings',
+      endUserSupportType,
+      { technicalContactId: 'b@a.com' },
+    ),
   ]
 
   beforeEach(async () => {
@@ -83,7 +94,8 @@ describe('user filter', () => {
         ]
       })
       filter = userFilter(getFilterParams({ paginator: mockPaginator })) as FilterType
-      const elements = [groupRuleType, groupRuleInstance, accessPolicyRuleType, accessRuleInstance].map(e => e.clone())
+      const elements = [groupRuleType, groupRuleInstance, accessPolicyRuleType,
+        accessRuleInstance, endUserSupportType, endUserInstance].map(e => e.clone())
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const groupRule = instances.find(e => e.elemID.typeName === GROUP_RULE_TYPE_NAME)
@@ -104,6 +116,10 @@ describe('user filter', () => {
             },
           },
         },
+      })
+      const endUserS = instances.find(e => e.elemID.typeName === 'EndUserSupport')
+      expect(endUserS?.value).toEqual({
+        technicalContactId: 'b@a.com',
       })
       expect(mockPaginator).toHaveBeenNthCalledWith(
         1,
@@ -194,6 +210,10 @@ describe('user filter', () => {
         conditions: {
           people: { users: { exclude: ['222'], include: ['111', '333', '555'] } },
         },
+      })
+      const endUserS = changedInstances.find(e => e.elemID.typeName === 'EndUserSupport')
+      expect(endUserS?.value).toEqual({
+        technicalContactId: '222',
       })
     })
   })

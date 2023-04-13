@@ -156,6 +156,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     oktaMissingRefStrategy: 'typeAndValue',
     target: { type: APPLICATION_TYPE_NAME },
   },
+  {
+    src: { field: 'enabledGroup', parentTypes: ['BrowserPlugin'] },
+    serializationStrategy: 'id',
+    target: { type: GROUP_TYPE_NAME },
+  },
 ]
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

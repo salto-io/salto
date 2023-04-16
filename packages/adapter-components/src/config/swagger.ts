@@ -160,6 +160,32 @@ export const createSwaggerAdapterApiConfigType = ({
   })
 }
 
+const validateTypeNameOverrides = (
+  apiDefinitionConfigPath: string,
+  typeNameOverrides: TypeNameOverrideConfig[],
+  typeNames: string[]
+): void => {
+  const allRenamedTypes = typeNameOverrides.flat()
+  const originalNames = allRenamedTypes.map(t => t.originalName)
+  const newNames = allRenamedTypes.map(t => t.newName)
+  const newNameDuplicates = findDuplicates(newNames)
+  if (newNameDuplicates.length > 0) {
+    throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${newNameDuplicates}`)
+  }
+  const originalNameDuplicates = findDuplicates(originalNames)
+  if (originalNameDuplicates.length > 0) {
+    throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${originalNameDuplicates}`)
+  }
+  const newTypeNames = new Set(newNames)
+  const invalidTypeNames = new Set(
+    typeNameOverrides.map(t => t.originalName).filter(originalName => !newTypeNames.has(originalName))
+  )
+  const invalidTypes = typeNames.filter(r => invalidTypeNames.has(r))
+  if (invalidTypes.length > 0) {
+    throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
+  }
+}
+
 export const validateApiDefinitionConfig = (
   apiDefinitionConfigPath: string,
   adapterApiConfig: AdapterSwaggerApiConfig,
@@ -179,18 +205,11 @@ export const validateApiDefinitionConfig = (
   )
   // TODO after loading the swagger and parsing the types,
   // add change suggestions for values that catch nothing
-  const typeNameOverrides = adapterApiConfig.swagger.typeNameOverrides ?? []
-  const allRenamedTypes = typeNameOverrides.flat()
-  const renameDuplicates = findDuplicates(allRenamedTypes.flatMap(t => [t.originalName, t.newName]))
-  if (renameDuplicates.length > 0) {
-    throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${renameDuplicates}`)
-  }
-  const invalidTypeNames = new Set(typeNameOverrides.map(t => t.originalName))
-  const explicitTypes = Object.keys(adapterApiConfig.types)
-  const invalidTypes = explicitTypes.filter(r => invalidTypeNames.has(r))
-  if (invalidTypes.length > 0) {
-    throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
-  }
+  validateTypeNameOverrides(
+    apiDefinitionConfigPath,
+    adapterApiConfig.swagger.typeNameOverrides ?? [],
+    Object.keys(adapterApiConfig.types),
+  )
 }
 
 /**

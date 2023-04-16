@@ -655,6 +655,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/permissions',
     },
+    transformation: {
+      dataField: '.',
+      isSingleton: true,
+      fieldTypeOverrides: [
+        { fieldName: 'permissions', fieldType: 'Map<UserPermission>' },
+      ],
+    },
   },
   PermissionSchemes: {
     request: {
@@ -1303,11 +1310,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       serviceUrl: '/secure/admin/ViewAttachmentSettings.jspa',
     },
   },
-  Permissions_permissions: {
-    transformation: {
-      isSingleton: true,
-    },
-  },
 
   // Jira API
   Boards: {
@@ -1600,7 +1602,7 @@ const SUPPORTED_TYPES = {
   IssueTypeScheme: ['IssueTypeSchemes'],
   IssueTypeScreenScheme: ['IssueTypeScreenSchemes'],
   NotificationScheme: ['NotificationSchemes'],
-  Permissions_permissions: ['Permissions'],
+  Permissions: ['Permissions'],
   PermissionScheme: ['PermissionSchemes'],
   Priority: ['Priorities'],
   ProjectCategory: ['ProjectCategories'],

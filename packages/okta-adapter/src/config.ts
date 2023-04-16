@@ -678,8 +678,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       idFields: ['title'],
       serviceIdField: 'id',
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }, { fieldName: '$schema' }),
       fieldsToHide: [{ fieldName: 'id' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/meta/schemas/group/default',
+        method: 'post',
+      },
     },
   },
   Domain: {

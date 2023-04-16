@@ -44,6 +44,7 @@ import privateApiDeployFilter from './filters/private_api_deploy'
 import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
+import groupSchemaAddNullFilter from './filters/group_schema_null_when_remove'
 
 const { awu } = collections.asynciterable
 
@@ -72,6 +73,7 @@ export const DEFAULT_FILTERS = [
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
+  groupSchemaAddNullFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,

@@ -381,7 +381,7 @@ describe('Adapter', () => {
       })
     })
 
-    describe('fetchWithChangeDetection', () => {
+    describe('fetchWithChangesDetection', () => {
       const withChangesDetection = true
       const conf = {
         fetch: {

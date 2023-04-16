@@ -20,13 +20,16 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
-import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, OktaApiConfig, CLIENT_CONFIG } from './config'
+import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, CLIENT_CONFIG, OktaClientConfig, OktaSwaggerApiConfig, PRIVATE_API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig } from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
+import { getAdminUrl } from './client/admin'
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
-const { validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig } = configUtils
+const {
+  validateSwaggerApiDefinitionConfig, validateSwaggerFetchConfig, validateDuckTypeApiDefinitionConfig,
+} = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
   const { baseUrl, token } = config.value
@@ -44,29 +47,56 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const apiDefinitions = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG.apiDefinitions,
     config?.value.apiDefinitions
-  ) as OktaApiConfig
+  ) as OktaSwaggerApiConfig
+
+  const privateApiDefinitions = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG[PRIVATE_API_DEFINITIONS_CONFIG],
+    config?.value.privateApiDefinitions
+  ) as OktaDuckTypeApiConfig
 
   const fetch = _.defaults(
     {}, config?.value.fetch, DEFAULT_CONFIG[FETCH_CONFIG],
   )
 
-  validateClientConfig(CLIENT_CONFIG, config?.value?.client)
+  const client = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG[CLIENT_CONFIG] ?? {},
+    config?.value?.client
+  ) as OktaClientConfig
+
+  validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateSwaggerFetchConfig(
     FETCH_CONFIG,
     fetch,
-    apiDefinitions
+    apiDefinitions,
   )
+  validateDuckTypeApiDefinitionConfig(PRIVATE_API_DEFINITIONS_CONFIG, privateApiDefinitions)
 
   const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {
-    client: config?.value?.client,
+    client,
     fetch,
     apiDefinitions,
+    privateApiDefinitions,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))
     .forEach(k => log.debug('Unknown config property was found: %s', k))
   return adapterConfig
+}
+
+const createAdminClient = (credentials: Credentials, config: OktaConfig): OktaClient | undefined => {
+  const clientConfig = config[CLIENT_CONFIG]
+  if (clientConfig?.usePrivateAPI !== true) {
+    // we use admin client for private api calls only
+    return undefined
+  }
+  const adminUrl = getAdminUrl(credentials.baseUrl)
+  return adminUrl !== undefined
+    ? new OktaClient({
+      credentials: { ...credentials, baseUrl: adminUrl },
+      config: clientConfig,
+    })
+    : undefined
 }
 
 export const adapter: Adapter = {
@@ -83,6 +113,7 @@ export const adapter: Adapter = {
       config,
       getElemIdFunc: context.getElemIdFunc,
       elementsSource: context.elementsSource,
+      adminClient: createAdminClient(credentials, config),
     })
 
     return {

@@ -14,30 +14,35 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
-const { createClientConfigType } = clientUtils
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
+export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
-export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
+export type OktaClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig> & {
+  usePrivateAPI: boolean
+}
 export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
 }
-export type OktaApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+
+export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
+export type OktaDuckTypeApiConfig = configUtils.AdapterDuckTypeApiConfig
 
 export type OktaConfig = {
   [CLIENT_CONFIG]?: OktaClientConfig
   [FETCH_CONFIG]: OktaFetchConfig
-  [API_DEFINITIONS_CONFIG]: OktaApiConfig
+  [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
+  [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -47,6 +52,11 @@ const DEFAULT_FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'createdBy' },
   { fieldName: 'lastUpdatedBy' },
 ]
+const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+  nestStandaloneInstances: true,
+}
 
 // Policy type is split to different kinds of policies
 // The full list of policy types is taken from here:
@@ -87,7 +97,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 
 const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
 const getPolicyRuleItemsName = (policyRuleName: string):string => (`${policyRuleName}s`)
-const getPolicyConfig = (): OktaApiConfig['types'] => {
+const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
       transformation: {
@@ -229,7 +239,7 @@ const getPolicyConfig = (): OktaApiConfig['types'] => {
   return Object.assign({}, ...policiesConfig)
 }
 
-const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
+const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__groups: {
     request: {
       url: '/api/v1/groups',
@@ -677,6 +687,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       isSingleton: true,
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   OrgSetting: {
@@ -694,6 +705,14 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       dataField: '.',
       fieldTypeOverrides: [{ fieldName: 'contactTypes', fieldType: 'list<OrgContactTypeObj>' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/org',
+        method: 'put',
+        fieldsToIgnore: ['contactTypes'],
+      },
     },
   },
   api__v1__org__contacts: {
@@ -994,9 +1013,38 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaApiConfig['types'] = {
       },
     },
   },
+  PerClientRateLimitSettings: {
+    request: {
+      url: '/api/v1/rate-limit-settings/per-client',
+    },
+    transformation: {
+      isSingleton: true,
+      dataField: '.',
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/rate-limit-settings/per-client',
+        method: 'put',
+      },
+    },
+  },
+  RateLimitAdminNotifications: {
+    request: {
+      url: '/api/v1/rate-limit-settings/admin-notifications',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/rate-limit-settings/admin-notifications',
+        method: 'put',
+      },
+    },
+  },
 }
 
-const DEFAULT_SWAGGER_CONFIG: OktaApiConfig['swagger'] = {
+const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   url: 'https://raw.githubusercontent.com/salto-io/adapter-swaggers/main/okta/management-swagger-v3.yaml',
   additionalTypes: [
     ...Object.keys(POLICY_TYPE_NAME_TO_PARAMS)
@@ -1047,17 +1095,150 @@ export const SUPPORTED_TYPES = {
   Domain: ['DomainListResponse'],
   Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
+  PerClientRateLimit: ['PerClientRateLimitSettings'],
+  RateLimitAdmin: ['RateLimitAdminNotifications'],
 }
 
+const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
+  EmailNotifications: {
+    request: {
+      url: '/api/internal/email-notifications',
+    },
+    transformation: {
+      isSingleton: true,
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/email-notifications',
+        method: 'put',
+      },
+    },
+  },
+  EndUserSupport: {
+    request: {
+      url: '/api/internal/enduser-support',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/enduser-support',
+        method: 'post',
+      },
+    },
+  },
+  ThirdPartyAdmin: {
+    request: {
+      url: '/api/internal/orgSettings/thirdPartyAdminSetting',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/orgSettings/thirdPartyAdminSetting',
+        method: 'post',
+      },
+    },
+  },
+  EmbeddedSignInSuppport: {
+    request: {
+      url: '/admin/api/v1/embedded-login-settings',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/admin/api/v1/embedded-login-settings',
+        method: 'post',
+      },
+    },
+  },
+  SignOutPage: {
+    request: {
+      url: '/api/internal/org/settings/signout-page',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/signout-page',
+        method: 'post',
+      },
+    },
+  },
+  BrowserPlugin: {
+    request: {
+      url: '/api/internal/org/settings/browserplugin',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/browserplugin',
+        method: 'post',
+      },
+    },
+  },
+  DisplayLanguage: {
+    request: {
+      url: '/api/internal/org/settings/locale',
+    },
+    transformation: {
+      dataField: '.',
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/locale',
+        method: 'post',
+      },
+    },
+  },
+  Reauthentication: {
+    request: {
+      url: '/api/internal/org/settings/reauth-expiration',
+    },
+    transformation: {
+      isSingleton: true,
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/internal/org/settings/reauth-expiration',
+        method: 'post',
+      },
+    },
+  },
+}
 
-export const DEFAULT_API_DEFINITIONS: OktaApiConfig = {
+export const DUCKTYPE_SUPPORTED_TYPES = {
+  EmailNotificationSettings: ['EmailNotifications'],
+  EndUserSupportSettings: ['EndUserSupport'],
+  ThirdPartyAdminSettings: ['ThirdPartyAdmin'],
+  EmbeddedSignInSuppportSettings: ['EmbeddedSignInSuppport'],
+  SignOutPageSettings: ['SignOutPage'],
+  BrowserPluginSettings: ['BrowserPlugin'],
+  DisplayLanguageSettings: ['DisplayLanguage'],
+  ReauthenticationSettings: ['Reauthentication'],
+}
+
+export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
+  typeDefaults: {
+    transformation: TRANSFORMATION_DEFAULTS,
+  },
+  types: DUCKTYPE_TYPES,
+  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
+}
+
+export const DEFAULT_API_DEFINITIONS: OktaSwaggerApiConfig = {
   swagger: DEFAULT_SWAGGER_CONFIG,
   typeDefaults: {
-    transformation: {
-      idFields: DEFAULT_ID_FIELDS,
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
-      nestStandaloneInstances: true,
-    },
+    transformation: TRANSFORMATION_DEFAULTS,
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,
   supportedTypes: SUPPORTED_TYPES,
@@ -1070,13 +1251,25 @@ export const DEFAULT_CONFIG: OktaConfig = {
     convertUsersIds: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
+  [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
+  [CLIENT_CONFIG]: {
+    usePrivateAPI: true,
+  },
+}
+
+const createClientConfigType = (): ObjectType => {
+  const configType = clientUtils.createClientConfigType(OKTA)
+  configType.fields.usePrivateAPI = new Field(
+    configType, 'usePrivateAPI', BuiltinTypes.BOOLEAN
+  )
+  return configType
 }
 
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
   fields: {
     [CLIENT_CONFIG]: {
-      refType: createClientConfigType(OKTA),
+      refType: createClientConfigType(),
     },
     [FETCH_CONFIG]: {
       refType: createUserFetchConfigType(
@@ -1091,11 +1284,18 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
         adapter: OKTA,
       }),
     },
+    [PRIVATE_API_DEFINITIONS_CONFIG]: {
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: OKTA,
+      }),
+    },
   },
   annotations: {
     [CORE_ANNOTATIONS.DEFAULT]: _.omit(
       DEFAULT_CONFIG,
       API_DEFINITIONS_CONFIG,
+      PRIVATE_API_DEFINITIONS_CONFIG,
+      CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
       `${FETCH_CONFIG}.convertUsersIds`
     ),
@@ -1105,5 +1305,6 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
 
 export type FilterContext = {
   [FETCH_CONFIG]: OktaFetchConfig
-  [API_DEFINITIONS_CONFIG]: OktaApiConfig
+  [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
+  [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
 }

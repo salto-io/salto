@@ -14,32 +14,23 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-import { ServiceUrlSetter } from './types'
+import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { isFileCabinetInstance, isFileInstance } from '../types'
-import { INTERNAL_ID } from '../constants'
+import { setElementsUrls } from './elements_urls'
+import { ServiceUrlSetter } from './types'
 
-const log = logger(module)
-
-const generateUrl = (element: InstanceElement): string | undefined => {
-  const id = element.value[INTERNAL_ID]
-  if (id === undefined) {
-    log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
-    return undefined
-  }
-
-  return isFileInstance(element)
+const generateUrl = (id: number, element: InstanceElement): string | undefined => (
+  isFileInstance(element)
     ? `app/common/media/mediaitem.nl?id=${id}`
     : `app/common/media/mediaitemfolder.nl?id=${id}`
-}
+)
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {
-  elements.filter(isFileCabinetInstance).forEach(element => {
-    const url = generateUrl(element)
-    if (url !== undefined) {
-      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
-    }
+  setElementsUrls({
+    elements: elements.filter(isInstanceElement),
+    client,
+    filter: isFileCabinetInstance,
+    generateUrl,
   })
 }
 

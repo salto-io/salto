@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
 import OktaClient from '../client/client'
-import { OktaConfig, API_DEFINITIONS_CONFIG } from '../config'
+import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
 import { deployChanges, defaultDeployChange, deployEdges, isActivationChange, isDeactivationChange, deployStatusChange, getOktaError } from '../deployment'
 
@@ -102,10 +102,9 @@ const getSubdomainFromElementsSource = async (elementsSource: ReadOnlyElementsSo
 const deployApp = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  config: OktaConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
   subdomain?: string,
 ): Promise<void> => {
-  const apiDefinitions = config[API_DEFINITIONS_CONFIG]
   const { fieldsToHide } = configUtils.getTypeTransformationConfig(
     APPLICATION_TYPE_NAME, apiDefinitions.types, apiDefinitions.typeDefaults
   )
@@ -195,7 +194,7 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
     const subdomain = await getSubdomainFromElementsSource(elementsSource)
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      async change => deployApp(change, client, config, subdomain)
+      async change => deployApp(change, client, config[API_DEFINITIONS_CONFIG], subdomain)
     )
 
     return {

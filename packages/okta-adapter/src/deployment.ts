@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import { ACTIVE_STATUS, INACTIVE_STATUS } from './constants'
-import { OktaApiConfig, OktaStatusActionName } from './config'
+import { OktaStatusActionName, OktaSwaggerApiConfig } from './config'
 
 const log = logger(module)
 
@@ -87,7 +87,7 @@ export const isDeactivationChange = ({ before, after }: {before: string; after: 
 export const deployStatusChange = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: OktaApiConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
   operation: OktaStatusActionName,
 ): Promise<void> => {
   const deployRequests = apiDefinitions.types?.[getChangeData(change).elemID.typeName]?.deployRequests
@@ -117,7 +117,7 @@ export const deployStatusChange = async (
 export const defaultDeployChange = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: OktaApiConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {
@@ -174,7 +174,7 @@ export const defaultDeployChange = async (
 export const defaultDeployWithStatus = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-  apiDefinitions: OktaApiConfig,
+  apiDefinitions: OktaSwaggerApiConfig,
   fieldsToIgnore?: string[],
   queryParams?: Record<string, string>,
 ): Promise<deployment.ResponseResult> => {

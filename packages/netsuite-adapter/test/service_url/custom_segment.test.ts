@@ -14,28 +14,28 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
-import { INTERNAL_ID } from '../../src/constants'
-import { emailtemplateType } from '../../src/autogen/types/standard_types/emailtemplate'
+import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import NetsuiteClient from '../../src/client/client'
-import setServiceUrl from '../../src/service_url/emailtemplate'
+import { INTERNAL_ID } from '../../src/constants'
+import setServiceUrl from '../../src/service_url/custom_segment'
 
 
-describe('setEmailTemplatesUrls', () => {
+describe('setCustomRecordTypesUrls', () => {
   const client = {
     url: 'https://accountid.app.netsuite.com',
   } as unknown as NetsuiteClient
-  const emailtemplate = emailtemplateType().type
+  const customsegment = customsegmentType().type
 
   it('should set the right url', async () => {
     const elements = [
-      new InstanceElement('A', emailtemplate, { scriptid: 'someScriptId', [INTERNAL_ID]: '1' }),
+      new InstanceElement('B', customsegment, { scriptid: 'cseg1', [INTERNAL_ID]: '2' }),
     ]
     await setServiceUrl(elements, client)
-    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/crm/common/merge/emailtemplate.nl?id=1&cp=F')
+    expect(elements[0].annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBe('https://accountid.app.netsuite.com/app/common/custom/segments/segment.nl?id=2')
   })
 
   it('should not set url if not found internal id', async () => {
-    const notFoundElement = new InstanceElement('A2', emailtemplate, { scriptid: 'someScriptID2' })
+    const notFoundElement = new InstanceElement('A2', customsegment, { scriptid: 'cseg2' })
     await setServiceUrl([notFoundElement], client)
     expect(notFoundElement.annotations[CORE_ANNOTATIONS.SERVICE_URL]).toBeUndefined()
   })

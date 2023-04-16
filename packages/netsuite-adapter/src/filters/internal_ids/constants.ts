@@ -127,3 +127,38 @@ export const RECORD_ID_SCHEMA = {
   },
   type: 'array',
 }
+
+export const SAVED_SEARCH_RESULTS_SCHEMA = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  items: {
+    properties: {
+      id: {
+        type: 'string',
+      },
+      internalid: {
+        items: [
+          {
+            properties: {
+              value: {
+                type: 'string',
+              },
+            },
+            required: [
+              'value',
+            ],
+            type: 'object',
+          },
+        ],
+        maxItems: 1,
+        minItems: 1,
+        type: 'array',
+      },
+    },
+    required: [
+      'id',
+      'internalid',
+    ],
+    type: 'object',
+  },
+  type: 'array',
+}

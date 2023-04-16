@@ -34,7 +34,7 @@ import { getAdminUrl } from '../client/admin'
 const log = logger(module)
 const { addUrlToInstance } = filters
 
-const createServiceUrlUserSchema = (instance: InstanceElement, baseUrl:string): void => {
+const createServiceUrlUserSchema = (instance: InstanceElement, baseUrl: string): void => {
   try {
     const userTypeId = getParent(instance).value.id
     const url = `/admin/universaldirectory#okta/${userTypeId}`
@@ -47,14 +47,14 @@ const createServiceUrlUserSchema = (instance: InstanceElement, baseUrl:string): 
 const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
   name: 'serviceUrlFilter',
   onFetch: async (elements: Element[]) => {
-    const baseUrl = getAdminUrl(client.baseUrl) as string
+    const baseUrl = getAdminUrl(client.baseUrl)
+    if (baseUrl === undefined) {
+      log.warn('Failed to create baseUrl for instances')
+      return
+    }
     elements
       .filter(isInstanceElement)
       .forEach(instance => {
-        if (baseUrl === undefined) {
-          log.warn('Failed to create baseUrl for instances')
-          return
-        }
         if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
           createServiceUrlUserSchema(instance, baseUrl)
           return
@@ -63,15 +63,15 @@ const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
       })
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
-    const baseUrl = getAdminUrl(client.baseUrl) as string
+    const baseUrl = getAdminUrl(client.baseUrl)
+    if (baseUrl === undefined) {
+      log.warn('Failed to create baseUrl for instances')
+      return
+    }
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
     relevantChanges
       .map(getChangeData)
       .forEach(instance => {
-        if (baseUrl === undefined) {
-          log.warn('Failed to create baseUrl for instances')
-          return
-        }
         if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
           createServiceUrlUserSchema(instance, baseUrl)
           return

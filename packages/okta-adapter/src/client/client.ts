@@ -99,9 +99,3 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       : undefined
   }
 }
-
-/**
- * Each Okta org has an administrator URL which is used to sign in to the admin console
- * and used in order to fetch data from private APIs
- * For more info: https://developer.okta.com/docs/concepts/okta-organizations/#org-urls
- */

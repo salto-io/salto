@@ -362,12 +362,13 @@ SuiteAppFileCabinetOperations => {
 
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
+
       const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
       const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults, folderIdsSet)
         .map(folder => ({ path: getFullPath(folder, idToFolder), ...folder }))
         // remove excluded folders before creating the query
-        .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}${FILE_CABINET_PATH_SEPARATOR}`))
+        .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
       const filesResults = await queryFiles(
         filteredFolderResults.map(folder => folder.id)
       )

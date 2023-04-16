@@ -39,19 +39,8 @@ const toModifiedAnnotationChangeError = (
 ): ChangeError => ({
   elemID: after.elemID,
   severity: 'Error',
-  message: 'Can\'t deploy a modification to an immutable annotation',
-  detailedMessage: `This ${modifiedAnno} annotation is immutable.\n`
-    + 'In order to proceed with this deployment, please edit the element in Salto and remove this annotation change.',
-})
-
-const toModifiedRefTypeChangeError = (
-  after: Field | ObjectType,
-): ChangeError => ({
-  elemID: after.elemID,
-  severity: 'Error',
-  message: 'Can\'t deploy a modification to an immutable annotation',
-  detailedMessage: 'This type is missing a service id annotation refType.\n'
-    + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
+  message: `Can't deploy a modification to ${modifiedAnno}, as it's immutable`,
+  detailedMessage: `This ${modifiedAnno} is immutable.\n In order to deploy this ${after.elemID.idType}, remove this change.`,
 })
 
 type TypeMissingServiceIdResponse = { type: 'missingRefType' } | { type: 'missingAnnotation'; value: string }
@@ -84,7 +73,7 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
   return modifiedImmutableAnnotations.map(modifiedAnno => (
     modifiedAnno.type === 'missingAnnotation'
       ? toModifiedAnnotationChangeError(after, modifiedAnno.value)
-      : toModifiedRefTypeChangeError(after)
+      : toModifiedAnnotationChangeError(after, 'script ID refType')
   ))
 }
 
@@ -148,8 +137,7 @@ const toModificationInstanceErrors = async (
     elemID: after.elemID,
     severity: 'Error',
     message: 'Can\'t deploy a modification to an immutable field',
-    detailedMessage: `The ${modifiedField} field is immutable.\n`
-      + 'In order to proceed with this deployment, please edit the element in Salto and remove this field change.',
+    detailedMessage: `The ${modifiedField} field is immutable.\n In order to deploy this ${after.elemID.idType}, remove this field change.`,
   } as ChangeError))
 }
 
@@ -172,19 +160,8 @@ const toAddedMissingAnnotationError = (
 ): ChangeError => ({
   elemID: after.elemID,
   severity: 'Error',
-  message: 'Can\'t deploy an annotation without a ServiceID',
-  detailedMessage: `This ${addedAnno} annotation is missing a ServiceID.\n`
-    + 'In order to proceed with this deployment, please edit the element in Salto and add a valid ServiceID.',
-})
-
-const toAddedRefTypeChangeError = (
-  after: Field | ObjectType,
-): ChangeError => ({
-  elemID: after.elemID,
-  severity: 'Error',
-  message: `Can't deploy a ${after.elemID.idType} without a service id annotation refType`,
-  detailedMessage: 'This type is missing a service id annotation refType.\n'
-    + 'In order to proceed with this deployment, please edit the element in Salto and add a service id refType.',
+  message: `Can't deploy a ${after.elemID.idType} without its ${addedAnno}`,
+  detailedMessage: `Missing ${addedAnno}.\n In order to deploy this ${after.elemID.idType}, make sure it has a valid ${addedAnno}`,
 })
 
 const additionServiceIdCondition = (change: AdditionChange<ChangeDataType>, annoName: string): boolean =>
@@ -197,7 +174,7 @@ const toAdditionTypeErrors = async (change: AdditionChange<ObjectType>): Promise
   return missingServiceIdAnnotations.map(addedAnno => (
     addedAnno.type === 'missingAnnotation'
       ? toAddedMissingAnnotationError(after, addedAnno.value)
-      : toAddedRefTypeChangeError(after)
+      : toAddedMissingAnnotationError(after, 'script ID refType')
   ))
 }
 
@@ -216,9 +193,8 @@ const toAdditionInstanceErrors = async (
   return missingServiceIdFields.map(addedField => ({
     elemID: after.elemID,
     severity: 'Error',
-    message: 'Can\'t deploy a field without a ServiceID',
-    detailedMessage: `The ${addedField} field is missing a ServiceID.\n`
-      + 'In order to proceed with this deployment, please edit the element in Salto and add a valid ServiceID.',
+    message: 'Can\'t deploy a field without a script ID',
+    detailedMessage: `Missing field script ID.\n In order to deploy this ${addedField} field, make sure it has a valid script ID`,
   } as ChangeError))
 }
 

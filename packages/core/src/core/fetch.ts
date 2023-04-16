@@ -378,7 +378,7 @@ const fetchAndProcessMergeErrors = async (
   accountToServiceNameMap: Record<string, string>,
   getChangesEmitter: StepEmitter,
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 ):
   Promise<{
     accountElements: Element[]
@@ -446,7 +446,7 @@ const fetchAndProcessMergeErrors = async (
         .map(async ([accountName, adapter]) => {
           const fetchResult = await adapter.fetch({
             progressReporter: progressReporters[accountName],
-            withChangeDetection,
+            withChangesDetection,
           })
           const { updatedConfig, errors } = fetchResult
           if (updatedConfig !== undefined) {
@@ -730,7 +730,7 @@ export const fetchChanges = async (
   accountToServiceNameMap: Record<string, string>,
   currentConfigs: InstanceElement[],
   progressEmitter?: EventEmitter<FetchProgressEvents>,
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 ): Promise<FetchChangesResult> => {
   const accountNames = _.keys(accountsToAdapters)
   const getChangesEmitter = new StepEmitter()
@@ -745,7 +745,7 @@ export const fetchChanges = async (
     accountToServiceNameMap,
     getChangesEmitter,
     progressEmitter,
-    withChangeDetection
+    withChangesDetection
   )
 
   const adaptersFirstFetchPartial = await getAdaptersFirstFetchPartial(

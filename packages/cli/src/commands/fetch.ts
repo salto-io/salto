@@ -60,7 +60,7 @@ export type FetchCommandArgs = {
   stateOnly: boolean
   accounts: string[]
   regenerateSaltoIds: boolean
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 }
 
 const createFetchFromWorkspaceCommand = (
@@ -93,7 +93,7 @@ export const fetchCommand = async (
     workspace, force, mode,
     getApprovedChanges, shouldUpdateConfig, accounts,
     cliTelemetry, output, fetch, shouldCalcTotalSize,
-    stateOnly, regenerateSaltoIds, withChangeDetection,
+    stateOnly, regenerateSaltoIds, withChangesDetection,
   }: FetchCommandArgs): Promise<CliExitCode> => {
   const bindedOutputline = (text: string): void => outputLine(text, output)
   const fetchProgress = new EventEmitter<FetchProgressEvents>()
@@ -157,7 +157,7 @@ export const fetchCommand = async (
     fetchProgress,
     accounts,
     regenerateSaltoIds,
-    withChangeDetection,
+    withChangesDetection,
   )
 
   // A few merge errors might have occurred,
@@ -257,7 +257,7 @@ type FetchArgs = {
   fromWorkspace?: string
   fromEnv?: string
   fromState: boolean
-  withChangeDetection?: boolean
+  withChangesDetection?: boolean
 } & AccountsArg & EnvArg & UpdateModeArg
 
 export const action: WorkspaceCommandAction<FetchArgs> = async ({
@@ -269,7 +269,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
   workspace,
 }): Promise<CliExitCode> => {
   const {
-    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState, withChangeDetection,
+    force, stateOnly, accounts, mode, regenerateSaltoIds, fromWorkspace, fromEnv, fromState, withChangesDetection,
   } = input
   if (
     [fromEnv, fromWorkspace].some(values.isDefined)
@@ -326,7 +326,7 @@ export const action: WorkspaceCommandAction<FetchArgs> = async ({
     mode: useAlignMode ? 'align' : mode,
     shouldCalcTotalSize,
     stateOnly,
-    withChangeDetection,
+    withChangesDetection,
     regenerateSaltoIds,
   })
 }
@@ -383,7 +383,7 @@ const fetchDef = createWorkspaceCommand({
         default: false,
       },
       {
-        name: 'withChangeDetection',
+        name: 'withChangesDetection',
         alias: 'cd',
         required: false,
         description: 'Improve fetch performance by relying on the service audit trail in order to fetch only elements that were modified or created since the last fetch',

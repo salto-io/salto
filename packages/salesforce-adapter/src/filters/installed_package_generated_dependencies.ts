@@ -13,54 +13,55 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { Element, ElemID, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
+import { collections, multiIndex } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
-import { FilterWith } from '../filter'
+import { FilterWith, LocalFilterCreator } from '../filter'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
-import { getNamespace, isInstanceOfType, isStandardObject } from './utils'
+import { buildElementsSourceForFetch, getNamespace, isInstanceOfType, isStandardObject } from './utils'
 import { apiName } from '../transformers/transformer'
 
-const { awu, keyByAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 const addInstalledPackageReference = async (
   element: Element,
-  installedPackageInstanceByNamespace: Record<string, InstanceElement>
+  installedPackageNamespaceToRef: multiIndex.Index<[string], ElemID>
 ): Promise<void> => {
   const namespace = await getNamespace(element)
   if (namespace === undefined) {
     return
   }
-  const installedPackageInstance = installedPackageInstanceByNamespace[namespace]
-  if (installedPackageInstance === undefined) {
+  const installedPackageElemID = installedPackageNamespaceToRef.get(namespace)
+  if (installedPackageElemID === undefined) {
     return
   }
-  const reference = new ReferenceExpression(installedPackageInstance.elemID, installedPackageInstance)
+  const reference = new ReferenceExpression(installedPackageElemID)
   extendGeneratedDependencies(element, [{ reference }])
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+
+const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   name: 'installedPackageGeneratedDependencies',
   onFetch: async (elements: Element[]) => {
-    const installedPackageInstanceByNamespace = await keyByAsync(
-      await awu(elements)
-        .filter(isInstanceElement)
-        .filter(isInstanceOfType(INSTALLED_PACKAGE_METADATA))
-        .toArray(),
-      apiName,
-    )
-    if (_.isEmpty(Object.keys(installedPackageInstanceByNamespace))) {
+    const referenceElements = buildElementsSourceForFetch(elements, config)
+    const installedPackageNamespaceToRef = await multiIndex.keyByAsync({
+      iter: await referenceElements.getAll(),
+      filter: isInstanceOfType(INSTALLED_PACKAGE_METADATA),
+      key: async inst => [await apiName(inst)],
+      map: inst => inst.elemID,
+    })
+    if (_.isEmpty(Object.keys(installedPackageNamespaceToRef))) {
       return
     }
     await awu(elements)
-      .forEach(element => addInstalledPackageReference(element, installedPackageInstanceByNamespace))
+      .forEach(element => addInstalledPackageReference(element, installedPackageNamespaceToRef))
     // CustomFields of Standard Objects
     await awu(elements)
       .filter(isObjectType)
       .filter(isStandardObject)
       .flatMap(standardObject => Object.values(standardObject.fields))
-      .forEach(standardObject => addInstalledPackageReference(standardObject, installedPackageInstanceByNamespace))
+      .forEach(standardObject => addInstalledPackageReference(standardObject, installedPackageNamespaceToRef))
   },
 })
 

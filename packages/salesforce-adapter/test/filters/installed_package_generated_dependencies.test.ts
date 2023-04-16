@@ -16,10 +16,10 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, Field, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
-import { createCustomMetadataType, createCustomObjectType } from '../utils'
+import { createCustomMetadataType, createCustomObjectType, defaultFilterContext } from '../utils'
 import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/installed_package_generated_dependencies'
-import { API_NAME, INSTANCE_FULL_NAME_FIELD } from '../../src/constants'
+import { API_NAME } from '../../src/constants'
 
 describe('installedPackageElementsFilter', () => {
   const NAMESPACE = 'namespace1'
@@ -32,7 +32,7 @@ describe('installedPackageElementsFilter', () => {
         createInstanceElement({ fullName: NAMESPACE }, mockTypes.InstalledPackage,),
         createInstanceElement({ fullName: 'namespace1' }, mockTypes.InstalledPackage,),
       ]
-      filter = filterCreator()
+      filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
     })
     describe('CustomObjects', () => {
       let customObject: ObjectType
@@ -48,8 +48,8 @@ describe('installedPackageElementsFilter', () => {
         expect(customObjectFromInstalledPackage.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
           {
             reference: expect.objectContaining({
-              resValue: expect.objectContaining({
-                value: { [INSTANCE_FULL_NAME_FIELD]: NAMESPACE },
+              elemID: expect.objectContaining({
+                name: NAMESPACE,
               }),
             }),
           },
@@ -84,8 +84,8 @@ describe('installedPackageElementsFilter', () => {
         expect(customFieldFromInstalledPackage.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
           {
             reference: expect.objectContaining({
-              resValue: expect.objectContaining({
-                value: { [INSTANCE_FULL_NAME_FIELD]: NAMESPACE },
+              elemID: expect.objectContaining({
+                name: NAMESPACE,
               }),
             }),
           },
@@ -106,8 +106,8 @@ describe('installedPackageElementsFilter', () => {
         expect(customMetadataFromInstalledPackage.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
           {
             reference: expect.objectContaining({
-              resValue: expect.objectContaining({
-                value: { [INSTANCE_FULL_NAME_FIELD]: NAMESPACE },
+              elemID: expect.objectContaining({
+                name: NAMESPACE,
               }),
             }),
           },
@@ -128,8 +128,8 @@ describe('installedPackageElementsFilter', () => {
         expect(instanceFromInstalledPackage.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toEqual([
           {
             reference: expect.objectContaining({
-              resValue: expect.objectContaining({
-                value: { [INSTANCE_FULL_NAME_FIELD]: NAMESPACE },
+              elemID: expect.objectContaining({
+                name: NAMESPACE,
               }),
             }),
           },

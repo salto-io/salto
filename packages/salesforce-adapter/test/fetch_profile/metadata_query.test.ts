@@ -15,7 +15,7 @@
 */
 
 import { buildMetadataQuery, validateMetadataParams, MetadataQuery } from '../../src/fetch_profile/metadata_query'
-import { CUSTOM_OBJECT, INSTALLED_PACKAGE_METADATA, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
+import { CUSTOM_OBJECT, TOPICS_FOR_OBJECTS_METADATA_TYPE } from '../../src/constants'
 
 describe('validateMetadataParams', () => {
   describe('invalid regex in include list', () => {
@@ -233,9 +233,6 @@ describe('buildMetadataQuery', () => {
       })
       it('should match topics for objects when custom object is in the target', () => {
         expect(query.isTypeMatch(TOPICS_FOR_OBJECTS_METADATA_TYPE)).toBeTruthy()
-      })
-      it('should match types that are in the ALWAYS_INCLUDED_IN_PARTIAL_FETCH list', () => {
-        expect(query.isTypeMatch(INSTALLED_PACKAGE_METADATA)).toBeTrue()
       })
     })
   })

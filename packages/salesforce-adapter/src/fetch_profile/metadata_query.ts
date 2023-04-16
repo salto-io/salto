@@ -15,16 +15,7 @@
 */
 import { regex, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import {
-  DEFAULT_NAMESPACE,
-  SETTINGS_METADATA_TYPE,
-  TOPICS_FOR_OBJECTS_METADATA_TYPE,
-  CUSTOM_OBJECT,
-  MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD,
-  FLOW_DEFINITION_METADATA_TYPE,
-  FLOW_METADATA_TYPE,
-  INSTALLED_PACKAGE_METADATA,
-} from '../constants'
+import { DEFAULT_NAMESPACE, SETTINGS_METADATA_TYPE, TOPICS_FOR_OBJECTS_METADATA_TYPE, CUSTOM_OBJECT, MAX_TYPES_TO_SEPARATE_TO_FILE_PER_FIELD, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from '../constants'
 import { validateRegularExpressions, ConfigValidationError } from '../config_validation'
 import { MetadataInstance, MetadataParams, MetadataQueryParams, METADATA_INCLUDE_LIST, METADATA_EXCLUDE_LIST, METADATA_SEPARATE_FIELD_LIST } from '../types'
 
@@ -58,11 +49,7 @@ const PERMANENT_SKIP_LIST: MetadataQueryParams[] = [
 // Instances of these types will match all namespaces
 // and not just standard if '' (aka default) is provided in the namespace filter
 const DEFAULT_NAMESPACE_MATCH_ALL_TYPE_LIST = [
-  INSTALLED_PACKAGE_METADATA,
-]
-
-const ALWAYS_INCLUDED_IN_PARTIAL_FETCH = [
-  INSTALLED_PACKAGE_METADATA,
+  'InstalledPackage',
 ]
 
 
@@ -110,11 +97,12 @@ export const buildMetadataQuery = (
       ? isFolderMetadataTypeNameMatch(instance, name)
       : regex.isFullRegexMatch(instance.name, name)
   }
+
   const isIncludedInPartialFetch = (type: string): boolean => {
     if (target === undefined) {
       return true
     }
-    if (target.includes(type) || ALWAYS_INCLUDED_IN_PARTIAL_FETCH.includes(type)) {
+    if (target.includes(type)) {
       return true
     }
     if (type === TOPICS_FOR_OBJECTS_METADATA_TYPE && target.includes(CUSTOM_OBJECT)) {

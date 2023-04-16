@@ -386,7 +386,7 @@ const fetchDef = createWorkspaceCommand({
         name: 'withChangeDetection',
         alias: 'cd',
         required: false,
-        description: 'Detect changes before running full fetch',
+        description: 'Improve fetch performance by relying on the service audit trail in order to fetch only elements that were modified or created since the last fetch',
         type: 'boolean',
         default: false,
       },

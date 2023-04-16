@@ -29,7 +29,7 @@ import { FilterCreator } from '../filter'
 import {
   USER_SCHEMA_TYPE_NAME,
 } from '../constants'
-import { getAdminUrl } from '../client/client'
+import { getAdminUrl } from '../client/admin'
 
 const log = logger(module)
 const { addUrlToInstance } = filters

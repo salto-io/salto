@@ -17,7 +17,8 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, getChangeData, toChange } from '@salto-io/adapter-api'
 import { getFilterParams, mockClient } from '../utils'
-import OktaClient, { getAdminUrl } from '../../src/client/client'
+import OktaClient from '../../src/client/client'
+import { getAdminUrl } from '../../src/client/admin'
 import serviceUrlFilter from '../../src/filters/service_url'
 import { APPLICATION_TYPE_NAME, OKTA, USERTYPE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 

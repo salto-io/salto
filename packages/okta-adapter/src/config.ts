@@ -533,7 +533,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'credentials' }],
       serviceIdField: 'id',
       standaloneFields: [{ fieldName: 'policies' }, { fieldName: 'scopes' }, { fieldName: 'claims' }],
     },
@@ -647,29 +647,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',
-      recurseInto: [
-        {
-          type: 'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu',
-          toField: 'emailTemplates',
-          context: [{ name: 'brandId', fromField: 'id' }],
-        },
-        {
-          type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
-          toField: 'themes',
-          context: [{ name: 'brandId', fromField: 'id' }],
-        },
-      ],
     },
     transformation: {
       dataField: '.',
     },
   },
   'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu': {
+    request: {
+      url: '/api/v1/brands/{brandId}/themes',
+      dependsOn: [{ pathParam: 'brandId', from: { type: 'api__v1__brands', field: 'id' } }],
+    },
     transformation: {
       dataField: '.',
     },
   },
   'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu': {
+    request: {
+      url: '/api/v1/brands/{brandId}/templates/email',
+      dependsOn: [{ pathParam: 'brandId', from: { type: 'api__v1__brands', field: 'id' } }],
+    },
     transformation: {
       dataField: '.',
     },
@@ -729,6 +725,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
+  BrandTheme: {
+    transformation: {
+      isSingleton: true,
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+  },
+  EmailTemplate: {
+    transformation: {
+      serviceIdField: 'name',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
   Authenticator: {
@@ -1057,6 +1067,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'ThemeResponse', newName: 'BrandTheme' },
     { originalName: 'IamRole', newName: 'Role' },
   ],
 }
@@ -1069,6 +1080,8 @@ export const SUPPORTED_TYPES = {
   AuthorizationServer: ['api__v1__authorizationServers'],
   AuthorizationServerPolicy: ['api__v1__authorizationServers___authServerId___policies@uuuuuu_00123_00125uu'],
   Brand: ['api__v1__brands'],
+  BrandTheme: ['api__v1__brands___brandId___themes@uuuuuu_00123_00125uu'],
+  EmailTemplate: ['api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu'],
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
   Group: [

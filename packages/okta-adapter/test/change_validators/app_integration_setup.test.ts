@@ -16,7 +16,8 @@
 
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { OKTA, APPLICATION_TYPE_NAME } from '../../src/constants'
-import OktaClient, { getAdminUrl } from '../../src/client/client'
+import OktaClient from '../../src/client/client'
+import { getAdminUrl } from '../../src/client/admin'
 import { mockClient } from '../utils'
 import { appIntegrationSetupValidator } from '../../src/change_validators/app_integration_setup'
 

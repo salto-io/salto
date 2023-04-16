@@ -15,7 +15,8 @@
 */
 
 import { ChangeError, ChangeValidator, InstanceElement, getChangeData, isAdditionChange, isInstanceChange } from '@salto-io/adapter-api'
-import OktaClient, { getAdminUrl } from '../client/client'
+import OktaClient from '../client/client'
+import { getAdminUrl } from '../client/admin'
 import { APPLICATION_TYPE_NAME, SAML_2_0_APP } from '../constants'
 
 const createAppSetupMsg = (instance: InstanceElement, baseUrl: string | undefined): ChangeError => {

@@ -77,6 +77,7 @@ import enumFieldPermissionsFilter from './filters/field_permissions_enum'
 import splitCustomLabels from './filters/split_custom_labels'
 import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
+import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
@@ -169,6 +170,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
+  { creator: installedPackageGeneratedDependencies, addsNewInformation: true },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero

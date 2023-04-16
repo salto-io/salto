@@ -26,7 +26,6 @@ import * as constants from '../src/constants'
 import {
   annotationsFileName, customFieldsFileName, standardFieldsFileName,
 } from '../src/filters/custom_type_split'
-import { getNamespaceFromString } from '../src/filters/utils'
 import { FilterContext } from '../src/filter'
 import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
@@ -71,6 +70,19 @@ export const createCustomObjectType = (
   ...params,
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
+    [constants.API_NAME]: typeName,
+    ...(params.annotations ?? {}),
+  },
+  elemID: new ElemID(constants.SALESFORCE, typeName),
+})
+
+export const createCustomMetadataType = (
+  typeName: string,
+  params: Partial<ConstructorParameters<typeof ObjectType>[0]>
+): ObjectType => new ObjectType({
+  ...params,
+  annotations: {
+    [constants.METADATA_TYPE]: constants.CUSTOM_METADATA,
     [constants.API_NAME]: typeName,
     ...(params.annotations ?? {}),
   },
@@ -283,7 +295,6 @@ export const createCustomSettingsObject = (
   name: string,
   settingsType: string,
 ): ObjectType => {
-  const namespace = getNamespaceFromString(name)
   const basicFields = {
     Id: {
       refType: idType,
@@ -335,11 +346,7 @@ export const createCustomSettingsObject = (
     },
     fields: basicFields,
   })
-  const path = namespace
-    ? [constants.SALESFORCE, constants.INSTALLED_PACKAGES_PATH, namespace,
-      constants.OBJECTS_PATH, obj.elemID.name]
-    : [constants.SALESFORCE, constants.OBJECTS_PATH, obj.elemID.name]
-  obj.path = path
+  obj.path = [constants.SALESFORCE, constants.OBJECTS_PATH, obj.elemID.name]
   return obj
 }
 

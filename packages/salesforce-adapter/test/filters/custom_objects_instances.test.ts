@@ -30,7 +30,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
-import { getNamespaceFromString, buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult, FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
@@ -67,7 +67,6 @@ const createCustomObject = (
   name: string,
   additionalFields?: Record<string, FieldDefinition>
 ): ObjectType => {
-  const namespace = getNamespaceFromString(name)
   const basicFields = {
     Id: {
       refType: stringType,
@@ -104,10 +103,7 @@ const createCustomObject = (
     },
     fields: additionalFields ? Object.assign(basicFields, additionalFields) : basicFields,
   })
-  const path = namespace
-    ? [SALESFORCE, INSTALLED_PACKAGES_PATH, namespace, OBJECTS_PATH, obj.elemID.name]
-    : [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
-  obj.path = path
+  obj.path = [SALESFORCE, OBJECTS_PATH, obj.elemID.name]
   return obj
 }
 

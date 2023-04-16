@@ -16,25 +16,65 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import {
-  Element, Field, isObjectType, ObjectType, InstanceElement, isInstanceElement, isField,
-  TypeElement, BuiltinTypes, ElemID, CoreAnnotationTypes, TypeMap, Value, ReadOnlyElementsSource,
-  isReferenceExpression, ReferenceExpression, ChangeDataType, Change, ChangeData,
-  isAdditionOrModificationChange, isRemovalOrModificationChange, getChangeData, CORE_ANNOTATIONS,
+  BuiltinTypes,
+  Change,
+  ChangeData,
+  ChangeDataType,
+  CORE_ANNOTATIONS,
+  CoreAnnotationTypes,
   createRefToElmWithValue,
+  Element,
+  ElemID,
+  Field,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isField,
+  isInstanceElement,
+  isObjectType,
+  isReferenceExpression,
+  isRemovalOrModificationChange,
+  ObjectType,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
+  TypeElement,
+  TypeMap,
+  Value,
 } from '@salto-io/adapter-api'
-import { getParents, buildElementsSourceFromElements, createSchemeGuard } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, createSchemeGuard, getParents } from '@salto-io/adapter-utils'
 import { FileProperties } from 'jsforce-types'
 import { chunks, collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import SalesforceClient from '../client/client'
-import { OptionalFeatures } from '../types'
+import { INSTANCE_SUFFIXES, OptionalFeatures } from '../types'
 import {
-  API_NAME, LABEL, CUSTOM_OBJECT, METADATA_TYPE, NAMESPACE_SEPARATOR, API_NAME_SEPARATOR,
-  INSTANCE_FULL_NAME_FIELD, SALESFORCE, INTERNAL_ID_FIELD, INTERNAL_ID_ANNOTATION,
-  KEY_PREFIX, MAX_QUERY_LENGTH, CUSTOM_METADATA_SUFFIX, PLURAL_LABEL, CHANGED_AT_SINGLETON,
+  API_NAME,
+  API_NAME_SEPARATOR,
+  CUSTOM_METADATA_SUFFIX,
+  CUSTOM_OBJECT,
+  INSTANCE_FULL_NAME_FIELD,
+  INTERNAL_ID_ANNOTATION,
+  INTERNAL_ID_FIELD,
+  KEY_PREFIX,
+  LABEL,
+  LAYOUT_TYPE_ID_METADATA_TYPE,
+  MAX_QUERY_LENGTH,
+  METADATA_TYPE,
+  NAMESPACE_SEPARATOR,
+  PLURAL_LABEL,
+  SALESFORCE,
+  CHANGED_AT_SINGLETON,
 } from '../constants'
 import { JSONBool, SalesforceRecord } from '../client/types'
-import { metadataType, apiName, defaultApiName, Types, isCustomObject, MetadataValues, isNameField } from '../transformers/transformer'
+import {
+  apiName,
+  defaultApiName,
+  isCustomObject,
+  isNameField,
+  metadataType,
+  MetadataValues,
+  Types,
+} from '../transformers/transformer'
 import { Filter, FilterContext } from '../filter'
 
 const { toArrayAsync, awu } = collections.asynciterable
@@ -46,6 +86,25 @@ const METADATA_VALUES_SCHEME = Joi.object({
 }).unknown(true)
 
 export const isMetadataValues = createSchemeGuard<MetadataValues>(METADATA_VALUES_SCHEME)
+
+// This function checks whether an element is an instance of a certain metadata type
+// note that for instances of custom objects this will check the specific type (i.e Lead)
+// if you want instances of all custom objects use isInstanceOfCustomObject
+export const isInstanceOfType = (...types: string[]) => (
+  async (elem: Element): Promise<boolean> => (
+    isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
+  )
+)
+
+export const isInstanceOfTypeChange = (...types: string[]) => (
+  (change: Change): Promise<boolean> => (
+    isInstanceOfType(...types)(getChangeData(change))
+  )
+)
+
+export const safeApiName = async (elem: Readonly<Element>, relative = false): Promise<string | undefined> => (
+  apiName(elem, relative)
+)
 
 export const isCustomMetadataRecordType = async (elem: Element): Promise<boolean> => {
   const elementApiName = await apiName(elem)
@@ -148,15 +207,38 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
-export const getNamespaceFromString = (name: string): string | undefined => {
-  const nameParts = name.split(NAMESPACE_SEPARATOR)
-  return nameParts.length === 3 ? nameParts[0] : undefined
+const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
+
+const getNamespaceFromString = (relativeApiName: string): string | undefined => {
+  const parts = relativeApiName
+    .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+    .split(NAMESPACE_SEPARATOR)
+  return parts.length !== 1
+    ? parts[0]
+    : undefined
 }
 
+const specialLayoutObjects = new Map([
+  ['CaseClose', 'Case'],
+  ['UserAlt', 'User'],
+])
+
+// Layout full name starts with related sobject and then '-'
+export const layoutObjAndName = (layoutApiName: string): [string, string] => {
+  const [obj, ...name] = layoutApiName.split('-')
+  return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
+}
 export const getNamespace = async (
-  customElement: Field | ObjectType
-): Promise<string | undefined> =>
-  getNamespaceFromString(await apiName(customElement, true))
+  element: Element,
+): Promise<string | undefined> => {
+  const elementApiName = await safeApiName(element, true)
+  if (elementApiName === undefined) {
+    return undefined
+  }
+  return isInstanceElement(element) && await isInstanceOfType(LAYOUT_TYPE_ID_METADATA_TYPE)(element)
+    ? getNamespaceFromString(layoutObjAndName(elementApiName)[1])
+    : getNamespaceFromString(elementApiName)
+}
 
 export const extractFullNamesFromValueList = (values: { [INSTANCE_FULL_NAME_FIELD]: string }[]):
   string[] =>
@@ -322,21 +404,6 @@ export const getDataFromChanges = <T extends Change<unknown>>(
       .map(change => _.get(change.data, dataField))
   )
 
-// This function checks whether an element is an instance of a certain metadata type
-// note that for instances of custom objects this will check the specific type (i.e Lead)
-// if you want instances of all custom objects use isInstanceOfCustomObject
-export const isInstanceOfType = (...types: string[]) => (
-  async (elem: Element): Promise<boolean> => (
-    isInstanceElement(elem) && types.includes(await apiName(await elem.getType()))
-  )
-)
-
-export const isInstanceOfTypeChange = (...types: string[]) => (
-  (change: Change): Promise<boolean> => (
-    isInstanceOfType(...types)(getChangeData(change))
-  )
-)
-
 export const ensureSafeFilterFetch = ({
   fetchFilterFunc, warningMessage, config, filterName,
 }:{
@@ -364,6 +431,11 @@ export const ensureSafeFilterFetch = ({
       }
     }
   }
+
+export const isStandardObject = async (objectType: ObjectType): Promise<boolean> => (
+  await isCustomObject(objectType)
+  && !ENDS_WITH_CUSTOM_SUFFIX_REGEX.test(await safeApiName(objectType) ?? '')
+)
 
 export const getChangedAtSingleton = async (
   elementsSource: ReadOnlyElementsSource

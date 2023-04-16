@@ -21,7 +21,7 @@ import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { multiIndex, collections } from '@salto-io/lowerdash'
 import { apiName, isCustomObject } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch, layoutObjAndName } from './utils'
+import { addElementParentReference, isInstanceOfType, buildElementsSourceForFetch } from './utils'
 import { SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE, WEBLINK_METADATA_TYPE } from '../constants'
 import { getObjectDirectoryPath } from './custom_objects_to_object_type'
 
@@ -31,6 +31,17 @@ const log = logger(module)
 
 export const LAYOUT_TYPE_ID = new ElemID(SALESFORCE, LAYOUT_TYPE_ID_METADATA_TYPE)
 export const WEBLINK_TYPE_ID = new ElemID(SALESFORCE, WEBLINK_METADATA_TYPE)
+
+export const specialLayoutObjects = new Map([
+  ['CaseClose', 'Case'],
+  ['UserAlt', 'User'],
+])
+
+// Layout full name starts with related sobject and then '-'
+const layoutObjAndName = async (layout: InstanceElement): Promise<[string, string]> => {
+  const [obj, ...name] = (await apiName(layout)).split('-')
+  return [specialLayoutObjects.get(obj) ?? obj, name.join('-')]
+}
 
 const fixLayoutPath = async (
   layout: InstanceElement,
@@ -74,7 +85,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     })
 
     await awu(layouts).forEach(async layout => {
-      const [layoutObjName, layoutName] = layoutObjAndName(await apiName(layout))
+      const [layoutObjName, layoutName] = await layoutObjAndName(layout)
       const layoutObjId = apiNameToCustomObject.get(layoutObjName)
       const layoutObj = layoutObjId !== undefined
         ? await referenceElements.get(layoutObjId)

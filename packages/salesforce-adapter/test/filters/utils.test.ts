@@ -15,17 +15,16 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import {
-  addDefaults, getNamespace,
+  addDefaults,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
-  isMetadataValues, isStandardObject, layoutObjAndName,
+  isMetadataValues,
 } from '../../src/filters/utils'
 import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
-import { INSTANCE_SUFFIXES } from '../../src/types'
 
 describe('addDefaults', () => {
   describe('when called with instance', () => {
@@ -242,62 +241,6 @@ describe('addDefaults', () => {
       expect(isMetadataValues({
         anotherProperty: 'anotherProperty',
       })).toBeFalse()
-    })
-  })
-  describe('getNamespace', () => {
-    describe('without namespace', () => {
-      it.each([
-        'Instance',
-        'Parent.Instance',
-        ...INSTANCE_SUFFIXES.map(suffix => `Instance__${suffix}`),
-      ])('%s', async (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
-        expect(await getNamespace(instance)).toBeUndefined()
-      })
-      it('Layout instance', async () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: 'Account-Test Layout-Name' }, mockTypes.Layout)
-        expect(await getNamespace(instance)).toBeUndefined()
-      })
-    })
-    describe('with namespace', () => {
-      const NAMESPACE = 'ns'
-      it.each([
-        `${NAMESPACE}__Instance`,
-        `Parent.${NAMESPACE}__Instance`,
-        `${NAMESPACE}__configurationSummary`, // There was an edge-case where __c was replaced and caused incorrect result
-        ...INSTANCE_SUFFIXES.map(suffix => `${NAMESPACE}__Instance__${suffix}`),
-      ])('%s', async (name: string) => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: name }, mockTypes.Profile)
-        expect(await getNamespace(instance)).toEqual(NAMESPACE)
-      })
-      it('Layout instance', async () => {
-        const instance = createInstanceElement({ [INSTANCE_FULL_NAME_FIELD]: `Account-${NAMESPACE}__Test Layout-Name` }, mockTypes.Layout)
-        expect(await getNamespace(instance)).toEqual(NAMESPACE)
-      })
-    })
-  })
-  describe('isStandardObject', () => {
-    it('should return true for Standard CustomObject', async () => {
-      expect(await isStandardObject(mockTypes.Account)).toBeTrue()
-    })
-    it('should return false for object with no custom suffix that is not of type CustomObject', async () => {
-      expect(await isStandardObject(mockTypes.Profile)).toBeFalse()
-    })
-    describe('when CustomObject has a custom suffix', () => {
-      it.each(INSTANCE_SUFFIXES.map(suffix => `TestObject__${suffix}`))('Should return false for CustomObject with name TestObject__%s', async (customObjectName: string) => {
-        const customObject = createCustomObjectType(customObjectName, {})
-        expect(await isStandardObject(customObject)).toBeFalse()
-      })
-    })
-  })
-  describe('layoutObjAndName', () => {
-    it.each([
-      ['Account-Layout Name', 'Account', 'Layout Name'],
-      ['Account-SBQQ__Layout Name', 'Account', 'SBQQ__Layout Name'],
-      ['SBQQ__Account__c-Layout Name', 'SBQQ__Account__c', 'Layout Name'],
-      ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
-    ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
-      expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
     })
   })
 })

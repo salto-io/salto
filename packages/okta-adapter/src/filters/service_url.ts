@@ -14,17 +14,71 @@
 * limitations under the License.
 */
 
-
+import { isInstanceElement,
+  CORE_ANNOTATIONS,
+  Element,
+  InstanceElement,
+  Change,
+  isInstanceChange,
+  isAdditionChange,
+  getChangeData } from '@salto-io/adapter-api'
 import { filters } from '@salto-io/adapter-components'
-import OktaClient, { getAdminUrl } from '../client/client'
-import { OktaConfig } from '../config'
-import { FilterCreator, FilterResult } from '../filter'
+import { getParent } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { FilterCreator } from '../filter'
+import {
+  USER_SCHEMA_TYPE_NAME,
+} from '../constants'
+import { getAdminUrl } from '../client/client'
 
-const filter: FilterCreator = params => {
-  const baseUrl = getAdminUrl(params.client.baseUrl) as string
-  return filters.serviceUrlFilterCreator<OktaClient, OktaConfig, FilterResult>(
-    baseUrl
-  )(params)
+const log = logger(module)
+const { addUrlToInstance } = filters
+
+const createServiceUrlUserSchema = (instance: InstanceElement, baseUrl:string): void => {
+  try {
+    const userTypeId = getParent(instance).value.id
+    const url = `/admin/universaldirectory#okta/${userTypeId}`
+    instance.annotations[CORE_ANNOTATIONS.SERVICE_URL] = (new URL(url, baseUrl)).href
+  } catch (error) {
+    log.warn(`Failed to create serviceUrl for ${instance.elemID.getFullName()}. Error: ${error.message}}`)
+  }
 }
 
-export default filter
+const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
+  name: 'serviceUrlFilter',
+  onFetch: async (elements: Element[]) => {
+    const baseUrl = getAdminUrl(client.baseUrl) as string
+    elements
+      .filter(isInstanceElement)
+      .forEach(instance => {
+        if (baseUrl === undefined) {
+          log.warn('Failed to create baseUrl for instances')
+          return
+        }
+        if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
+          createServiceUrlUserSchema(instance, baseUrl)
+          return
+        }
+        addUrlToInstance(instance, baseUrl, config)
+      })
+  },
+  onDeploy: async (changes: Change<InstanceElement>[]) => {
+    const baseUrl = getAdminUrl(client.baseUrl) as string
+    const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)
+    relevantChanges
+      .map(getChangeData)
+      .forEach(instance => {
+        if (baseUrl === undefined) {
+          log.warn('Failed to create baseUrl for instances')
+          return
+        }
+        if (instance.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
+          createServiceUrlUserSchema(instance, baseUrl)
+          return
+        }
+        addUrlToInstance(instance, baseUrl, config)
+      })
+  },
+})
+
+export default serviceUrlFilter

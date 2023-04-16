@@ -166,13 +166,12 @@ const validateTypeNameOverrides = (
   typeNames: string[]
 ): void => {
   const allRenamedTypes = typeNameOverrides.flat()
-  const originalNames = allRenamedTypes.map(t => t.originalName)
   const newNames = allRenamedTypes.map(t => t.newName)
   const newNameDuplicates = findDuplicates(newNames)
   if (newNameDuplicates.length > 0) {
     throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${newNameDuplicates}`)
   }
-  const originalNameDuplicates = findDuplicates(originalNames)
+  const originalNameDuplicates = findDuplicates(allRenamedTypes.map(t => t.originalName))
   if (originalNameDuplicates.length > 0) {
     throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${originalNameDuplicates}`)
   }

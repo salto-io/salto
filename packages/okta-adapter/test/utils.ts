@@ -58,7 +58,7 @@ export const mockClient = (): ClientWithMockConnection => {
   const connection = mockConnection()
   const client = new OktaClient({
     credentials: {
-      baseUrl: 'https://dev-00000000.okta.com',
+      baseUrl: 'https://bla.okta.net/',
       token: 'test',
     },
     connection: {

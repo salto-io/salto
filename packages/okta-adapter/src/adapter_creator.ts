@@ -125,7 +125,7 @@ export const adapter: Adapter = {
           updatedConfig: fetchRes.updatedConfig,
         }
       },
-      deployModifiers: adapterOperations.deployModifiers,
+      deployModifiers: OktaAdapter.deployModifiers,
     }
   },
   validateCredentials: async config => validateCredentials(

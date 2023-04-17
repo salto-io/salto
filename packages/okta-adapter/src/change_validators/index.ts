@@ -23,14 +23,9 @@ import { defaultPoliciesValidator } from './default_policies'
 import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
-import { appIntegrationSetupValidator } from './app_integration_setup'
-import OktaClient from '../client/client'
 
-export default ({
-  client,
-}: {
-  client: OktaClient
-}): ChangeValidator => {
+export default (
+): ChangeValidator => {
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(),
     applicationValidator,
@@ -40,7 +35,6 @@ export default ({
     groupRuleAdministratorValidator,
     customApplicationStatusValidator,
     userTypeAndSchemaValidator,
-    appIntegrationSetupValidator(client),
   ]
 
   return createChangeValidator(validators)

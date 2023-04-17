@@ -16,6 +16,7 @@
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { types } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { CORE_ANNOTATIONS, ElemID, ObjectType } from '@salto-io/adapter-api'
 
 export const { RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS } = clientUtils
 
@@ -378,6 +379,17 @@ export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
+
+export const ArtificalTypes = {
+  [CHANGED_AT_SINGLETON]: new ObjectType({
+    elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
+    isSettings: true,
+    annotations: {
+      [CORE_ANNOTATIONS.HIDDEN]: true,
+      [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+    },
+  }),
+} as const
 
 // Standard Object Types
 export const ORGANIZATION_SETTINGS = 'Organization'

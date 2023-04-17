@@ -19,14 +19,14 @@ import {
   ElemID,
   InstanceElement,
   isInstanceElement,
-  ObjectType, ReadOnlyElementsSource,
+  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
-import { CHANGED_AT_SINGLETON, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../constants'
+import { ArtificalTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { getChangedAtSingleton } from './utils'
 
 const { groupByAsync, awu } = collections.asynciterable
@@ -47,14 +47,7 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
 const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
   new InstanceElement(
     ElemID.CONFIG_NAME,
-    new ObjectType({
-      elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
-      isSettings: true,
-      annotations: {
-        [CORE_ANNOTATIONS.HIDDEN]: true,
-        [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
-      },
-    }),
+    ArtificalTypes.ChangedAtSingleton,
   )
 )
 
@@ -88,7 +81,7 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
       createChangedAtSingletonInstanceValues(metadataInstancesByType),
       changedAtInstance.value,
     )
-    elements.push(await changedAtInstance.getType(), changedAtInstance)
+    elements.push(changedAtInstance)
   },
 })
 

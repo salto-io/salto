@@ -15,11 +15,9 @@
 */
 import {
   CORE_ANNOTATIONS,
-  InstanceElement,
   Values,
   Element,
-  isInstanceElement,
-  isObjectType,
+  isInstanceElement, InstanceElement,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -32,12 +30,10 @@ import { defaultFilterContext } from '../utils'
 
 describe('createChangedAtSingletonInstanceFilter', () => {
   describe('onFetch', () => {
+    const CHANGED_AT = '2023-03-28T00:00:00.000Z'
     describe('when ChangedAtSingleton instance exists in the elementsSource', () => {
-      const CHANGED_AT = '2023-03-28T00:00:00.000Z'
-
       let updatedInstanceTypeName: string
       let updatedInstanceName: string
-      let changedAtSingleton: InstanceElement
       let previousChangedAtSingletonValue: Values
       let fetchedElements: Element[]
 
@@ -51,7 +47,7 @@ describe('createChangedAtSingletonInstanceFilter', () => {
           [CORE_ANNOTATIONS.CHANGED_AT]: CHANGED_AT,
         }
 
-        changedAtSingleton = instances.ChangedAtSingleton
+        const changedAtSingleton = instances.ChangedAtSingleton
         changedAtSingleton.value = {
           ...changedAtSingleton.value,
           [updatedInstanceTypeName]: {
@@ -74,10 +70,10 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         await filter.onFetch(fetchedElements)
       })
       it('should only update the info about the changed instances', async () => {
-        expect(fetchedElements).toEqual(expect.arrayContaining([
-          expect.objectContaining({ elemID: changedAtSingleton.elemID }),
-          expect.objectContaining({ elemID: (await changedAtSingleton.getType()).elemID }),
-        ]))
+        const changedAtSingleton = fetchedElements
+          .filter(isInstanceElement)
+          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON) as InstanceElement
+        expect(changedAtSingleton).toBeDefined()
         expect(changedAtSingleton.value).not.toEqual(previousChangedAtSingletonValue)
         const expectedValues = _.cloneDeep(previousChangedAtSingletonValue)
         _.set(expectedValues, [updatedInstanceTypeName, updatedInstanceName], CHANGED_AT)
@@ -85,8 +81,6 @@ describe('createChangedAtSingletonInstanceFilter', () => {
       })
     })
     describe('when ChangedAtSingleton instance does not exist in the elementsSource', () => {
-      const CHANGED_AT = '2023-03-28T00:00:00.000Z'
-
       let updatedInstanceTypeName: string
       let updatedInstanceName: string
       let fetchedElements: Element[]
@@ -103,15 +97,11 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         fetchedElements = [updatedInstance]
         await filter.onFetch(fetchedElements)
       })
-      it('should create the singleton and its type with correct values', async () => {
+      it('should create the singleton with correct values', async () => {
         const changedAtSingleton = fetchedElements
           .filter(isInstanceElement)
           .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
-        const changedAtType = fetchedElements
-          .filter(isObjectType)
-          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
         expect(changedAtSingleton).toBeDefined()
-        expect(changedAtType).toBeDefined()
         expect(changedAtSingleton?.value).toEqual({
           [updatedInstanceTypeName]: {
             [updatedInstanceName]: CHANGED_AT,
@@ -129,15 +119,11 @@ describe('createChangedAtSingletonInstanceFilter', () => {
         await filter.onFetch(fetchedElements)
       })
 
-      it('should not create the singleton and its type', async () => {
+      it('should not create the singleton instance', async () => {
         const changedAtSingleton = fetchedElements
           .filter(isInstanceElement)
           .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
-        const changedAtType = fetchedElements
-          .filter(isObjectType)
-          .find(e => e.elemID.typeName === CHANGED_AT_SINGLETON)
         expect(changedAtSingleton).toBeUndefined()
-        expect(changedAtType).toBeUndefined()
       })
     })
   })

@@ -29,7 +29,7 @@ import {
   CPQ_QUOTE,
   DUPLICATE_RULE_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
-  PATH_ASSISTANT_METADATA_TYPE, CHANGED_AT_SINGLETON,
+  PATH_ASSISTANT_METADATA_TYPE, CHANGED_AT_SINGLETON, ArtificalTypes,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -448,10 +448,6 @@ export const mockTypes = {
       },
     },
   }),
-  [CHANGED_AT_SINGLETON]: new ObjectType({
-    elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
-    isSettings: true,
-  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
@@ -618,6 +614,6 @@ export const mockInstances = () => ({
   ),
   [CHANGED_AT_SINGLETON]: new InstanceElement(
     ElemID.CONFIG_NAME,
-    mockTypes.ChangedAtSingleton,
+    ArtificalTypes.ChangedAtSingleton,
   ),
 })

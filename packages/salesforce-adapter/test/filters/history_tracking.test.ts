@@ -236,7 +236,7 @@ describe('historyTracking', () => {
         })
       })
     })
-    describe('When tracked fields are changed but the fields are not changed', () => {
+    describe('When tracked fields are changed but there are no explicit changes to the fields themselves', () => {
       const isFieldModificationChange = <T extends Change<unknown>>(change: T)
         : change is T & ModificationChange<Field> => (
           isFieldChange(change) && isModificationChange(change)

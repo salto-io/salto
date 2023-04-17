@@ -117,7 +117,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
       })
 
       describe('when the missing InstalledPackage is not excluded from the fetch config', () => {
-        describe('when isFetchWithChangeDetection is false', () => {
+        describe('when isFetchWithChangesDetection is false', () => {
           beforeEach(async () => {
             const filterContext = {
               ...defaultFilterContext,
@@ -125,7 +125,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
                 ...defaultFilterContext.fetchProfile,
                 metadataQuery: {
                   ...defaultFilterContext.fetchProfile.metadataQuery,
-                  isFetchWithChangeDetection: () => false,
+                  isFetchWithChangesDetection: () => false,
                 },
               },
             }
@@ -152,7 +152,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
           })
         })
 
-        describe('when isFetchWithChangeDetection is true', () => {
+        describe('when isFetchWithChangesDetection is true', () => {
           beforeEach(async () => {
             const filterContext = {
               ...defaultFilterContext,
@@ -160,7 +160,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
                 ...defaultFilterContext.fetchProfile,
                 metadataQuery: {
                   ...defaultFilterContext.fetchProfile.metadataQuery,
-                  isFetchWithChangeDetection: () => true,
+                  isFetchWithChangesDetection: () => true,
                 },
               },
             }

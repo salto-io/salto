@@ -13,17 +13,37 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, Field, InstanceElement, createRefToElmWithValue } from '@salto-io/adapter-api'
 import {
-  addDefaults, getNamespace,
+  BuiltinTypes,
+  createRefToElmWithValue,
+  ElemID,
+  Field,
+  InstanceElement,
+  ObjectType,
+  ReadOnlyElementsSource,
+} from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  addDefaults, getChangedAtSingleton,
+  getNamespace,
   isCustomMetadataRecordInstance,
   isCustomMetadataRecordType,
-  isMetadataValues, isStandardObject, layoutObjAndName,
+  isMetadataValues,
+  isStandardObject,
+  layoutObjAndName,
 } from '../../src/filters/utils'
-import { SALESFORCE, LABEL, API_NAME, INSTANCE_FULL_NAME_FIELD, METADATA_TYPE, CUSTOM_OBJECT, CUSTOM_SETTINGS_TYPE } from '../../src/constants'
+import {
+  API_NAME,
+  CUSTOM_OBJECT,
+  CUSTOM_SETTINGS_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  LABEL,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { createInstanceElement, Types } from '../../src/transformers/transformer'
 import { CustomObject } from '../../src/client/types'
-import { mockTypes } from '../mock_elements'
+import { mockInstances, mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
 import { INSTANCE_SUFFIXES } from '../../src/types'
 
@@ -298,6 +318,29 @@ describe('addDefaults', () => {
       ['Account-Layout-Complex-Name', 'Account', 'Layout-Complex-Name'],
     ])('%s', (layoutApiName, expectedObjectName, expectedLayoutName) => {
       expect(layoutObjAndName(layoutApiName)).toEqual([expectedObjectName, expectedLayoutName])
+    })
+  })
+  describe('getChangedAtSingleton', () => {
+    let elementsSource: ReadOnlyElementsSource
+
+    describe('when the ChangedAtSingleton instance exists in the elementsSource', () => {
+      let changedAtSingleton: InstanceElement
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton
+        elementsSource = buildElementsSourceFromElements([changedAtSingleton])
+      })
+      it('should return the singleton', async () => {
+        expect(await getChangedAtSingleton(elementsSource)).toEqual(changedAtSingleton)
+      })
+    })
+
+    describe('when the ChangedAtSingleton instance does not exist in the elementsSource', () => {
+      beforeEach(() => {
+        elementsSource = buildElementsSourceFromElements([])
+      })
+      it('should return undefined', async () => {
+        expect(await getChangedAtSingleton(elementsSource)).toBeUndefined()
+      })
     })
   })
 })

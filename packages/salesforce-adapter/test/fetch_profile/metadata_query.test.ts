@@ -211,9 +211,9 @@ describe('buildMetadataQuery', () => {
           expect(query.isPartialFetch()).toBeTrue()
         })
       })
-      describe('isFetchWithChangeDetection', () => {
+      describe('isFetchWithChangesDetection', () => {
         it('should return true', () => {
-          expect(query.isFetchWithChangeDetection()).toBeTrue()
+          expect(query.isFetchWithChangesDetection()).toBeTrue()
         })
       })
       describe('when the instance was not updated from the previous fetch', () => {

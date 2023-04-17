@@ -30,7 +30,7 @@ export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
   isTargetedFetch: () => boolean
-  isFetchWithChangeDetection: () => boolean
+  isFetchWithChangesDetection: () => boolean
   isPartialFetch: () => boolean
   getFolderPathsByName: (folderType: string) => Record<string, string>
 }
@@ -149,7 +149,7 @@ export const buildMetadataQuery = (
 
     isTargetedFetch: () => target !== undefined,
 
-    isFetchWithChangeDetection: () => changedAtSingleton !== undefined,
+    isFetchWithChangesDetection: () => changedAtSingleton !== undefined,
 
     isPartialFetch: () => target !== undefined || changedAtSingleton !== undefined,
 

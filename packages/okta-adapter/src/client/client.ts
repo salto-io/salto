@@ -58,6 +58,10 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
     )
   }
 
+  public get baseUrl(): string {
+    return this.credentials.baseUrl
+  }
+
   /**
   * Clear response data values might contain secrets, returns a new object
   */

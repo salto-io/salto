@@ -31,7 +31,6 @@ import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
-import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
@@ -72,7 +71,6 @@ export const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   fieldReferencesFilter,
-  groupDeploymentFilter,
   // should run before appDeploymentFilter and after after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,

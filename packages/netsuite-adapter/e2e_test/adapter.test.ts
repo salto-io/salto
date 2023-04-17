@@ -419,7 +419,7 @@ describe('Netsuite adapter E2E with real account', () => {
           // we need to get the folder internalId
           ? await realAdapter(
             { credentials: credentialsLease.value, withSuiteApp },
-            { fetch: { include: { types: [], fileCabinet: ['/Images'], customRecords: [] } } }
+            { fetch: { include: { types: [], fileCabinet: ['/Images/'], customRecords: [] } } }
           ).adapter.fetch({
             progressReporter: { reportProgress: jest.fn() },
           })

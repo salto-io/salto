@@ -109,7 +109,7 @@ describe('historyTracking', () => {
   describe('preDeploy', () => {
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
       const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
-      const typeName = 'SomeType'
+      const typeName = 'SomeType__c'
       const objectType = createCustomObjectType(typeName, {
         fields: Object.fromEntries(fields.map(fieldName => [fieldName, {
           refType: Types.primitiveDataTypes.Text,
@@ -122,6 +122,26 @@ describe('historyTracking', () => {
       }
       return objectType
     }
+
+    describe('when an object does not support history tracking', () => {
+      it('should not create any annotations', async () => {
+        const objectType = createCustomObjectType('SomeObject', {
+          fields: {
+            SomeField: {
+              refType: Types.primitiveDataTypes.Text,
+              annotations: {
+                apiName: 'SomeObject.SomeField',
+              },
+            },
+          },
+        })
+
+        const changes = [toChange({ after: objectType })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
+        expect(getChangeData(changes[0]).fields.SomeField).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY)
+      })
+    })
 
     describe('when an object has no historyTrackedFields', () => {
       it('should add enableHistory=false annotation if the object type is new', async () => {

@@ -420,7 +420,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      isPartial: this.userConfig.fetch?.target !== undefined,
+      isPartial: this.fetchProfile.metadataQuery.isPartialFetch(),
     }
   }
 

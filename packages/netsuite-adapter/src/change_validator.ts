@@ -27,6 +27,7 @@ import removeSdfElementsValidator from './change_validators/remove_sdf_elements'
 import reportTypesMoveEnvironment from './change_validators/report_types_move_environment'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
+import uniqueFieldsValidator from './change_validators/unique_fields'
 import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
@@ -62,6 +63,7 @@ const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
   immutableChangesValidator,
   removeListItemValidator,
   fileValidator,
+  uniqueFieldsValidator,
   subInstancesValidator,
   standardTypesInvalidValuesValidator,
   mappedListsIndexesValidator,

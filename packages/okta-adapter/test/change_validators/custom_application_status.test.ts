@@ -30,7 +30,7 @@ describe('customApplicationStatusValidator', () => {
     { customName: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0', status: INACTIVE_STATUS }
   )
 
-  it('should return change error when modifying custom app in status INACTIVE', async () => {
+  it('should return warning when modifying custom app in status INACTIVE', async () => {
     const errors = await customApplicationStatusValidator([
       toChange({ before: customAppInstance, after: customAppInstance }),
     ])
@@ -38,13 +38,13 @@ describe('customApplicationStatusValidator', () => {
     expect(errors).toEqual([
       {
         elemID: customAppInstance.elemID,
-        severity: 'Error',
-        message: 'Cannot change custom application in status INACTIVE',
-        detailedMessage: 'Modifications of custom applications in status INACTIVE is not supported via the Okta API. Please make this change in Okta and fetch, or activate the application and try again.',
+        severity: 'Warning',
+        message: 'Application will be activated in order to apply those changes',
+        detailedMessage: `Modifications of custom applications in status ${INACTIVE_STATUS} are not supported via the Okta API. Therefore, Salto will activate the application in order to apply changes, and deactivate it afterwards. Alternatively, you can make this change in Okta and fetch.`,
       },
     ])
   })
-  it('should not return change error when modifying regular app in status INACTIVE', async () => {
+  it('should not return warning when modifying regular app in status INACTIVE', async () => {
     const errors = await customApplicationStatusValidator([
       toChange({ before: appInstance, after: appInstance }),
     ])

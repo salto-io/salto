@@ -177,15 +177,21 @@ const getEntriesForType = async (
   const instances = await awu(entriesValues).flatMap(async (entry, index) => {
     if (nestedFieldDetails !== undefined) {
       return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
-        (nestedEntry, nesteIndex) => toInstance({
-          entry: nestedEntry,
-          type: nestedFieldDetails.type,
-          transformationConfigByType,
-          transformationDefaultConfig,
-          defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
-          hasDynamicFields,
-          getElemIdFunc,
-        })
+        (nestedEntry, nesteIndex) => {
+          if (!isObjectType(nestedFieldDetails.type)) {
+            log.error('type is not objectType returning undefined')
+            return undefined
+          }
+          return toInstance({
+            entry: nestedEntry,
+            type: nestedFieldDetails.type,
+            transformationConfigByType,
+            transformationDefaultConfig,
+            defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
+            hasDynamicFields,
+            getElemIdFunc,
+          })
+        }
       ).filter(isDefined).toArray()
     }
 

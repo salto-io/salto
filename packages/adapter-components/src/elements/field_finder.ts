@@ -13,7 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, Field, isListType, isObjectType, TypeElement } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  Field,
+  isListType,
+  isObjectType,
+  TypeElement,
+  BuiltinTypes,
+  PrimitiveType,
+  isPrimitiveType,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { FieldToOmitType, DATA_FIELD_ENTIRE_OBJECT } from '../config/transformation'
@@ -27,7 +36,7 @@ export type FindNestedFieldFunc = (
   dataField?: string,
 ) => Promise<{
   field: Field
-  type: ObjectType
+  type: ObjectType | PrimitiveType
 } | undefined>
 
 /**
@@ -85,7 +94,12 @@ export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, d
     ? await nestedFieldType.getInnerType()
     // map type currently cannot be returned from nested fields
     : nestedFieldType
-
+  if (isPrimitiveType(nestedType) && nestedType.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID)) {
+    return {
+      field: nestedField,
+      type: nestedType,
+    }
+  }
   if (!isObjectType(nestedType)) {
     log.info('unexpected field type for type %s field %s (%s), extracting full entry',
       type.elemID.name, nestedField.name, nestedType.elemID.getFullName())

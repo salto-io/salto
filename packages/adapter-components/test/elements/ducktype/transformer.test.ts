@@ -14,7 +14,15 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  ListType,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements, EntriesRequester } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
@@ -129,6 +137,62 @@ describe('ducktype_transformer', () => {
         },
         defaultName: 'unnamed_1',
       })
+    })
+    it('should not return the instances if the entry is empty', async () => {
+      jest.spyOn(typeElements, 'generateType').mockReset()
+      jest.spyOn(typeElements, 'generateType').mockImplementationOnce(({ adapterName, name }) => {
+        const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
+        return {
+          type: new ObjectType({
+            elemID: new ElemID(adapterName, name),
+            fields: {
+              articles: { refType: new ListType(BuiltinTypes.UNKNOWN) },
+              meta: { refType: someNested },
+            },
+          }),
+          nestedTypes: [someNested],
+        }
+      })
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+        yield [{
+          meta: { has_more: false },
+          links: {
+            first: 'https://salto87.zendesk.com/api/v2/help_center/categories/15828521533331/articles?include=translations&page%5Bsize%5D=100&sort_by=updated_at',
+            last: 'https://salto87.zendesk.com/api/v2/help_center/categories/15828521533331/articles?include=translations&page%5Bbefore%5D=bGFzdF9wYWdl&page%5Bsize%5D=100&sort_by=updated_at',
+          },
+          articles: [],
+        }]
+      })
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        computeGetArgs: simpleGetArgs,
+        typeName: 'myType',
+        typesConfig: {
+          myType: {
+            request: {
+              url: 'url',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            dataField: 'articles',
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: findDataField,
+      })
+      expect(res).toHaveLength(2)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.myType',
+        'something.myType__some_nested',
+      ])
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(typeElements.generateType).toHaveBeenCalledTimes(1)
+      expect(instanceElements.toInstance).toHaveBeenCalledTimes(0)
     })
 
     it('should omit fieldsToOmit from instances but not from type', async () => {

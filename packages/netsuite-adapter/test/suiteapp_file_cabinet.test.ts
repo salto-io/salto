@@ -471,6 +471,11 @@ describe('suiteapp_file_cabinet', () => {
       query.isFileMatch.mockImplementation(path => !path.includes('folder4'))
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
+      const testWhereQuery = 'hideinbundle = \'F\' AND folder IN (5, 3)'
+      const suiteQlQuery = 'SELECT name, id, filesize, bundleable, isinactive, isonline,'
+      + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
+      + ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual([
         expectedResults[0],
         expectedResults[1],

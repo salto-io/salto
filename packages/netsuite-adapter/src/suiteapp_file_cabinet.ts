@@ -271,7 +271,7 @@ SuiteAppFileCabinetOperations => {
     const fileCriteria = 'hideinbundle = \'F\''
     const whereQueries = folderIdsToQuery.length > 0
       ? _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-        `${fileCriteria} AND folder IN(${foldersToQueryChunk.join(', ')})`)
+        `${fileCriteria} AND folder IN (${foldersToQueryChunk.join(', ')})`)
       : [fileCriteria]
     const results = await Promise.all(whereQueries.map(async whereQuery => {
       const filesResults = await suiteAppClient.runSuiteQL(

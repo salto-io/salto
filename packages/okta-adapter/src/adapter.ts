@@ -44,8 +44,6 @@ import privateApiDeployFilter from './filters/private_api_deploy'
 import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
-import serviceUrlFilter from './filters/service_url'
-import additionalServiceUrlFilter from './filters/additional_service_url'
 
 const { awu } = collections.asynciterable
 
@@ -71,10 +69,6 @@ export const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
-  // should run after userSchemaFilter
-  additionalServiceUrlFilter,
-  // should run before appDeploymentFilter
-  serviceUrlFilter,
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
@@ -285,11 +279,9 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
-  public get deployModifiers(): AdapterOperations['deployModifiers'] {
+  static get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator({
-        client: this.client,
-      }),
+      changeValidator: changeValidator(),
       dependencyChanger,
     }
   }

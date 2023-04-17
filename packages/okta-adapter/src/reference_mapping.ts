@@ -45,12 +45,28 @@ const OktaReferenceSerializationStrategyLookup: Record<
   },
 }
 
-type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<never> & {
+const getProfileMappingRefType: referenceUtils.ContextValueMapperFunc = val => {
+  if (val === 'user') {
+    return USERTYPE_TYPE_NAME
+  }
+  if (val === 'appuser') {
+    return APPLICATION_TYPE_NAME
+  }
+  return undefined
+}
+
+export type ReferenceContextStrategyName = 'neighborField'
+
+export const contextStrategyLookup: Record<ReferenceContextStrategyName, referenceUtils.ContextFunc> = {
+  neighborField: referenceUtils.neighborContextGetter({ contextFieldName: 'type', getLookUpName: async ({ ref }) => ref.elemID.name, contextValueMapper: getProfileMappingRefType }),
+}
+
+type OktaFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<ReferenceContextStrategyName> & {
   oktaSerializationStrategy?: OktaReferenceSerializationStrategyName
   oktaMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 
-export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<never> {
+export class OktaFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<ReferenceContextStrategyName> {
   constructor(def: OktaFieldReferenceDefinition) {
     super({ ...def, sourceTransformation: def.sourceTransformation ?? 'asString' })
     this.serializationStrategy = OktaReferenceSerializationStrategyLookup[
@@ -160,6 +176,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     src: { field: 'enabledGroup', parentTypes: ['BrowserPlugin'] },
     serializationStrategy: 'id',
     target: { type: GROUP_TYPE_NAME },
+  },
+  {
+    src: { field: 'id', parentTypes: ['ProfileMappingSource'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'neighborField' },
   },
 ]
 

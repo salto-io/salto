@@ -15,7 +15,7 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
@@ -30,7 +30,7 @@ const formulon = require('formulon')
 const { extract } = formulon
 
 const log = logger(module)
-const { awu } = collections.asynciterable
+const { awu, groupByAsync } = collections.asynciterable
 
 const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
   if (identifierInfo.type === 'customLabel') {
@@ -86,6 +86,17 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
   }
 
+  const isSelfReference = (elemId: ElemID): boolean => (
+    elemId.isEqual(field.parent.elemID)
+  )
+
+  const referenceValidity = async (elemId: ElemID): Promise<'valid' | 'omitted' | 'invalid'> => {
+    if (isSelfReference(elemId)) {
+      return 'omitted'
+    }
+    return (await isValidReference(elemId)) ? 'valid' : 'invalid'
+  }
+
   const logInvalidReferences = (
     invalidReferences: ElemID[],
     formula: string,
@@ -135,11 +146,11 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
-    logInvalidReferences(invalidReferences, formula, identifiersInfo)
+    const referencesWithValidity = await groupByAsync(references, referenceValidity)
 
-    const depsAsRefExpr = validReferences
-      .filter(elemId => !elemId.isEqual(field.parent.elemID))
+    logInvalidReferences(referencesWithValidity.invalid ?? [], formula, identifiersInfo)
+
+    const depsAsRefExpr = (referencesWithValidity.valid ?? [])
       .map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)

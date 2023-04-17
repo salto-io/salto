@@ -149,8 +149,8 @@ type FileResult = {
   folder: string
 }
 
-type ExtendedFolderResult = FolderResult & { path: string[]}
-type ExtendedFileResult = FileResult & { path: string[]}
+type ExtendedFolderResult = FolderResult & { path: string[] }
+type ExtendedFileResult = FileResult & { path: string[] }
 
 type FileCabinetResults = {
   filesResults: ExtendedFileResult[]
@@ -300,9 +300,9 @@ SuiteAppFileCabinetOperations => {
   })
 
   const removeResultsWithoutParentFolder = (
-    foldersResults : FolderResult[],
-    folderIdsSet: Set<string>,
+    foldersResults: FolderResult[],
   ): FolderResult[] => {
+    const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
     const removeFoldersWithoutParentFolder = (folders: FolderResult[]): FolderResult[] => {
       const filteredFolders = folders.filter(folder => {
         if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
@@ -322,16 +322,17 @@ SuiteAppFileCabinetOperations => {
 
   const removeFilesWithoutParentFolder = (
     filesResults: FileResult[],
-    folderIdsSet: Set<string>,
-  ): FileResult[] =>
-    filesResults.filter(file => {
+    filteredFolderResults: ExtendedFolderResult[],
+  ): FileResult[] => {
+    const folderIdsSet = new Set(filteredFolderResults.map(folder => folder.id))
+    return filesResults.filter(file => {
       if (!folderIdsSet.has(file.folder)) {
         log.warn('file\'s folder does not exist: %o', file)
         return false
       }
       return true
     })
-
+  }
 
   const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
     string[] => {
@@ -363,16 +364,15 @@ SuiteAppFileCabinetOperations => {
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
 
-      const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-      const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults, folderIdsSet)
+      const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
         .map(folder => ({ path: getFullPath(folder, idToFolder), ...folder }))
         // remove excluded folders before creating the query
         .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
       const filesResults = await queryFiles(
         filteredFolderResults.map(folder => folder.id)
       )
-      const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, folderIdsSet)
+      const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
         .map(file => ({ path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name], ...file }))
       fileCabinetResults = { filesResults: filteredFilesResults, foldersResults: filteredFolderResults }
     }

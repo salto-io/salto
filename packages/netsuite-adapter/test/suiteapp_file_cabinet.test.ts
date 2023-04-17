@@ -358,12 +358,13 @@ describe('suiteapp_file_cabinet', () => {
     })
 
     it('should filter files with query', async () => {
-      query.isFileMatch.mockImplementation(path => path !== '/folder5/folder4' && path !== '/folder5/folder3/file1')
+      query.isFileMatch.mockImplementation(path => path !== '/folder5/folder3/file1')
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query)
       expect(elements).toEqual([
         expectedResults[0],
         expectedResults[1],
+        expectedResults[2],
         expectedResults[4],
         expectedResults[5],
       ])

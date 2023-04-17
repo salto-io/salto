@@ -19,7 +19,7 @@ import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAd
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, SAML_2_0_APP } from '../constants'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
@@ -28,7 +28,6 @@ import { deployChanges, defaultDeployChange, deployEdges, isActivationChange, is
 const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
-const SAML_2_0_APP = 'SAML_2_0'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
     add: {

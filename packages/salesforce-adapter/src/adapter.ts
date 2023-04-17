@@ -92,7 +92,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { ArtificalTypes, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import { ArtificialTypes, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -384,7 +384,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     const hardCodedTypes = [
       ...Types.getAllMissingTypes(),
       ...Types.getAnnotationTypes(),
-      ...Object.values(ArtificalTypes),
+      ...Object.values(ArtificialTypes),
     ]
     const metadataTypeInfosPromise = this.listMetadataTypes()
     const metadataTypesPromise = this.fetchMetadataTypes(

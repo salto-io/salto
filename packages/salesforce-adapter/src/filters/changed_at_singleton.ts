@@ -26,7 +26,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith, LocalFilterCreator } from '../filter'
 import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
-import { ArtificalTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
+import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { getChangedAtSingleton } from './utils'
 
 const { groupByAsync, awu } = collections.asynciterable
@@ -47,7 +47,7 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
 const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
   new InstanceElement(
     ElemID.CONFIG_NAME,
-    ArtificalTypes.ChangedAtSingleton,
+    ArtificialTypes.ChangedAtSingleton,
   )
 )
 

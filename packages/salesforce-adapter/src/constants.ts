@@ -380,7 +380,7 @@ export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 
-export const ArtificalTypes = {
+export const ArtificialTypes = {
   [CHANGED_AT_SINGLETON]: new ObjectType({
     elemID: new ElemID(SALESFORCE, CHANGED_AT_SINGLETON),
     isSettings: true,

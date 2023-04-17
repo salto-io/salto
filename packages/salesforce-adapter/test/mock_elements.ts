@@ -29,7 +29,7 @@ import {
   CPQ_QUOTE,
   DUPLICATE_RULE_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
-  PATH_ASSISTANT_METADATA_TYPE, CHANGED_AT_SINGLETON, ArtificalTypes,
+  PATH_ASSISTANT_METADATA_TYPE, CHANGED_AT_SINGLETON, ArtificialTypes,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -614,6 +614,6 @@ export const mockInstances = () => ({
   ),
   [CHANGED_AT_SINGLETON]: new InstanceElement(
     ElemID.CONFIG_NAME,
-    ArtificalTypes.ChangedAtSingleton,
+    ArtificialTypes.ChangedAtSingleton,
   ),
 })

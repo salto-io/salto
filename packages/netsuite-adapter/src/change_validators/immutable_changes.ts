@@ -43,21 +43,20 @@ const toModifiedAnnotationChangeError = (
   detailedMessage: `This ${modifiedAnno} is immutable.\n In order to deploy this ${after.elemID.idType}, remove this change.`,
 })
 
-type TypeMissingServiceIdResponse = { type: 'missingRefType' } | { type: 'missingAnnotation'; value: string }
-
 const typeServiceIdConditions = async <T extends AdditionChange<ObjectType> | ModificationChange<ObjectType>>(
   change: T,
   condition: (change: T, annoName: string) => boolean
-): Promise<TypeMissingServiceIdResponse[]> => {
+): Promise<string[]> => {
   const { after } = change.data
   const serviceIdRefTypes = await awu(Object.entries(after.annotationRefTypes))
     .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue())).toArray()
-  if (serviceIdRefTypes.length === 0) {
-    return [{ type: 'missingRefType' }]
+  if (serviceIdRefTypes.length === 0 && condition(change, SCRIPT_ID)) {
+    // In this case there are no serviceid refTypes and the scriptid changed.
+    return [SCRIPT_ID]
   }
   return serviceIdRefTypes
     .filter(([annoName, _refType]) => condition(change, annoName))
-    .map(([annoName, _refType]) => ({ type: 'missingAnnotation', value: annoName }))
+    .map(([annoName, _refType]) => annoName)
 }
 
 const modificationServiceIdCondition = (change: ModificationChange<ChangeDataType>, annoName: string): boolean =>
@@ -68,13 +67,9 @@ const toModificationTypeErrors = async (change: ModificationChange<ObjectType>):
   const { after } = change.data
   const modifiedImmutableAnnotations = await typeServiceIdConditions(change, modificationServiceIdCondition)
   if (modificationServiceIdCondition(change, APPLICATION_ID)) {
-    modifiedImmutableAnnotations.push({ type: 'missingAnnotation', value: APPLICATION_ID })
+    modifiedImmutableAnnotations.push(APPLICATION_ID)
   }
-  return modifiedImmutableAnnotations.map(modifiedAnno => (
-    modifiedAnno.type === 'missingAnnotation'
-      ? toModifiedAnnotationChangeError(after, modifiedAnno.value)
-      : toModifiedAnnotationChangeError(after, 'script ID refType')
-  ))
+  return modifiedImmutableAnnotations.map(modifiedAnno => toModifiedAnnotationChangeError(after, modifiedAnno))
 }
 
 const fieldServiceIdConditions = <T extends AdditionChange<Field> | ModificationChange<Field>>(
@@ -171,11 +166,7 @@ const toAdditionTypeErrors = async (change: AdditionChange<ObjectType>): Promise
   const { after } = change.data
   const missingServiceIdAnnotations = await typeServiceIdConditions(change, additionServiceIdCondition)
 
-  return missingServiceIdAnnotations.map(addedAnno => (
-    addedAnno.type === 'missingAnnotation'
-      ? toAddedMissingAnnotationError(after, addedAnno.value)
-      : toAddedMissingAnnotationError(after, 'script ID refType')
-  ))
+  return missingServiceIdAnnotations.map(addedAnno => toAddedMissingAnnotationError(after, addedAnno))
 }
 
 const toAdditionFieldErrors = (change: AdditionChange<Field>): ChangeError[] => {
@@ -193,8 +184,8 @@ const toAdditionInstanceErrors = async (
   return missingServiceIdFields.map(addedField => ({
     elemID: after.elemID,
     severity: 'Error',
-    message: 'Can\'t deploy a field without a script ID',
-    detailedMessage: `Missing field script ID.\n In order to deploy this ${addedField} field, make sure it has a valid script ID`,
+    message: `Can't deploy an instance without its ${addedField}`,
+    detailedMessage: `Missing ${addedField}.\n In order to deploy this instance, make sure it has a valid ${addedField}`,
   } as ChangeError))
 }
 

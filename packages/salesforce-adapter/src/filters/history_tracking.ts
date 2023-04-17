@@ -160,8 +160,6 @@ const filter: LocalFilterCreator = () => {
       //    3.1.3 Else if the field was removed:
       //    3.1.3.1 create a new change where the 'before' part is the field from the object with trackHistory=true and
       //            the 'after' part is the field from the object
-      // Note: if an object was added we assume we'll get an AdditionChange for every one of its fields, so that case
-      //       will be handled in (1)
 
       const changedFieldNames = changedCustomObjectFields.map(field => field.elemID.getFullName())
 

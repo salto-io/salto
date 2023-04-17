@@ -153,6 +153,13 @@ describe('historyTracking', () => {
         expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
         expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
       })
+      it('should add the trackHistory annotation to fields if the object type is new', async () => {
+        const changes = [toChange({ after: typeForPreDeploy(['SomeField'], ['SomeField', 'UntrackedField']) })]
+        await filter.preDeploy(changes)
+        expect(getChangeData(changes[0]).annotations).toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
+        expect(getChangeData(changes[0]).annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+        expect(getChangeData(changes[0]).fields.SomeField.annotations).toHaveProperty('trackHistory', true)
+      })
       it('should add the enableHistory annotation if historyTrackedFields was modified', async () => {
         const before = typeForPreDeploy(['SomeField'], ['SomeField'])
         const changes = [toChange({ before, after: typeForPreDeploy([]) })]

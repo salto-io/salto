@@ -49,7 +49,7 @@ const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
   onFetch: async (elements: Element[]) => {
     const baseUrl = getAdminUrl(client.baseUrl)
     if (baseUrl === undefined) {
-      log.warn('Failed to create baseUrl for instances')
+      log.warn('Failed to run serviceUrlFilter, because baseUrl could not be found')
       return
     }
     elements
@@ -65,7 +65,7 @@ const serviceUrlFilter: FilterCreator = ({ client, config }) => ({
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     const baseUrl = getAdminUrl(client.baseUrl)
     if (baseUrl === undefined) {
-      log.warn('Failed to create baseUrl for instances')
+      log.warn('Failed to run serviceUrlFilter, because baseUrl could not be found')
       return
     }
     const relevantChanges = changes.filter(isInstanceChange).filter(isAdditionChange)

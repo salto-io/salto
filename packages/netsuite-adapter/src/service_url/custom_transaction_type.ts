@@ -18,11 +18,12 @@ import { isInstanceElement } from '@salto-io/adapter-api'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
-const setServiceUrl: ServiceUrlSetter = (elements, client) => {
-  setElementsUrls({
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  await setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,
     filter: element => element.refType.elemID.name === 'customtransactiontype',
+    query: 'SELECT id, scriptid FROM customtransactiontype ORDER BY id ASC',
     generateUrl: id => `app/common/custom/customtransaction.nl?id=${id}`,
   })
 }

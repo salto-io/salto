@@ -14,17 +14,44 @@
 * limitations under the License.
 */
 
-import { isInstanceElement } from '@salto-io/adapter-api'
-import { SAVED_SEARCH } from '../constants'
-import { setElementsUrls } from './elements_urls'
+import { CORE_ANNOTATIONS, isInstanceElement } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
+import NetsuiteClient from '../client/client'
 import { ServiceUrlSetter } from './types'
+import { areSavedSearchResultsValid } from './validation'
 
-const setServiceUrl: ServiceUrlSetter = (elements, client) => {
-  setElementsUrls({
-    elements: elements.filter(isInstanceElement),
-    client,
-    filter: element => element.refType.elemID.name === SAVED_SEARCH,
-    generateUrl: id => `app/common/search/search.nl?cu=T&id=${id}`,
+const log = logger(module)
+
+
+const getScriptIdToInternalId = async (client: NetsuiteClient): Promise<Record<string, number>> => {
+  const results = await client.runSavedSearchQuery({ type: 'savedsearch', filters: [], columns: ['id', 'internalid'] })
+  if (!areSavedSearchResultsValid(results)) {
+    throw new Error('Got invalid results from savedsearch query')
+  }
+
+  return Object.fromEntries(
+    results.map(({ id, internalid }) => [id, parseInt(internalid[0].value, 10)])
+  )
+}
+
+const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
+  const relevantElements = elements
+    .filter(isInstanceElement)
+    .filter(element => element.refType.elemID.name === 'savedsearch')
+
+  if (relevantElements.length === 0) {
+    return
+  }
+
+  const scriptIdToInternalId = await getScriptIdToInternalId(client)
+
+  relevantElements.forEach(element => {
+    const id = scriptIdToInternalId[element.value.scriptid]
+    if (id !== undefined) {
+      element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(`app/common/search/search.nl?cu=T&id=${id}`, client.url).href
+    } else {
+      log.warn(`Did not find the internal id of ${element.elemID.getFullName()}`)
+    }
   })
 }
 

@@ -109,10 +109,12 @@ const addInternalIdAnnotationToCustomRecordTypes = (elements: Element[]): void =
     })
 }
 
+const isSavedSearch = (element: Element): boolean => element.elemID.typeName === SAVED_SEARCH
+
 const addInternalIdFieldToSupportedType = (elements: Element[]): void => {
   elements
     .filter(isObjectType)
-    .filter(object => getTableName(object) in TABLE_NAME_TO_ID_PARAMETER_MAP)
+    .filter(object => getTableName(object) in TABLE_NAME_TO_ID_PARAMETER_MAP || isSavedSearch(object))
     .forEach(object => {
       if (_.isUndefined(object.fields[INTERNAL_ID])) {
         object.fields[INTERNAL_ID] = new Field(
@@ -222,8 +224,6 @@ const addInternalIdToCustomListValues = async (
     })
   })
 }
-
-const isSavedSearch = (element: InstanceElement): boolean => element.refType.elemID.name === SAVED_SEARCH
 
 const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: Element[]): Promise<void> => {
   const queryScriptIdToInternalId = async (): Promise<Record<string, string>> => {

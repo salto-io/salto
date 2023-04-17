@@ -165,21 +165,21 @@ const validateTypeNameOverrides = (
   typeNameOverrides: TypeNameOverrideConfig[],
   typeNames: string[]
 ): void => {
-  const allRenamedTypes = typeNameOverrides.flat()
-  const newNames = allRenamedTypes.map(t => t.newName)
+  const newNames = typeNameOverrides.map(t => t.newName)
   const newNameDuplicates = findDuplicates(newNames)
   if (newNameDuplicates.length > 0) {
     throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${newNameDuplicates}`)
   }
-  const originalNameDuplicates = findDuplicates(allRenamedTypes.map(t => t.originalName))
+  const originalNames = typeNameOverrides.map(t => t.originalName)
+  const originalNameDuplicates = findDuplicates(originalNames)
   if (originalNameDuplicates.length > 0) {
     throw new Error(`Duplicate type names in ${apiDefinitionConfigPath}.typeNameOverrides: ${originalNameDuplicates}`)
   }
   const newTypeNames = new Set(newNames)
   const invalidTypeNames = new Set(
-    typeNameOverrides.map(t => t.originalName).filter(originalName => !newTypeNames.has(originalName))
+    originalNames.filter(originalName => !newTypeNames.has(originalName))
   )
-  const invalidTypes = typeNames.filter(r => invalidTypeNames.has(r))
+  const invalidTypes = typeNames.filter(t => invalidTypeNames.has(t))
   if (invalidTypes.length > 0) {
     throw new Error(`Invalid type names in ${apiDefinitionConfigPath}: ${[...invalidTypes].sort()} were renamed in ${apiDefinitionConfigPath}.typeNameOverrides`)
   }

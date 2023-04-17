@@ -94,7 +94,7 @@ const filter: LocalFilterCreator = () => {
   return {
     name: 'history_tracking',
     onFetch: async elements => {
-      elements
+      await awu(elements)
         .filter(isObjectType)
         .filter(isCustomObject)
         .forEach(centralizeHistoryTrackingAnnotations)
@@ -121,7 +121,7 @@ const filter: LocalFilterCreator = () => {
         .filter(change => {
           const before = isModificationChange(change) ? change.data.before : undefined
           const after = getChangeData(change)
-          return before?.annotations[HISTORY_TRACKED_FIELDS] !== after.annotations[HISTORY_TRACKED_FIELDS]
+          return !_.isEqual(before?.annotations[HISTORY_TRACKED_FIELDS], after.annotations[HISTORY_TRACKED_FIELDS])
         })
       objectTypesChangedInPreDeploy = await groupByAsync(actuallyChangedObjectTypes,
         change => apiName(getChangeData(change)))
@@ -138,11 +138,12 @@ const filter: LocalFilterCreator = () => {
             })
         })
 
-      const changedCustomObjectFields = changes
+      const changedCustomObjectFields = await awu(changes)
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .filter(isField)
         .filter(isFieldOfCustomObject)
+        .toArray()
 
       // 2. For all changed fields, make sure they have the expected 'trackHistory' value
       await awu(changedCustomObjectFields)

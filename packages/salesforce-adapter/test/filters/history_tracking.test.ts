@@ -346,74 +346,103 @@ describe('historyTracking', () => {
         },
       },
     })
-    it('should have the same output between onFetch and preDeploy=>onDeploy when adding an object', async () => {
-      const elements = [typeWithHistoryTrackedFields.clone()]
-      await filter.onFetch(elements)
+    describe('state preservation', () => {
+      it('should preserve changes from preDeploy even if they don`t get passed to onDeploy', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-      const changes = [toChange({ after: elements[0] })]
-      getChangeData(changes[0]).annotations[HISTORY_TRACKED_FIELDS] = resolveRefs(getChangeData(changes[0])
-        .annotations[HISTORY_TRACKED_FIELDS])
+        const after = elements[0].clone()
+        after.annotations[HISTORY_TRACKED_FIELDS] = {}
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        const onDeployChanges:Change[] = []
+        await filter.onDeploy(onDeployChanges)
+        expect(onDeployChanges).toHaveLength(1)
+        expect(getChangeData(onDeployChanges[0])).toEqual(after)
+      })
+      it('should disregard changes from preDeploy if they`re irrelevant', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-      await filter.preDeploy(changes)
-      await filter.onDeploy(changes)
-      expect(changes).toHaveLength(1)
-      expect(getChangeData(changes[0])).toEqual(elements[0])
+        const after = elements[0].clone()
+        after.annotations.unrelatedAnnotation = 'SomeAnnotationValue'
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        const onDeployChanges:Change[] = []
+        await filter.onDeploy(onDeployChanges)
+        expect(onDeployChanges).toHaveLength(0)
+      })
     })
-    it('should have the same output between onFetch and preDeploy=>onDeploy when adding a tracked field', async () => {
-      const elements = [typeWithHistoryTrackedFields.clone()]
-      await filter.onFetch(elements)
+    describe('onFetch vs. preDeploy=>onDeploy', () => {
+      it('should have the same output between onFetch and preDeploy=>onDeploy when adding an object', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-      const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = (
-        new ReferenceExpression(after.fields.fieldWithoutHistoryTracking.elemID))
-      const changes = [toChange({ before: elements[0], after })]
-      await filter.preDeploy(changes)
-      await filter.onDeploy(changes)
-      expect(changes).toHaveLength(1)
-      expect(getChangeData(changes[0])).toEqual(after)
-    })
-    it('should have the same output between onFetch and preDeploy=>onDeploy when removing a tracked field', async () => {
-      const elements = [typeWithHistoryTrackedFields.clone()]
-      await filter.onFetch(elements)
+        const changes = [toChange({ after: elements[0] })]
+        getChangeData(changes[0]).annotations[HISTORY_TRACKED_FIELDS] = resolveRefs(getChangeData(changes[0])
+          .annotations[HISTORY_TRACKED_FIELDS])
 
-      const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS] = {}
-      const changes = [toChange({ before: elements[0], after })]
-      await filter.preDeploy(changes)
-      await filter.onDeploy(changes)
-      expect(changes).toHaveLength(1)
-      expect(getChangeData(changes[0])).toEqual(after)
-    })
-    it('should have the same output between onFetch and preDeploy=>onDeploy when disabling history tracking', async () => {
-      const elements = [typeWithHistoryTrackedFields.clone()]
-      await filter.onFetch(elements)
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0])).toEqual(elements[0])
+      })
+      it('should have the same output between onFetch and preDeploy=>onDeploy when adding a tracked field', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-      const after = elements[0].clone()
-      delete after.annotations[HISTORY_TRACKED_FIELDS]
-      const changes = [toChange({ before: elements[0], after })]
-      await filter.preDeploy(changes)
-      await filter.onDeploy(changes)
-      expect(changes).toHaveLength(1)
-      expect(getChangeData(changes[0])).toEqual(after)
-    })
+        const after = elements[0].clone()
+        after.annotations[HISTORY_TRACKED_FIELDS].fieldWithoutHistoryTracking = (
+          new ReferenceExpression(after.fields.fieldWithoutHistoryTracking.elemID))
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0])).toEqual(after)
+      })
+      it('should have the same output between onFetch and preDeploy=>onDeploy when removing a tracked field', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-    it('should have the same output between onFetch and preDeploy=>onDeploy when enabling history tracking', async () => {
-      const type = typeWithHistoryTrackedFields.clone()
-      type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = false
-      type.fields.fieldWithHistoryTracking.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
-      const elements = [type]
-      await filter.onFetch(elements)
+        const after = elements[0].clone()
+        after.annotations[HISTORY_TRACKED_FIELDS] = {}
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0])).toEqual(after)
+      })
+      it('should have the same output between onFetch and preDeploy=>onDeploy when disabling history tracking', async () => {
+        const elements = [typeWithHistoryTrackedFields.clone()]
+        await filter.onFetch(elements)
 
-      const after = elements[0].clone()
-      after.annotations[HISTORY_TRACKED_FIELDS] = {
-        fieldWithoutHistoryTracking: new ReferenceExpression(type.fields.fieldWithoutHistoryTracking.elemID),
-      }
+        const after = elements[0].clone()
+        delete after.annotations[HISTORY_TRACKED_FIELDS]
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0])).toEqual(after)
+      })
 
-      const changes = [toChange({ before: elements[0], after })]
-      await filter.preDeploy(changes)
-      await filter.onDeploy(changes)
-      expect(changes).toHaveLength(1)
-      expect(getChangeData(changes[0])).toEqual(after)
+      it('should have the same output between onFetch and preDeploy=>onDeploy when enabling history tracking', async () => {
+        const type = typeWithHistoryTrackedFields.clone()
+        type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = false
+        type.fields.fieldWithHistoryTracking.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false
+        const elements = [type]
+        await filter.onFetch(elements)
+
+        const after = elements[0].clone()
+        after.annotations[HISTORY_TRACKED_FIELDS] = {
+          fieldWithoutHistoryTracking: new ReferenceExpression(type.fields.fieldWithoutHistoryTracking.elemID),
+        }
+
+        const changes = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(changes)
+        await filter.onDeploy(changes)
+        expect(changes).toHaveLength(1)
+        expect(getChangeData(changes[0])).toEqual(after)
+      })
     })
   })
 })

@@ -1326,6 +1326,8 @@ public class LargeClass${index} {
         isTypeMatch: jest.fn(),
         isInstanceMatch: () => true,
         isPartialFetch: jest.fn(),
+        isTargetedFetch: jest.fn(),
+        isFetchWithChangeDetection: jest.fn(),
         getFolderPathsByName: jest.fn(),
       }
       const excludeFilePropMock = mockFileProperties({ fullName: 'fullName', type: 'excludeMe' })

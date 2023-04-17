@@ -91,6 +91,7 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
           EXISTING_NAMESPACES.concat(MISSING_NAMESPACE).map(createInstalledPackageFileProperties)
         )
       })
+
       describe('when the missing InstalledPackage is excluded from the fetch config', () => {
         beforeEach(async () => {
           const filterContext = {
@@ -114,27 +115,62 @@ describe('createMissingInstalledPackagesInstancesFilter', () => {
           expect(afterElements).toEqual(beforeElements)
         })
       })
+
       describe('when the missing InstalledPackage is not excluded from the fetch config', () => {
-        beforeEach(async () => {
-          await filter.onFetch(afterElements)
+        describe('when isFetchWithChangeDetection is false', () => {
+          beforeEach(async () => {
+            const filterContext = {
+              ...defaultFilterContext,
+              fetchProfile: {
+                ...defaultFilterContext.fetchProfile,
+                metadataQuery: {
+                  ...defaultFilterContext.fetchProfile.metadataQuery,
+                  isFetchWithChangeDetection: () => false,
+                },
+              },
+            }
+            filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>
+            await filter.onFetch(afterElements)
+          })
+          it('should create an InstalledPackage instance', async () => {
+            expect(afterElements).not.toEqual(beforeElements)
+            const missingNamespaceInstance = await awu(afterElements)
+              .find(async e => await apiName(e) === MISSING_NAMESPACE)
+            expect(missingNamespaceInstance).toEqual(expect.objectContaining({
+              path: [SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGE_METADATA, MISSING_NAMESPACE],
+              value: {
+                [INSTANCE_FULL_NAME_FIELD]: MISSING_NAMESPACE,
+              },
+              // Validates author information
+              annotations: {
+                [CORE_ANNOTATIONS.CHANGED_AT]: expect.toBeString(),
+                [CORE_ANNOTATIONS.CHANGED_BY]: expect.toBeString(),
+                [CORE_ANNOTATIONS.CREATED_AT]: expect.toBeString(),
+                [CORE_ANNOTATIONS.CREATED_BY]: expect.toBeString(),
+              },
+            }))
+          })
         })
-        it('should create an InstalledPackage instance', async () => {
-          expect(afterElements).not.toEqual(beforeElements)
-          const missingNamespaceInstance = await awu(afterElements)
-            .find(async e => await apiName(e) === MISSING_NAMESPACE)
-          expect(missingNamespaceInstance).toEqual(expect.objectContaining({
-            path: [SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGE_METADATA, MISSING_NAMESPACE],
-            value: {
-              [INSTANCE_FULL_NAME_FIELD]: MISSING_NAMESPACE,
-            },
-            // Validates author information
-            annotations: {
-              [CORE_ANNOTATIONS.CHANGED_AT]: expect.toBeString(),
-              [CORE_ANNOTATIONS.CHANGED_BY]: expect.toBeString(),
-              [CORE_ANNOTATIONS.CREATED_AT]: expect.toBeString(),
-              [CORE_ANNOTATIONS.CREATED_BY]: expect.toBeString(),
-            },
-          }))
+
+        describe('when isFetchWithChangeDetection is true', () => {
+          beforeEach(async () => {
+            const filterContext = {
+              ...defaultFilterContext,
+              fetchProfile: {
+                ...defaultFilterContext.fetchProfile,
+                metadataQuery: {
+                  ...defaultFilterContext.fetchProfile.metadataQuery,
+                  isFetchWithChangeDetection: () => true,
+                },
+              },
+            }
+            filter = filterCreator({ client, config: filterContext }) as FilterWith<'onFetch'>
+            await filter.onFetch(afterElements)
+          })
+
+          it('should not create any new instances', () => {
+            expect(afterElements).toEqual(beforeElements)
+          })
         })
       })
     })

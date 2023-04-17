@@ -29,6 +29,8 @@ const VALID_FOLDER_PATH_RE = /^[a-zA-Z\d_/]+$/
 export type MetadataQuery = {
   isTypeMatch: (type: string) => boolean
   isInstanceMatch: (instance: MetadataInstance) => boolean
+  isTargetedFetch: () => boolean
+  isFetchWithChangeDetection: () => boolean
   isPartialFetch: () => boolean
   getFolderPathsByName: (folderType: string) => Record<string, string>
 }
@@ -144,6 +146,10 @@ export const buildMetadataQuery = (
       && !fullExcludeList.some(params => isInstanceMatchQueryParams(instance, params))
       && wasUpdated(instance)
     ),
+
+    isTargetedFetch: () => target !== undefined,
+
+    isFetchWithChangeDetection: () => changedAtSingleton !== undefined,
 
     isPartialFetch: () => target !== undefined || changedAtSingleton !== undefined,
 

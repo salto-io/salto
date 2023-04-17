@@ -211,6 +211,11 @@ describe('buildMetadataQuery', () => {
           expect(query.isPartialFetch()).toBeTrue()
         })
       })
+      describe('isFetchWithChangeDetection', () => {
+        it('should return true', () => {
+          expect(query.isFetchWithChangeDetection()).toBeTrue()
+        })
+      })
       describe('when the instance was not updated from the previous fetch', () => {
         it('should return false', () => {
           expect(query.isInstanceMatch({
@@ -268,6 +273,11 @@ describe('buildMetadataQuery', () => {
     describe('isPartialFetch', () => {
       it('should return true', () => {
         expect(query.isPartialFetch()).toBeTruthy()
+      })
+    })
+    describe('isTargetedFetch', () => {
+      it('should return true', () => {
+        expect(query.isTargetedFetch()).toBeTruthy()
       })
     })
     describe('isTypeMatch', () => {

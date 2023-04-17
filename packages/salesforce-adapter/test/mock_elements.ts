@@ -599,6 +599,9 @@ export const mockDefaultValues = {
     description: 'Test Static Resource Description',
     content: Buffer.from('<xml/>'),
   },
+  [INSTALLED_PACKAGE_METADATA]: {
+    [INSTANCE_FULL_NAME_FIELD]: 'test_namespace',
+  },
 }
 
 // Intentionally let typescript infer the return type here to avoid repeating

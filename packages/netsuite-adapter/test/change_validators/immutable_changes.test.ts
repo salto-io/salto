@@ -121,7 +121,7 @@ describe('customization type change validator', () => {
     })
 
     describe('is missing refType', () => {
-      it('when modified, should have change error for type without refType', async () => {
+      it('when modified, should not have change error for type without refType but with script id', async () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotationRefsOrTypes: {
@@ -136,12 +136,10 @@ describe('customization type change validator', () => {
         const changeErrors = await immutableChangesValidator(
           [toChange({ before: type, after })]
         )
-        expect(changeErrors).toHaveLength(1)
-        expect(changeErrors[0].severity).toEqual('Error')
-        expect(changeErrors[0].elemID).toEqual(type.elemID)
+        expect(changeErrors).toHaveLength(0)
       })
 
-      it('when added, should have change error for type without refType', async () => {
+      it('when added, should have change error for type without refType and no script id', async () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotationRefsOrTypes: {

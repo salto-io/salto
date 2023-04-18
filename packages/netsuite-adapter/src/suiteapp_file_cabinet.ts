@@ -486,7 +486,7 @@ SuiteAppFileCabinetOperations => {
           typeName: 'file',
           values: file.values,
         })),
-      ].filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`)),
+      ],
       failedPaths: {
         otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
         lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),

@@ -201,6 +201,7 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
+  private readonly maxFileCabinetSize: number
 
   constructor({
     credentials,
@@ -220,6 +221,7 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
+    this.maxFileCabinetSize = config?.maxFileCabinetSize ?? DEFAULT_MAX_FILE_CABINET_SIZE
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
   }
@@ -803,7 +805,8 @@ export default class SdfClient {
 
     type FolderSizeMap = { [path: string]: FolderSize }
 
-    const excludeLargeFolders = async (filePaths: string[], fileCabinetDirPath: string): Promise<string[]> => {
+    const excludeLargeFolders = async (filePaths: string[], fileCabinetDirPath: string, maxFileCabinetSize: number):
+    Promise<{ listedPaths: string[]; failedPaths: string[] }> => {
       const folderSizes = async (): Promise<FolderSize[]> => {
         const statFiles = async ():
           Promise<{ [path: string]: number }> => {
@@ -859,7 +862,7 @@ export default class SdfClient {
       }
 
       const sizes = await folderSizes()
-      const maxSizeInBytes = (1024 ** 3) * DEFAULT_MAX_FILE_CABINET_SIZE
+      const maxSizeInBytes = (1024 ** 3) * maxFileCabinetSize
       const overflowSize = sizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
 
       const filterSingleFolder = (): string[] => {
@@ -894,15 +897,16 @@ export default class SdfClient {
       }
 
       if (overflowSize <= 0) {
-        return filePaths
+        return { listedPaths: filePaths, failedPaths: [] }
       }
 
       const foldersToExclude = sizes.some(folderSize => folderSize.size > overflowSize)
         ? filterSingleFolder()
         : filterMultipleFolders()
-      return filePaths.filter(filePath => !foldersToExclude.some(
+      const listedPaths = filePaths.filter(filePath => !foldersToExclude.some(
         folder => filePath.startsWith(`${FILE_CABINET_PATH_SEPARATOR}${folder}`)
       ))
+      return { listedPaths, failedPaths: foldersToExclude.map(path => `^${path}/.*`) }
     }
 
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
@@ -956,8 +960,8 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
-    const filteredPaths = await excludeLargeFolders(importedPaths, fileCabinetDirPath)
-    const [attributesPaths, filePaths] = _.partition(filteredPaths,
+    const filteredPaths = await excludeLargeFolders(importedPaths, fileCabinetDirPath, this.maxFileCabinetSize)
+    const [attributesPaths, filePaths] = _.partition(filteredPaths.listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
@@ -969,7 +973,7 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: { lockedError: [], otherError: listFilesResults.failedPaths },
+      failedPaths: { lockedError: [], otherError: _.concat(listFilesResults.failedPaths, filteredPaths.failedPaths) },
     }
   }
 

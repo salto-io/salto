@@ -160,6 +160,12 @@ jest.mock('@salto-io/file', () => ({
   rename: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
+  stat: jest.fn().mockImplementation(filePath => {
+    if (filePath.endsWith(MOCK_FILE_PATH)) {
+      return { size: 33 }
+    }
+    return { size: 0 }
+  }),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock

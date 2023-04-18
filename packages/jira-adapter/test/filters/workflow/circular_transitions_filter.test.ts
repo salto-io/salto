@@ -21,7 +21,7 @@ import { createEmptyType, getFilterParams } from '../../utils'
 import circularTransitionsFilter from '../../../src/filters/workflow/circular_transitions_filter'
 
 describe('circular transitions filter', () => {
-  let filter: filterUtils.FilterWith<'preDeploy'>
+  let filter: filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let type: ObjectType
   let instances: InstanceElement[]
   let changes: Change<InstanceElement>[]
@@ -122,6 +122,14 @@ describe('circular transitions filter', () => {
       )
       expect(getChangeData(changes[1]).value.transitions.length).toEqual(0)
       expect(getChangeData(changes[2]).value.transitions.length).toEqual(1)
+    })
+  })
+  describe('onDeploy', () => {
+    it('should not change the changes', async () => {
+      const changesCopy = changes.map(change => ({ ...change }))
+      await filter.preDeploy(changes) // to fill the cache
+      await filter.onDeploy(changes)
+      expect(changes).toEqual(changesCopy)
     })
   })
 })

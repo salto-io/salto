@@ -13,25 +13,41 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, Value } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance } from './types'
+import { isWorkflowInstance, Transition } from './types'
 
-function removeCircularTransitions(value: InstanceElement): void {
-  value.value.transitions = value.value.transitions
-    .filter((transition: Value) => transition.to !== '' || transition.from !== undefined)
-}
 
 // This filter removes circular transitions that cannot be deployed
-const filter: FilterCreator = () => ({
-  name: 'circularTransitionsFilter',
-  preDeploy: async changes => {
-    changes
-      .filter(isInstanceChange)
-      .filter(isAdditionOrModificationChange)
-      .map(getChangeData)
-      .filter(isWorkflowInstance)
-      .forEach(removeCircularTransitions)
-  },
-})
+const filter: FilterCreator = () => {
+  const cache: Map<string, Transition[]> = new Map()
+  return {
+    name: 'circularTransitionsFilter',
+    preDeploy: async changes => {
+      changes
+        .filter(isInstanceChange)
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isWorkflowInstance)
+        .forEach(instance => {
+          const noCircularTransitions = instance.value.transitions
+            .filter(transition => transition.to !== '' || transition.from !== undefined)
+          if (instance.value.transitions.length !== noCircularTransitions.length) {
+            cache.set(instance.elemID.getFullName(), instance.value.transitions)
+            instance.value.transitions = noCircularTransitions
+          }
+        })
+    },
+    onDeploy: async changes => {
+      changes
+        .filter(isInstanceChange)
+        .filter(isAdditionOrModificationChange)
+        .map(getChangeData)
+        .filter(isWorkflowInstance)
+        .forEach(instance => {
+          instance.value.transitions = cache.get(instance.elemID.getFullName()) ?? instance.value.transitions
+        })
+    },
+  }
+}
 export default filter

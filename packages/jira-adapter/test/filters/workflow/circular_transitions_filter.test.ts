@@ -40,7 +40,7 @@ describe('circular transitions filter', () => {
           },
           {
             name: 'reg2',
-            from: 'from',
+            from: ['from'],
             to: 'to',
           },
           {
@@ -53,7 +53,7 @@ describe('circular transitions filter', () => {
           },
           {
             name: 'reg5',
-            from: 'from',
+            from: ['from'],
             to: '',
           },
         ],
@@ -81,7 +81,7 @@ describe('circular transitions filter', () => {
           {
             name: 'reg1',
             to: 'to',
-            from: 'from',
+            from: ['from'],
           },
         ],
       },
@@ -106,7 +106,7 @@ describe('circular transitions filter', () => {
         [
           {
             name: 'reg2',
-            from: 'from',
+            from: ['from'],
             to: 'to',
           },
           {
@@ -115,7 +115,7 @@ describe('circular transitions filter', () => {
           },
           {
             name: 'reg5',
-            from: 'from',
+            from: ['from'],
             to: '',
           },
         ]

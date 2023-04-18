@@ -13,20 +13,18 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, Value } from '@salto-io/adapter-api'
-import _ from 'lodash'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { isWorkflowInstance } from '../../filters/workflow/types'
 
 export const circularTransitionsValidator: ChangeValidator = async changes =>
   changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-    .filter(instance => _.isArray(instance.value.transitions))
+    .filter(isWorkflowInstance)
     .flatMap(instance => instance.value.transitions
-      .filter((transition: Value) => transition.to === '' && transition.from === undefined)
-      .map((transition: Value) => ({
+      .filter(transition => transition.to === '' && transition.from === undefined)
+      .map(transition => ({
         elemID: instance.elemID,
         severity: 'Warning' as SeverityLevel,
         message: 'Circular workflow transitions cannot be deployed',

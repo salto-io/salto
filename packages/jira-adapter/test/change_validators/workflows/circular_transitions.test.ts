@@ -47,7 +47,7 @@ describe('circularTransitionsValidator', () => {
           },
           {
             name: 'reg2',
-            from: 'from',
+            from: ['from'],
             to: 'to',
           },
           {
@@ -60,7 +60,7 @@ describe('circularTransitionsValidator', () => {
           },
           {
             name: 'reg5',
-            from: 'from',
+            from: ['from'],
             to: '',
           },
         ],
@@ -88,7 +88,7 @@ describe('circularTransitionsValidator', () => {
           {
             name: 'reg1',
             to: 'to',
-            from: 'from',
+            from: ['from'],
           },
         ],
       },

@@ -140,15 +140,17 @@ export type Transition = {
   name?: string
   from?: unknown[]
   properties?: Values
+  to?: string
 }
 
-const transitionsSchema = Joi.object({
+export const transitionsSchema = Joi.object({
   id: Joi.string().optional(),
   type: Joi.string().optional(),
   rules: rulesSchema.optional(),
   name: Joi.string().optional(),
   from: Joi.array().items(Joi.any()).optional(),
   properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
+  to: Joi.any().optional(),
 }).unknown(true)
 
 export type Status = {
@@ -167,7 +169,7 @@ export type Workflow = {
   id?: Id
   entityId?: string
   name?: string
-  transitions?: Transition[]
+  transitions: Transition[]
   statuses?: Status[]
 }
 
@@ -175,7 +177,7 @@ export const workflowSchema = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
-  transitions: Joi.array().items(transitionsSchema).optional(),
+  transitions: Joi.array().items(transitionsSchema),
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true).required()
 
@@ -205,6 +207,9 @@ export const isPostFetchWorkflowInstance = (instance: InstanceElement)
 : instance is PostFetchWorkflowInstance => isWorkflowValues(instance.value)
   && instance.value.name !== undefined
 
+export const isPostFetchWorkflowChange = (change: Change<Element>): change is Change<PostFetchWorkflowInstance> =>
+  isInstanceChange(change) && isPostFetchWorkflowInstance(getChangeData(change))
+
 export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
   .filter(isInstanceChange)
-  .filter(change => isWorkflowInstance(getChangeData(change)))
+  .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))

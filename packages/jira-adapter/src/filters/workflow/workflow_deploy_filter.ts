@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowInstance, WorkflowInstance } from './types'
+import { isPostFetchWorkflowChange, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
@@ -83,11 +83,13 @@ export const deployWorkflow = async (
   config: JiraConfig,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
-  const instance = getChangeData(resolvedChange)
-  if (!isPostFetchWorkflowInstance(instance)) {
+
+  if (!isPostFetchWorkflowChange(resolvedChange)) {
+    const instance = getChangeData(resolvedChange)
     log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
+  const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
   instance.value.transitions?.forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
@@ -114,7 +116,7 @@ export const deployWorkflow = async (
       await deployTriggers(resolvedChange, client)
       // No need to run in DC since the main deployment requests already supports deploying steps
       if (!client.isDataCenter) {
-        await deploySteps(getChangeData(change), client)
+        await deploySteps(instance, client)
       }
     }
   }

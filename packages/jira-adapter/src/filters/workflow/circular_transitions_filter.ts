@@ -14,9 +14,8 @@
 * limitations under the License.
 */
 import { getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, Value } from '@salto-io/adapter-api'
-import _ from 'lodash'
 import { FilterCreator } from '../../filter'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { isWorkflowInstance } from './types'
 
 function removeCircularTransitions(value: InstanceElement): void {
   value.value.transitions = value.value.transitions
@@ -31,11 +30,8 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
-      .filter(instance => _.isArray(instance.value.transitions))
+      .filter(isWorkflowInstance)
       .forEach(removeCircularTransitions)
   },
-  // onDeploy: async changes => {
-  // },
 })
 export default filter

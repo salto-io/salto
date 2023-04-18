@@ -27,6 +27,8 @@ describe('author information index', () => {
   let modifiedObjectChange: ModificationChange<ObjectType>
   let addedInstanceChange: AdditionChange<InstanceElement>
   let modifiedInstanceChange: ModificationChange<InstanceElement>
+  let modifiedInstanceWithoutAuthorChange: ModificationChange<InstanceElement>
+  let modifiedInstanceWithSameAuthorChange: ModificationChange<InstanceElement>
   let modifiedToEmptyChange: ModificationChange<InstanceElement>
   let deletedInstanceChange: RemovalChange<InstanceElement>
   let expectedSetAllCalledWith: Value[]
@@ -129,6 +131,50 @@ describe('author information index', () => {
         ),
       },
     }
+    modifiedInstanceWithoutAuthorChange = {
+      action: 'modify',
+      data: {
+        before: new InstanceElement(
+          'instance2',
+          getChangeData(modifiedObjectChange),
+          {},
+          undefined,
+          {},
+        ),
+        after: new InstanceElement(
+          'instance2',
+          getChangeData(modifiedObjectChange),
+          {},
+          undefined,
+          {},
+        ),
+      },
+    }
+    modifiedInstanceWithSameAuthorChange = {
+      action: 'modify',
+      data: {
+        before: new InstanceElement(
+          'instance2',
+          getChangeData(modifiedObjectChange),
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-24 10:00:00',
+            [CORE_ANNOTATIONS.CHANGED_BY]: 'Salto User',
+          },
+        ),
+        after: new InstanceElement(
+          'instance2',
+          getChangeData(modifiedObjectChange),
+          {},
+          undefined,
+          {
+            [CORE_ANNOTATIONS.CHANGED_AT]: '2023-03-24 10:00:00',
+            [CORE_ANNOTATIONS.CHANGED_BY]: 'Salto User',
+          },
+        ),
+      },
+    }
     modifiedToEmptyChange = {
       action: 'modify',
       data: {
@@ -191,6 +237,8 @@ describe('author information index', () => {
         modifiedObjectChange,
         addedInstanceChange,
         modifiedInstanceChange,
+        modifiedInstanceWithoutAuthorChange,
+        modifiedInstanceWithSameAuthorChange,
         modifiedToEmptyChange,
         deletedInstanceChange,
       ]

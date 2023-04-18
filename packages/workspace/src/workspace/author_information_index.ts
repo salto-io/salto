@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, getChangeData, Element, isRemovalChange, AuthorInformation, isAdditionOrModificationChange, getAuthorInformationFromElement } from '@salto-io/adapter-api'
+import { Change, getChangeData, Element, isRemovalChange, AuthorInformation, isAdditionOrModificationChange, getAuthorInformationFromElement, isModificationChange } from '@salto-io/adapter-api'
 import { ElementsSource } from './elements_source'
 import { getBaseChanges, updateIndex } from './index_utils'
 import { RemoteMap } from './remote_map'
@@ -30,11 +30,15 @@ const updateChanges = async (
 
   const entries = allChanges
     .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .map(elem => ({
-      key: elem.elemID.getFullName(),
-      value: getAuthorInformationFromElement(elem),
+    .map(change => ({
+      key: change.data.after.elemID.getFullName(),
+      before: isModificationChange(change)
+        ? getAuthorInformationFromElement(change.data.before)
+        : undefined,
+      after: getAuthorInformationFromElement(change.data.after),
     }))
+    .filter(({ before, after }) => !_.isEqual(before, after))
+    .map(({ key, after }) => ({ key, value: after }))
 
   const [entriesToSet, entriesWithEmptyValue] = _.partition(
     entries,

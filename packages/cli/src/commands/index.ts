@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import fetchDef from './fetch'
-import fetchDiffDef from './fetch_diff'
+import fetchDiffDef from './apply_patch'
 import envGroupDef from './env'
 import { accountGroupDef, serviceGroupDef } from './account'
 import deployDef from './deploy'

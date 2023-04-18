@@ -19,7 +19,7 @@ import readdirp from 'readdirp'
 import { logger } from '@salto-io/logging'
 import { collections, promises } from '@salto-io/lowerdash'
 import { filter } from '@salto-io/adapter-utils'
-import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element } from '@salto-io/adapter-api'
+import { ObjectType, StaticFile, isObjectType, ReadOnlyElementsSource, ElemID, Element, FetchResult, LoadElementsFromFolderArgs } from '@salto-io/adapter-api'
 import { readTextFile, readFile } from '@salto-io/file'
 import { SYSTEM_FIELDS, allFilters, UNSUPPORTED_SYSTEM_FIELDS } from '../adapter'
 import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transformers/xml_transformer'
@@ -215,13 +215,15 @@ const getDXPackageDirs = async (baseDir: string): Promise<string[]> => {
     .map(packageDir => path.join(baseDir, packageDir.path))
 }
 
-export const loadElementsFromFolder = async (
-  dxBaseDir: string,
-  elementSource: ReadOnlyElementsSource,
-): Promise<Element[]> => {
-  const packages = await getDXPackageDirs(dxBaseDir)
+export const loadElementsFromFolder = async ({
+  baseDir,
+  elementSource,
+}: LoadElementsFromFolderArgs): Promise<FetchResult> => {
+  const packages = await getDXPackageDirs(baseDir)
   const types = await getElementTypesForSFDX(elementSource)
-  return awu(packages)
-    .flatMap(pkg => getElementsFromDXFolder(pkg, elementSource, types))
-    .toArray()
+  return {
+    elements: await awu(packages)
+      .flatMap(pkg => getElementsFromDXFolder(pkg, elementSource, types))
+      .toArray(),
+  }
 }

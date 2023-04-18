@@ -25,10 +25,11 @@ describe('loadElementsFromFolder', () => {
   let elements: Element[]
   beforeAll(async () => {
     const elementSource = buildElementsSourceFromElements(Object.values(mockTypes))
-    elements = await loadElementsFromFolder(
-      path.join(__dirname, 'test_sfdx_project'),
+    const loadElementsRes = await loadElementsFromFolder({
+      baseDir: path.join(__dirname, 'test_sfdx_project'),
       elementSource,
-    )
+    })
+    elements = loadElementsRes.elements
   })
   describe('layout elements', () => {
     let layout: InstanceElement

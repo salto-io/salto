@@ -23,7 +23,7 @@ import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -39,6 +39,7 @@ import {
   MergeErrorWithElements,
   fetchChangesFromWorkspace,
   getFetchAdapterAndServicesSetup,
+  calcFetchChanges,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
 import { createRestoreChanges } from './core/restore'
@@ -366,6 +367,91 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     progressEmitter,
+  }
+}
+
+type CalculatePatchArgs = {
+  workspace: Workspace
+  fromDir: string
+  toDir: string
+  // This currently restricts the account name to be salesforce
+  // when using this feature
+  accountName: 'salesforce'
+}
+
+export const calculatePatch = async (
+  {
+    workspace,
+    fromDir,
+    toDir,
+    accountName,
+  }: CalculatePatchArgs,
+): Promise<FetchResult> => {
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  const { loadElementsFromFolder } = adapterCreators[accountToServiceNameMap[accountName]]
+  if (loadElementsFromFolder === undefined) {
+    throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support fetch diff`)
+  }
+
+  const wsElements = await workspace.elements()
+  const resolvedWSElements = await expressions.resolve(
+    await awu(await wsElements.getAll()).toArray(),
+    wsElements,
+  )
+  const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
+
+  const { elements: beforeElements, errors: beforeLoadErrors } = await loadElementsFromFolder({
+    baseDir: fromDir,
+    elementSource: resolvedWSElementSource,
+  })
+  const beforeMergeResult = await merger.mergeElements(awu(beforeElements))
+  const beforeMergeErrors = await awu(beforeMergeResult.errors.values()).flat().toArray()
+  if (beforeMergeErrors.length > 0) {
+    return {
+      changes: [],
+      mergeErrors: beforeMergeErrors,
+      fetchErrors: [],
+      success: false,
+      updatedConfig: {},
+    }
+  }
+
+  const { elements: afterElements, errors: afterLoadErrors } = await loadElementsFromFolder({
+    baseDir: toDir,
+    elementSource: resolvedWSElementSource,
+  })
+  const afterMergeResult = await merger.mergeElements(awu(afterElements))
+  const afterMergeErrors = await awu(afterMergeResult.errors.values()).flat().toArray()
+  if (afterMergeErrors.length > 0) {
+    return {
+      changes: [],
+      mergeErrors: afterMergeErrors,
+      fetchErrors: [],
+      success: false,
+      updatedConfig: {},
+    }
+  }
+
+  const mergedBeforeElements = await awu(beforeMergeResult.merged.values()).toArray()
+  const mergedAfterElements = await awu(afterMergeResult.merged.values()).toArray()
+
+  const changes = await calcFetchChanges(
+    afterElements,
+    elementSource.createInMemoryElementSource(mergedAfterElements),
+    elementSource.createInMemoryElementSource(mergedBeforeElements),
+    resolvedWSElementSource,
+    new Set([accountName]),
+    new Set([accountName]),
+  )
+  return {
+    changes,
+    mergeErrors: [],
+    fetchErrors: [
+      ...(beforeLoadErrors ?? []),
+      ...(afterLoadErrors ?? []),
+    ],
+    success: true,
+    updatedConfig: {},
   }
 }
 

@@ -445,7 +445,7 @@ const validateAdditionalDependencies = (
   if (include?.files && exclude?.files) {
     const conflictedFiles = _.intersection(include.files, exclude.files)
     if (conflictedFiles.length > 0) {
-      throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedFiles.join(', ')}`)
+      throw new Error(`Additional files cannot be both included and excluded. The following files are conflicted: ${conflictedFiles.join(', ')}`)
     }
   }
 }

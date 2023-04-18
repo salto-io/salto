@@ -287,10 +287,9 @@ const replaceFormulasWithTemplates = async (
 }
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
-  // TODO: test on something else, and add to tests
   // There are cases where part is not resolved, which means that it has no value
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
-  if (part.value.value instanceof UnresolvedReference) {
+  if (part.value instanceof UnresolvedReference) {
     log.debug('prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ', part.elemID.getFullName())
     return ''
   }

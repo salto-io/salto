@@ -13,15 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
-  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, ObjectType, ReferenceExpression,
+  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement, UnresolvedReference,
+} from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import filterCreator, {
   TICKET_ORGANIZATION_FIELD,
   TICKET_TICKET_FIELD_OPTION_TITLE,
-  TICKET_TICKET_FIELD, TICKET_USER_FIELD,
+  TICKET_TICKET_FIELD, TICKET_USER_FIELD, prepRef,
 } from '../../src/filters/handle_template_expressions'
-import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
+import {
+  GROUP_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  ZENDESK,
+} from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 const { createMissingInstance } = referencesUtils
@@ -76,6 +83,14 @@ describe('handle templates filter', () => {
       id: { refType: BuiltinTypes.NUMBER },
       actions: { refType: new MapType(BuiltinTypes.STRING) },
     },
+  })
+
+  const orgTypeName = new ObjectType({
+    elemID: new ElemID(ZENDESK, ORG_FIELD_TYPE_NAME),
+  })
+
+  const groupType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME),
   })
 
   const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
@@ -439,6 +454,49 @@ describe('handle templates filter', () => {
 
     it('Returns elements to after fetch state (with templates) after onDeploy', () => {
       expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+    })
+  })
+
+  describe('prepRef', () => {
+    it('zendeskReferenceTypes', () => {
+      const validOrg = new InstanceElement('instance', orgTypeName, { key: 'test' })
+      const invalidOrg = new InstanceElement('instance', orgTypeName, { noKey: 'test' })
+      const invalidOrgRef = new ReferenceExpression(invalidOrg.elemID, invalidOrg)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validOrg.elemID, validOrg))
+      const invalidPrepRef = prepRef(invalidOrgRef)
+
+      expect(validPrepRef).toEqual('test')
+      expect(invalidPrepRef).toEqual('undefined')
+    })
+    it('dynamic_content_item', () => {
+      const validDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: '{{dc.test}}' })
+      const invalidDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: 'invalid' })
+      const invalidDynamicContentRef = new ReferenceExpression(invalidDynamicContent.elemID, invalidDynamicContent)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validDynamicContent.elemID, validDynamicContent))
+      const invalidPrepRef = prepRef(invalidDynamicContentRef)
+
+      expect(validPrepRef).toEqual('dc.test')
+      expect(invalidPrepRef).toEqual(invalidDynamicContentRef)
+    })
+    it('group', () => {
+      const validGroup = new InstanceElement('instance', groupType, { id: 123 })
+      const invalidGroup = new InstanceElement('instance', groupType, { noId: 123 })
+      const invalidGroupRef = new ReferenceExpression(invalidGroup.elemID, invalidGroup)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validGroup.elemID, validGroup))
+      const invalidPrepRef = prepRef(invalidGroupRef)
+
+      expect(validPrepRef).toEqual('123')
+      expect(invalidPrepRef).toEqual(invalidGroupRef)
+    })
+    it('unresolvedReference', () => {
+      const elemId = new ElemID(ZENDESK, 'test')
+      const unresolvedRef = new UnresolvedReference(elemId)
+      const unresolvedPrepRef = prepRef(new ReferenceExpression(elemId, unresolvedRef))
+
+      expect(unresolvedPrepRef).toEqual('')
     })
   })
 })

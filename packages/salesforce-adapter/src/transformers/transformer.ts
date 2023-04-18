@@ -119,6 +119,9 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
+/**
+ * @deprecated use {@link safeApiName} instead.
+ */
 export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
   const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name

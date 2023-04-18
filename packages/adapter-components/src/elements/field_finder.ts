@@ -94,6 +94,7 @@ export const findDataField: FindNestedFieldFunc = async (type, fieldsToIgnore, d
     ? await nestedFieldType.getInnerType()
     // map type currently cannot be returned from nested fields
     : nestedFieldType
+  // this can happen when a dataField is specified but no entries are returned
   if (isPrimitiveType(nestedType) && nestedType.elemID.isEqual(BuiltinTypes.UNKNOWN.elemID)) {
     return {
       field: nestedField,

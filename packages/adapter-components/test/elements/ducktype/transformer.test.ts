@@ -157,8 +157,8 @@ describe('ducktype_transformer', () => {
         yield [{
           meta: { has_more: false },
           links: {
-            first: 'https://salto87.zendesk.com/api/v2/help_center/categories/15828521533331/articles?include=translations&page%5Bsize%5D=100&sort_by=updated_at',
-            last: 'https://salto87.zendesk.com/api/v2/help_center/categories/15828521533331/articles?include=translations&page%5Bbefore%5D=bGFzdF9wYWdl&page%5Bsize%5D=100&sort_by=updated_at',
+            first: 'one',
+            last: 'two',
           },
           articles: [],
         }]

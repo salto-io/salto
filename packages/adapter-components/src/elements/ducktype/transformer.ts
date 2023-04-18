@@ -179,7 +179,7 @@ const getEntriesForType = async (
       return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
         (nestedEntry, nesteIndex) => {
           if (!isObjectType(nestedFieldDetails.type)) {
-            log.error('type is not objectType returning undefined')
+            log.error(`for typeName ${typeName} in adapter ${adapterName} nestedFieldDetails.type is not objectType returning undefined`)
             return undefined
           }
           return toInstance({

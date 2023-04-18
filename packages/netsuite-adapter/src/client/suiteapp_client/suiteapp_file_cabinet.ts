@@ -31,13 +31,13 @@ import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
-import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './client/suiteapp_client/errors'
-import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
-import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
-import { ImportFileCabinetResult } from './client/types'
-import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from './constants'
-import { NetsuiteQuery } from './query'
-import { DeployResult, isFileCabinetType, isFileInstance } from './types'
+import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
+import SuiteAppClient from './suiteapp_client'
+import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
+import { ImportFileCabinetResult } from '../types'
+import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
+import { NetsuiteQuery } from '../../query'
+import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
 
 const log = logger(module)
 
@@ -587,7 +587,7 @@ SuiteAppFileCabinetOperations => {
       }
     } catch (e) {
       return {
-        errors: [e],
+        errors: [e as Error],
         appliedChanges: [],
         failedChanges: [...chunk],
       }

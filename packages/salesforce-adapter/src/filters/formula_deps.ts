@@ -89,17 +89,9 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
   const logInvalidReferences = (
     invalidReferences: ElemID[],
     formula: string,
-    identifiersInfo: FormulaIdentifierInfo[][]
+    _identifiersInfo: FormulaIdentifierInfo[][]
   ): void => {
-    if (invalidReferences.length > 0) {
-      log.error('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
-        formula,
-        field.elemID.getFullName(),
-        identifiersInfo.flat().map(info => info.instance))
-    }
-    invalidReferences.forEach(refElemId => {
-      log.error(`Invalid reference: ${refElemId.getFullName()}`)
-    })
+    log.debug('Formula: %s # Invalid references: %o', formula, invalidReferences.length)
   }
 
   const formula = field.annotations[FORMULA]
@@ -138,7 +130,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
     logInvalidReferences(invalidReferences, formula, identifiersInfo)
 
-    log.info(`Extracted ${validReferences.length} valid references`)
+    log.info('Formula: %s # Valid references: %o', formula, validReferences)
     const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)

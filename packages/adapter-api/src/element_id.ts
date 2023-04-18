@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
@@ -178,6 +179,10 @@ export class ElemID {
 
   getFullName(): string {
     return this.fullName
+  }
+
+  [inspect.custom](): string {
+    return `ElemID(${this.getFullName()})`
   }
 
   getFullNameParts(): string[] {

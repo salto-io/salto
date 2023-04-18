@@ -1144,6 +1144,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       fieldsToHide: [{ fieldName: 'id' }],
+      dataField: '.',
     },
     deployRequests: {
       modify: {

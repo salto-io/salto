@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { inspect } from 'util'
 import { InstanceElement, ElemID, TypeReference } from '@salto-io/adapter-api'
+import { safeStringifyLimited } from '@salto-io/adapter-utils'
 import {
   MergeResult, MergeError, mergeNoDuplicates, DuplicateAnnotationError,
 } from './common'
@@ -29,7 +29,7 @@ export class DuplicateInstanceKeyError extends MergeError {
     { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
     super({
       elemID,
-      error: `duplicate key ${key} (values - ${inspect(existingValue)} & ${inspect(newValue)})`,
+      error: `duplicate key ${key} (values - ${safeStringifyLimited(existingValue)} & ${safeStringifyLimited(newValue)})`,
     })
     this.key = key
     this.existingValue = existingValue

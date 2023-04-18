@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
+import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
+import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, safeStringifyLimited } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
 import { isPostFetchWorkflowChange, WorkflowInstance } from './types'
@@ -91,7 +91,7 @@ export const deployWorkflow = async (
 
   if (!isPostFetchWorkflowChange(resolvedChange)) {
     const instance = getChangeData(resolvedChange)
-    log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
+    log.error(`values ${safeStringifyLimited(instance.value)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
   const instance = getChangeData(resolvedChange)

@@ -21,8 +21,8 @@ import {
   getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { safeStringifyLimited } from '@salto-io/adapter-utils'
 import { retry } from '@salto-io/lowerdash'
-import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -49,7 +49,7 @@ const EXPECTED_APP_SCHEMA = Joi.object({
 const isJobStatus = (value: unknown): value is JobStatus => {
   const { error } = EXPECTED_APP_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the job status: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the job status: ${error.message}, ${safeStringifyLimited(value)}`)
     return false
   }
   return true

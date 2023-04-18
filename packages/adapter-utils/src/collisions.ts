@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify, elementExpressionStringifyReplacer } from './utils'
+import { safeStringifyLimited } from './utils'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)
@@ -73,21 +73,15 @@ export const getInstancesWithCollidingElemID = (instances: InstanceElement[]): I
 
 const logInstancesWithCollidingElemID = async (
   typeToElemIDtoInstances: Record<string, Record<string, InstanceElement[]>>,
-  skipLogCollisionStringify?: boolean
 ): Promise<void> => {
   Object.entries(typeToElemIDtoInstances).forEach(([type, elemIDtoInstances]) => {
     const instancesCount = Object.values(elemIDtoInstances).flat().length
     log.debug(`Omitted ${instancesCount} instances of type ${type} due to Salto ID collisions`)
     Object.entries(elemIDtoInstances).forEach(([elemID, elemIDInstances]) => {
-      // SALTO-3059
-      if (skipLogCollisionStringify) {
-        log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID}`)
-        return
-      }
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => val != null))
       const relevantInstanceValuesStr = relevantInstanceValues
-        .map(instValues => safeJsonStringify(instValues, elementExpressionStringifyReplacer, 2)).join('\n')
+        .map(instValues => safeStringifyLimited(instValues)).join('\n')
       log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
   ${relevantInstanceValuesStr}`)
     })
@@ -105,7 +99,6 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements = MAX_BREAKDOWN_ELEMENTS,
   maxBreakdownDetailsElements = MAX_BREAKDOWN_DETAILS_ELEMENTS,
   baseUrl,
-  skipLogCollisionStringify,
   docsUrl,
 }: {
   instances: InstanceElement[]
@@ -118,11 +111,10 @@ export const getAndLogCollisionWarnings = async ({
   maxBreakdownElements?: number
   maxBreakdownDetailsElements?: number
   baseUrl?: string
-  skipLogCollisionStringify?: boolean
   docsUrl?: string
 }): Promise<SaltoError[]> => {
   const typeToElemIDtoInstances = await groupInstancesByTypeAndElemID(instances, getTypeName)
-  await logInstancesWithCollidingElemID(typeToElemIDtoInstances, skipLogCollisionStringify)
+  await logInstancesWithCollidingElemID(typeToElemIDtoInstances)
   return Promise.all(Object.entries(typeToElemIDtoInstances)
     .map(async ([type, elemIDtoInstances]) => {
       const numInstances = Object.values(elemIDtoInstances)

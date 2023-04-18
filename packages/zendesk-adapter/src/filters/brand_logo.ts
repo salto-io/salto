@@ -21,7 +21,7 @@ import {
   ReferenceExpression, SaltoElementError, SaltoError, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
+import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, safeStringifyLimited } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
@@ -55,7 +55,7 @@ const EXPECTED_BRAND_SCHEMA = Joi.object({
 const isBrand = (value: unknown): value is Brand => {
   const { error } = EXPECTED_BRAND_SCHEMA.validate(value, { allowUnknown: true })
   if (error !== undefined) {
-    log.error(`Received an invalid response for the brand values: ${error.message}, ${safeJsonStringify(value, elementExpressionStringifyReplacer)}`)
+    log.error(`Received an invalid response for the brand values: ${error.message}, ${safeStringifyLimited(value)}`)
     return false
   }
   return true

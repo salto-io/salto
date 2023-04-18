@@ -352,4 +352,38 @@ describe('Formula dependencies', () => {
         .toEqual(formulaWithUnknownRelationshipExpectedDeps)
     })
   })
+  describe('Long running', () => {
+    const longRunningFormula1 = `
+    IF(INCLUDES( COVID19_Status__c  ,'Fraud evaluation on hold'),'Negative',
+      IF(INCLUDES(COVID19_Status__c,'Volume increase'),'Positive',
+        IF(INCLUDES(COVID19_Status__c,'Volume decrease'),'Negative',
+          IF(INCLUDES(COVID19_Status__c,'Not affected'),'Neutral',
+            IF(INCLUDES(COVID19_Status__c,'Staff changes/challenges'),'Negative',
+              IF(INCLUDES(COVID19_Status__c,'Have manual review'),'Neutral',
+                IF(INCLUDES(COVID19_Status__c,'Have Manual Review;Potential increase in chargebacks'),'Neutral',
+                  IF(INCLUDES(COVID19_Status__c,'Potential increase in Chargebacks'),'Positive',
+                    IF(INCLUDES(COVID19_Status__c,'Paused eCommerce operations'),'Negative',
+                      IF(INCLUDES(COVID19_Status__c,'Started ecomm operations'),'Positive',""))))))))))
+    `
+    const typeWithLongRunningFormula = createCustomObjectType('Account',
+      {
+        fields: {
+          COVID19_Status__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          someFormulaField__c: {
+            refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.TEXT)],
+            annotations: {
+              [FORMULA]: '',
+            },
+          },
+        },
+      })
+
+    it('should not take too long', async () => {
+      const elements = [typeWithLongRunningFormula.clone()]
+      elements[0].fields.someFormulaField__c.annotations[FORMULA] = longRunningFormula1
+      await filter.onFetch(elements)
+    })
+  })
 })

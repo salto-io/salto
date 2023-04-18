@@ -328,6 +328,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
         },
+        {
+          type: 'UserSchema',
+          toField: 'AppUserSchema',
+          context: [{ name: 'appId', fromField: 'id' }],
+        },
       ],
     },
   },
@@ -341,6 +346,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
+        { fieldName: 'AppUserSchema', fieldType: 'list<UserSchema>' },
       ],
       idFields: ['label'],
       serviceIdField: 'id',
@@ -351,6 +357,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
+      standaloneFields: [{ fieldName: 'AppUserSchema' }],
     },
     deployRequests: {
       add: {
@@ -1199,6 +1206,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
 }
 
 export const SUPPORTED_TYPES = {
+  AppUserSchema: ['UserSchema'],
   Application: [
     'api__v1__apps',
   ],

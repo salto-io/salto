@@ -39,8 +39,8 @@ export const groupSchemaModifyBaseValidator: ChangeValidator = async changes => 
     .map((instance: InstanceElement): ChangeError => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Cannot change base attributes of ${GROUP_SCHEMA_TYPE_NAME}`,
-      detailedMessage: `Cannot change ${GROUP_SCHEMA_TYPE_NAME}, because base properties section can not be changed.`,
+      message: `Cannot change base properties of ${GROUP_SCHEMA_TYPE_NAME}`,
+      detailedMessage: `It is posibble to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
     }))
     .toArray()
 )

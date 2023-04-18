@@ -16,12 +16,12 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import groupSchemaAddNullFilter from '../../src/filters/group_schema_null_when_remove'
+import groupSchemaAddNullFilter from '../../src/filters/group_schema_field_removal'
 import { getFilterParams } from '../utils'
 import { GROUP_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 
 describe('groupSchemaAddNullFilter', () => {
-    type FilterType = filterUtils.FilterWith< 'preDeploy' | 'onDeploy'>
+    type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
     let filter: FilterType
 
     const groupSchemaType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME) })
@@ -33,8 +33,8 @@ describe('groupSchemaAddNullFilter', () => {
           custom: {
             properties: {
               additionalProperties: {
-                field1: {},
-                field2: {},
+                property1: {},
+                property2: {},
               },
             },
           },
@@ -49,7 +49,7 @@ describe('groupSchemaAddNullFilter', () => {
           custom: {
             properties: {
               additionalProperties: {
-                field1: {},
+                property1: {},
               },
             },
           },
@@ -62,20 +62,58 @@ describe('groupSchemaAddNullFilter', () => {
     })
 
     describe('preDeploy', () => {
-      it('should add null to removed fields', async () => {
+      it('should add null to removed Properties', async () => {
         const groupSchemaBeforeInstanceCopy = groupSchemaBeforeInstance.clone()
         const groupSchemaAfterInstanceCopy = groupSchemaAfterInstance.clone()
         await filter.preDeploy([
           toChange({ before: groupSchemaBeforeInstanceCopy, after: groupSchemaAfterInstanceCopy })])
-        expect(groupSchemaAfterInstanceCopy.value.definitions.custom.properties.additionalProperties.field2).toBeNull()
+        expect(groupSchemaAfterInstanceCopy.value.definitions.custom.properties.additionalProperties.property2)
+          .toBeNull()
+      })
+      it('should add null when changing property name', async () => {
+        const groupSchemaAfterModifyedInstance = new InstanceElement(
+          'defualtGroupSchema',
+          groupSchemaType,
+          {
+            definitions: {
+              custom: {
+                properties: {
+                  additionalProperties: {
+                    property1: {},
+                    property3: {},
+                  },
+                },
+              },
+            },
+          },
+        )
+        await filter.preDeploy([
+          toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterModifyedInstance })])
+        expect(groupSchemaAfterModifyedInstance.value.definitions.custom.properties.additionalProperties.property2)
+          .toBeNull()
       })
     })
     describe('onDeploy', () => {
-      it('should delete fields with null', async () => {
-        const groupSchemaAfterInstanceCopy = groupSchemaAfterInstance.clone()
+      it('should delete Properties with null', async () => {
+        const groupSchemaAfterInstanceTwo = new InstanceElement(
+          'defualtGroupSchema',
+          groupSchemaType,
+          {
+            definitions: {
+              custom: {
+                properties: {
+                  additionalProperties: {
+                    property1: {},
+                    property2: null,
+                  },
+                },
+              },
+            },
+          },
+        )
         await filter.onDeploy([
-          toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceCopy })])
-        expect(groupSchemaAfterInstanceCopy.value.definitions.custom.properties.additionalProperties.field2)
+          toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceTwo })])
+        expect(groupSchemaAfterInstanceTwo.value.definitions.custom.properties.additionalProperties.property2)
           .toBeUndefined()
       })
     })

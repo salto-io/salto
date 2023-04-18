@@ -21,38 +21,44 @@ import { GROUP_SCHEMA_TYPE_NAME } from '../constants'
 
 const CUSTOM_ADDITONAL_PROPERTIES_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
 
-const addNullToRemovedFields = (change: ModificationChange<InstanceElement>): void => {
+const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>): void => {
   const { before, after } = change.data
-  const customAdditionalPropertiesPath = before.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
-  const beforeCustomFields = resolvePath(before, customAdditionalPropertiesPath)
-  const afterCustomFields = resolvePath(after, customAdditionalPropertiesPath)
-  const fieldsToRemove = Object.keys(beforeCustomFields)
-    .filter(key => !(Object.keys(afterCustomFields).includes(key)))
+  const customPropertiesPath = before.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
+  const beforeCustomProperties = resolvePath(before, customPropertiesPath)
+  const afterCustomProperties = resolvePath(after, customPropertiesPath)
+  const afterCustomPropertiesKeys = Object.keys(afterCustomProperties)
+  const PropertiesToRemove = Object.keys(beforeCustomProperties)
+    .filter(key => !(afterCustomPropertiesKeys).includes(key))
 
-  fieldsToRemove.forEach(field => {
-    resolvePath(after, customAdditionalPropertiesPath)[field] = null
-  })
+  PropertiesToRemove
+    .forEach(Property => {
+      afterCustomProperties[Property] = null
+    })
 }
 
-const deleteFieldsWithNull = (instance: InstanceElement): void => {
+const deletePropertiesWithNull = (instance: InstanceElement): void => {
   const customAdditionalPropertiesPath = instance.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
-  const customFields = resolvePath(instance, customAdditionalPropertiesPath)
+  const customProperties = resolvePath(instance, customAdditionalPropertiesPath)
 
-  Object.keys(customFields).forEach(field => {
-    if (customFields[field] === null) {
-      delete customFields[field]
+  Object.keys(customProperties).forEach(Property => {
+    if (customProperties[Property] === null) {
+      delete customProperties[Property]
     }
   })
 }
-
-const groupSchemaAddNullFilter: FilterCreator = () => ({
-  name: 'groupSchemaAddNullFilter',
+/**
+ * When a user wants to delete a custom property from the group schema, the custom property is set to null.
+ * This is in order for Okta to delete the property from the group schema.
+ * This filter removes the custom properties that are set to null in the onDeploy.
+ */
+const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
+  name: 'groupSchemaFieldsRemovalFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
-      .map(change => addNullToRemovedFields(change))
+      .map(change => addNullToRemovedProperties(change))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
@@ -60,9 +66,9 @@ const groupSchemaAddNullFilter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
-      .map(instance => deleteFieldsWithNull(instance))
+      .map(instance => deletePropertiesWithNull(instance))
   },
 }
 )
 
-export default groupSchemaAddNullFilter
+export default groupSchemaFieldsRemovalFilter

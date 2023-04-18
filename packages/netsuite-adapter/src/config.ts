@@ -46,6 +46,7 @@ export const removeRequiredFeatureSuffix = (featureName: string): string =>
 type AdditionalSdfDeployDependencies = {
   features: string[]
   objects: string[]
+  files: string[]
 }
 
 export type AdditionalDependencies = {
@@ -360,6 +361,7 @@ Partial<AdditionalSdfDeployDependencies>
   fields: {
     features: { refType: new ListType(BuiltinTypes.STRING) },
     objects: { refType: new ListType(BuiltinTypes.STRING) },
+    files: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -438,6 +440,12 @@ const validateAdditionalDependencies = (
     const conflictedObjects = _.intersection(include.objects, exclude.objects)
     if (conflictedObjects.length > 0) {
       throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedObjects.join(', ')}`)
+    }
+  }
+  if (include?.files && exclude?.files) {
+    const conflictedFiles = _.intersection(include.objects, exclude.objects)
+    if (conflictedFiles.length > 0) {
+      throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedFiles.join(', ')}`)
     }
   }
 }

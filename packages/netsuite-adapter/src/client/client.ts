@@ -211,6 +211,8 @@ export default class NetsuiteClient {
       excludedFeatures: excluded.map(feature => feature.name),
       includedObjects: additionalDependencies.include.objects,
       excludedObjects: additionalDependencies.exclude.objects,
+      includedFiles: additionalDependencies.include.files,
+      excludedFiles: additionalDependencies.exclude.files,
     }
   }
 

@@ -23,6 +23,8 @@ const DEFAULT_ADDITIONAL_DEPS = {
   excludedFeatures: [],
   includedObjects: [],
   excludedObjects: [],
+  includedFiles: [],
+  excludedFiles: [],
 }
 
 describe('manifest.xml utils', () => {
@@ -50,7 +52,6 @@ describe('manifest.xml utils', () => {
         ref3: '[scriptid=workflow1.innerscriptid]',
         // 'external_script_id' shouldn't be added to the manifest since it has appid
         ref4: '[appid=com.salto, scriptid=external_script_id]',
-        // '/SuiteScripts/test.js' shouldn't be added to the manifest since we add only scriptids
         fileRef: '[/SuiteScripts/test.js]',
         // 'customrecord_test.cseg1' shouldn't be added to the manifest since
         // it is a wrong customsegment scriptid
@@ -82,6 +83,9 @@ describe('manifest.xml utils', () => {
       <object>somescriptid</object>
       <object>secondscriptid</object>
     </objects>
+    <files>
+      <file>/SuiteScripts/test.js</file>
+    </files>
   </dependencies>
 </manifest>
 `
@@ -115,6 +119,7 @@ describe('manifest.xml utils', () => {
   </objects>
   <files>
     <file>/SuiteScripts/clientScript_2_0.js</file>
+    <file>/SuiteScripts/test
   </files>
 </dependencies>
 </manifest>`
@@ -141,6 +146,7 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
+      <file>/SuiteScripts/test</file>
     </files>
   </dependencies>
 </manifest>
@@ -205,6 +211,7 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
+      <file>/SuiteScripts/test.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -267,6 +274,8 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
+      <file>/SuiteScripts/testScript.js</file>
+      <file>/SuiteScripts/test.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -277,6 +286,8 @@ describe('manifest.xml utils', () => {
       excludedFeatures: ['RECEIVABLES'],
       includedObjects: ['addedObject'],
       excludedObjects: ['custentity2edited', 'somescriptid', 'secondscriptid'],
+      includedFiles: ['/SuiteScripts/testScript.js'],
+      excludedFiles: ['/SuiteScripts/exludedTestScript.js'],
     }))
       .toEqual(fixedManifest)
   })

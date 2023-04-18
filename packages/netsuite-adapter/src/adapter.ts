@@ -202,10 +202,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       include: {
         features: config.deploy?.additionalDependencies?.include?.features ?? [],
         objects: config.deploy?.additionalDependencies?.include?.objects ?? [],
+        files: config.deploy?.additionalDependencies?.include?.files ?? [],
       },
       exclude: {
         features: config.deploy?.additionalDependencies?.exclude?.features ?? [],
         objects: config.deploy?.additionalDependencies?.exclude?.objects ?? [],
+        files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
     this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(

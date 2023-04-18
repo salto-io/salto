@@ -18,10 +18,11 @@ import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
-import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
+import { FILE_CABINET_PATH_SEPARATOR, FINANCIAL_LAYOUT, PATH, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo } from '../service_id_info'
 import { ManifestDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
+import { isFileCustomizationInfo } from './utils'
 
 const { makeArray } = collections.array
 const { lookupValue } = values
@@ -130,11 +131,33 @@ const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =
   }))
 }
 
+const getRequiredFiles = (customizationInfos: CustomizationInfo[]): string[] => {
+  const fileNames = new Set(customizationInfos.filter(isFileCustomizationInfo).map(fileCustInfo =>
+    fileCustInfo.path.join(FILE_CABINET_PATH_SEPARATOR)))
+
+  return _.uniq(customizationInfos.flatMap(custInfo => {
+    const requiredFiles: string[] = []
+    lookupValue(custInfo.values, val => {
+      if (!_.isString(val)) {
+        return
+      }
+
+      requiredFiles.push(...captureServiceIdInfo(val)
+        .filter(({ serviceIdType }) => serviceIdType === PATH)
+        .map(serviceIdInfo => serviceIdInfo.serviceId)
+        .filter(path => !fileNames.has(path)))
+    })
+    return requiredFiles
+  }))
+}
+
 const fixDependenciesObject = (dependencies: Value): void => {
   dependencies.features = dependencies.features ?? {}
   dependencies.features.feature = dependencies.features.feature ?? []
   dependencies.objects = dependencies.objects ?? {}
   dependencies.objects.object = dependencies.objects.object ?? []
+  dependencies.files = dependencies.files ?? {}
+  dependencies.files.file = dependencies.files.file ?? []
 }
 
 const addRequiredDependencies = (
@@ -153,7 +176,7 @@ const addRequiredDependencies = (
     .value()
   const additionalFeatures = [...requiredFeatures, ...optionalFeatures]
 
-  const { features, objects } = dependencies
+  const { features, objects, files } = dependencies
   features.feature = _(makeArray(features.feature))
     // remove all additional features
     .differenceBy(additionalFeatures, item => item[TEXT_ATTRIBUTE])
@@ -166,6 +189,12 @@ const addRequiredDependencies = (
     .union(additionalDependencies.includedObjects)
     .union(getRequiredObjects(customizationInfos))
     .difference(additionalDependencies.excludedObjects)
+    .value()
+
+  files.file = _(makeArray(files.file))
+    .union(additionalDependencies.includedFiles)
+    .union(getRequiredFiles(customizationInfos))
+    .difference(additionalDependencies.excludedFiles)
     .value()
 }
 

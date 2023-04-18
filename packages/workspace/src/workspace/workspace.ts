@@ -1055,11 +1055,15 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  const validateBaseIdAndRun = <T>(id: ElemID, call: () => T): T => {
+  const validateBaseIdAndRunOnEnvState = async <T>(
+    id: ElemID,
+    envName: string,
+    call: (envState: SingleState) => T
+  ): Promise<T> => {
     if (!id.isBaseID()) {
       throw new Error(`only base ids are supported, received ${id.getFullName()}`)
     }
-    return call()
+    return call((await getWorkspaceState()).states[envName])
   }
 
   return {
@@ -1156,17 +1160,20 @@ export const loadWorkspace = async (
       .states[envName].referenceSources,
     getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceTargets,
-    getElementOutgoingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRun(
+    getElementOutgoingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
       id,
-      async () => await (await getWorkspaceState()).states[envName].referenceTargets.get(id.getFullName()) ?? []
+      envName,
+      async envState => await envState.referenceTargets.get(id.getFullName()) ?? []
     ),
-    getElementIncomingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRun(
+    getElementIncomingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
       id,
-      async () => await (await getWorkspaceState()).states[envName].referenceSources.get(id.getFullName()) ?? []
+      envName,
+      async envState => await envState.referenceSources.get(id.getFullName()) ?? []
     ),
-    getElementAuthorInformation: async (id, envName = currentEnv()) => validateBaseIdAndRun(
+    getElementAuthorInformation: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
       id,
-      async () => await (await getWorkspaceState()).states[envName].authorInformation.get(id.getFullName()) ?? {}
+      envName,
+      async envState => await envState.authorInformation.get(id.getFullName()) ?? {}
     ),
     getAllChangedByAuthors,
     getChangedElementsByAuthors,

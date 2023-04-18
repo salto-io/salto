@@ -287,8 +287,10 @@ const replaceFormulasWithTemplates = async (
 }
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
-  // There are cases where part is not resolved, which means that it has no value
+  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
+  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
   // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
+  // This fix is enough since the .before value is not used in the deployment process
   if (part.value instanceof UnresolvedReference) {
     log.debug('prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ', part.elemID.getFullName())
     return ''

@@ -458,7 +458,7 @@ describe('handle templates filter', () => {
   })
 
   describe('prepRef', () => {
-    it('zendeskReferenceTypes', () => {
+    it('should return \'key\' field or \'undefined\' on ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE', () => {
       const validOrg = new InstanceElement('instance', orgTypeName, { key: 'test' })
       const invalidOrg = new InstanceElement('instance', orgTypeName, { noKey: 'test' })
       const invalidOrgRef = new ReferenceExpression(invalidOrg.elemID, invalidOrg)
@@ -469,7 +469,7 @@ describe('handle templates filter', () => {
       expect(validPrepRef).toEqual('test')
       expect(invalidPrepRef).toEqual('undefined')
     })
-    it('dynamic_content_item', () => {
+    it('should return \'placeholder\' field or the instance reference on dynamic_content_item type', () => {
       const validDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: '{{dc.test}}' })
       const invalidDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: 'invalid' })
       const invalidDynamicContentRef = new ReferenceExpression(invalidDynamicContent.elemID, invalidDynamicContent)
@@ -480,7 +480,7 @@ describe('handle templates filter', () => {
       expect(validPrepRef).toEqual('dc.test')
       expect(invalidPrepRef).toEqual(invalidDynamicContentRef)
     })
-    it('group', () => {
+    it('should return \'id\' field or the instance reference on group type', () => {
       const validGroup = new InstanceElement('instance', groupType, { id: 123 })
       const invalidGroup = new InstanceElement('instance', groupType, { noId: 123 })
       const invalidGroupRef = new ReferenceExpression(invalidGroup.elemID, invalidGroup)
@@ -491,7 +491,7 @@ describe('handle templates filter', () => {
       expect(validPrepRef).toEqual('123')
       expect(invalidPrepRef).toEqual(invalidGroupRef)
     })
-    it('unresolvedReference', () => {
+    it('should return an empty string on UnresolvedReference', () => {
       const elemId = new ElemID(ZENDESK, 'test')
       const unresolvedRef = new UnresolvedReference(elemId)
       const unresolvedPrepRef = prepRef(new ReferenceExpression(elemId, unresolvedRef))

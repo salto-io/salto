@@ -695,7 +695,7 @@ describe('NetsuiteAdapter creator', () => {
           ).toThrow()
         })
 
-        it('should throw and Error when additionalDependencies has conflicting files', () => {
+        it('should throw an Error when additionalDependencies has conflicting files', () => {
           const invalidConfig = new InstanceElement(
             ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,

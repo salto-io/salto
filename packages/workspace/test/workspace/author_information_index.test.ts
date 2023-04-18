@@ -26,6 +26,7 @@ describe('author information index', () => {
   let elementsSource: ElementsSource
   let modifiedObjectChange: ModificationChange<ObjectType>
   let addedInstanceChange: AdditionChange<InstanceElement>
+  let addedInstanceWithoutAuthorChange: AdditionChange<InstanceElement>
   let modifiedInstanceChange: ModificationChange<InstanceElement>
   let modifiedInstanceWithoutAuthorChange: ModificationChange<InstanceElement>
   let modifiedInstanceWithSameAuthorChange: ModificationChange<InstanceElement>
@@ -106,11 +107,23 @@ describe('author information index', () => {
         ),
       },
     }
+    addedInstanceWithoutAuthorChange = {
+      action: 'add',
+      data: {
+        after: new InstanceElement(
+          'instance2',
+          getChangeData(modifiedObjectChange),
+          {},
+          undefined,
+          {},
+        ),
+      },
+    }
     modifiedInstanceChange = {
       action: 'modify',
       data: {
         before: new InstanceElement(
-          'instance2',
+          'instance3',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -120,7 +133,7 @@ describe('author information index', () => {
           },
         ),
         after: new InstanceElement(
-          'instance2',
+          'instance3',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -135,14 +148,14 @@ describe('author information index', () => {
       action: 'modify',
       data: {
         before: new InstanceElement(
-          'instance2',
+          'instance4',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
           {},
         ),
         after: new InstanceElement(
-          'instance2',
+          'instance4',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -154,7 +167,7 @@ describe('author information index', () => {
       action: 'modify',
       data: {
         before: new InstanceElement(
-          'instance2',
+          'instance5',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -164,7 +177,7 @@ describe('author information index', () => {
           },
         ),
         after: new InstanceElement(
-          'instance2',
+          'instance5',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -179,7 +192,7 @@ describe('author information index', () => {
       action: 'modify',
       data: {
         before: new InstanceElement(
-          'instance3',
+          'instance6',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -189,7 +202,7 @@ describe('author information index', () => {
           },
         ),
         after: new InstanceElement(
-          'instance3',
+          'instance6',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -201,7 +214,7 @@ describe('author information index', () => {
       action: 'remove',
       data: {
         before: new InstanceElement(
-          'instance4',
+          'instance7',
           getChangeData(modifiedObjectChange),
           {},
           undefined,
@@ -236,6 +249,7 @@ describe('author information index', () => {
       const changes = [
         modifiedObjectChange,
         addedInstanceChange,
+        addedInstanceWithoutAuthorChange,
         modifiedInstanceChange,
         modifiedInstanceWithoutAuthorChange,
         modifiedInstanceWithSameAuthorChange,
@@ -269,7 +283,7 @@ describe('author information index', () => {
             toChange({ after: getChangeData(modifiedObjectChange) }),
             toChange({ after: getChangeData(addedInstanceChange) }),
             toChange({ after: getChangeData(modifiedInstanceChange) }),
-            toChange({ after: getChangeData(modifiedToEmptyChange) }),
+            toChange({ after: getChangeData(addedInstanceWithoutAuthorChange) }),
           ],
           authorInformationIndex,
           mapVersions,
@@ -280,9 +294,7 @@ describe('author information index', () => {
       it('should update changed by index with all additions', () => {
         expect(authorInformationIndex.clear).toHaveBeenCalled()
         expect(authorInformationIndex.setAll).toHaveBeenCalledWith(expectedSetAllCalledWith)
-        expect(authorInformationIndex.deleteAll).toHaveBeenCalledWith([
-          getChangeData(modifiedToEmptyChange).elemID.getFullName(),
-        ])
+        expect(authorInformationIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })
 
@@ -291,7 +303,7 @@ describe('author information index', () => {
         await elementsSource.set(getChangeData(modifiedObjectChange))
         await elementsSource.set(getChangeData(addedInstanceChange))
         await elementsSource.set(getChangeData(modifiedInstanceChange))
-        await elementsSource.set(getChangeData(modifiedToEmptyChange))
+        await elementsSource.set(getChangeData(addedInstanceWithoutAuthorChange))
         mapVersions.get.mockResolvedValue(0)
         await updateAuthorInformationIndex(
           [],
@@ -304,9 +316,7 @@ describe('author information index', () => {
       it('should update changed by index using the element source', () => {
         expect(authorInformationIndex.clear).toHaveBeenCalled()
         expect(authorInformationIndex.setAll).toHaveBeenCalledWith(expectedSetAllCalledWith)
-        expect(authorInformationIndex.deleteAll).toHaveBeenCalledWith([
-          getChangeData(modifiedToEmptyChange).elemID.getFullName(),
-        ])
+        expect(authorInformationIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })
   })

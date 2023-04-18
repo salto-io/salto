@@ -32,9 +32,9 @@ const updateChanges = async (
     .filter(isAdditionOrModificationChange)
     .map(change => ({
       key: change.data.after.elemID.getFullName(),
-      before: isModificationChange(change)
-        ? getAuthorInformationFromElement(change.data.before)
-        : undefined,
+      before: getAuthorInformationFromElement(
+        isModificationChange(change) ? change.data.before : undefined
+      ),
       after: getAuthorInformationFromElement(change.data.after),
     }))
     .filter(({ before, after }) => !_.isEqual(before, after))

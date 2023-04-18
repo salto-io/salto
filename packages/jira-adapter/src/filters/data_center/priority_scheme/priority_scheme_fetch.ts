@@ -15,12 +15,14 @@
 */
 import { ElemIdGetter, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../../filter'
-import { JIRA, PRIORITY_SCHEME_TYPE_NAME } from '../../../constants'
+import { JIRA, PRIORITY_SCHEME_TYPE_NAME, fetchFailedWarnings } from '../../../constants'
 import { createPrioritySchemeType } from './types'
 
+const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 
@@ -64,20 +66,37 @@ const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc })
   name: 'prioritySchemeFetchFilter',
   onFetch: async elements => {
     if (!client.isDataCenter || !fetchQuery.isTypeMatch(PRIORITY_SCHEME_TYPE_NAME)) {
-      return
+      return undefined
     }
+    try {
+      const schemeValues = await fetchSchemeValues(paginator)
 
-    const schemeValues = await fetchSchemeValues(paginator)
+      const type = createPrioritySchemeType()
+      schemeValues
+        .map(values => createInstance(values, type, getElemIdFunc))
+        .forEach(instance => {
+          transformInstance(instance)
+          elements.push(instance)
+        })
 
-    const type = createPrioritySchemeType()
-    schemeValues
-      .map(values => createInstance(values, type, getElemIdFunc))
-      .forEach(instance => {
-        transformInstance(instance)
-        elements.push(instance)
-      })
-
-    elements.push(type)
+      elements.push(type)
+      return undefined
+    } catch (e) {
+      if (e instanceof clientUtils.HTTPError && e.response !== undefined
+        && (e.response.status === 403
+          || e.response.status === 405)) {
+        log.error(`Received a ${e.response.status} error when fetching priority schemes. Please make sure you have the "Automation" permission enabled in Jira.`)
+        return {
+          errors: [
+            {
+              message: fetchFailedWarnings(PRIORITY_SCHEME_TYPE_NAME),
+              severity: 'Warning',
+            },
+          ],
+        }
+      }
+      throw e
+    }
   },
 })
 

@@ -15,7 +15,7 @@
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
-import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
+import { mkdirp, readDir, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
   CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
@@ -37,7 +37,7 @@ import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_MAX_FILE_CABINET_SIZE,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
@@ -545,7 +545,7 @@ export default class SdfClient {
         return await this.runImportObjectsCommand(executor, ALL, ALL, suiteAppId)
       } catch (e) {
         log.warn(`Attempt to fetch all custom objects has failed with suiteApp: ${suiteAppId}`)
-        log.warn(e)
+        log.warn(e as Error)
         return undefined
       }
     }
@@ -605,7 +605,7 @@ export default class SdfClient {
         return failedTypeToInstances
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
-        log.warn(e)
+        log.warn(e as Error)
         const [objectId] = ids
         if (retriesLeft === 0) {
           throw new Error(`Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`)
@@ -773,7 +773,7 @@ export default class SdfClient {
         .map(result => result.path)
     } catch (e) {
       if (filePaths.length === 1) {
-        log.error(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
+        log.error(`Failed to import file ${filePaths[0]} due to: ${(e as Error).message}`)
         throw new Error(`Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`)
       }
       const middle = (filePaths.length + 1) / 2
@@ -793,6 +793,116 @@ export default class SdfClient {
         elements: [],
         failedPaths: { lockedError: [], otherError: [] },
       }
+    }
+
+    type FolderSize = {
+      path: string
+      size: number
+      folders: FolderSize[]
+    }
+
+    type FolderSizeMap = { [path: string]: FolderSize }
+
+    const excludeLargeFolders = async (filePaths: string[], fileCabinetDirPath: string): Promise<string[]> => {
+      const folderSizes = async (): Promise<FolderSize[]> => {
+        const statFiles = async ():
+          Promise<{ [path: string]: number }> => {
+          const normalizedPath = (filePath: string): string => {
+            const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
+            return osPath.join(fileCabinetDirPath, ...filePathParts)
+          }
+          return Object.assign({}, ...await withLimitedConcurrency(
+            filePaths.map(filePath => async () => (
+              { [filePath]: (await stat(normalizedPath(filePath))).size }
+            )),
+            READ_CONCURRENCY
+          ))
+        }
+
+        const statFolders = (fileSizes: { [path: string]: number }): FolderSize[] => {
+          const createFlatFolderSizes = (): FolderSizeMap => {
+            const flatFolderSizes = {} as FolderSizeMap
+            Object.keys(fileSizes).forEach((path: string) => {
+              osPath.dirname(path).split(osPath.sep).reduce((currentPath, nextFolder) => {
+                const nextPath = osPath.join(currentPath, nextFolder)
+                if (nextPath in flatFolderSizes) {
+                  flatFolderSizes[nextPath].size += fileSizes[path]
+                } else {
+                  flatFolderSizes[nextPath] = {
+                    path: nextPath,
+                    size: fileSizes[path],
+                    folders: [],
+                  }
+                }
+                return nextPath
+              })
+            })
+            return flatFolderSizes
+          }
+          const createFolderHierarchy = (flatFolderSizes: FolderSizeMap): FolderSize[] => {
+            const folderGraph = [] as FolderSize[]
+            Object.keys(flatFolderSizes).forEach(folderName => {
+              if (folderName.split(osPath.sep).length === 1) { // Top level folder
+                folderGraph.push(flatFolderSizes[folderName])
+              } else { // Sub folder
+                const parentFolder = osPath.dirname(folderName)
+                flatFolderSizes[parentFolder].folders.push(flatFolderSizes[folderName])
+              }
+            })
+            return folderGraph
+          }
+
+          return createFolderHierarchy(createFlatFolderSizes())
+        }
+
+        return statFolders(await statFiles())
+      }
+
+      const sizes = await folderSizes()
+      const maxSizeInBytes = (1024 ** 3) * DEFAULT_MAX_FILE_CABINET_SIZE
+      const overflowSize = sizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
+
+      const filterSingleFolder = (): string[] => {
+        let lastLargeFolder = sizes.find(folderSize => folderSize.size > overflowSize) as FolderSize
+        let noLargeSubFolders = false
+        while (!noLargeSubFolders) {
+          const nextLargeFolder = lastLargeFolder.folders.find(folderSize => folderSize.size > overflowSize)
+          if (nextLargeFolder) {
+            lastLargeFolder = nextLargeFolder
+          } else {
+            noLargeSubFolders = true
+          }
+        }
+
+        return [lastLargeFolder.path]
+      }
+
+      const filterMultipleFolders = (): string[] => {
+        const sortedSizes = _.sortBy(sizes, 'size', 'desc')
+        let selectedSize = 0
+        const selectedFolders = [] as string[]
+        while (selectedSize <= overflowSize) {
+          const folderSize = sortedSizes.shift()
+          if (!folderSize) {
+            break
+          }
+          selectedFolders.push(folderSize.path)
+          selectedSize += folderSize.size
+        }
+
+        return selectedFolders
+      }
+
+      if (overflowSize <= 0) {
+        return filePaths
+      }
+
+      const foldersToExclude = sizes.some(folderSize => folderSize.size > overflowSize)
+        ? filterSingleFolder()
+        : filterMultipleFolders()
+      return filePaths.filter(filePath => !foldersToExclude.some(
+        folder => filePath.startsWith(`${FILE_CABINET_PATH_SEPARATOR}${folder}`)
+      ))
     }
 
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
@@ -844,12 +954,14 @@ export default class SdfClient {
     const importFilesResult = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResult)
-    const [attributesPaths, filePaths] = _.partition(importedPaths,
+
+    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const filteredPaths = await excludeLargeFolders(importedPaths, fileCabinetDirPath)
+    const [attributesPaths, filePaths] = _.partition(filteredPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
 
-    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
     const elements = (await Promise.all(
       [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
         transformFolders(folderAttrsPaths, fileCabinetDirPath)]

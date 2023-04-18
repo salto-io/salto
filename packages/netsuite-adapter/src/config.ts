@@ -33,6 +33,7 @@ export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
+export const DEFAULT_MAX_FILE_CABINET_SIZE = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
@@ -77,6 +78,7 @@ export type SdfClientConfig = {
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
+  maxFileCabinetSize?: number
 }
 
 export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
@@ -85,6 +87,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
   sdfConcurrencyLimit: 'sdfConcurrencyLimit',
   installedSuiteApps: 'installedSuiteApps',
+  maxFileCabinetSize: 'maxFileCabinetSize',
 }
 
 export type SuiteAppClientConfig = {
@@ -160,6 +163,12 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
     },
     installedSuiteApps: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    maxFileCabinetSize: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_FILE_CABINET_SIZE,
+      },
     },
   },
   annotations: {

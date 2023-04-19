@@ -30,8 +30,8 @@ See [the vscode package documentation](packages/vscode/README.md#installation)
 
 ### Building from source
 
-  1. Install Node.js 14. You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
-  2. Install [yarn](https://yarnpkg.com/en/docs/install).
+  1. Install Node.js 14 (for M1 Macs use 14.15). You can download it directly from [here](https://nodejs.org/en/download/releases/), or use [Node Version Manager (NVM)](https://github.com/nvm-sh/nvm) (simply run `nvm use`) to install it.
+  2. Install [yarn 1](https://yarnpkg.com/en/docs/install).
   3. Fetch dependencies and build:
 
 ```bash

@@ -15,12 +15,12 @@
 */
 import { ElemIdGetter, InstanceElement, isInstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import _ from 'lodash'
-import { AUTOMATION_TYPE, JIRA, PROJECT_TYPE } from '../../constants'
+import { AUTOMATION_TYPE, fetchFailedWarnings, JIRA, PROJECT_TYPE } from '../../constants'
 import JiraClient from '../../client/client'
 import { FilterCreator } from '../../filter'
 import { createAutomationTypes } from './types'
@@ -134,12 +134,12 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
   name: 'automationFetchFilter',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(AUTOMATION_TYPE)) {
-      return
+      return undefined
     }
 
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping automation fetch filter because private API is not enabled')
-      return
+      return undefined
     }
 
     const idToProject = _(elements)
@@ -148,14 +148,31 @@ const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuery }) =>
       .keyBy(instance => instance.value.id)
       .value()
 
-    const automations = await getAutomations(client, config)
+    try {
+      const automations = await getAutomations(client, config)
+      const { automationType, subTypes } = createAutomationTypes()
 
-    const { automationType, subTypes } = createAutomationTypes()
-
-    automations.forEach(automation => elements.push(
-      createInstance(automation, automationType, idToProject, getElemIdFunc),
-    ))
-    elements.push(automationType, ...subTypes)
+      automations.forEach(automation => elements.push(
+        createInstance(automation, automationType, idToProject, getElemIdFunc),
+      ))
+      elements.push(automationType, ...subTypes)
+      return undefined
+    } catch (e) {
+      if (e instanceof clientUtils.HTTPError && e.response !== undefined
+        && (e.response.status === 403
+          || e.response.status === 405)) {
+        log.error(`Received a ${e.response.status} error when fetching automations. Please make sure you have the "Automation" permission enabled in Jira.`)
+        return {
+          errors: [
+            {
+              message: fetchFailedWarnings(AUTOMATION_TYPE),
+              severity: 'Warning',
+            },
+          ],
+        }
+      }
+      throw e
+    }
   },
 })
 

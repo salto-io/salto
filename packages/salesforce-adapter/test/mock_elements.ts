@@ -606,14 +606,6 @@ export const mockDefaultValues = {
   },
   DataCategoryGroup: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestDataCategoryGroup',
-    dataCategory: {
-      label: 'test label',
-      name: 'test name',
-    },
-    objectUsage: {
-      object: 'KnowledgeArticleVersion',
-    },
-    label: 'Test Data Cateogry Group Description',
   },
 }
 

@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceElement } from '@salto-io/adapter-api'
+  isInstanceChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { isInstanceOfType } from '../filters/utils'
+import { DATA_CATEGORY_GROUP_METADATA_TYPE } from '../constants'
+import { isInstanceOfTypeChange } from '../filters/utils'
 
 const { awu } = collections.asynciterable
 
@@ -36,10 +37,10 @@ Issue a warning on all such changes
 function changeValidator(): ChangeValidator {
   return async changes => (
     awu(changes)
+      .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
+      .filter(isInstanceOfTypeChange(DATA_CATEGORY_GROUP_METADATA_TYPE))
       .map(getChangeData)
-      .filter(isInstanceElement)
-      .filter(isInstanceOfType('DataCategoryGroup'))
       .map(destructiveDataCategoryGroupDeployError)
       .toArray()
   )

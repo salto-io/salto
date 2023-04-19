@@ -18,16 +18,18 @@ import changeValidator from '../../src/change_validators/data_category_group'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 
-describe('data category group addition or modification change validator', () => {
+describe('DataCategoryGroup ChangeValidator', () => {
   const afterRecord = createInstanceElement({ fullName: 'obj__c.record' }, mockTypes.DataCategoryGroup)
 
   it('should have warning when trying to add a new data category group', async () => {
     const changeErrors = await changeValidator(
       [toChange({ after: afterRecord })]
     )
-    expect(changeErrors).toHaveLength(1)
-    const [changeError] = changeErrors
-    expect(changeError.elemID).toEqual(afterRecord.elemID)
-    expect(changeError.severity).toEqual('Warning')
+    expect(changeErrors).toEqual([
+      expect.objectContaining({
+        elemID: afterRecord.elemID,
+        severity: 'Warning',
+      }),
+    ])
   })
 })

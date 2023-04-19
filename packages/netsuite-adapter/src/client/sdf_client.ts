@@ -798,16 +798,17 @@ export default class SdfClient {
       }
     }
 
-    const filesToSize = async (filePaths: string[], fileCabinetDirPath: string):
-      Promise<{ [path: string]: number }> => {
+    const filesToSize = async (
+      filePaths: string[],
+      fileCabinetDirPath: string
+    ): Promise<{ [path: string]: number }> => {
       const normalizedPath = (filePath: string): string => {
         const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
         return osPath.join(fileCabinetDirPath, ...filePathParts)
       }
-      return Object.assign({}, ...await withLimitedConcurrency(
-        filePaths.map(filePath => async () => (
-          { [filePath]: (await stat(normalizedPath(filePath))).size }
-        )),
+
+      return Object.fromEntries(await withLimitedConcurrency(
+        filePaths.map(filePath => async () => [filePath, (await stat(normalizedPath(filePath))).size]),
         READ_CONCURRENCY
       ))
     }

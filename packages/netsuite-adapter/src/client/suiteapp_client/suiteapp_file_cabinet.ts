@@ -327,6 +327,9 @@ SuiteAppFileCabinetOperations => {
     return removeFoldersWithoutParentFolder(foldersResults)
   }
 
+    return removeFoldersWithoutParentFolder(foldersResults)
+  }
+
   const removeFilesWithoutParentFolder = (
     filesResults: FileResult[],
     filteredFolderResults: ExtendedFolderResult[],
@@ -370,7 +373,6 @@ SuiteAppFileCabinetOperations => {
 
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
-
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
       const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
         .map(folder => ({ path: getFullPath(folder, idToFolder), ...folder }))
@@ -386,7 +388,6 @@ SuiteAppFileCabinetOperations => {
     }
     return fileCabinetResults
   }
-
 
   const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
@@ -404,7 +405,7 @@ SuiteAppFileCabinetOperations => {
         isprivate: folder.isprivate,
         internalId: folder.id,
       },
-    })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+    }))
 
     const fullPath = (file: { path: string[] }): string => file.path.join(FILE_CABINET_PATH_SEPARATOR)
 
@@ -423,15 +424,15 @@ SuiteAppFileCabinetOperations => {
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
-    })).filter(file => query.isFileMatch(`/${fullPath(file)}`))
+    }))
 
     const [
       unfilteredFilesCustomizationWithoutContent,
       filesCustomizationsLinks,
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
 
-    const filesToSize = Object.assign({}, ...unfilteredFilesCustomizationWithoutContent.map(
-      file => ({ [fullPath(file)]: file.size })
+    const filesToSize = Object.fromEntries(unfilteredFilesCustomizationWithoutContent.map(
+      file => [fullPath(file), file.size]
     ))
     const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSize)
     const filteredFilesSet = new Set(filteredFilesCustomization.listedPaths)

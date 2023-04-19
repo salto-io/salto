@@ -109,18 +109,19 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
+    const newLargeFolderPath = 'largeFolder'
+    const newLargeFolderExclusion = `^/${newLargeFolderPath}/.*`
     const newExclude = {
       types: [
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
       ],
-      fileCabinet: ['SomeRegex'],
+      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
     }
-    newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
       true,
-      { lockedError: [], otherError: [newFailedFilePath] },
+      { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
       { lockedError: {}, unexpectedError: suggestedSkipListTypes },
       currentConfigWithFetch,
     )

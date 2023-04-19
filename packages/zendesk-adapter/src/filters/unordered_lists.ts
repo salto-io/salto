@@ -70,7 +70,7 @@ const orderDynamicContentItems = (instances: InstanceElement[]): void => {
           ([dynamicContentItemVariantInstancesById[variant.elemID.getFullName()].value.locale_id.value.value?.locale])
       )
     } else {
-      log.error(`could not sort variants for ${inst.elemID.getFullName()}`)
+      log.warn(`could not sort variants for ${inst.elemID.getFullName()}`)
     }
   })
 }
@@ -103,6 +103,9 @@ const orderMacros = (instances: InstanceElement[]): void => {
   const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
   macroInstances.forEach(macro => {
     const ids = macro.value.restriction?.ids
+    if (ids === undefined) { // the restriction does not have to be by ids
+      return
+    }
     if (isValidMacroIds(ids, groupInstancesById)) {
       macro.value.restriction.ids = _.sortBy(
         ids,
@@ -110,7 +113,7 @@ const orderMacros = (instances: InstanceElement[]): void => {
         id => ([groupInstancesById[id.elemID.getFullName()].value.name])
       )
     } else {
-      log.error(`could not sort ids for ${macro.elemID.getFullName()}`)
+      log.warn(`could not sort ids for ${macro.elemID.getFullName()}`)
     }
   })
 }
@@ -131,6 +134,9 @@ const sortConditions = (
 ): void => {
   formInstances.forEach(form => {
     const conditions = form.value[conditionType]
+    if (conditions === undefined) { // there may not be any conditions
+      return
+    }
     if (isValidConditions(conditions, customFieldById)) {
       form.value[conditionType] = _.sortBy(
         conditions,
@@ -139,7 +145,7 @@ const sortConditions = (
           : [customFieldById[condition.value.elemID.getFullName()].value.value])
       )
     } else {
-      log.error(`could not sort conditions for ${form.elemID.getFullName()}`)
+      log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)
     }
   })
 }
@@ -171,7 +177,7 @@ const sortChildFields = (
           field => ([ticketFieldById[field.id.elemID.getFullName()].value.raw_title])
         )
       } else {
-        log.error(`could not sort child fields for ${form.elemID.getFullName()}`)
+        log.warn(`could not sort child fields for ${form.elemID.getFullName()}`)
       }
     })
   })

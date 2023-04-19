@@ -123,6 +123,33 @@ File: ~/Objects/customrecord1.xml`
       severity: 'Error',
     })
   })
+  it('should have SDF account settings validation Error for customRecordType', async () => {
+    const detailedMessage = `An error occurred during custom object validation. (customrecord1)
+Details: The object field daterange is missing.
+Details: The object field kpi must not be OPENJOBS.
+Details: The object field periodrange is missing.
+Details: The object field compareperiodrange is missing.
+Details: The object field defaultgeneraltype must not be ENTITY_ENTITY_NAME.
+Details: The object field type must not be 449.
+File: ~/Objects/customrecord1.xml`
+    const fullErrorMessage = `Validation of account settings failed.\n\n${detailedMessage}`
+    mockValidate.mockReturnValue([
+      new ObjectsDeployError(fullErrorMessage, new Set(['customrecord1'])),
+    ])
+    const changeErrors = await clientValidation(
+      changes,
+      client,
+      {} as unknown as AdditionalDependencies,
+      mockFiltersRunner,
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      detailedMessage: `SDF Objects validation error: ${detailedMessage}`,
+      elemID: getChangeData(changes[1]).elemID,
+      message: 'Netsuite\'s validation failed with an SDF Objects validation error',
+      severity: 'Error',
+    })
+  })
   it('should have SDF Objects Validation Error for customRecordType field', async () => {
     const detailedMessage = `An error occurred during custom object validation. (customrecord1)
 Details: The object field daterange is missing.

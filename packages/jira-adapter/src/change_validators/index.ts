@@ -53,6 +53,7 @@ import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
+import { circularTransitionsValidator } from './workflows/circular_transitions'
 
 const {
   deployTypesNotSupportedValidator,
@@ -101,6 +102,7 @@ export default (
     workflowSchemeDupsValidator,
     permissionSchemeDeploymentValidator(client),
     projectCategoryValidator(client),
+    circularTransitionsValidator,
   ]
 
   return createChangeValidator(validators)

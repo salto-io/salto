@@ -57,7 +57,7 @@ const filter: FilterCreator = () => ({
   preDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)
-      .filter(change => isWorkflowInstance(getChangeData(change)))
+      .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))
       .forEach(async change => {
         await applyFunctionToChangeData<Change<WorkflowInstance>>(
           change,
@@ -88,7 +88,7 @@ const filter: FilterCreator = () => ({
   onDeploy: async changes => {
     await awu(changes)
       .filter(isInstanceChange)
-      .filter(change => isWorkflowInstance(getChangeData(change)))
+      .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))
       .forEach(async change => {
         await applyFunctionToChangeData<Change<WorkflowInstance>>(
           change,

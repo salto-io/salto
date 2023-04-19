@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { safeStringifyLimited } from './utils'
+import { inspectValue } from './utils'
 
 const { groupByAsync } = collections.asynciterable
 const log = logger(module)
@@ -81,7 +81,7 @@ const logInstancesWithCollidingElemID = async (
       const relevantInstanceValues = elemIDInstances
         .map(instance => _.pickBy(instance.value, val => val != null))
       const relevantInstanceValuesStr = relevantInstanceValues
-        .map(instValues => safeStringifyLimited(instValues)).join('\n')
+        .map(instValues => inspectValue(instValues)).join('\n')
       log.debug(`Omitted instances of type ${type} with colliding ElemID ${elemID} with values - 
   ${relevantInstanceValuesStr}`)
     })

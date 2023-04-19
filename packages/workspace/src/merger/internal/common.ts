@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { types } from '@salto-io/lowerdash'
 import { ElemID, SaltoElementError, SeverityLevel } from '@salto-io/adapter-api'
-import { safeStringifyLimited } from '@salto-io/adapter-utils'
+import { inspectValue } from '@salto-io/adapter-utils'
 
 
 export abstract class MergeError extends types.Bean<Readonly<{
@@ -43,7 +43,7 @@ export class DuplicateAnnotationError extends MergeError {
     { elemID: ElemID; key: string; existingValue: unknown; newValue: unknown}) {
     super({
       elemID,
-      error: `duplicate annotation key ${key} (values - ${safeStringifyLimited(existingValue)} & ${safeStringifyLimited(newValue)})`,
+      error: `duplicate annotation key ${key} (values - ${inspectValue(existingValue)} & ${inspectValue(newValue)})`,
     })
     this.key = key
     this.existingValue = existingValue

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
-import { naclCase, safeStringifyLimited } from '@salto-io/adapter-utils'
+import { naclCase, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
@@ -58,7 +58,7 @@ const filter: FilterCreator = ({ config }) => ({
     duplicateInstances
       .filter(isInstanceElement)
       .forEach(instance => {
-        log.debug(`Found a duplicate instance ${instance.elemID.getFullName()} with values: ${safeStringifyLimited(instance.value)}`)
+        log.debug(`Found a duplicate instance ${instance.elemID.getFullName()} with values: ${inspectValue(instance.value)}`)
       })
 
     if (!config.fetch.fallbackToInternalId) {

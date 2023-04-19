@@ -34,7 +34,7 @@ import {
   StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeFilePathPart, naclCase,
-  resolveChangeElement, safeJsonStringify, pathNaclCase, references, safeStringifyLimited } from '@salto-io/adapter-utils'
+  resolveChangeElement, safeJsonStringify, pathNaclCase, references, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { values, collections } from '@salto-io/lowerdash'
@@ -75,7 +75,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeStringifyLimited(value)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
@@ -91,7 +91,7 @@ const replaceAttachmentId = (
   }
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
-      safeStringifyLimited(attachments)}`)
+      inspectValue(attachments)}`)
     throw createSaltoElementError({ // caught in try block
       message: 'Failed to deploy macro because its attachment field has an invalid format',
       severity: 'Error',

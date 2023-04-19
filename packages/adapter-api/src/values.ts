@@ -78,6 +78,10 @@ export class StaticFile {
   public isEqual(other: StaticFile): boolean {
     return this.hash === other.hash && this.encoding === other.encoding
   }
+
+  [inspect.custom](): string {
+    return `StaticFile(${this.filepath}, ${this.hash ? this.hash : '<unknown hash>'})`
+  }
 }
 
 type StaticFileMetadata = Pick<StaticFile, 'filepath' | 'hash'>

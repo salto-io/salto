@@ -22,7 +22,7 @@ import {
   normalizeFilePathPart,
   replaceTemplatesWithValues,
   safeJsonStringify,
-  safeStringifyLimited,
+  inspectValue,
 } from '@salto-io/adapter-utils'
 import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
@@ -88,7 +88,7 @@ const EXPECTED_ATTACHMENT_SCHEMA = Joi.array().items(Joi.object({
 export const isAttachments = (value: unknown): value is Attachment[] => {
   const { error } = EXPECTED_ATTACHMENT_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeStringifyLimited((value))}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue((value))}`)
     return false
   }
   return true
@@ -105,7 +105,7 @@ const EXPECTED_ATTACHMENT_RESPONSE_SCHEMA = Joi.array().items(Joi.object({
 export const isAttachmentsResponse = (value: unknown): value is AttachmentResponse[] => {
   const { error } = EXPECTED_ATTACHMENT_RESPONSE_SCHEMA.validate(value)
   if (error !== undefined) {
-    log.error(`Received an invalid response for the attachments values: ${error.message}, ${safeStringifyLimited(value)}`)
+    log.error(`Received an invalid response for the attachments values: ${error.message}, ${inspectValue(value)}`)
     return false
   }
   return true
@@ -239,7 +239,7 @@ export const updateArticleTranslationBody = async ({
   const attachmentElementsNames = attachmentInstances.map(instance => instance.elemID.name)
   const articleTranslations = articleValues?.translations
   if (!Array.isArray(articleTranslations)) {
-    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${safeStringifyLimited(articleTranslations)}`)
+    log.error(`Received an invalid translations value for attachment ${articleValues.name} - ${inspectValue(articleTranslations)}`)
     return
   }
   await awu(articleTranslations)

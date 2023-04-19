@@ -1137,21 +1137,11 @@ export const createDefaultInstanceFromType = async (name: string, objectType: Ob
 
 type Replacer = (key: string, value: Value) => Value
 
-export const elementExpressionStringifyReplacer: Replacer = (_key, value) => {
-  if (isReferenceExpression(value)) {
-    return inspect(value)
-  }
-  if (isTypeReference(value)) {
-    return inspect(value)
-  }
-  if (isStaticFile(value)) {
-    return `StaticFile(${value.filepath}, ${value.hash ? value.hash : '<unknown hash>'})`
-  }
-  if (value instanceof ElemID) {
-    return inspect(value)
-  }
-  return value
-}
+export const elementExpressionStringifyReplacer: Replacer = (_key, value) => (
+  (isReferenceExpression(value) || isTypeReference(value) || isStaticFile(value) || value instanceof ElemID)
+    ? inspect(value)
+    : value
+)
 
 // WARNING: using safeJsonStringify with a customizer is inefficient and should not be done at a large scale.
 // prefer inspect / safeStringifyWithInspect (which allow limiting depth / max array length / max string length)
@@ -1163,7 +1153,7 @@ export const safeJsonStringify = (
 ): string =>
   safeStringify(value, replacer, space)
 
-export const safeStringifyLimited = (
+export const inspectValue = (
   value: Value,
   options?: InspectOptions
 ): string => (
@@ -1260,7 +1250,7 @@ export const createSchemeGuard = <T>(scheme: Joi.AnySchema, errorMessage?: strin
     const { error } = scheme.validate(value)
     if (error !== undefined) {
       if (errorMessage !== undefined) {
-        log.error(`${errorMessage}: ${error.message}, ${safeStringifyLimited(value)}`)
+        log.error(`${errorMessage}: ${error.message}, ${inspectValue(value)}`)
       }
       return false
     }
@@ -1275,7 +1265,7 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
       if (errorMessage !== undefined) {
         log.error('Error validating instance %s: %s, %s. Value: %s',
           instance.elemID.getFullName(), errorMessage, error.message,
-          safeStringifyLimited(instance.value))
+          inspectValue(instance.value))
       }
       return false
     }

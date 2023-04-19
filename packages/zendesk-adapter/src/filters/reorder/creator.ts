@@ -31,7 +31,7 @@ import {
   SaltoError, createSaltoElementError, isSaltoError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, pathNaclCase, safeStringifyLimited } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, pathNaclCase, inspectValue } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { ZENDESK } from '../../constants'
 import { deployChange } from '../../deployment'
@@ -195,7 +195,7 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
       throw createSaltoElementError({ // caught in try block
-        message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeStringifyLimited(ids, { maxArrayLength: null })}`,
+        message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${inspectValue(ids, { maxArrayLength: null })}`,
         severity: 'Error',
         elemID: getChangeData(change).elemID,
       })

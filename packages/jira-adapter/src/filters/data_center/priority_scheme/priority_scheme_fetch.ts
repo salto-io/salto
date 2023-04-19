@@ -85,7 +85,7 @@ const filter: FilterCreator = ({ paginator, client, fetchQuery, getElemIdFunc })
       if (e instanceof clientUtils.HTTPError && e.response !== undefined
         && (e.response.status === 403
           || e.response.status === 405)) {
-        log.error(`Received a ${e.response.status} error when fetching priority schemes. Please make sure you have the "Automation" permission enabled in Jira.`)
+        log.error(`Received a ${e.response.status} error when fetching priority schemes. You need an admin user to fetch them.`)
         return {
           errors: [
             {

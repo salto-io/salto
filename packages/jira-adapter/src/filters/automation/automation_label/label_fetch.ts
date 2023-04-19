@@ -71,11 +71,11 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
       return undefined
     }
 
-    // get labels
-    const url = client.isDataCenter
-      ? '/rest/cb-automation/latest/rule-label'
-      : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
     try {
+      // get labels
+      const url = client.isDataCenter
+        ? '/rest/cb-automation/latest/rule-label'
+        : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
       const response = await client.getSinglePage({ url })
       if (!isLabelsGetResponse(response.data)) {
         log.error('Failed to get automation labels, received invalid response')

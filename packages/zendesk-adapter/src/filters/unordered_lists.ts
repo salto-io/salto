@@ -103,6 +103,9 @@ const orderMacros = (instances: InstanceElement[]): void => {
   const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
   macroInstances.forEach(macro => {
     const ids = macro.value.restriction?.ids
+    if (ids === undefined) { // the restriction does not have to be by ids
+      return
+    }
     if (isValidMacroIds(ids, groupInstancesById)) {
       macro.value.restriction.ids = _.sortBy(
         ids,
@@ -131,6 +134,9 @@ const sortConditions = (
 ): void => {
   formInstances.forEach(form => {
     const conditions = form.value[conditionType]
+    if (conditions === undefined) { // there may not be any conditions
+      return
+    }
     if (isValidConditions(conditions, customFieldById)) {
       form.value[conditionType] = _.sortBy(
         conditions,

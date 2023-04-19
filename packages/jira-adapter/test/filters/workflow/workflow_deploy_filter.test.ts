@@ -181,7 +181,7 @@ describe('workflowDeployFilter', () => {
           .apiDefinitions.types.Workflow.deployRequests,
         fieldsToIgnore: expect.toBeFunction(),
       })
-    }, 100000)
+    })
 
     it('should add operations value', async () => {
       const change = toChange({

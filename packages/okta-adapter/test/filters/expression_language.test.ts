@@ -28,7 +28,7 @@ describe('expression language filter', () => {
       const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
       const policyRuleType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_RULE_TYPE_NAME) })
       const behaviorType = new ObjectType({ elemID: new ElemID(OKTA, BEHAVIOR_RULE_TYPE_NAME) })
-      const customPath = ['definitions', 'custom', 'properties', 'additionalProperties', 'saltoDepartment']
+      const customPath = ['definitions', 'custom', 'properties', 'saltoDepartment']
       const basePath = ['definitions', 'base', 'properties', 'department']
       const groupRuleWithExpression = new InstanceElement(
         'groupRuleTest',
@@ -54,11 +54,9 @@ describe('expression language filter', () => {
           definitions: {
             custom: {
               properties: {
-                additionalProperties: {
-                  saltoDepartment: {
-                    title: 'salto',
-                    type: 'string',
-                  },
+                saltoDepartment: {
+                  title: 'salto',
+                  type: 'string',
                 },
               },
             },

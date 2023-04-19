@@ -16,11 +16,11 @@
 import _ from 'lodash'
 import {
   AdditionChange,
-  Change,
-  Field,
+  Change, ElemID,
+  Field, getAllChangeData,
   getChangeData, isAdditionChange,
   isFieldChange,
-  isModificationChange, isRemovalChange,
+  isModificationChange, isObjectTypeChange, isRemovalChange,
   ModificationChange,
   ObjectType, ReferenceExpression, RemovalChange,
   toChange,
@@ -34,7 +34,7 @@ import {
   API_NAME,
   FIELD_ANNOTATIONS,
   HISTORY_TRACKED_FIELDS,
-  OBJECT_HISTORY_TRACKING_ENABLED,
+  OBJECT_HISTORY_TRACKING_ENABLED, SALESFORCE,
 } from '../../src/constants'
 
 describe('historyTracking', () => {
@@ -109,6 +109,10 @@ describe('historyTracking', () => {
   describe('preDeploy', () => {
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
       const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
+      const refExprForField = (typeName: string, fieldName: string): ReferenceExpression => (
+        new ReferenceExpression(new ElemID(SALESFORCE, typeName, 'field', fieldName))
+      )
+
       const typeName = 'SomeType__c'
       const objectType = createCustomObjectType(typeName, {
         fields: Object.fromEntries(fields.map(fieldName => [fieldName, {
@@ -117,8 +121,8 @@ describe('historyTracking', () => {
         }])),
       })
       if (trackedFields !== undefined) {
-        objectType.annotations[HISTORY_TRACKED_FIELDS] = trackedFields
-          .map(fieldName => fieldApiName(typeName, fieldName))
+        objectType.annotations[HISTORY_TRACKED_FIELDS] = Object.fromEntries(trackedFields
+          .map(fieldName => [fieldName, refExprForField(typeName, fieldName)]))
       }
       return objectType
     }
@@ -352,7 +356,7 @@ describe('historyTracking', () => {
         .mapValues(ref => `${ref.elemID.typeName}.${ref.elemID.name}`)
         .value()
     )
-    const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
+    const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking__c', {
       annotations: {
         [OBJECT_HISTORY_TRACKING_ENABLED]: true,
       },
@@ -374,7 +378,7 @@ describe('historyTracking', () => {
       },
     })
     describe('state preservation', () => {
-      it('should preserve changes from preDeploy even if they don`t get passed to onDeploy', async () => {
+      it('should disregard changes from preDeploy if there are no matching field changes', async () => {
         const elements = [typeWithHistoryTrackedFields.clone()]
         await filter.onFetch(elements)
 
@@ -384,8 +388,7 @@ describe('historyTracking', () => {
         await filter.preDeploy(changes)
         const onDeployChanges:Change[] = []
         await filter.onDeploy(onDeployChanges)
-        expect(onDeployChanges).toHaveLength(1)
-        expect(getChangeData(onDeployChanges[0])).toEqual(after)
+        expect(onDeployChanges).toHaveLength(0)
       })
       it('should disregard changes from preDeploy if they`re irrelevant', async () => {
         const elements = [typeWithHistoryTrackedFields.clone()]
@@ -398,6 +401,23 @@ describe('historyTracking', () => {
         const onDeployChanges:Change[] = []
         await filter.onDeploy(onDeployChanges)
         expect(onDeployChanges).toHaveLength(0)
+      })
+      it('should create changes based on field changes', async () => {
+        const before = typeWithHistoryTrackedFields.clone()
+        const elements = [before]
+        await filter.onFetch(elements)
+
+        const after = elements[0].clone()
+        after.annotations[HISTORY_TRACKED_FIELDS] = {}
+        const preDeployChanges = [toChange({ before: elements[0], after })]
+        await filter.preDeploy(preDeployChanges)
+
+        const onDeployChanges = [toChange({ before: getAllChangeData(preDeployChanges[1])[0].clone(),
+          after: getAllChangeData(preDeployChanges[1])[1].clone() })]
+        await filter.onDeploy(onDeployChanges)
+        expect(onDeployChanges).toHaveLength(1)
+        expect(isModificationChange(onDeployChanges[0])).toBeTrue()
+        expect(isObjectTypeChange(onDeployChanges[0])).toBeTrue()
       })
     })
     describe('onFetch vs. preDeploy=>onDeploy', () => {
@@ -423,6 +443,7 @@ describe('historyTracking', () => {
           new ReferenceExpression(after.fields.fieldWithoutHistoryTracking.elemID))
         const changes = [toChange({ before: elements[0], after })]
         await filter.preDeploy(changes)
+        expect(changes).toHaveLength(2)
         await filter.onDeploy(changes)
         expect(changes).toHaveLength(1)
         expect(getChangeData(changes[0])).toEqual(after)

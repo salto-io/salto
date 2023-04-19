@@ -39,7 +39,7 @@ import {
   SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 
-const { awu, groupByAsync } = collections.asynciterable
+const { awu } = collections.asynciterable
 
 // https://help.salesforce.com/s/articleView?id=sf.tracking_field_history.htm&type=5
 const STANDARD_OBJECTS_THAT_SUPPORT_HISTORY_TRACKING = [
@@ -101,9 +101,8 @@ const fieldHistoryTrackingChanged = async (
   objectTypeChange: ModificationChange<ObjectType>
 ): Promise<boolean> => {
   const [typeBefore, typeAfter] = getAllChangeData(objectTypeChange)
-  const fieldApiName = await apiName(field)
-  const trackedBefore = Object.values(typeBefore.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(fieldApiName)
-  const trackedAfter = Object.values(typeAfter.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(fieldApiName)
+  const trackedBefore = Object.keys(typeBefore.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
+  const trackedAfter = Object.keys(typeAfter.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
   const existedBefore = field.name in typeBefore.fields
   const existedAfter = field.name in typeAfter.fields
   return existedBefore && existedAfter && (trackedBefore !== trackedAfter)
@@ -114,9 +113,8 @@ const createHistoryTrackingFieldChange = async (
   objectTypeChange: ModificationChange<ObjectType>
 ): Promise<Change<Field>> => {
   const [typeBefore, typeAfter] = getAllChangeData(objectTypeChange)
-  const fieldApiName = await apiName(field)
-  const trackedBefore = Object.values(typeBefore.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(fieldApiName)
-  const trackedAfter = Object.values(typeAfter.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(fieldApiName)
+  const trackedBefore = Object.keys(typeBefore.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
+  const trackedAfter = Object.keys(typeAfter.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
 
   const fieldBefore = field.clone()
   const fieldAfter = field.clone()
@@ -138,7 +136,7 @@ const createHistoryTrackingFieldChange = async (
  * *before* these types are split up into different elements (custom_type_split)
  * */
 const filter: LocalFilterCreator = () => {
-  let objectTypesChangedInPreDeploy: Record<string, Change<ObjectType>[]> = {}
+  let objectTypesChangedInPreDeploy: Record<string, ObjectType> = {}
   return {
     name: 'history_tracking',
     onFetch: async elements => {
@@ -151,12 +149,12 @@ const filter: LocalFilterCreator = () => {
       const trackedFields = (type: ObjectType): string[] => (
         // At this point the type will be resolved through getLookUpName so the annotation will have the apiName of the
         // field instead of the reference
-        Object.values(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
+        Object.keys(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
       )
 
       const isHistoryTrackedField = async (field: Field): Promise<boolean> => (
         (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true)
-        || trackedFields(field.parent).includes(await apiName(field))
+        || trackedFields(field.parent).includes(field.name)
       )
 
       const distributeTrackingInfo = async (objType: ObjectType): Promise<void> => {
@@ -223,8 +221,9 @@ const filter: LocalFilterCreator = () => {
           const [before, after] = getAllChangeData(change)
           return !_.isEqual(before?.annotations[HISTORY_TRACKED_FIELDS], after.annotations[HISTORY_TRACKED_FIELDS])
         })
-      objectTypesChangedInPreDeploy = await groupByAsync(actuallyChangedObjectTypes,
-        change => apiName(getChangeData(change)))
+      objectTypesChangedInPreDeploy = await awu(actuallyChangedObjectTypes)
+        .map(change => change.data.before)
+        .keyBy(objectType => apiName(objectType))
 
       // Finally, remove the 'historyTrackedFields' annotation from all object types (either added or changed)
       changes
@@ -236,29 +235,103 @@ const filter: LocalFilterCreator = () => {
         })
     },
     onDeploy: async changes => {
-      const changedCustomObjects = changes
+      const isRedundantFieldChange = (change: Change) : change is ModificationChange<Field> => (
+        isModificationChange(change)
+        && isFieldChange(change)
+        && isFieldOfCustomObject(getChangeData(change))
+        && change.data.before.isEqual(change.data.after)
+      )
+
+      /**
+       * Re-create ObjectType changes that may have been discarded between preDeploy and onDeploy.
+       *
+       * If the only change in an object is a change in the list of tracked fields, then after preDeploy that change
+       * becomes redundant (because we delete the historyTrackedFields annotation, and the enableHistory annotation
+       * remains the same).
+       * We can't assume that such changes where before === after will remain intact between preDeploy and onDeploy, so
+       * we have to recreate them in onDeploy.
+       * Luckily, we can identify these "tracked fields only" changes, because in preDeploy we generate a
+       * ModificationChange<Field> for every field that changed. And we can identify these field changes here by them
+       * having *only* a change in the trackHistory annotation.
+       * So we use the state we saved in preDeploy as the basis for creating these ObjectType changes, and modify the
+       * 'after' part of these changes based on the field changes we receive here.
+       *
+       * Note that we can't just use the changes from preDeploy as-is because some of them could be missing from the
+       * onDeploy changes because they failed to deploy, and we shouldn't re-add them to the list of changes.
+       * */
+      const createAdditionalObjectTypeChanges = async (
+        fieldChanges: ModificationChange<Field>[],
+        typesToIgnore: Set<string>
+      ): Promise<Change<ObjectType>[]> => {
+        const additionalChanges: Record<string, Change<ObjectType>> = {}
+
+        const addTrackedFieldChangeToObjectTypeChange = async (change: ModificationChange<Field>): Promise<void> => {
+          const [before, after] = getAllChangeData(change)
+          const parentTypeName = await apiName(after.parent)
+
+          const trackedBefore = before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
+          const trackedAfter = after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]
+
+          if (!!trackedBefore === !!trackedAfter) {
+            // converting to bool because some types don't have the annotation at all, but for now we still add a false
+            // annotation in preDeploy
+            return
+          }
+
+          if (!(parentTypeName in additionalChanges)) {
+            const originalObjectType = objectTypesChangedInPreDeploy[parentTypeName]
+            additionalChanges[parentTypeName] = toChange(
+              { before: originalObjectType, after: originalObjectType.clone() }
+            )
+          }
+
+          const changedObjectType = getChangeData(additionalChanges[parentTypeName])
+          if (trackedAfter) {
+            // field is added to tracked fields
+            changedObjectType.annotations[HISTORY_TRACKED_FIELDS][after.name] = new ReferenceExpression(after.elemID)
+          } else {
+            // field is removed from tracked fields
+            _.omit(changedObjectType.annotations[HISTORY_TRACKED_FIELDS], [after.name])
+          }
+        }
+
+        await awu(fieldChanges)
+          .filter(isModificationChange)
+          .filter(change => _.isEqual(_.omit(change.data.before.annotations[HISTORY_TRACKED_FIELDS]),
+            _.omit(change.data.after.annotations[HISTORY_TRACKED_FIELDS])))
+          .filter(async change => !typesToIgnore.has(await apiName(getChangeData(change).parent)))
+          .forEach(change => addTrackedFieldChangeToObjectTypeChange(change))
+
+        return Object.values(additionalChanges)
+      }
+
+      const changedCustomObjects = await awu(changes)
         .filter(isAdditionOrModificationChange)
         .filter(isObjectTypeChange)
         .map(getChangeData)
         .filter(isCustomObject)
-
-      const onDeployObjectTypes = await awu(changedCustomObjects)
-        .map(objType => apiName(objType))
         .toArray()
-      const preDeployObjectTypes = Object.keys(objectTypesChangedInPreDeploy)
-
-      _.difference(preDeployObjectTypes, onDeployObjectTypes)
-        .forEach(objTypeApiName => {
-          changes.push(...objectTypesChangedInPreDeploy[objTypeApiName])
-          changedCustomObjects.push(...objectTypesChangedInPreDeploy[objTypeApiName].map(getChangeData))
-        })
 
       changedCustomObjects
         .forEach(centralizeHistoryTrackingAnnotations)
 
-      changes
+      const changedCustomObjectNames = new Set(await awu(changedCustomObjects)
+        .map(objType => apiName(objType))
+        .toArray())
+
+      const fieldChanges = await awu(changes)
         .filter(isFieldChange)
         .filter(change => isFieldOfCustomObject(getChangeData(change)))
+        .toArray()
+
+      const additionalChanges = await createAdditionalObjectTypeChanges(
+        fieldChanges.filter(isModificationChange),
+        changedCustomObjectNames,
+      )
+
+      additionalChanges.forEach(change => changes.push(change))
+
+      fieldChanges
         .forEach(change => {
           const [before, after] = getAllChangeData(change)
           if (before !== undefined) {
@@ -269,12 +342,7 @@ const filter: LocalFilterCreator = () => {
           }
         })
 
-      _.remove(changes, change => (
-        isModificationChange(change)
-        && isFieldChange(change)
-        && isFieldOfCustomObject(getChangeData(change))
-        && change.data.before.isEqual(change.data.after)
-      ))
+      _.remove(changes, isRedundantFieldChange)
     },
   }
 }

@@ -47,6 +47,7 @@ const filterCreator: FilterCreator = () => ({
     profileEnrollmentRules.forEach(rule => {
       const profileAttributes = resolvePath(rule, rule.elemID.createNestedID(...PROFILE_ATTRIBUTES_PATH))
       if (!Array.isArray(profileAttributes)) {
+        log.warn(`Can not create references from instance ${rule.elemID.getFullName()} to user schema attributes`)
         return
       }
       profileAttributes.forEach(att => {

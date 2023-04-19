@@ -109,7 +109,7 @@ describe('profileEnrollmentAttributeFilter', () => {
       const atts = profileWithMissing.value.actions?.profileEnrollment?.profileAttributes
       expect(atts).toEqual([
         { name: saltoDepRef, label: 'salto' },
-        { name: new ReferenceExpression(missingAtt.elemID, missingAtt), label: 'salto' },
+        { name: new ReferenceExpression(missingAtt.elemID, missingAtt), label: 'missing' },
       ])
     })
   })

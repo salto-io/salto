@@ -607,6 +607,27 @@ describe('NetsuiteAdapter creator', () => {
             })
           ).toThrow()
         })
+        it('should throw an error when files in additionalDependencies is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { files: ['should be list of strings', 1] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
         it('should throw an error when additionalDependencies.exclude is invalid', () => {
           const invalidConfig = new InstanceElement(
             ElemID.CONFIG_NAME,

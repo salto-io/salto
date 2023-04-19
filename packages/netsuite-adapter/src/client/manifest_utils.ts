@@ -133,7 +133,7 @@ const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] =
 
 const getRequiredFiles = (customizationInfos: CustomizationInfo[]): string[] => {
   const fileNames = new Set(customizationInfos.filter(isFileCustomizationInfo).map(fileCustInfo =>
-    fileCustInfo.path.join(FILE_CABINET_PATH_SEPARATOR)))
+    `${FILE_CABINET_PATH_SEPARATOR}${fileCustInfo.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
 
   return _.uniq(customizationInfos.flatMap(custInfo => {
     const requiredFiles: string[] = []

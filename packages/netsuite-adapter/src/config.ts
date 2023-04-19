@@ -403,12 +403,15 @@ function validateAdditionalSdfDeployDependencies(
   input: Partial<Record<keyof AdditionalSdfDeployDependencies, unknown>>,
   configName: string
 ): asserts input is Partial<AdditionalSdfDeployDependencies> {
-  const { features, objects } = input
+  const { features, objects, files } = input
   if (features !== undefined) {
     validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
   if (objects !== undefined) {
     validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
+  }
+  if (files !== undefined) {
+    validateArrayOfStrings(files, additionalDependenciesConfigPath.concat(configName, 'files'))
   }
 }
 

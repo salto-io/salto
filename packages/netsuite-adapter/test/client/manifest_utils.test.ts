@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { WORKFLOW } from '../../src/constants'
+import { WORKFLOW, FILE } from '../../src/constants'
 import { fixManifest } from '../../src/client/manifest_utils'
 import { CustomizationInfo } from '../../src/client/types'
 
@@ -52,12 +52,19 @@ describe('manifest.xml utils', () => {
         ref3: '[scriptid=workflow1.innerscriptid]',
         // 'external_script_id' shouldn't be added to the manifest since it has appid
         ref4: '[appid=com.salto, scriptid=external_script_id]',
+        // test.js file shouldn't be added to manifest since it is in the SDF project
         fileRef: '[/SuiteScripts/test.js]',
         // 'customrecord_test.cseg1' shouldn't be added to the manifest since
         // it is a wrong customsegment scriptid
         customSegmentRef: '[scriptid=customrecord_test.cseg1]',
       },
     },
+    {
+      typeName: FILE,
+      path: ['SuiteScripts', 'test.js'],
+      values: {
+      },
+    } as CustomizationInfo,
   ]
 
   it('should return with no manifest tag', () => {
@@ -84,7 +91,6 @@ describe('manifest.xml utils', () => {
       <object>secondscriptid</object>
     </objects>
     <files>
-      <file>/SuiteScripts/test.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -119,7 +125,6 @@ describe('manifest.xml utils', () => {
   </objects>
   <files>
     <file>/SuiteScripts/clientScript_2_0.js</file>
-    <file>/SuiteScripts/test
   </files>
 </dependencies>
 </manifest>`
@@ -146,7 +151,6 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
-      <file>/SuiteScripts/test</file>
     </files>
   </dependencies>
 </manifest>
@@ -211,7 +215,6 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
-      <file>/SuiteScripts/test.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -275,7 +278,6 @@ describe('manifest.xml utils', () => {
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
       <file>/SuiteScripts/testScript.js</file>
-      <file>/SuiteScripts/test.js</file>
     </files>
   </dependencies>
 </manifest>

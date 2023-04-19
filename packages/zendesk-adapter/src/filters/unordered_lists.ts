@@ -70,7 +70,7 @@ const orderDynamicContentItems = (instances: InstanceElement[]): void => {
           ([dynamicContentItemVariantInstancesById[variant.elemID.getFullName()].value.locale_id.value.value?.locale])
       )
     } else {
-      log.error(`could not sort variants for ${inst.elemID.getFullName()}`)
+      log.warn(`could not sort variants for ${inst.elemID.getFullName()}`)
     }
   })
 }
@@ -113,7 +113,7 @@ const orderMacros = (instances: InstanceElement[]): void => {
         id => ([groupInstancesById[id.elemID.getFullName()].value.name])
       )
     } else {
-      log.error(`could not sort ids for ${macro.elemID.getFullName()}`)
+      log.warn(`could not sort ids for ${macro.elemID.getFullName()}`)
     }
   })
 }
@@ -145,7 +145,7 @@ const sortConditions = (
           : [customFieldById[condition.value.elemID.getFullName()].value.value])
       )
     } else {
-      log.error(`could not sort conditions for ${form.elemID.getFullName()}`)
+      log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)
     }
   })
 }
@@ -177,7 +177,7 @@ const sortChildFields = (
           field => ([ticketFieldById[field.id.elemID.getFullName()].value.raw_title])
         )
       } else {
-        log.error(`could not sort child fields for ${form.elemID.getFullName()}`)
+        log.warn(`could not sort child fields for ${form.elemID.getFullName()}`)
       }
     })
   })

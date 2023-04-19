@@ -145,8 +145,10 @@ export default class SuiteAppClient {
    * ORDER BY <some unique identifier> ASC/DESC in your queries.
    * Otherwise, you might not get all the results.
    */
-  public async runSuiteQL(query: string):
-    Promise<Record<string, unknown>[] | undefined> {
+  public async runSuiteQL(
+    query: string,
+    throwOnErrors: Record<string, string> = {}
+  ): Promise<Record<string, unknown>[] | undefined> {
     log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* (ASC|DESC)/.test(query)) {
       log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`)
@@ -163,9 +165,16 @@ export default class SuiteAppClient {
         log.debug('SuiteQL query received %d/%d results', items.length, results.totalResults)
         hasMore = results.hasMore
       } catch (error) {
-        log.error('SuiteQL query error - %s', query, { error })
+        log.warn('SuiteQL query error - %s', query, { error })
         if (error instanceof InvalidSuiteAppCredentialsError) {
           throw error
+        }
+        if (axios.isAxiosError(error)) {
+          const errorDetailedMessage = getAxiosErrorDetailedMessage(error)
+          const matchingErrorKey = Object.keys(throwOnErrors).find(e => errorDetailedMessage?.includes(e))
+          if (matchingErrorKey !== undefined) {
+            throw new Error(throwOnErrors[matchingErrorKey])
+          }
         }
         return undefined
       }

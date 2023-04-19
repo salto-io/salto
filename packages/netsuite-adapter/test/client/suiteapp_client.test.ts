@@ -112,6 +112,16 @@ describe('SuiteAppClient', () => {
           mockAxiosAdapter.onPost().reply(() => [])
           expect(await client.runSuiteQL('')).toBeUndefined()
         })
+        it('should throw customize error', async () => {
+          mockAxiosAdapter.onPost().reply(400, {
+            code: 'SOME_CODE',
+            'o:errorDetails': [{
+              detail: 'some error',
+            }],
+          })
+          await expect(client.runSuiteQL('query', { 'some err': 'custom error1' })).rejects.toThrow('custom error1')
+          await expect(client.runSuiteQL('query', { 'other error': 'custom error2' })).resolves.not.toThrow()
+        })
         it('with concurrency error retry', async () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))
           mockAxiosAdapter

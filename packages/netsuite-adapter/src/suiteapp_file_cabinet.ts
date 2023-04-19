@@ -159,6 +159,11 @@ const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 const MAX_ITEMS_IN_WHERE_QUERY = 200
 
+export const THROW_ON_MISSING_FEATURE_ERROR = {
+  'Search error occurred: Unknown identifier \'bundleable\'': 'Failed to list folders.'
+    + ' Please verify that the "Create bundles with SuiteBundler" feature is enabled in the account.',
+}
+
 export type SuiteAppFileCabinetOperations = {
   importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
   deploy: (
@@ -231,7 +236,8 @@ SuiteAppFileCabinetOperations => {
   ): Promise<FolderResult[]> => retryOnRetryableError(async () => {
     const foldersResults = await suiteAppClient.runSuiteQL(
       'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
-      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`,
+      THROW_ON_MISSING_FEATURE_ERROR,
     )
 
     if (foldersResults === undefined) {

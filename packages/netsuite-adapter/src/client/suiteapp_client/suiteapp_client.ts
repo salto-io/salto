@@ -36,7 +36,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
-import { DEFAULT_CONCURRENCY } from '../../config'
+import { DEFAULT_CONCURRENCY, DEFAULT_MAX_FILE_CABINET_SIZE } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
@@ -106,6 +106,7 @@ export default class SuiteAppClient {
 
   private versionFeatures: VersionFeatures | undefined
   private readonly setVersionFeaturesLock: AsyncLock
+  readonly maxFileCabinetSize: number
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -137,6 +138,7 @@ export default class SuiteAppClient {
 
     this.versionFeatures = undefined
     this.setVersionFeaturesLock = new AsyncLock()
+    this.maxFileCabinetSize = params.config?.maxFileCabinetSize || DEFAULT_MAX_FILE_CABINET_SIZE
   }
 
   /**
@@ -536,7 +538,7 @@ export default class SuiteAppClient {
     try {
       return await this.soapClient.readFile(id)
     } catch (e) {
-      return e
+      return e as Error
     }
   }
 

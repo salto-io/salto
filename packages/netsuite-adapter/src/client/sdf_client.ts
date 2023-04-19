@@ -57,6 +57,7 @@ import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
 import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
+import { excludeLargeFolders } from './file_cabinet_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -797,116 +798,18 @@ export default class SdfClient {
       }
     }
 
-    type FolderSize = {
-      path: string
-      size: number
-      folders: FolderSize[]
-    }
-
-    type FolderSizeMap = { [path: string]: FolderSize }
-
-    const excludeLargeFolders = async (filePaths: string[], fileCabinetDirPath: string, maxFileCabinetSize: number):
-    Promise<{ listedPaths: string[]; failedPaths: string[] }> => {
-      const folderSizes = async (): Promise<FolderSize[]> => {
-        const statFiles = async ():
-          Promise<{ [path: string]: number }> => {
-          const normalizedPath = (filePath: string): string => {
-            const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
-            return osPath.join(fileCabinetDirPath, ...filePathParts)
-          }
-          return Object.assign({}, ...await withLimitedConcurrency(
-            filePaths.map(filePath => async () => (
-              { [filePath]: (await stat(normalizedPath(filePath))).size }
-            )),
-            READ_CONCURRENCY
-          ))
-        }
-
-        const statFolders = (fileSizes: { [path: string]: number }): FolderSize[] => {
-          const createFlatFolderSizes = (): FolderSizeMap => {
-            const flatFolderSizes = {} as FolderSizeMap
-            Object.keys(fileSizes).forEach((path: string) => {
-              osPath.dirname(path).split(osPath.sep).reduce((currentPath, nextFolder) => {
-                const nextPath = osPath.join(currentPath, nextFolder)
-                if (nextPath in flatFolderSizes) {
-                  flatFolderSizes[nextPath].size += fileSizes[path]
-                } else {
-                  flatFolderSizes[nextPath] = {
-                    path: nextPath,
-                    size: fileSizes[path],
-                    folders: [],
-                  }
-                }
-                return nextPath
-              })
-            })
-            return flatFolderSizes
-          }
-          const createFolderHierarchy = (flatFolderSizes: FolderSizeMap): FolderSize[] => {
-            const folderGraph = [] as FolderSize[]
-            Object.keys(flatFolderSizes).forEach(folderName => {
-              if (folderName.split(osPath.sep).length === 1) { // Top level folder
-                folderGraph.push(flatFolderSizes[folderName])
-              } else { // Sub folder
-                const parentFolder = osPath.dirname(folderName)
-                flatFolderSizes[parentFolder].folders.push(flatFolderSizes[folderName])
-              }
-            })
-            return folderGraph
-          }
-
-          return createFolderHierarchy(createFlatFolderSizes())
-        }
-
-        return statFolders(await statFiles())
+    const filesToSize = async (filePaths: string[], fileCabinetDirPath: string):
+      Promise<{ [path: string]: number }> => {
+      const normalizedPath = (filePath: string): string => {
+        const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
+        return osPath.join(fileCabinetDirPath, ...filePathParts)
       }
-
-      const sizes = await folderSizes()
-      const maxSizeInBytes = (1024 ** 3) * maxFileCabinetSize
-      const overflowSize = sizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
-
-      const filterSingleFolder = (): string[] => {
-        let lastLargeFolder = sizes.find(folderSize => folderSize.size > overflowSize) as FolderSize
-        let noLargeSubFolders = false
-        while (!noLargeSubFolders) {
-          const nextLargeFolder = lastLargeFolder.folders.find(folderSize => folderSize.size > overflowSize)
-          if (nextLargeFolder) {
-            lastLargeFolder = nextLargeFolder
-          } else {
-            noLargeSubFolders = true
-          }
-        }
-
-        return [lastLargeFolder.path]
-      }
-
-      const filterMultipleFolders = (): string[] => {
-        const sortedSizes = _.sortBy(sizes, 'size', 'desc')
-        let selectedSize = 0
-        const selectedFolders = [] as string[]
-        while (selectedSize <= overflowSize) {
-          const folderSize = sortedSizes.shift()
-          if (!folderSize) {
-            break
-          }
-          selectedFolders.push(folderSize.path)
-          selectedSize += folderSize.size
-        }
-
-        return selectedFolders
-      }
-
-      if (overflowSize <= 0) {
-        return { listedPaths: filePaths, failedPaths: [] }
-      }
-
-      const foldersToExclude = sizes.some(folderSize => folderSize.size > overflowSize)
-        ? filterSingleFolder()
-        : filterMultipleFolders()
-      const listedPaths = filePaths.filter(filePath => !foldersToExclude.some(
-        folder => filePath.startsWith(`${FILE_CABINET_PATH_SEPARATOR}${folder}`)
+      return Object.assign({}, ...await withLimitedConcurrency(
+        filePaths.map(filePath => async () => (
+          { [filePath]: (await stat(normalizedPath(filePath))).size }
+        )),
+        READ_CONCURRENCY
       ))
-      return { listedPaths, failedPaths: foldersToExclude.map(path => `^${path}/.*`) }
     }
 
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
@@ -960,7 +863,9 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
-    const filteredPaths = await excludeLargeFolders(importedPaths, fileCabinetDirPath, this.maxFileCabinetSize)
+    const filteredPaths = excludeLargeFolders(
+      await filesToSize(importedPaths, fileCabinetDirPath), this.maxFileCabinetSize
+    )
     const [attributesPaths, filePaths] = _.partition(filteredPaths.listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
@@ -973,7 +878,11 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: { lockedError: [], otherError: _.concat(listFilesResults.failedPaths, filteredPaths.failedPaths) },
+      failedPaths: {
+        lockedError: [],
+        otherError: listFilesResults.failedPaths,
+        largeFolderError: filteredPaths.largeFolderError,
+      },
     }
   }
 

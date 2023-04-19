@@ -21,9 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
-  CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
+  CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, FILE_CABINET_PATH_SEPARATOR, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
@@ -92,6 +92,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
 
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
+  maxFileCabinetSize?: number
 }
 
 export type NetsuiteConfig = {
@@ -187,6 +188,12 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
           min: 1,
           max: 50,
         }),
+      },
+    },
+    maxFileCabinetSize: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_FILE_CABINET_SIZE,
       },
     },
   },
@@ -567,12 +574,30 @@ export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been ch
 export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
 + ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
-const createExclude = ({
-  filePaths: failedPaths = [],
-  types: failedTypes = {},
-}: Pick<NetsuiteQueryParameters, 'types' | 'filePaths'>): QueryParams =>
+const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
+  folderPaths.map(folder => {
+    const wrapWithSeparators = (): string => {
+      let normalizedFolder = folder
+      if (!folder.startsWith(FILE_CABINET_PATH_SEPARATOR)) {
+        normalizedFolder = `${FILE_CABINET_PATH_SEPARATOR}${normalizedFolder}`
+      }
+      if (!folder.endsWith(FILE_CABINET_PATH_SEPARATOR)) {
+        normalizedFolder = `${normalizedFolder}${FILE_CABINET_PATH_SEPARATOR}`
+      }
+      return normalizedFolder
+    }
+
+    const normalizedFolder = wrapWithSeparators()
+    return `^${_.escapeRegExp(normalizedFolder)}.*`
+  })
+
+const createExclude = (
+  failedPaths: NetsuiteFilePathsQueryParams = [],
+  failedTypes: NetsuiteTypesQueryParams = {},
+  folderPaths: NetsuiteFilePathsQueryParams = [],
+): QueryParams =>
   ({
-    fileCabinet: failedPaths.map(_.escapeRegExp),
+    fileCabinet: _.concat(failedPaths.map(_.escapeRegExp), createFolderExclude(folderPaths)),
     types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
   })
 
@@ -583,22 +608,24 @@ const toConfigSuggestions = (
 ): NetsuiteConfig => {
   const config: NetsuiteConfig = {}
 
-  if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
+  if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)
+    || !_.isEmpty(failedFilePaths?.largeFolderError)) {
     config.fetch = {
       ...config.fetch,
-      exclude: createExclude({
-        filePaths: failedFilePaths.otherError,
-        types: failedTypes.unexpectedError,
-      }),
+      exclude: createExclude(
+        failedFilePaths.otherError,
+        failedTypes.unexpectedError,
+        failedFilePaths.largeFolderError,
+      ),
     }
   }
   if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
     config.fetch = {
       ...config.fetch,
-      lockedElementsToExclude: createExclude({
-        filePaths: failedFilePaths.lockedError,
-        types: failedTypes.lockedError,
-      }),
+      lockedElementsToExclude: createExclude(
+        failedFilePaths.lockedError,
+        failedTypes.lockedError,
+      ),
     }
   }
   if (failedToFetchAllAtOnce) {

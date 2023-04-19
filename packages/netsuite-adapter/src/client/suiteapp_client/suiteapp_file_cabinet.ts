@@ -38,6 +38,7 @@ import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
 import { NetsuiteQuery } from '../../query'
 import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
+import { excludeLargeFolders } from '../file_cabinet_utils'
 
 const log = logger(module)
 
@@ -403,7 +404,9 @@ SuiteAppFileCabinetOperations => {
         isprivate: folder.isprivate,
         internalId: folder.id,
       },
-    }))
+    })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+
+    const fullPath = (file: { path: string[] }): string => file.path.join(FILE_CABINET_PATH_SEPARATOR)
 
     const filesCustomizations = filesResults.map(file => ({
       path: file.path,
@@ -420,11 +423,21 @@ SuiteAppFileCabinetOperations => {
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
-    }))
+    })).filter(file => query.isFileMatch(`/${fullPath(file)}`))
+
     const [
-      filesCustomizationWithoutContent,
+      unfilteredFilesCustomizationWithoutContent,
       filesCustomizationsLinks,
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
+
+    const filesToSize = Object.assign({}, ...unfilteredFilesCustomizationWithoutContent.map(
+      file => ({ [fullPath(file)]: file.size })
+    ))
+    const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSize)
+    const filteredFilesSet = new Set(filteredFilesCustomization.listedPaths)
+    const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent.filter(
+      file => filteredFilesSet.has(fullPath(file))
+    )
 
     const fileChunks = chunks.weightedChunks(
       filesCustomizationWithoutContent,
@@ -496,6 +509,7 @@ SuiteAppFileCabinetOperations => {
       failedPaths: {
         otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
         lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
+        largeFolderError: filteredFilesCustomization.largeFolderError,
       },
     }
   }

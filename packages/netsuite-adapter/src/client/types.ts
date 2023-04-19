@@ -54,6 +54,7 @@ export type GetCustomObjectsResult = {
 export type FailedFiles = {
   lockedError: NetsuiteFilePathsQueryParams
   otherError: NetsuiteFilePathsQueryParams
+  largeFolderError?: NetsuiteFilePathsQueryParams
 }
 
 export type ImportFileCabinetResult = {

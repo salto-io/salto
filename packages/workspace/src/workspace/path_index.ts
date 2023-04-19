@@ -169,6 +169,14 @@ RemoteMapEntry<Path[]>[] => {
     ))
 }
 
+export const updatePathIndexTemp = async (
+  current: PathIndex,
+  unmergedElements: Element[],
+): Promise<void> => {
+  const entries = getElementsPathHints(unmergedElements)
+  await current.setAll(entries)
+}
+
 export const overridePathIndex = async (
   current: PathIndex,
   unmergedElements: Element[],
@@ -187,6 +195,14 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
       key,
       value: value.map(e => e.path as Path),
     }))
+}
+
+export const updateTopLevelPathIndex = async (
+  current: PathIndex,
+  unmergedElements: Element[],
+): Promise<void> => {
+  const entries = getTopLevelPathHints(unmergedElements)
+  await current.setAll(entries)
 }
 
 export const overrideTopLevelPathIndex = async (

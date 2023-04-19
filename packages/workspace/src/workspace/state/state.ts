@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
+import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { PathIndex, Path } from '../path_index'
@@ -22,6 +22,12 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
 
 export type StateMetadataKey = 'version' | 'hash'
+
+type updateStateElementsArgs = {
+  changes: DetailedChange[]
+  unmergedElements: Element[]
+  accounts: string[]
+}
 
 // This distinction is temporary for the transition to multiple services.
 // Remove this when no longer used, SALTO-1661
@@ -68,6 +74,7 @@ export interface State extends ElementsSource {
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
+  updateStateFromChanges(args: updateStateElementsArgs): Promise<void>
 }
 
 

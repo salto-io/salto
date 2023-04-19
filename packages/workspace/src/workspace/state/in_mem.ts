@@ -13,15 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
+import {
+  DetailedChange,
+  Element,
+  ElemID,
+  getChangeData, isAdditionChange,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import {
   updatePathIndex,
   overridePathIndex,
   PathIndex,
-  overrideTopLevelPathIndex,
+  overrideTopLevelPathIndex, updateTopLevelPathIndex, updatePathIndexTemp,
 } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
@@ -79,6 +87,30 @@ export const buildInMemState = (
     )
   }
 
+  const updateStateElements = async (changes: DetailedChange[]): Promise<void> => {
+    const state = (await stateData()).elements
+    const changesByTopLevelElement = _.groupBy(
+      changes,
+      change => change.id.createTopLevelParentID().parent.getFullName()
+    )
+    await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
+      const elemID = elemChanges[0].id.createTopLevelParentID().parent
+      if (elemChanges[0].id.isEqual(elemID)) {
+        if (isRemovalChange(elemChanges[0])) {
+          await state.delete(elemID)
+        } else if (isAdditionChange(elemChanges[0])) {
+          await state.set(getChangeData(elemChanges[0]))
+        }
+        return
+      }
+
+      const updatedElem = (await state.get(elemID)).clone()
+      applyDetailedChanges(updatedElem, elemChanges)
+      await state.set(updatedElem)
+    })
+  }
+
+
   return {
     getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
     list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
@@ -102,11 +134,14 @@ export const buildInMemState = (
       : Promise<void> => log.time(
       async () => {
         const data = await stateData()
+        const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
 
         await data.staticFilesSource.clear()
 
         await data.elements.overide(elements)
-        return updateAccounts(accounts)
+        return getUpdateDate(data).setAll(
+          awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+        )
       },
       'state override'
     ),
@@ -154,7 +189,7 @@ export const buildInMemState = (
       await currentStateData.saltoMetadata.clear()
       await currentStateData.staticFilesSource.clear()
     },
-    flush: async () => log.time(async () => {
+    flush: async () => {
       if (!persistent) {
         throw new Error('can not flush a non persistent state')
       }
@@ -165,7 +200,7 @@ export const buildInMemState = (
       await getUpdateDate(currentStateData).flush()
       await currentStateData.saltoMetadata.flush()
       await currentStateData.staticFilesSource.flush()
-    }, 'state flush'),
+    },
     rename: () => Promise.resolve(),
     getHash: async () => (await stateData()).saltoMetadata.get('hash'),
     setHash: async newHash => (await stateData()).saltoMetadata.set('hash', newHash),
@@ -173,5 +208,39 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
+    updateStateFromChanges: async ({ changes, unmergedElements, accounts } : {
+        changes: DetailedChange[]
+        unmergedElements?: Element[]
+        accounts?: string[]
+}) => {
+      await log.time(async () => {
+        await updateStateElements(changes)
+        if (!_.isEmpty(accounts)) {
+          await updateAccounts(accounts)
+        }
+      }, 'state update')
+      log.debug('finished updating state elements with %d changes', changes.length)
+
+      if (unmergedElements === undefined || _.isEmpty(unmergedElements)) {
+        return
+      }
+
+      // TODO: Seroussi - Export it to another inner func
+      const changedElements = new Set(Object.keys(_.groupBy(
+        changes,
+        change => change.id.createTopLevelParentID().parent.getFullName()
+      )))
+      const changedUnmergedElements = unmergedElements.filter(
+        elem => changedElements.has(elem.elemID.getFullName())
+      )
+
+      await log.time(async () => {
+        const currentStateData = await stateData()
+        // TODO: Seroussi - what about deletion?
+        await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements)
+        await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements)
+      }, 'update path index')
+      log.debug('finished updating path index with %d elements', unmergedElements.length)
+    },
   }
 }

@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import {
-  Change,
+  Change, Element,
   Field, getAllChangeData,
   getChangeData, isAdditionChange,
   isAdditionOrModificationChange,
@@ -31,13 +31,14 @@ import {
   toChange,
 } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
-import { apiName, isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
+import { isCustomObject, isFieldOfCustomObject } from '../transformers/transformer'
 import {
   FIELD_ANNOTATIONS,
   HISTORY_TRACKED_FIELDS,
   OBJECT_HISTORY_TRACKING_ENABLED,
   SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
+import { safeApiName } from './utils'
 
 const { awu } = collections.asynciterable
 
@@ -74,6 +75,8 @@ const STANDARD_OBJECTS_THAT_SUPPORT_HISTORY_TRACKING = [
   'WorkOrder',
   'WorkOrderLineItem',
 ]
+
+const apiName = async (element: Element): Promise<string> => ((await safeApiName(element)) ?? '')
 
 const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
   (type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] === true)
@@ -152,7 +155,7 @@ const filter: LocalFilterCreator = () => {
         Object.keys(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
       )
 
-      const isHistoryTrackedField = async (field: Field): Promise<boolean> => (
+      const isHistoryTrackedField = (field: Field): boolean => (
         (field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] === true)
         || trackedFields(field.parent).includes(field.name)
       )
@@ -167,7 +170,7 @@ const filter: LocalFilterCreator = () => {
           return
         }
         objType.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = isHistoryTrackingEnabled(objType)
-        await awu(Object.values(objType.fields))
+        Object.values(objType.fields)
           .filter(isHistoryTrackedField)
           .forEach(field => {
             field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = true
@@ -188,8 +191,8 @@ const filter: LocalFilterCreator = () => {
         .map(getChangeData)
         .filter(isField)
         .filter(isFieldOfCustomObject)
-        .forEach(async field => {
-          field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = await isHistoryTrackedField(field)
+        .forEach(field => {
+          field.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = isHistoryTrackedField(field)
         })
 
       // Existing object types that changed

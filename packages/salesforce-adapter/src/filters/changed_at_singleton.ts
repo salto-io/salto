@@ -19,15 +19,14 @@ import {
   ElemID,
   InstanceElement,
   isInstanceElement,
-  ReadOnlyElementsSource,
   Values,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { FilterWith, LocalFilterCreator } from '../filter'
-import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
+import { isMetadataInstanceElement } from '../transformers/transformer'
 import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
-import { getChangedAtSingleton } from './utils'
+import { getChangedAtSingleton, safeApiName } from './utils'
 
 const { groupByAsync, awu } = collections.asynciterable
 
@@ -44,22 +43,6 @@ const createChangedAtSingletonInstanceValues = (metadataInstancesByType: Record<
   return instanceValues
 }
 
-const createEmptyChangedAtSingletonInstance = async (): Promise<InstanceElement> => (
-  new InstanceElement(
-    ElemID.CONFIG_NAME,
-    ArtificialTypes.ChangedAtSingleton,
-  )
-)
-
-const getChangedAtSingletonInstance = async (
-  elementsSource: ReadOnlyElementsSource | undefined
-): Promise<InstanceElement> => {
-  const changedAtSingleton = elementsSource !== undefined
-    ? await getChangedAtSingleton(elementsSource)
-    : undefined
-  return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
-}
-
 const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
@@ -69,17 +52,19 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
         .filter(isMetadataInstanceElement)
         .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
         .toArray(),
-      async instance => apiName(await instance.getType())
+      async instance => await safeApiName(instance) ?? '_unsorted'
     )
     // None of the Elements were annotated with changedAt
     if (Object.values(metadataInstancesByType).flat().length === 0) {
       return
     }
 
-    const changedAtInstance = await getChangedAtSingletonInstance(config.elementsSource)
-    changedAtInstance.value = _.defaultsDeep(
-      createChangedAtSingletonInstanceValues(metadataInstancesByType),
-      changedAtInstance.value,
+    const currentValues = createChangedAtSingletonInstanceValues(metadataInstancesByType)
+    const valuesFromElementsSource = (await getChangedAtSingleton(config.elementsSource))?.value ?? {}
+    const changedAtInstance = new InstanceElement(
+      ElemID.CONFIG_NAME,
+      ArtificialTypes.ChangedAtSingleton,
+      _.defaultsDeep(currentValues, valuesFromElementsSource),
     )
     elements.push(changedAtInstance)
   },

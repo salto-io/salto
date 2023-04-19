@@ -26,6 +26,8 @@ import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { ParseError } from '../../src/parser'
 import { DuplicateAnnotationError } from '../../src/merger'
 import { Errors } from '../../src/errors'
+import { DirectoryStore } from '../../src/workspace/dir_store'
+import { mockDirStore } from '../common/nacl_file_store'
 
 const { awu } = collections.asynciterable
 
@@ -35,12 +37,15 @@ describe('adapters config', () => {
   let mockNaclFilesSource: MockInterface<NaclFilesSource>
   let configSource: AdaptersConfigSource
   let validationErrorsMap: MockInterface<RemoteMap<ValidationError[]>>
+  let mockNaclFilesStore: MockInterface<DirectoryStore<string>>
 
   const configType = new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) })
 
   beforeEach(async () => {
     jest.resetAllMocks()
     mockNaclFilesSource = createMockNaclFileSource([])
+
+    mockNaclFilesStore = mockDirStore()
 
     mockNaclFilesSource.get.mockResolvedValue(new InstanceElement(
       ElemID.CONFIG_NAME,
@@ -109,6 +114,7 @@ describe('adapters config', () => {
       ignoreFileChanges: false,
       remoteMapCreator: mockFunction<RemoteMapCreator>().mockResolvedValue(validationErrorsMap),
       persistent: true,
+      naclFilesStore: mockNaclFilesStore,
       configTypes: [configType],
       configOverrides,
     })
@@ -124,6 +130,7 @@ describe('adapters config', () => {
         ignoreFileChanges: true,
         remoteMapCreator: jest.fn().mockResolvedValue(validationErrorsMap),
         persistent: true,
+        naclFilesStore: mockNaclFilesStore,
         configTypes: [configType],
         configOverrides: [],
       })
@@ -138,6 +145,7 @@ describe('adapters config', () => {
         ignoreFileChanges: true,
         remoteMapCreator: jest.fn().mockResolvedValue(validationErrorsMap),
         persistent: true,
+        naclFilesStore: mockNaclFilesStore,
         configTypes: [configType],
         configOverrides: [],
       })
@@ -215,7 +223,7 @@ describe('adapters config', () => {
   })
 
   it('getElementNaclFiles should return the configuration files', async () => {
-    mockNaclFilesSource.listNaclFiles.mockResolvedValue(['salto.config/adapters/salesforce/a/b', 'salto.config/adapters/salesforce/c', 'salto.config/adapters/dummy/d'])
+    mockNaclFilesStore.list.mockResolvedValue(['salto.config/adapters/salesforce/a/b', 'salto.config/adapters/salesforce/c', 'salto.config/adapters/dummy/d'])
     const paths = await configSource.getElementNaclFiles('salesforce')
     expect(paths).toEqual(['salto.config/adapters/salesforce/a/b', 'salto.config/adapters/salesforce/c'])
   })

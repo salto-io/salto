@@ -23,6 +23,7 @@ import { mergeSingleElement } from '../merger'
 import { serialize } from '../serializer'
 import { deserializeValidationErrors } from '../serializer/elements'
 import { validateElements, ValidationError } from '../validator'
+import { DirectoryStore } from './dir_store'
 import { Errors } from './errors'
 import { NaclFilesSource } from './nacl_files'
 import { RemoteMap, RemoteMapCreator } from './remote_map'
@@ -68,6 +69,7 @@ const updateValidationErrorsCache = async (
 
 export type AdaptersConfigSourceArgs = {
   naclSource: NaclFilesSource
+  naclFilesStore: DirectoryStore<string>
   ignoreFileChanges: boolean
   remoteMapCreator: RemoteMapCreator
   persistent: boolean
@@ -99,6 +101,7 @@ export const calculateAdditionalConfigTypes = async (
 
 export const buildAdaptersConfigSource = async ({
   naclSource,
+  naclFilesStore,
   ignoreFileChanges,
   remoteMapCreator,
   persistent,
@@ -233,7 +236,7 @@ export const buildAdaptersConfigSource = async ({
       }
       await updateValidationErrorsCache(validationErrorsMap, elementsSource, naclSource)
     },
-    getElementNaclFiles: async adapter => (await naclSource.listNaclFiles())
+    getElementNaclFiles: async adapter => (await naclFilesStore.list())
       .filter(filePath => filePath.startsWith(path.join(...CONFIG_PATH, adapter).concat(path.sep))),
 
     getErrors: async () => {

@@ -15,7 +15,7 @@
 * limitations under the License.
 */
 import path from 'path'
-import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap } from '@salto-io/workspace'
+import { nacl, staticFiles, adaptersConfigSource as acs, remoteMap, dirStore } from '@salto-io/workspace'
 import { DetailedChange, ObjectType } from '@salto-io/adapter-api'
 import { localDirectoryStore, createExtensionFileFilter } from './dir_store'
 import { buildLocalStaticFilesCache } from './static_files_cache'
@@ -23,16 +23,10 @@ import { buildLocalStaticFilesCache } from './static_files_cache'
 const createNaclSource = async (
   baseDir: string,
   localStorage: string,
+  naclFilesStore: dirStore.DirectoryStore<string>,
   remoteMapCreator: remoteMap.RemoteMapCreator,
   persistent: boolean,
 ) : Promise<nacl.NaclFilesSource> => {
-  const naclFilesStore = localDirectoryStore({
-    baseDir,
-    accessiblePath: path.join(...acs.CONFIG_PATH),
-    fileFilter: createExtensionFileFilter(nacl.FILE_EXTENSION),
-    encoding: 'utf8',
-  })
-
   const naclStaticFilesStore = localDirectoryStore({
     baseDir: path.join(baseDir, ...acs.CONFIG_PATH),
     nameSuffix: 'static-resources',
@@ -60,11 +54,20 @@ export const buildLocalAdaptersConfigSource = async (
   persistent: boolean,
   configTypes: ObjectType[],
   configOverrides: DetailedChange[] = [],
-): Promise<acs.AdaptersConfigSource> => acs.buildAdaptersConfigSource({
-  naclSource: await createNaclSource(baseDir, localStorage, remoteMapCreator, persistent),
-  ignoreFileChanges: false,
-  remoteMapCreator,
-  persistent,
-  configTypes,
-  configOverrides,
-})
+): Promise<acs.AdaptersConfigSource> => {
+  const naclFilesStore = localDirectoryStore({
+    baseDir,
+    accessiblePath: path.join(...acs.CONFIG_PATH),
+    fileFilter: createExtensionFileFilter(nacl.FILE_EXTENSION),
+    encoding: 'utf8',
+  })
+  return acs.buildAdaptersConfigSource({
+    naclSource: await createNaclSource(baseDir, localStorage, naclFilesStore, remoteMapCreator, persistent),
+    ignoreFileChanges: false,
+    naclFilesStore,
+    remoteMapCreator,
+    persistent,
+    configTypes,
+    configOverrides,
+  })
+}

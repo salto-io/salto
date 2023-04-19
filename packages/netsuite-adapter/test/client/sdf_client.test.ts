@@ -1009,7 +1009,11 @@ describe('sdf client', () => {
       })
       const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`) })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeFolderError: [],
+        otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`),
+      })
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -1049,7 +1053,7 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
     })
 
     it('should fail to importFiles when failing to import a certain file', async () => {
@@ -1171,7 +1175,7 @@ describe('sdf client', () => {
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -1200,7 +1204,7 @@ describe('sdf client', () => {
       const { elements, failedPaths } = await client.importFileCabinetContent(query)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1267,7 +1271,7 @@ describe('sdf client', () => {
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
       }])
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
     })
   })

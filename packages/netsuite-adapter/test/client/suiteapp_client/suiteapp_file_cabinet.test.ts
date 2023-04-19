@@ -354,6 +354,7 @@ describe('suiteapp_file_cabinet', () => {
         otherError: [
           '/folder5/folder3/file1',
         ],
+        largeFolderError: [],
       })
     })
 
@@ -384,7 +385,7 @@ describe('suiteapp_file_cabinet', () => {
 
       const suiteAppFileCabinet = createSuiteAppFileCabinetOperations(suiteAppClient)
       expect(await suiteAppFileCabinet.importFileCabinet(query))
-        .toEqual({ elements: [], failedPaths: { lockedError: [], otherError: [] } })
+        .toEqual({ elements: [], failedPaths: { lockedError: [], largeFolderError: [], otherError: [] } })
       expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledTimes(1)
     })
 

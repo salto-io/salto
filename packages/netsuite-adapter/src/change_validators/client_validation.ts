@@ -44,8 +44,7 @@ const mapObjectDeployErrorToInstance = (error: Error):
   } = multiLanguageErrorDetectors[detectedLanguage]
   const scriptIdToErrorRecord: Record<string, string> = {}
   const splitterRegex = validationFailed.test(error.message) ? validationFailed : settingsValidationErrorRegex
-  const errorMessageChunks = error.message.split(splitterRegex)[1]?.split('\n\n')
-  ?? []
+  const errorMessageChunks = error.message.split(splitterRegex)[1]?.split('\n\n') ?? []
   errorMessageChunks.forEach(chunk => {
     const objectErrorScriptId = getGroupItemFromRegex(
       chunk, objectValidationErrorRegex, OBJECT_ID

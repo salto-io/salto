@@ -37,9 +37,15 @@ type FailedChangeWithDependencies = {
 const mapObjectDeployErrorToInstance = (error: Error):
 { get: (changeData: ChangeDataType) => string | undefined } => {
   const detectedLanguage = detectLanguage(error.message)
-  const { validationFailed, objectValidationErrorRegex } = multiLanguageErrorDetectors[detectedLanguage]
+  const {
+    validationFailed,
+    objectValidationErrorRegex,
+    settingsValidationErrorRegex,
+  } = multiLanguageErrorDetectors[detectedLanguage]
   const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorMessageChunks = error.message.split(validationFailed)[1]?.split('\n\n') ?? []
+  const splitterRegex = validationFailed.test(error.message) ? validationFailed : settingsValidationErrorRegex
+  const errorMessageChunks = error.message.split(splitterRegex)[1]?.split('\n\n')
+  ?? []
   errorMessageChunks.forEach(chunk => {
     const objectErrorScriptId = getGroupItemFromRegex(
       chunk, objectValidationErrorRegex, OBJECT_ID

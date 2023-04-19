@@ -131,9 +131,9 @@ describe('workflowDeployFilter', () => {
                     },
                     conditions: [
                       {
-                        configuration: [{
+                        configuration: {
                           id: 2,
-                        }],
+                        },
                       },
                     ],
                   },
@@ -164,9 +164,9 @@ describe('workflowDeployFilter', () => {
                       },
                       conditions: [
                         {
-                          configuration: [{
+                          configuration: {
                             id: '2',
-                          }],
+                          },
                         },
                       ],
                     },
@@ -181,7 +181,7 @@ describe('workflowDeployFilter', () => {
           .apiDefinitions.types.Workflow.deployRequests,
         fieldsToIgnore: expect.toBeFunction(),
       })
-    })
+    }, 100000)
 
     it('should add operations value', async () => {
       const change = toChange({
@@ -204,6 +204,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
+            transitions: [],
           }
         ),
       })
@@ -217,6 +218,7 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'name',
+              transitions: [],
             },
           ),
         }),

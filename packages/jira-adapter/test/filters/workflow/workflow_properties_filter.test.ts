@@ -79,6 +79,7 @@ describe('workflowPropertiesFilter', () => {
               },
             },
           ],
+          transitions: [],
         }
       )
       await filter.onFetch([instance])
@@ -97,6 +98,7 @@ describe('workflowPropertiesFilter', () => {
             ],
           },
         ],
+        transitions: [],
       })
     })
 
@@ -161,6 +163,7 @@ describe('workflowPropertiesFilter', () => {
               ],
             },
           ],
+          transitions: [],
         }
       )
       const changes = [toChange({ after: instance })]
@@ -182,6 +185,7 @@ describe('workflowPropertiesFilter', () => {
             },
           },
         ],
+        transitions: [],
       })
 
       await filter.onDeploy?.(changes)

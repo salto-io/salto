@@ -116,7 +116,8 @@ export const deployWorkflow = async (
       await deployTriggers(resolvedChange, client)
       // No need to run in DC since the main deployment requests already supports deploying steps
       if (!client.isDataCenter) {
-        await deploySteps(instance, client)
+        // as is done since it was already verified on the resolved change
+        await deploySteps(getChangeData(change) as WorkflowInstance, client)
       }
     }
   }

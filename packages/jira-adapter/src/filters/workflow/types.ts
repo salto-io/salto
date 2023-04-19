@@ -112,7 +112,7 @@ export type Condition = {
 }
 
 const conditionScheme = Joi.object({
-  conditions: Joi.array().items(Joi.link('/')).optional(),
+  conditions: Joi.array().items(Joi.link('...')).optional(),
   type: Joi.string().optional(),
   configuration: Joi.object().optional(),
 }).unknown(true)
@@ -140,7 +140,7 @@ export type Transition = {
   name?: string
   from?: unknown[]
   properties?: Values
-  to?: string
+  to?: unknown
 }
 
 export const transitionsSchema = Joi.object({
@@ -177,7 +177,7 @@ export const workflowSchema = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
-  transitions: Joi.array().items(transitionsSchema),
+  transitions: Joi.array().items(transitionsSchema).required(),
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true).required()
 

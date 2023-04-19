@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { NetsuiteQuery } from '../src/query'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
-import { createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
+import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable } from '../src/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../src/client/suiteapp_client/errors'
 import { customtransactiontypeType } from '../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../src/client/suiteapp_client/types'
@@ -368,6 +368,14 @@ describe('suiteapp_file_cabinet', () => {
         expectedResults[4],
         expectedResults[5],
       ])
+    })
+
+    it('should call suiteql with missing feature error param', async () => {
+      await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query)
+      expect(mockSuiteAppClient.runSuiteQL).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT name, id, bundleable'),
+        THROW_ON_MISSING_FEATURE_ERROR
+      )
     })
 
     it('return empty result when no top level folder matches the adapter\'s query', async () => {

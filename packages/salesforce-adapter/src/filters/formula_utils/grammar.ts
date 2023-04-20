@@ -18,13 +18,13 @@ import { getField, getObject, parts } from './utils'
 import { CPQ_NAMESPACE, CUSTOM_METADATA_SUFFIX, NAMESPACE_SEPARATOR, SALESFORCE_CUSTOM_SUFFIX } from '../../constants'
 
 const RELATIONSHIP_SUFFIX = '__R'
-const USER_FIELDS_REGEX = new RegExp(/^OWNER|MANAGER|CREATEDBY|LASTMODIFIEDBY$/, 'i')
-const CUSTOM_LABEL_PREFIX_REGEX = new RegExp(/^\$LABEL\./, 'i')
-const CUSTOM_SETTING_PREFIX_REGEX = new RegExp(/^\$SETUP\./, 'i')
-const OBJECT_TYPE_PREFIX_REGEX = new RegExp(/^\$OBJECTTYPE\./, 'i')
-const SELF_REFERENTIAL_PARENT_FIELD_REGEX = new RegExp(/^parentid$/, 'i')
-const SELF_REFERENTIAL_PARENT_OBJECT_REGEX = new RegExp(/^parent$/, 'i')
-const SPECIAL_PREFIXES_REGEX = new RegExp(/^\$USER|\$PROFILE|\$ORGANIZATION|\$USERROLE|\$SYSTEM/, 'i')
+const USER_FIELDS_REGEX = /^OWNER|MANAGER|CREATEDBY|LASTMODIFIEDBY$/i
+const CUSTOM_LABEL_PREFIX_REGEX = /^\$LABEL\./i
+const CUSTOM_SETTING_PREFIX_REGEX = /^\$SETUP\./i
+const OBJECT_TYPE_PREFIX_REGEX = /^\$OBJECTTYPE\./i
+const SELF_REFERENTIAL_PARENT_FIELD_REGEX = /^parentid$/i
+const SELF_REFERENTIAL_PARENT_OBJECT_REGEX = /^parent$/i
+const SPECIAL_PREFIXES_REGEX = /^\$USER|\$PROFILE|\$ORGANIZATION|\$USERROLE|\$SYSTEM/i
 
 export const isUserField = (value: string): boolean => {
   const prefix = parts(value)[0]

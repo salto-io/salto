@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   isCPQRelationship, isCustom, isCustomLabel, isCustomMetadata, isCustomSetting, isObjectType, isParent, isParentField,
   isProcessBuilderIdentifier, isRelationshipField, isSpecialPrefix, isStandardRelationship, isUserField,
@@ -23,6 +24,8 @@ import {
   transformToUserField,
 } from './utils'
 import { mapCPQField } from './cpq'
+
+const log = logger(module)
 
 export type IdentifierType = 'customField'|'standardField'|'customObject'|'standardObject'|'customLabel'
   |'customSetting'|'customMetadataTypeRecord'|'customMetadataType'|'unknownRelationship'
@@ -70,6 +73,11 @@ export const parseObject = (object: string): FormulaIdentifierInfo => {
 export const parseCustomMetadata = (value: string): FormulaIdentifierInfo[] => {
   // 'value' looks like $CustomMetadata.Trigger_Context_Status__mdt.SRM_Metadata_c.Enable_After_Insert__c
   const [, sobject, sobjInstance, fieldName] = parts(value)
+
+  if (fieldName === undefined) {
+    log.warn('Unexpected custom metadata field format: %s', value)
+    return []
+  }
 
   return [
     {

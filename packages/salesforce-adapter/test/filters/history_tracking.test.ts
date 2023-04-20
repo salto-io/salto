@@ -55,7 +55,6 @@ describe('historyTracking', () => {
         const inputType = mockTypes.Account.clone()
         inputType.annotations.enableHistory = false
         const expectedOutput = inputType.clone()
-        delete expectedOutput.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
         const elements = [inputType]
         await filter.onFetch(elements)
         expect(elements).toEqual([expectedOutput])
@@ -101,8 +100,7 @@ describe('historyTracking', () => {
           .not
           .toHaveProperty([FIELD_ANNOTATIONS.TRACK_HISTORY])
         expect(elements[0].annotations)
-          .not
-          .toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
+          .toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, true)
       })
     })
   })
@@ -115,9 +113,14 @@ describe('historyTracking', () => {
 
       const typeName = 'SomeType__c'
       const objectType = createCustomObjectType(typeName, {
+        annotations: {
+          [OBJECT_HISTORY_TRACKING_ENABLED]: (trackedFields !== undefined),
+        },
         fields: Object.fromEntries(fields.map(fieldName => [fieldName, {
           refType: Types.primitiveDataTypes.Text,
-          annotations: { apiName: fieldApiName(typeName, fieldName) },
+          annotations: {
+            apiName: fieldApiName(typeName, fieldName),
+          },
         }])),
       })
       if (trackedFields !== undefined) {

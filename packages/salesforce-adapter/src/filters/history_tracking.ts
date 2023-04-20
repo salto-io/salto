@@ -36,45 +36,10 @@ import {
   FIELD_ANNOTATIONS,
   HISTORY_TRACKED_FIELDS,
   OBJECT_HISTORY_TRACKING_ENABLED,
-  SALESFORCE_CUSTOM_SUFFIX,
 } from '../constants'
 import { safeApiName } from './utils'
 
 const { awu } = collections.asynciterable
-
-// https://help.salesforce.com/s/articleView?id=sf.tracking_field_history.htm&type=5
-const STANDARD_OBJECTS_THAT_SUPPORT_HISTORY_TRACKING = [
-  'Account',
-  'Article',
-  'Asset',
-  'Campaign',
-  'Case',
-  'Contact',
-  'Contract',
-  'ContractLineItem',
-  'Crisis',
-  'Employee',
-  'EmployeeCrisisAssessment',
-  'Entitlement',
-  'Event',
-  'Individual',
-  'InternalOrganizationUnit',
-  'Knowledge',
-  'Lead',
-  'Opportunity',
-  'Order',
-  'OrderItem',
-  'Product',
-  'PriceBookEntry',
-  'Quote',
-  'QuoteLineItem',
-  'ServiceAppointment',
-  'ServiceContract',
-  'Solution',
-  'Task',
-  'WorkOrder',
-  'WorkOrderLineItem',
-]
 
 const apiName = async (element: Element): Promise<string> => ((await safeApiName(element)) ?? '')
 
@@ -84,10 +49,7 @@ const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
 )
 
 const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void => {
-  const trackingEnabled = isHistoryTrackingEnabled(customObject)
-  delete customObject.annotations[OBJECT_HISTORY_TRACKING_ENABLED]
-
-  if (!trackingEnabled) {
+  if (!isHistoryTrackingEnabled(customObject)) {
     return
   }
 
@@ -161,15 +123,14 @@ const filter: LocalFilterCreator = () => {
       )
 
       const distributeTrackingInfo = async (objType: ObjectType): Promise<void> => {
-        const typeSupportsHistoryTracking = (typeName: string): boolean => (
-          typeName.endsWith(SALESFORCE_CUSTOM_SUFFIX)
-          || STANDARD_OBJECTS_THAT_SUPPORT_HISTORY_TRACKING.includes(typeName)
+        const typeSupportsHistoryTracking = (type: ObjectType): boolean => (
+          type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] !== undefined
         )
 
-        if (!typeSupportsHistoryTracking(objType.elemID.typeName)) {
+        if (!typeSupportsHistoryTracking(objType)) {
           return
         }
-        objType.annotations[OBJECT_HISTORY_TRACKING_ENABLED] = isHistoryTrackingEnabled(objType)
+
         Object.values(objType.fields)
           .filter(isHistoryTrackedField)
           .forEach(field => {

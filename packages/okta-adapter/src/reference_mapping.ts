@@ -196,12 +196,8 @@ const userSchemaLookUpFunc: GetLookupNameFunc = async ({ ref }) => {
   if (ref.elemID.typeName !== USER_SCHEMA_TYPE_NAME) {
     return ref
   }
-  try {
-    const userSchemaField = resolveUserSchemaRef(ref)
-    return userSchemaField
-  } catch (e) {
-    return undefined
-  }
+  const userSchemaField = resolveUserSchemaRef(ref)
+  return userSchemaField ?? ref
 }
 
 const lookupNameFuncs: GetLookupNameFunc[] = [

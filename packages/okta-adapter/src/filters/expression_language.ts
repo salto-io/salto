@@ -77,7 +77,7 @@ export const getUserSchemaReference = (
   return undefined
 }
 
-export const resolveUserSchemaRef = (ref: ReferenceExpression): string => {
+export const resolveUserSchemaRef = (ref: ReferenceExpression): string | undefined => {
   const topLevelParentId = ref.elemID.createTopLevelParentID().parent
   const parentId = ref.elemID.createParentID()
   if (
@@ -89,14 +89,17 @@ export const resolveUserSchemaRef = (ref: ReferenceExpression): string => {
       return userSchemaField
     }
   }
-  throw new Error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${ref.elemID.getFullName()}`)
+  log.error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${ref.elemID.getFullName()}`)
+  return undefined
 }
 
 const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression) => TemplatePart => {
   const prepRef = (part: ReferenceExpression): TemplatePart => {
     if (part.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
       const userSchemaField = resolveUserSchemaRef(part)
-      return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
+      if (userSchemaField !== undefined) {
+        return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
+      }
     }
     if (part.elemID.typeName === BEHAVIOR_RULE_TYPE_NAME) {
       // references to BehaviorRule are by name

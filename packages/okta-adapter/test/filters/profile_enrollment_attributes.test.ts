@@ -112,5 +112,30 @@ describe('profileEnrollmentAttributeFilter', () => {
         { name: new ReferenceExpression(missingAtt.elemID, missingAtt), label: 'missing' },
       ])
     })
+    it('should skip the filter for a rule with no profile attributes', async () => {
+      const profileNoAtt = new InstanceElement(
+        'missing',
+        profileEnrollType,
+        {
+          name: 'someRule',
+          actions: {
+            profileEnrollment: {
+              targetGroupIds: ['123', '234'],
+              unknownUserAction: 'DENY',
+            },
+          },
+        },
+      )
+      await filter.onFetch?.([schemaInst, schemaType, profileEnrollType, profileNoAtt])
+      expect(profileNoAtt.value).toEqual({
+        name: 'someRule',
+        actions: {
+          profileEnrollment: {
+            targetGroupIds: ['123', '234'],
+            unknownUserAction: 'DENY',
+          },
+        },
+      })
+    })
   })
 })

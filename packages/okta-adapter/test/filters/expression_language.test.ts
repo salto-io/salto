@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../utils'
-import oktaExpressionLanguageFilter from '../../src/filters/expression_language'
+import oktaExpressionLanguageFilter, { getUserSchemaReference, resolveUserSchemaRef } from '../../src/filters/expression_language'
 import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
 describe('expression language filter', () => {
@@ -91,13 +91,18 @@ describe('expression language filter', () => {
           },
         }
       )
+      const userSchemaBaseAttRef = new ReferenceExpression(
+        userSchemaInstance.elemID.createNestedID(...basePath),
+        _.get(userSchemaInstance.value, basePath)
+      )
+      const userSchemaCustomAttRef = new ReferenceExpression(
+        userSchemaInstance.elemID.createNestedID(...customPath),
+        _.get(userSchemaInstance.value, customPath)
+      )
       const groupRuleTemplate = new TemplateExpression({
         parts: [
           '(String.stringContains(',
-          new ReferenceExpression(
-            userSchemaInstance.elemID.createNestedID(...basePath),
-            _.get(userSchemaInstance.value, basePath)
-          ),
+          userSchemaBaseAttRef,
           ', "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup(',
           new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
           ') AND !isMemberOfAnyGroup(',
@@ -109,10 +114,7 @@ describe('expression language filter', () => {
       })
       const policyRuleTemplate = new TemplateExpression({
         parts: [
-          new ReferenceExpression(
-            userSchemaInstance.elemID.createNestedID(...customPath),
-            _.get(userSchemaInstance.value, customPath)
-          ),
+          userSchemaCustomAttRef,
           ' == \'salto\' AND user.isMemberOf({\'group.id\':{',
           new ReferenceExpression(groupInstances[2].elemID, groupInstances[2]),
           ', ',
@@ -299,6 +301,37 @@ describe('expression language filter', () => {
           expect(res.deployResult.errors[0]).toEqual(
             new Error('Error parsing Okta expression language expression for instance groupRuleTest2 of type GroupRule')
           )
+        })
+      })
+
+      describe('getUserSchemaReference', () => {
+        it('it should return reference to custom path if attribute is custom', () => {
+          const res = getUserSchemaReference('saltoDepartment', userSchemaInstance)
+          expect(res).toBeInstanceOf(ReferenceExpression)
+          expect(res?.elemID.getFullName()).toEqual('okta.UserSchema.instance.user.definitions.custom.properties.saltoDepartment')
+        })
+        it('it should return reference to base path if attribute is basic', () => {
+          const res = getUserSchemaReference('department', userSchemaInstance)
+          expect(res).toBeInstanceOf(ReferenceExpression)
+          expect(res?.elemID.getFullName()).toEqual('okta.UserSchema.instance.user.definitions.base.properties.department')
+        })
+        it('it should return undefined if attribute is missing', () => {
+          const res = getUserSchemaReference('something', userSchemaInstance)
+          expect(res).toBeUndefined()
+        })
+      })
+
+      describe('resolveUserSchemaRef', () => {
+        it('should return attribute name for reference', () => {
+          const resCustom = resolveUserSchemaRef(userSchemaCustomAttRef)
+          expect(resCustom).toEqual('saltoDepartment')
+          const resBase = resolveUserSchemaRef(userSchemaBaseAttRef)
+          expect(resBase).toEqual('department')
+        })
+        it('should return undefined for invalid reference ', () => {
+          const ref = new ReferenceExpression(userSchemaInstance.elemID, userSchemaInstance)
+          const res = resolveUserSchemaRef(ref)
+          expect(res).toBeUndefined()
         })
       })
 })

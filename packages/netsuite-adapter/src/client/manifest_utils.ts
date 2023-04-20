@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
 import { FILE_CABINET_PATH_SEPARATOR, FINANCIAL_LAYOUT, PATH, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
-import { captureServiceIdInfo } from '../service_id_info'
+import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { ManifestDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
 import { isFileCustomizationInfo } from './utils'
@@ -58,6 +58,11 @@ type RequiredDependencyWithCondition = (
     value: Value
   }
 })
+
+type RequiredObjectsAndFiles = {
+  requiredFiles: string[]
+  requiredObjects: string[]
+}
 
 const REQUIRED_FEATURES: RequiredDependencyWithCondition[] = [
   {
@@ -105,50 +110,42 @@ const getRequiredFeatures = (customizationInfos: CustomizationInfo[]): string[] 
       })
   ).map(({ dependency }) => dependency)
 
-const getRequiredObjects = (customizationInfos: CustomizationInfo[]): string[] => {
-  const objNames = new Set(customizationInfos.map(custInfo =>
-    custInfo.values[ATTRIBUTE_PREFIX + SCRIPT_ID]))
-  return _.uniq(customizationInfos.flatMap(custInfo => {
-    const requiredObjects: string[] = []
-    lookupValue(custInfo.values, val => {
-      if (!_.isString(val)) {
-        return
-      }
+const isRequiredObjects = (serviceIdInfo: ServiceIdInfo, objNames: Set<string>): boolean =>
+  serviceIdInfo.serviceIdType === 'scriptid'
+  && serviceIdInfo.appid === undefined
+  && !objNames.has(serviceIdInfo.serviceId.split('.')[0])
 
-      requiredObjects.push(...captureServiceIdInfo(val)
-        .filter(({ serviceIdType, appid }) => serviceIdType === 'scriptid' && appid === undefined)
-        .map(serviceIdInfo => serviceIdInfo.serviceId)
-        .filter(scriptId => !objNames.has(scriptId.split('.')[0]))
-        .filter(scriptId => {
-          if (wrongCustomSegmentDependencyRegex.test(scriptId)) {
-            log.debug('removing wrong customsegment dependency from manifest: %o', scriptId)
-            return false
-          }
-          return true
-        }))
-    })
-    return requiredObjects
-  }))
-}
+const isRequiredFile = (serviceIdInfo: ServiceIdInfo, fileNames: Set<string>): boolean =>
+  serviceIdInfo.serviceIdType === PATH && !fileNames.has(serviceIdInfo.serviceId)
 
-const getRequiredFiles = (customizationInfos: CustomizationInfo[]): string[] => {
+const getRequiredObjectsAndFiles = (customizationInfos: CustomizationInfo[]): RequiredObjectsAndFiles => {
   const fileNames = new Set(customizationInfos.filter(isFileCustomizationInfo).map(fileCustInfo =>
     `${FILE_CABINET_PATH_SEPARATOR}${fileCustInfo.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+  const objNames = new Set(customizationInfos.map(custInfo => custInfo.values[ATTRIBUTE_PREFIX + SCRIPT_ID]))
 
-  return _.uniq(customizationInfos.flatMap(custInfo => {
-    const requiredFiles: string[] = []
+  const requiredObjects: string[] = []
+  const requiredFiles: string[] = []
+
+  customizationInfos.forEach(custInfo => {
     lookupValue(custInfo.values, val => {
       if (!_.isString(val)) {
         return
       }
-
-      requiredFiles.push(...captureServiceIdInfo(val)
-        .filter(({ serviceIdType }) => serviceIdType === PATH)
-        .map(serviceIdInfo => serviceIdInfo.serviceId)
-        .filter(path => !fileNames.has(path)))
+      captureServiceIdInfo(val).forEach(serviceIdInfo => {
+        if (isRequiredObjects(serviceIdInfo, objNames)) {
+          const scriptId = serviceIdInfo.serviceId
+          if (wrongCustomSegmentDependencyRegex.test(scriptId)) {
+            log.debug('removing wrong customsegment dependency from manifest: %o', scriptId)
+          } else {
+            requiredObjects.push(scriptId)
+          }
+        } else if (isRequiredFile(serviceIdInfo, fileNames)) {
+          requiredFiles.push(serviceIdInfo.serviceId)
+        }
+      })
     })
-    return requiredFiles
-  }))
+  })
+  return { requiredFiles: _.uniq(requiredFiles), requiredObjects: _.uniq(requiredObjects) }
 }
 
 const fixDependenciesObject = (dependencies: Value): void => {
@@ -185,15 +182,17 @@ const addRequiredDependencies = (
     .filter(item => !additionalDependencies.excludedFeatures.includes(item[TEXT_ATTRIBUTE]))
     .value()
 
+  const { requiredFiles, requiredObjects } = getRequiredObjectsAndFiles(customizationInfos)
+
   objects.object = _(makeArray(objects.object))
     .union(additionalDependencies.includedObjects)
-    .union(getRequiredObjects(customizationInfos))
+    .union(requiredObjects)
     .difference(additionalDependencies.excludedObjects)
     .value()
 
   files.file = _(makeArray(files.file))
     .union(additionalDependencies.includedFiles)
-    .union(getRequiredFiles(customizationInfos))
+    .union(requiredFiles)
     .difference(additionalDependencies.excludedFiles)
     .value()
 }

@@ -174,8 +174,10 @@ export const updatePathIndexTemp = async (
   changedUnmergedElements: Element[],
   unmergedElementIDs: Set<string>,
 ): Promise<void> => {
+  // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
   const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
   const entriesToSet = getElementsPathHints(changedUnmergedElements)
+
   await current.deleteAll(entriesToDelete)
   await current.setAll(entriesToSet)
 }
@@ -205,8 +207,10 @@ export const updateTopLevelPathIndex = async (
   changedUnmergedElements: Element[],
   unmergedElementIDs: Set<string>,
 ): Promise<void> => {
+  // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
   const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
   const entries = getTopLevelPathHints(changedUnmergedElements)
+
   await current.deleteAll(entriesToDelete)
   await current.setAll(entries)
 }

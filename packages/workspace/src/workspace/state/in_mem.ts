@@ -238,12 +238,12 @@ export const buildInMemState = (
         return
       }
 
-      const changedElements = new Set(Object.keys(_.groupBy(
+      const changedElementsFullNames = new Set(Object.keys(_.groupBy(
         changes,
         change => change.id.createTopLevelParentID().parent.getFullName()
       )))
       const changedUnmergedElements = unmergedElements.filter(
-        elem => changedElements.has(elem.elemID.getFullName())
+        elem => changedElementsFullNames.has(elem.elemID.getFullName())
       )
       const unmergedElementIDs = new Set(unmergedElements.map(elem => elem.elemID.getFullName()))
 

@@ -33,6 +33,7 @@ import {
 } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData } from './state'
+import { mergeElements } from '../../merger'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -87,6 +88,13 @@ export const buildInMemState = (
     )
   }
 
+  // Some salesforce objects are split into multiple files, we want to merge them before setting them in the state
+  const mergeAdditionsToElement = async (changes: DetailedChange[], elemID: ElemID): Promise<Element | undefined> => {
+    const additionChanges = changes.filter(isAdditionChange).filter(change => change.id.isEqual(elemID))
+    const combinedElement = await mergeElements(awu(additionChanges).map(getChangeData))
+    return combinedElement.merged.get(elemID.getFullName())
+  }
+
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> => {
     const state = (await stateData()).elements
     const changesByTopLevelElement = _.groupBy(
@@ -99,7 +107,12 @@ export const buildInMemState = (
         if (isRemovalChange(elemChanges[0])) {
           await state.delete(elemID)
         } else if (isAdditionChange(elemChanges[0])) {
-          await state.set(getChangeData(elemChanges[0]))
+          const mergedElement = await mergeAdditionsToElement(elemChanges, elemID)
+          if (mergedElement !== undefined) {
+            await state.set(mergedElement)
+          } else {
+            await state.set(getChangeData(elemChanges[0]))
+          }
         }
         return
       }
@@ -208,15 +221,15 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
-    updateStateFromChanges: async ({ changes, unmergedElements, accounts } : {
+    updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
         changes: DetailedChange[]
         unmergedElements?: Element[]
-        accounts?: string[]
+        fetchAccounts?: string[]
 }) => {
       await log.time(async () => {
         await updateStateElements(changes)
-        if (!_.isEmpty(accounts)) {
-          await updateAccounts(accounts)
+        if (!_.isEmpty(fetchAccounts)) {
+          await updateAccounts(fetchAccounts)
         }
       }, 'state update')
       log.debug('finished updating state elements with %d changes', changes.length)
@@ -225,7 +238,6 @@ export const buildInMemState = (
         return
       }
 
-      // TODO: Seroussi - Export it to another inner func
       const changedElements = new Set(Object.keys(_.groupBy(
         changes,
         change => change.id.createTopLevelParentID().parent.getFullName()
@@ -233,12 +245,12 @@ export const buildInMemState = (
       const changedUnmergedElements = unmergedElements.filter(
         elem => changedElements.has(elem.elemID.getFullName())
       )
+      const unmergedElementIDs = new Set(unmergedElements.map(elem => elem.elemID.getFullName()))
 
       await log.time(async () => {
         const currentStateData = await stateData()
-        // TODO: Seroussi - what about deletion?
-        await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements)
-        await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements)
+        await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
+        await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
       }, 'update path index')
       log.debug('finished updating path index with %d elements', unmergedElements.length)
     },

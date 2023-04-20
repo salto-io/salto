@@ -171,10 +171,13 @@ RemoteMapEntry<Path[]>[] => {
 
 export const updatePathIndexTemp = async (
   current: PathIndex,
-  unmergedElements: Element[],
+  changedUnmergedElements: Element[],
+  unmergedElementIDs: Set<string>,
 ): Promise<void> => {
-  const entries = getElementsPathHints(unmergedElements)
-  await current.setAll(entries)
+  const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
+  const entriesToSet = getElementsPathHints(changedUnmergedElements)
+  await current.deleteAll(entriesToDelete)
+  await current.setAll(entriesToSet)
 }
 
 export const overridePathIndex = async (
@@ -199,9 +202,12 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
 
 export const updateTopLevelPathIndex = async (
   current: PathIndex,
-  unmergedElements: Element[],
+  changedUnmergedElements: Element[],
+  unmergedElementIDs: Set<string>,
 ): Promise<void> => {
-  const entries = getTopLevelPathHints(unmergedElements)
+  const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
+  const entries = getTopLevelPathHints(changedUnmergedElements)
+  await current.deleteAll(entriesToDelete)
   await current.setAll(entries)
 }
 

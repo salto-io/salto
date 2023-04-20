@@ -276,49 +276,8 @@ export const fetch: FetchFunc = async (
     await workspace.state().updateStateFromChanges({
       changes: await awu(changes).map(change => change.change).toArray(),
       unmergedElements,
-      accounts: fetchAccounts,
+      fetchAccounts,
     })
-
-    // const updateState = await awu(await workspace.state().getAll()).toArray()
-    // const updatePathIndex = await workspace.state().getPathIndex()
-    //
-    // await updateStateWithFetchResults(
-    //   workspace,
-    //   elements,
-    //   unmergedElements,
-    //   fetchAccounts,
-    //   Array.from(partiallyFetchedAccounts),
-    // )
-    //
-    // const overrideState = await awu(await workspace.state().getAll()).toArray()
-    // const overridePathIndex = await workspace.state().getPathIndex()
-    //
-    // const notEqualInstances: DetailedChange<Value>[][] = []
-    // const notEqualObjects: { override: Element; update: Element }[] = []
-    // overrideState.forEach((elem, index) => {
-    //   if (!_.isEqual(elem, updateState[index])) {
-    //     if (isInstanceElement(elem) && isInstanceElement(updateState[index])) {
-    //       const detailedChanges = detailedCompare(elem, updateState[index] as InstanceElement)
-    //       if (detailedChanges.length > 0) {
-    //         notEqualInstances.push(detailedChanges)
-    //       }
-    //     } else {
-    //       notEqualObjects.push({ override: elem, update: updateState[index] })
-    //     }
-    //   }
-    // })
-    //
-    // const overridePathValues = await awu(overridePathIndex.values()).toArray()
-    // const updatePathValues = await awu(updatePathIndex.values()).toArray()
-    //
-    // const isPathIndexEqual = _.isEqual(overridePathValues, updatePathValues)
-    //
-    // // eslint-disable-next-line no-console
-    // notEqualInstances.forEach(elem => console.log(elem))
-    // // eslint-disable-next-line no-console
-    // notEqualObjects.forEach(elem => console.log(elem))
-    // // eslint-disable-next-line no-console
-    // console.log(isPathIndexEqual)
 
     return {
       changes,
@@ -379,7 +338,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   await workspace.state().updateStateFromChanges({
     changes: await awu(changes).map(change => change.change).toArray(),
     unmergedElements,
-    accounts: fetchAccounts,
+    fetchAccounts,
   })
   return {
     changes,

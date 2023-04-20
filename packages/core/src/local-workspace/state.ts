@@ -22,7 +22,7 @@ import { chain } from 'stream-chain'
 import { parser } from 'stream-json/jsonl/Parser'
 
 import getStream from 'get-stream'
-import { Element, ElemID } from '@salto-io/adapter-api'
+import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { exists, readTextFile, mkdirp, rm, rename, replaceContents, createGZipWriteStream, isOldFormatStateZipFile, readOldFormatGZipFile, createGZipReadStream } from '@salto-io/file'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
@@ -363,6 +363,14 @@ export const localState = (
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()
       await Promise.all(stateFiles.map(filename => rm(filename)))
+      setDirty()
+    },
+    updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
+      changes: DetailedChange[]
+      unmergedElements?: Element[]
+      fetchAccounts?: string[]
+    }) => {
+      await inMemState.updateStateFromChanges({ changes, unmergedElements, fetchAccounts })
       setDirty()
     },
   }

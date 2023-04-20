@@ -25,8 +25,8 @@ export type StateMetadataKey = 'version' | 'hash'
 
 type updateStateElementsArgs = {
   changes: DetailedChange[]
-  unmergedElements: Element[]
-  accounts: string[]
+  unmergedElements?: Element[]
+  fetchAccounts?: string[]
 }
 
 // This distinction is temporary for the transition to multiple services.

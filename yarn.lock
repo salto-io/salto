@@ -3256,6 +3256,11 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
+"@types/formulon@^6.25.0":
+  version "6.25.0"
+  resolved "https://registry.yarnpkg.com/@types/formulon/-/formulon-6.25.0.tgz#048b0f25136527bd40d34371676796bffa69da63"
+  integrity sha512-TTPCLvqnX5C1lQrixdFn/cTM6knq9AJieLqnCa7dgFQ6OVIq008xWTvphest3pZ9XYLU/qpTPebqKerWnP02sA==
+
 "@types/fs-extra@^9.0.8":
   version "9.0.12"
   resolved "https://registry.yarnpkg.com/@types/fs-extra/-/fs-extra-9.0.12.tgz#9b8f27973df8a7a3920e8461517ebf8a7d4fdfaf"
@@ -6873,10 +6878,10 @@ formidable@^1.2.2:
   resolved "https://registry.yarnpkg.com/formidable/-/formidable-1.2.2.tgz#bf69aea2972982675f00865342b982986f6b8dd9"
   integrity sha512-V8gLm+41I/8kguQ4/o1D3RIHRmhYFG4pnNyonvua+40rqcEmT4+V71yaZ3B457xbbgCsCfjSPi65u/W6vK1U5Q==
 
-formulon@^6.24.1:
-  version "6.24.2"
-  resolved "https://registry.yarnpkg.com/formulon/-/formulon-6.24.2.tgz#024cad2a4314c273b3ee9dba10b8a65a98d566c5"
-  integrity sha512-uEOO6dMGc9UfTzK+87n/rrGs6HepMBnsFwLChozp+pTGj/PzP1HDzdEdSFVw6d7K2xeh2x7GvC5BFe1PAGMv+g==
+formulon@^6.25.0:
+  version "6.25.0"
+  resolved "https://registry.yarnpkg.com/formulon/-/formulon-6.25.0.tgz#885e3849b6a89277d7a9ca0703b618f1b9bb0c34"
+  integrity sha512-x/jcPi8e7wZK7M115v3YiSNOAfmsrCY/o6i4M09zSxEYNslS3I1Nrk2a3S3jP5Qa6iEj9XPN49UfqKK7f8mn2w==
   dependencies:
     decimal.js "^10.3.1"
 

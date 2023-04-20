@@ -72,14 +72,14 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
 
 const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
   const isValidReference = async (elemId: ElemID): Promise<boolean> => {
-    if (elemId.idType === 'type' || elemId.idType === 'instance') {
-      return await allElements.get(elemId) !== undefined
+    if (elemId.idType === 'field') {
+      const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
+      const typeElement = await allElements.get(typeElemId)
+      return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
     }
 
-    // field
-    const typeElemId = new ElemID(elemId.adapter, elemId.typeName)
-    const typeElement = await allElements.get(typeElemId)
-    return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
+    // 'type' or 'instance'
+    return await allElements.get(elemId) !== undefined
   }
 
   const isSelfReference = (elemId: ElemID): boolean => (

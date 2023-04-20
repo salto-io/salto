@@ -36,7 +36,7 @@ import {
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig, DEFAULT_MAX_INSTANCES_PER_TYPE,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
@@ -140,6 +140,7 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
+  private readonly maxInstancesPerType: number
 
   constructor({
     credentials,
@@ -161,6 +162,7 @@ export default class SdfClient {
     this.installedSuiteApps = config?.installedSuiteApps ?? []
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
+    this.maxInstancesPerType = config?.maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE
   }
 
   @SdfClient.logDecorator
@@ -543,8 +545,19 @@ export default class SdfClient {
     )).filter(query.isObjectMatch)
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
-    const idsChunks = wu.entries(instancesIdsByType).map(
-      ([type, ids]: [string, ObjectID[]]) =>
+
+    const excludedTypes = [] as string[]
+    const filterLargeTypes = ([type, instances]: [string, ObjectID[]]): boolean => {
+      if (instances.length > this.maxInstancesPerType) {
+        excludedTypes.push(type)
+        return false
+      }
+      return true
+    }
+
+    const idsChunks = Object.entries(instancesIdsByType)
+      .filter(filterLargeTypes)
+      .flatMap(([type, ids]: [string, ObjectID[]]) =>
         wu(ids)
           .map(id => id.instanceId)
           .chunk(this.maxItemsInImportObjectsRequest)
@@ -555,8 +568,7 @@ export default class SdfClient {
             index: index + 1,
             total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
           }))
-          .toArray()
-    ).flatten(true).toArray()
+          .toArray())
 
     log.debug('Fetching custom objects by types in chunks')
     const results = await withLimitedConcurrency( // limit the number of open promises
@@ -566,6 +578,7 @@ export default class SdfClient {
     return {
       lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
       unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+      excludedTypes,
     }
   }
 

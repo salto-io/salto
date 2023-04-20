@@ -37,6 +37,7 @@ export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
+export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
 
@@ -80,6 +81,7 @@ export type SdfClientConfig = {
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
+  maxInstancesPerType?: number
   maxFileCabinetSizeInGB?: number
 }
 
@@ -89,6 +91,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
   sdfConcurrencyLimit: 'sdfConcurrencyLimit',
   installedSuiteApps: 'installedSuiteApps',
+  maxInstancesPerType: 'maxInstancesPerType',
   maxFileCabinetSizeInGB: 'maxFileCabinetSizeInGB',
 }
 
@@ -166,6 +169,12 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
     },
     installedSuiteApps: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    maxInstancesPerType: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_INSTANCES_PER_TYPE,
+      },
     },
     maxFileCabinetSizeInGB: {
       refType: BuiltinTypes.NUMBER,

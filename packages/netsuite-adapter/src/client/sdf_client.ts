@@ -548,7 +548,7 @@ export default class SdfClient {
         return await this.runImportObjectsCommand(executor, ALL, ALL, suiteAppId)
       } catch (e) {
         log.warn(`Attempt to fetch all custom objects has failed with suiteApp: ${suiteAppId}`)
-        log.warn(e as Error)
+        log.warn(toError(e))
         return undefined
       }
     }
@@ -608,7 +608,7 @@ export default class SdfClient {
         return failedTypeToInstances
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
-        log.warn(e as Error)
+        log.warn(toError(e))
         const [objectId] = ids
         if (retriesLeft === 0) {
           throw new Error(`Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`)
@@ -776,7 +776,7 @@ export default class SdfClient {
         .map(result => result.path)
     } catch (e) {
       if (filePaths.length === 1) {
-        log.error(`Failed to import file ${filePaths[0]} due to: ${(e as Error).message}`)
+        log.error(`Failed to import file ${filePaths[0]} due to: ${toError(e).message}`)
         throw new Error(`Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`)
       }
       const middle = (filePaths.length + 1) / 2
@@ -864,10 +864,10 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
-    const filteredPaths = excludeLargeFolders(
+    const { listedPaths, largeFolderError } = excludeLargeFolders(
       await filesToSize(importedPaths, fileCabinetDirPath), this.maxFileCabinetSize
     )
-    const [attributesPaths, filePaths] = _.partition(filteredPaths.listedPaths,
+    const [attributesPaths, filePaths] = _.partition(listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
@@ -882,7 +882,7 @@ export default class SdfClient {
       failedPaths: {
         lockedError: [],
         otherError: listFilesResults.failedPaths,
-        largeFolderError: filteredPaths.largeFolderError,
+        largeFolderError,
       },
     }
   }

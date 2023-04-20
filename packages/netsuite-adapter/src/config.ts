@@ -597,7 +597,7 @@ const createExclude = (
   folderPaths: NetsuiteFilePathsQueryParams = [],
 ): QueryParams =>
   ({
-    fileCabinet: _.concat(failedPaths.map(_.escapeRegExp), createFolderExclude(folderPaths)),
+    fileCabinet: failedPaths.map(_.escapeRegExp).concat(createFolderExclude(folderPaths)),
     types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
   })
 
@@ -609,7 +609,7 @@ const toConfigSuggestions = (
   const config: NetsuiteConfig = {}
 
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)
-    || !_.isEmpty(failedFilePaths?.largeFolderError)) {
+    || !_.isEmpty(failedFilePaths.largeFolderError)) {
     config.fetch = {
       ...config.fetch,
       exclude: createExclude(

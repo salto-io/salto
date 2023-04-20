@@ -65,5 +65,15 @@ describe('excludeLargeFolders', () => {
       expect(result.largeFolderError).toEqual(['firstTopFolder', 'secondTopFolder'])
       expect(result.listedPaths).toEqual(['/thirdTopFolder/path2', '/fourthTopFolder/path2'])
     })
+
+    it('should not exclude partial file matches (only by folders)', () => {
+      const filesToSize = {
+        '/topFolder/folder/path1': 1_700_000,
+        '/topFolder/folder_do_not_exclude': 1_500_000,
+      }
+      const result = excludeLargeFolders(filesToSize, 0.002)
+      expect(result.largeFolderError).toEqual(['topFolder/folder'])
+      expect(result.listedPaths).toEqual(['/topFolder/folder_do_not_exclude'])
+    })
   })
 })

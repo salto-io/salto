@@ -344,7 +344,7 @@ SuiteAppFileCabinetOperations => {
     })
   }
 
-  const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
+  const fullPathParts = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
     string[] => {
     if (folder.parent === undefined) {
       return [folder.name]
@@ -353,8 +353,10 @@ SuiteAppFileCabinetOperations => {
       log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
       throw new Error(`Failed to get absolute folder path of ${folder.name}`)
     }
-    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
+    return [...fullPathParts(idToFolder[folder.parent], idToFolder), folder.name]
   }
+
+  const fullPath = (fileParts: string[]): string => fileParts.join(FILE_CABINET_PATH_SEPARATOR)
 
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
@@ -375,15 +377,15 @@ SuiteAppFileCabinetOperations => {
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
       const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
-        .map(folder => ({ path: getFullPath(folder, idToFolder), ...folder }))
+        .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder }))
         // remove excluded folders before creating the query
-        .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}${FILE_CABINET_PATH_SEPARATOR}`))
+        .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
       const filesResults = await queryFiles(
         filteredFolderResults.map(folder => folder.id)
       )
       const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
-        .map(file => ({ path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name], ...file }))
-        .filter(file => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+        .map(file => ({ path: [...fullPathParts(idToFolder[file.folder], idToFolder), file.name], ...file }))
+        .filter(file => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${fullPath(file.path)}`))
       fileCabinetResults = { filesResults: filteredFilesResults, foldersResults: filteredFolderResults }
     }
     return fileCabinetResults
@@ -406,8 +408,6 @@ SuiteAppFileCabinetOperations => {
         internalId: folder.id,
       },
     }))
-
-    const fullPath = (file: { path: string[] }): string => file.path.join(FILE_CABINET_PATH_SEPARATOR)
 
     const filesCustomizations = filesResults.map(file => ({
       path: file.path,
@@ -432,12 +432,12 @@ SuiteAppFileCabinetOperations => {
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
 
     const filesToSize = Object.fromEntries(unfilteredFilesCustomizationWithoutContent.map(
-      file => [fullPath(file), file.size]
+      file => [fullPath(file.path), file.size]
     ))
     const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSize)
     const filteredFilesSet = new Set(filteredFilesCustomization.listedPaths)
     const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent.filter(
-      file => filteredFilesSet.has(fullPath(file))
+      file => filteredFilesSet.has(fullPath(file.path))
     )
 
     const fileChunks = chunks.weightedChunks(
@@ -481,7 +481,7 @@ SuiteAppFileCabinetOperations => {
     const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
-        log.warn(`Failed reading file /${file.path.join(FILE_CABINET_PATH_SEPARATOR)} with id ${file.id}`)
+        log.warn(`Failed reading file /${fullPath(file.path)} with id ${file.id}`)
         if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
           lockedPaths.push(file.path)
         } else {
@@ -508,8 +508,8 @@ SuiteAppFileCabinetOperations => {
         })),
       ],
       failedPaths: {
-        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
-        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
+        otherError: failedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
+        lockedError: lockedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
         largeFolderError: filteredFilesCustomization.largeFolderError,
       },
     }

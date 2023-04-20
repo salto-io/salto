@@ -15,18 +15,19 @@
 */
 import { extract as extractFormulaIdentifiers } from 'formulon'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
 import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
+import { buildElementsSourceForFetch, extractFlatCustomObjectFields, safeApiName } from './utils'
 
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
+const { isDefined } = values
 
 const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
   if (identifierInfo.type === 'customLabel') {
@@ -121,12 +122,20 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       `Parse formula '${formula.slice(0, 15)}'`
     )
 
-    const identifiersInfo = await log.time(
+    const identifiersInfo = (await log.time(
       () => Promise.all(
-        formulaIdentifiers.map(async identifier => parseFormulaIdentifier(identifier, field.parent.elemID.typeName))
+        formulaIdentifiers
+          .map(async identifier => {
+            const apiName = await safeApiName(field.parent)
+            if (apiName === undefined) {
+              return undefined
+            }
+            return parseFormulaIdentifier(identifier, apiName)
+          })
       ),
       'Convert formula identifiers to references'
-    )
+    ))
+      .filter(isDefined)
 
     const references = (await referencesFromIdentifiers(identifiersInfo.flat()))
 

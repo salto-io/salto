@@ -17,7 +17,7 @@
 import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, Element, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
@@ -27,10 +27,9 @@ import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
-import { changeDateFormat, getZoneAndFormat } from './saved_searches'
-import { SUITEQL_DATE_FORMAT, SUITEQL_TIME_FORMAT, toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
+import { getZoneAndFormat, toMomentDate } from './saved_searches'
+import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
 
-const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
 const log = logger(module)
 const UNDERSCORE = '_'
@@ -172,17 +171,18 @@ const distinctSortedSystemNotes = (
 const indexSystemNotes = (
   systemNotes: SystemNoteResult[]
 ): Record<string, ModificationInformation> =>
-  Object.fromEntries(systemNotes.map(
-    systemnote => [getKeyForNote(systemnote), { name: systemnote.name, date: systemnote.date }]
-  ))
+  Object.fromEntries(systemNotes.map(systemnote => [
+    getKeyForNote(systemnote),
+    { lastModifiedBy: systemnote.name, lastModifiedAt: systemnote.date },
+  ]))
 
 const fetchSystemNotes = async (
   client: NetsuiteClient,
   queryIds: string[],
   lastFetchTime: Date,
-  timeZone: string,
+  employeeNames: Record<string, string>,
+  timeZone: string | undefined
 ): Promise<Record<string, ModificationInformation>> => {
-  const now = moment.tz(timeZone)
   const systemNotes = await log.time(
     () => querySystemNotes(client, queryIds, lastFetchTime),
     'querySystemNotes'
@@ -191,11 +191,31 @@ const fetchSystemNotes = async (
     log.warn('System note query failed')
     return {}
   }
+  const now = timeZone ? moment.tz(timeZone).utc() : moment().utc()
   return indexSystemNotes(
     distinctSortedSystemNotes(
-      systemNotes.filter(
-        systemNote => isDefined(systemNote.date) && !now.isBefore(moment.tz(systemNote.date, timeZone))
-      )
+      systemNotes
+        .map(({ date, name, ...item }) => ({
+          ...item,
+          name: employeeNames[name],
+          dateString: date,
+          date: toMomentDate(date, { format: moment.ISO_8601, timeZone }),
+        }))
+        .filter(({ date, dateString, name }) => {
+          if (!date.isValid()) {
+            log.warn('dropping invalid date: %s', dateString)
+            return false
+          }
+          if (now.isBefore(date)) {
+            log.warn('dropping future date: %s > %s (now)', date.format(), now.format())
+            return false
+          }
+          return name !== undefined
+        })
+        .map(({ date, ...item }) => ({
+          ...item,
+          date: date.format(),
+        }))
     )
   )
 }
@@ -261,68 +281,46 @@ const filterCreator: FilterCreator = ({ client, config, elementsSource, elements
     const employeeNames = await fetchEmployeeNames(client)
     const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
     const systemNotes = !_.isEmpty(employeeNames)
-      ? await fetchSystemNotes(client, queryIds, lastFetchTime, timeZone)
+      ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)
       : {}
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
-    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex)
-    && _.isEmpty(elemIdToChangeAtIndex)) {
+    if (_.isEmpty(systemNotes) && _.isEmpty(elemIdToChangeByIndex) && _.isEmpty(elemIdToChangeAtIndex)) {
       return
     }
 
-    const setChangedBy = (element: Element, employeeId: string): void => {
-      if (isDefined(employeeId) && isDefined(employeeNames[employeeId])) {
-        element.annotate(
-          { [CORE_ANNOTATIONS.CHANGED_BY]: employeeNames[employeeId] }
-        )
+    const setAuthorInformation = (
+      element: Element,
+      info: ModificationInformation | undefined
+    ): void => {
+      if (info !== undefined) {
+        element.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: info.lastModifiedBy })
+        element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: info.lastModifiedAt })
       } else {
-        const changedBy = elemIdToChangeByIndex[element.elemID.getFullName()]
-        if (isDefined(changedBy)) {
-          element.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_BY]: changedBy }
-          )
-        }
+        element.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: elemIdToChangeByIndex[element.elemID.getFullName()] })
+        element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: elemIdToChangeAtIndex[element.elemID.getFullName()] })
       }
     }
 
-    const setChangedAt = async (element: Element, lastModifiedDate: string): Promise<void> => {
-      if (isDefined(lastModifiedDate)) {
-        const formatedDate = changeDateFormat(
-          lastModifiedDate, { dateFormat: SUITEQL_DATE_FORMAT, timeZone, timeFormat: SUITEQL_TIME_FORMAT }
-        )
-        element.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: formatedDate })
-      } else {
-        const changedAt = elemIdToChangeAtIndex[element.elemID.getFullName()]
-        if (isDefined(changedAt)) {
-          element.annotate(
-            { [CORE_ANNOTATIONS.CHANGED_AT]: changedAt }
-          )
-        }
-      }
-    }
-
-    instancesWithInternalId.forEach(async instance => {
-      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
+    instancesWithInternalId.forEach(instance => {
+      const info = systemNotes[getRecordIdAndTypeStringKey(
         instance.value.internalId,
         TYPES_TO_INTERNAL_ID[instance.elemID.typeName.toLowerCase()]
-      )] ?? {}
-      setChangedBy(instance, employeeId)
-      await setChangedAt(instance, lastModifiedDate)
+      )]
+      setAuthorInformation(instance, info)
     })
-    customRecordTypesWithInternalIds.forEach(async type => {
-      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
+    customRecordTypesWithInternalIds.forEach(type => {
+      const info = systemNotes[getRecordIdAndTypeStringKey(
         type.annotations.internalId,
         TYPES_TO_INTERNAL_ID[CUSTOM_RECORD_TYPE]
-      )] ?? {}
-      setChangedBy(type, employeeId)
-      await setChangedAt(type, lastModifiedDate)
+      )]
+      setAuthorInformation(type, info)
     })
     await awu(customRecordsWithInternalIds).forEach(async instance => {
-      const { name: employeeId, date: lastModifiedDate } = systemNotes[getRecordIdAndTypeStringKey(
+      const info = systemNotes[getRecordIdAndTypeStringKey(
         getInternalId(instance),
         getInternalId(await instance.getType())
-      )] ?? {}
-      setChangedBy(instance, employeeId)
-      await setChangedAt(instance, lastModifiedDate)
+      )]
+      setAuthorInformation(instance, info)
     })
   },
 })

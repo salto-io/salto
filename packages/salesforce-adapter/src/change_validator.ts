@@ -44,6 +44,7 @@ import lastLayoutRemoval from './change_validators/last_layout_removal'
 import currencyIsoCodes from './change_validators/currency_iso_codes'
 import unknownPicklistValues from './change_validators/unknown_picklist_values'
 import accountSettings from './change_validators/account_settings'
+import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, SalesforceConfig } from './types'
 
@@ -86,6 +87,7 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefini
   lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
   accountSettings: { creator: () => accountSettings(), ...defaultAlwaysRun },
   unknownPicklistValues: { creator: () => unknownPicklistValues, ...defaultAlwaysRun },
+  dataCategoryGroup: { creator: () => dataCategoryGroupValidator, ...defaultAlwaysRun },
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {

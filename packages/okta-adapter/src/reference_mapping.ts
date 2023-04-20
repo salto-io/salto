@@ -85,6 +85,7 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'assignedGroups', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: GROUP_TYPE_NAME },
   },
   {
@@ -142,11 +143,13 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   {
     src: { field: 'profileEnrollment', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: PROFILE_ENROLLMENT_POLICY_TYPE_NAME },
   },
   {
     src: { field: 'accessPolicy', parentTypes: [APPLICATION_TYPE_NAME] },
     serializationStrategy: 'id',
+    oktaMissingRefStrategy: 'typeAndValue',
     target: { type: ACCESS_POLICY_TYPE_NAME },
   },
   {

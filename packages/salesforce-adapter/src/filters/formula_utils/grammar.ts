@@ -42,6 +42,11 @@ export const isParent = (value: string): boolean => SELF_REFERENTIAL_PARENT_OBJE
 export const isStandardRelationship = (value: string): boolean => (
   !value.toLocaleUpperCase().endsWith(RELATIONSHIP_SUFFIX)
 )
+
+// ORI: Seems like there are a lot of different places that mix the meaning of "." as a separator
+// this feels unsafe as we assign different meanings implicitly, this function for example
+// isn't really correct in most contexts, there are many strings where having a "." does not mean
+// it is a relationship field
 export const isRelationshipField = (value: string): boolean => value.includes('.')
 export const isSpecialPrefix = (value: string): boolean => SPECIAL_PREFIXES_REGEX.test(value)
 export const isProcessBuilderIdentifier = (value: string): boolean => (

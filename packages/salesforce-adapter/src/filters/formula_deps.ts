@@ -99,23 +99,21 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     identifiersInfo: FormulaIdentifierInfo[][]
   ): void => {
     if (invalidReferences.length > 0) {
-      log.error('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+      log.info('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
         formula,
         field.elemID.getFullName(),
         identifiersInfo.flat().map(info => info.instance))
     }
     invalidReferences.forEach(refElemId => {
-      log.error(`Invalid reference: ${refElemId.getFullName()}`)
+      log.info(`Invalid reference: ${refElemId.getFullName()}`)
     })
   }
 
   const formula = field.annotations[FORMULA]
   if (formula === undefined) {
-    log.error(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
+    log.debug(`Field ${field.elemID.getFullName()} is a formula field with no formula?`)
     return
   }
-
-  log.debug(`Extracting formula refs from ${field.elemID.getFullName()}`)
 
   try {
     const formulaIdentifiers: string[] = log.time(
@@ -130,17 +128,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       'Convert formula identifiers to references'
     )
 
-    // We check the # of refs before we filter bad refs out because otherwise the # of refs will be affected by the
-    // filtering.
     const references = (await referencesFromIdentifiers(identifiersInfo.flat()))
-
-    if (references.length < identifiersInfo.length) {
-      log.warn(`Some formula identifiers were not converted to references.
-      Field: ${field.elemID.getFullName()}
-      Formula: ${formula}
-      Identifiers: ${identifiersInfo.flat().map(info => info.instance).join(', ')}
-      References: ${references.map(ref => ref.getFullName()).join(', ')}`)
-    }
 
     const referencesWithValidity = await groupByAsync(references, referenceValidity)
 

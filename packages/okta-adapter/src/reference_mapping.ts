@@ -17,7 +17,10 @@ import _ from 'lodash'
 import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME } from './constants'
+
+const { awu } = collections.asynciterable
 
 export const OktaMissingReferenceStrategyLookup: Record<
 referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
@@ -190,7 +193,7 @@ const lookupNameFuncs: GetLookupNameFunc[] = [
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (
-  lookupNameFuncs
+  awu(lookupNameFuncs)
     .map(lookupFunc => lookupFunc(args))
     .find(res => !isReferenceExpression(res))
 )

@@ -39,6 +39,15 @@ export class GraphNode<T> {
   }
 }
 
+type DFSParameters<T>= {
+  node: GraphNode<T>
+  visited: Set<T[keyof T]>
+  resultArray: GraphNode<T>[]
+  // optional parameters for cycle detection
+  stack?: GraphNode<T>[]
+  cycle?: GraphNode<T>[]
+}
+
 export class Graph<T> {
   nodes: Map<T[keyof T], GraphNode<T>>
   key: keyof T
@@ -57,22 +66,29 @@ export class Graph<T> {
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Set<T[keyof T]>, resultArray: GraphNode<T>[]): void {
+  private dfs(dfsParams: DFSParameters<T>): void {
+    const { node, visited, resultArray, stack, cycle } = dfsParams
     if (visited.has(node.value[this.key])) {
+      if (stack !== undefined) {
+        const cycleStartIndex = stack.indexOf(node)
+        cycle?.push(...stack.slice(cycleStartIndex))
+      }
       return
     }
     visited.add(node.value[this.key])
+    stack?.push(node)
     node.edges.forEach(dependency => {
-      this.dfs(dependency, visited, resultArray)
+      this.dfs({ node: dependency, visited, resultArray, stack, cycle })
     })
     resultArray.push(node)
+    stack?.pop()
   }
 
   getTopologicalOrder(): GraphNode<T>[] {
     const visited = new Set<T[keyof T]>()
     const sortedNodes: GraphNode<T>[] = []
     Array.from(this.nodes.values()).forEach(node => {
-      this.dfs(node, visited, sortedNodes)
+      this.dfs({ node, visited, resultArray: sortedNodes })
     })
     return sortedNodes.reverse()
   }
@@ -83,7 +99,7 @@ export class Graph<T> {
     }
     const visited = new Set<T[keyof T]>()
     const dependencies: GraphNode<T>[] = []
-    this.dfs(startNode, visited, dependencies)
+    this.dfs({ node: startNode, visited, resultArray: dependencies })
     return dependencies
   }
 
@@ -107,5 +123,18 @@ export class Graph<T> {
       })
       this.nodes.delete(key)
     }
+  }
+
+  findCycle(): GraphNode<T>[] {
+    const visited = new Set<T[keyof T]>()
+    const stack : GraphNode<T>[] = []
+    const nodesInCycle: GraphNode<T>[] = []
+
+    Array.from(this.nodes.values()).forEach(node => {
+      if (!visited.has(node.value[this.key])) {
+        this.dfs({ node, visited, resultArray: [], stack, cycle: nodesInCycle })
+      }
+    })
+    return nodesInCycle
   }
 }

@@ -57,10 +57,19 @@ describe('graph utils tests', () => {
   it('should return nodes in topological sort', async () => {
     expect(testGraph.getTopologicalOrder()).toEqual([testNode1, testNode3, testNode2])
   })
+  it('should find the cycle in the graph and return its nodes', async () => {
+    const cycleNodes = testGraph.findCycle()
+    expect(cycleNodes).toHaveLength(2)
+    expect(cycleNodes).toEqual([testNode1, testNode2])
+  })
 
   it('should remove node from graph and edges from nodes', async () => {
     testGraph.removeNode('node1')
     expect(testGraph.nodes.get('node1')).toBeUndefined()
     expect(testNode2.edges).not.toContain(testNode1)
+  })
+  it('should return an empty array if there is no cycle', async () => {
+    const cycleNodes = testGraph.findCycle()
+    expect(cycleNodes).toHaveLength(0)
   })
 })

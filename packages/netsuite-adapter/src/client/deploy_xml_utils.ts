@@ -63,6 +63,7 @@ export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
 ): string => {
+  dependencyGraph.findCycle().forEach(node => dependencyGraph.removeNode(node.value.elemIdFullName))
   const custInfosInTopologicalOrder = dependencyGraph.getTopologicalOrder()
     .map(node => node.value.customizationInfo)
 

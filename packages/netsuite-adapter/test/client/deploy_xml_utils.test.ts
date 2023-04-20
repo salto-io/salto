@@ -21,8 +21,9 @@ import { FILE, FOLDER } from '../../src/constants'
 
 describe('deploy xml utils tests', () => {
   let testGraph: Graph<SDFObjectNode>
+  let testNode1: GraphNode<SDFObjectNode>
   beforeEach(() => {
-    const testNode1 = new GraphNode<SDFObjectNode>(
+    testNode1 = new GraphNode<SDFObjectNode>(
       { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: { scriptId: 'scriptid1', typeName: '', values: {} } as CustomizationInfo }
     )
     const testNode2 = new GraphNode<SDFObjectNode>(
@@ -62,6 +63,35 @@ describe('deploy xml utils tests', () => {
   <objects>
     <path>~/Objects/scriptid3.xml</path>
     <path>~/Objects/scriptid1.xml</path>
+    <path>~/Objects/scriptid2.xml</path>
+    <path>~/Objects/*</path>
+  </objects>
+  <translationimports>
+    <path>~/Translations/*</path>
+  </translationimports>
+</deploy>
+`
+    expect(reorderDeployXml(originalDeployXml, testGraph)).toEqual(fixedDeployXml)
+  })
+
+  it('should only explictly add objects that dont have circular dependencies', async () => {
+    const testNode4 = new GraphNode<SDFObjectNode>(
+      { elemIdFullName: 'fullName4', serviceid: 'scriptid4', changeType: 'addition', customizationInfo: { scriptId: 'scriptid4', typeName: '', values: {} } as CustomizationInfo }
+    )
+    testGraph.removeNode('fullName1')
+    // creates cycle in graph
+    testNode4.addEdge('elemIdFullName', testNode1)
+    testNode1.addEdge('elemIdFullName', testNode4)
+    testGraph.addNodes([testNode4, testNode1])
+    const fixedDeployXml = `<deploy>
+  <configuration>
+    <path>~/AccountConfiguration/*</path>
+  </configuration>
+  <files>
+    <path>~/FileCabinet/*</path>
+  </files>
+  <objects>
+    <path>~/Objects/scriptid3.xml</path>
     <path>~/Objects/scriptid2.xml</path>
     <path>~/Objects/*</path>
   </objects>

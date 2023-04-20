@@ -44,7 +44,7 @@ type DFSParameters<T>= {
   visited: Set<T[keyof T]>
   resultArray: GraphNode<T>[]
   // optional parameters for cycle detection
-  stack?: GraphNode<T>[]
+  path?: GraphNode<T>[]
   cycle?: GraphNode<T>[]
 }
 
@@ -67,21 +67,23 @@ export class Graph<T> {
   }
 
   private dfs(dfsParams: DFSParameters<T>): void {
-    const { node, visited, resultArray, stack, cycle } = dfsParams
+    const { node, visited, resultArray, path, cycle } = dfsParams
     if (visited.has(node.value[this.key])) {
-      if (stack !== undefined) {
-        const cycleStartIndex = stack.indexOf(node)
-        cycle?.push(...stack.slice(cycleStartIndex))
+      if (path?.includes(node)) {
+        // node is visited & in path mean its a cycle
+        const cycleStartIndex = path.indexOf(node)
+        cycle?.push(...path.slice(cycleStartIndex))
       }
       return
     }
     visited.add(node.value[this.key])
-    stack?.push(node)
+    path?.push(node)
     node.edges.forEach(dependency => {
-      this.dfs({ node: dependency, visited, resultArray, stack, cycle })
+      this.dfs({ node: dependency, visited, resultArray, path, cycle })
     })
     resultArray.push(node)
-    stack?.pop()
+    //
+    path?.pop()
   }
 
   getTopologicalOrder(): GraphNode<T>[] {
@@ -127,12 +129,12 @@ export class Graph<T> {
 
   findCycle(): GraphNode<T>[] {
     const visited = new Set<T[keyof T]>()
-    const stack : GraphNode<T>[] = []
+    const path : GraphNode<T>[] = []
     const nodesInCycle: GraphNode<T>[] = []
 
     Array.from(this.nodes.values()).forEach(node => {
       if (!visited.has(node.value[this.key])) {
-        this.dfs({ node, visited, resultArray: [], stack, cycle: nodesInCycle })
+        this.dfs({ node, visited, resultArray: [], path, cycle: nodesInCycle })
       }
     })
     return nodesInCycle

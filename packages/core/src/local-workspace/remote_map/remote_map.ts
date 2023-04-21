@@ -16,7 +16,6 @@
 import path from 'path'
 import { promisify } from 'util'
 import AsyncLock from 'async-lock'
-import LRU from 'lru-cache'
 import { v4 as uuidv4 } from 'uuid'
 import uniq from 'lodash/uniq'
 import * as fileUtils from '@salto-io/file'
@@ -209,9 +208,6 @@ const readonlyDBConnections: ConnectionPool = {}
 const tmpDBConnections: Record<string, ConnectionPool> = {}
 const readonlyDBConnectionsPerRemoteMap: Record<string, ConnectionPool> = {}
 let currentConnectionsCount = 0
-/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-const locationCaches = new LRU<string, LRU<string, any>>({ max: 10 })
-
 
 const deleteLocation = async (location: string): Promise<void> => {
   try {
@@ -275,7 +271,6 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  locationCaches.del(location)
   const locationResources = remoteMapLocations.get(location)
   locationResources.counters.dump()
   remoteMapLocations.return(locationResources)
@@ -432,28 +427,11 @@ ReadIterator => {
 }
 
 export const createRemoteMapCreator = (location: string,
-  persistentDefaultValue = false,
-  cacheSize = 5000):
+  persistentDefaultValue = false):
 remoteMap.RemoteMapCreator => {
   const locationResources = remoteMapLocations.get(location)
   const statCounters = locationResources.counters
-
-  // Note: once we set a non-zero cache size,
-  // we won't change the cache size even if we give different value
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  let locationCache: LRU<string, any>
-  if (locationCaches.has(location)) {
-    statCounters.LocationCacheReuse.inc()
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    locationCache = locationCaches.get(location) as LRU<string, any>
-  } else {
-    statCounters.LocationCacheCreated.inc()
-    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-    locationCache = new LRU<string, any>({ max: cacheSize })
-    if (cacheSize > 0) {
-      locationCaches.set(location, locationCache)
-    }
-  }
+  const locationCache = locationResources.cache
 
   let persistentDB: rocksdb
   let tmpDB: rocksdb

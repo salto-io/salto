@@ -15,24 +15,27 @@
 */
 
 import { counters, LocationCounters } from './counters'
+import { LocationCache, locationCaches } from './location_cache'
 
 type RemoteMapLocation = {
   name: string
   counters: LocationCounters
+  cache: LocationCache
 }
 
 type RemoteMapLocationPool = {
   get: (location: string) => RemoteMapLocation
   return: (location: RemoteMapLocation) => void
 }
-
 const createRemoteMapLocationPool = (): RemoteMapLocationPool => (
   {
     get: location => ({
       name: location,
       counters: counters.get(location),
+      cache: locationCaches.get(location),
     }),
     return: location => {
+      locationCaches.release(location.cache)
       counters.return(location.name)
     },
   }

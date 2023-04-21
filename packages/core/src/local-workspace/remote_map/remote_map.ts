@@ -25,7 +25,7 @@ import { collections, promises, values } from '@salto-io/lowerdash'
 import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { counters } from './counters'
+import { remoteMapLocations } from './location_pool'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
@@ -276,8 +276,9 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     log.debug('closed read-only connections per remote map of location %s', location)
   }
   locationCaches.del(location)
-  log.debug('Remote Map Stats for location \'%s\': %o', location, counters.locationCounters(location))
-  counters.deleteLocation(location)
+  const locationResources = remoteMapLocations.get(location)
+  locationResources.counters.dump()
+  remoteMapLocations.return(locationResources)
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
@@ -434,7 +435,8 @@ export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false,
   cacheSize = 5000):
 remoteMap.RemoteMapCreator => {
-  const statCounters = counters.locationCounters(location)
+  const locationResources = remoteMapLocations.get(location)
+  const statCounters = locationResources.counters
 
   // Note: once we set a non-zero cache size,
   // we won't change the cache size even if we give different value

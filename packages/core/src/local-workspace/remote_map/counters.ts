@@ -14,9 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 
-const { DefaultMap } = collections.map
 const log = logger(module)
 
 const COUNTER_TYPES = [
@@ -38,13 +36,13 @@ type Counter = {
   value: () => number
 }
 
-type LocationCounters = Record<CounterType, Counter> & {
+export type LocationCounters = Record<CounterType, Counter> & {
   dump: () => void
 }
 
 type StatCounters = {
-  locationCounters: (location: string) => LocationCounters
-  deleteLocation: (location: string) => void
+  get: (location: string) => LocationCounters
+  return: (location: string) => void
 }
 
 const createCounter = (): Counter => {
@@ -67,10 +65,21 @@ const createLocationCounters = (location: string): LocationCounters => {
 }
 
 const createStatCounters = (): StatCounters => {
-  const locations = new DefaultMap<string, LocationCounters>(createLocationCounters)
+  const locations: Record<string, { refCnt: number; counters: LocationCounters }> = {}
   return {
-    locationCounters: location => locations.get(location),
-    deleteLocation: location => { locations.delete(location) },
+    get: location => {
+      if (!(location in locations)) {
+        locations[location] = { refCnt: 0, counters: createLocationCounters(location) }
+      }
+      locations[location].refCnt += 1
+      return locations[location].counters
+    },
+    return: location => {
+      locations[location].refCnt -= 1
+      if (locations[location].refCnt === 0) {
+        delete locations[location]
+      }
+    },
   }
 }
 

@@ -36,6 +36,8 @@ describe('manifest.xml utils', () => {
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
         // 'somescriptid' should be added to the manifest
         ref: '[scriptid=somescriptid]',
+        // should be added to the manifest
+        ref2: '[/SuiteScripts/test.js]',
       },
     },
     {
@@ -54,6 +56,8 @@ describe('manifest.xml utils', () => {
         ref4: '[appid=com.salto, scriptid=external_script_id]',
         // test.js file shouldn't be added to manifest since it is in the SDF project
         fileRef: '[/SuiteScripts/test.js]',
+        // /SuiteSCripts/test2.js should be added to manifest
+        fileRef2: '[/SuiteScripts/test2.js]',
         // 'customrecord_test.cseg1' shouldn't be added to the manifest since
         // it is a wrong customsegment scriptid
         customSegmentRef: '[scriptid=customrecord_test.cseg1]',
@@ -91,6 +95,7 @@ describe('manifest.xml utils', () => {
       <object>secondscriptid</object>
     </objects>
     <files>
+      <file>/SuiteScripts/test2.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -215,6 +220,7 @@ describe('manifest.xml utils', () => {
     </objects>
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
+      <file>/SuiteScripts/test2.js</file>
     </files>
   </dependencies>
 </manifest>
@@ -278,6 +284,7 @@ describe('manifest.xml utils', () => {
     <files>
       <file>/SuiteScripts/clientScript_2_0.js</file>
       <file>/SuiteScripts/testScript.js</file>
+      <file>/SuiteScripts/test2.js</file>
     </files>
   </dependencies>
 </manifest>

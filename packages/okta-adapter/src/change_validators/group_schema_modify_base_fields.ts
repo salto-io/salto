@@ -23,7 +23,7 @@ const isBaseFieldModified = (
   const { before, after } = change.data
   const beforeBase = before.value?.definitions.base
   const afterBase = after.value?.definitions.base
-  return !isEqualValues(beforeBase, afterBase)
+  return !isEqualValues(beforeBase, afterBase, { compareReferencesByValue: true })
 }
 
 export const groupSchemaModifyBaseValidator: ChangeValidator = async changes => (

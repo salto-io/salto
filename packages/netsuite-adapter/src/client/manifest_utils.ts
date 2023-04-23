@@ -18,7 +18,7 @@ import { Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import xmlParser from 'fast-xml-parser'
 import _ from 'lodash'
-import { FILE_CABINET_PATH_SEPARATOR, FINANCIAL_LAYOUT, PATH, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
+import { FILE_CABINET_PATH_SEPARATOR, FINANCIAL_LAYOUT, REPORT_DEFINITION, SCRIPT_ID, WORKFLOW } from '../constants'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { ManifestDependencies, CustomizationInfo } from './types'
 import { ATTRIBUTE_PREFIX } from './constants'
@@ -116,7 +116,7 @@ const isRequiredObjects = (serviceIdInfo: ServiceIdInfo, objNames: Set<string>):
   && !objNames.has(serviceIdInfo.serviceId.split('.')[0])
 
 const isRequiredFile = (serviceIdInfo: ServiceIdInfo, fileNames: Set<string>): boolean =>
-  serviceIdInfo.serviceIdType === PATH && !fileNames.has(serviceIdInfo.serviceId)
+  serviceIdInfo.serviceIdType === 'path' && !fileNames.has(serviceIdInfo.serviceId)
 
 const getRequiredObjectsAndFiles = (customizationInfos: CustomizationInfo[]): RequiredObjectsAndFiles => {
   const fileNames = new Set(customizationInfos.filter(isFileCustomizationInfo).map(fileCustInfo =>

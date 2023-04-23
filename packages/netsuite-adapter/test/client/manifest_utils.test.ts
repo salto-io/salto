@@ -36,8 +36,6 @@ describe('manifest.xml utils', () => {
         key: '__STDRECORDSUBSIDIARYDEFAULTACCTCORPCARDEXP__',
         // 'somescriptid' should be added to the manifest
         ref: '[scriptid=somescriptid]',
-        // should be added to the manifest
-        ref2: '[/SuiteScripts/test.js]',
       },
     },
     {
@@ -54,7 +52,7 @@ describe('manifest.xml utils', () => {
         ref3: '[scriptid=workflow1.innerscriptid]',
         // 'external_script_id' shouldn't be added to the manifest since it has appid
         ref4: '[appid=com.salto, scriptid=external_script_id]',
-        // test.js file shouldn't be added to manifest since it is in the SDF project
+        // /SuiteScripts/test.js file shouldn't be added to manifest since it is in the SDF project
         fileRef: '[/SuiteScripts/test.js]',
         // /SuiteSCripts/test2.js should be added to manifest
         fileRef2: '[/SuiteScripts/test2.js]',
@@ -256,6 +254,7 @@ describe('manifest.xml utils', () => {
   </objects>
   <files>
     <file>/SuiteScripts/clientScript_2_0.js</file>
+    <file>/SuiteScripts/excludedTestScript.js</file>
   </files>
 </dependencies>
 </manifest>`
@@ -296,7 +295,7 @@ describe('manifest.xml utils', () => {
       includedObjects: ['addedObject'],
       excludedObjects: ['custentity2edited', 'somescriptid', 'secondscriptid'],
       includedFiles: ['/SuiteScripts/testScript.js'],
-      excludedFiles: ['/SuiteScripts/exludedTestScript.js'],
+      excludedFiles: ['/SuiteScripts/excludedTestScript.js'],
     }))
       .toEqual(fixedManifest)
   })

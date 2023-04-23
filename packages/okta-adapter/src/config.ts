@@ -1387,11 +1387,13 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({
         adapter: OKTA,
+        additionalIdPrefix: 'swagger',
       }),
     },
     [PRIVATE_API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({
         adapter: OKTA,
+        additionalIdPrefix: 'ducktype',
       }),
     },
   },

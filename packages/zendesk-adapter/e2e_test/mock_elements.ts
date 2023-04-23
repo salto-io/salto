@@ -75,7 +75,7 @@ export const mockDefaultValues: Record<string, Values> = {
       ticket_comment_access: 'public',
       voice_access: true,
       moderate_forums: false,
-      group_access: false,
+      group_access: false, // must be false - see SALTO-4041
       light_agent: false,
       side_conversation_create: true,
       assign_tickets_to_any_group: true,

@@ -26,6 +26,9 @@ const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>)
   const customPropertiesPath = before.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
   const beforeCustomProperties = resolvePath(before, customPropertiesPath)
   const afterCustomProperties = resolvePath(after, customPropertiesPath)
+  if (beforeCustomProperties === undefined || afterCustomProperties === undefined) {
+    return
+  }
   const afterCustomPropertiesKeys = new Set(Object.keys(afterCustomProperties))
   const propertiesToRemove = Object.keys(beforeCustomProperties)
     .filter(key => !(afterCustomPropertiesKeys.has(key)))

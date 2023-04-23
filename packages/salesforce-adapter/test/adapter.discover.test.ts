@@ -38,7 +38,7 @@ import { fetchMetadataInstances } from '../src/fetch'
 import * as fetchModule from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
-import { SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
+import { ArtificialTypes, SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
 import { isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
 
@@ -299,6 +299,7 @@ describe('SalesforceAdapter fetch', () => {
       expect(elementNames).toHaveLength(_.concat(
         Object.keys(Types.getAllFieldTypes()),
         Object.keys(Types.getAllMissingTypes()),
+        Object.keys(ArtificialTypes),
       ).length
         + 2 /* LookupFilter & filter items */
         + 1 /* rollup summary operation */
@@ -1324,7 +1325,9 @@ public class LargeClass${index} {
       } as unknown as ObjectType
       const metadataQuery = {
         isTypeMatch: jest.fn(),
-        isInstanceMatch: jest.fn(),
+        isInstanceMatch: () => true,
+        isTargetedFetch: jest.fn(),
+        isFetchWithChangesDetection: jest.fn(),
         isPartialFetch: jest.fn(),
         getFolderPathsByName: jest.fn(),
       }

@@ -329,7 +329,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           context: [{ name: 'appId', fromField: 'id' }],
         },
         {
-          type: 'UserSchema',
+          type: 'AppUserSchema',
           toField: 'appUserSchema',
           context: [{ name: 'appId', fromField: 'id' }],
         },
@@ -1241,7 +1241,7 @@ export const SUPPORTED_TYPES = {
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
-  AppUserSchema: ['UserSchema'],
+  AppUserSchema: ['AppUserSchema'],
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(

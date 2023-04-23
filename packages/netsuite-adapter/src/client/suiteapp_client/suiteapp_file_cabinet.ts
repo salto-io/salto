@@ -434,7 +434,7 @@ SuiteAppFileCabinetOperations => {
     const filesToSize = Object.fromEntries(unfilteredFilesCustomizationWithoutContent.map(
       file => [fullPath(file.path), file.size]
     ))
-    const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSize)
+    const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSizeInGB)
     const filteredFilesSet = new Set(filteredFilesCustomization.listedPaths)
     const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent.filter(
       file => filteredFilesSet.has(fullPath(file.path))

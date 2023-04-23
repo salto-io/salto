@@ -202,7 +202,7 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
-  private readonly maxFileCabinetSize: number
+  private readonly maxFileCabinetSizeInGB: number
 
   constructor({
     credentials,
@@ -222,7 +222,7 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
-    this.maxFileCabinetSize = config?.maxFileCabinetSize ?? DEFAULT_MAX_FILE_CABINET_SIZE
+    this.maxFileCabinetSizeInGB = config?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
   }
@@ -865,7 +865,7 @@ export default class SdfClient {
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
     const { listedPaths, largeFolderError } = excludeLargeFolders(
-      await filesToSize(importedPaths, fileCabinetDirPath), this.maxFileCabinetSize
+      await filesToSize(importedPaths, fileCabinetDirPath), this.maxFileCabinetSizeInGB
     )
     const [attributesPaths, filePaths] = _.partition(listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))

@@ -106,7 +106,7 @@ export default class SuiteAppClient {
 
   private versionFeatures: VersionFeatures | undefined
   private readonly setVersionFeaturesLock: AsyncLock
-  readonly maxFileCabinetSize: number
+  readonly maxFileCabinetSizeInGB: number
 
   constructor(params: SuiteAppClientParameters) {
     this.credentials = params.credentials
@@ -138,7 +138,7 @@ export default class SuiteAppClient {
 
     this.versionFeatures = undefined
     this.setVersionFeaturesLock = new AsyncLock()
-    this.maxFileCabinetSize = params.config?.maxFileCabinetSize || DEFAULT_MAX_FILE_CABINET_SIZE
+    this.maxFileCabinetSizeInGB = params.config?.maxFileCabinetSizeInGB || DEFAULT_MAX_FILE_CABINET_SIZE
   }
 
   /**

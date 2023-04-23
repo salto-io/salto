@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import osPath from 'path'
-import { FILE_CABINET_PATH_SEPARATOR } from '../constants'
+import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
 
 type FileToSize = Record<string, number>
 
@@ -26,27 +26,26 @@ type FolderSize = {
 }
 
 type FolderSizeMap = Record<string, FolderSize>
-const sep = FILE_CABINET_PATH_SEPARATOR
 const BYTES_IN_GB = 1024 ** 3
 
 export const excludeLargeFolders = (
   files: FileToSize,
-  maxFileCabinetSize: number
+  maxFileCabinetSizeInGB: number
 ): { listedPaths: string[]; largeFolderError: string[] } => {
   const createFlatFolderSizes = (fileSizes: FileToSize): FolderSizeMap => {
-    const flatFolderSizes = {} as FolderSizeMap
-    Object.keys(fileSizes).forEach(path => {
+    const flatFolderSizes: FolderSizeMap = {}
+    Object.entries(fileSizes).forEach(([path, size]) => {
       const pathParts = path.startsWith(sep)
         ? osPath.dirname(path).split(sep)
         : osPath.dirname(`${sep}${path}`).split(sep)
       pathParts.reduce((currentPath, nextFolder) => {
         const nextPath = osPath.join(currentPath, nextFolder)
         if (nextPath in flatFolderSizes) {
-          flatFolderSizes[nextPath].size += fileSizes[path]
+          flatFolderSizes[nextPath].size += size
         } else {
           flatFolderSizes[nextPath] = {
             path: nextPath,
-            size: fileSizes[path],
+            size,
             folders: [],
           }
         }
@@ -70,37 +69,27 @@ export const excludeLargeFolders = (
   }
 
   const folderSizes = createFolderHierarchy(createFlatFolderSizes(files))
-  const maxSizeInBytes = BYTES_IN_GB * maxFileCabinetSize
+  const maxSizeInBytes = BYTES_IN_GB * maxFileCabinetSizeInGB
   const overflowSize = folderSizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
 
   const filterSingleFolder = (largestFolder: FolderSize): string[] => {
-    let lastLargeFolder = largestFolder
-    let noLargeSubFolders = false
-    while (!noLargeSubFolders) {
-      const nextLargeFolder = lastLargeFolder.folders.find(folderSize => folderSize.size > overflowSize)
-      if (nextLargeFolder) {
-        lastLargeFolder = nextLargeFolder
-      } else {
-        noLargeSubFolders = true
-      }
+    const nextLargeFolder = largestFolder.folders.find(folderSize => folderSize.size > overflowSize)
+    if (!nextLargeFolder) {
+      return [largestFolder.path]
     }
-
-    return [lastLargeFolder.path]
+    return filterSingleFolder(nextLargeFolder)
   }
 
   const filterMultipleFolders = (): string[] => {
     const sortedSizes = _.orderBy(folderSizes, 'size', 'desc')
-    let selectedSize = 0
     const selectedFolders = [] as string[]
-    while (selectedSize <= overflowSize) {
-      const folderSize = sortedSizes.shift()
-      if (!folderSize) {
-        break
+    sortedSizes.reduce((selectedSize, folderSize) => {
+      if (selectedSize < overflowSize) {
+        selectedFolders.push(folderSize.path)
+        return selectedSize + folderSize.size
       }
-      selectedFolders.push(folderSize.path)
-      selectedSize += folderSize.size
-    }
-
+      return selectedSize
+    }, 0)
     return selectedFolders
   }
 

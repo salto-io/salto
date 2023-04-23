@@ -84,10 +84,7 @@ export const resolveUserSchemaRef = (ref: ReferenceExpression): string | undefin
     (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
       || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
   ) {
-    const userSchemaField = ref.elemID.getFullNameParts().pop()
-    if (_.isString(userSchemaField)) {
-      return userSchemaField
-    }
+    return ref.elemID.name
   }
   log.error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${ref.elemID.getFullName()}`)
   return undefined

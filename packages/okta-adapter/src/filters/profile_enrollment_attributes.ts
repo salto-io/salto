@@ -13,17 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { references as referencesUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { OKTA, PROFILE_ENROLLMENT_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { PROFILE_ENROLLMENT_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 import { getUserSchemaReference } from './expression_language'
 
 const log = logger(module)
-const { createMissingInstance } = referencesUtils
 
 const PROFILE_ATTRIBUTES_PATH = ['actions', 'profileEnrollment', 'profileAttributes']
 
@@ -53,15 +51,12 @@ const filterCreator: FilterCreator = () => ({
       profileAttributes.forEach(att => {
         const { name } = att
         if (!_.isString(name)) {
+          log.warn(`Unexpected name field in profileAttributes for instance: ${rule.elemID.getFullName()}`)
           return
         }
         const userSchemaRef = getUserSchemaReference(name, defaultUserSchema)
         if (userSchemaRef !== undefined) {
           att.name = userSchemaRef
-        } else {
-          // create missing reference
-          const missingInstance = createMissingInstance(OKTA, USER_SCHEMA_TYPE_NAME, name)
-          att.name = new ReferenceExpression(missingInstance.elemID, missingInstance)
         }
       })
     })

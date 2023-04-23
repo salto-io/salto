@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ObjectType, ElemID, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import { filterUtils } from '@salto-io/adapter-components'
 import { OKTA, PROFILE_ENROLLMENT_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 import profileEnrollmentAttributeFilter from '../../src/filters/profile_enrollment_attributes'
 import { getFilterParams } from '../utils'
@@ -85,31 +85,6 @@ describe('profileEnrollmentAttributeFilter', () => {
       expect(atts).toEqual([
         { name: saltoDepRef, label: 'salto' },
         { name: departmentRef, label: 'salto' },
-      ])
-    })
-    it('should create a missing reference for attributes that does not exist in the user schema', async () => {
-      const profileWithMissing = new InstanceElement(
-        'missing',
-        profileEnrollType,
-        {
-          name: 'someRule',
-          actions: {
-            profileEnrollment: {
-              profileAttributes: [
-                { name: 'saltoDepartment', label: 'salto' },
-                { name: 'missingProp', label: 'missing' },
-              ],
-            },
-          },
-        },
-      )
-      const missingAtt = referencesUtils.createMissingInstance(OKTA, USER_SCHEMA_TYPE_NAME, 'missingProp')
-
-      await filter.onFetch?.([schemaInst, schemaType, profileEnrollType, profileWithMissing])
-      const atts = profileWithMissing.value.actions?.profileEnrollment?.profileAttributes
-      expect(atts).toEqual([
-        { name: saltoDepRef, label: 'salto' },
-        { name: new ReferenceExpression(missingAtt.elemID, missingAtt), label: 'missing' },
       ])
     })
     it('should skip the filter for a rule with no profile attributes', async () => {

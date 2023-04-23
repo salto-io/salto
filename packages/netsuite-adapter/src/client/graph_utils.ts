@@ -69,10 +69,10 @@ export class Graph<T> {
   private dfs(dfsParams: DFSParameters<T>): void {
     const { node, visited, resultArray, path, cycle } = dfsParams
     if (visited.has(node.value[this.key])) {
-      if (path?.includes(node)) {
+      const cycleStartIndex = path?.indexOf(node)
+      if (cycleStartIndex !== -1) {
         // node is visited & in path mean its a cycle
-        const cycleStartIndex = path.indexOf(node)
-        cycle?.push(...path.slice(cycleStartIndex))
+        cycle?.push(...(path?.slice(cycleStartIndex) ?? []))
       }
       return
     }

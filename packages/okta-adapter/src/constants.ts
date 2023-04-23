@@ -49,3 +49,4 @@ export const POLICY_RULE_TYPE_NAMES = [ACCESS_POLICY_RULE_TYPE_NAME, IDP_RULE_TY
 export const CUSTOM_NAME_FIELD = 'customName'
 export const LINKS_FIELD = '_links'
 export const SAML_2_0_APP = 'SAML_2_0'
+export const GROUP_SCHEMA_TYPE_NAME = 'GroupSchema'

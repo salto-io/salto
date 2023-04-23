@@ -346,7 +346,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
-        { fieldName: 'appUserSchema', fieldType: 'list<UserSchema>' },
+        { fieldName: 'appUserSchema', fieldType: 'list<AppUserSchema>' },
       ],
       idFields: ['label'],
       serviceIdField: 'id',
@@ -399,10 +399,24 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       url: '/api/v1/meta/schemas/apps/{appId}/default',
     },
     transformation: {
-      idFields: [],
-      extendsParentId: true,
+      idFields: ['title'],
       nestStandaloneInstances: false,
-      dataField: 'definitions',
+      dataField: '.',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
+        { fieldName: '$schema' },
+        { fieldName: 'type' },
+        { fieldName: 'properties' }
+      ),
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/meta/schemas/apps/{applicationId}/default',
+        method: 'post',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+        },
+      },
     },
   },
   ApplicationCredentials: {
@@ -1241,7 +1255,6 @@ export const SUPPORTED_TYPES = {
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
-  AppUserSchema: ['AppUserSchema'],
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(

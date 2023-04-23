@@ -4,6 +4,7 @@ on:
   schedule:
     # every saturday on 3 am
     - cron: '0 3 * * 6'
+  workflow_dispatch:
 
 jobs:
   build:

@@ -14,33 +14,29 @@
 * limitations under the License.
 */
 
-import { ChangeError, ChangeValidator, InstanceElement, ModificationChange, getChangeData, isEqualValues, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { ChangeValidator, InstanceElement, ModificationChange, getChangeData, isEqualValues, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { GROUP_SCHEMA_TYPE_NAME } from '../constants'
-
-const { awu } = collections.asynciterable
 
 const isBaseFieldModified = (
   change: ModificationChange<InstanceElement>
 ): boolean => {
   const { before, after } = change.data
-  const beforeBase = before.value.definitions.base
-  const afterBase = after.value.definitions.base
+  const beforeBase = before.value?.definitions.base
+  const afterBase = after.value?.definitions.base
   return !isEqualValues(beforeBase, afterBase)
 }
 
 export const groupSchemaModifyBaseValidator: ChangeValidator = async changes => (
-  awu(changes)
+  changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
     .filter(isBaseFieldModified)
     .map(getChangeData)
-    .map((instance: InstanceElement): ChangeError => ({
+    .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
       message: `Cannot change base properties of ${GROUP_SCHEMA_TYPE_NAME}`,
-      detailedMessage: `It is posibble to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
+      detailedMessage: `It is possible to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
     }))
-    .toArray()
 )

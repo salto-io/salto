@@ -26,13 +26,13 @@ const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>)
   const customPropertiesPath = before.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
   const beforeCustomProperties = resolvePath(before, customPropertiesPath)
   const afterCustomProperties = resolvePath(after, customPropertiesPath)
-  const afterCustomPropertiesKeys = Object.keys(afterCustomProperties)
-  const PropertiesToRemove = Object.keys(beforeCustomProperties)
-    .filter(key => !(afterCustomPropertiesKeys).includes(key))
+  const afterCustomPropertiesKeys = new Set(Object.keys(afterCustomProperties))
+  const propertiesToRemove = Object.keys(beforeCustomProperties)
+    .filter(key => !(afterCustomPropertiesKeys.has(key)))
 
-  PropertiesToRemove
-    .forEach(Property => {
-      afterCustomProperties[Property] = null
+  propertiesToRemove
+    .forEach(property => {
+      afterCustomProperties[property] = null
     })
 }
 
@@ -40,9 +40,9 @@ const deletePropertiesWithNull = (instance: InstanceElement): void => {
   const customAdditionalPropertiesPath = instance.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
   const customProperties = resolvePath(instance, customAdditionalPropertiesPath)
 
-  Object.keys(customProperties).forEach(Property => {
-    if (customProperties[Property] === null) {
-      delete customProperties[Property]
+  Object.keys(customProperties).forEach(property => {
+    if (customProperties[property] === null) {
+      delete customProperties[property]
     }
   })
 }
@@ -58,7 +58,7 @@ const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .filter(change => getChangeData(change).elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
-      .map(change => addNullToRemovedProperties(change))
+      .forEach(change => addNullToRemovedProperties(change))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
@@ -66,7 +66,7 @@ const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
-      .map(instance => deletePropertiesWithNull(instance))
+      .forEach(instance => deletePropertiesWithNull(instance))
   },
 }
 )

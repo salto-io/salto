@@ -52,7 +52,7 @@ const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> =>
         .filter(isMetadataInstanceElement)
         .filter(instance => _.isString(instance.annotations[CORE_ANNOTATIONS.CHANGED_AT]))
         .toArray(),
-      async instance => await safeApiName(instance) ?? '_unsorted'
+      async instance => await safeApiName(await instance.getType()) ?? '_unsorted'
     )
     // None of the Elements were annotated with changedAt
     if (Object.values(metadataInstancesByType).flat().length === 0) {

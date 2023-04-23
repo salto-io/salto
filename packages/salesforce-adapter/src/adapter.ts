@@ -86,7 +86,7 @@ import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults } from './filters/utils'
+import { addDefaults, safeApiName } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
@@ -94,9 +94,10 @@ import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import { ArtificialTypes, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
-const { awu } = collections.asynciterable
+const { awu, groupByAsync } = collections.asynciterable
 const { partition } = promises.array
 const { concatObjects } = objects
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -281,6 +282,33 @@ export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastViewedDate',
 ]
 
+/**
+ * This is a temporary required workaround, since the following filters rely on Instances:
+ * {@link convertListsFilter}, {@link convertTypeFilter}, {@link convertMapsFilter}
+ * This logic can be removed once [SALTO-3985]{@link https://salto-io.atlassian.net/browse/SALTO-3985} is implemented.
+ */
+const getMetadataTypesWithInstances = async (
+  metadataTypes: TypeElement[],
+  metadataInstances: InstanceElement[],
+  topLevelTypeToSubtypes: Record<string, string[]>): Promise<TypeElement[]> => {
+  const metadataInstancesByType = await groupByAsync(
+    metadataInstances,
+    async instance => await safeApiName(await instance.getType()) ?? '_unsorted',
+  )
+  const metadataTypesWithInstances = new Set(Object.keys(metadataInstancesByType))
+
+  const typesToInclude = new Set(Object.entries(topLevelTypeToSubtypes)
+    .filter(([typeName]) => metadataTypesWithInstances.has(typeName))
+    .flatMap((([typeName, subtypes]) => subtypes.concat(typeName))))
+
+  return awu(metadataTypes)
+    .filter(async metadataType => {
+      const typeName = await safeApiName(metadataType)
+      return typeName !== undefined && typesToInclude.has(typeName)
+    })
+    .toArray()
+}
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -396,14 +424,19 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataTypesPromise
     )
     progressReporter.reportProgress({ message: 'Fetching types' })
-    const metadataTypes = await metadataTypesPromise
+    const { elements: metadataTypes, topLevelTypeToSubTypes } = await metadataTypesPromise
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: metadataInstancesElements,
       configChanges: metadataInstancesConfigInstances,
     } = await metadataInstancesPromise
     const elements = [
-      ...fieldTypes, ...hardCodedTypes, ...metadataTypes, ...metadataInstancesElements,
+      ...fieldTypes,
+      ...hardCodedTypes,
+      ...this.fetchProfile.metadataQuery.isFetchWithChangesDetection()
+        ? await getMetadataTypesWithInstances(metadataTypes, metadataInstancesElements, topLevelTypeToSubTypes)
+        : metadataTypes,
+      ...metadataInstancesElements,
     ]
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
     const onFetchFilterResult = (
@@ -502,7 +535,7 @@ export default class SalesforceAdapter implements AdapterOperations {
   private async fetchMetadataTypes(
     typeInfoPromise: Promise<MetadataObject[]>,
     knownMetadataTypes: TypeElement[],
-  ): Promise<TypeElement[]> {
+  ): Promise<{elements: TypeElement[]; topLevelTypeToSubTypes: Record<string, string[]>}> {
     const typeInfos = await typeInfoPromise
     const knownTypes = new Map<string, TypeElement>(
       await awu(knownMetadataTypes).map(
@@ -510,18 +543,24 @@ export default class SalesforceAdapter implements AdapterOperations {
       ).toArray()
     )
     const baseTypeNames = new Set(typeInfos.map(type => type.xmlName))
+    const topLevelTypeToSubTypes = Object.fromEntries(
+      typeInfos.map(typeInfo => [typeInfo.xmlName, makeArray(typeInfo.childXmlNames)])
+    )
     const childTypeNames = new Set(
       typeInfos.flatMap(type => type.childXmlNames).filter(values.isDefined)
     )
-    return (await Promise.all(typeInfos.map(typeInfo => fetchMetadataType(
-      this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames,
-    )))).flat()
+    return {
+      elements: (await Promise.all(typeInfos.map(typeInfo => fetchMetadataType(
+        this.client, typeInfo, knownTypes, baseTypeNames, childTypeNames,
+      )))).flat(),
+      topLevelTypeToSubTypes,
+    }
   }
 
   @logDuration('fetching instances')
   private async fetchMetadataInstances(
     typeInfoPromise: Promise<MetadataObject[]>,
-    types: Promise<TypeElement[]>,
+    types: Promise<{elements: TypeElement[]; topLevelTypeToSubTypes: Record<string, string[]>}>,
   ): Promise<FetchElements<InstanceElement[]>> {
     const readInstances = async (metadataTypes: ObjectType[]):
       Promise<FetchElements<InstanceElement[]>> => {
@@ -540,7 +579,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const typeInfos = await typeInfoPromise
     const topLevelTypeNames = typeInfos.map(info => info.xmlName)
-    const topLevelTypes = await awu(await types)
+    const topLevelTypes = await awu((await types).elements)
       .filter(isMetadataObjectType)
       .filter(async t => (
         topLevelTypeNames.includes(await apiName(t))

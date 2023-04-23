@@ -178,7 +178,7 @@ export default class NetsuiteClient {
           const startNode = dependencyGraph.findNodeByField(
             'serviceid', (serviceIdInfo.serviceIdType === PATH ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
           )
-          if (startNode && endNode && startNode.value.changeType === 'addition') {
+          if (startNode && endNode && startNode.value.changeType === 'addition' && !_.isEqual(startNode, endNode)) {
             startNode.addEdge(dependencyGraph.key, endNode)
           }
         })

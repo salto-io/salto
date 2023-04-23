@@ -15,6 +15,7 @@
 */
 import { ObjectType, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
 import { createRequestConfigs, validateRequestConfig } from '../../src/config'
+import { getConfigTypeName } from 'src/config/request'
 
 describe('config_request', () => {
   describe('createRequestConfigs', () => {
@@ -203,6 +204,14 @@ describe('config_request', () => {
           },
         },
       )).toThrow(new Error('Unresolved URL params in the following types in PATH for the following types: t1,t2'))
+    })
+  })
+  describe('getConfigTypeName', () => {
+    it('should use additional prefix if provided', () => {
+      expect(getConfigTypeName('someName', 'prefix')).toEqual('prefix__someName')
+    })
+    it('should return the typeName if prefix is not provided', () => {
+      expect(getConfigTypeName('someName')).toEqual('someName')
     })
   })
 })

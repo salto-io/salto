@@ -18,6 +18,7 @@ import { ElemID, ObjectType, BuiltinTypes, CORE_ANNOTATIONS,
   FieldDefinition, ListType, RestrictionAnnotationType } from '@salto-io/adapter-api'
 import { types, values, collections } from '@salto-io/lowerdash'
 import { getConfigWithDefault, TypeConfig, TypeDefaultsConfig } from './shared'
+import { getConfigTypeName } from './request'
 
 const { findDuplicates } = collections.array
 
@@ -79,9 +80,10 @@ export type TransformationDefaultConfig = types.PickyRequired<Partial<Omit<Trans
 export const createTransformationConfigTypes = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
+  additionalIdPrefix?: string,
 ): { transformation: ObjectType; transformationDefault: ObjectType } => {
   const standaloneFieldConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'standaloneFieldConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('standaloneFieldConfig', additionalIdPrefix)),
     fields: {
       fieldName: { refType: BuiltinTypes.STRING },
       parseJSON: { refType: BuiltinTypes.BOOLEAN },
@@ -92,7 +94,7 @@ export const createTransformationConfigTypes = (
   })
 
   const fieldToAdjustConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'fieldToAdjustConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('fieldToAdjustConfig', additionalIdPrefix)),
     fields: {
       fieldName: {
         refType: BuiltinTypes.STRING,
@@ -104,7 +106,7 @@ export const createTransformationConfigTypes = (
     },
   })
   const fieldTypeOverrideConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'fieldTypeOverrideConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('fieldTypeOverrideConfig', additionalIdPrefix)),
     fields: {
       fieldName: {
         refType: BuiltinTypes.STRING,
@@ -143,7 +145,7 @@ export const createTransformationConfigTypes = (
     ...additionalFields,
   }
   const transformationConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'transformationConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('transformationConfig', additionalIdPrefix)),
     fields: {
       idFields: { refType: new ListType(BuiltinTypes.STRING) },
       ...sharedTransformationFields,
@@ -151,7 +153,7 @@ export const createTransformationConfigTypes = (
   })
 
   const transformationDefaultConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'transformationDefaultConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('transformationDefaultConfig', additionalIdPrefix)),
     fields: {
       idFields: {
         refType: new ListType(BuiltinTypes.STRING),

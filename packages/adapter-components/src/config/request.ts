@@ -21,6 +21,10 @@ import { collections } from '@salto-io/lowerdash'
 const { findDuplicates } = collections.array
 
 export const ARG_PLACEHOLDER_MATCHER = /\{([\w_]+)\}/g
+const ID_SEPARATOR = '__'
+
+export const getConfigTypeName = (typeName: string, additionalPrefix?: string): string =>
+  additionalPrefix?.concat(ID_SEPARATOR, typeName) ?? typeName
 
 export type DependsOnConfig = {
   pathParam: string
@@ -89,9 +93,10 @@ export const createRequestConfigs = (
   adapter: string,
   additionalFields?: Record<string, FieldDefinition>,
   additionalActions?: string[],
+  additionalIdPrefix?: string,
 ): { fetch: { request: ObjectType; requestDefault: ObjectType }; deployRequests: ObjectType } => {
   const dependsOnFromConfig = new ObjectType({
-    elemID: new ElemID(adapter, 'dependsOnFromConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('dependsOnFromConfig', additionalIdPrefix)),
     fields: {
       type: {
         refType: BuiltinTypes.STRING,
@@ -111,7 +116,7 @@ export const createRequestConfigs = (
     },
   })
   const dependsOnConfigType = createMatchingObjectType<DependsOnConfig>({
-    elemID: new ElemID(adapter, 'dependsOnConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('dependsOnConfig', additionalIdPrefix)),
     fields: {
       pathParam: {
         refType: BuiltinTypes.STRING,
@@ -132,7 +137,7 @@ export const createRequestConfigs = (
   })
 
   const recurseIntoContextType = createMatchingObjectType<RecurseIntoContext>({
-    elemID: new ElemID(adapter, 'recurseIntoContext'),
+    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoContext', additionalIdPrefix)),
     fields: {
       name: {
         refType: BuiltinTypes.STRING,
@@ -156,7 +161,7 @@ export const createRequestConfigs = (
   const recurseIntoConditionType = createMatchingObjectType<
     RecurseIntoConditionBase & Partial<RecurseIntoCondition
   >>({
-    elemID: new ElemID(adapter, 'recurseIntoCondition'),
+    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoCondition', additionalIdPrefix)),
     fields: {
       match: {
         refType: new ListType(BuiltinTypes.STRING),
@@ -176,7 +181,7 @@ export const createRequestConfigs = (
     },
   })
   const recurseIntoConfigType = createMatchingObjectType<RecurseIntoConfig>({
-    elemID: new ElemID(adapter, 'recurseIntoConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoConfig', additionalIdPrefix)),
     fields: {
       toField: {
         refType: BuiltinTypes.STRING,
@@ -242,7 +247,7 @@ export const createRequestConfigs = (
   }
 
   const fetchRequestConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'fetchRequestConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('fetchRequestConfig', additionalIdPrefix)),
     fields: fetchEndpointFields,
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -250,7 +255,7 @@ export const createRequestConfigs = (
   })
 
   const fetchRequestDefaultConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'fetchRequestDefaultConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('fetchRequestDefaultConfig', additionalIdPrefix)),
     fields: _.omit(fetchEndpointFields, ['url']),
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -259,7 +264,7 @@ export const createRequestConfigs = (
 
 
   const deployRequestConfigType = new ObjectType({
-    elemID: new ElemID(adapter, 'deployRequestConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName('deployRequestConfig', additionalIdPrefix)),
     fields: {
       ...sharedEndpointFields,
       method: {
@@ -287,7 +292,7 @@ export const createRequestConfigs = (
     additionalActions?.map(actionName => [actionName, { refType: deployRequestConfigType }]) ?? []
   )
   const deployRequestsType = new ObjectType({
-    elemID: new ElemID(adapter, 'deployRequests'),
+    elemID: new ElemID(adapter, getConfigTypeName('deployRequests', additionalIdPrefix)),
     fields: {
       add: {
         refType: deployRequestConfigType,

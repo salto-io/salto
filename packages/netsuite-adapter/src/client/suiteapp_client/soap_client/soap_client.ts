@@ -599,8 +599,13 @@ export default class SoapClient {
     namespace: string,
     subtypes?: string[]
   ): Promise<RecordValue[]> {
+    // TODO change here to get the first page and calc the amount of instances
+    const firstSearchPage = await this.sendSearchRequest(type, namespace, subtypes)
+    if (firstSearchPage.searchResult.totalPages > 2) {
+
+    }
     const responses = await this.getAllSearchPages(
-      await this.sendSearchRequest(type, namespace, subtypes),
+      firstSearchPage,
       type
     )
     return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])

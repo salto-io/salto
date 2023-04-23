@@ -83,6 +83,11 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
+export type DataElementsResult = {
+  elements: (ObjectType | InstanceElement)[]
+  largeTypesError: string[]
+}
+
 type OptionalFeature = { status: 'optional'; canBeRequired: boolean }
 type RequiredFeature = { status: 'required' }
 type ExcludedFeature = { status: 'excluded' }

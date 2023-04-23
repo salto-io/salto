@@ -15,7 +15,7 @@
 */
 import { ObjectType, BuiltinTypes, MapType, ListType } from '@salto-io/adapter-api'
 import { createRequestConfigs, validateRequestConfig } from '../../src/config'
-import { getConfigTypeName } from 'src/config/request'
+import { getConfigTypeName } from '../../src/config/request'
 
 describe('config_request', () => {
   describe('createRequestConfigs', () => {

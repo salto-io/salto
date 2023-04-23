@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   ObjectType, InstanceElement, ServiceIds, ElemID, BuiltinTypes, FetchOptions,
-  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, getRestriction, isServiceId,
+  Element, CORE_ANNOTATIONS, FetchResult, isListType, ListType, getRestriction, isServiceId, isObjectType,
 } from '@salto-io/adapter-api'
 import { MetadataInfo } from 'jsforce'
 import { values, collections } from '@salto-io/lowerdash'
@@ -39,12 +39,14 @@ import * as fetchModule from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
 import { ArtificialTypes, SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
-import { isInstanceOfType } from '../src/filters/utils'
+import { isInstanceOfType, safeApiName } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
+import { mockInstances } from './mock_elements'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
 const { INVALID_CROSS_REFERENCE_KEY } = SALESFORCE_ERRORS
+const { isDefined } = values
 
 describe('SalesforceAdapter fetch', () => {
   let connection: MockInterface<Connection>
@@ -120,9 +122,14 @@ describe('SalesforceAdapter fetch', () => {
         mockDescribeValueResult(valueDef)
       )
       if (instances !== undefined) {
-        connection.metadata.list.mockResolvedValue(
-          instances.map(inst => mockFileProperties({ type: typeDef.xmlName, ...inst.props }))
-        )
+        connection.metadata.list.mockImplementation(async queries => {
+          const queriedTypes = makeArray(queries).map(query => query.type)
+          const folderType = valueDef.parentField?.foreignKeyDomain
+          // Make sure we don't interfere with calls to `list` within filters.
+          return [typeDef.xmlName, folderType].filter(isDefined).some(type => queriedTypes.includes(type))
+            ? instances.map(inst => mockFileProperties({ type: typeDef.xmlName, ...inst.props }))
+            : []
+        })
         connection.metadata.read.mockImplementation(
           async (type, fullNames) => (
             type === typeDef.xmlName
@@ -1556,6 +1563,92 @@ public class LargeClass${index} {
             .map(instance => apiName(instance))
             .toArray()
           expect(fetchedInstancesNames).toEqual(ROLE_INSTANCE_NAMES)
+        })
+      })
+    })
+    describe('when fetch is with changes detection', () => {
+      let changedAtSingleton: InstanceElement
+      let fetchedMetadataTypeNames: string[]
+
+      const CHANGED_AT = '2023-03-03T00:00:00.000Z'
+      const LAYOUT_NAME = 'Account-Test Layout'
+      const FILE_NAME = `layouts/${LAYOUT_NAME}.layout`
+
+      const mockType = (): void => mockMetadataType(
+        { xmlName: 'Layout', suffix: 'layout', directoryName: 'layouts', inFolder: false, metaFile: false, childXmlNames: ['FeedLayout'] },
+        {
+          valueTypeFields: [
+            { name: 'fullName', soapType: 'string' },
+            { name: 'feedLayout', soapType: 'FeedLayout' },
+          ],
+        },
+        [
+          {
+            props: {
+              fullName: LAYOUT_NAME,
+              fileName: FILE_NAME,
+              lastModifiedDate: CHANGED_AT,
+            },
+            values: { fullName: LAYOUT_NAME },
+            zipFiles: [
+              {
+                path: `unpackaged/${FILE_NAME}`,
+                content: '<Layout xmlns="http://soap.sforce.com/2006/04/metadata">',
+              },
+            ],
+          },
+        ],
+      )
+      beforeEach(() => {
+        changedAtSingleton = mockInstances().ChangedAtSingleton;
+        ({ connection, adapter } = mockAdapter({
+          adapterParams: {
+            getElemIdFunc: mockGetElemIdFunc,
+            config: {
+              fetch: {
+                metadata: {
+                  exclude: metadataExclude,
+                },
+              },
+              maxItemsInRetrieveRequest: testMaxItemsInRetrieveRequest,
+              client: {
+                readMetadataChunkSize: { default: 3, overrides: { Test: 2 } },
+              },
+            },
+            changedAtSingleton,
+          },
+        }))
+      })
+
+      describe('when no instances were updated since the last fetch', () => {
+        beforeEach(async () => {
+          mockType()
+          _.set(changedAtSingleton.value, ['Layout', LAYOUT_NAME], CHANGED_AT)
+          const { elements } = await adapter.fetch(mockFetchOpts)
+          fetchedMetadataTypeNames = await awu(elements)
+            .filter(isObjectType)
+            .map(element => safeApiName(element))
+            .filter(isDefined)
+            .toArray()
+        })
+        it('should not include the MetadataType and its sub-types', async () => {
+          expect(fetchedMetadataTypeNames).not.toContainAnyValues(['Layout', 'FeedLayout'])
+        })
+      })
+      describe('when instances were updated since the last fetch', () => {
+        beforeEach(async () => {
+          mockType()
+          _.set(changedAtSingleton.value, ['Layout', LAYOUT_NAME], '2020-01-01T00:00:00.000Z')
+
+          const { elements } = await adapter.fetch(mockFetchOpts)
+          fetchedMetadataTypeNames = await awu(elements)
+            .filter(isObjectType)
+            .map(element => safeApiName(element))
+            .filter(isDefined)
+            .toArray()
+        })
+        it('should include the MetadataType and its sub-types', async () => {
+          expect(fetchedMetadataTypeNames).toContainValues(['Layout', 'FeedLayout'])
         })
       })
     })

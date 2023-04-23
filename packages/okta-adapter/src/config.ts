@@ -330,7 +330,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         },
         {
           type: 'UserSchema',
-          toField: 'AppUserSchema',
+          toField: 'appUserSchema',
           context: [{ name: 'appId', fromField: 'id' }],
         },
       ],
@@ -346,7 +346,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
-        { fieldName: 'AppUserSchema', fieldType: 'list<UserSchema>' },
+        { fieldName: 'appUserSchema', fieldType: 'list<UserSchema>' },
       ],
       idFields: ['label'],
       serviceIdField: 'id',
@@ -357,7 +357,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
-      standaloneFields: [{ fieldName: 'AppUserSchema' }],
+      standaloneFields: [{ fieldName: 'appUserSchema' }],
     },
     deployRequests: {
       add: {
@@ -392,6 +392,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           applicationId: 'id',
         },
       },
+    },
+  },
+  AppUserSchema: {
+    request: {
+      url: '/api/v1/meta/schemas/apps/{appId}/default',
+    },
+    transformation: {
+      idFields: [],
+      extendsParentId: true,
+      nestStandaloneInstances: false,
+      dataField: 'definitions',
     },
   },
   ApplicationCredentials: {
@@ -1196,6 +1207,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
+    { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
@@ -1206,7 +1218,6 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
 }
 
 export const SUPPORTED_TYPES = {
-  AppUserSchema: ['UserSchema'],
   Application: [
     'api__v1__apps',
   ],
@@ -1230,6 +1241,7 @@ export const SUPPORTED_TYPES = {
   LinkedObjectDefinitions: ['api__v1__meta__schemas__user__linkedObjects'],
   GroupSchema: ['GroupSchema'],
   UserSchema: ['UserSchema'],
+  AppUserSchema: ['UserSchema'],
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(

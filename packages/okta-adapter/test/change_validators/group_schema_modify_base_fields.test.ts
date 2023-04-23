@@ -69,14 +69,14 @@ describe('groupSchemaModifyBaseValidator', () => {
     expect(changeErrors).toEqual([{
       elemID: groupSchemaModifiedFieldInstance.elemID,
       severity: 'Error',
-      message: `Cannot change base properties of ${GROUP_SCHEMA_TYPE_NAME}`,
-      detailedMessage: `It is possible to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
+      message: `Cannot change base attributes of ${GROUP_SCHEMA_TYPE_NAME}`,
+      detailedMessage: `Cannot change base attributes for ${groupSchemaModifiedFieldInstance.elemID.name}. It is possible to modify the custom attributes section of the group schema.`,
     },
     {
       elemID: groupSchemaRemovedFieldInstance.elemID,
       severity: 'Error',
-      message: `Cannot change base properties of ${GROUP_SCHEMA_TYPE_NAME}`,
-      detailedMessage: `It is possible to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
+      message: `Cannot change base attributes of ${GROUP_SCHEMA_TYPE_NAME}`,
+      detailedMessage: `Cannot change base attributes for ${groupSchemaRemovedFieldInstance.elemID.name}. It is possible to modify the custom attributes section of the group schema.`,
     }])
   })
   it('should not return errors for changing custom field', async () => {

@@ -21,8 +21,8 @@ const isBaseFieldModified = (
   change: ModificationChange<InstanceElement>
 ): boolean => {
   const { before, after } = change.data
-  const beforeBase = before.value?.definitions.base
-  const afterBase = after.value?.definitions.base
+  const beforeBase = before.value.definitions?.base
+  const afterBase = after.value.definitions?.base
   return !isEqualValues(beforeBase, afterBase, { compareReferencesByValue: true })
 }
 
@@ -36,7 +36,7 @@ export const groupSchemaModifyBaseValidator: ChangeValidator = async changes => 
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Error',
-      message: `Cannot change base properties of ${GROUP_SCHEMA_TYPE_NAME}`,
-      detailedMessage: `It is possible to modify the custom properties section of the ${GROUP_SCHEMA_TYPE_NAME} instance.`,
+      message: `Cannot change base attributes of ${GROUP_SCHEMA_TYPE_NAME}`,
+      detailedMessage: `Cannot change base attributes for ${instance.elemID.name}. It is possible to modify the custom attributes section of the group schema.`,
     }))
 )

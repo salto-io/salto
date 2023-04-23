@@ -47,7 +47,7 @@ import templateUrlsFilter from './filters/template_urls'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
-import groupSchemaFieldsRemovalFilter from './filters/group_schema_field_removal'
+import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 
 const { awu } = collections.asynciterable
 
@@ -80,7 +80,7 @@ export const DEFAULT_FILTERS = [
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
-  groupSchemaFieldsRemovalFilter,
+  schemaFieldsRemovalFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,

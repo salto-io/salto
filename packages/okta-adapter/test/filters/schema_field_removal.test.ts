@@ -16,14 +16,19 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import groupSchemaAddNullFilter from '../../src/filters/group_schema_field_removal'
+import schemaAddNullFilter from '../../src/filters/schema_field_removal'
 import { getFilterParams } from '../utils'
 import { GROUP_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
 
 describe('groupSchemaAddNullFilter', () => {
-    type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
-    let filter: FilterType
+  type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
+  let filter: FilterType
 
+  beforeEach(async () => {
+    filter = schemaAddNullFilter(getFilterParams()) as typeof filter
+  })
+
+  describe('groupSchema', () => {
     const groupSchemaType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME) })
     const groupSchemaBeforeInstance = new InstanceElement(
       'defualtGroupSchema',
@@ -56,11 +61,6 @@ describe('groupSchemaAddNullFilter', () => {
         },
       },
     )
-
-    beforeEach(async () => {
-      filter = groupSchemaAddNullFilter(getFilterParams()) as typeof filter
-    })
-
     describe('preDeploy', () => {
       it('should add null to removed Properties', async () => {
         const groupSchemaBeforeInstanceCopy = groupSchemaBeforeInstance.clone()
@@ -117,4 +117,5 @@ describe('groupSchemaAddNullFilter', () => {
           .toBeUndefined()
       })
     })
+  })
 })

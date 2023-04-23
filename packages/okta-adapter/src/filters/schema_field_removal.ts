@@ -17,9 +17,15 @@
 import { Change, InstanceElement, ModificationChange, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { GROUP_SCHEMA_TYPE_NAME } from '../constants'
+import { APP_USER_SCHEMA_TYPE_NAME, GROUP_SCHEMA_TYPE_NAME } from '../constants'
 
 const CUSTOM_ADDITONAL_PROPERTIES_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
+const SUPPORTED_SCHEMAS: Set<string> = new Set(
+  [
+    GROUP_SCHEMA_TYPE_NAME,
+    APP_USER_SCHEMA_TYPE_NAME,
+  ]
+)
 
 const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>): void => {
   const { before, after } = change.data
@@ -49,18 +55,19 @@ const deletePropertiesWithNull = (instance: InstanceElement): void => {
     }
   })
 }
+
 /**
  * When a user wants to delete a custom property from the group schema, the custom property is set to null.
  * This is in order for Okta to delete the property from the group schema.
  * This filter removes the custom properties that are set to null in the onDeploy.
  */
-const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
-  name: 'groupSchemaFieldsRemovalFilter',
+const schemaFieldsRemovalFilter: FilterCreator = () => ({
+  name: 'schemaFieldsRemovalFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
       .filter(isModificationChange)
       .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
+      .filter(change => SUPPORTED_SCHEMAS.has(getChangeData(change).elemID.typeName))
       .forEach(change => addNullToRemovedProperties(change))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -68,10 +75,10 @@ const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
+      .filter(instance => SUPPORTED_SCHEMAS.has(instance.elemID.typeName))
       .forEach(instance => deletePropertiesWithNull(instance))
   },
 }
 )
 
-export default groupSchemaFieldsRemovalFilter
+export default schemaFieldsRemovalFilter

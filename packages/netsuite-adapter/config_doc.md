@@ -75,9 +75,11 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | deploy.additionalDependencies.include.features              | []                      | Feature dependencies list (string[]) to be included in the manifest passed to SDF when deploying
 | deploy.additionalDependencies.include.objects               | []                      | Object dependencies list (string[]) to be included in the manifest passed to SDF when deploying
+| deploy.additionalDependencies.include.files                 | []                      | File dependencies list (string[]) to be included in the manifest passed to SDF when deploying
 | deploy.additionalDependencies.exclude.features              | []                      | Feature dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
 | deploy.additionalDependencies.exclude.objects               | []                      | Object dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
-
+| deploy.additionalDependencies.exclude.files                 | []                      | Files dependencies list (string[]) to be 
+excluded from the manifest passed to SDF when deploying
 Features are included as optional by default. In order to include a required feature add the `":required"` suffix to it.
 Example:
 ```

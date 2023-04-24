@@ -50,6 +50,8 @@ const DEFAULT_SDF_DEPLOY_PARAMS = {
     excludedFeatures: [],
     includedObjects: [],
     excludedObjects: [],
+    includedFiles: [],
+    excludedFiles: [],
   },
   validateOnly: false,
 }

@@ -29,8 +29,8 @@ const DEFAULT_OPTIONS = {
   warnStaleData: false,
   validate: false,
   additionalDependencies: {
-    include: { features: [], objects: [] },
-    exclude: { features: [], objects: [] },
+    include: { features: [], objects: [], files: [] },
+    exclude: { features: [], objects: [], files: [] },
   },
   deployReferencedElements: false,
   filtersRunner: () => ({

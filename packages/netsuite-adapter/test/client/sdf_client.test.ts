@@ -39,6 +39,8 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
       excludedFeatures: [],
       includedObjects: [],
       excludedObjects: [],
+      includedFiles: [],
+      excludedFiles: [],
     },
   },
   new Graph<SDFObjectNode>('elemIdFullName'),

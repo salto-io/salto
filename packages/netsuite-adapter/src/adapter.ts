@@ -319,7 +319,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc
     )
 
-    const dataElements = await dataElementsPromise
+    const { elements: dataElements, largeTypesError } = await dataElementsPromise
+    failedTypes.excludedTypes = failedTypes.excludedTypes?.concat(largeTypesError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []

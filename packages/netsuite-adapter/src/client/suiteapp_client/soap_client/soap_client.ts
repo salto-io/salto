@@ -33,6 +33,7 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../../../config'
 import { toError } from '../../utils'
 
 const { awu } = collections.asynciterable
@@ -385,7 +386,7 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<{ records: RecordValue[]; largeTypesError: string[] }> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
     const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
@@ -396,18 +397,19 @@ export default class SoapClient {
       typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
     }
 
-    return (await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+    return Object.assign({}, ...await Promise.all(typesToSearch.flatMap(async ({ type, subtypes }) => {
       const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
       if (namespace !== undefined) {
-        return this.search(type, namespace, subtypes)
+        const response = await this.search(type, namespace, subtypes)
+        return (typeof response === 'string') ? { largeTypesError: response } : { records: response }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-      const records = await this.sendGetAllRequest(type)
+      const response = await this.sendGetAllRequest(type)
 
       log.debug(`Finished getting all records of ${type}`)
-      return records
-    }))).flat()
+      return { records: response }
+    })))
   }
 
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
@@ -598,11 +600,11 @@ export default class SoapClient {
     type: string,
     namespace: string,
     subtypes?: string[]
-  ): Promise<RecordValue[]> {
+  ): Promise<RecordValue[] | string> {
     // TODO change here to get the first page and calc the amount of instances
     const firstSearchPage = await this.sendSearchRequest(type, namespace, subtypes)
-    if (firstSearchPage.searchResult.totalPages > 2) {
-
+    if (firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE > DEFAULT_MAX_INSTANCES_PER_TYPE) {
+      return type
     }
     const responses = await this.getAllSearchPages(
       firstSearchPage,

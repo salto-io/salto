@@ -153,7 +153,7 @@ export const getDataElements = async (
     return { elements: types, largeTypesError: [] }
   }
 
-  const allRecords = await client.getAllRecords(availableTypesToFetch) // Start adding the errors here
+  const { records: allRecords, largeTypesError } = await client.getAllRecords(availableTypesToFetch)
   const instances = await createInstances(
     allRecords,
     typesMap,
@@ -171,6 +171,6 @@ export const getDataElements = async (
         })
       }).toArray(),
     ],
-    largeTypesError: [],
+    largeTypesError,
   }
 }

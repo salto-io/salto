@@ -546,7 +546,7 @@ export default class SdfClient {
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
 
-    const excludedTypes = [] as string[]
+    const excludedTypes: string[] = []
     const filterLargeTypes = ([type, instances]: [string, ObjectID[]]): boolean => {
       if (instances.length > this.maxInstancesPerType) {
         excludedTypes.push(type)

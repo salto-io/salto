@@ -580,7 +580,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [{
         id: 'id1',
         attributes: {
           internalId: '1',
@@ -590,7 +590,7 @@ describe('soap_client', () => {
         attributes: {
           internalId: '2',
         },
-      }])
+      }] })
     })
 
     it('should return empty record list when subsidiaries is disabled', async () => {
@@ -612,7 +612,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [] })
     })
 
     it('Should work for item type', async () => {
@@ -635,7 +635,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{
+      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual({ records: [{
         id: 'id1',
         attributes: {
           internalId: '1',
@@ -645,7 +645,7 @@ describe('soap_client', () => {
         attributes: {
           internalId: '2',
         },
-      }])
+      }] })
       expect(searchAsyncMock).toHaveBeenCalledWith({
         searchRecord: {
           attributes: {
@@ -704,7 +704,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [{
         id: 'id1',
         attributes: {
           internalId: '1',
@@ -714,7 +714,7 @@ describe('soap_client', () => {
         attributes: {
           internalId: '2',
         },
-      }])
+      }] })
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -782,7 +782,7 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [{
         id: 'id1',
         attributes: {
           internalId: '1',
@@ -792,7 +792,7 @@ describe('soap_client', () => {
         attributes: {
           internalId: '2',
         },
-      }])
+      }] })
       expect(searchMoreWithIdAsyncMock).toHaveBeenCalledTimes(2)
     })
 
@@ -816,7 +816,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [{
         id: 'id1',
         attributes: {
           internalId: '1',
@@ -826,7 +826,7 @@ describe('soap_client', () => {
         attributes: {
           internalId: '2',
         },
-      }])
+      }] })
     })
 
     it('Should throw an error if got invalid getAll results', async () => {

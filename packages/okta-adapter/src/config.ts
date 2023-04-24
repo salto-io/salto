@@ -548,10 +548,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'clients', fieldType: 'list<OAuth2Client>' },
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'credentials' }],
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'issuer' }],
       serviceIdField: 'id',
       standaloneFields: [{ fieldName: 'policies' }, { fieldName: 'scopes' }, { fieldName: 'claims' }],
       serviceUrl: '/admin/oauth2/as/{id}',
+    },
+  },
+  AuthorizationServerCredentialsSigningConfig: {
+    transformation: {
+      fieldsToHide: [{ fieldName: 'kid' }, { fieldName: 'lastRotated' }, { fieldName: 'nextRotation' }],
     },
   },
   AuthorizationServerPolicy: {

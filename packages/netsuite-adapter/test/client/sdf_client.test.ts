@@ -983,6 +983,7 @@ describe('sdf client', () => {
     const allFilesQuery = buildNetsuiteQuery({
       fileCabinet: ['.*'],
     })
+    const maxFileCabinetSizeInGB = 1
 
     let client: SdfClient
     beforeEach(() => {
@@ -996,7 +997,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
       expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
@@ -1007,7 +1008,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({
         lockedError: [],
@@ -1023,7 +1024,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
     })
 
     it('should succeed when having no files', async () => {
@@ -1044,7 +1045,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1105,7 +1106,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1157,7 +1158,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(3)
       expect(elements).toHaveLength(2)
       expect(elements).toEqual([{
@@ -1201,7 +1202,7 @@ describe('sdf client', () => {
       const query = notQuery(buildNetsuiteQuery({
         fileCabinet: [MOCK_FILE_PATH],
       }))
-      const { elements, failedPaths } = await client.importFileCabinetContent(query)
+      const { elements, failedPaths } = await client.importFileCabinetContent(query, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
@@ -1218,7 +1219,7 @@ describe('sdf client', () => {
       const { elements, failedPaths } = await client
         .importFileCabinetContent(buildNetsuiteQuery({
           fileCabinet: [],
-        }))
+        }), maxFileCabinetSizeInGB)
 
       expect(elements).toHaveLength(0)
       expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
@@ -1261,7 +1262,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(1)
       expect(elements).toEqual([{

@@ -18,7 +18,7 @@ import { isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from './constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, IDENTITY_PROVIDER_TYPE_NAME, USERTYPE_TYPE_NAME, FEATURE_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, INLINE_HOOK_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME } from './constants'
 import { resolveUserSchemaRef } from './filters/expression_language'
 
 const { awu } = collections.asynciterable
@@ -90,9 +90,19 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     target: { type: GROUP_TYPE_NAME },
   },
   {
-    src: { field: 'roles', parentTypes: [GROUP_TYPE_NAME] },
+    src: { field: 'role', parentTypes: [ROLE_ASSIGNMENT_TYPE_NAME] },
     serializationStrategy: 'id',
     target: { type: ROLE_TYPE_NAME },
+  },
+  {
+    src: { field: 'type', parentTypes: [ROLE_ASSIGNMENT_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: ROLE_TYPE_NAME },
+  },
+  {
+    src: { field: 'resource-set', parentTypes: [ROLE_ASSIGNMENT_TYPE_NAME] },
+    serializationStrategy: 'id',
+    target: { type: 'ResourceSet' },
   },
   {
     src: { field: 'featureDependencies', parentTypes: [FEATURE_TYPE_NAME] },

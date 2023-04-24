@@ -267,20 +267,20 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'apps', fieldType: 'list<Application>' },
-        { fieldName: 'roles', fieldType: 'list<Role>' },
+        { fieldName: 'roles', fieldType: 'list<RoleAssignment>' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
       ],
-      fieldsToOmit: [
-        { fieldName: 'created' },
-        { fieldName: 'lastUpdated' },
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([
         { fieldName: 'lastMembershipUpdated' },
         { fieldName: '_links' },
-      ],
+      ]),
       idFields: ['profile.name'],
       serviceIdField: 'id',
       serviceUrl: '/admin/group/{id}',
+      standaloneFields: [{ fieldName: 'roles' }],
+      nestStandaloneInstances: false,
     },
     deployRequests: {
       add: {
@@ -306,13 +306,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__groups___groupId___roles@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/groups/{groupId}/roles',
-      recurseInto: [
-        {
-          type: 'api__v1__groups___groupId___roles___roleId___targets__groups@uuuuuu_00123_00125uuuu_00123_00125uuuu',
-          toField: 'targetGroups',
-          context: [{ name: 'roleId', fromField: 'id' }],
-        },
-      ],
     },
   },
   Role: {
@@ -1095,6 +1088,60 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldTypeOverrides: [{ fieldName: 'name', fieldType: 'UserSchemaAttribute' }],
     },
   },
+  RoleAssignment: {
+    transformation: {
+      idFields: ['label'],
+      serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldTypeOverrides: [
+        { fieldName: 'resource-set', fieldType: 'string' },
+        { fieldName: 'role', fieldType: 'string' },
+      ],
+      extendsParentId: true,
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/groups/{groupId}/roles',
+        method: 'post',
+        urlParamsToFields: {
+          groupId: '_parent.0.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/groups/{groupId}/roles/{roleId}',
+        method: 'delete',
+        urlParamsToFields: {
+          groupId: '_parent.0.id',
+          roleId: 'id',
+        },
+      },
+    },
+  },
+  ResourceSets: {
+    request: {
+      url: '/api/v1/iam/resource-sets',
+    },
+    transformation: {
+      dataField: 'resource-sets',
+    },
+  },
+  ResourceSetResources: {
+    request: {
+      url: '/api/v1/iam/resource-sets/{resourceSetId}/resources',
+    },
+    transformation: {
+      dataField: 'resources',
+    },
+  },
+  ResourceSet: {
+    transformation: {
+      idFields: ['label'],
+      serviceIdField: 'id',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
@@ -1111,6 +1158,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
     { originalName: 'ThemeResponse', newName: 'BrandTheme' },
+    { originalName: 'Role', newName: 'RoleAssignment' },
     { originalName: 'IamRole', newName: 'Role' },
   ],
 }
@@ -1127,9 +1175,8 @@ export const SUPPORTED_TYPES = {
   EmailTemplate: ['api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu'],
   EventHook: ['api__v1__eventHooks'],
   Feature: ['api__v1__features'],
-  Group: [
-    'api__v1__groups',
-  ],
+  Group: ['api__v1__groups'],
+  RoleAssignment: ['api__v1__groups___groupId___roles@uuuuuu_00123_00125uu'],
   GroupRule: ['api__v1__groups__rules'],
   IdentityProvider: [
     'api__v1__idps',
@@ -1153,6 +1200,7 @@ export const SUPPORTED_TYPES = {
   BehaviorRule: ['api__v1__behaviors'],
   PerClientRateLimit: ['PerClientRateLimitSettings'],
   RateLimitAdmin: ['RateLimitAdminNotifications'],
+  ResourceSet: ['ResourceSets'],
 }
 
 const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {

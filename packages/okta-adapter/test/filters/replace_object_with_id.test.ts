@@ -16,35 +16,32 @@
 
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_TYPE_NAME, OKTA } from '../../src/constants'
+import { APPLICATION_TYPE_NAME, OKTA } from '../../src/constants'
 import replaceObjectWithIdFilter from '../../src/filters/replace_object_with_id'
 import { getFilterParams } from '../utils'
 
 describe('replaceObjectWithIdFilter', () => {
-  let groupType: ObjectType
-  let groupInstance: InstanceElement
+  let appType: ObjectType
+  let appInstance: InstanceElement
   let filter: filterUtils.FilterWith<'onFetch'>
 
   beforeEach(() => {
     filter = replaceObjectWithIdFilter(getFilterParams()) as typeof filter
-    groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
-    groupInstance = new InstanceElement(
+    appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
+    appInstance = new InstanceElement(
       'instance',
-      groupType,
+      appType,
       {
-        type: 'OKTA_GROUP',
-        profile: {
-          name: 'Marketing',
-          description: 'Marketing Dep',
-        },
-        roles: [
+        name: 'salesforce',
+        signOnMode: 'SAML_2_0',
+        assignedGroups: [
           {
             id: '0oa66j371cnRcCeQB5d7',
-            type: 'CUSTOM',
+            name: 'a',
           },
           {
             id: '0oa68k9spoT0zHGQe5d7',
-            type: 'HELP_DESK_ADMIN',
+            something: 'b',
           },
         ],
       },
@@ -52,21 +49,21 @@ describe('replaceObjectWithIdFilter', () => {
   })
 
   it('should replace object with ids', async () => {
-    await filter.onFetch?.([groupType, groupInstance])
-    expect(groupInstance.value.roles).toEqual([
+    await filter.onFetch?.([appType, appInstance])
+    expect(appInstance.value.assignedGroups).toEqual([
       '0oa66j371cnRcCeQB5d7',
-      'HELP_DESK_ADMIN',
+      '0oa68k9spoT0zHGQe5d7',
     ])
   })
   it('should not replace object with ids if id does not exists', async () => {
-    const group2 = groupInstance.clone()
-    delete group2.value.roles[0].id
-    await filter.onFetch?.([groupType, group2])
-    expect(group2.value.roles).toEqual([
+    const app2 = appInstance.clone()
+    delete app2.value.assignedGroups[0].id
+    await filter.onFetch?.([appType, app2])
+    expect(app2.value.assignedGroups).toEqual([
       {
-        type: 'CUSTOM',
+        name: 'a',
       },
-      'HELP_DESK_ADMIN',
+      '0oa68k9spoT0zHGQe5d7',
     ])
   })
 })

@@ -84,17 +84,17 @@ describe('index utils', () => {
       ]
       expect(getBaseChanges(changes)).toEqual([
         toChange({ after: addedObject }),
-        toChange({ after: addedObject.fields.field }),
         toChange({ before: deletedObject }),
-        toChange({ before: deletedObject.fields.field }),
         toChange({ before: modifiedObjectBefore, after: modifiedObjectAfter }),
+        toChange({ after: addedInstance }),
+        toChange({ after: addedObject.fields.field }),
+        toChange({ before: deletedObject.fields.field }),
         toChange({ before: modifiedObjectBefore.fields.deletedField }),
         toChange({
           before: modifiedObjectBefore.fields.modifiedField,
           after: modifiedObjectAfter.fields.modifiedField,
         }),
         toChange({ after: modifiedObjectAfter.fields.addedField }),
-        toChange({ after: addedInstance }),
       ])
     })
   })

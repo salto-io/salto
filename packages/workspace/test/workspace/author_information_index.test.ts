@@ -229,17 +229,17 @@ describe('author information index', () => {
       key: getChangeData(modifiedObjectChange).elemID.getFullName(),
       value: { changedBy: 'Salto User', changedAt: '2023-03-18 10:00:00' },
     }, {
-      key: getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'modifiedField').getFullName(),
-      value: { changedBy: 'Salto User', changedAt: '2023-03-18 12:00:00' },
-    }, {
-      key: getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'addedField').getFullName(),
-      value: { changedBy: 'Salto User', changedAt: '2023-03-18 13:00:00' },
-    }, {
       key: getChangeData(addedInstanceChange).elemID.getFullName(),
       value: { changedBy: 'Salto User', changedAt: '2023-03-19 10:00:00' },
     }, {
       key: getChangeData(modifiedInstanceChange).elemID.getFullName(),
       value: { changedBy: 'Salto User', changedAt: '2023-03-20 10:00:00' },
+    }, {
+      key: getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'modifiedField').getFullName(),
+      value: { changedBy: 'Salto User', changedAt: '2023-03-18 12:00:00' },
+    }, {
+      key: getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'addedField').getFullName(),
+      value: { changedBy: 'Salto User', changedAt: '2023-03-18 13:00:00' },
     }]
   })
 
@@ -267,8 +267,8 @@ describe('author information index', () => {
     it('should add the new instances changed by values to index', () => {
       expect(authorInformationIndex.setAll).toHaveBeenCalledWith(expectedSetAllCalledWith)
       expect(authorInformationIndex.deleteAll).toHaveBeenCalledWith([
-        getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'removedField').getFullName(),
         getChangeData(deletedInstanceChange).elemID.getFullName(),
+        getChangeData(modifiedObjectChange).elemID.createNestedID('field', 'removedField').getFullName(),
         getChangeData(modifiedToEmptyChange).elemID.getFullName(),
       ])
     })

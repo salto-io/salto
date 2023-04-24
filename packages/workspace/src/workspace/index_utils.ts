@@ -53,9 +53,9 @@ const getFieldChangesFromTypeChange = (change: Change<ObjectType>): Change<Field
 }
 
 export const getBaseChanges = (changes: Change<Element>[]): Change<Element>[] =>
-  changes.flatMap(change => [change].concat(
-    isObjectTypeChange(change) ? getFieldChangesFromTypeChange(change) : []
-  ))
+  changes.concat(
+    changes.filter(isObjectTypeChange).flatMap(getFieldChangesFromTypeChange)
+  )
 
 export const updateIndex = async <T>({
   changes,

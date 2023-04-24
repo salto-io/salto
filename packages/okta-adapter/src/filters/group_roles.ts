@@ -25,6 +25,7 @@ const filter: FilterCreator = () => ({
   onFetch: async (elements: Element[]) => {
     const groups = elements.filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
+    // field cannot be removed with fieldsToOmit cause it's added with recurseInto
     groups.forEach(group => delete group.value.roles)
   },
 })

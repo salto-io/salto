@@ -23,7 +23,7 @@ export type AuthorInformation = {
   changedAt?: string
 }
 
-export const getAuthorInformationFromElement = (
+export const getAuthorInformation = (
   element: Element | undefined
 ): AuthorInformation => {
   if (!element) {

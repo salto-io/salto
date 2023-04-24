@@ -22,7 +22,7 @@ import {
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
   AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformationFromElement,
+  isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -56,7 +56,7 @@ export type FetchChange = {
 }
 
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
-  getAuthorInformationFromElement(changedElement)
+  getAuthorInformation(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {

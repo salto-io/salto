@@ -82,7 +82,7 @@ describe('filterInvalidChanges', () => {
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
-    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(4)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(2)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(newInvalidObj.fields.invalid.elemID)))
@@ -303,7 +303,7 @@ describe('filterInvalidChanges', () => {
       changeValidators: { salto: mockChangeValidator },
     })
     expect(planResult.changeErrors.filter(err => !isDependencyError(err))).toHaveLength(3)
-    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(3)
+    expect(planResult.changeErrors.filter(err => isDependencyError(err))).toHaveLength(2)
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidObj.elemID)))
       .toBeTruthy()
     expect(planResult.changeErrors.some(v => v.elemID.isEqual(beforeInvalidField.elemID)))

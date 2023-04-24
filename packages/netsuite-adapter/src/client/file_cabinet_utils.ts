@@ -15,9 +15,15 @@
 */
 import _ from 'lodash'
 import osPath from 'path'
+import { logger } from '@salto-io/logging'
 import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
 
-type FileToSize = Record<string, number>
+const log = logger(module)
+
+type FileSize = {
+  path: string
+  size: number
+}
 
 type FolderSize = {
   path: string
@@ -28,17 +34,14 @@ type FolderSize = {
 type FolderSizeMap = Record<string, FolderSize>
 const BYTES_IN_GB = 1024 ** 3
 
-export const excludeLargeFolders = (
-  files: FileToSize,
+export const largeFoldersToExclude = (
+  files: FileSize[],
   maxFileCabinetSizeInGB: number
-): { listedPaths: string[]; largeFolderError: string[] } => {
-  const createFlatFolderSizes = (fileSizes: FileToSize): FolderSizeMap => {
+): string[] => {
+  const createFlatFolderSizes = (fileSizes: FileSize[]): FolderSizeMap => {
     const flatFolderSizes: FolderSizeMap = {}
-    Object.entries(fileSizes).forEach(([path, size]) => {
-      const pathParts = path.startsWith(sep)
-        ? osPath.dirname(path).split(sep)
-        : osPath.dirname(`${sep}${path}`).split(sep)
-      pathParts.reduce((currentPath, nextFolder) => {
+    fileSizes.forEach(({ path, size }) => {
+      osPath.dirname(path).split(sep).reduce((currentPath, nextFolder) => {
         const nextPath = osPath.join(currentPath, nextFolder)
         if (nextPath in flatFolderSizes) {
           flatFolderSizes[nextPath].size += size
@@ -72,20 +75,20 @@ export const excludeLargeFolders = (
   const maxSizeInBytes = BYTES_IN_GB * maxFileCabinetSizeInGB
   const overflowSize = folderSizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
 
-  const filterSingleFolder = (largestFolder: FolderSize): string[] => {
+  const filterSingleFolder = (largestFolder: FolderSize): FolderSize[] => {
     const nextLargeFolder = largestFolder.folders.find(folderSize => folderSize.size > overflowSize)
     if (!nextLargeFolder) {
-      return [largestFolder.path]
+      return [largestFolder]
     }
     return filterSingleFolder(nextLargeFolder)
   }
 
-  const filterMultipleFolders = (): string[] => {
+  const filterMultipleFolders = (): FolderSize[] => {
     const sortedSizes = _.orderBy(folderSizes, 'size', 'desc')
-    const selectedFolders = [] as string[]
+    const selectedFolders: FolderSize[] = []
     sortedSizes.reduce((selectedSize, folderSize) => {
       if (selectedSize < overflowSize) {
-        selectedFolders.push(folderSize.path)
+        selectedFolders.push(folderSize)
         return selectedSize + folderSize.size
       }
       return selectedSize
@@ -94,16 +97,20 @@ export const excludeLargeFolders = (
   }
 
   if (overflowSize <= 0) {
-    return { listedPaths: Object.keys(files), largeFolderError: [] }
+    return []
   }
 
   const largeTopLevelFolder = folderSizes.find(folderSize => folderSize.size > overflowSize)
   const foldersToExclude = largeTopLevelFolder
     ? filterSingleFolder(largeTopLevelFolder)
     : filterMultipleFolders()
-  const listedPaths = Object.keys(files).filter(filePath => !foldersToExclude.some(
-    folder => filePath.startsWith(`${folder}${sep}`)
-      || filePath.startsWith(`${sep}${folder}${sep}`)
-  ))
-  return { listedPaths, largeFolderError: foldersToExclude }
+  log.info(`Excluding large folder(s) with total size of ${foldersToExclude.reduce((sum, folder) => sum + folder.size, 0)}`
+    + ` and name(s): ${foldersToExclude.map(folder => folder.path)}`)
+  return foldersToExclude.map(folder => `${sep}${folder.path}${sep}`)
 }
+
+export const filterFilesInFolders = (files: string[], folders: string[]): string[] =>
+  files.filter(file => !folders.some(folder => file.startsWith(folder)))
+
+export const filterFilePathsInFolders = <T extends { path: string[] }>(files: T[], folders: string[]): T[] =>
+  files.filter(file => !folders.some(folder => file.path.join(sep).startsWith(folder)))

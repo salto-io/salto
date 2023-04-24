@@ -36,9 +36,10 @@ import SuiteAppClient from './suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
 import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
+import { DEFAULT_MAX_FILE_CABINET_SIZE } from '../../config'
 import { NetsuiteQuery } from '../../query'
 import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
-import { excludeLargeFolders } from '../file_cabinet_utils'
+import { largeFoldersToExclude } from '../file_cabinet_utils'
 
 const log = logger(module)
 
@@ -169,7 +170,7 @@ export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
 }
 
 export type SuiteAppFileCabinetOperations = {
-  importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
+  importFileCabinet: (query: NetsuiteQuery, maxFileCabinetSizeInGB?: number) => Promise<ImportFileCabinetResult>
   deploy: (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
@@ -391,13 +392,15 @@ SuiteAppFileCabinetOperations => {
     return fileCabinetResults
   }
 
-  const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
+  const importFileCabinet = async (
+    query: NetsuiteQuery, maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE
+  ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
     }
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
-    const foldersCustomizationInfo = foldersResults.map(folder => ({
+    const unfilteredFoldersCustomizationInfo = foldersResults.map(folder => ({
       path: folder.path,
       typeName: 'folder',
       values: {
@@ -431,14 +434,22 @@ SuiteAppFileCabinetOperations => {
       filesCustomizationsLinks,
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
 
-    const filesToSize = Object.fromEntries(unfilteredFilesCustomizationWithoutContent.map(
-      file => [fullPath(file.path), file.size]
-    ))
-    const filteredFilesCustomization = excludeLargeFolders(filesToSize, suiteAppClient.maxFileCabinetSizeInGB)
-    const filteredFilesSet = new Set(filteredFilesCustomization.listedPaths)
-    const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent.filter(
-      file => filteredFilesSet.has(fullPath(file.path))
+    const filesSize = unfilteredFilesCustomizationWithoutContent.map(
+      file => ({ path: `${FILE_CABINET_PATH_SEPARATOR}${fullPath(file.path)}`, size: file.size })
     )
+    const largeFolders: string[] = []
+    largeFoldersToExclude(filesSize, maxFileCabinetSizeInGB)
+    // Salto 3853: Will change to filtered files on full deployment
+    const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent
+    const foldersCustomizationInfo = unfilteredFoldersCustomizationInfo
+    // const filesCustomizationWithoutContent = filterFilePathsInFolders(
+    //   unfilteredFilesCustomizationWithoutContent,
+    //   largeFolders
+    // )
+    // const foldersCustomizationInfo = filterFilePathsInFolders(
+    //   unfilteredFoldersCustomizationInfo,
+    //   largeFolders
+    // )
 
     const fileChunks = chunks.weightedChunks(
       filesCustomizationWithoutContent,
@@ -510,7 +521,7 @@ SuiteAppFileCabinetOperations => {
       failedPaths: {
         otherError: failedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
         lockedError: lockedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
-        largeFolderError: filteredFilesCustomization.largeFolderError,
+        largeFolderError: largeFolders,
       },
     }
   }

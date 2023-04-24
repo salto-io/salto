@@ -131,13 +131,13 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
     Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query)
+      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB)
     }
 
-    return this.sdfClient.importFileCabinetContent(query)
+    return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
   }
 
   private static async getSDFObjectNodes(

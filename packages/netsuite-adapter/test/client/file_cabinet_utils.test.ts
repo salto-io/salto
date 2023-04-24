@@ -14,66 +14,57 @@
 * limitations under the License.
 */
 
-import { excludeLargeFolders } from '../../src/client/file_cabinet_utils'
+import { filterFilePathsInFolders, filterFilesInFolders, largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 describe('excludeLargeFolders', () => {
   it('should not exclude any folders if there is no size overflow', () => {
-    const filesToSize = {
-      '/folder/path1': 500_000,
-      '/folder/path2': 500_000,
-    }
-    const result = excludeLargeFolders(filesToSize, 1)
-    expect(result.largeFolderError).toEqual([])
-    expect(result.listedPaths).toEqual(Object.keys(filesToSize))
+    const filesToSize = [
+      { path: '/folder/path1', size: 500_000 },
+      { path: '/folder/path2', size: 500_000 },
+    ]
+    const largeFolders = largeFoldersToExclude(filesToSize, 1)
+    expect(largeFolders).toEqual([])
   })
 
   describe('when there is a size overflow', () => {
-    describe('should exclude the last largest folder if there is a larger than overflow top level folder', () => {
-      it('works on absolute paths', () => {
-        const filesToSize = {
-          '/largeTopFolder/largeFolder/path1': 1_000_000,
-          '/largeTopFolder/largeFolder/path2': 1_000_000,
-          '/largeTopFolder/smallFolder/path2': 500_000,
-          '/smallTopFolder/path1': 500_000,
-        }
-        const result = excludeLargeFolders(filesToSize, 0.002)
-        expect(result.largeFolderError).toEqual(['largeTopFolder/largeFolder'])
-        expect(result.listedPaths).toEqual(['/largeTopFolder/smallFolder/path2', '/smallTopFolder/path1'])
-      })
-
-      it('works on relative paths', () => {
-        const filesToSize = {
-          'largeTopFolder/largeFolder/path1': 1_000_000,
-          'largeTopFolder/largeFolder/path2': 1_000_000,
-          'largeTopFolder/smallFolder/path2': 500_000,
-          'smallTopFolder/path1': 500_000,
-        }
-        const result = excludeLargeFolders(filesToSize, 0.002)
-        expect(result.largeFolderError).toEqual(['largeTopFolder/largeFolder'])
-        expect(result.listedPaths).toEqual(['largeTopFolder/smallFolder/path2', 'smallTopFolder/path1'])
-      })
+    it('should exclude the last largest folder if there is a larger than overflow top level folder', () => {
+      const filesToSize = [
+        { path: '/largeTopFolder/largeFolder/path1', size: 1_000_000 },
+        { path: '/largeTopFolder/largeFolder/path2', size: 1_000_000 },
+        { path: '/largeTopFolder/smallFolder/path2', size: 500_000 },
+        { path: '/smallTopFolder/path1', size: 500_000 },
+      ]
+      const largeFolders = largeFoldersToExclude(filesToSize, 0.002)
+      expect(largeFolders).toEqual(['/largeTopFolder/largeFolder/'])
     })
 
     it('should exclude multiple largest top level folders if there are no larger than overflow top level folders', () => {
-      const filesToSize = {
-        '/firstTopFolder/path1': 1_700_000,
-        '/thirdTopFolder/path2': 1_500_000,
-        '/secondTopFolder/path2': 1_600_000,
-        '/fourthTopFolder/path2': 1_400_000,
-      }
-      const result = excludeLargeFolders(filesToSize, 0.004)
-      expect(result.largeFolderError).toEqual(['firstTopFolder', 'secondTopFolder'])
-      expect(result.listedPaths).toEqual(['/thirdTopFolder/path2', '/fourthTopFolder/path2'])
+      const filesToSize = [
+        { path: '/firstTopFolder/path1', size: 1_700_000 },
+        { path: '/thirdTopFolder/path2', size: 1_500_000 },
+        { path: '/secondTopFolder/path2', size: 1_600_000 },
+        { path: '/fourthTopFolder/path2', size: 1_400_000 },
+      ]
+      const largeFolders = largeFoldersToExclude(filesToSize, 0.004)
+      expect(largeFolders).toEqual(['/firstTopFolder/', '/secondTopFolder/'])
     })
+  })
+})
 
-    it('should not exclude partial file matches (only by folders)', () => {
-      const filesToSize = {
-        '/topFolder/folder/path1': 1_700_000,
-        '/topFolder/folder_do_not_exclude': 1_500_000,
-      }
-      const result = excludeLargeFolders(filesToSize, 0.002)
-      expect(result.largeFolderError).toEqual(['topFolder/folder'])
-      expect(result.listedPaths).toEqual(['/topFolder/folder_do_not_exclude'])
-    })
+describe('filterFilePathsInFolders', () => {
+  it('filters out files or subfolders that appear in one of the folders', () => {
+    const files = [{ path: ['a', 'b', 'c.ts'] }, { path: ['a', 'b', 'd'] }, { path: ['a', 'z', 'w.ts'] }]
+    const folders = ['a/b/']
+    const result = filterFilePathsInFolders(files, folders)
+    expect(result).toEqual([{ path: ['a', 'z', 'w.ts'] }])
+  })
+})
+
+describe('filterFilesInFolders', () => {
+  it('filters out files or subfolders that appear in one of the folders', () => {
+    const files = ['a/b/c.ts', 'a/b/d', 'a/z/w.ts']
+    const folders = ['a/b/']
+    const result = filterFilesInFolders(files, folders)
+    expect(result).toEqual(['a/z/w.ts'])
   })
 })

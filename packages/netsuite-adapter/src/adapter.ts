@@ -62,7 +62,7 @@ import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import { Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -256,7 +256,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       getStandardTypesNames(),
       updatedFetchQuery
     )
-    const importFileCabinetResult = this.client.importFileCabinetContent(updatedFetchQuery)
+    const importFileCabinetResult = this.client.importFileCabinetContent(
+      updatedFetchQuery,
+      this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE
+    )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
     const {

@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -109,8 +109,8 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
-    const newLargeFolderPath = 'largeFolder'
-    const newLargeFolderExclusion = `^/${newLargeFolderPath}/.*`
+    const newLargeFolderPath = '/largeFolder/'
+    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newExclude = {
       types: [
         { name: 'testAll', ids: ['.*'] },
@@ -118,6 +118,7 @@ describe('config', () => {
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
       ],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
+      customRecords: [],
     }
     const configChange = getConfigFromConfigChanges(
       true,
@@ -143,7 +144,7 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(STOP_MANAGING_ITEMS_MSG)
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
   })
 
   it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {

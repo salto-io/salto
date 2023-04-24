@@ -37,7 +37,7 @@ import {
   FILE_CABINET_PATH_SEPARATOR,
 } from '../constants'
 import {
-  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES, DEFAULT_MAX_FILE_CABINET_SIZE,
+  DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
@@ -57,7 +57,7 @@ import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
 import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
-import { excludeLargeFolders } from './file_cabinet_utils'
+import { largeFoldersToExclude } from './file_cabinet_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -202,7 +202,6 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
-  private readonly maxFileCabinetSizeInGB: number
 
   constructor({
     credentials,
@@ -222,7 +221,6 @@ export default class SdfClient {
       ?? DEFAULT_COMMAND_TIMEOUT_IN_MINUTES
     SdkProperties.setCommandTimeout(commandTimeoutInMinutes * MINUTE_IN_MILLISECONDS)
     this.installedSuiteApps = config?.installedSuiteApps ?? []
-    this.maxFileCabinetSizeInGB = config?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
   }
@@ -789,7 +787,7 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
     Promise<ImportFileCabinetResult> {
     if (!query.areSomeFilesMatch()) {
       return {
@@ -801,16 +799,16 @@ export default class SdfClient {
     const filesToSize = async (
       filePaths: string[],
       fileCabinetDirPath: string
-    ): Promise<{ [path: string]: number }> => {
+    ): Promise<{ path: string; size: number }[]> => {
       const normalizedPath = (filePath: string): string => {
         const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
         return osPath.join(fileCabinetDirPath, ...filePathParts)
       }
 
-      return Object.fromEntries(await withLimitedConcurrency(
-        filePaths.map(filePath => async () => [filePath, (await stat(normalizedPath(filePath))).size]),
+      return withLimitedConcurrency(
+        filePaths.map(path => async () => ({ path, size: (await stat(normalizedPath(path))).size })),
         READ_CONCURRENCY
-      ))
+      )
     }
 
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
@@ -864,9 +862,12 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
-    const { listedPaths, largeFolderError } = excludeLargeFolders(
-      await filesToSize(importedPaths, fileCabinetDirPath), this.maxFileCabinetSizeInGB
+    const largeFolders: string[] = [] // largeFoldersToExclude(
+    largeFoldersToExclude(
+      await filesToSize(importedPaths, fileCabinetDirPath), maxFileCabinetSizeInGB
     )
+    const listedPaths = importedPaths // Salto 3853: Will change to filtered files on full deployment
+    // const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
     const [attributesPaths, filePaths] = _.partition(listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
@@ -882,7 +883,7 @@ export default class SdfClient {
       failedPaths: {
         lockedError: [],
         otherError: listFilesResults.failedPaths,
-        largeFolderError,
+        largeFolderError: largeFolders,
       },
     }
   }

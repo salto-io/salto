@@ -113,4 +113,4 @@ export const filterFilesInFolders = (files: string[], folders: string[]): string
   files.filter(file => !folders.some(folder => file.startsWith(folder)))
 
 export const filterFilePathsInFolders = <T extends { path: string[] }>(files: T[], folders: string[]): T[] =>
-  files.filter(file => !folders.some(folder => file.path.join(sep).startsWith(folder)))
+  files.filter(file => !folders.some(folder => file.path.join(sep).startsWith(folder.slice(1))))

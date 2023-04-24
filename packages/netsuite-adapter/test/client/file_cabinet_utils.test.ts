@@ -54,7 +54,7 @@ describe('excludeLargeFolders', () => {
 describe('filterFilePathsInFolders', () => {
   it('filters out files or subfolders that appear in one of the folders', () => {
     const files = [{ path: ['a', 'b', 'c.ts'] }, { path: ['a', 'b', 'd'] }, { path: ['a', 'z', 'w.ts'] }]
-    const folders = ['a/b/']
+    const folders = ['/a/b/']
     const result = filterFilePathsInFolders(files, folders)
     expect(result).toEqual([{ path: ['a', 'z', 'w.ts'] }])
   })
@@ -70,7 +70,7 @@ describe('filterFilesInFolders', () => {
 })
 
 describe('exclude and filter', () => {
-  it('works together when excluding', () => {
+  it('works together when excluding files', () => {
     const filesToSize = [
       { path: '/largeTopFolder/largeFolder/path1', size: 1_000_000 },
       { path: '/largeTopFolder/largeFolder/path2', size: 1_000_000 },
@@ -80,5 +80,21 @@ describe('exclude and filter', () => {
     const largeFolders = largeFoldersToExclude(filesToSize, 0.002)
     const result = filterFilesInFolders(filesToSize.map(({ path }) => path), largeFolders)
     expect(result).toEqual(['/largeTopFolder/smallFolder/path2', '/smallTopFolder/path1'])
+  })
+
+  it('works together when excluding file paths', () => {
+    const filesPathsSize = [
+      { path: ['largeTopFolder', 'largeFolder', 'path1'], size: 1_000_000 },
+      { path: ['largeTopFolder', 'largeFolder', 'path2'], size: 1_000_000 },
+      { path: ['largeTopFolder', 'smallFolder', 'path2'], size: 500_000 },
+      { path: ['smallTopFolder', 'path1'], size: 500_000 },
+    ]
+    const filesToSize = filesPathsSize.map(({ path, size }) => ({ path: `/${path.join('/')}`, size }))
+    const largeFolders = largeFoldersToExclude(filesToSize, 0.002)
+    const result = filterFilePathsInFolders(filesPathsSize, largeFolders)
+    expect(result).toEqual([
+      { path: ['largeTopFolder', 'smallFolder', 'path2'], size: 500_000 },
+      { path: ['smallTopFolder', 'path1'], size: 500_000 },
+    ])
   })
 })

@@ -61,7 +61,7 @@ describe('config', () => {
   it('should return undefined when having no currentConfig suggestions', () => {
     expect(getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       currentConfigWithFetch
     )).toBeUndefined()
@@ -72,7 +72,7 @@ describe('config', () => {
     const lockedTypes = { lockedType: ['lockedInstance'] }
     const configFromConfigChanges = getConfigFromConfigChanges(
       true,
-      { lockedError: lockedFiles, otherError: [newFailedFilePath] },
+      { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
       { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes },
       {}
     )?.config as InstanceElement[]
@@ -166,7 +166,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -194,7 +194,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -226,7 +226,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -252,7 +252,7 @@ describe('config', () => {
 
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config,
     )
@@ -285,7 +285,7 @@ describe('config', () => {
 
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: ['someFailedFile'] },
+      { lockedError: [], otherError: ['someFailedFile'], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -298,7 +298,7 @@ describe('config', () => {
       skipList: currentConfigWithSkipList.skipList }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       conf
     )
@@ -340,7 +340,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       conf,
     )

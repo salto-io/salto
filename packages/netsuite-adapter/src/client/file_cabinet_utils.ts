@@ -20,7 +20,7 @@ import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
 
 const log = logger(module)
 
-type FileSize = {
+export type FileSize = {
   path: string
   size: number
 }

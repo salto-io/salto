@@ -57,7 +57,7 @@ import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
 import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
-import { largeFoldersToExclude } from './file_cabinet_utils'
+import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -792,14 +792,14 @@ export default class SdfClient {
     if (!query.areSomeFilesMatch()) {
       return {
         elements: [],
-        failedPaths: { lockedError: [], otherError: [] },
+        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
       }
     }
 
     const filesToSize = async (
       filePaths: string[],
       fileCabinetDirPath: string
-    ): Promise<{ path: string; size: number }[]> => {
+    ): Promise<FileSize[]> => {
       const normalizedPath = (filePath: string): string => {
         const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
         return osPath.join(fileCabinetDirPath, ...filePathParts)

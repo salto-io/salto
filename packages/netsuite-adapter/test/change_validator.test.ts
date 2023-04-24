@@ -53,7 +53,7 @@ describe('change validator', () => {
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [],
@@ -126,7 +126,7 @@ describe('change validator', () => {
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [serviceInstance],

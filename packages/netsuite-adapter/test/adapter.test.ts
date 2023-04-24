@@ -141,7 +141,7 @@ describe('Adapter', () => {
     client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
       .mockResolvedValue({
         elements: [],
-        failedPaths: { lockedError: [], otherError: [] },
+        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
       })
 
     suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
@@ -181,7 +181,7 @@ describe('Adapter', () => {
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [folderCustomizationInfo, fileCustomizationInfo],
-          failedPaths: { lockedError: [], otherError: [] },
+          failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
         })
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
@@ -532,7 +532,7 @@ describe('Adapter', () => {
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
-        { lockedError: [], otherError: [] },
+        { lockedError: [], otherError: [], largeFolderError: [] },
         { lockedError: {}, unexpectedError: {} },
         config,
       )
@@ -543,7 +543,7 @@ describe('Adapter', () => {
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [],
-          failedPaths: { lockedError: [], otherError: ['/path/to/file'] },
+          failedPaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
@@ -551,7 +551,7 @@ describe('Adapter', () => {
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
-        { lockedError: [], otherError: ['/path/to/file'] },
+        { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
         { lockedError: {}, unexpectedError: {} },
         config,
       )
@@ -572,7 +572,7 @@ describe('Adapter', () => {
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
-        { lockedError: [], otherError: [] },
+        { lockedError: [], otherError: [], largeFolderError: [] },
         { lockedError: {}, unexpectedError: failedTypeToInstances },
         config,
       )
@@ -592,7 +592,7 @@ describe('Adapter', () => {
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         true,
-        { lockedError: [], otherError: [] },
+        { lockedError: [], otherError: [], largeFolderError: [] },
         { lockedError: {}, unexpectedError: {} },
         config,
       )

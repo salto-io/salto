@@ -1222,7 +1222,7 @@ describe('sdf client', () => {
         }), maxFileCabinetSizeInGB)
 
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [], largeFolderError: [] })
       expect(mockExecuteAction).not.toHaveBeenCalled()
     })
 

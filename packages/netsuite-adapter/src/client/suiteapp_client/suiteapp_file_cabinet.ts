@@ -170,7 +170,7 @@ export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
 }
 
 export type SuiteAppFileCabinetOperations = {
-  importFileCabinet: (query: NetsuiteQuery, maxFileCabinetSizeInGB?: number) => Promise<ImportFileCabinetResult>
+  importFileCabinet: (query: NetsuiteQuery, maxFileCabinetSizeInGB: number) => Promise<ImportFileCabinetResult>
   deploy: (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
@@ -354,7 +354,8 @@ SuiteAppFileCabinetOperations => {
     return [...fullPathParts(idToFolder[folder.parent], idToFolder), folder.name]
   }
 
-  const fullPath = (fileParts: string[]): string => fileParts.join(FILE_CABINET_PATH_SEPARATOR)
+  const fullPath = (fileParts: string[]): string =>
+    `${FILE_CABINET_PATH_SEPARATOR}${fileParts.join(FILE_CABINET_PATH_SEPARATOR)}`
 
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
@@ -377,13 +378,13 @@ SuiteAppFileCabinetOperations => {
       const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
         .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder }))
         // remove excluded folders before creating the query
-        .filter(folder => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
+        .filter(folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
       const filesResults = await queryFiles(
         filteredFolderResults.map(folder => folder.id)
       )
       const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
         .map(file => ({ path: [...fullPathParts(idToFolder[file.folder], idToFolder), file.name], ...file }))
-        .filter(file => query.isFileMatch(`${FILE_CABINET_PATH_SEPARATOR}${fullPath(file.path)}`))
+        .filter(file => query.isFileMatch(fullPath(file.path)))
       fileCabinetResults = { filesResults: filteredFilesResults, foldersResults: filteredFolderResults }
     }
     return fileCabinetResults
@@ -393,7 +394,7 @@ SuiteAppFileCabinetOperations => {
     query: NetsuiteQuery, maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE
   ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
-      return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
+      return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }
     }
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
@@ -432,7 +433,7 @@ SuiteAppFileCabinetOperations => {
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
 
     const filesSize = unfilteredFilesCustomizationWithoutContent.map(
-      file => ({ path: `${FILE_CABINET_PATH_SEPARATOR}${fullPath(file.path)}`, size: file.size })
+      file => ({ path: fullPath(file.path), size: file.size })
     )
     const largeFolders: string[] = []
     largeFoldersToExclude(filesSize, maxFileCabinetSizeInGB)
@@ -489,7 +490,7 @@ SuiteAppFileCabinetOperations => {
     const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
-        log.warn(`Failed reading file /${fullPath(file.path)} with id ${file.id}`)
+        log.warn(`Failed reading file ${fullPath(file.path)} with id ${file.id}`)
         if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
           lockedPaths.push(file.path)
         } else {
@@ -516,8 +517,8 @@ SuiteAppFileCabinetOperations => {
         })),
       ],
       failedPaths: {
-        otherError: failedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
-        lockedError: lockedPaths.map(fileCabinetPath => `/${fullPath(fileCabinetPath)}`),
+        otherError: failedPaths.map(fileCabinetPath => fullPath(fileCabinetPath)),
+        lockedError: lockedPaths.map(fileCabinetPath => fullPath(fileCabinetPath)),
         largeFolderError: largeFolders,
       },
     }

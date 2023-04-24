@@ -720,7 +720,8 @@ const updateConfigFromFailures = (
     return true
   }
 
-  const updateConfigFromLargeFolders = (largeFolderError: NetsuiteFilePathsQueryParams | undefined): boolean => {
+  const updateConfigFromLargeFolders = (): boolean => {
+    const { largeFolderError } = failedFilePaths
     if (largeFolderError && !_.isEmpty(largeFolderError)) {
       const largeFoldersToExclude = convertToQueryParams({ filePaths: createFolderExclude(largeFolderError) })
       config.fetch = {
@@ -734,7 +735,7 @@ const updateConfigFromFailures = (
 
   return {
     didUpdateFromFailures: updateConfigFromFailedFetch(),
-    didUpdateLargeFolders: updateConfigFromLargeFolders(failedFilePaths.largeFolderError),
+    didUpdateLargeFolders: updateConfigFromLargeFolders(),
   }
 }
 

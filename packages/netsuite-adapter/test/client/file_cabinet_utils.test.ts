@@ -68,3 +68,17 @@ describe('filterFilesInFolders', () => {
     expect(result).toEqual(['a/z/w.ts'])
   })
 })
+
+describe('exclude and filter', () => {
+  it('works together when excluding', () => {
+    const filesToSize = [
+      { path: '/largeTopFolder/largeFolder/path1', size: 1_000_000 },
+      { path: '/largeTopFolder/largeFolder/path2', size: 1_000_000 },
+      { path: '/largeTopFolder/smallFolder/path2', size: 500_000 },
+      { path: '/smallTopFolder/path1', size: 500_000 },
+    ]
+    const largeFolders = largeFoldersToExclude(filesToSize, 0.002)
+    const result = filterFilesInFolders(filesToSize.map(({ path }) => path), largeFolders)
+    expect(result).toEqual(['/largeTopFolder/smallFolder/path2', '/smallTopFolder/path1'])
+  })
+})

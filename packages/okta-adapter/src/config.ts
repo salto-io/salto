@@ -1090,6 +1090,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  ProfileEnrollmentPolicyRuleProfileAttribute: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'name', fieldType: 'UserSchemaAttribute' }],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {

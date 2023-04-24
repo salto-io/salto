@@ -41,6 +41,7 @@ import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
+import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import userFilter from './filters/user'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
@@ -69,6 +70,7 @@ export const DEFAULT_FILTERS = [
   replaceObjectWithIdFilter,
   userFilter,
   oktaExpressionLanguageFilter,
+  profileEnrollmentAttributesFilter,
   fieldReferencesFilter,
   groupDeploymentFilter,
   // should run before appDeploymentFilter and after after userSchemaFilter

@@ -34,8 +34,12 @@ const filter: FilterCreator = () => ({
       log.warn(`Could not find ${ORG_SETTING_TYPE_NAME} instance, skipping templateUrlsFilter`)
       return
     }
-    const subdomain = orgSettingsInstance?.value?.subdomain
-    const subdomainReg = new RegExp(`(${subdomain})`)
+    const { subdomain } = orgSettingsInstance.value
+    if (!_.isString(subdomain)) {
+      log.warn('Could not find subdomain, skipping templateUrlsFilter')
+    }
+    const subdomainRegString = `://${subdomain}`
+    const subdomainReg = new RegExp(`(${subdomainRegString})`)
 
     const brandThemeInstance = instances.find(instance => instance.elemID.typeName === 'BrandTheme')
     const faviconUrl = brandThemeInstance?.value?.favicon
@@ -47,8 +51,8 @@ const filter: FilterCreator = () => ({
       faviconUrl,
       [subdomainReg],
       expression => {
-        if (expression === subdomain) {
-          return new ReferenceExpression(orgSettingsInstance.elemID.createNestedID('subdomain'), subdomain)
+        if (expression === `${subdomainRegString}`) {
+          return ['://', new ReferenceExpression(orgSettingsInstance.elemID.createNestedID('subdomain'), subdomain)]
         }
         return expression
       },

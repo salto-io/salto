@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import osPath from 'path'
+import { posix } from 'path'
 import { logger } from '@salto-io/logging'
 import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
 
@@ -41,8 +41,8 @@ export const largeFoldersToExclude = (
   const createFlatFolderSizes = (fileSizes: FileSize[]): FolderSizeMap => {
     const flatFolderSizes: FolderSizeMap = {}
     fileSizes.forEach(({ path, size }) => {
-      osPath.dirname(path).split(sep).reduce((currentPath, nextFolder) => {
-        const nextPath = osPath.join(currentPath, nextFolder)
+      posix.dirname(path).split(sep).reduce((currentPath, nextFolder) => {
+        const nextPath = posix.join(currentPath, nextFolder)
         if (nextPath in flatFolderSizes) {
           flatFolderSizes[nextPath].size += size
         } else {
@@ -64,7 +64,7 @@ export const largeFoldersToExclude = (
       if (folderName.indexOf(sep) === -1) { // Top level folder
         folderGraph.push(flatFolderSizes[folderName])
       } else { // Sub folder
-        const parentFolder = osPath.dirname(folderName)
+        const parentFolder = posix.dirname(folderName)
         flatFolderSizes[parentFolder].folders.push(flatFolderSizes[folderName])
       }
     })

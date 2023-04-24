@@ -14,25 +14,21 @@
 * limitations under the License.
 */
 
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { groupRuleAdministratorValidator } from '../../src/change_validators/group_rule_administrator'
-import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, ROLE_TYPE_NAME } from '../../src/constants'
+import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, ROLE_ASSIGNMENT_TYPE_NAME } from '../../src/constants'
 
 describe('groupRuleAdministratorValidator', () => {
   const groupRuleType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_RULE_TYPE_NAME) })
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
-  const RoleType = new ObjectType({ elemID: new ElemID(OKTA, ROLE_TYPE_NAME) })
+  const roleAssignmentType = new ObjectType({ elemID: new ElemID(OKTA, ROLE_ASSIGNMENT_TYPE_NAME) })
   const msg = 'Group membership rules cannot be created for groups with administrator roles.'
-
-  const role1 = new InstanceElement(
-    'role1',
-    RoleType,
-  )
 
   const group1 = new InstanceElement(
     'group1',
     groupType,
-    { type: 'OKTA_GROUP', profile: { name: 'group1' }, roles: [new ReferenceExpression(role1.elemID, role1)] },
+    { type: 'OKTA_GROUP', profile: { name: 'group1' } },
   )
 
   const group3 = new InstanceElement(
@@ -43,16 +39,24 @@ describe('groupRuleAdministratorValidator', () => {
   const group4 = new InstanceElement(
     'group4',
     groupType,
-    { type: 'OKTA_GROUP', profile: { name: 'group4' }, roles: [] },
+    { type: 'OKTA_GROUP', profile: { name: 'group4' } },
+  )
+
+  const group2 = new InstanceElement(
+    'group2',
+    groupType,
+    { type: 'OKTA_GROUP', profile: { name: 'group2' } },
+  )
+
+  const roleAssign = new InstanceElement(
+    'role1',
+    roleAssignmentType,
+    { type: 'CUSTOM', label: 'some role' },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(group2.elemID, group2)] }
   )
 
   it('should return errors because the groups associated has roles', async () => {
-    const group2 = new InstanceElement(
-      'group2',
-      groupType,
-      { type: 'OKTA_GROUP', profile: { name: 'group2' }, roles: [new ReferenceExpression(role1.elemID, role1)] },
-    )
-
     const groupRule1 = new InstanceElement(
       'groupRule1',
       groupRuleType,
@@ -60,58 +64,29 @@ describe('groupRuleAdministratorValidator', () => {
         name: 'rule',
         status: 'ACTIVE',
         conditions: {},
-        actions: { assignUserToGroups: { groupIds: [new ReferenceExpression(group1.elemID, group1)] } },
+        actions: {
+          assignUserToGroups: {
+            groupIds: [new ReferenceExpression(group1.elemID, group1), new ReferenceExpression(group2.elemID, group2)],
+          },
+        },
       },
     )
 
-    const groupRule2 = new InstanceElement(
-      'groupRule2',
-      groupRuleType,
-      {
-        name: 'rule',
-        status: 'ACTIVE',
-        conditions: {},
-        actions: { assignUserToGroups: { groupIds: [new ReferenceExpression(group1.elemID, group1),
-          new ReferenceExpression(group2.elemID, group2)] } },
-      },
+    const elementSource = buildElementsSourceFromElements(
+      [groupType, groupRuleType, group1, group2, groupRule1, roleAssign, roleAssignmentType]
     )
-
-    const groupRule4 = new InstanceElement(
-      'groupRule4',
-      groupRuleType,
-      {
-        name: 'rule',
-        status: 'ACTIVE',
-        conditions: {},
-        actions: { assignUserToGroups: { groupIds: [new ReferenceExpression(group3.elemID, group3),
-          new ReferenceExpression(group4.elemID, group4), new ReferenceExpression(group1.elemID, group1)] } },
-      },
-    )
-
-    const changes = [toChange({ after: groupRule1 }), toChange({ after: groupRule2 }), toChange({ after: groupRule4 })]
-    const changeErrors = await groupRuleAdministratorValidator(changes)
-    expect(changeErrors).toHaveLength(3)
+    const changes = [toChange({ after: groupRule1 })]
+    const changeErrors = await groupRuleAdministratorValidator(changes, elementSource)
+    expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{
       elemID: groupRule1.elemID,
       severity: 'Error',
       message: msg,
-      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name].join(', ')}.`,
-    },
-    {
-      elemID: groupRule2.elemID,
-      severity: 'Error',
-      message: msg,
-      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name, group2.elemID.name].join(', ')}.`,
-    },
-    {
-      elemID: groupRule4.elemID,
-      severity: 'Error',
-      message: msg,
-      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group1.elemID.name].join(', ')}.`,
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group2.elemID.getFullName()].join(', ')}. Please remove role assignemnts from groups or choose different groups as targets for this rule.`,
     }])
   })
 
-  it('should not return errors because the groups associated has no roles or roles are empty', async () => {
+  it('should not return errors because the groups has no roles', async () => {
     const groupRule3 = new InstanceElement(
       'groupRule3',
       groupRuleType,
@@ -123,9 +98,17 @@ describe('groupRuleAdministratorValidator', () => {
           new ReferenceExpression(group4.elemID, group4)] } },
       },
     )
-
+    const elementSource = buildElementsSourceFromElements(
+      [groupType, groupRuleType, group2, group3, group4, groupRule3, roleAssignmentType, roleAssign]
+    )
     const changes = [toChange({ after: groupRule3 })]
-    const changeErrors = await groupRuleAdministratorValidator(changes)
+    const changeErrors = await groupRuleAdministratorValidator(changes, elementSource)
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('should do nothing when element source is missing', async () => {
+    const changeErrors = await groupRuleAdministratorValidator(
+      [toChange({ after: new InstanceElement('rule', groupRuleType, {}) })]
+    )
     expect(changeErrors).toHaveLength(0)
   })
 })

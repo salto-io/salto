@@ -271,7 +271,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       fieldsToHide: [
         { fieldName: 'id' },
-        { fieldName: 'roles' },
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([
         { fieldName: 'lastMembershipUpdated' },

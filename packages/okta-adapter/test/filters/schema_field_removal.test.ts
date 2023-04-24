@@ -18,9 +18,9 @@ import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import schemaAddNullFilter from '../../src/filters/schema_field_removal'
 import { getFilterParams } from '../utils'
-import { GROUP_SCHEMA_TYPE_NAME, OKTA } from '../../src/constants'
+import { GROUP_SCHEMA_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
 
-describe('groupSchemaAddNullFilter', () => {
+describe('schemaFieldRemovalFilter', () => {
   type FilterType = filterUtils.FilterWith<'preDeploy' | 'onDeploy'>
   let filter: FilterType
 
@@ -28,7 +28,7 @@ describe('groupSchemaAddNullFilter', () => {
     filter = schemaAddNullFilter(getFilterParams()) as typeof filter
   })
 
-  describe('groupSchema', () => {
+  describe('schemas with additional properties ', () => {
     const groupSchemaType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_SCHEMA_TYPE_NAME) })
     const groupSchemaBeforeInstance = new InstanceElement(
       'defualtGroupSchema',
@@ -114,6 +114,89 @@ describe('groupSchemaAddNullFilter', () => {
         await filter.onDeploy([
           toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceTwo })])
         expect(groupSchemaAfterInstanceTwo.value.definitions.custom.properties.additionalProperties.property2)
+          .toBeUndefined()
+      })
+    })
+  })
+
+  describe('schemas without additional properties ', () => {
+    const userSchemaType = new ObjectType({ elemID: new ElemID(OKTA, USER_SCHEMA_TYPE_NAME) })
+    const userSchemaBeforeInstance = new InstanceElement(
+      'defualtGroupSchema',
+      userSchemaType,
+      {
+        definitions: {
+          custom: {
+            properties: {
+              property1: {},
+              property2: {},
+            },
+          },
+        },
+      },
+    )
+    const userSchemaAfterInstance = new InstanceElement(
+      'defualtGroupSchema',
+      userSchemaType,
+      {
+        definitions: {
+          custom: {
+            properties: {
+              property1: {},
+            },
+          },
+        },
+      },
+    )
+    describe('preDeploy', () => {
+      it('should add null to removed Properties', async () => {
+        const userSchemaBeforeInstanceCopy = userSchemaBeforeInstance.clone()
+        const userSchemaAfterInstanceCopy = userSchemaAfterInstance.clone()
+        await filter.preDeploy([
+          toChange({ before: userSchemaBeforeInstanceCopy, after: userSchemaAfterInstanceCopy })])
+        expect(userSchemaAfterInstanceCopy.value.definitions.custom.properties.property2)
+          .toBeNull()
+      })
+      it('should add null when changing property name', async () => {
+        const userSchemaAfterModifyedInstance = new InstanceElement(
+          'defualtGroupSchema',
+          userSchemaType,
+          {
+            definitions: {
+              custom: {
+                properties: {
+                  property1: {},
+                  property3: {},
+                },
+              },
+            },
+          },
+        )
+        await filter.preDeploy([
+          toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterModifyedInstance })])
+        expect(userSchemaAfterModifyedInstance.value.definitions.custom.properties.property2)
+          .toBeNull()
+      })
+    })
+    describe('onDeploy', () => {
+      it('should delete Properties with null', async () => {
+        const userSchemaAfterInstanceTwo = new InstanceElement(
+          'defualtGroupSchema',
+          userSchemaType,
+          {
+            definitions: {
+              custom: {
+                properties: {
+                  property1: {},
+                  property2: null,
+                },
+              },
+            },
+          },
+        )
+        await filter.onDeploy([
+          toChange({ before: userSchemaBeforeInstance, after: userSchemaAfterInstanceTwo })])
+        expect(userSchemaAfterInstanceTwo.value.definitions.custom.properties.property2)
           .toBeUndefined()
       })
     })

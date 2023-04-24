@@ -328,9 +328,6 @@ SuiteAppFileCabinetOperations => {
     return removeFoldersWithoutParentFolder(foldersResults)
   }
 
-    return removeFoldersWithoutParentFolder(foldersResults)
-  }
-
   const removeFilesWithoutParentFolder = (
     filesResults: FileResult[],
     filteredFolderResults: ExtendedFolderResult[],

@@ -69,6 +69,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
     request: {
       url: 'MCMFormulas',
     },
+    transformation: {
+      idFields: ['idText'],
+    },
   },
 }
 

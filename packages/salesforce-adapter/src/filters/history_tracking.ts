@@ -44,8 +44,7 @@ const { awu } = collections.asynciterable
 const apiName = async (element: Element): Promise<string> => ((await safeApiName(element)) ?? '')
 
 const isHistoryTrackingEnabled = (type: ObjectType): boolean => (
-  (type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] === true)
-  || (type.annotations[HISTORY_TRACKED_FIELDS] !== undefined)
+  type.annotations[OBJECT_HISTORY_TRACKING_ENABLED] === true
 )
 
 const centralizeHistoryTrackingAnnotations = (customObject: ObjectType): void => {
@@ -112,8 +111,6 @@ const filter: LocalFilterCreator = () => {
     },
     preDeploy: async changes => {
       const trackedFields = (type: ObjectType): string[] => (
-        // At this point the type will be resolved through getLookUpName so the annotation will have the apiName of the
-        // field instead of the reference
         Object.keys(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
       )
 
@@ -229,6 +226,11 @@ const filter: LocalFilterCreator = () => {
       ): Promise<Change<ObjectType>[]> => {
         const additionalChanges: Record<string, Change<ObjectType>> = {}
 
+        const isSyntheticTrackHistoryChange = (change: ModificationChange<Field>): boolean => (
+          _.isEqual(_.omit(change.data.before.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]),
+            _.omit(change.data.after.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY]))
+        )
+
         const addTrackedFieldChangeToObjectTypeChange = async (change: ModificationChange<Field>): Promise<void> => {
           const [before, after] = getAllChangeData(change)
           const parentTypeName = await apiName(after.parent)
@@ -255,14 +257,12 @@ const filter: LocalFilterCreator = () => {
             changedObjectType.annotations[HISTORY_TRACKED_FIELDS][after.name] = new ReferenceExpression(after.elemID)
           } else {
             // field is removed from tracked fields
-            _.omit(changedObjectType.annotations[HISTORY_TRACKED_FIELDS], [after.name])
+            delete changedObjectType.annotations[HISTORY_TRACKED_FIELDS][after.name]
           }
         }
 
         await awu(fieldChanges)
-          .filter(isModificationChange)
-          .filter(change => _.isEqual(_.omit(change.data.before.annotations[HISTORY_TRACKED_FIELDS]),
-            _.omit(change.data.after.annotations[HISTORY_TRACKED_FIELDS])))
+          .filter(isSyntheticTrackHistoryChange)
           .filter(async change => !typesToIgnore.has(await apiName(getChangeData(change).parent)))
           .forEach(change => addTrackedFieldChangeToObjectTypeChange(change))
 
@@ -279,9 +279,11 @@ const filter: LocalFilterCreator = () => {
       changedCustomObjects
         .forEach(centralizeHistoryTrackingAnnotations)
 
-      const changedCustomObjectNames = new Set(await awu(changedCustomObjects)
-        .map(objType => apiName(objType))
-        .toArray())
+      const changedCustomObjectNames = new Set(
+        await awu(changedCustomObjects)
+          .map(objType => apiName(objType))
+          .toArray()
+      )
 
       const fieldChanges = await awu(changes)
         .filter(isFieldChange)

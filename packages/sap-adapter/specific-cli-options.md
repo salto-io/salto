@@ -4,10 +4,10 @@
 Supprted parameters are:
 * `clientId`
 * `clientSecret`
-* `subdomain`
-* `production` - true/false
+* `authorizationUrl`
+* `baseUrl`
 
 ### Example
 ```
-salto account add sap --login-parameters clientId=SomeClientId clientSecret=SomeClientSecret subdomain=SomeSubdomain production=false
+salto account add sap --login-parameters clientId=SomeClientId clientSecret=SomeClientSecret authorizationUrl=SomeAuthzUrl baseUrl=SomeBaseServiceUrl
 ```

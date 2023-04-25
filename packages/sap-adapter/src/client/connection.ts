@@ -29,8 +29,9 @@ export const validateCredentials = async ({ connection }: {
 }): Promise<AccountId> => {
   // oauth was already authenticated when the connection was created, but validating just in case
   try {
-    const res = await connection.get('/', {})
+    const res = await connection.get('/')
     if (res.status !== 200) {
+      log.error('Got %s:%s response from base service url', res.status, res.statusText)
       throw new clientUtils.UnauthorizedError('Authentication failed')
     }
   } catch (e) {

@@ -67,7 +67,6 @@ export const oauthClientCredentialsBearerToken = async ({
       client_secret: clientSecret,
       // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
-      // eslint-disable-next-line camelcase
       ...additionalData,
     }),
   )

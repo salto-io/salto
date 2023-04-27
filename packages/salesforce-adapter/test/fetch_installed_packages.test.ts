@@ -92,6 +92,32 @@ describe('Test fetching installed package metadata', () => {
       })
     })
   })
+  describe('Test fetching objects with complicated API names', () => {
+    describe('addNamespacePrefixToFullName is true', () => {
+      it('should add prefix to the object\'s name correctly', async () => {
+        const fullNameFromList = 'Account.TestObject'
+        const expectedFullName = 'Account.Test__TestObject'
+        const addNamespacePrefixToFullName = true
+        const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Account', namespacePrefix: 'Test' })
+        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+
+        expect(instance).toBeDefined()
+        expect(instance?.value).toHaveProperty('fullName', expectedFullName)
+      })
+    })
+    describe('addNamespacePrefixToFullName is false', () => {
+      it('should not add prefix to the object\'s name', async () => {
+        const fullNameFromList = 'TestPermissionSet'
+        const expectedFullName = 'TestPermissionSet'
+        const addNamespacePrefixToFullName = false
+        const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
+        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+
+        expect(instance).toBeDefined()
+        expect(instance?.value).toHaveProperty('fullName', expectedFullName)
+      })
+    })
+  })
   describe('Test fetching layouts of installed packages', () => {
     describe('if the API name already includes namespacePrefix', () => {
       describe('if layout name does not include prefix', () => {

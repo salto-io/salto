@@ -18,10 +18,10 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
+import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from '@salto-io/salesforce-formula-parser'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
-import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
 /* eslint-disable-next-line @typescript-eslint/no-var-requires */

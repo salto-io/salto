@@ -14,23 +14,24 @@
 * limitations under the License.
 */
 
-import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChange, ReadOnlyElementsSource, getChangeData, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChange, getChangeData,
+  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType, isCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
+import { PARENT } from '../constants'
 
 const { awu } = collections.asynciterable
-const { isDefined } = values
 
 const IS_INACTIVE_FIELD = 'isInactive'
 
-const isDataElement = async (change: Change<InstanceElement>): Promise<boolean> => {
+const isDataElementChange = async (change: Change<InstanceElement>): Promise<boolean> => {
   const changeType = await getChangeData(change).getType()
-  return isDataObjectType(changeType) && !isCustomRecordType(changeType)
+  return isDataObjectType(changeType)
+    && !isCustomRecordType(changeType) // custom record types don't have inactive parent limitation on NetSuite
 }
 
-const getParentIdentifier = (elem: InstanceElement): string | undefined => elem.value.parent?.elemID.getFullName()
+const getParentIdentifier = (elem: InstanceElement): string | undefined => elem.value[PARENT]?.elemID?.getFullName()
 
 const hasNewParent = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
@@ -40,32 +41,24 @@ const hasNewParent = (
 }
 
 const hasInactiveParent = async (
-  change: InstanceElement,
-  elementsSource: ReadOnlyElementsSource
+  instanceElement: InstanceElement,
 ): Promise<boolean> =>
-  (isDefined(change.value.parent)
-    ? ((await elementsSource.get(change.value.parent.elemID.createNestedID(IS_INACTIVE_FIELD))) ?? false) : false)
+    instanceElement.value[PARENT]?.value?.value?.[IS_INACTIVE_FIELD] ?? false
 
-const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
-  if (_.isUndefined(elementsSource)) {
-    return []
-  }
-
-  return awu(changes)
-    .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-    .filter(isDataElement)
-    .filter(hasNewParent)
-    .map(getChangeData)
-    .filter(change => hasInactiveParent(change, elementsSource))
-    .map(({ elemID }): ChangeError => ({
-      elemID,
-      severity: 'Error',
-      message: 'Inactive parent assigned.',
-      detailedMessage: 'Can\'t deploy this element because its newly assigned parent is inactive.'
+const changeValidator: NetsuiteChangeValidator = async changes => awu(changes)
+  .filter(isAdditionOrModificationChange)
+  .filter(isInstanceChange)
+  .filter(isDataElementChange)
+  .filter(hasNewParent)
+  .map(getChangeData)
+  .filter(hasInactiveParent)
+  .map(({ elemID }): ChangeError => ({
+    elemID,
+    severity: 'Error',
+    message: 'Inactive parent assigned',
+    detailedMessage: 'Can\'t deploy this element because its newly assigned parent is inactive.'
         + ' To deploy it, activate its parent.',
-    }))
-    .toArray()
-}
+  }))
+  .toArray()
 
 export default changeValidator

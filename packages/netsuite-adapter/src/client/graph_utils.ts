@@ -15,8 +15,11 @@
 */
 
 import _ from 'lodash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { CustomizationInfo } from './types'
+
+const { isDefined } = lowerDashValues
 
 export type SDFObjectNode = {
   elemIdFullName: string
@@ -42,10 +45,10 @@ export class GraphNode<T> {
 type DFSParameters<T>= {
   node: GraphNode<T>
   visited: Set<T[keyof T]>
-  resultArray: GraphNode<T>[]
+  resultArray?: GraphNode<T>[]
   // optional parameters for cycle detection
-  path?: GraphNode<T>[]
-  cycle?: GraphNode<T>[]
+  path?: T[keyof T][]
+  cycle?: T[keyof T][]
 }
 
 export class Graph<T> {
@@ -67,23 +70,20 @@ export class Graph<T> {
   }
 
   private dfs(dfsParams: DFSParameters<T>): void {
-    const { node, visited, resultArray, path, cycle } = dfsParams
+    const { node, visited, resultArray = [], path = [], cycle = [] } = dfsParams
     if (visited.has(node.value[this.key])) {
-      const cycleStartIndex = path?.indexOf(node)
+      const cycleStartIndex = path.indexOf(node.value[this.key])
       if (cycleStartIndex !== -1) {
         // node is visited & in path mean its a cycle
-        cycle?.push(...(path?.slice(cycleStartIndex) ?? []))
+        cycle.push(...(path?.slice(cycleStartIndex) ?? []))
       }
       return
     }
     visited.add(node.value[this.key])
-    path?.push(node)
     node.edges.forEach(dependency => {
-      this.dfs({ node: dependency, visited, resultArray, path, cycle })
+      this.dfs({ node: dependency, visited, resultArray, path: path.concat(node.value[this.key]), cycle })
     })
     resultArray.push(node)
-    //
-    path?.pop()
   }
 
   getTopologicalOrder(): GraphNode<T>[] {
@@ -129,14 +129,16 @@ export class Graph<T> {
 
   findCycle(): GraphNode<T>[] {
     const visited = new Set<T[keyof T]>()
-    const path : GraphNode<T>[] = []
-    const nodesInCycle: GraphNode<T>[] = []
+    const path: T[keyof T][] = []
+    const nodesInCycle: T[keyof T][] = []
 
     Array.from(this.nodes.values()).forEach(node => {
       if (!visited.has(node.value[this.key])) {
-        this.dfs({ node, visited, resultArray: [], path, cycle: nodesInCycle })
+        this.dfs({ node, visited, path, cycle: nodesInCycle })
       }
     })
     return nodesInCycle
+      .map(nodeKey => this.findNodeByKey(nodeKey))
+      .filter(isDefined)
   }
 }

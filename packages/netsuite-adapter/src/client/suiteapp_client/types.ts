@@ -93,6 +93,7 @@ export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig
   globalLimiter: Bottleneck
+  instanceLimiter: (type: string, instanceCount: number) => boolean
 }
 
 export type SavedSearchQuery = {

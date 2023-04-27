@@ -36,7 +36,7 @@ import {
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig, DEFAULT_MAX_INSTANCES_PER_TYPE,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
@@ -73,6 +73,7 @@ export type SdfClientOpts = {
   credentials: SdfCredentials
   config?: SdfClientConfig
   globalLimiter: Bottleneck
+  instanceLimiter: (type: string, instanceCount: number) => boolean
 }
 
 export const COMMANDS = {
@@ -140,12 +141,13 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
-  private readonly maxInstancesPerType: number
+  private readonly instanceLimiter: (type: string, instanceCount: number) => boolean
 
   constructor({
     credentials,
     config,
     globalLimiter,
+    instanceLimiter,
   }: SdfClientOpts) {
     this.globalLimiter = globalLimiter
     this.credentials = credentials
@@ -162,12 +164,16 @@ export default class SdfClient {
     this.installedSuiteApps = config?.installedSuiteApps ?? []
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
-    this.maxInstancesPerType = config?.maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE
+    this.instanceLimiter = instanceLimiter
   }
 
   @SdfClient.logDecorator
   static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
-    const netsuiteClient = new SdfClient({ credentials, globalLimiter: new Bottleneck() })
+    const netsuiteClient = new SdfClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
@@ -548,7 +554,7 @@ export default class SdfClient {
 
     const excludedTypes: string[] = []
     const filterLargeTypes = ([type, instances]: [string, ObjectID[]]): boolean => {
-      if (instances.length > this.maxInstancesPerType) {
+      if (this.instanceLimiter(type, instances.length)) {
         excludedTypes.push(type)
         return false
       }

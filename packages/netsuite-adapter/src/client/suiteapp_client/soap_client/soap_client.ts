@@ -33,7 +33,6 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from '../../../config'
 import { toError } from '../../utils'
 
 const { awu } = collections.asynciterable
@@ -115,10 +114,16 @@ export default class SoapClient {
   private callsLimiter: CallsLimiter
   private ajv: Ajv
   private client: elementUtils.soap.Client | undefined
+  private instanceLimiter: (type: string, instanceCount: number) => boolean
 
-  constructor(credentials: SuiteAppSoapCredentials, callsLimiter: CallsLimiter) {
+  constructor(
+    credentials: SuiteAppSoapCredentials,
+    callsLimiter: CallsLimiter,
+    instanceLimiter: (type: string, instanceCount: number) => boolean
+  ) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
+    this.instanceLimiter = instanceLimiter
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 
@@ -603,7 +608,7 @@ export default class SoapClient {
   ): Promise<RecordValue[] | string> {
     // TODO change here to get the first page and calc the amount of instances
     const firstSearchPage = await this.sendSearchRequest(type, namespace, subtypes)
-    if (firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE > DEFAULT_MAX_INSTANCES_PER_TYPE) {
+    if (this.instanceLimiter(type, firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE)) {
       return type
     }
     const responses = await this.getAllSearchPages(

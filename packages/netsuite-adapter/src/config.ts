@@ -37,7 +37,8 @@ export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_MAX_INSTANCES_PER_TYPE = 5000
+export const DEFAULT_MAX_INSTANCES_VALUE = 5000
+export const DEFAULT_MAX_INSTANCES_PER_TYPE = { customrecord: 10_000 }
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
@@ -82,7 +83,8 @@ export type SdfClientConfig = {
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
-  maxInstancesPerType?: number
+  maxInstancesPerType?: { [type: string]: number} // Might want to allow only real types
+  defaultMaxInstancesValue?: number
   maxFileCabinetSizeInGB?: number
 }
 
@@ -93,6 +95,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
   sdfConcurrencyLimit: 'sdfConcurrencyLimit',
   installedSuiteApps: 'installedSuiteApps',
   maxInstancesPerType: 'maxInstancesPerType',
+  defaultMaxInstancesValue: 'defaultMaxInstancesValue',
   maxFileCabinetSizeInGB: 'maxFileCabinetSizeInGB',
 }
 
@@ -172,9 +175,12 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
       refType: new ListType(BuiltinTypes.STRING),
     },
     maxInstancesPerType: {
+      refType: new MapType(BuiltinTypes.NUMBER),
+    },
+    defaultMaxInstancesValue: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_INSTANCES_PER_TYPE,
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_INSTANCES_VALUE,
       },
     },
     maxFileCabinetSizeInGB: {

@@ -33,6 +33,7 @@ import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/con
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/elements/query'
+import { InvalidSingletonType } from '../../../src/config/shared'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -740,6 +741,39 @@ describe('ducktype_transformer', () => {
       })
       const { configChanges } = res
       expect(configChanges).toEqual([{ typeToExclude: 'folder' }])
+    })
+    it('should return singleton type errors as fetch warnings', async () => {
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new InvalidSingletonType('singleton err')
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folders'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folders: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+      })
+      const { errors } = res
+      expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
     })
   })
 

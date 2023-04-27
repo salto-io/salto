@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { hash as hashUtils } from '@salto-io/lowerdash'
 // import { ElementsSource } from '@salto-io/workspace'
 import { ElemID } from './element_id'
@@ -147,6 +148,10 @@ export class ReferenceExpression {
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
     return getResolvedValue(this.elemID, elementsSource, this.value)
   }
+
+  [inspect.custom](): string {
+    return `ReferenceExpression(${this.elemID.getFullName()}, ${this.value ? '<omitted>' : '<no value>'})`
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -188,6 +193,10 @@ export class TypeReference {
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     return getResolvedValue(this.elemID, elementsSource, this.type)
+  }
+
+  [inspect.custom](): string {
+    return `TypeReference(${this.elemID.getFullName()}, ${this.type ? '<omitted>' : '<no value>'})`
   }
 }
 

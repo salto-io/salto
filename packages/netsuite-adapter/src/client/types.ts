@@ -54,6 +54,7 @@ export type GetCustomObjectsResult = {
 export type FailedFiles = {
   lockedError: NetsuiteFilePathsQueryParams
   otherError: NetsuiteFilePathsQueryParams
+  largeFolderError: NetsuiteFilePathsQueryParams
 }
 
 export type ImportFileCabinetResult = {
@@ -91,6 +92,8 @@ export type ManifestDependencies = {
   excludedFeatures: string[]
   includedObjects: string[]
   excludedObjects: string[]
+  includedFiles: string[]
+  excludedFiles: string[]
 }
 
 export type SdfDeployParams = {

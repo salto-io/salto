@@ -21,6 +21,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { deploySteps } from '../../../src/filters/workflow/steps_deployment'
 import { JSP_API_HEADERS } from '../../../src/client/headers'
+import { WorkflowInstance } from '../../../src/filters/workflow/types'
 
 describe('steps_deployment', () => {
   let workflowType: ObjectType
@@ -48,6 +49,7 @@ describe('steps_deployment', () => {
             id: '3',
           },
         ],
+        transitions: [],
       }
     )
 
@@ -79,7 +81,7 @@ describe('steps_deployment', () => {
   })
 
   it('should call the deploy steps endpoint', async () => {
-    await deploySteps(instance, client)
+    await deploySteps(instance as WorkflowInstance, client)
 
     expect(mockConnection.post).toHaveBeenCalledWith(
       '/secure/admin/workflows/EditWorkflowStep.jspa',
@@ -115,17 +117,17 @@ describe('steps_deployment', () => {
 
   it('should throw if workflow does not have a name', async () => {
     delete instance.value.name
-    await expect(deploySteps(instance, client)).rejects.toThrow()
+    await expect(deploySteps(instance as WorkflowInstance, client)).rejects.toThrow()
   })
 
   it('should throw if status does not have a name', async () => {
     delete instance.value.statuses[0].name
-    await expect(deploySteps(instance, client)).rejects.toThrow()
+    await expect(deploySteps(instance as WorkflowInstance, client)).rejects.toThrow()
   })
 
   it('should throw if status does not have an id', async () => {
     delete instance.value.statuses[0].id
-    await expect(deploySteps(instance, client)).rejects.toThrow()
+    await expect(deploySteps(instance as WorkflowInstance, client)).rejects.toThrow()
   })
 
   it('should throw if there are no step ids', async () => {
@@ -138,6 +140,6 @@ describe('steps_deployment', () => {
       },
     })
 
-    await expect(deploySteps(instance, client)).rejects.toThrow()
+    await expect(deploySteps(instance as WorkflowInstance, client)).rejects.toThrow()
   })
 })

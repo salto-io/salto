@@ -131,9 +131,9 @@ describe('workflowDeployFilter', () => {
                     },
                     conditions: [
                       {
-                        configuration: [{
+                        configuration: {
                           id: 2,
-                        }],
+                        },
                       },
                     ],
                   },
@@ -164,9 +164,9 @@ describe('workflowDeployFilter', () => {
                       },
                       conditions: [
                         {
-                          configuration: [{
+                          configuration: {
                             id: '2',
-                          }],
+                          },
                         },
                       ],
                     },
@@ -204,6 +204,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
+            transitions: [],
           }
         ),
       })
@@ -217,6 +218,7 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'name',
+              transitions: [],
             },
           ),
         }),

@@ -28,6 +28,7 @@ import {
   TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
 } from '../../config'
+import { InvalidSingletonType } from '../../config/shared'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { FetchElements, getElementsWithContext } from '../element_getter'
@@ -450,7 +451,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     const { entries, objType } = await getEntriesForType(params)
     if (objType.isSettings && entries.length > 1) {
       log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
-      throw new InvalidTypeConfig(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
+      throw new InvalidSingletonType(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
     }
     return await generateInstancesForType({
       entries,
@@ -464,6 +465,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     if (e instanceof UnauthorizedError
       || e instanceof InvalidTypeConfig
       || e instanceof TimeoutError
+      || e instanceof InvalidSingletonType
       || (e instanceof HTTPError && e.response.status === 403)) {
       throw e
     }
@@ -522,6 +524,9 @@ export const getAllInstances = async ({
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
+        }
+        if (e instanceof InvalidSingletonType) {
+          return { elements: [], errors: [{ message: e.message, severity: 'Warning' }] }
         }
         throw e
       }

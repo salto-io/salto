@@ -158,7 +158,7 @@ describe('netsuite saved searches author information tests', () => {
   it('elements will stay the same if they were not found by the search', async () => {
     runSavedSearchQueryMock.mockReset()
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+    expect(savedSearch.annotations).toEqual({})
   })
   it('elements will stay the same if a modified by was empty in search', async () => {
     runSavedSearchQueryMock.mockReset()
@@ -166,7 +166,7 @@ describe('netsuite saved searches author information tests', () => {
       { id: '1', modifiedby: [] },
     ])
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+    expect(savedSearch.annotations).toEqual({})
   })
   describe('failure', () => {
     it('undefined saved search result', async () => {

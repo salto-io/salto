@@ -31,13 +31,15 @@ import { chunks, promises, values } from '@salto-io/lowerdash'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import path from 'path'
-import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './client/suiteapp_client/errors'
-import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
-import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './client/suiteapp_client/types'
-import { ImportFileCabinetResult } from './client/types'
-import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from './constants'
-import { NetsuiteQuery } from './query'
-import { DeployResult, isFileCabinetType, isFileInstance } from './types'
+import { ReadFileEncodingError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
+import SuiteAppClient from './suiteapp_client'
+import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
+import { ImportFileCabinetResult } from '../types'
+import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
+import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
+import { NetsuiteQuery } from '../../query'
+import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
+import { largeFoldersToExclude } from '../file_cabinet_utils'
 
 const log = logger(module)
 
@@ -149,9 +151,12 @@ type FileResult = {
   folder: string
 }
 
+type ExtendedFolderResult = FolderResult & { path: string[] }
+type ExtendedFileResult = FileResult & { path: string[] }
+
 type FileCabinetResults = {
-  filesResults: FileResult[]
-  foldersResults: FolderResult[]
+  filesResults: ExtendedFileResult[]
+  foldersResults: ExtendedFolderResult[]
 }
 
 const FILES_CHUNK_SIZE = 5 * 1024 * 1024
@@ -159,8 +164,13 @@ const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 const MAX_ITEMS_IN_WHERE_QUERY = 200
 
+export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
+  'Search error occurred: Unknown identifier \'bundleable\'':
+    'Failed to list folders. Please verify that the "Create bundles with SuiteBundler" feature is enabled in the account.',
+}
+
 export type SuiteAppFileCabinetOperations = {
-  importFileCabinet: (query: NetsuiteQuery) => Promise<ImportFileCabinetResult>
+  importFileCabinet: (query: NetsuiteQuery, maxFileCabinetSizeInGB: number) => Promise<ImportFileCabinetResult>
   deploy: (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
@@ -231,7 +241,8 @@ SuiteAppFileCabinetOperations => {
   ): Promise<FolderResult[]> => retryOnRetryableError(async () => {
     const foldersResults = await suiteAppClient.runSuiteQL(
       'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
-      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`,
+      THROW_ON_MISSING_FEATURE_ERROR,
     )
 
     if (foldersResults === undefined) {
@@ -263,14 +274,13 @@ SuiteAppFileCabinetOperations => {
   }
 
   const queryFiles = (
-    foldersToQuery: FolderResult[]
+    folderIdsToQuery: string[]
   ): Promise<FileResult[]> => retryOnRetryableError(async () => {
     const fileCriteria = 'hideinbundle = \'F\''
-    const whereQueries = foldersToQuery.length > 0
-      ? _.chunk(foldersToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-        `${fileCriteria} AND (${foldersToQueryChunk.map(folder => `folder = '${folder.id}'`).join(' OR ')})`)
+    const whereQueries = folderIdsToQuery.length > 0
+      ? _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
+        `${fileCriteria} AND folder IN (${foldersToQueryChunk.join(', ')})`)
       : [fileCriteria]
-
     const results = await Promise.all(whereQueries.map(async whereQuery => {
       const filesResults = await suiteAppClient.runSuiteQL(
         'SELECT name, id, filesize, bundleable, isinactive, isonline,'
@@ -298,10 +308,9 @@ SuiteAppFileCabinetOperations => {
   })
 
   const removeResultsWithoutParentFolder = (
-    { foldersResults, filesResults }: FileCabinetResults
-  ): FileCabinetResults => {
+    foldersResults: FolderResult[],
+  ): FolderResult[] => {
     const folderIdsSet = new Set(foldersResults.map(folder => folder.id))
-
     const removeFoldersWithoutParentFolder = (folders: FolderResult[]): FolderResult[] => {
       const filteredFolders = folders.filter(folder => {
         if (folder.parent !== undefined && !folderIdsSet.has(folder.parent)) {
@@ -316,19 +325,37 @@ SuiteAppFileCabinetOperations => {
       }
       return removeFoldersWithoutParentFolder(filteredFolders)
     }
-
-    const filteredFoldersResults = removeFoldersWithoutParentFolder(foldersResults)
-    return {
-      foldersResults: filteredFoldersResults,
-      filesResults: filesResults.filter(file => {
-        if (!folderIdsSet.has(file.folder)) {
-          log.warn('file\'s folder does not exist: %o', file)
-          return false
-        }
-        return true
-      }),
-    }
+    return removeFoldersWithoutParentFolder(foldersResults)
   }
+
+  const removeFilesWithoutParentFolder = (
+    filesResults: FileResult[],
+    filteredFolderResults: ExtendedFolderResult[],
+  ): FileResult[] => {
+    const folderIdsSet = new Set(filteredFolderResults.map(folder => folder.id))
+    return filesResults.filter(file => {
+      if (!folderIdsSet.has(file.folder)) {
+        log.warn('file\'s folder does not exist: %o', file)
+        return false
+      }
+      return true
+    })
+  }
+
+  const fullPathParts = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
+    string[] => {
+    if (folder.parent === undefined) {
+      return [folder.name]
+    }
+    if (idToFolder[folder.parent] === undefined) {
+      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
+      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
+    }
+    return [...fullPathParts(idToFolder[folder.parent], idToFolder), folder.name]
+  }
+
+  const fullPath = (fileParts: string[]): string =>
+    `${FILE_CABINET_PATH_SEPARATOR}${fileParts.join(FILE_CABINET_PATH_SEPARATOR)}`
 
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
@@ -347,35 +374,32 @@ SuiteAppFileCabinetOperations => {
 
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
-      const filesResults = await queryFiles(foldersResults)
-
-      fileCabinetResults = removeResultsWithoutParentFolder({ foldersResults, filesResults })
+      const idToFolder = _.keyBy(foldersResults, folder => folder.id)
+      const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
+        .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder }))
+        // remove excluded folders before creating the query
+        .filter(folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
+      const filesResults = await queryFiles(
+        filteredFolderResults.map(folder => folder.id)
+      )
+      const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
+        .map(file => ({ path: [...fullPathParts(idToFolder[file.folder], idToFolder), file.name], ...file }))
+        .filter(file => query.isFileMatch(fullPath(file.path)))
+      fileCabinetResults = { filesResults: filteredFilesResults, foldersResults: filteredFolderResults }
     }
     return fileCabinetResults
   }
 
-  const getFullPath = (folder: FolderResult, idToFolder: Record<string, FolderResult>):
-  string[] => {
-    if (folder.parent === undefined) {
-      return [folder.name]
-    }
-    if (idToFolder[folder.parent] === undefined) {
-      log.error('folder\'s parent is unknown\nfolder: %o\nidToFolder: %o', folder, idToFolder)
-      throw new Error(`Failed to get absolute folder path of ${folder.name}`)
-    }
-    return [...getFullPath(idToFolder[folder.parent], idToFolder), folder.name]
-  }
-
-  const importFileCabinet = async (query: NetsuiteQuery): Promise<ImportFileCabinetResult> => {
+  const importFileCabinet = async (
+    query: NetsuiteQuery, maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
+  ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
-      return { elements: [], failedPaths: { lockedError: [], otherError: [] } }
+      return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }
     }
 
     const { foldersResults, filesResults } = await queryFileCabinet(query)
-    const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-
-    const foldersCustomizationInfo = foldersResults.map(folder => ({
-      path: getFullPath(folder, idToFolder),
+    const unfilteredFoldersCustomizationInfo = foldersResults.map(folder => ({
+      path: folder.path,
       typeName: 'folder',
       values: {
         description: folder.description ?? '',
@@ -384,10 +408,10 @@ SuiteAppFileCabinetOperations => {
         isprivate: folder.isprivate,
         internalId: folder.id,
       },
-    })).filter(folder => query.isFileMatch(`/${folder.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+    }))
 
     const filesCustomizations = filesResults.map(file => ({
-      path: [...getFullPath(idToFolder[file.folder], idToFolder), file.name],
+      path: file.path,
       typeName: 'file',
       values: {
         description: file.description ?? '',
@@ -401,12 +425,29 @@ SuiteAppFileCabinetOperations => {
       },
       id: file.id,
       size: parseInt(file.filesize, 10),
-    })).filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`))
+    }))
 
     const [
-      filesCustomizationWithoutContent,
+      unfilteredFilesCustomizationWithoutContent,
       filesCustomizationsLinks,
     ] = _.partition(filesCustomizations, file => file.values.link === undefined)
+
+    const filesSize = unfilteredFilesCustomizationWithoutContent.map(
+      file => ({ path: fullPath(file.path), size: file.size })
+    )
+    const largeFolders: string[] = []
+    largeFoldersToExclude(filesSize, maxFileCabinetSizeInGB)
+    // Salto 3853: Will change to filtered files on full deployment
+    const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent
+    const foldersCustomizationInfo = unfilteredFoldersCustomizationInfo
+    // const filesCustomizationWithoutContent = filterFilePathsInFolders(
+    //   unfilteredFilesCustomizationWithoutContent,
+    //   largeFolders
+    // )
+    // const foldersCustomizationInfo = filterFilePathsInFolders(
+    //   unfilteredFoldersCustomizationInfo,
+    //   largeFolders
+    // )
 
     const fileChunks = chunks.weightedChunks(
       filesCustomizationWithoutContent,
@@ -449,7 +490,7 @@ SuiteAppFileCabinetOperations => {
     const lockedPaths: string[][] = []
     const filesCustomizationWithContent = filesCustomizationWithoutContent.map((file, index) => {
       if (!(filesContent[index] instanceof Buffer)) {
-        log.warn(`Failed reading file /${file.path.join(FILE_CABINET_PATH_SEPARATOR)} with id ${file.id}`)
+        log.warn(`Failed reading file ${fullPath(file.path)} with id ${file.id}`)
         if (filesContent[index] instanceof ReadFileInsufficientPermissionError) {
           lockedPaths.push(file.path)
         } else {
@@ -474,10 +515,11 @@ SuiteAppFileCabinetOperations => {
           typeName: 'file',
           values: file.values,
         })),
-      ].filter(file => query.isFileMatch(`/${file.path.join(FILE_CABINET_PATH_SEPARATOR)}`)),
+      ],
       failedPaths: {
-        otherError: failedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
-        lockedError: lockedPaths.map(fileCabinetPath => `/${fileCabinetPath.join(FILE_CABINET_PATH_SEPARATOR)}`),
+        otherError: failedPaths.map(fileCabinetPath => fullPath(fileCabinetPath)),
+        lockedError: lockedPaths.map(fileCabinetPath => fullPath(fileCabinetPath)),
+        largeFolderError: largeFolders,
       },
     }
   }
@@ -569,7 +611,7 @@ SuiteAppFileCabinetOperations => {
       }
     } catch (e) {
       return {
-        errors: [e],
+        errors: [e as Error],
         appliedChanges: [],
         failedChanges: [...chunk],
       }

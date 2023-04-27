@@ -30,6 +30,7 @@ import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
+import { InvalidSingletonType } from '../../config/shared'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -208,7 +209,7 @@ const getEntriesForType = async (
 
   if (type.isSettings && instances.length > 1) {
     log.warn(`Expected one instance for singleton type: ${type.elemID.name} but received: ${instances.length}`)
-    throw new Error(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
+    throw new InvalidSingletonType(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
   }
 
   const { recurseInto } = requestWithDefaults
@@ -399,6 +400,9 @@ export const getAllElements = async ({
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
+        }
+        if (e instanceof InvalidSingletonType) {
+          return { elements: [], errors: [{ message: e.message, severity: 'Warning' }] }
         }
         throw e
       }

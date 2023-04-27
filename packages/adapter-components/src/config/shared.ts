@@ -23,6 +23,8 @@ import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, F
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
+export class InvalidSingletonType extends Error {}
+
 export type TypeConfig<T extends TransformationConfig = TransformationConfig, A extends string = ActionName> = {
   request?: FetchRequestConfig
   deployRequests?: DeploymentRequestsByAction<A>

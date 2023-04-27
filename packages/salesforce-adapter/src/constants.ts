@@ -375,6 +375,7 @@ export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
+export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
 
 // Artifitial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'

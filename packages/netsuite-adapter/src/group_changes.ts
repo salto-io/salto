@@ -22,7 +22,7 @@ import {
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import * as suiteAppFileCabinet from './suiteapp_file_cabinet'
+import * as suiteAppFileCabinet from './client/suiteapp_client/suiteapp_file_cabinet'
 import { isSuiteAppConfigInstance, isSDFConfigTypeName, isDataObjectType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType, isCustomRecordType } from './types'
 import { APPLICATION_ID } from './constants'
 import { isPathAllowedBySdf } from './types/file_cabinet_types'

@@ -141,12 +141,14 @@ describe('workflowStructureFilter', () => {
             entityId: 'id',
             name: 'name',
           },
+          transitions: [],
         }
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
         entityId: 'id',
         name: 'name',
+        transitions: [],
       })
     })
 
@@ -174,6 +176,7 @@ describe('workflowStructureFilter', () => {
             },
             {},
           ],
+          transitions: [],
         }
       )
       await filter.onFetch([instance])

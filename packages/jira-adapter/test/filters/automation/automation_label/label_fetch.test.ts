@@ -18,6 +18,7 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { getFilterParams, mockClient } from '../../../utils'
 import automationLabelFetchFilter from '../../../../src/filters/automation/automation_label/label_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
@@ -278,7 +279,72 @@ describe('automationLabelFetchFilter', () => {
       })
 
       const elements = [] as Element[]
-      await expect(filter.onFetch(elements)).rejects.toThrow()
+      expect(await filter.onFetch(elements)).toEqual({
+        errors: [{
+          message: 'Unable to fetch automation labels due to invalid response',
+          severity: 'Warning',
+        }],
+      })
     })
+  })
+  it('should warn if response is 403', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    connection = conn
+
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/rule-label') {
+        throw new HTTPError('failed', { data: {}, status: 403 })
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationLabelFetchFilter(getFilterParams({
+      client,
+    })) as filterUtils.FilterWith<'onFetch'>
+    const elements = [] as Element[]
+    expect(await filter.onFetch(elements)).toEqual({
+      errors: [{
+        message: 'Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }],
+    })
+  })
+  it('should warn if response is 405', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    connection = conn
+
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/rule-label') {
+        throw new HTTPError('failed', { data: {}, status: 405 })
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationLabelFetchFilter(getFilterParams({
+      client,
+    })) as filterUtils.FilterWith<'onFetch'>
+    const elements = [] as Element[]
+    expect(await filter.onFetch(elements)).toEqual({
+      errors: [{
+        message: 'Salto could not access the AutomationLabel resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }],
+    })
+  })
+  it('should fail for other errors', async () => {
+    connection.get.mockImplementation(async url => {
+      if (url === '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rule-labels') {
+        throw new Error('failed')
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    const elements = [] as Element[]
+    await expect(filter.onFetch(elements)).rejects.toThrow('failed')
   })
 })

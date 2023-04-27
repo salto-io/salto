@@ -19,7 +19,6 @@ import { FilterCreator } from '../filter'
 
 const TYPE_TO_REFERENCES_TYPES: Record<string, string[]> = {
   Application: ['assignedGroups'],
-  Group: ['roles'],
   Feature: ['featureDependencies'],
 }
 
@@ -29,13 +28,7 @@ const replaceObjectWithId = (instance: InstanceElement): void => {
     const currentValues = instance.value[fieldName]
     if (_.isArray(currentValues)) {
       instance.value[fieldName] = currentValues
-        .map(value => {
-          if (fieldName === 'roles' && value.type !== 'CUSTOM') {
-            // adjustment to standard role id
-            return value.type !== undefined ? value.type : value
-          }
-          return value.id !== undefined ? value.id : value
-        })
+        .map(value => (value.id !== undefined ? value.id : value))
     }
   })
 }

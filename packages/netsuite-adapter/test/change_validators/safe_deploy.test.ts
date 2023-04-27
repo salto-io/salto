@@ -26,7 +26,7 @@ import { fileType, folderType } from '../../src/types/file_cabinet_types'
 
 const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
   failedToFetchAllAtOnce: false,
-  failedFilePaths: { lockedError: [], otherError: [] },
+  failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
   failedTypes: { lockedError: {}, unexpectedError: {} },
   elements: [],
 }
@@ -137,7 +137,7 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [] },
+            failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
             failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceCustomRecordType.clone()],
           }))
@@ -171,7 +171,7 @@ describe('safe deploy change validator', () => {
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [] },
+            failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
             failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceCustomRecordType.clone()],
           }))

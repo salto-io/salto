@@ -536,7 +536,7 @@ export default class SuiteAppClient {
     try {
       return await this.soapClient.readFile(id)
     } catch (e) {
-      return e
+      return e as Error
     }
   }
 

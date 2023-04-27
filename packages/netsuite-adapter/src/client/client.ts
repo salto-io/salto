@@ -24,7 +24,7 @@ import { NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
+import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
 import { FeaturesMap, GetCustomObjectsResult, getDeployableChanges, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
@@ -131,13 +131,13 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
     Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query)
+      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB)
     }
 
-    return this.sdfClient.importFileCabinetContent(query)
+    return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
   }
 
   private static async getSDFObjectNodes(

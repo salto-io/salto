@@ -17,11 +17,11 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
-import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
-import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
-import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../src/types'
+import SoapClient from '../../../src/client/suiteapp_client/soap_client/soap_client'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
+import SuiteAppClient, { PAGE_SIZE } from '../../../src/client/suiteapp_client/suiteapp_client'
+import { InvalidSuiteAppCredentialsError } from '../../../src/client/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../../src/types'
 
 
 describe('SuiteAppClient', () => {

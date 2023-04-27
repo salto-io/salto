@@ -15,7 +15,7 @@
 */
 
 import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChange, getChangeData,
-  isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType, isCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
@@ -48,7 +48,8 @@ const hasInactiveParent = async (
   instance: InstanceElement,
 ): Promise<boolean> => (
   isReferenceExpression(instance.value[PARENT])
-    ? (instance.value[PARENT].value.value?.[IS_INACTIVE_FIELD] === true)
+    && isInstanceElement(instance.value[PARENT].value)
+    ? (instance.value[PARENT].value.value[IS_INACTIVE_FIELD] === true)
     : false
 )
 

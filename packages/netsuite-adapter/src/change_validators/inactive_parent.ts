@@ -15,7 +15,7 @@
 */
 
 import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChange, getChangeData,
-  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+  isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { isDataObjectType, isCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
@@ -31,7 +31,11 @@ const isDataElementChange = async (change: Change<InstanceElement>): Promise<boo
     && !isCustomRecordType(changeType) // custom record types don't have inactive parent limitation on NetSuite
 }
 
-const getParentIdentifier = (elem: InstanceElement): string | undefined => elem.value[PARENT]?.elemID?.getFullName()
+const getParentIdentifier = (elem: InstanceElement): string | undefined => (
+  isReferenceExpression(elem.value[PARENT])
+    ? elem.value[PARENT].elemID.getFullName()
+    : undefined
+)
 
 const hasNewParent = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
@@ -41,9 +45,12 @@ const hasNewParent = (
 }
 
 const hasInactiveParent = async (
-  instanceElement: InstanceElement,
-): Promise<boolean> =>
-    instanceElement.value[PARENT]?.value?.value?.[IS_INACTIVE_FIELD] ?? false
+  instance: InstanceElement,
+): Promise<boolean> => (
+  isReferenceExpression(instance.value[PARENT])
+    ? (instance.value[PARENT].value.value?.[IS_INACTIVE_FIELD] === true)
+    : false
+)
 
 const changeValidator: NetsuiteChangeValidator = async changes => awu(changes)
   .filter(isAdditionOrModificationChange)

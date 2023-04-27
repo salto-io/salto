@@ -22,8 +22,9 @@ import Lexer, { TOKEN_TYPES, NoSuchElementError, UnresolvedMergeConflictError } 
 import { SourceMap } from '../../source_map'
 import { contentMergeConflict, invalidStringChar, unexpectedEndOfFile } from './errors'
 import { ParseContext } from './types'
-import { replaceValuePromises, positionAtStart } from './helpers'
+import { replaceValuePromises, positionAtStart, positionAtEnd } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
+import { UnknownCharacter } from './consumers/values'
 
 const isVariableDef = (context: ParseContext): boolean => (
   context.lexer.peek()?.type === TOKEN_TYPES.WORD
@@ -100,6 +101,15 @@ export async function parseBuffer(
         context.errors.push(invalidStringChar(
           { start: pos, end: pos, filename },
           TOKEN_TYPES.MERGE_CONFLICT,
+        ))
+      }
+    } else if (e instanceof UnknownCharacter) {
+      // For specific scenarios (e.g. merge errors) we have more specific messages,
+      // so if there is already an error here we wouldn't want to add another one
+      if (context.errors.length === 0) {
+        context.errors.push(invalidStringChar(
+          { start: positionAtStart(e.token), end: positionAtEnd(e.token), filename },
+          e.message,
         ))
       }
     }

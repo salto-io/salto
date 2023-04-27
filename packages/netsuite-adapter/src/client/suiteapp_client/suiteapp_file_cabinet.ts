@@ -36,7 +36,7 @@ import SuiteAppClient from './suiteapp_client'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from './types'
 import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
-import { DEFAULT_MAX_FILE_CABINET_SIZE } from '../../config'
+import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
 import { NetsuiteQuery } from '../../query'
 import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
 import { largeFoldersToExclude } from '../file_cabinet_utils'
@@ -391,7 +391,7 @@ SuiteAppFileCabinetOperations => {
   }
 
   const importFileCabinet = async (
-    query: NetsuiteQuery, maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE
+    query: NetsuiteQuery, maxFileCabinetSizeInGB: number = DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
   ): Promise<ImportFileCabinetResult> => {
     if (!query.areSomeFilesMatch()) {
       return { elements: [], failedPaths: { lockedError: [], otherError: [], largeFolderError: [] } }

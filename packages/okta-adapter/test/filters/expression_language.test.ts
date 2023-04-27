@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
-import { filterUtils } from '@salto-io/adapter-components'
+import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../utils'
 import oktaExpressionLanguageFilter, { getUserSchemaReference, resolveUserSchemaRef } from '../../src/filters/expression_language'
 import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
@@ -36,15 +36,15 @@ describe('expression language filter', () => {
         {
           conditions: {
             expression: {
-              value: '(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("123A") AND !isMemberOfAnyGroup("234B", "345C")',
+              value: '(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("00g11111111") AND !isMemberOfAnyGroup("00g22222222", "00g33333333")',
             },
           },
         }
       )
       const groupInstances = [
-        new InstanceElement('group1', groupType, { id: '123A' },),
-        new InstanceElement('group2', groupType, { id: '234B' },),
-        new InstanceElement('group3', groupType, { id: '345C' },),
+        new InstanceElement('group1', groupType, { id: '00g11111111' },),
+        new InstanceElement('group2', groupType, { id: '00g22222222' },),
+        new InstanceElement('group3', groupType, { id: '00g33333333' },),
       ]
       const userSchemaInstance = new InstanceElement(
         'user',
@@ -86,7 +86,7 @@ describe('expression language filter', () => {
           name: 'policy',
           conditions: {
             elCondition: {
-              condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", \'123A\'}}) AND security.behaviors.contains("New IP")',
+              condition: 'user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"00g33333333", \'00g11111111\'}}) AND security.behaviors.contains("New IP")',
             },
           },
         }
@@ -143,20 +143,21 @@ describe('expression language filter', () => {
             .toEqual(policyRuleTemplate)
         })
 
-        it('should not create references if there is no match', async () => {
+        it('should create missing reference if there is no match and the id is in groupId format', async () => {
           const groupRuleWithMissingId = new InstanceElement(
             'groupRuleWithMissingId',
             groupRuleType,
             {
               conditions: {
                 expression: {
-                  value: 'isMemberOfAnyGroup("123A", "555E")',
+                  value: 'isMemberOfAnyGroup("00g11111111", "00g5555555555")',
                 },
               },
             }
           )
           const elements = [groupRuleType, groupType, groupRuleWithMissingId, ...groupInstances]
           await filter.onFetch(elements)
+          const missingInstance = referencesUtils.createMissingInstance(OKTA, GROUP_TYPE_NAME, '00g5555555555')
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleWithMissingId')
           expect(groupRule).toBeDefined()
           expect(groupRule?.value?.conditions?.expression?.value).toEqual(
@@ -164,7 +165,9 @@ describe('expression language filter', () => {
               parts: [
                 'isMemberOfAnyGroup(',
                 new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
-                ', "555E")',
+                ', ',
+                new ReferenceExpression(missingInstance.elemID, missingInstance),
+                ')',
               ],
             })
           )
@@ -241,11 +244,11 @@ describe('expression language filter', () => {
             const groupRuleInstance = instances.find(i => i.elemID.name === 'groupRuleTest')
             expect(groupRuleInstance).toBeDefined()
             expect(groupRuleInstance?.value?.conditions?.expression?.value)
-              .toEqual('(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("123A") AND !isMemberOfAnyGroup("234B", "345C")')
+              .toEqual('(String.stringContains(user.department, "salto") OR isMemberOfGroupNameRegex("/.*admin.*")) AND isMemberOfAnyGroup("00g11111111") AND !isMemberOfAnyGroup("00g22222222", "00g33333333")')
             const policyRuleInstance = instances.find(i => i.elemID.name === 'policyRuleTest')
             expect(policyRuleInstance).toBeDefined()
             expect(policyRuleInstance?.value?.conditions?.elCondition?.condition)
-              .toEqual('user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"345C", "123A"}}) AND security.behaviors.contains("New IP")')
+              .toEqual('user.profile.saltoDepartment == \'salto\' AND user.isMemberOf({\'group.id\':{"00g33333333", "00g11111111"}}) AND security.behaviors.contains("New IP")')
           })
         })
         describe('onDeploy', () => {

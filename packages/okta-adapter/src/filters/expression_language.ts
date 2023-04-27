@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../constants'
 
 const log = logger(module)
+const { createMissingInstance } = referenceUtils
 
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z0-9_]+)/g // pattern: user.someString
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z0-9_]+)/g // pattern: user.profile.someString
@@ -134,9 +136,16 @@ const stringToTemplate = (
       if (expression.match(/^["'][a-zA-Z0-9]+?['"]$/)) { // check if the string is a potential id
         const id = expression.slice(1, -1)
         const matchingInstance = groupInstances.find(instance => instance.value.id === id)
-        return matchingInstance !== undefined
-          ? new ReferenceExpression(matchingInstance.elemID, matchingInstance)
-          : expression
+        if (matchingInstance !== undefined) {
+          return new ReferenceExpression(matchingInstance.elemID, matchingInstance)
+        }
+        // hack to verify this is a group id, because group ids in okta starts with '00g'
+        if (id.startsWith('00g') && id.length > 10) {
+          // create missing reference for group
+          const missingInstance = createMissingInstance(OKTA, GROUP_TYPE_NAME, id)
+          return new ReferenceExpression(missingInstance.elemID, missingInstance)
+        }
+        return expression
       }
       if (expression.startsWith(USER_SCHEMA_PREFIX)) {
         if (userSchemaInstance === undefined) {

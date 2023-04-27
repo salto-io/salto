@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
@@ -33,6 +34,9 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+
+const logging = logger('jira-adapter/src/filters/workflow/workflow_deploy_filter')
+const logErrorSpy = jest.spyOn(logging, 'error')
 
 describe('workflowDeployFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -439,6 +443,330 @@ describe('workflowDeployFilter', () => {
       await filter.deploy([change])
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', expect.anything())
+    })
+    describe('workflow diagrams', () => {
+      let instance: InstanceElement
+      beforeEach(() => {
+        instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'workflowName',
+            statuses: [
+              {
+                name: 'Resolved',
+                id: '5',
+                direction: {
+                  x: -33,
+                  y: 3,
+                },
+              },
+              {
+                name: 'Open',
+                id: '1',
+                direction: {
+                  x: -3,
+                  y: 3,
+                },
+              },
+              {
+                name: 'The best name',
+                id: '10007',
+                direction: {
+                  x: 3,
+                  y: -3,
+                },
+              },
+              {
+                name: 'Create',
+                id: '5',
+                direction: {
+                  x: 3,
+                  y: 33,
+                },
+              },
+              {
+                name: 'Building',
+                id: '400',
+                direction: {
+                  x: 33,
+                  y: 3,
+                },
+              },
+              {
+                name: 'without direction',
+                id: '500',
+              },
+            ],
+            transitions: [
+              {
+                name: 'Building',
+                to: '400',
+                type: 'global',
+              },
+              {
+                name: 'Create',
+                to: '1',
+                type: 'initial',
+                from: [
+                  {
+                    sourceAngle: 11,
+                    targetAngle: 19,
+                  },
+                ],
+              },
+              {
+                name: 'hey',
+                to: '5',
+                type: 'directed',
+                from: [
+                  {
+                    id: '1',
+                    sourceAngle: 19,
+                    targetAngle: 11,
+                  },
+                ],
+              },
+              {
+                name: 'super',
+                from: [
+                  {
+                    id: '10007',
+                    sourceAngle: 111,
+                    targetAngle: 199,
+                  },
+                ],
+                to: '400',
+                type: 'directed',
+              },
+              {
+                name: 'yey',
+                from: [
+                  {
+                    id: 5,
+                    sourceAngle: 111,
+                    targetAngle: 1,
+                  },
+                ],
+                to: '10007',
+                type: 'directed',
+              },
+            ],
+          }
+        )
+        mockConnection.post.mockResolvedValue({
+          status: 200,
+          data: {
+          },
+        })
+        mockConnection.get.mockResolvedValue({
+          status: 200,
+          data: {
+            isDraft: false,
+            layout: {
+              statuses: [
+                {
+                  id: 'S<3>',
+                  name: 'Open',
+                  stepId: '3',
+                  statusId: '1',
+                  x: 3,
+                  y: 6,
+                },
+                {
+                  id: 'I<1>',
+                  name: 'Create',
+                  stepId: '1',
+                  initial: true,
+                  x: 33,
+                  y: 66,
+                },
+                {
+                  id: 'S<4>',
+                  name: 'Resolved',
+                  stepId: '4',
+                  statusId: '5',
+                  x: -3,
+                  y: 6,
+                },
+                {
+                  id: 'S<1>',
+                  name: 'Building',
+                  stepId: '1',
+                  statusId: '400',
+                  x: 3,
+                  y: -66,
+                },
+                {
+                  id: 'S<2>',
+                  name: 'The best name',
+                  stepId: '2',
+                  statusId: '10007',
+                  x: 33,
+                  y: -66,
+                },
+                {
+                  id: 'S<22>',
+                  name: 'without x and y',
+                  stepId: '5',
+                  statusId: '500',
+                  x: 3333,
+                  y: -6666,
+                },
+              ],
+              transitions: [
+                {
+                  id: 'A<31:S<2>:S<1>>',
+                  name: 'super',
+                  sourceId: 'S<2>',
+                  targetId: 'S<1>',
+                  sourceAngle: 34.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'IA<1:I<1>:S<3>>',
+                  name: 'Create',
+                  sourceId: 'I<1>',
+                  targetId: 'S<3>',
+                  sourceAngle: 99.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'A<41:S<4>:S<2>>',
+                  name: 'yey',
+                  sourceId: 'S<4>',
+                  targetId: 'S<2>',
+                  sourceAngle: 78.11,
+                  targetAngle: 122.58,
+                },
+                {
+                  id: 'A<21:S<3>:S<4>>',
+                  name: 'hey',
+                  sourceId: 'S<3>',
+                  targetId: 'S<4>',
+                  sourceAngle: -78.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'A<11:S<1>:S<1>>',
+                  name: 'Building',
+                  sourceId: 'S<1>',
+                  targetId: 'S<1>',
+                  sourceAngle: 78.11,
+                  targetAngle: -173.58,
+                },
+              ],
+            },
+          },
+        })
+        filter = workflowFilter(getFilterParams({
+          client,
+        })) as typeof filter
+      })
+      afterEach(() => {
+        jest.clearAllMocks()
+      })
+      it('should deploy workflow diagram values', async () => {
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(mockConnection.post).toHaveBeenCalledWith('/rest/workflowDesigner/latest/workflows', {
+          name: 'workflowName',
+          draft: false,
+          layout: {
+            statuses: [
+              {
+                id: 'S<4>',
+                x: -33,
+                y: 3,
+              },
+              {
+                id: 'S<3>',
+                x: -3,
+                y: 3,
+              },
+              {
+                id: 'S<2>',
+                x: 3,
+                y: -3,
+              },
+              {
+                id: 'S<4>',
+                x: 3,
+                y: 33,
+              },
+              {
+                id: 'S<1>',
+                x: 33,
+                y: 3,
+              },
+              {
+                id: 'S<22>',
+              },
+            ],
+            transitions: [
+              {
+                id: 'IA<1:I<1>:S<3>>',
+                sourceId: 'I<1>',
+                targetId: 'S<3>',
+                sourceAngle: 11,
+                targetAngle: 19,
+              },
+              {
+                id: 'A<21:S<3>:S<4>>',
+                sourceId: 'S<3>',
+                targetId: 'S<4>',
+                sourceAngle: 19,
+                targetAngle: 11,
+              },
+              {
+                id: 'A<31:S<2>:S<1>>',
+                sourceId: 'S<2>',
+                targetId: 'S<1>',
+                sourceAngle: 111,
+                targetAngle: 199,
+              },
+              {
+                id: 'A<41:S<4>:S<2>>',
+                sourceId: 'S<4>',
+                targetId: 'S<2>',
+                sourceAngle: 111,
+                targetAngle: 1,
+              },
+            ],
+          },
+        },
+        { headers: { 'X-Atlassian-Token': 'no-check' },
+          params: undefined,
+          responseType: undefined },)
+      })
+      it('should log error when transition from id is undefined', async () => {
+        instance.value.transitions[2].from[0].id = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Transition hey diagram values')
+      })
+
+      it('should log error when post return an error ', async () => {
+        mockConnection.post.mockResolvedValue({
+          status: 400,
+          data: {
+          },
+        })
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to post Workflow workflowName diagram values with status 400')
+      })
+      it('should work ok with no statuses and no transitions', async () => {
+        instance.value.statuses = undefined
+        instance.value.transitions = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).not.toHaveBeenCalled()
+      })
     })
   })
 })

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -27,6 +27,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
+import { buildDiagramMaps, deployWorkflowDiagram, insertWorkflowDiagramFields, isHasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
 
 const log = logger(module)
 
@@ -96,7 +97,11 @@ export const deployWorkflow = async (
   })
 
   fixGroupNames(instance)
-
+  const instanceCopy = instance.clone() as WorkflowInstance
+  const isNeedToDeployDiagram = !isRemovalChange(resolvedChange) && isHasDiagramFields(instance)
+  if (isNeedToDeployDiagram) {
+    removeWorkflowDiagramFields(instance)
+  }
   await defaultDeployChange({
     change: resolvedChange,
     client,
@@ -107,6 +112,15 @@ export const deployWorkflow = async (
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
+  if (isNeedToDeployDiagram) {
+    try {
+      const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instanceCopy })
+      await deployWorkflowDiagram(instanceCopy, client, workflowDiagramMaps)
+      insertWorkflowDiagramFields(instance, workflowDiagramMaps)
+    } catch (e) {
+      log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
+    }
+  }
   if (isAdditionChange(resolvedChange)) {
     getChangeData(change).value.entityId = instance.value.entityId
     // If we created the workflow we can edit it

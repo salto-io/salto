@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isArray, isString } from 'lodash'
+import _, { isArray, isBoolean, isString } from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -125,7 +125,8 @@ const isValidConditions = (conditions: unknown, customFieldById: Record<string, 
       isReferenceExpression(condition.value)
       && (customFieldById[condition.value.elemID.getFullName()]?.value.value !== undefined)
     )
-    || (isString(condition.value)))
+    || (isString(condition.value))
+|| (isBoolean(condition.value)))
 
 const sortConditions = (
   formInstances: InstanceElement[],
@@ -140,7 +141,7 @@ const sortConditions = (
     if (isValidConditions(conditions, customFieldById)) {
       form.value[conditionType] = _.sortBy(
         conditions,
-        condition => (isString(condition.value)
+        condition => (isString(condition.value) || isBoolean(condition.value)
           ? condition.value
           : [customFieldById[condition.value.elemID.getFullName()].value.value])
       )

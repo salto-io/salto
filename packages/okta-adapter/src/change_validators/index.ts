@@ -25,8 +25,9 @@ import { customApplicationStatusValidator } from './custom_application_status'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
-import OktaClient from '../client/client'
 import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
+import { enabledAuthenticatorsValidator } from './enabled_authenticators'
+import OktaClient from '../client/client'
 
 export default ({
   client,
@@ -45,6 +46,7 @@ export default ({
     appIntegrationSetupValidator(client),
     assignedAccessPoliciesValidator,
     groupSchemaModifyBaseValidator,
+    enabledAuthenticatorsValidator,
   ]
 
   return createChangeValidator(validators)

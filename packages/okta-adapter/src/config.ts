@@ -771,6 +771,34 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/admin/access/multifactor#policies',
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/authenticators',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/authenticators/{authenticatorId}',
+        method: 'put',
+        urlParamsToFields: {
+          authenticatorId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/authenticators/{authenticatorId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          authenticatorId: 'id',
+        },
+      },
+      // There is no endpoint for remove, deactivating authenticator removes it
+      deactivate: {
+        url: '/api/v1/authenticators/{authenticatorId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          authenticatorId: 'id',
+        },
+      },
+    },
   },
   EventHook: {
     transformation: {

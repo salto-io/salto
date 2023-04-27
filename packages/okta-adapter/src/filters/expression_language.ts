@@ -29,7 +29,7 @@ const BEHAVIOR_REGEX = /(security\.behaviors\.contains\(.+?\))/g // pattern: sec
 const USER_SCHEMA_PREFIX = 'user.'
 const USER_SCHEMA_IE_PREFIX = 'user.profile.'
 const BEHAVIOR_EXPRESSION_PREFIX = 'security.behaviors.contains'
-const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
+const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties']
 const USER_SCHEMA_BASE_PATH = ['definitions', 'base', 'properties']
 
 type ExpressionLanguageDef = {
@@ -54,7 +54,7 @@ const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
   },
 }
 
-const getUserSchemaReference = (
+export const getUserSchemaReference = (
   userAttribute: string,
   userSchemaInstance: InstanceElement,
 ): ReferenceExpression | undefined => {
@@ -77,19 +77,24 @@ const getUserSchemaReference = (
   return undefined
 }
 
+export const resolveUserSchemaRef = (ref: ReferenceExpression): string | undefined => {
+  const topLevelParentId = ref.elemID.createTopLevelParentID().parent
+  const parentId = ref.elemID.createParentID()
+  if (
+    (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
+      || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
+  ) {
+    return ref.elemID.name
+  }
+  log.error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${ref.elemID.getFullName()}`)
+  return undefined
+}
+
 const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression) => TemplatePart => {
   const prepRef = (part: ReferenceExpression): TemplatePart => {
     if (part.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
-      const topLevelParentId = part.elemID.createTopLevelParentID().parent
-      const parentId = part.elemID.createParentID()
-      if (
-        (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
-        || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
-      ) {
-        const userSchemaField = part.elemID.getFullNameParts().pop()
-        if (!_.isString(userSchemaField)) {
-          throw new Error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${part.elemID.getFullName()}`)
-        }
+      const userSchemaField = resolveUserSchemaRef(part)
+      if (userSchemaField !== undefined) {
         return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
       }
     }

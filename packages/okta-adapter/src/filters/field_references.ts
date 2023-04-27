@@ -15,7 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
-import { referencesRules, OktaFieldReferenceResolver } from '../reference_mapping'
+import { referencesRules, OktaFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 
 
@@ -29,6 +29,7 @@ const filter: FilterCreator = () => ({
       elements,
       fieldsToGroupBy: ['id', 'name', 'key'],
       defs: referencesRules,
+      contextStrategyLookup,
       fieldReferenceResolverCreator: defs => new OktaFieldReferenceResolver(defs),
     })
   },

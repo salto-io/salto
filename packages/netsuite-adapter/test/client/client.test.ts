@@ -40,8 +40,8 @@ describe('NetsuiteClient', () => {
       AdditionalDependencies,
     ] = [
       {
-        include: { features: [], objects: [] },
-        exclude: { features: [], objects: [] },
+        include: { features: [], objects: [], files: [] },
+        exclude: { features: [], objects: [], files: [] },
       },
     ]
 
@@ -265,12 +265,14 @@ describe('NetsuiteClient', () => {
                 'required:required',
               ],
               objects: [],
+              files: [],
             },
             exclude: {
               features: [
                 'excluded',
               ],
               objects: [],
+              files: [],
             },
           },
         )
@@ -283,6 +285,8 @@ describe('NetsuiteClient', () => {
               excludedFeatures: ['excluded'],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -308,10 +312,12 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             include: {
               features: [],
               objects: [],
+              files: [],
             },
             exclude: {
               features: ['SUBSCRIPTIONBILLING'],
               objects: [],
+              files: [],
             },
           },
         )).toEqual({
@@ -331,6 +337,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: ['SUBSCRIPTIONBILLING'],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -344,6 +352,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: [],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -379,6 +389,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: [],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -392,6 +404,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: [],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -405,6 +419,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: [],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: false,
           },
@@ -448,6 +464,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
                 excludedFeatures: [],
                 includedObjects: [],
                 excludedObjects: [],
+                includedFiles: [],
+                excludedFiles: [],
               },
               validateOnly: false,
             },
@@ -590,6 +608,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               excludedFeatures: [],
               includedObjects: [],
               excludedObjects: [],
+              includedFiles: [],
+              excludedFiles: [],
             },
             validateOnly: true,
           },
@@ -627,8 +647,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
       AdditionalDependencies,
     ] = [
       {
-        include: { features: [], objects: [] },
-        exclude: { features: [], objects: [] },
+        include: { features: [], objects: [], files: [] },
+        exclude: { features: [], objects: [], files: [] },
       },
     ]
 

@@ -124,6 +124,7 @@ import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workfl
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
+import circularTransitionFilter from './filters/workflow/circular_transitions_filter'
 
 const {
   generateTypes,
@@ -169,6 +170,7 @@ export const DEFAULT_FILTERS = [
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
+  circularTransitionFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,

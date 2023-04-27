@@ -23,7 +23,7 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
 import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
@@ -33,6 +33,7 @@ export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
 export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
+export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
@@ -46,6 +47,7 @@ export const removeRequiredFeatureSuffix = (featureName: string): string =>
 type AdditionalSdfDeployDependencies = {
   features: string[]
   objects: string[]
+  files: string[]
 }
 
 export type AdditionalDependencies = {
@@ -76,6 +78,7 @@ export type SdfClientConfig = {
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
+  maxFileCabinetSizeInGB?: number
 }
 
 export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
@@ -84,6 +87,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
   sdfConcurrencyLimit: 'sdfConcurrencyLimit',
   installedSuiteApps: 'installedSuiteApps',
+  maxFileCabinetSizeInGB: 'maxFileCabinetSizeInGB',
 }
 
 export type SuiteAppClientConfig = {
@@ -159,6 +163,12 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
     },
     installedSuiteApps: {
       refType: new ListType(BuiltinTypes.STRING),
+    },
+    maxFileCabinetSizeInGB: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB,
+      },
     },
   },
   annotations: {
@@ -360,6 +370,7 @@ Partial<AdditionalSdfDeployDependencies>
   fields: {
     features: { refType: new ListType(BuiltinTypes.STRING) },
     objects: { refType: new ListType(BuiltinTypes.STRING) },
+    files: { refType: new ListType(BuiltinTypes.STRING) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -401,12 +412,15 @@ function validateAdditionalSdfDeployDependencies(
   input: Partial<Record<keyof AdditionalSdfDeployDependencies, unknown>>,
   configName: string
 ): asserts input is Partial<AdditionalSdfDeployDependencies> {
-  const { features, objects } = input
+  const { features, objects, files } = input
   if (features !== undefined) {
     validateArrayOfStrings(features, additionalDependenciesConfigPath.concat(configName, 'features'))
   }
   if (objects !== undefined) {
     validateArrayOfStrings(objects, additionalDependenciesConfigPath.concat(configName, 'objects'))
+  }
+  if (files !== undefined) {
+    validateArrayOfStrings(files, additionalDependenciesConfigPath.concat(configName, 'files'))
   }
 }
 
@@ -438,6 +452,12 @@ const validateAdditionalDependencies = (
     const conflictedObjects = _.intersection(include.objects, exclude.objects)
     if (conflictedObjects.length > 0) {
       throw new Error(`Additional objects cannot be both included and excluded. The following objects are conflicted: ${conflictedObjects.join(', ')}`)
+    }
+  }
+  if (include?.files && exclude?.files) {
+    const conflictedFiles = _.intersection(include.files, exclude.files)
+    if (conflictedFiles.length > 0) {
+      throw new Error(`Additional files cannot be both included and excluded. The following files are conflicted: ${conflictedFiles.join(', ')}`)
     }
   }
 }
@@ -538,6 +558,9 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
   + ' In order to complete the fetch operation, Salto needs to stop managing these items by modifying the configuration.'
 
+export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders were excluded from the fetch.'
+ + ' To include them, increase the File Cabinet\'s size limitations and remove their exclusion rules.'
+
 export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
   + ' To skip items in fetch, please use the "fetch.exclude" option.'
   + ' The following configuration will update the deprecated fields to "fetch.exclude" field.'
@@ -547,10 +570,13 @@ export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been ch
 export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
 + ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
 
-const createExclude = ({
-  filePaths: failedPaths = [],
-  types: failedTypes = {},
-}: Pick<NetsuiteQueryParameters, 'types' | 'filePaths'>): QueryParams =>
+const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
+  folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
+
+const createExclude = (
+  failedPaths: NetsuiteFilePathsQueryParams = [],
+  failedTypes: NetsuiteTypesQueryParams = {},
+): QueryParams =>
   ({
     fileCabinet: failedPaths.map(_.escapeRegExp),
     types: Object.entries(failedTypes).map(([name, ids]) => ({ name, ids })),
@@ -566,19 +592,19 @@ const toConfigSuggestions = (
   if (!_.isEmpty(failedFilePaths.otherError) || !_.isEmpty(failedTypes.unexpectedError)) {
     config.fetch = {
       ...config.fetch,
-      exclude: createExclude({
-        filePaths: failedFilePaths.otherError,
-        types: failedTypes.unexpectedError,
-      }),
+      exclude: createExclude(
+        failedFilePaths.otherError,
+        failedTypes.unexpectedError,
+      ),
     }
   }
   if (!_.isEmpty(failedFilePaths.lockedError) || !_.isEmpty(failedTypes.lockedError)) {
     config.fetch = {
       ...config.fetch,
-      lockedElementsToExclude: createExclude({
-        filePaths: failedFilePaths.lockedError,
-        types: failedTypes.lockedError,
-      }),
+      lockedElementsToExclude: createExclude(
+        failedFilePaths.lockedError,
+        failedTypes.lockedError,
+      ),
     }
   }
   if (failedToFetchAllAtOnce) {
@@ -651,46 +677,66 @@ const updateConfigFromFailures = (
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes,
   config: NetsuiteConfig,
-): boolean => {
-  const suggestions = toConfigSuggestions(
-    failedToFetchAllAtOnce, failedFilePaths, failedTypes
-  )
-  if (_.isEmpty(suggestions)) {
+): { didUpdateFromFailures: boolean; didUpdateLargeFolders: boolean} => {
+  const updateConfigFromFailedFetch = (): boolean => {
+    const suggestions = toConfigSuggestions(
+      failedToFetchAllAtOnce, failedFilePaths, failedTypes
+    )
+    if (_.isEmpty(suggestions)) {
+      return false
+    }
+
+    const {
+      fetch: currentFetchConfig,
+      client: currentClientConfig,
+    } = config
+    const {
+      fetch: suggestedFetchConfig,
+      client: suggestedClientConfig,
+    } = suggestions
+
+    if (suggestedClientConfig?.fetchAllTypesAtOnce !== undefined) {
+      config.client = {
+        ...currentClientConfig,
+        fetchAllTypesAtOnce: suggestedClientConfig.fetchAllTypesAtOnce,
+      }
+    }
+
+    const updatedFetchConfig = {
+      ...currentFetchConfig,
+      exclude: combineQueryParams(currentFetchConfig?.exclude, suggestedFetchConfig?.exclude),
+    }
+
+    const newLockedElementToExclude = combineQueryParams(
+    currentFetchConfig?.lockedElementsToExclude,
+    suggestedFetchConfig?.lockedElementsToExclude
+    )
+
+    if (!_.isEqual(newLockedElementToExclude, emptyQueryParams())) {
+      updatedFetchConfig.lockedElementsToExclude = newLockedElementToExclude
+    }
+
+    config.fetch = updatedFetchConfig
+    return true
+  }
+
+  const updateConfigFromLargeFolders = (): boolean => {
+    const { largeFolderError } = failedFilePaths
+    if (largeFolderError && !_.isEmpty(largeFolderError)) {
+      const largeFoldersToExclude = convertToQueryParams({ filePaths: createFolderExclude(largeFolderError) })
+      config.fetch = {
+        ...config.fetch,
+        exclude: combineQueryParams(config.fetch?.exclude, largeFoldersToExclude),
+      }
+      return true
+    }
     return false
   }
 
-  const {
-    fetch: currentFetchConfig,
-    client: currentClientConfig,
-  } = config
-  const {
-    fetch: suggestedFetchConfig,
-    client: suggestedClientConfig,
-  } = suggestions
-
-  if (suggestedClientConfig?.fetchAllTypesAtOnce !== undefined) {
-    config.client = {
-      ...currentClientConfig,
-      fetchAllTypesAtOnce: suggestedClientConfig.fetchAllTypesAtOnce,
-    }
+  return {
+    didUpdateFromFailures: updateConfigFromFailedFetch(),
+    didUpdateLargeFolders: updateConfigFromLargeFolders(),
   }
-
-  const updatedFetchConfig = {
-    ...currentFetchConfig,
-    exclude: combineQueryParams(currentFetchConfig?.exclude, suggestedFetchConfig?.exclude),
-  }
-
-  const newLockedElementToExclude = combineQueryParams(
-    currentFetchConfig?.lockedElementsToExclude,
-    suggestedFetchConfig?.lockedElementsToExclude
-  )
-
-  if (!_.isEqual(newLockedElementToExclude, emptyQueryParams())) {
-    updatedFetchConfig.lockedElementsToExclude = newLockedElementToExclude
-  }
-
-  config.fetch = updatedFetchConfig
-  return true
 }
 
 const updateConfigSkipListFormat = (config: NetsuiteConfig): void => {
@@ -812,7 +858,10 @@ export const getConfigFromConfigChanges = (
     didUpdateDeployFormat,
     didUpdateSuiteAppTypesFormat,
   } = updateConfigFormat(config)
-  const didUpdateFromFailures = updateConfigFromFailures(
+  const {
+    didUpdateFromFailures,
+    didUpdateLargeFolders,
+  } = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
     failedTypes,
@@ -821,6 +870,9 @@ export const getConfigFromConfigChanges = (
   const messages = [
     didUpdateFromFailures
       ? STOP_MANAGING_ITEMS_MSG
+      : undefined,
+    didUpdateLargeFolders
+      ? LARGE_FOLDERS_EXCLUDED_MESSAGE
       : undefined,
     didUpdateFetchFormat
       ? UPDATE_FETCH_CONFIG_FORMAT

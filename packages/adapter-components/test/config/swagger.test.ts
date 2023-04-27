@@ -101,6 +101,7 @@ describe('config_swagger', () => {
             ],
             typeNameOverrides: [
               { newName: 'aaa', originalName: 'bbb' },
+              { newName: 'ccc', originalName: 'aaa' },
             ],
           },
           typeDefaults: {
@@ -189,6 +190,36 @@ describe('config_swagger', () => {
           supportedTypes: {},
         },
       )).toThrow(new Error('Duplicate type names in PATH.typeNameOverrides: bbb,eee'))
+    })
+    it('should throw when multiple types have the same overrides', () => {
+      expect(() => validateSwaggerApiDefinitionConfig(
+        'PATH',
+        {
+          swagger: {
+            url: '/a/b/c',
+            additionalTypes: [
+              { typeName: 'abc', cloneFrom: 'def' },
+            ],
+            typeNameOverrides: [
+              { newName: 'ccc', originalName: 'aaa' },
+              { newName: 'ccc', originalName: 'bbb' },
+            ],
+          },
+          typeDefaults: {
+            transformation: {
+              idFields: ['a', 'b'],
+            },
+          },
+          types: {
+            abc: {
+              transformation: {
+                idFields: ['something', 'else'],
+              },
+            },
+          },
+          supportedTypes: {},
+        },
+      )).toThrow(new Error('Duplicate type names in PATH.typeNameOverrides: ccc'))
     })
     it('should not throw when supportedTypes is non-empty', () => {
       expect(() => validateSwaggerApiDefinitionConfig(

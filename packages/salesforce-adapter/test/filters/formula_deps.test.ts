@@ -164,8 +164,7 @@ describe('Formula dependencies', () => {
       // eslint-disable-next-line no-underscore-dangle
       const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
-      expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField__c'))
+      expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'someField__c'))
     })
     it('Should return a Metadata Type Record field reference as a dependency', async () => {
       const customMetadataType = customObjectTypeWithFields('SomeCustomMetadataType__mdt', { SomeTextField__c: BuiltinTypes.STRING })
@@ -202,9 +201,8 @@ describe('Formula dependencies', () => {
       // eslint-disable-next-line no-underscore-dangle
       const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps).toHaveLength(2)
+      expect(deps).toHaveLength(1)
       expect(deps[0].reference.elemID.typeName).not.toEqual('GarbageType')
-      expect(deps[1].reference.elemID.typeName).not.toEqual('GarbageType')
     })
   })
 
@@ -219,10 +217,9 @@ describe('Formula dependencies', () => {
       // eslint-disable-next-line no-underscore-dangle
       const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
       expect(deps).toBeDefined()
-      expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName))
-      expect(deps[1]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'RecordTypeId'))
-      expect(deps[2]).toEqual(depNameToRefExpr('RecordType'))
-      expect(deps[3]).toEqual(depNameToRefExpr('RecordType', 'Name'))
+      expect(deps[0]).toEqual(depNameToRefExpr(typeWithFormula.elemID.typeName, 'RecordTypeId'))
+      expect(deps[1]).toEqual(depNameToRefExpr('RecordType'))
+      expect(deps[2]).toEqual(depNameToRefExpr('RecordType', 'Name'))
     })
   })
 
@@ -240,7 +237,7 @@ describe('Formula dependencies', () => {
     const processBuilderFormula = `IF([Account].Owner.Manager.Contact.Account.AccountNumber  = "text" ,TRUE,FALSE)
         || IF([Account].original_lead__r.ConvertedAccountId != "",TRUE,FALSE)
         || IF($CustomMetadata.Trigger_Context_Status__mdt.by_class.Enable_After_Delete__c , TRUE,FALse)`
-    const standardFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.LastModifiedById',
+    const standardFormulaExpectedRefs = ['salesforce.Account.field.LastModifiedById',
       'salesforce.Account.field.OpportunityId', 'salesforce.Account.field.Opportunity__c',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.ParentId', 'salesforce.Center__c',
       'salesforce.Center__c.field.My_text_field__c', 'salesforce.Contact', 'salesforce.Contact.field.AssistantName',
@@ -258,7 +255,7 @@ describe('Formula dependencies', () => {
       'salesforce.Trigger_Context_Status__mdt.instance.Trigger_Context_Status_by_handler@uuvu', 'salesforce.User',
       'salesforce.User.field.CompanyName', 'salesforce.User.field.ContactId', 'salesforce.User.field.ManagerId',
       'salesforce.User.field.ProfileId']
-    const processBuilderFormulaExpectedRefs = ['salesforce.Account', 'salesforce.Account.field.AccountNumber',
+    const processBuilderFormulaExpectedRefs = ['salesforce.Account.field.AccountNumber',
       'salesforce.Account.field.OwnerId', 'salesforce.Account.field.original_lead__c', 'salesforce.Contact',
       'salesforce.Contact.field.AccountId', 'salesforce.Trigger_Context_Status__mdt',
       'salesforce.Trigger_Context_Status__mdt.field.Enable_After_Delete__c',
@@ -292,14 +289,10 @@ describe('Formula dependencies', () => {
   describe('CPQ formulas', () => {
     const simpleFormula = 'SBQQ__DistriBUtor__r.Name '
     const formulaWithUnknownRelationship = 'SBQQ__random__r.Name '
-    const simpleFormulaExpectedDeps = ['salesforce.SBQQ__QuoTE__c',
-      'salesforce.SBQQ__QuoTE__c.field.SBQQ__DistriBUtor__c',
-      'salesforce.Account',
-      'salesforce.Account.field.Name'].sort()
-    const formulaWithUnknownRelationshipExpectedDeps = ['salesforce.SBQQ__QuoTE__c',
-      'salesforce.SBQQ__QuoTE__c.field.SBQQ__random__c',
-      'salesforce.SBQQ__random__r',
-      'salesforce.SBQQ__random__r.field.Name'].sort()
+    const simpleFormulaExpectedDeps = ['salesforce.SBQQ__QuoTE__c.field.SBQQ__DistriBUtor__c',
+      'salesforce.Account', 'salesforce.Account.field.Name'].sort()
+    const formulaWithUnknownRelationshipExpectedDeps = ['salesforce.SBQQ__QuoTE__c.field.SBQQ__random__c',
+      'salesforce.SBQQ__random__r', 'salesforce.SBQQ__random__r.field.Name'].sort()
     let typeWithCpqFormula: ObjectType
     let referredObjectTypes: ObjectType[]
 

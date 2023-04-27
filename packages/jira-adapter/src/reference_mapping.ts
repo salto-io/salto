@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_TYPE,
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
@@ -26,6 +27,7 @@ import { getFieldsLookUpName } from './filters/fields/field_type_references_filt
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
 
+const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
 
 const neighborContextFunc = (args: {
@@ -757,7 +759,7 @@ const lookupNameFuncs: GetLookupNameFunc[] = [
 ]
 
 export const getLookUpName: GetLookupNameFunc = async args => (
-  lookupNameFuncs
+  awu(lookupNameFuncs)
     .map(lookupFunc => lookupFunc(args))
     .find(res => !isReferenceExpression(res))
 )

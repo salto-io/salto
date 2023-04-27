@@ -191,7 +191,7 @@ describe('swagger_type_elements', () => {
       }
 
       it('should generate the right types for swagger v2 yaml', async () => {
-        await validateV2(`${BASE_DIR}/petstore_swagger.v2.yaml`)
+        await validateV2(`${BASE_DIR}/petstore_swagger.v2.yaml`, [], { NewPet: { request: { url: '/newPet/all' } } })
       })
       it('should generate the right types for swagger v2 json', async () => {
         await validateV2(`${BASE_DIR}/petstore_swagger.v2.json`)
@@ -219,6 +219,7 @@ describe('swagger_type_elements', () => {
               ],
               typeNameOverrides: [
                 { originalName: 'pet__findByTags', newName: 'PetByTag' },
+                { originalName: 'NewPet', newName: 'Pet' },
                 { originalName: 'Pet', newName: 'Pet__new' },
               ],
             },
@@ -258,6 +259,7 @@ describe('swagger_type_elements', () => {
               Food: ['Food'],
               FoodAndCategory: ['FoodAndCategory'],
               Order: ['Order'],
+              Pet: ['Pet'],
               Pet2: ['Pet2'],
               Pet3: ['Pet3'],
               PetByTag: ['PetByTag'],
@@ -274,11 +276,12 @@ describe('swagger_type_elements', () => {
         parsedConfigs = res.parsedConfigs
       })
       it('should generate the right types', () => {
-        const updatedExpectedTypes = ['AdditionalType', 'Category', 'Food', 'FoodAndCategory', 'NestedType', 'Order', 'Pet2', 'Pet3', 'PetByTag', 'Pet__new', 'Tag', 'User', 'foodDetails', 'pet__findByStatus', 'store__inventory']
+        const updatedExpectedTypes = ['AdditionalType', 'Category', 'Food', 'FoodAndCategory', 'NestedType', 'Order', 'Pet', 'Pet2', 'Pet3', 'PetByTag', 'Pet__new', 'Tag', 'User', 'foodDetails', 'pet__findByStatus', 'store__inventory']
         expect(Object.keys(allTypes).sort()).toEqual(updatedExpectedTypes)
         // no Pet2 because it does not have a request config
         const updatedExpectedParsedConfigs = {
           Order: { request: { url: '/store/order/{orderId}' } },
+          Pet: { request: { url: '/newPet/all' } },
           // eslint-disable-next-line camelcase
           Pet__new: { request: { url: '/pet/{petId}' } },
           // eslint-disable-next-line camelcase
@@ -299,7 +302,7 @@ describe('swagger_type_elements', () => {
       })
 
       it('should not have anything under the original typenames', () => {
-        expect(allTypes.Pet).toBeUndefined()
+        expect(allTypes.NewPet).toBeUndefined()
         expect(allTypes.pet__findByTags).toBeUndefined()
       })
 

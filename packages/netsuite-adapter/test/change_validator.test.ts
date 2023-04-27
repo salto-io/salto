@@ -29,8 +29,8 @@ const DEFAULT_OPTIONS = {
   warnStaleData: false,
   validate: false,
   additionalDependencies: {
-    include: { features: [], objects: [] },
-    exclude: { features: [], objects: [] },
+    include: { features: [], objects: [], files: [] },
+    exclude: { features: [], objects: [], files: [] },
   },
   deployReferencedElements: false,
   filtersRunner: () => ({
@@ -53,7 +53,7 @@ describe('change validator', () => {
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [],
@@ -126,7 +126,7 @@ describe('change validator', () => {
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [serviceInstance],

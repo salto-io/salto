@@ -26,7 +26,7 @@ import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
 import { getGroupItemFromRegex } from '../client/utils'
-import { getContent } from '../suiteapp_file_cabinet'
+import { getContent } from '../client/suiteapp_client/suiteapp_file_cabinet'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values

@@ -148,7 +148,7 @@ const buildValidDiffGraph = (
     ] as [ElemID, ElemID[]])
     .map(([causeID, elemIds]) => [
       causeID,
-      elemIds.filter(elemId => !elemId.isEqual(causeID)),
+      elemIds.filter(elemId => !elemId.isEqual(causeID) && !causeID.isParentOf(elemId)),
     ] as [ElemID, ElemID[]]).flatMap(
       ([causeID, elemIDs]) => elemIDs.map(elemID => createDependencyErr(causeID, elemID))
     )

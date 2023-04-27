@@ -66,7 +66,7 @@ const shareToMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
 
 const neighborContextFunc = (args: {
   contextFieldName: string
-  levelsUp?: number
+  levelsUp?: number | 'top'
   contextValueMapper?: referenceUtils.ContextValueMapperFunc
 }): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName })
 
@@ -97,7 +97,7 @@ const contextStrategyLookup: Record<
   neighborCaseOwnerTypeLookup: neighborContextFunc({ contextFieldName: 'caseOwnerType' }),
   neighborAssignedToTypeLookup: neighborContextFunc({ contextFieldName: 'assignedToType' }),
   neighborRelatedEntityTypeLookup: neighborContextFunc({ contextFieldName: 'relatedEntityType' }),
-
+  parentSObjectTypeLookupTopLevel: neighborContextFunc({ contextFieldName: 'SObjectType', levelsUp: 'top' }),
 }
 
 

@@ -72,6 +72,12 @@ describe('swagger_instance_elements', () => {
           name: { refType: BuiltinTypes.STRING },
         },
       })
+      const Singleton = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'Singleton'),
+        fields: {
+          id: { refType: BuiltinTypes.STRING },
+        },
+      })
 
       return {
         Owner,
@@ -79,6 +85,7 @@ describe('swagger_instance_elements', () => {
         Food,
         Status,
         Fail,
+        Singleton,
       }
     }
 
@@ -1628,9 +1635,9 @@ describe('swagger_instance_elements', () => {
         ],
       ])
     })
-    it('should fail if singleton type have more than one instance', async () => {
+    it('should return fetch error if singleton type have more than one instance', async () => {
       const objectTypes = generateObjectTypes()
-      await expect(getAllInstances({
+      const result = await getAllInstances({
         paginator: mockPaginator,
         apiConfig: {
           typeDefaults: {
@@ -1664,7 +1671,12 @@ describe('swagger_instance_elements', () => {
         objectTypes,
         computeGetArgs: simpleGetArgs,
         nestedFieldFinder: returnFullEntry,
-      })).rejects.toThrow()
+      })
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors?.[0]).toEqual({
+        message: 'Could not fetch type Pet, singleton types should not have more than one instance',
+        severity: 'Warning',
+      })
     })
   })
 })

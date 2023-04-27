@@ -62,14 +62,14 @@ const getChangedFields = (change: ModificationChange<ObjectType>): Change<Elemen
     !beforeFieldsNamesSet.has(afterField.name) && getAlias(afterField) !== undefined)
   const removedFields = beforeFields.filter(beforeField =>
     !afterFieldsNamesSet.has(beforeField.name) && getAlias(beforeField) !== undefined)
-  const aliasModifiedFields = afterFields
+  const fieldAliasChanges = afterFields
     .flatMap(afterField => {
       const field = change.data.before.fields[afterField.name]
       return isField(field)
         ? calculateAliasChange(afterField, getAlias(field), getAlias(afterField))
         : []
     })
-  return aliasModifiedFields
+  return fieldAliasChanges
     .concat(addedFields.map(field => toChange({ after: field })))
     .concat(removedFields.map(field => toChange({ before: field })))
 }
@@ -98,15 +98,18 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
       // any other modification
       return undefined // the relevant modification changes are added as addition changes or removal
     }
-    // if it is an addition of an object we want to add all its fields as addition changes
-    if (isAdditionChange(change) && isObjectTypeChange(change)) {
-      // take only the fields with alias
-      const addedAliasFields: Element[] = Object.values(change.data.after.fields).filter(getAlias)
-      return (addedAliasFields.map(f => toChange({ after: f })) ?? [])
-        .concat(getAlias(getChangeData(change)) ? [change] : [])
-    }
-    if (isAdditionChange(change) && isInstanceChange(change)) {
-      return getAlias(getChangeData(change)) ? change : undefined
+    if (isAdditionChange(change)) {
+      // if it is an addition of an object we want to add all its fields as addition changes
+      if (isObjectTypeChange(change)) {
+        // take only the fields with alias
+        const addedAliasFields: Element[] = Object.values(change.data.after.fields).filter(getAlias)
+        return (addedAliasFields.map(f => toChange({ after: f })) ?? [])
+          .concat(getAlias(getChangeData(change)) ? [change] : [])
+      }
+      if (isInstanceChange(change)) {
+        return getAlias(getChangeData(change)) ? change : undefined
+      }
+      return undefined
     }
     return change // should only be removals
   }).filter(isDefined)
@@ -124,13 +127,13 @@ const getInfoForIndex = (changes: Change<Element>[]):
   { removalNames: string[]; additionsIdsToAlias: Record<string, string> } => {
   const { additions, removals } = getRemovalsAndAdditions(changes)
   const filteredAdditions = additions.map(getChangeData)
-    .filter(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)
+    .filter(elem => getAlias(elem) !== undefined)
   const additionsIdsToAlias: Record<string, string> = _.mapValues(
     _.keyBy(
       filteredAdditions,
       elem => elem.elemID.getFullName()
     ),
-    elem => elem.annotations[CORE_ANNOTATIONS.ALIAS]
+    elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] // can't use getAlias since it returns undefined
   )
   const removalNames = removals.flatMap(getRelevantNamesFromChange)
   return { removalNames, additionsIdsToAlias }

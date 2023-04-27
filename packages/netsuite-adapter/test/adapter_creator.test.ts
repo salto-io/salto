@@ -168,6 +168,7 @@ describe('NetsuiteAdapter creator', () => {
         },
         config: clientConfig,
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
   })
@@ -215,6 +216,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: { ...cred.value, accountId: 'FOO_A' },
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
 
@@ -248,6 +250,7 @@ describe('NetsuiteAdapter creator', () => {
           httpTimeoutLimitInMinutes: 20,
         },
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
   })

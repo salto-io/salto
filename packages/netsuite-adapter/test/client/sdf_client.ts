@@ -31,6 +31,7 @@ const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
     credentials: DUMMY_CREDENTIALS,
     config,
     globalLimiter: new Bottleneck(),
+    instanceLimiter: (_t: string, _c: number) => false,
   })
 
 export default mockSdfClient

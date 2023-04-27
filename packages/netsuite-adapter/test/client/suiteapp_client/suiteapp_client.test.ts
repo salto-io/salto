@@ -46,6 +46,7 @@ describe('SuiteAppClient', () => {
           suiteAppActivationKey: 'activationKey',
         },
         globalLimiter: new Bottleneck(),
+        instanceLimiter: (_t: string, _c: number) => false,
       })
 
       mockAxiosAdapter.onPost().replyOnce(200, {
@@ -416,6 +417,7 @@ describe('SuiteAppClient', () => {
             suiteAppActivationKey: 'activationKey',
           },
           globalLimiter: new Bottleneck(),
+          instanceLimiter: (_t: string, _c: number) => false,
         })
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',
@@ -482,6 +484,7 @@ describe('SuiteAppClient', () => {
             suiteAppActivationKey: 'activationKey',
           },
           globalLimiter: new Bottleneck(),
+          instanceLimiter: (_t: string, _c: number) => false,
         })
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',
@@ -614,6 +617,7 @@ describe('SuiteAppClient', () => {
           suiteAppActivationKey: 'activationKey',
         },
         globalLimiter: new Bottleneck(),
+        instanceLimiter: (_t: string, _c: number) => false,
       })
     })
     it('should set old versionFeatures', async () => {

@@ -351,7 +351,11 @@ export default class SuiteAppClient {
   }
 
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
-    const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
+    const client = new SuiteAppClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    })
     await client.sendRestletRequest('sysInfo')
   }
 

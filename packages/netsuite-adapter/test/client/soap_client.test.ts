@@ -68,6 +68,7 @@ describe('soap_client', () => {
         suiteAppTokenSecret: 'tokenSecret',
       },
       fn => fn(),
+      (_t: string, _c: number) => false,
     )
   })
 

@@ -56,8 +56,16 @@ describe('data_elements', () => {
     suiteAppActivationKey: 'suiteAppActivationKey',
   }
   const client = new NetsuiteClient(
-    new SdfClient({ credentials: creds, globalLimiter: new Bottleneck() }),
-    new SuiteAppClient({ credentials: creds, globalLimiter: new Bottleneck() }),
+    new SdfClient({
+      credentials: creds,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    }),
+    new SuiteAppClient({
+      credentials: creds,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    }),
   )
 
   const getAllRecordsMock = jest.spyOn(client, 'getAllRecords')

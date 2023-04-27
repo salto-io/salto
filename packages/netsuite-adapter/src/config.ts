@@ -17,9 +17,10 @@ import _ from 'lodash'
 import { types as lowerdashTypes, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
-  createRestriction, MapType,
+  createRestriction, MapType, isMapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
@@ -27,6 +28,8 @@ import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
+
+const log = logger(module)
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -42,6 +45,9 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = { customrecord: 10_000 }
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
+
+// Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
+const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 
 const REQUIRED_FEATURE_SUFFIX = ':required'
 export const isRequiredFeature = (featureName: string): boolean =>
@@ -194,6 +200,51 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
+const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
+  validateArrayOfStrings(installedSuiteApps, [CONFIG.client, CLIENT_CONFIG.installedSuiteApps])
+  const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
+  if (invalidValues.length !== 0) {
+    throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
+  }
+}
+
+const validateMaxInstancesPerType = (maxInstancesPerType: unknown): void => {
+  if (isMapType(maxInstancesPerType) && Object.values(maxInstancesPerType).every(val => typeof val === 'number')) {
+    const invalidTypes = Object.keys(maxInstancesPerType).filter(type => !(type in netsuiteSupportedTypes))
+    if (invalidTypes.length > 0) {
+      throw new Error(
+        `${CLIENT_CONFIG.maxInstancesPerType} keys should include only supported NetSuite types.`
+        + ` The following keys are invalid: ${invalidTypes.join(', ')}`
+      )
+    }
+  } else {
+    throw new Error(`${CLIENT_CONFIG.maxInstancesPerType} should be a mapping of types to numbers`)
+  }
+}
+
+export function validateClientConfig(
+  client: Partial<Record<keyof SdfClientConfig, unknown>>,
+  fetchTargetDefined: boolean
+): asserts client is SdfClientConfig {
+  validatePlainObject(client, CONFIG.client)
+  const {
+    fetchAllTypesAtOnce,
+    installedSuiteApps,
+    maxInstancesPerType,
+  } = _.pick(client, Object.values(CLIENT_CONFIG))
+
+  if (fetchAllTypesAtOnce && fetchTargetDefined) {
+    log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
+    client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
+  }
+  if (installedSuiteApps !== undefined) {
+    validateInstalledSuiteApps(installedSuiteApps)
+  }
+  if (maxInstancesPerType !== undefined) {
+    validateMaxInstancesPerType(maxInstancesPerType)
+  }
+}
 
 const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),

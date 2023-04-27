@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { CONFIG, configType, DEFAULT_CONCURRENCY, DEFAULT_MAX_INSTANCES_VALUE, NetsuiteConfig, validateClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
+import { CONFIG, configType, DEFAULT_CONCURRENCY, instanceLimiter, NetsuiteConfig, validateClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
 import { NETSUITE } from './constants'
 import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
@@ -210,19 +210,12 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
       ),
   })
 
-  const instanceLimiter = (type: string, instanceCount: number): boolean => {
-    const maxInstancesPerType = adapterConfig.client?.maxInstancesPerType ?? {}
-    const defaultMaxInstancesValue = adapterConfig.client?.defaultMaxInstancesValue ?? DEFAULT_MAX_INSTANCES_VALUE
-    const maxInstances = maxInstancesPerType[type] || defaultMaxInstancesValue
-    return instanceCount > maxInstances
-  }
-
   const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey
     ? new SuiteAppClient({
       credentials,
       config: adapterConfig.suiteAppClient,
       globalLimiter,
-      instanceLimiter,
+      instanceLimiter: instanceLimiter(adapterConfig.client),
     })
     : undefined
 
@@ -230,7 +223,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
     credentials,
     config: adapterConfig.client,
     globalLimiter,
-    instanceLimiter,
+    instanceLimiter: instanceLimiter(adapterConfig.client),
   })
 
   return new NetsuiteAdapter({

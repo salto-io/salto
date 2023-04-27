@@ -246,6 +246,16 @@ export function validateClientConfig(
   }
 }
 
+export type InstanceLimiterFunc = (type: string, instanceCount: number) => boolean
+
+export const instanceLimiter = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
+  (type: string, instanceCount: number): boolean => {
+    const maxInstancesPerType = clientConfig?.maxInstancesPerType ?? {}
+    const defaultMaxInstancesValue = clientConfig?.defaultMaxInstancesValue ?? DEFAULT_MAX_INSTANCES_VALUE
+    const maxInstances = maxInstancesPerType[type] || defaultMaxInstancesValue
+    return instanceCount > maxInstances
+  }
+
 const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>({
   elemID: new ElemID(NETSUITE, 'suiteAppClientConfig'),
   fields: {

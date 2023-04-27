@@ -15,7 +15,7 @@
 */
 import { Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
@@ -88,12 +88,11 @@ export const isError = (results: RestletResults): results is RestletErrorResults
 
 export type HttpMethod = 'POST' | 'GET'
 
-
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig
   globalLimiter: Bottleneck
-  instanceLimiter: (type: string, instanceCount: number) => boolean
+  instanceLimiter: InstanceLimiterFunc
 }
 
 export type SavedSearchQuery = {

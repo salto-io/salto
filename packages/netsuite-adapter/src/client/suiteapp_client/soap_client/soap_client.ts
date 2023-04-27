@@ -33,6 +33,7 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
+import { InstanceLimiterFunc } from '../../../config'
 import { toError } from '../../utils'
 
 const { awu } = collections.asynciterable
@@ -114,12 +115,12 @@ export default class SoapClient {
   private callsLimiter: CallsLimiter
   private ajv: Ajv
   private client: elementUtils.soap.Client | undefined
-  private instanceLimiter: (type: string, instanceCount: number) => boolean
+  private instanceLimiter: InstanceLimiterFunc
 
   constructor(
     credentials: SuiteAppSoapCredentials,
     callsLimiter: CallsLimiter,
-    instanceLimiter: (type: string, instanceCount: number) => boolean
+    instanceLimiter: InstanceLimiterFunc
   ) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter

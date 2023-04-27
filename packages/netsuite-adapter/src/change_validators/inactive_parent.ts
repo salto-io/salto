@@ -16,7 +16,7 @@
 
 import { AdditionChange, Change, ChangeError, InstanceElement, ModificationChange, ReadOnlyElementsSource, getChangeData, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { isUndefined } from 'lodash'
+import _ from 'lodash'
 import { isDataObjectType, isCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
@@ -47,7 +47,7 @@ const hasInactiveParent = async (
     ? ((await elementsSource.get(change.value.parent.elemID.createNestedID(IS_INACTIVE_FIELD))) ?? false) : false)
 
 const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferencedElements, elementsSource) => {
-  if (isUndefined(elementsSource)) {
+  if (_.isUndefined(elementsSource)) {
     return []
   }
 

@@ -41,7 +41,7 @@ export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 export const DEFAULT_MAX_INSTANCES_VALUE = 5000
-export const DEFAULT_MAX_INSTANCES_PER_TYPE = { customrecord: 10_000 }
+export const DEFAULT_MAX_INSTANCES_PER_TYPE = { customrecordtype: 10_000 }
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
@@ -224,7 +224,7 @@ const validateMaxInstancesPerType = (maxInstancesPerType: unknown): void => {
 }
 
 export function validateClientConfig(
-  client: Partial<Record<keyof SdfClientConfig, unknown>>,
+  client: unknown,
   fetchTargetDefined: boolean
 ): asserts client is SdfClientConfig {
   validatePlainObject(client, CONFIG.client)

@@ -402,19 +402,22 @@ export default class SoapClient {
       typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
     }
 
-    return Object.assign({}, ...await Promise.all(typesToSearch.flatMap(async ({ type, subtypes }) => {
-      const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+    return Object.assign(
+      { records: [], largeTypesError: [] },
+      ...await Promise.all(typesToSearch.flatMap(async ({ type, subtypes }) => {
+        const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
-      if (namespace !== undefined) {
-        const response = await this.search(type, namespace, subtypes)
-        return (typeof response === 'string') ? { largeTypesError: response } : { records: response }
-      }
-      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-      const response = await this.sendGetAllRequest(type)
+        if (namespace !== undefined) {
+          const response = await this.search(type, namespace, subtypes)
+          return (typeof response === 'string') ? { largeTypesError: [response] } : { records: response }
+        }
+        log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+        const response = await this.sendGetAllRequest(type)
 
-      log.debug(`Finished getting all records of ${type}`)
-      return { records: response }
-    })))
+        log.debug(`Finished getting all records of ${type}`)
+        return { records: response }
+      }))
+    )
   }
 
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {

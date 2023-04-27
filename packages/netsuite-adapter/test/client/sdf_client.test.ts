@@ -493,6 +493,49 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
+    it('should exclude types with too many instances', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const ids = [
+          { type: 'addressForm', scriptId: 'a' },
+          { type: 'addressForm', scriptId: 'b' },
+          { type: 'addressForm', scriptId: 'c' },
+          { type: 'addressForm', scriptId: 'd' },
+          { type: 'advancedpdftemplate', scriptId: 'd' },
+        ]
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const client = mockClient({}, (_type: string, count: number) => count > 3)
+      await client.getCustomObjects(typeNames, typeNamesQuery)
+      // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
+      const numberOfExecuteActions = 6
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'advancedpdftemplate',
+        scriptid: 'd',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importConfigurationCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+    })
+
     it('should succeed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {

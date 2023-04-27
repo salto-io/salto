@@ -100,7 +100,7 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
   }
 
-  if (client && client !== undefined) {
+  if (client !== undefined) {
     validateClientConfig(client, fetchTarget !== undefined)
   }
 
@@ -214,7 +214,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
     const maxInstancesPerType = adapterConfig.client?.maxInstancesPerType ?? {}
     const defaultMaxInstancesValue = adapterConfig.client?.defaultMaxInstancesValue ?? DEFAULT_MAX_INSTANCES_VALUE
     const maxInstances = maxInstancesPerType[type] || defaultMaxInstancesValue
-    return maxInstances > instanceCount
+    return instanceCount > maxInstances
   }
 
   const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey

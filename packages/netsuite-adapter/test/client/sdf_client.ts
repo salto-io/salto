@@ -26,12 +26,12 @@ export const DUMMY_CREDENTIALS = {
   tokenId: DUMMY_TOKEN_ID,
   tokenSecret: DUMMY_TOKEN_SECRET,
 }
-const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
+const mockSdfClient = (config?: SdfClientConfig, instanceLimiter = (_t: string, _c: number) => false): SdfClient =>
   new SdfClient({
     credentials: DUMMY_CREDENTIALS,
     config,
     globalLimiter: new Bottleneck(),
-    instanceLimiter: (_t: string, _c: number) => false,
+    instanceLimiter,
   })
 
 export default mockSdfClient

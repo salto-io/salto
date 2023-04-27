@@ -199,6 +199,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { typeContext: 'neighborField' },
   },
+  {
+    src: { field: 'appInstanceId', parentTypes: ['AuthenticatorSettings'] },
+    serializationStrategy: 'id',
+    target: { type: APPLICATION_TYPE_NAME },
+  },
 ]
 
 // Resolve references to userSchema fields references to field name instead of full value

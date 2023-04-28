@@ -24,11 +24,6 @@ import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
 import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
 import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
 
-/* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const formulon = require('formulon')
-
-const { extract } = formulon
-
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
 
@@ -73,6 +68,20 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
         ...identifierTypeToElementName(identifierInfo).map(naclCase))
     ))
 )
+
+
+const IDENTIFIER_REGEX = /(?:^|[^'"\w$]+)([^\s'"()&|+/*=\-,]+)(?:[\s),]|$)/mgi
+const extractIdentifiers = (formula: string): string[] => {
+  formula.replace(/"[^"]"/g, '""')
+  formula.replace(/'[^']'/g, '\'\'')
+  const identifiers: string[] = []
+  let match = IDENTIFIER_REGEX.exec(formula)
+  while (match) {
+    identifiers.push(match[1])
+    match = IDENTIFIER_REGEX.exec(formula)
+  }
+  return identifiers
+}
 
 const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElementsSource): Promise<void> => {
   const isValidReference = async (elemId: ElemID): Promise<boolean> => {
@@ -123,7 +132,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
 
   try {
     const formulaIdentifiers: string[] = log.time(
-      () => (extract(formula)),
+      () => (extractIdentifiers(formula)),
       `Parse formula '${formula.slice(0, 15)}'`
     )
 

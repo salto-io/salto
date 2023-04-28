@@ -40,7 +40,6 @@
     "@salto-io/lowerdash": "0.3.37",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
-    "formulon": "^6.24.1",
     "he": "^1.2.0",
     "joi": "^17.4.0",
     "jsforce": "https://github.com/salto-io/jsforce.git#3e8adeb2b14f8e443852605729990fd978efc209",

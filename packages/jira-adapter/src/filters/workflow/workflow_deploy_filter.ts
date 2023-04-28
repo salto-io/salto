@@ -98,8 +98,7 @@ export const deployWorkflow = async (
 
   fixGroupNames(instance)
   const instanceCopy = instance.clone() as WorkflowInstance
-  const isNeedToDeployDiagram = !isRemovalChange(resolvedChange) && isHasDiagramFields(instance)
-  if (isNeedToDeployDiagram) {
+  if (!isRemovalChange(resolvedChange)) {
     removeWorkflowDiagramFields(instance)
   }
   await defaultDeployChange({
@@ -112,7 +111,7 @@ export const deployWorkflow = async (
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
-  if (isNeedToDeployDiagram) {
+  if (!isRemovalChange(resolvedChange) && isHasDiagramFields(instanceCopy)) {
     try {
       const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instanceCopy })
       await deployWorkflowDiagram(instanceCopy, client, workflowDiagramMaps)

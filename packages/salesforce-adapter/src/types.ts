@@ -106,6 +106,7 @@ export type ChangeValidatorName = (
   | 'lastLayoutRemoval'
   | 'accountSettings'
   | 'unknownPicklistValues'
+  | 'installedPackages'
   | 'dataCategoryGroup'
 )
 
@@ -605,6 +606,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
     dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
+    installedPackages: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

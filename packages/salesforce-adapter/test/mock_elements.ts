@@ -604,6 +604,9 @@ export const mockDefaultValues = {
     description: 'Test Static Resource Description',
     content: Buffer.from('<xml/>'),
   },
+  [INSTALLED_PACKAGE_METADATA]: {
+    [INSTANCE_FULL_NAME_FIELD]: 'test_namespace',
+  },
   DataCategoryGroup: {
     [INSTANCE_FULL_NAME_FIELD]: 'TestDataCategoryGroup',
   },

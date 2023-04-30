@@ -265,3 +265,4 @@ For more details see the DeployOptions section in the [salesforce documentation 
 | picklistPromote       | true                   | Disallow promoting picklist value-set to global since it cannot be done with the API              |
 | validateOnlyFlag      | true                   | Disallow deploying data records in a validation only deploy                                       |
 | dataCategoryGroup     | true                   | Warn when deploying additions or changes to DataCategoryGroup elements                            |
+| installedPackages     | true                   | Disallow any changes on metadata instances of type InstalledPackage.                              |

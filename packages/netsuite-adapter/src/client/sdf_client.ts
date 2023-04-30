@@ -141,7 +141,7 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
-  private readonly instanceLimiter: (type: string, instanceCount: number) => boolean
+  private readonly instanceLimiter: InstanceLimiterFunc
 
   constructor({
     credentials,
@@ -555,6 +555,7 @@ export default class SdfClient {
     const excludedTypes: string[] = []
     const filterLargeTypes = ([type, instances]: [string, ObjectID[]]): boolean => {
       if (this.instanceLimiter(type, instances.length)) {
+        log.info(`Excluding type ${type} as it has about ${instances.length} elements.`)
         excludedTypes.push(type)
         return false
       }

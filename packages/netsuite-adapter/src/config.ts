@@ -40,7 +40,7 @@ export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_MAX_INSTANCES_VALUE = 5000
+export const DEFAULT_MAX_INSTANCES_VALUE = 2000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = { customrecordtype: 10_000 }
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
@@ -253,6 +253,9 @@ export const instanceLimiter = (clientConfig?: SdfClientConfig): InstanceLimiter
     const maxInstancesPerType = clientConfig?.maxInstancesPerType ?? {}
     const defaultMaxInstancesValue = clientConfig?.defaultMaxInstancesValue ?? DEFAULT_MAX_INSTANCES_VALUE
     const maxInstances = maxInstancesPerType[type] || defaultMaxInstancesValue
+    if (maxInstances === UNLIMITED_INSTANCES_VALUE) {
+      return false
+    }
     return instanceCount > maxInstances
   }
 
@@ -666,6 +669,9 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceed File Cabinet\'s size limitation.'
  + ' To include them, increase the File Cabinet\'s size limitation and remove their exclusion rules from the configuration file.'
 
+export const LARGE_TYPES_EXCLUDED_MESSAGE = 'Some types were excluded from the fetch as the elements of that type were too numerous.'
+ + ' To include them, increase the types elements\' size limitations and remove their exclusion rules.'
+
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
 
@@ -759,7 +765,11 @@ const updateConfigFromFailures = (
   failedFilePaths: FailedFiles,
   failedTypes: FailedTypes,
   config: NetsuiteConfig,
-): { didUpdateFromFailures: boolean; didUpdateLargeFolders: boolean} => {
+): {
+  didUpdateFromFailures: boolean
+  didUpdateLargeFolders: boolean
+  didUpdateLargeTypes: boolean
+} => {
   const updateConfigFromFailedFetch = (): boolean => {
     const suggestions = toConfigSuggestions(
       failedToFetchAllAtOnce, failedFilePaths, failedTypes
@@ -815,9 +825,26 @@ const updateConfigFromFailures = (
     return false
   }
 
+  const updateConfigFromLargeTypes = (): boolean => {
+    const { excludedTypes } = failedTypes
+    if (excludedTypes && !_.isEmpty(excludedTypes)) {
+      const typesExcludeQuery = {
+        fileCabinet: [],
+        types: excludedTypes.map(type => ({ name: type })),
+      }
+      config.fetch = {
+        ...config.fetch,
+        exclude: combineQueryParams(config.fetch?.exclude, typesExcludeQuery),
+      }
+      return true
+    }
+    return false
+  }
+
   return {
     didUpdateFromFailures: updateConfigFromFailedFetch(),
     didUpdateLargeFolders: updateConfigFromLargeFolders(),
+    didUpdateLargeTypes: updateConfigFromLargeTypes(),
   }
 }
 
@@ -857,6 +884,7 @@ export const getConfigFromConfigChanges = (
   const {
     didUpdateFromFailures,
     didUpdateLargeFolders,
+    didUpdateLargeTypes,
   } = updateConfigFromFailures(
     failedToFetchAllAtOnce,
     failedFilePaths,
@@ -869,6 +897,9 @@ export const getConfigFromConfigChanges = (
       : undefined,
     didUpdateLargeFolders
       ? LARGE_FOLDERS_EXCLUDED_MESSAGE
+      : undefined,
+    didUpdateLargeTypes
+      ? LARGE_TYPES_EXCLUDED_MESSAGE
       : undefined,
   ].filter(values.isDefined)
 

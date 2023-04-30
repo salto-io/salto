@@ -610,9 +610,9 @@ export default class SoapClient {
     namespace: string,
     subtypes?: string[]
   ): Promise<RecordValue[] | string> {
-    // TODO change here to get the first page and calc the amount of instances
     const firstSearchPage = await this.sendSearchRequest(type, namespace, subtypes)
     if (this.instanceLimiter(type, firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE)) {
+      log.info(`Excluding type ${type} as it has about ${firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE} elements.`)
       return type
     }
     const responses = await this.getAllSearchPages(

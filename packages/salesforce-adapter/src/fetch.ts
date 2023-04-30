@@ -31,6 +31,7 @@ import {
   UNLIMITED_INSTANCES_VALUE,
   FOLDER_CONTENT_TYPE,
   API_NAME_SEPARATOR,
+  INSTALLED_PACKAGE_METADATA,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -178,7 +179,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   }
 
   // Managed package names should exactly match obj.namespacePrefix
-  if (obj.fullName === obj.namespacePrefix) {
+  if (obj.type === INSTALLED_PACKAGE_METADATA) {
     return obj.fullName
   }
 
@@ -204,8 +205,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
     if (obj.fullName.includes(API_NAME_SEPARATOR)) {
     // Case for API name with an object <Object>.X where it should be <Object>.<namespace>__X
-      const [nameWithoutNamespace, nameParts] = obj.fullName.split(API_NAME_SEPARATOR).reverse()
-      return `${makeArray(nameParts).reverse().join(API_NAME_SEPARATOR)}${API_NAME_SEPARATOR}${namePrefix}${nameWithoutNamespace}`
+      return obj.fullName.replace(API_NAME_SEPARATOR, `${API_NAME_SEPARATOR}${namePrefix}`)
     }
     return `${namePrefix}${obj.fullName}`
   }

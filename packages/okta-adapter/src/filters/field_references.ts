@@ -13,22 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { referencesRules, OktaFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
+import { FETCH_CONFIG } from '../config'
 
 
 /**
  * Convert field values into references, based on predefined rules.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
+    const fixedDefs = referencesRules
+      .map(def => (
+        config[FETCH_CONFIG].enableMissingReferences ? def : _.omit(def, 'oktaMissingRefStrategy')
+      ))
     await referenceUtils.addReferences({
       elements,
       fieldsToGroupBy: ['id', 'name', 'key'],
-      defs: referencesRules,
+      defs: fixedDefs,
       contextStrategyLookup,
       fieldReferenceResolverCreator: defs => new OktaFieldReferenceResolver(defs),
     })

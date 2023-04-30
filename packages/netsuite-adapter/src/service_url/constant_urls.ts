@@ -72,6 +72,8 @@ const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> =
   transactioncolumncustomfield: 'app/common/custom/columncustfields.nl',
   translationcollection: 'app/translations/ui/managetranslations.nl#/collections',
   workflow: 'app/common/workflow/setup/workflowlist.nl',
+  financiallayout: '/app/reporting/financiallayouts.nl',
+  reportdefinition: '/app/reporting/savedreports.nl',
   cmscontenttype: undefined,
   customrecordactionscript: undefined,
   dataset: undefined,
@@ -79,8 +81,6 @@ const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> =
   promotionsplugin: undefined,
   publisheddashboard: undefined,
   workbook: undefined,
-  financiallayout: undefined,
-  reportdefinition: undefined,
 }
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {

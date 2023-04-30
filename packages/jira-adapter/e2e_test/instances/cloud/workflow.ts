@@ -176,9 +176,11 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
     {
       name: 'TransitionToShared',
       description: '',
-      from: [
-        createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-      ],
+      from: [{
+        id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+        sourceAngle: 12.45,
+        targetAngle: 67.89,
+      }],
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'directed',
       rules: {
@@ -389,6 +391,10 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         key: 'jira.issue.editable',
         value: 'true',
       }],
+      direction: {
+        x: 12.34,
+        y: 56.78,
+      },
     },
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
@@ -397,6 +403,10 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         key: 'jira.issue.editable',
         value: 'true',
       }],
+      direction: {
+        x: 67.89,
+        y: 20.78,
+      },
     },
   ],
 })

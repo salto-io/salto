@@ -19,9 +19,18 @@ import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
-import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL, FIELD_ANNOTATIONS } from '../../src/constants'
+import {
+  SALESFORCE,
+  API_NAME,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  LABEL,
+  FIELD_ANNOTATIONS,
+  CUSTOM_OBJECT_ID_FIELD,
+} from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
 
 describe('Custom Object Instances References filter', () => {
   let client: SalesforceClient
@@ -358,6 +367,50 @@ describe('Custom Object Instances References filter', () => {
           errorMsg => errorMsg.includes(instance.elemID.name)
         ) || errorMessages.some(errorMsg => errorMsg.includes(instance.value.Id))
         expect(warningsIncludeNameOrId).toBeTruthy()
+      })
+    })
+    describe('when instances with empty Salto ID exist', () => {
+      let instancesWithEmptyNames: InstanceElement[]
+      beforeEach(async () => {
+        instancesWithEmptyNames = [
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Product2,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '01t8d000003NIL3AAO',
+            }
+          ),
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Product2,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '01t3f005723ACL3AAO',
+            }
+          ),
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Account,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '0018d00000PxfVvAAJ',
+            }
+          ),
+        ]
+        elements = instancesWithEmptyNames.map(instance => instance.clone())
+        const fetchResult = await filter.onFetch(elements)
+        errors = fetchResult ? fetchResult.errors ?? [] : []
+      })
+      it('should create fetch warnings and omit the instances', () => {
+        expect(errors).toIncludeSameMembers([
+          expect.objectContaining({
+            severity: 'Warning',
+            message: expect.stringContaining('collisions') && expect.stringContaining('Product2'),
+          }),
+          expect.objectContaining({
+            severity: 'Warning',
+            message: expect.stringContaining('Omitted Instance of type Account'),
+          }),
+        ])
+        expect(elements).not.toIncludeAnyMembers(instancesWithEmptyNames)
       })
     })
   })

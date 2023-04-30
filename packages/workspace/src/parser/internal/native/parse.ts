@@ -15,6 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { flattenElementStr } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
@@ -25,6 +26,8 @@ import { ParseContext } from './types'
 import { replaceValuePromises, positionAtStart, positionAtEnd } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
 import { UnknownCharacter } from './consumers/values'
+
+const log = logger(module)
 
 const isVariableDef = (context: ParseContext): boolean => (
   context.lexer.peek()?.type === TOKEN_TYPES.WORD
@@ -112,6 +115,8 @@ export async function parseBuffer(
           e.message,
         ))
       }
+    } else {
+      log.error('Unexpected error while parsing %s: %o', filename, e)
     }
   }
 

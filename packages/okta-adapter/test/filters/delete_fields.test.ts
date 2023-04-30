@@ -17,7 +17,7 @@
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
-import deleteRecurseIntoFilter from '../../src/filters/delete_recurse_into_fields'
+import deleteRecurseIntoFilter from '../../src/filters/delete__fields'
 import { getFilterParams } from '../utils'
 
 describe('deleteRecurseIntoFilter', () => {
@@ -47,7 +47,7 @@ describe('deleteRecurseIntoFilter', () => {
       expect(applicationInstance.value.appUserSchema).toEqual(undefined)
       expect(applicationInstance.value).toEqual({ label: 'app' })
     })
-    it('should do nothing if roles field is missing', async () => {
+    it('should do nothing if field is missing', async () => {
       const groupInstance = new InstanceElement(
         'group',
         groupType,

@@ -60,7 +60,7 @@ const deletePropertiesWithNull = (instance: InstanceElement): void => {
 }
 
 /**
- * When a user wants to delete a custom property from the a schema, the custom property is set to null.
+ * When a user wants to delete a custom property from a schema, the custom property is set to null.
  * This is in order for Okta to delete the property from the schema.
  * This filter removes the custom properties that are set to null in the onDeploy.
  */

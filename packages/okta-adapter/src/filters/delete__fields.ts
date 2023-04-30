@@ -27,7 +27,7 @@ const TYPES_TO_FIELDS: Record<string, string[]> = {
  * the recurseInto function cannot be removes with fieldsToOmit.
  */
 const filter: FilterCreator = () => ({
-  name: 'deleteRecurseIntoFilter',
+  name: 'deleteFieldsFilter',
   onFetch: async (elements: Element[]) => {
     const instancesWithFieldsToDelete = elements.filter(isInstanceElement)
       .filter(instance => Object.keys(TYPES_TO_FIELDS).includes(instance.elemID.typeName))

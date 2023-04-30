@@ -358,6 +358,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
       standaloneFields: [{ fieldName: 'appUserSchema' }],
+      nestStandaloneInstances: false,
     },
     deployRequests: {
       add: {
@@ -400,7 +401,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       idFields: ['title'],
-      nestStandaloneInstances: false,
       dataField: '.',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
         { fieldName: '$schema' },
@@ -1218,9 +1218,10 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
       .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
     ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
-    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
+    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
+    // UserSchema and AppUserSchema are from the same swagger endpoint, but have different names.
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
   ],
   typeNameOverrides: [

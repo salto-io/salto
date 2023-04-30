@@ -76,7 +76,7 @@ export const createAdapterApiConfigType = ({
   transformationTypes,
   additionalRequestFields,
   additionalActions,
-  additionalIdPrefix,
+  elemIdPrefix = '',
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
@@ -84,11 +84,16 @@ export const createAdapterApiConfigType = ({
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalActions?: string[]
-  additionalIdPrefix?: string
+  elemIdPrefix?: string
 }): ObjectType => {
-  const requestTypes = createRequestConfigs(adapter, additionalRequestFields, additionalActions, additionalIdPrefix)
+  const requestTypes = createRequestConfigs({
+    adapter,
+    additionalFields: additionalRequestFields,
+    additionalActions,
+    elemIdPrefix,
+  })
   const typeDefaultsConfigType = createMatchingObjectType<Partial<TypeDefaultsConfig>>({
-    elemID: new ElemID(adapter, getConfigTypeName('typeDefaultsConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typeDefaultsConfig')),
     fields: {
       request: { refType: requestTypes.fetch.requestDefault },
       transformation: {
@@ -102,7 +107,7 @@ export const createAdapterApiConfigType = ({
   })
 
   const typesConfigType = createMatchingObjectType<TypeConfig>({
-    elemID: new ElemID(adapter, getConfigTypeName('typesConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typesConfig')),
     fields: {
       request: { refType: requestTypes.fetch.request },
       deployRequests: {
@@ -118,7 +123,7 @@ export const createAdapterApiConfigType = ({
 
 
   const adapterApiConfigType = createMatchingObjectType<Partial<AdapterApiConfig>>({
-    elemID: new ElemID(adapter, getConfigTypeName('adapterApiConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'adapterApiConfig')),
     fields: {
       types: {
         refType: new MapType(typesConfigType),

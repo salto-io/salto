@@ -20,7 +20,7 @@ import { getConfigTypeName } from '../../src/config/request'
 describe('config_request', () => {
   describe('createRequestConfigs', () => {
     it('should return default config type when no custom fields were added', async () => {
-      const { fetch: { request, requestDefault } } = createRequestConfigs('myAdapter')
+      const { fetch: { request, requestDefault } } = createRequestConfigs({ adapter: 'myAdapter' })
       expect(Object.keys(request.fields)).toHaveLength(6)
       expect(Object.keys(request.fields).sort()).toEqual(['dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField', 'url'])
       expect(request.fields.url.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
@@ -65,10 +65,10 @@ describe('config_request', () => {
     })
 
     it('should include additional fields when added', () => {
-      const { fetch: { request, requestDefault } } = createRequestConfigs(
-        'myAdapter',
-        { a: { refType: BuiltinTypes.STRING } },
-      )
+      const { fetch: { request, requestDefault } } = createRequestConfigs({
+        adapter: 'myAdapter',
+        additionalFields: { a: { refType: BuiltinTypes.STRING } },
+      })
       expect(Object.keys(request.fields)).toHaveLength(7)
       expect(Object.keys(request.fields).sort()).toEqual(['a', 'dependsOn', 'paginationField', 'queryParams', 'recurseInto', 'recursiveQueryByResponseField', 'url'])
       expect(request.fields.a.refType.elemID.isEqual(BuiltinTypes.STRING.elemID)).toBeTruthy()
@@ -79,11 +79,10 @@ describe('config_request', () => {
     })
 
     it('should include additional actions when added', () => {
-      const { deployRequests } = createRequestConfigs(
-        'myAdapter',
-        undefined,
-        ['a', 'b']
-      )
+      const { deployRequests } = createRequestConfigs({
+        adapter: 'myAdapter',
+        additionalActions: ['a', 'b'],
+      })
       expect(Object.keys(deployRequests.fields)).toHaveLength(5)
       expect(Object.keys(deployRequests.fields).sort()).toEqual(['a', 'add', 'b', 'modify', 'remove'])
       expect(deployRequests.fields.a.refType.elemID).toEqual(deployRequests.fields.add.refType.elemID)
@@ -208,10 +207,10 @@ describe('config_request', () => {
   })
   describe('getConfigTypeName', () => {
     it('should use additional prefix if provided', () => {
-      expect(getConfigTypeName('someName', 'prefix')).toEqual('prefix__someName')
+      expect(getConfigTypeName('prefix', 'someName')).toEqual('prefix_someName')
     })
     it('should return the typeName if prefix is not provided', () => {
-      expect(getConfigTypeName('someName')).toEqual('someName')
+      expect(getConfigTypeName('', 'someName')).toEqual('someName')
     })
   })
 })

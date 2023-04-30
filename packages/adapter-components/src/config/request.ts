@@ -21,10 +21,9 @@ import { collections } from '@salto-io/lowerdash'
 const { findDuplicates } = collections.array
 
 export const ARG_PLACEHOLDER_MATCHER = /\{([\w_]+)\}/g
-const ID_SEPARATOR = '__'
 
-export const getConfigTypeName = (typeName: string, additionalPrefix?: string): string =>
-  additionalPrefix?.concat(ID_SEPARATOR, typeName) ?? typeName
+export const getConfigTypeName = (prefix: string, typeName: string): string =>
+  (_.isEmpty(prefix) ? typeName : prefix.concat('_', typeName))
 
 export type DependsOnConfig = {
   pathParam: string
@@ -89,14 +88,19 @@ export type DeploymentRequestsByAction<A extends string = ActionName> = Partial<
 
 export type FetchRequestDefaultConfig = Partial<Omit<FetchRequestConfig, 'url'>>
 
-export const createRequestConfigs = (
-  adapter: string,
-  additionalFields?: Record<string, FieldDefinition>,
-  additionalActions?: string[],
-  additionalIdPrefix?: string,
-): { fetch: { request: ObjectType; requestDefault: ObjectType }; deployRequests: ObjectType } => {
+export const createRequestConfigs = ({
+  adapter,
+  additionalFields,
+  additionalActions,
+  elemIdPrefix = '',
+}:{
+  adapter: string
+  additionalFields?: Record<string, FieldDefinition>
+  additionalActions?: string[]
+  elemIdPrefix?: string
+}): { fetch: { request: ObjectType; requestDefault: ObjectType }; deployRequests: ObjectType } => {
   const dependsOnFromConfig = new ObjectType({
-    elemID: new ElemID(adapter, getConfigTypeName('dependsOnFromConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'dependsOnFromConfig')),
     fields: {
       type: {
         refType: BuiltinTypes.STRING,
@@ -116,7 +120,7 @@ export const createRequestConfigs = (
     },
   })
   const dependsOnConfigType = createMatchingObjectType<DependsOnConfig>({
-    elemID: new ElemID(adapter, getConfigTypeName('dependsOnConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'dependsOnConfig')),
     fields: {
       pathParam: {
         refType: BuiltinTypes.STRING,
@@ -137,7 +141,7 @@ export const createRequestConfigs = (
   })
 
   const recurseIntoContextType = createMatchingObjectType<RecurseIntoContext>({
-    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoContext', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'recurseIntoContext')),
     fields: {
       name: {
         refType: BuiltinTypes.STRING,
@@ -161,7 +165,7 @@ export const createRequestConfigs = (
   const recurseIntoConditionType = createMatchingObjectType<
     RecurseIntoConditionBase & Partial<RecurseIntoCondition
   >>({
-    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoCondition', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'recurseIntoCondition')),
     fields: {
       match: {
         refType: new ListType(BuiltinTypes.STRING),
@@ -181,7 +185,7 @@ export const createRequestConfigs = (
     },
   })
   const recurseIntoConfigType = createMatchingObjectType<RecurseIntoConfig>({
-    elemID: new ElemID(adapter, getConfigTypeName('recurseIntoConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'recurseIntoConfig')),
     fields: {
       toField: {
         refType: BuiltinTypes.STRING,
@@ -247,7 +251,7 @@ export const createRequestConfigs = (
   }
 
   const fetchRequestConfigType = new ObjectType({
-    elemID: new ElemID(adapter, getConfigTypeName('fetchRequestConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'fetchRequestConfig')),
     fields: fetchEndpointFields,
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -255,7 +259,7 @@ export const createRequestConfigs = (
   })
 
   const fetchRequestDefaultConfigType = new ObjectType({
-    elemID: new ElemID(adapter, getConfigTypeName('fetchRequestDefaultConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'fetchRequestDefaultConfig')),
     fields: _.omit(fetchEndpointFields, ['url']),
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -264,7 +268,7 @@ export const createRequestConfigs = (
 
 
   const deployRequestConfigType = new ObjectType({
-    elemID: new ElemID(adapter, getConfigTypeName('deployRequestConfig', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'deployRequestConfig')),
     fields: {
       ...sharedEndpointFields,
       method: {
@@ -292,7 +296,7 @@ export const createRequestConfigs = (
     additionalActions?.map(actionName => [actionName, { refType: deployRequestConfigType }]) ?? []
   )
   const deployRequestsType = new ObjectType({
-    elemID: new ElemID(adapter, getConfigTypeName('deployRequests', additionalIdPrefix)),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'deployRequests')),
     fields: {
       add: {
         refType: deployRequestConfigType,

@@ -15,6 +15,7 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { flattenElementStr } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
@@ -22,8 +23,11 @@ import Lexer, { TOKEN_TYPES, NoSuchElementError, UnresolvedMergeConflictError } 
 import { SourceMap } from '../../source_map'
 import { contentMergeConflict, invalidStringChar, unexpectedEndOfFile } from './errors'
 import { ParseContext } from './types'
-import { replaceValuePromises, positionAtStart } from './helpers'
+import { replaceValuePromises, positionAtStart, positionAtEnd } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
+import { UnknownCharacter } from './consumers/values'
+
+const log = logger(module)
 
 const isVariableDef = (context: ParseContext): boolean => (
   context.lexer.peek()?.type === TOKEN_TYPES.WORD
@@ -102,6 +106,17 @@ export async function parseBuffer(
           TOKEN_TYPES.MERGE_CONFLICT,
         ))
       }
+    } else if (e instanceof UnknownCharacter) {
+      // For specific scenarios (e.g. merge errors) we have more specific messages,
+      // so if there is already an error here we wouldn't want to add another one
+      if (context.errors.length === 0) {
+        context.errors.push(invalidStringChar(
+          { start: positionAtStart(e.token), end: positionAtEnd(e.token), filename },
+          e.message,
+        ))
+      }
+    } else {
+      log.error('Unexpected error while parsing %s: %o', filename, e)
     }
   }
 

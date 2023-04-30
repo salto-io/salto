@@ -23,11 +23,13 @@ import { adapter as zuoraBillingAdapter } from '@salto-io/zuora-billing-adapter'
 import { adapter as jiraAdapter } from '@salto-io/jira-adapter'
 import { adapter as stripeAdapter } from '@salto-io/stripe-adapter'
 import { adapter as oktaAdapter } from '@salto-io/okta-adapter'
+import { adapter as sapAdapter } from '@salto-io/sap-adapter'
 
 const adapterCreators: Record<string, Adapter> = {
   salesforce: salesforceAdapter,
   netsuite: netsuiteAdapter,
   workato: workatoAdapter,
+  sap: sapAdapter,
   stripe: stripeAdapter,
   // eslint-disable-next-line camelcase
   zuora_billing: zuoraBillingAdapter,

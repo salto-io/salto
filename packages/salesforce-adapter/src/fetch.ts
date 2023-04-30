@@ -178,7 +178,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
     return obj.fullName
   }
 
-  // Managed package names should exactly match obj.namespacePrefix
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
   if (obj.type === INSTALLED_PACKAGE_METADATA) {
     return obj.fullName
   }
@@ -205,7 +205,8 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
     if (obj.fullName.includes(API_NAME_SEPARATOR)) {
     // Case for API name with an object <Object>.X where it should be <Object>.<namespace>__X
-      return obj.fullName.replace(API_NAME_SEPARATOR, `${API_NAME_SEPARATOR}${namePrefix}`)
+      const [parentName, instanceName] = obj.fullName.split(API_NAME_SEPARATOR)
+      return `${parentName}${API_NAME_SEPARATOR}${namePrefix}${instanceName}`
     }
     return `${namePrefix}${obj.fullName}`
   }

@@ -54,7 +54,10 @@ const groupByValues = (ruleTogroupIdsRecord: Record<string, string[]>): Record<s
   return result
 }
 
-
+/**
+ * prevents the assignment of admin roles to groups that are defined as "target groups" in other
+ * group rules.
+ */
 export const preventRoleToTargetGroupsValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
     log.error('Failed to run addRoleToTargetGroupValidator because element source is undefined')

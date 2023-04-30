@@ -62,7 +62,7 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(type.elemID)
       })
 
-      it('should have change error for field', async () => {
+      it('should have change error for custom field', async () => {
         const field = new Field(
           new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
           'custom_field',
@@ -77,6 +77,21 @@ describe('customization type change validator', () => {
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
+      })
+
+      it('should not have change error for internal field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'non_custom_field',
+          BuiltinTypes.STRING,
+          { [SCRIPT_ID]: 'non_custom_field' },
+        )
+        const after = field.clone()
+        after.annotations[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: field, after })]
+        )
+        expect(changeErrors).toHaveLength(0)
       })
     })
     describe('is missing on added change', () => {
@@ -105,7 +120,7 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(type.elemID)
       })
 
-      it('should have change error for field', async () => {
+      it('should have change error for custom field', async () => {
         const field = new Field(
           new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
           'custom_field',
@@ -117,6 +132,18 @@ describe('customization type change validator', () => {
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
+      })
+
+      it('should not have change error for internal field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'non_custom_field',
+          BuiltinTypes.STRING,
+        )
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: field })]
+        )
+        expect(changeErrors).toHaveLength(0)
       })
     })
 

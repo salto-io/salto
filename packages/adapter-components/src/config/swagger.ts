@@ -133,6 +133,7 @@ export const createSwaggerAdapterApiConfigType = ({
   additionalRequestFields,
   additionalTransformationFields,
   additionalActions,
+  elemIdPrefix = '',
 }: {
   adapter: string
   additionalTypeFields?: Record<string, FieldDefinition>
@@ -140,11 +141,13 @@ export const createSwaggerAdapterApiConfigType = ({
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalTransformationFields?: Record<string, FieldDefinition>
   additionalActions?: string[]
+  elemIdPrefix?: string
 }): ObjectType => {
-  const transformationTypes = createTransformationConfigTypes(
+  const transformationTypes = createTransformationConfigTypes({
     adapter,
-    additionalTransformationFields,
-  )
+    additionalFields: additionalTransformationFields,
+    elemIdPrefix,
+  })
   return createAdapterApiConfigType({
     adapter,
     transformationTypes,
@@ -157,6 +160,7 @@ export const createSwaggerAdapterApiConfigType = ({
     },
     additionalRequestFields,
     additionalActions,
+    elemIdPrefix,
   })
 }
 

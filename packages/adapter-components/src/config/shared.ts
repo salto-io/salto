@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
-import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
+import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -76,6 +76,7 @@ export const createAdapterApiConfigType = ({
   transformationTypes,
   additionalRequestFields,
   additionalActions,
+  elemIdPrefix = '',
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
@@ -83,10 +84,16 @@ export const createAdapterApiConfigType = ({
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalActions?: string[]
+  elemIdPrefix?: string
 }): ObjectType => {
-  const requestTypes = createRequestConfigs(adapter, additionalRequestFields, additionalActions)
+  const requestTypes = createRequestConfigs({
+    adapter,
+    additionalFields: additionalRequestFields,
+    additionalActions,
+    elemIdPrefix,
+  })
   const typeDefaultsConfigType = createMatchingObjectType<Partial<TypeDefaultsConfig>>({
-    elemID: new ElemID(adapter, 'typeDefaultsConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typeDefaultsConfig')),
     fields: {
       request: { refType: requestTypes.fetch.requestDefault },
       transformation: {
@@ -100,7 +107,7 @@ export const createAdapterApiConfigType = ({
   })
 
   const typesConfigType = createMatchingObjectType<TypeConfig>({
-    elemID: new ElemID(adapter, 'typesConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typesConfig')),
     fields: {
       request: { refType: requestTypes.fetch.request },
       deployRequests: {
@@ -114,8 +121,9 @@ export const createAdapterApiConfigType = ({
     },
   })
 
+
   const adapterApiConfigType = createMatchingObjectType<Partial<AdapterApiConfig>>({
-    elemID: new ElemID(adapter, 'adapterApiConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'adapterApiConfig')),
     fields: {
       types: {
         refType: new MapType(typesConfigType),

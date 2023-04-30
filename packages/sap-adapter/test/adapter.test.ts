@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {
-  BuiltinTypes,
   ElemID,
   InstanceElement,
   isInstanceElement,
@@ -35,6 +35,15 @@ import {
   DEFAULT_CONFIG,
   SUPPORTED_TYPES,
 } from '../src/config'
+import mockReplies from './mock_replies.json'
+
+
+type MockReply = {
+  url: string
+  params?: Record<string, string>
+  response: unknown
+}
+
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -47,22 +56,41 @@ jest.mock('@salto-io/adapter-components', () => {
     return {
       allTypes: {
         ...Object.fromEntries(Object.values(SUPPORTED_TYPES).flat().map(
-          type => [naclCase(type), new ObjectType({ elemID: new ElemID(SAP, type) })]
+          type => [
+            naclCase(type),
+            new ObjectType({
+              elemID: new ElemID(SAP, type),
+              fields: {
+                value: { refType: new ListType(new ObjectType({ elemID: new ElemID(SAP, naclCase(`MCMService_${type}`)) })) },
+              },
+            }),
+          ]
         )),
-        MCMService_EnergySourceTypes: new ObjectType({
-          elemID: new ElemID(SAP, 'MCMService_EnergySourceTypes'),
-          fields: {
-            texts: { refType: new ListType(new ObjectType({ elemID: new ElemID(SAP, 'texts') })) },
-            name: { refType: BuiltinTypes.STRING },
-            descr: { refType: BuiltinTypes.STRING },
-            code: { refType: BuiltinTypes.STRING },
+      },
+      parsedConfigs: {
+        EnergySourceTypes: {
+          request: {
+            url: '/EnergySourceTypes',
           },
-        }),
-        parsedConfigs: {
-          MCMService_EnergySourceTypes: {
-            request: {
-              url: '/odata/v4/api/mcm/v1/EnergySourceTypes',
-            },
+        },
+        MeasuringTypes: {
+          request: {
+            url: '/MeasuringTypes',
+          },
+        },
+        MCIRateTypes: {
+          request: {
+            url: '/MCIRateTypes',
+          },
+        },
+        PowerRangeTypes: {
+          request: {
+            url: '/PowerRangeTypes',
+          },
+        },
+        MCMFormulas: {
+          request: {
+            url: '/MCMFormulas',
           },
         },
       },
@@ -97,7 +125,12 @@ describe('adapter', () => {
       // eslint-disable-next-line camelcase
       token_type: 'bearer', access_token: 'token123', expires_in: 10000,
     })
-    mockAxiosAdapter.onPost('/v1/connections').reply(200, { success: true })
+    mockAxiosAdapter.onGet('/').reply(200, { success: true });
+    (mockReplies as MockReply[]).forEach(({ url, params, response }) => {
+      mockAxiosAdapter.onGet(url, !_.isEmpty(params) ? { params } : undefined).replyOnce(
+        200, response
+      )
+    })
   })
 
   afterEach(() => {
@@ -125,7 +158,7 @@ describe('adapter', () => {
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
 
-        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(2)
+        expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledTimes(1)
         expect(adapterComponents.elements.swagger.generateTypes).toHaveBeenCalledWith(
           SAP,
           {
@@ -139,8 +172,30 @@ describe('adapter', () => {
           [...new Set(elements.filter(isInstanceElement).map(e => e.elemID.typeName))].sort()
         ).toEqual([
           'MCMService_EnergySourceTypes',
+          'MCMService_MCIRateTypes',
+          'MCMService_MCMFormulas',
+          'MCMService_MeasuringTypes',
+          'MCMService_PowerRangeTypes',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(145)
+        expect(elements.filter(isInstanceElement)).toHaveLength(12)
+      })
+      describe('deploy', () => {
+        it('should throw not implemented', async () => {
+          const operations = adapter.operations({
+            credentials: new InstanceElement(
+              'config',
+              oauthClientCredentialsType,
+              { clientId: 'client', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
+            ),
+            config: new InstanceElement(
+              'config',
+              configType,
+              DEFAULT_CONFIG,
+            ),
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+          await expect(operations.deploy({ changeGroup: { groupID: '', changes: [] } })).rejects.toThrow(new Error('Not implemented.'))
+        })
       })
     })
   })

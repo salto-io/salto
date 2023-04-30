@@ -295,7 +295,7 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -559,7 +559,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -629,7 +629,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
@@ -791,6 +791,7 @@ describe('sdf client', () => {
           savedcsvimport: ['c'],
           advancedpdftemplate: ['a'],
         },
+        excludedTypes: [],
       })
     })
 
@@ -845,6 +846,7 @@ describe('sdf client', () => {
         unexpectedError: {
           addressForm: ['a', 'b'],
         },
+        excludedTypes: [],
       })
     })
 

@@ -379,7 +379,7 @@ export default class SdfClient {
       return {
         elements: [],
         failedToFetchAllAtOnce: false,
-        failedTypes: { unexpectedError: {}, lockedError: {} },
+        failedTypes: { unexpectedError: {}, lockedError: {}, excludedTypes: [] },
       }
     }
 
@@ -421,6 +421,7 @@ export default class SdfClient {
       lockedError: concatObjects(
         importResult.map(res => res.failedTypes.lockedError)
       ),
+      excludedTypes: importResult.flatMap(res => res.failedTypes.excludedTypes),
     }
 
     const elements = importResult.flatMap(res => res.elements)
@@ -515,6 +516,7 @@ export default class SdfClient {
               failedTypeToInstances.unexpectedError[type]
             )).unexpectedError,
             lockedError: failedTypeToInstances.lockedError,
+            excludedTypes: failedTypeToInstances.excludedTypes,
           }
         }
         log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypes: %o',
@@ -540,6 +542,7 @@ export default class SdfClient {
         return {
           lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
           unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+          excludedTypes: results.flatMap(res => res.excludedTypes),
         }
       }
     }
@@ -638,7 +641,7 @@ export default class SdfClient {
         return false
       }))
 
-    return { unexpectedError, lockedError }
+    return { unexpectedError, lockedError, excludedTypes: [] }
   }
 
   private static fixTypeName(typeName: string): string {

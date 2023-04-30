@@ -135,7 +135,7 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
-        failedTypes: { lockedError: {}, unexpectedError: {} },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedToFetchAllAtOnce: false,
       })
     client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
@@ -192,7 +192,7 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [customTypeInfo, featuresCustomTypeInfo],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
@@ -515,7 +515,7 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [customTypeInfo],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(elements).toHaveLength(metadataTypes.length)
@@ -541,7 +541,7 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
         { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {} },
+        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         config,
       )
       expect(fetchResult.updatedConfig).toBeUndefined()
@@ -560,7 +560,7 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
         { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {} },
+        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -572,7 +572,7 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances },
+          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
@@ -581,7 +581,7 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         false,
         { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: failedTypeToInstances },
+        { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -592,7 +592,7 @@ describe('Adapter', () => {
         .mockResolvedValue({
           elements: [],
           failedToFetchAllAtOnce: true,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
@@ -601,7 +601,7 @@ describe('Adapter', () => {
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
         true,
         { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {} },
+        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)

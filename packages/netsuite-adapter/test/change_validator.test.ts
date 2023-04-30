@@ -54,7 +54,7 @@ describe('change validator', () => {
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
         failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {} },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         errors: [],
         elements: [],
       }))
@@ -127,7 +127,7 @@ describe('change validator', () => {
       Promise<FetchByQueryReturnType> => (Promise.resolve({
         failedToFetchAllAtOnce: false,
         failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {} },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         errors: [],
         elements: [serviceInstance],
       }))

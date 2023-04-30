@@ -45,7 +45,7 @@ export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomi
 export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
-  excludedTypes?: string[]
+  excludedTypes: string[]
 }
 
 export type GetCustomObjectsResult = {

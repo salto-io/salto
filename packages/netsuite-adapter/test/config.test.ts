@@ -63,7 +63,7 @@ describe('config', () => {
     expect(getConfigFromConfigChanges(
       false,
       { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
+      { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
       currentConfigWithFetch
     )).toBeUndefined()
   })
@@ -74,7 +74,7 @@ describe('config', () => {
     const configFromConfigChanges = getConfigFromConfigChanges(
       true,
       { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
-      { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes },
+      { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
       {}
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
@@ -124,7 +124,7 @@ describe('config', () => {
     const configChange = getConfigFromConfigChanges(
       true,
       { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
-      { lockedError: {}, unexpectedError: suggestedSkipListTypes },
+      { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
       currentConfigWithFetch,
     )
     expect(configChange?.config[0]
@@ -165,7 +165,7 @@ describe('config', () => {
     const configChange = getConfigFromConfigChanges(
       false,
       { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
-      { lockedError: {}, unexpectedError: {} },
+      { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
       config
     )
 

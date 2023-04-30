@@ -27,7 +27,7 @@ import { fileType, folderType } from '../../src/types/file_cabinet_types'
 const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
   failedToFetchAllAtOnce: false,
   failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-  failedTypes: { lockedError: {}, unexpectedError: {} },
+  failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
   elements: [],
 }
 
@@ -138,7 +138,7 @@ describe('safe deploy change validator', () => {
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
             failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-            failedTypes: { lockedError: {}, unexpectedError: {} },
+            failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
             elements: [serviceCustomRecordType.clone()],
           }))
           const changeErrors = await safeDeployValidator(
@@ -172,7 +172,7 @@ describe('safe deploy change validator', () => {
             Promise<FetchByQueryReturnType> => (Promise.resolve({
             failedToFetchAllAtOnce: false,
             failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
-            failedTypes: { lockedError: {}, unexpectedError: {} },
+            failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
             elements: [serviceCustomRecordType.clone()],
           }))
           const changeErrors = await safeDeployValidator([toChange({

@@ -16,9 +16,11 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {
+  BuiltinTypes,
   ElemID,
   InstanceElement,
   isInstanceElement,
+  ListType,
   ObjectType,
 } from '@salto-io/adapter-api'
 import * as adapterComponents from '@salto-io/adapter-components'
@@ -47,6 +49,15 @@ jest.mock('@salto-io/adapter-components', () => {
         ...Object.fromEntries(Object.values(SUPPORTED_TYPES).flat().map(
           type => [naclCase(type), new ObjectType({ elemID: new ElemID(SAP, type) })]
         )),
+        MCMService_EnergySourceTypes: new ObjectType({
+          elemID: new ElemID(SAP, 'MCMService_EnergySourceTypes'),
+          fields: {
+            texts: { refType: new ListType(new ObjectType({ elemID: new ElemID(SAP, 'texts') })) },
+            name: { refType: BuiltinTypes.STRING },
+            descr: { refType: BuiltinTypes.STRING },
+            code: { refType: BuiltinTypes.STRING },
+          },
+        }),
         parsedConfigs: {
           MCMService_EnergySourceTypes: {
             request: {

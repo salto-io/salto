@@ -15,18 +15,27 @@
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { GROUP_TYPE_NAME } from '../constants'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
+
+const TYPES_TO_FIELDS: Record<string, string[]> = {
+  [GROUP_TYPE_NAME]: ['roles'],
+  [APPLICATION_TYPE_NAME]: ['appUserSchema'],
+}
 
 /**
- * Delete roles field from Group type
+ * Delete fields that are added by the recurseInto function. This is needed because
+ * the recurseInto function cannot be removes with fieldsToOmit.
  */
 const filter: FilterCreator = () => ({
-  name: 'groupRolesFilter',
+  name: 'deleteRecurseIntoFilter',
   onFetch: async (elements: Element[]) => {
-    const groups = elements.filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
-    // field cannot be removed with fieldsToOmit cause it's added with recurseInto
-    groups.forEach(group => delete group.value.roles)
+    const instancesWithFieldsToDelete = elements.filter(isInstanceElement)
+      .filter(instance => Object.keys(TYPES_TO_FIELDS).includes(instance.elemID.typeName))
+    instancesWithFieldsToDelete.forEach(instance => {
+      TYPES_TO_FIELDS[instance.elemID.typeName].forEach(fieldName => {
+        delete instance.value[fieldName]
+      })
+    })
   },
 })
 

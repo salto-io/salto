@@ -41,7 +41,7 @@ import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
-import groupRolesFilter from './filters/group_roles'
+import deleteRecurseIntoFilter from './filters/delete_recurse_into_fields'
 import userFilter from './filters/user'
 import templateUrlsFilter from './filters/template_urls'
 import { OKTA } from './constants'
@@ -62,7 +62,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   queryFilter,
   standardRolesFilter,
-  groupRolesFilter,
+  deleteRecurseIntoFilter,
   userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,

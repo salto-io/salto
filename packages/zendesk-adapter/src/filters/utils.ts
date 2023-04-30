@@ -34,7 +34,7 @@ export type Condition = {
   value?: unknown
 }
 export type SubjectCondition = {
-  subject: string
+  subject: string | ReferenceExpression
   value?: unknown
 }
 

@@ -19,7 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { APPLICATION_ID, SCRIPT_ID } from '../constants'
 import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
-import { getElementValueOrAnnotations, isCustomFieldName, isDataObjectType, isFileCabinetType } from '../types'
+import { getElementValueOrAnnotations, isCustomFieldName, isCustomRecordType, isDataObjectType, isFileCabinetType } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
 
@@ -48,6 +48,9 @@ const typeServiceIdConditions = async <T extends AdditionChange<ObjectType> | Mo
   condition: (change: T, annoName: string) => boolean
 ): Promise<string[]> => {
   const { after } = change.data
+  if (!isCustomRecordType(after)) {
+    return []
+  }
   const serviceIdRefTypes = await awu(Object.entries(after.annotationRefTypes))
     .filter(async ([_annoName, refType]) => isServiceId(await refType.getResolvedValue())).toArray()
   if (serviceIdRefTypes.length === 0 && condition(change, SCRIPT_ID)) {
@@ -76,7 +79,7 @@ const fieldServiceIdConditions = <T extends AdditionChange<Field> | Modification
   change: T,
   condition: (change: T, annoName: string) => boolean
 ): string[] => {
-  if (!isCustomFieldName(change.data.after.name)) {
+  if (!(isCustomRecordType(change.data.after.parent) && isCustomFieldName(change.data.after.name))) {
     return []
   }
   return [SCRIPT_ID].filter(annoName => condition(change, annoName))

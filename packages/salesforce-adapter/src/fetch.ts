@@ -178,11 +178,6 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
     return obj.fullName
   }
 
-  // Instances of type InstalledPackage fullNames should never include the namespace prefix
-  if (obj.type === INSTALLED_PACKAGE_METADATA) {
-    return obj.fullName
-  }
-
   const namePrefix = `${obj.namespacePrefix}${NAMESPACE_SEPARATOR}`
 
   if (obj.type === LAYOUT_TYPE_ID_METADATA_TYPE) {
@@ -201,8 +196,13 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
     return obj.fullName
   }
   if (addNamespacePrefixToFullName) {
-  // In some cases, obj.fullName does not contain the namespace prefix even though
-  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+    // Instances of type InstalledPackage fullNames should never include the namespace prefix
+    if (obj.type === INSTALLED_PACKAGE_METADATA) {
+      return obj.fullName
+    }
+
+    // In some cases, obj.fullName does not contain the namespace prefix even though
+    // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
     if (obj.fullName.includes(API_NAME_SEPARATOR)) {
     // Case for API name with an object <Object>.X where it should be <Object>.<namespace>__X
       const [parentName, instanceName] = obj.fullName.split(API_NAME_SEPARATOR)

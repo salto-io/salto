@@ -208,7 +208,7 @@ export const deploy = async (
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
 export type FetchResult = {
-  changes: Iterable<FetchChange>
+  changes: FetchChange[]
   mergeErrors: MergeErrorWithElements[]
   fetchErrors: SaltoError[]
   success: boolean

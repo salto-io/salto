@@ -125,10 +125,9 @@ const fetchDiffToWorkspace = async (
     new Set([input.accountName]),
     new Set([input.accountName]),
   )
-  const allChanges = Array.from(changes)
 
-  outputLine(`Found ${allChanges.length} changes to apply`, output)
-  const conflicts = allChanges.filter(change => !_.isEmpty(change.pendingChanges))
+  outputLine(`Found ${changes.length} changes to apply`, output)
+  const conflicts = changes.filter(change => !_.isEmpty(change.pendingChanges))
   conflicts.forEach(change => {
     log.info(
       'Conflict between pending change IDs %s and incoming IDs %s',
@@ -142,10 +141,10 @@ const fetchDiffToWorkspace = async (
   }
   if (updateState) {
     outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)
-    await updateStateElements(workspace.state(), allChanges.map(change => change.change))
+    await updateStateElements(workspace.state(), changes.map(change => change.change))
   }
   outputLine(`Updating NaCl for environment ${workspace.currentEnv()}`, output)
-  await workspace.updateNaclFiles(allChanges.map(change => change.change), input.mode)
+  await workspace.updateNaclFiles(changes.map(change => change.change), input.mode)
   const { status, errors } = await validateWorkspace(workspace)
   if (status === 'Error') {
     const formattedErrors = await formatWorkspaceErrors(workspace, errors)

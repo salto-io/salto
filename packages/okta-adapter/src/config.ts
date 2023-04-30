@@ -711,6 +711,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',
+      recurseInto: [{
+        type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
+        toField: 'theme',
+        context: [{ name: 'brandId', fromField: 'id' }],
+      }],
     },
     transformation: {
       dataField: '.',
@@ -719,7 +724,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/brands/{brandId}/themes',
-      dependsOn: [{ pathParam: 'brandId', from: { type: 'api__v1__brands', field: 'id' } }],
     },
     transformation: {
       dataField: '.',
@@ -798,6 +802,19 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      standaloneFields: [{ fieldName: 'theme' }],
+      nestStandaloneInstances: false,
+      fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
+
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/brands/{brandId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
     },
   },
   BrandTheme: {
@@ -806,6 +823,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+          themeId: 'id',
+        },
+        fieldsToIgnore: ['id', 'logo', 'favicon'],
+      },
     },
   },
   EmailTemplate: {

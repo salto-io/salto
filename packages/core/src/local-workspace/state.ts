@@ -315,15 +315,6 @@ export const localState = (
       await inMemState.override(element, accounts)
       setDirty()
     },
-    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      await inMemState.overridePathIndex(unmergedElements)
-      setDirty()
-    },
-    updatePathIndex: async (unmergedElements: Element[], accountsToMaintain: string[]):
-     Promise<void> => {
-      await inMemState.updatePathIndex(unmergedElements, accountsToMaintain)
-      setDirty()
-    },
     rename: async (newPrefix: string): Promise<void> => {
       await staticFilesSource.rename(newPrefix)
 

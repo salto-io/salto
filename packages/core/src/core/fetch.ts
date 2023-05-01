@@ -908,7 +908,7 @@ export const fetchChangesFromWorkspace = async (
       )
     )).filter(values.isDefined).flat()
     const naclPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
-    await pathIndex.overridePathIndex(naclPathIndex, naclFragments)
+    await pathIndex.updatePathIndex(naclPathIndex, naclFragments)
     return pathIndex.splitElementByPath(element, naclPathIndex)
   }
 

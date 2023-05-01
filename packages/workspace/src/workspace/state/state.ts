@@ -65,8 +65,6 @@ export interface State extends ElementsSource {
   // Remove this when no longer used, SALTO-1661
   getServicesUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
-  overridePathIndex(unmergedElements: Element[]): Promise<void>
-  updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>

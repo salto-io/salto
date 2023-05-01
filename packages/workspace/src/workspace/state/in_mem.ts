@@ -25,12 +25,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
-import {
-  updatePathIndex,
-  overridePathIndex,
-  PathIndex,
-  overrideTopLevelPathIndex, updateTopLevelPathIndex, updatePathIndexTemp,
-} from '../path_index'
+import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData, updateStateElementsArgs } from './state'
 import { mergeElements } from '../../merger'
@@ -163,33 +158,6 @@ export const buildInMemState = (
     getServicesUpdateDates: getAccountsUpdateDates,
     existingAccounts: async (): Promise<string[]> =>
       awu(getUpdateDate(await stateData()).keys()).toArray(),
-    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      const currentStateData = await stateData()
-      await overridePathIndex(currentStateData.pathIndex, unmergedElements)
-      await overrideTopLevelPathIndex(currentStateData.topLevelPathIndex, unmergedElements)
-    },
-    updatePathIndex: async (
-      unmergedElements: Element[],
-      servicesNotToChange: string[]
-    ): Promise<void> => {
-      const currentStateData = await stateData()
-      await updatePathIndex(
-        {
-          index: currentStateData.pathIndex,
-          elements: unmergedElements,
-          accountsToMaintain: servicesNotToChange,
-          isTopLevel: false,
-        }
-      )
-      await updatePathIndex(
-        {
-          index: currentStateData.topLevelPathIndex,
-          elements: unmergedElements,
-          accountsToMaintain: servicesNotToChange,
-          isTopLevel: true,
-        }
-      )
-    },
     getPathIndex: async (): Promise<PathIndex> =>
       (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> =>
@@ -244,7 +212,7 @@ export const buildInMemState = (
 
       const currentStateData = await stateData()
       await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
-      await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
+      await updatePathIndex(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
     },
   }
 }

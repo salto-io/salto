@@ -172,16 +172,21 @@ RemoteMapEntry<Path[]>[] => {
     ))
 }
 
-export const updatePathIndexTemp = async (
+export const updatePathIndex = async (
   current: PathIndex,
   changedUnmergedElements: Element[],
-  unmergedElementIDs: Set<string>,
+  unmergedElementIDs?: Set<string>,
 ): Promise<void> => log.time(async () => {
-  // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
-  const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
-  const entriesToSet = getElementsPathHints(changedUnmergedElements)
+  // If no unmergedElementIDs were passed, override the index with the new elements
+  if (unmergedElementIDs === undefined) {
+    await current.clear()
+  } else {
+    // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
+    const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
+    await current.deleteAll(entriesToDelete)
+  }
 
-  await current.deleteAll(entriesToDelete)
+  const entriesToSet = getElementsPathHints(changedUnmergedElements)
   await current.setAll(entriesToSet)
 }, 'updatePathIndex')
 
@@ -226,36 +231,6 @@ export const overrideTopLevelPathIndex = async (
   const entries = getTopLevelPathHints(unmergedElements)
   await current.clear()
   await current.setAll(entries)
-}
-
-type UpdateIndexParams = {
-  index: PathIndex
-  elements: Element[]
-  accountsToMaintain: string[]
-  isTopLevel: boolean
-}
-
-export const updatePathIndex = async (
-  { index,
-    elements,
-    accountsToMaintain,
-    isTopLevel }: UpdateIndexParams
-): Promise<void> => {
-  if (accountsToMaintain.length === 0) {
-    if (isTopLevel) {
-      await overrideTopLevelPathIndex(index, elements)
-      return
-    }
-    await overridePathIndex(index, elements)
-    return
-  }
-  const entries = isTopLevel ? getTopLevelPathHints(elements) : getElementsPathHints(elements)
-  const oldPathHintsToMaintain = await awu(index.entries())
-    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
-    .toArray()
-  const updatedEntries = _.unionBy(entries, oldPathHintsToMaintain, e => e.key)
-  await index.clear()
-  await index.setAll(awu(updatedEntries))
 }
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

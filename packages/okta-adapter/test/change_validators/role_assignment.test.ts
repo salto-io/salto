@@ -17,7 +17,7 @@
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, ROLE_ASSIGNMENT_TYPE_NAME } from '../../src/constants'
-import { preventRoleToTargetGroupsValidator } from '../../src/change_validators/prevent_role_to_target_groups'
+import { getTargetGroupsForRule, roleAssignmentValidator } from '../../src/change_validators/role_assignment'
 
 
 describe('addRoleToTargetGroupValidator', () => {
@@ -38,22 +38,22 @@ describe('addRoleToTargetGroupValidator', () => {
     { type: 'OKTA_GROUP', profile: { name: 'group2' } },
   )
 
-  it('should return error because the group is already assined to group rule', async () => {
-    const groupRule1 = new InstanceElement(
-      'groupRule1',
-      groupRuleType,
-      {
-        name: 'rule',
-        status: 'ACTIVE',
-        conditions: {},
-        actions: {
-          assignUserToGroups: {
-            groupIds: [new ReferenceExpression(group1.elemID, group1)],
-          },
+  const groupRule1 = new InstanceElement(
+    'groupRule1',
+    groupRuleType,
+    {
+      name: 'rule',
+      status: 'ACTIVE',
+      conditions: {},
+      actions: {
+        assignUserToGroups: {
+          groupIds: [new ReferenceExpression(group1.elemID, group1)],
         },
       },
-    )
+    },
+  )
 
+  it('should return error because the group is already assined to group rule', async () => {
     const groupRule2 = new InstanceElement(
       'groupRule2',
       groupRuleType,
@@ -81,7 +81,7 @@ describe('addRoleToTargetGroupValidator', () => {
       [groupType, groupRuleType, group1, groupRule1, groupRule2, roleAssign, roleAssignmentType]
     )
     const changes = [toChange({ after: roleAssign })]
-    const changeErrors = await preventRoleToTargetGroupsValidator(changes, elementSource)
+    const changeErrors = await roleAssignmentValidator(changes, elementSource)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{
       elemID: roleAssign.elemID,
@@ -104,7 +104,33 @@ describe('addRoleToTargetGroupValidator', () => {
     )
 
     const changes = [toChange({ after: roleAssign2 })]
-    const changeErrors = await preventRoleToTargetGroupsValidator(changes, elementSource)
+    const changeErrors = await roleAssignmentValidator(changes, elementSource)
     expect(changeErrors).toHaveLength(0)
+  })
+  describe('getTargetGroupsForRule', () => {
+    it('should return the target groups for the rule', () => {
+      const targetGroups = getTargetGroupsForRule(groupRule1)
+      expect(targetGroups).toHaveLength(1)
+      expect(targetGroups).toEqual([group1.elemID.name])
+    })
+    it('should return empty array when there are no target groups', () => {
+      const groupRule = new InstanceElement(
+        'groupRule1',
+        groupRuleType,
+        {
+          name: 'rule',
+          status: 'ACTIVE',
+          conditions: {},
+          actions: {
+            assignUserToGroups: {
+              groupIds: [],
+            },
+          },
+        },
+      )
+      const targetGroups = getTargetGroupsForRule(groupRule)
+      expect(targetGroups).toHaveLength(0)
+      expect(targetGroups).toEqual([])
+    })
   })
 })

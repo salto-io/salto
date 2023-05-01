@@ -28,7 +28,7 @@ import { assignedAccessPoliciesValidator } from './assigned_policies'
 import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import OktaClient from '../client/client'
-import { preventRoleToTargetGroupsValidator } from './prevent_role_to_target_groups'
+import { roleAssignmentValidator } from './role_assignment'
 
 export default ({
   client,
@@ -48,7 +48,7 @@ export default ({
     assignedAccessPoliciesValidator,
     groupSchemaModifyBaseValidator,
     enabledAuthenticatorsValidator,
-    preventRoleToTargetGroupsValidator,
+    roleAssignmentValidator,
   ]
 
   return createChangeValidator(validators)

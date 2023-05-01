@@ -31,7 +31,7 @@ const isArrayOfRefExpr = (values: unknown): values is ReferenceExpression[] => (
   && values.every(isReferenceExpression)
 )
 
-const getTargetGroupsForRule = (groupRule: InstanceElement): string[] => {
+export const getTargetGroupsForRule = (groupRule: InstanceElement): string[] => {
   const targetGroupsPath = groupRule.elemID.createNestedID(...GROUP_ID_PATH)
   const targetGroupReferences = resolvePath(groupRule, targetGroupsPath)
   if (!isArrayOfRefExpr(targetGroupReferences)) {
@@ -41,44 +41,24 @@ const getTargetGroupsForRule = (groupRule: InstanceElement): string[] => {
   return targetGroupReferences.map(ref => ref.elemID.name)
 }
 
-const groupByValues = (ruleTogroupIdsRecord: Record<string, string[]>): Record<string, string[]> => {
-  const result: Record<string, string[]> = {}
-  Object.entries(ruleTogroupIdsRecord).forEach(([ruleId, groupIds]) => {
-    groupIds.forEach(groupId => {
-      if (result[groupId] === undefined) {
-        result[groupId] = []
-      }
-      result[groupId].push(ruleId)
-    })
-  })
-  return result
-}
-
 /**
  * prevents the assignment of admin roles to groups that are defined as "target groups" in other
  * group rules.
  */
-export const preventRoleToTargetGroupsValidator: ChangeValidator = async (changes, elementSource) => {
+export const roleAssignmentValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
-    log.error('Failed to run addRoleToTargetGroupValidator because element source is undefined')
+    log.error('Failed to run roleAssignmentValidator because element source is undefined')
     return []
   }
 
-  const RoleAssignmentInstances = changes
+  const roleAssignmentInstances = changes
     .filter(isInstanceChange)
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === ROLE_ASSIGNMENT_TYPE_NAME)
-  if (_.isEmpty(RoleAssignmentInstances)) {
+  if (_.isEmpty(roleAssignmentInstances)) {
     return []
   }
-
-  const roleAssignmentsIdToGroupId = Object.fromEntries(RoleAssignmentInstances.map(role => {
-    const parent = getParents(role)?.[0]
-    return isReferenceExpression(parent) ? [role.elemID.name, parent.elemID.name] : undefined
-  }).filter(isDefined))
-
-  const groupIds = new Set(Object.values(roleAssignmentsIdToGroupId))
 
   const groupRuleInstances = (await awu(await elementSource.list())
     .filter(id => id.typeName === GROUP_RULE_TYPE_NAME)
@@ -87,29 +67,29 @@ export const preventRoleToTargetGroupsValidator: ChangeValidator = async (change
     .filter(isInstanceElement)
     .toArray())
 
-  const targetGruopIdtoRuleIds = groupByValues(Object.fromEntries(groupRuleInstances.map(rule => {
-    const groupsWithRoles = getTargetGroupsForRule(rule)
-      .filter(groupId => groupIds.has(groupId))
-    if (!_.isEmpty(groupsWithRoles)) {
-      return [rule.elemID.name, groupsWithRoles]
-    }
-    return undefined
-  }).filter(isDefined)))
-  if (_.isEmpty(targetGruopIdtoRuleIds)) {
+  const targetGroupIdtoRuleIds = _.groupBy(groupRuleInstances.flatMap(rule => {
+    const groups = getTargetGroupsForRule(rule)
+    return groups.map(groupId => ({ ruleId: rule.elemID.name, groupName: groupId })).filter(isDefined)
+  }), 'groupName')
+  if (_.isEmpty(targetGroupIdtoRuleIds)) {
     return []
   }
 
-  return RoleAssignmentInstances
-    .filter(instance => {
-      const groupName = roleAssignmentsIdToGroupId[instance.elemID.name]
-      return targetGruopIdtoRuleIds[groupName] !== undefined
+  return roleAssignmentInstances
+    .filter(role => {
+      const parent = getParents(role)?.[0]
+      return isReferenceExpression(parent) && targetGroupIdtoRuleIds[parent.elemID.name] !== undefined
     })
     .map(
-      instance => ({
-        elemID: instance.elemID,
-        severity: 'Error',
-        message: 'Unable to assign admin role to group.',
-        detailedMessage: `Element ${roleAssignmentsIdToGroupId[instance.elemID.name]} of type ${GROUP_TYPE_NAME} cannot be assigned an administrator role because it is a target group in the following ${GROUP_RULE_TYPE_NAME} elements: [${(targetGruopIdtoRuleIds[roleAssignmentsIdToGroupId[instance.elemID.name]]).join(', ')}]. Please remove all the relevant GroupRules before assigning it an administrator role, or assign the role to a different group.`,
-      })
+      instance => {
+        const parent = getParents(instance)?.[0]
+        const groupRules = targetGroupIdtoRuleIds[parent.elemID.name].map(({ ruleId }) => ruleId)
+        return ({
+          elemID: instance.elemID,
+          severity: 'Error',
+          message: 'Unable to assign admin role to group.',
+          detailedMessage: `Element ${parent.elemID.name} of type ${GROUP_TYPE_NAME} cannot be assigned an administrator role because it is a target group in the following ${GROUP_RULE_TYPE_NAME} elements: [${groupRules.join(', ')}]. Please remove all the relevant GroupRules before assigning it an administrator role, or assign the role to a different group.`,
+        })
+      }
     )
 }

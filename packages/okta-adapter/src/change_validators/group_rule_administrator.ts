@@ -13,29 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, InstanceElement, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
-import { resolvePath, references as referenceUtils, getParents } from '@salto-io/adapter-utils'
+import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { GROUP_RULE_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME } from '../constants'
+import { getTargetGroupsForRule } from './role_assignment'
 
 const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
-const { isArrayOfRefExprToInstances } = referenceUtils
 const log = logger(module)
-
-const GROUP_ID_PATH = ['actions', 'assignUserToGroups', 'groupIds']
-
-const getTargetGroupsForRule = (groupRule: InstanceElement): string[] => {
-  const targetGroupsPath = groupRule.elemID.createNestedID(...GROUP_ID_PATH)
-  const targetGroupReferences = resolvePath(groupRule, targetGroupsPath)
-  if (!isArrayOfRefExprToInstances(targetGroupReferences)) {
-    log.debug('Could not find group references in %s', groupRule.elemID.getFullName())
-    return []
-  }
-  return targetGroupReferences.map(ref => ref.elemID.getFullName())
-}
 
 /**
  * Verifies that the target groups for a GroupRule has no administrator roles.
@@ -63,25 +51,25 @@ export const groupRuleAdministratorValidator: ChangeValidator = async (changes, 
 
   const groupsIdsWithRoles = new Set(roleAssignments.map(role => {
     const parent = getParents(role)?.[0]
-    return isReferenceExpression(parent) ? parent.elemID.getFullName() : undefined
+    return isReferenceExpression(parent) ? parent.elemID.name : undefined
   }).filter(isDefined))
 
   const ruleIdToTargetGroupsIds = Object.fromEntries(groupRuleInstances.map(rule => {
     const groupsWithRoles = getTargetGroupsForRule(rule).filter(groupId => groupsIdsWithRoles.has(groupId))
     if (!_.isEmpty(groupsWithRoles)) {
-      return [rule.elemID.getFullName(), groupsWithRoles]
+      return [rule.elemID.name, groupsWithRoles]
     }
     return undefined
   }).filter(isDefined))
 
   return groupRuleInstances
-    .filter(instance => ruleIdToTargetGroupsIds[instance.elemID.getFullName()] !== undefined)
+    .filter(instance => ruleIdToTargetGroupsIds[instance.elemID.name] !== undefined)
     .map(
       instance => ({
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Group membership rules cannot be created for groups with administrator roles.',
-        detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${(ruleIdToTargetGroupsIds[instance.elemID.getFullName()]).join(', ')}. Please remove role assignemnts from groups or choose different groups as targets for this rule.`,
+        detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${(ruleIdToTargetGroupsIds[instance.elemID.name]).join(', ')}. Please remove role assignemnts from groups or choose different groups as targets for this rule.`,
       })
     )
 }

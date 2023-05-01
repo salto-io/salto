@@ -136,7 +136,7 @@ const replaceFormulasWithTemplates = async (instances: InstanceElement[])
   return ambiguousTokensWarnings
 }
 
-const prepRef = (part: ReferenceExpression): TemplatePart => {
+export const prepRef = (part: ReferenceExpression): TemplatePart => {
   if (part.elemID.isTopLevel()) {
     return part.value.value.id
   }

@@ -38,7 +38,7 @@ const filter: FilterCreator = () => ({
     if (!_.isString(subdomain)) {
       log.warn('Could not find subdomain, skipping templateUrlsFilter')
     }
-    const subdomainRegString = `://${subdomain}`
+    const subdomainRegString = `://${subdomain}.`
     const subdomainReg = new RegExp(`(${subdomainRegString})`)
 
     const brandThemeInstance = instances.find(instance => instance.elemID.typeName === 'BrandTheme')
@@ -52,7 +52,7 @@ const filter: FilterCreator = () => ({
       [subdomainReg],
       expression => {
         if (expression === `${subdomainRegString}`) {
-          return ['://', new ReferenceExpression(orgSettingsInstance.elemID.createNestedID('subdomain'), subdomain)]
+          return ['://', new ReferenceExpression(orgSettingsInstance.elemID.createNestedID('subdomain'), subdomain), '.']
         }
         return expression
       },

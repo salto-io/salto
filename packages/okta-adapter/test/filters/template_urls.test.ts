@@ -62,5 +62,20 @@ describe('templateUrlsFilter', () => {
           const theme = elements.filter(isInstanceElement).find(i => i.elemID.typeName === 'BrandTheme')
           expect(theme?.value?.favicon).toEqual('https://myOkta.oktapreview.com/favicon.ico')
         })
+
+        it('should not create referene if subdomain exist somewhere else in the url', async () => {
+          const themeWithSub = themeInstance.clone()
+          themeWithSub.value.favicon = 'https://myOkta.oktapreview.com/myOkta/favicon.ico'
+          const elements = [orgType, orgInst, themeWithSub, themeType]
+          await filter.onFetch(elements)
+          const theme = elements.filter(isInstanceElement).find(i => i.elemID.typeName === 'BrandTheme')
+          expect(theme?.value?.favicon).toEqual(new TemplateExpression({
+            parts: [
+              'https://',
+              new ReferenceExpression(orgInst.elemID.createNestedID('subdomain'), orgInst.value.subdomain),
+              '.oktapreview.com/myOkta/favicon.ico',
+            ],
+          }))
+        })
       })
 })

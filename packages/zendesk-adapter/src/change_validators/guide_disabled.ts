@@ -14,72 +14,52 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, InstanceElement, isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getBrandsForGuide } from '../filters/utils'
 import { BRAND_TYPE_NAME } from '../constants'
-import { GUIDE_TYPES_TO_HANDLE_BY_BRAND } from '../config'
+import { GUIDE_TYPES_TO_HANDLE_BY_BRAND, ZendeskFetchConfig } from '../config'
 
-const { isDefined } = lowerDashValues
 const log = logger(module)
 const { awu } = collections.asynciterable
 
-const getBrandsWithoutGuideByInstanceId = (
-  instances: InstanceElement[], BrandsByBrandsId: Record<string, InstanceElement>
-):
-Record<string, InstanceElement> => {
-  const BrandsWithoutGuideByInstanceId = instances.map(instance => {
-    const brandRef = instance.value.brand
-    if (!isReferenceExpression(brandRef)) {
-      log.debug('brand is not a reference expression')
-      return undefined
-    }
-    const brand = BrandsByBrandsId[brandRef.elemID.getFullName()]
-    if (brand === undefined) {
-      log.debug('brand is not found in the element source')
-      return undefined
-    }
-    if (brand.value.has_help_center === false) {
-      return [instance.elemID.getFullName(), brand]
-    }
-    return undefined
-  }).filter(isDefined)
-  return Object.fromEntries(BrandsWithoutGuideByInstanceId)
-}
+export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
+ => ChangeValidator = fetchConfig => async (changes, elementSource) => {
+   const relevantInstances = changes
+     .filter(isInstanceChange)
+     .filter(isAdditionChange)
+     .map(getChangeData)
+     .filter(instance => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(instance.elemID.typeName))
+   if (_.isEmpty(relevantInstances)) {
+     return []
+   }
+   if (elementSource === undefined) {
+     log.error('Failed to run guideDisabledValidator because no element source was provided')
+     return []
+   }
 
-export const guideDisabledValidator: ChangeValidator = async (changes, elementSource) => {
-  const relevantInstances = changes
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(getChangeData)
-    .filter(instance => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(instance.elemID.typeName))
-  if (_.isEmpty(relevantInstances)) {
-    return []
-  }
-  if (elementSource === undefined) {
-    log.error('Failed to run guideDisabledValidator because no element source was provided')
-    return []
-  }
+   const brandsInstances = await awu(await elementSource.list())
+     .filter(id => id.typeName === BRAND_TYPE_NAME)
+     .map(id => elementSource.get(id))
+     .filter(isInstanceElement)
+     .toArray()
 
-  const BrandsByBrandId = Object.fromEntries((await awu(await elementSource.list())
-    .filter(id => id.typeName === BRAND_TYPE_NAME)
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray())
-    .map(instance => [instance.elemID.getFullName(), instance]))
-  if (_.isEmpty(BrandsByBrandId)) {
-    return []
-  }
+   const brandsWithGuide = new Set(getBrandsForGuide(brandsInstances, fetchConfig)
+     .map(brand => brand.elemID.getFullName()))
 
-  const brandsWithoutGuideByInstanceId = getBrandsWithoutGuideByInstanceId(relevantInstances, BrandsByBrandId)
+   if (brandsWithGuide === undefined) {
+     return []
+   }
 
-  return relevantInstances
-    .filter(instance => instance.elemID.getFullName() in brandsWithoutGuideByInstanceId)
-    .map(instance => ({
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: 'Cannot add this element because help center is not enabled for its associated brand.',
-      detailedMessage: `please enable help center for brand "${brandsWithoutGuideByInstanceId[instance.elemID.getFullName()].elemID.name}" in order to add this element.`,
-    }))
-}
+   return relevantInstances
+     .filter(instance => isReferenceExpression(instance.value.brand))
+     .filter(instance => !brandsWithGuide.has(instance.value.brand.elemID.getFullName()))
+     .map(instance => ({
+       elemID: instance.elemID,
+       severity: 'Error',
+       message: 'Cannot add this element because help center is not enabled for its associated brand, or the brand itself may not be enabled in the configuration.',
+       detailedMessage: `please enable help center for brand "${instance.value.brand.elemID.name}" or enable the brand in the configuration in order to add this element.`,
+     }))
+ }

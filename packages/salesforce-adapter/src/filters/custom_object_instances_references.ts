@@ -23,13 +23,14 @@ import {
   getInstancesDetailsMsg,
   createWarningFromMsg,
   getInstancesWithCollidingElemID,
+  safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError } from '@salto-io/adapter-api'
+import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError, ElemID } from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
-import { isLookupField, isMasterDetailField } from './utils'
+import { isLookupField, isMasterDetailField, safeApiName } from './utils'
 import { DataManagement } from '../fetch_profile/data_management'
 
 const { makeArray } = collections.array
@@ -69,6 +70,7 @@ const deserializeInternalID = (internalID: string): RefOrigin => {
 
 const createWarnings = async (
   instancesWithCollidingElemID: InstanceElement[],
+  instancesWithEmptyIds: InstanceElement[],
   missingRefs: MissingRef[],
   illegalRefSources: Set<string>,
   customObjectPrefixKeyMap: Record<string, string>,
@@ -86,6 +88,20 @@ const createWarnings = async (
     getInstanceName: instance => apiName(instance),
     docsUrl: 'https://help.salto.io/en/articles/6927217-salto-for-salesforce-cpq-support',
   })
+  const instanceWithEmptyIdWarnings = await awu(instancesWithEmptyIds)
+    // In case of collisions, there's already a warning on the Element
+    .filter(instance => !instancesWithCollidingElemID.includes(instance))
+    .map(async instance => {
+      const typeName = await safeApiName(await instance.getType()) ?? 'Unknown'
+      return createWarningFromMsg(
+        [
+          `Omitted Instance of type ${typeName} due to empty Salto ID.`,
+          `Current Salto ID configuration for ${typeName} is defined as ${safeJsonStringify(dataManagement.getObjectIdsFields(typeName))}`,
+          `Instance Service Url: ${getInstanceDesc(await serializeInstanceInternalID(instance), baseUrl)}`,
+        ].join('\n')
+      )
+    })
+    .toArray()
 
   const typeToInstanceIdToMissingRefs = _.mapValues(
     _.groupBy(
@@ -128,6 +144,7 @@ const createWarnings = async (
 
   return [
     ...collisionWarnings,
+    ...instanceWithEmptyIdWarnings,
     ...missingRefsWarnings,
     ...illegalOriginsWarnings,
   ]
@@ -274,6 +291,7 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
       dataManagement,
     )
     const instancesWithCollidingElemID = getInstancesWithCollidingElemID(customObjectInstances)
+    const instancesWithEmptyId = customObjectInstances.filter(instance => instance.elemID.name === ElemID.CONFIG_NAME)
     const missingRefOriginInternalIDs = new Set(
       missingRefs
         .map(missingRef => serializeInternalID(missingRef.origin.type, missingRef.origin.id))
@@ -281,9 +299,12 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     const instWithDupElemIDInterIDs = new Set(
       await Promise.all(instancesWithCollidingElemID.map(serializeInstanceInternalID))
     )
+    const instancesWithEmptyIdInternalIDs = new Set(
+      await Promise.all(instancesWithEmptyId.map(serializeInstanceInternalID))
+    )
     const illegalRefTargets = new Set(
       [
-        ...missingRefOriginInternalIDs, ...instWithDupElemIDInterIDs,
+        ...missingRefOriginInternalIDs, ...instWithDupElemIDInterIDs, ...instancesWithEmptyIdInternalIDs,
       ]
     )
     const illegalRefSources = getIllegalRefSources(illegalRefTargets, reverseReferencesMap)
@@ -304,6 +325,7 @@ const filter: RemoteFilterCreator = ({ client, config }) => ({
     return {
       errors: await createWarnings(
         instancesWithCollidingElemID,
+        instancesWithEmptyId,
         missingRefs,
         illegalRefSources,
         customObjectPrefixKeyMap,

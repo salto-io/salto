@@ -165,8 +165,8 @@ const filterCreator: FilterCreator = ({ config }) => {
     },
 
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
-        async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).forEach(
+        instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
           try {
             replaceTemplatesWithValues(
               { values: [obj], fieldName: key },

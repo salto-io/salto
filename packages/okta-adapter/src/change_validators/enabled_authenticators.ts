@@ -13,10 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import Joi from 'joi'
 import _ from 'lodash'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isInstanceElement, isReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isInstanceElement, isReferenceExpression, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { AUTHENTICATOR_TYPE_NAME, MFA_POLICY_TYPE_NAME } from '../constants'
 import { isDeactivationChange } from '../deployment'
 
@@ -28,17 +30,38 @@ type PolicyToAuthenticator = {
   authenticatorId: string
 }
 
+type Authenticator = {
+  key: ReferenceExpression
+  enroll: {
+    self: string
+  }
+}
+
+const AUTHENTICATORS_SCHEMA = Joi.array().items(
+  Joi.object({
+    key: Joi.required(),
+    enroll: Joi.object({
+      self: Joi.string().required(),
+    }).unknown().required(),
+  }).unknown(true)
+).required()
+
+export const areAuthenticators = createSchemeGuard<Authenticator[]>(
+  AUTHENTICATORS_SCHEMA, 'Received an invalid value for authenticators'
+)
+
 // Options are taken from: https://developer.okta.com/docs/reference/api/policy/#policy-factor-enroll-object
 const ENABLED_AUTHENTICATORS = ['OPTIONAL', 'REQUIRED']
 
 const getAutheticatorsForPolicy = (instance: InstanceElement): PolicyToAuthenticator[] => {
   const authenticators = instance.value.settings?.authenticators
-  if (!Array.isArray(authenticators)) {
+  if (!areAuthenticators(authenticators)) {
+    log.warn(`Received invalid authenticator for instance ${instance.elemID.getFullName()}`)
     return []
   }
   return authenticators
     // Indicates the authenticator is enabled for this policy
-    .filter(authenticator => ENABLED_AUTHENTICATORS.includes(authenticator.enroll?.self))
+    .filter(authenticator => ENABLED_AUTHENTICATORS.includes(authenticator.enroll.self))
     .map(authenticator => authenticator.key)
     .filter(isReferenceExpression)
     .map(ref => ref.elemID.getFullName())

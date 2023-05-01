@@ -358,7 +358,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
       standaloneFields: [{ fieldName: 'appUserSchema' }],
-      nestStandaloneInstances: false,
     },
     deployRequests: {
       add: {
@@ -408,6 +407,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'properties' }
       ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+      nestStandaloneInstances: false,
     },
     deployRequests: {
       modify: {
@@ -417,6 +417,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           applicationId: '_parent.0.id',
         },
       },
+    },
+  },
+  UserSchemaPublic: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' },
+      ],
     },
   },
   ApplicationCredentials: {

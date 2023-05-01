@@ -20,14 +20,14 @@ import path from 'path'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
-import { collections, decorators, strings } from '@salto-io/lowerdash'
+import { collections, decorators, strings, values as lowerdashValues } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType } from './types'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
@@ -35,9 +35,11 @@ import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_T
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc } from '../../../config'
 import { toError } from '../../utils'
+import { getModifiedInstance, HasElemIDFunc } from './filter_uneditable_locked_field'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
+const { isDefined } = lowerdashValues
 
 export const { createClientAsync } = elementUtils.soap
 
@@ -47,6 +49,7 @@ export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
+const LOCKED_FIELDS_MAX_REDEPLOYS = 5
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
@@ -498,15 +501,14 @@ export default class SoapClient {
 
   @retryOnBadResponse
   private async runDeployAction(
-    instances: InstanceElement[],
     body: {
       attributes: Record<string, string>
       record: RecordValue[]
     } | {
       baseRef: object[]
     },
-    action: 'updateList' | 'addList' | 'deleteList'
-  ): Promise<(number | Error)[]> {
+    action: 'updateList' | 'addList' | 'deleteList',
+  ): Promise<WriteResponse[]> {
     const response = await this.sendSoapRequest(action, body)
     if (!this.ajv.validate<DeployListResults>(
       DEPLOY_LIST_SCHEMA,
@@ -522,18 +524,102 @@ export default class SoapClient {
       throw new Error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
     }
 
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
+    return response.writeResponseList.writeResponse
+  }
+
+  private async redeployLockedFields(
+    instances: InstanceElement[],
+    writeResponseList: WriteResponse[],
+    action: 'updateList' | 'addList',
+    hasElemID: HasElemIDFunc,
+  ): Promise<({
+    redeployWriteResponseList: WriteResponse[]
+    indicesMap: Map<number, number>
+    updatedInstances: InstanceElement[]
+  }) | undefined> {
+    const modifiedInstances = await awu(writeResponseList)
+      .map((writeResponse, index) => getModifiedInstance(writeResponse, _.cloneDeep(instances[index]), hasElemID))
+      .toArray()
+    const modifiedInstancesToRedeploy = modifiedInstances.filter(isDefined)
+
+    if (modifiedInstancesToRedeploy.length === 0) {
+      log.debug('No locked fields found, cancelling redeployment.')
+      return undefined
+    }
+
+    log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
+    + ' Redeploying changes without the locked fields.')
+    const redeployBody = {
+      attributes: {
+        'xmlns:platformCore': SOAP_CORE_URN,
+      },
+      record: await awu(modifiedInstancesToRedeploy).map(
+        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
+      ).toArray(),
+    }
+    const redeployWriteResponseList = await this.runDeployAction(redeployBody, action)
+    const indicesMap = new Map(modifiedInstances
+      .map((modifiedInstance, originalIdx) => (isDefined(modifiedInstance) ? originalIdx : undefined))
+      .filter(isDefined)
+      .map((originalIdx, reducedIdx) => [originalIdx, reducedIdx]))
+    const updatedInstances = modifiedInstances
+      .map((modifiedInstance, index) => (isDefined(modifiedInstance) ? modifiedInstance : instances[index]))
+
+    return { redeployWriteResponseList, indicesMap, updatedInstances }
+  }
+
+  private async runFullDeploy(
+    originalInstances: InstanceElement[],
+    body: {
+      attributes: Record<string, string>
+      record: RecordValue[]
+    } | {
+      baseRef: object[]
+    },
+    action: 'updateList' | 'addList' | 'deleteList',
+    hasElemID?: HasElemIDFunc,
+  ): Promise<(number | Error)[]> {
+    let writeResponseList = await this.runDeployAction(body, action)
+
+    if (action !== 'deleteList' && isDefined(hasElemID)) {
+      const redeployWithRetry = async (
+        retriesLeft: number,
+        prevWriteResponseList: WriteResponse[],
+        instances: InstanceElement[]
+      ): Promise<void> => {
+        if (retriesLeft === 0) {
+          log.debug('Redeployment on locked fields exceed max retries.')
+          return
+        }
+
+        log.debug('Retrying deployment request for locked fields. Retries left: %d', retriesLeft)
+        const redeployResult = await this.redeployLockedFields(instances, prevWriteResponseList, action, hasElemID)
+        if (_.isUndefined(redeployResult)) return
+        const { redeployWriteResponseList, indicesMap, updatedInstances } = redeployResult
+        writeResponseList = writeResponseList.map((writeResponse, index): WriteResponse => {
+          const redeployIndex = indicesMap.get(index)
+          return isDefined(redeployIndex)
+            ? redeployWriteResponseList[redeployIndex]
+            : writeResponse
+        })
+        await redeployWithRetry(retriesLeft - 1, redeployWriteResponseList, updatedInstances)
+      }
+
+      await redeployWithRetry(LOCKED_FIELDS_MAX_REDEPLOYS, writeResponseList, originalInstances)
+    }
+
+    return writeResponseList.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
 
-        log.error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
-        return Error(`SOAP api call ${action} for instance ${instances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        log.error(`SOAP api call ${action} for instance ${originalInstances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
+        return Error(`SOAP api call ${action} for instance ${originalInstances[index].elemID.getFullName()} failed. error code: ${code}, error message: ${message}`)
       }
       return parseInt(writeResponse.baseRef.attributes.internalId, 10)
     })
   }
 
-  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
     const body = {
       attributes: {
         'xmlns:platformCore': SOAP_CORE_URN,
@@ -542,10 +628,10 @@ export default class SoapClient {
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
       ).toArray(),
     }
-    return this.runDeployAction(instances, body, 'updateList')
+    return this.runFullDeploy(instances, body, 'updateList', hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
     const body = {
       attributes: {
         'xmlns:platformCore': SOAP_CORE_URN,
@@ -554,7 +640,7 @@ export default class SoapClient {
         async instance => this.convertToSoapRecord(instance.value, await instance.getType())
       ).toArray(),
     }
-    return this.runDeployAction(instances, body, 'addList')
+    return this.runFullDeploy(instances, body, 'addList', hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]):
@@ -571,7 +657,7 @@ export default class SoapClient {
         })
       }).toArray(),
     }
-    return this.runDeployAction(instances, body, 'deleteList')
+    return this.runFullDeploy(instances, body, 'deleteList')
   }
 
   public async deleteSdfInstances(instances: InstanceElement[]):
@@ -587,7 +673,7 @@ export default class SoapClient {
         })
       }).toArray(),
     }
-    return this.runDeployAction(instances, body, 'deleteList')
+    return this.runFullDeploy(instances, body, 'deleteList')
   }
 
   private async getAllSearchPages(

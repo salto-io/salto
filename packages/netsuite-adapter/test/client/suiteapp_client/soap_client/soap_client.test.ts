@@ -16,11 +16,12 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
-import { ReadFileError } from '../../src/client/suiteapp_client/errors'
-import SoapClient, * as soapClientUtils from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { CUSTOM_RECORD_TYPE, NETSUITE } from '../../src/constants'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suiteapp_client/types'
+import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
+import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
+import { InvalidSuiteAppCredentialsError } from '../../../../src/client/types'
+import { CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, SOAP_SCRIPT_ID } from '../../../../src/constants'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -1321,6 +1322,144 @@ describe('soap_client', () => {
           }
         ),
       ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+  })
+
+  describe('Redeploy when update/addition fails on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields', () => {
+    const INSUFFICIENT_PERMISSION_ERROR = 'INSUFFICIENT_PERMISSION'
+
+    const testType = new ObjectType({ elemID: new ElemID(NETSUITE, 'TestType') })
+
+    const customField1 = {
+      attributes: {
+        [SOAP_SCRIPT_ID]: `${OTHER_CUSTOM_FIELD_PREFIX}test1`,
+        'xsi:type': 'platformCore:BooleanCustomFieldRef',
+        'platformCore:value': true,
+      },
+    }
+    const customField2 = {
+      attributes: {
+        [SOAP_SCRIPT_ID]: `${OTHER_CUSTOM_FIELD_PREFIX}test2`,
+        'xsi:type': 'platformCore:BooleanCustomFieldRef',
+        'platformCore:value': true,
+      },
+    }
+    const instance = new InstanceElement('testOther', testType, {
+      attributes: {
+        internalId: '1',
+      },
+      customFieldList: {
+        'platformCore:customField': [customField1, customField2],
+      },
+    })
+
+    const errorMessage1 = `You do not have permissions to set a value for element ${customField1.attributes[SOAP_SCRIPT_ID]} due to one of the following reasons:`
+    + ' 1) The field is read-only;'
+    + ' 2) An associated feature is disabled;'
+    + ' 3) The field is available either when a record is created or updated, but not in both cases.'
+
+    const errorMessage2 = `You do not have permissions to set a value for element ${customField2.attributes[SOAP_SCRIPT_ID]} due to one of the following reasons:`
+    + ' 1) The field is read-only;'
+    + ' 2) An associated feature is disabled;'
+    + ' 3) The field is available either when a record is created or updated, but not in both cases.'
+
+    const writeResponseListError1 = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: {
+              attributes: { isSuccess: 'false' },
+              statusDetail: [
+                {
+                  code: INSUFFICIENT_PERMISSION_ERROR,
+                  message: errorMessage1,
+                },
+              ],
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const writeResponseListError2 = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: {
+              attributes: { isSuccess: 'false' },
+              statusDetail: [
+                {
+                  code: INSUFFICIENT_PERMISSION_ERROR,
+                  message: errorMessage2,
+                },
+              ],
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const writeResponseListSuccess = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: { attributes: { isSuccess: 'true' } },
+            baseRef: {
+              attributes: {
+                internalId: '1',
+              },
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const elementsSource = buildElementsSourceFromElements([])
+
+    it('Update Sanity - Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
+      updateListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+    })
+
+    it('Addition Sanity - Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
+      addListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.addInstances([instance], elementsSource.has)).toEqual([1])
+    })
+
+    it('Should redeploy with success when updating instances that failed to deploy several uneditable locked elements', async () => {
+      updateListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListError2])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+    })
+
+
+    it('Should redeploy at most 5 times', async () => {
+      updateListAsyncMock.mockResolvedValue([writeResponseListError1])
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const redeployLockedFieldsMock = jest.spyOn(SoapClient.prototype as any, 'redeployLockedFields')
+      redeployLockedFieldsMock.mockResolvedValue({
+        redeployWriteResponseList: writeResponseListError1.writeResponseList.writeResponse,
+        indicesMap: new Map([[0, 0]]),
+        updatedInstances: [instance],
+      })
+
+      expect(await client.updateInstances([instance], elementsSource.has))
+        .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
+        + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
+      expect(redeployLockedFieldsMock).toHaveBeenCalledTimes(5)
     })
   })
 })

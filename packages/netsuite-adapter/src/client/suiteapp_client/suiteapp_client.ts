@@ -42,6 +42,7 @@ import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
+import { HasElemIDFunc } from './soap_client/filter_uneditable_locked_field'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
@@ -571,12 +572,12 @@ export default class SuiteAppClient {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.updateInstances(instances)
+  public async updateInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.addInstances(instances)
+  public async addInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.addInstances(instances, hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {

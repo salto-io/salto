@@ -36,6 +36,7 @@ import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_eleme
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
+import { HasElemIDFunc } from './suiteapp_client/soap_client/filter_uneditable_locked_field'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -378,6 +379,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
+    hasElemID?: HasElemIDFunc,
   ): Promise<DeployResult> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return this.sdfDeploy({
@@ -400,14 +402,14 @@ export default class NetsuiteClient {
       return this.deployConfigChanges(instancesChanges)
     }
 
-    return this.deployRecords(changes, groupID)
+    return this.deployRecords(changes, groupID, hasElemID)
   }
 
-  private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
+  private async deployRecords(changes: Change[], groupID: string, hasElemID?: HasElemIDFunc): Promise<DeployResult> {
     const relevantChanges = getDeployableChanges(changes)
     const relevantInstances = relevantChanges.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance)
 
-    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID)
+    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID, hasElemID)
     const results = deployResults
       .map((result, index) => (typeof result === 'number' ? relevantChanges[index] : result))
       .filter(values.isDefined)
@@ -423,18 +425,18 @@ export default class NetsuiteClient {
     return { errors, appliedChanges, elemIdToInternalId }
   }
 
-  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string):
+  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string, hasElemID?: HasElemIDFunc):
   Promise<(number | Error)[]> {
     if (this.suiteAppClient === undefined) {
       return [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)]
     }
 
     if (isSuiteAppUpdateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.updateInstances(elements)
+      return this.suiteAppClient.updateInstances(elements, hasElemID)
     }
 
     if (isSuiteAppCreateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.addInstances(elements)
+      return this.suiteAppClient.addInstances(elements, hasElemID)
     }
 
     if (isSuiteAppDeleteRecordsGroupId(groupID)) {

@@ -63,6 +63,13 @@ type DependencyInfo = {
   dependencyGraph: Graph<SDFObjectNode>
 }
 
+const isLegalEdge = (
+  startNode: GraphNode<SDFObjectNode>,
+  endNode: GraphNode<SDFObjectNode>,
+): boolean =>
+  startNode.value.changeType === 'addition'
+  && (startNode.id !== endNode.id)
+
 export default class NetsuiteClient {
   private sdfClient: SdfClient
   private suiteAppClient?: SuiteAppClient
@@ -163,7 +170,7 @@ export default class NetsuiteClient {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(changes)
     const dependencyGraph = new Graph<SDFObjectNode>(
-      'elemIdFullName', elemIdsAndCustInfos.map(elemIdsAndCustInfo => new GraphNode(elemIdsAndCustInfo))
+      'elemIdFullName', elemIdsAndCustInfos.map(elemIdsAndCustInfo => new GraphNode(elemIdsAndCustInfo, elemIdsAndCustInfo.elemIdFullName))
     )
     elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
       const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
@@ -178,7 +185,7 @@ export default class NetsuiteClient {
           const startNode = dependencyGraph.findNodeByField(
             'serviceid', (serviceIdInfo.serviceIdType === PATH ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
           )
-          if (startNode && endNode && startNode.value.changeType === 'addition' && (startNode.value[dependencyGraph.key] !== endNode.value[dependencyGraph.key])) {
+          if (startNode && endNode && isLegalEdge(startNode, endNode)) {
             startNode.addEdge(dependencyGraph.key, endNode)
           }
         })
@@ -194,7 +201,7 @@ export default class NetsuiteClient {
     return new Set(elemIds.map(id => dependencyGraph.findNodeByKey(id.getFullName()))
       .filter(values.isDefined)
       .flatMap(node => dependencyGraph.getNodeDependencies(node))
-      .map(node => node.value.elemIdFullName))
+      .map(node => node.id))
   }
 
   private static toManifestDependencies(

@@ -22,13 +22,19 @@ type testNode = {
 }
 
 describe('graph utils tests', () => {
-  const testNode1 = new GraphNode({ name: 'node1', num: 1 })
-  const testNode2 = new GraphNode({ name: 'node2', num: 2 })
-  const testNode3 = new GraphNode({ name: 'node3', num: 3 })
-  const testGraph = new Graph<testNode>('name', [testNode1, testNode2, testNode3])
-  testNode1.addEdge(testGraph.key, testNode2)
-  testNode1.addEdge(testGraph.key, testNode3)
-  testNode2.addEdge(testGraph.key, testNode1)
+  let testGraph: Graph<testNode>
+  let testNode1: GraphNode<testNode>
+  let testNode2: GraphNode<testNode>
+  let testNode3: GraphNode<testNode>
+  beforeEach(() => {
+    testNode1 = new GraphNode({ name: 'node1', num: 1 }, 'node1')
+    testNode2 = new GraphNode({ name: 'node2', num: 2 }, 'node2')
+    testNode3 = new GraphNode({ name: 'node3', num: 3 }, 'node3')
+    testGraph = new Graph<testNode>('name', [testNode1, testNode2, testNode3])
+    testNode1.addEdge(testGraph.key, testNode2)
+    testNode1.addEdge(testGraph.key, testNode3)
+    testNode2.addEdge(testGraph.key, testNode1)
+  })
 
 
   it('should find the nodes dependencies', async () => {
@@ -60,7 +66,7 @@ describe('graph utils tests', () => {
   it('should find the cycle in the graph and return its nodes', async () => {
     const cycleNodes = testGraph.findCycle()
     expect(cycleNodes).toHaveLength(2)
-    expect(cycleNodes).toEqual([testNode1, testNode2])
+    expect(cycleNodes).toEqual([testNode1.value.name, testNode2.value.name])
   })
 
   it('should remove node from graph and edges from nodes', async () => {
@@ -69,6 +75,12 @@ describe('graph utils tests', () => {
     expect(testNode2.edges).not.toContain(testNode1)
   })
   it('should return an empty array if there is no cycle', async () => {
+    const testNode4 = new GraphNode({ name: 'node4', num: 1 }, 'node4')
+    const testNode5 = new GraphNode({ name: 'node5', num: 2 }, 'node5')
+    const testNode6 = new GraphNode({ name: 'node6', num: 3 }, 'node6')
+    testNode4.addEdge(testGraph.key, testNode5)
+    testNode4.addEdge(testGraph.key, testNode6)
+    testGraph = new Graph<testNode>('name', [testNode4, testNode5, testNode6])
     const cycleNodes = testGraph.findCycle()
     expect(cycleNodes).toHaveLength(0)
   })

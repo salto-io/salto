@@ -63,8 +63,10 @@ export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
 ): string => {
-  dependencyGraph.findCycle().forEach(node => dependencyGraph.removeNode(node.value.elemIdFullName))
+  const nodesInCycle = new Set(dependencyGraph.findCycle())
+  log.debug('The following %d objects will not be written explicity in the deploy xml since they contain a cycle: %o', nodesInCycle.size, [...nodesInCycle])
   const custInfosInTopologicalOrder = dependencyGraph.getTopologicalOrder()
+    .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
 
   const [fileCabinetCustInfos, customTypeInfos] = _.partition(

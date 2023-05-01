@@ -24,13 +24,16 @@ describe('deploy xml utils tests', () => {
   let testNode1: GraphNode<SDFObjectNode>
   beforeEach(() => {
     testNode1 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: { scriptId: 'scriptid1', typeName: '', values: {} } as CustomizationInfo }
+      { elemIdFullName: 'fullName1', serviceid: 'scriptid1', changeType: 'addition', customizationInfo: { scriptId: 'scriptid1', typeName: '', values: {} } as CustomizationInfo },
+      'fullName1',
     )
     const testNode2 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: { scriptId: 'scriptid2', typeName: '', values: {} } as CustomizationInfo }
+      { elemIdFullName: 'fullName2', serviceid: 'scriptid2', changeType: 'addition', customizationInfo: { scriptId: 'scriptid2', typeName: '', values: {} } as CustomizationInfo },
+      'fullName2',
     )
     const testNode3 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: { scriptId: 'scriptid3', typeName: '', values: {} } as CustomizationInfo }
+      { elemIdFullName: 'fullName3', serviceid: 'scriptid3', changeType: 'addition', customizationInfo: { scriptId: 'scriptid3', typeName: '', values: {} } as CustomizationInfo },
+      'fullName3',
     )
     testNode3.addEdge('elemIdFullName', testNode1)
     testNode1.addEdge('elemIdFullName', testNode2)
@@ -76,7 +79,8 @@ describe('deploy xml utils tests', () => {
 
   it('should only explictly add objects that dont have circular dependencies', async () => {
     const testNode4 = new GraphNode<SDFObjectNode>(
-      { elemIdFullName: 'fullName4', serviceid: 'scriptid4', changeType: 'addition', customizationInfo: { scriptId: 'scriptid4', typeName: '', values: {} } as CustomizationInfo }
+      { elemIdFullName: 'fullName4', serviceid: 'scriptid4', changeType: 'addition', customizationInfo: { scriptId: 'scriptid4', typeName: '', values: {} } as CustomizationInfo },
+      'fullName4'
     )
     testGraph.removeNode('fullName1')
     // creates cycle in graph
@@ -106,8 +110,8 @@ describe('deploy xml utils tests', () => {
   it('should write files and folders to deploy xml according to ref level', async () => {
     const emptyFileCustInfo = { typeName: FILE, values: {}, path: ['SuiteScripts', 'shalomTest.js'], content: '' }
     const emptyFolderCustInfo = { typeName: FOLDER, values: {}, path: ['SuiteScripts', 'InnerFolder'] }
-    const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: emptyFileCustInfo, changeType: 'addition' })
-    const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: emptyFolderCustInfo, changeType: 'addition' })
+    const fileTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFileName', serviceid: '/SuiteScripts/shalomTest.js', customizationInfo: emptyFileCustInfo, changeType: 'addition' }, 'fullFileName')
+    const folderTestNode = new GraphNode<SDFObjectNode>({ elemIdFullName: 'fullFolderName', serviceid: '/SuiteScripts/InnerFolder', customizationInfo: emptyFolderCustInfo, changeType: 'addition' }, 'fullFolderName')
     fileTestNode.addEdge(testGraph.key, folderTestNode)
     testGraph.addNodes([fileTestNode, folderTestNode])
     const fixedDeployXml = `<deploy>

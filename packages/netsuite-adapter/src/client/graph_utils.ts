@@ -15,11 +15,9 @@
 */
 
 import _ from 'lodash'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
 import wu from 'wu'
 import { CustomizationInfo } from './types'
 
-const { isDefined } = lowerDashValues
 
 export type SDFObjectNode = {
   elemIdFullName: string
@@ -31,10 +29,12 @@ export type SDFObjectNode = {
 export class GraphNode<T> {
   edges: Map<T[keyof T], GraphNode<T>>
   value: T
+  id: string
 
-  constructor(value: T) {
+  constructor(value: T, id: string) {
     this.value = value
     this.edges = new Map<T[keyof T], GraphNode<T>>()
+    this.id = id
   }
 
   addEdge(key: keyof T, node: GraphNode<T>): void {
@@ -75,7 +75,7 @@ export class Graph<T> {
       const cycleStartIndex = path.indexOf(node.value[this.key])
       if (cycleStartIndex !== -1) {
         // node is visited & in path mean its a cycle
-        cycle.push(...(path?.slice(cycleStartIndex) ?? []))
+        cycle.push(...(path.slice(cycleStartIndex)))
       }
       return
     }
@@ -127,18 +127,15 @@ export class Graph<T> {
     }
   }
 
-  findCycle(): GraphNode<T>[] {
+  findCycle(): T[keyof T][] {
     const visited = new Set<T[keyof T]>()
-    const path: T[keyof T][] = []
     const nodesInCycle: T[keyof T][] = []
 
     Array.from(this.nodes.values()).forEach(node => {
       if (!visited.has(node.value[this.key])) {
-        this.dfs({ node, visited, path, cycle: nodesInCycle })
+        this.dfs({ node, visited, cycle: nodesInCycle })
       }
     })
     return nodesInCycle
-      .map(nodeKey => this.findNodeByKey(nodeKey))
-      .filter(isDefined)
   }
 }

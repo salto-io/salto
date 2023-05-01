@@ -254,7 +254,7 @@ describe('NetsuiteClient', () => {
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode, 'netsuite.type.instance.instance')])
         await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -304,7 +304,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
-        testGraph.addNodes([new GraphNode({ serviceid: 'someObject', elemIdFullName: 'netsuite.type.instance.instance', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        testGraph.addNodes([new GraphNode({ serviceid: 'someObject', elemIdFullName: 'netsuite.type.instance.instance', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode, 'netsuite.type.instance.instance')])
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -370,7 +370,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
         })
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode)])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo: { scriptId: 'someObject', typeName: 'type', values: { scriptid: 'someObject' } } } as SDFObjectNode, 'netsuite.type.instance.instance')])
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -446,7 +446,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               },
             }),
           })
-          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode, 'netsuite.customrecord1')])
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -498,7 +498,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           const successFieldChange = toChange({
             after: customRecordType.fields.custom_field,
           })
-          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1.field.custom_field', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode)])
+          testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.customrecord1.field.custom_field', serviceid: 'customrecord1', changeType: 'addition', customizationInfo } as SDFObjectNode, 'netsuite.customrecord1.field.custom_field')])
           expect(await client.deploy(
             [successTypeChange, successFieldChange, failedChange],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
@@ -597,7 +597,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           typeName: 'type',
           values: { scriptid: 'someObject' },
         }
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.type.instance.instance', serviceid: 'someObject', changeType: 'addition', customizationInfo } as SDFObjectNode, 'netsuite.type.instance.instance')])
         await client.validate([change], SDF_CREATE_OR_UPDATE_GROUP_ID, deployParams[0])
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           undefined,

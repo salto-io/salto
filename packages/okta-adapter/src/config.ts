@@ -1170,6 +1170,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
     },
   },
+  ProfileEnrollmentPolicyRuleAction: {
+    transformation: {
+      // TODO: should change to reference in SALTO-3806
+      fieldTypeOverrides: [{ fieldName: 'uiSchemaId', fieldType: 'string' }],
+      fieldsToHide: [{ fieldName: 'uiSchemaId' }],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {

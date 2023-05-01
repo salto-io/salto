@@ -45,30 +45,7 @@ const DEFAULT_ID_FIELDS = ['name']
 export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = []
 
 const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
-  MCMService_EnergySourceTypes: {
-    request: {
-      url: 'EnergySourceTypes',
-    },
-  },
-  MCMService_MeasuringTypes: {
-    request: {
-      url: 'MeasuringTypes',
-    },
-  },
-  MCMService_MCIRateTypes: {
-    request: {
-      url: 'MCIRateTypes',
-    },
-  },
-  MCMService_PowerRangeTypes: {
-    request: {
-      url: 'PowerRangeTypes',
-    },
-  },
   MCMService_MCMFormulas: {
-    request: {
-      url: 'MCMFormulas',
-    },
     transformation: {
       idFields: ['idText'],
     },

@@ -43,6 +43,7 @@ import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import groupRolesFilter from './filters/group_roles'
 import userFilter from './filters/user'
+import templateUrlsFilter from './filters/template_urls'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
@@ -72,8 +73,9 @@ export const DEFAULT_FILTERS = [
   userFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
+  templateUrlsFilter,
   fieldReferencesFilter,
-  // should run before appDeploymentFilter and after after userSchemaFilter
+  // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,
   defaultPolicyRuleDeployment,

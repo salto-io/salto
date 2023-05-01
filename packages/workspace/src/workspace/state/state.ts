@@ -23,8 +23,8 @@ import { StateStaticFilesSource } from '../static_files/common'
 
 export type StateMetadataKey = 'version' | 'hash'
 
-type updateStateElementsArgs = {
-  changes: DetailedChange[]
+export type updateStateElementsArgs = {
+  serviceToStateChanges: DetailedChange<Element>[]
   unmergedElements?: Element[]
   fetchAccounts?: string[]
 }
@@ -59,7 +59,6 @@ export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
   override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
-  updateAccounts(accounts: string[]): Promise<void>
   getAccountsUpdateDates(): Promise<Record<string, Date>>
   // getServicesUpdateDates is deprecated, kept for backwards compatibility.
   // use getAccountsUpdateDates.

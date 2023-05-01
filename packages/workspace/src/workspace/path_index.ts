@@ -18,10 +18,13 @@ import { collections, values, serialize as lowerdashSerialize } from '@salto-io/
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
   ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { filterByID } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
+
+const log = logger(module)
 
 export type Path = readonly string[]
 
@@ -173,14 +176,15 @@ export const updatePathIndexTemp = async (
   current: PathIndex,
   changedUnmergedElements: Element[],
   unmergedElementIDs: Set<string>,
-): Promise<void> => {
+): Promise<void> => log.time(async () => {
   // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
   const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
   const entriesToSet = getElementsPathHints(changedUnmergedElements)
 
   await current.deleteAll(entriesToDelete)
   await current.setAll(entriesToSet)
-}
+}, 'updatePathIndex')
+
 
 export const overridePathIndex = async (
   current: PathIndex,
@@ -206,14 +210,14 @@ export const updateTopLevelPathIndex = async (
   current: PathIndex,
   changedUnmergedElements: Element[],
   unmergedElementIDs: Set<string>,
-): Promise<void> => {
+): Promise<void> => log.time(async () => {
   // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
   const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
   const entries = getTopLevelPathHints(changedUnmergedElements)
 
   await current.deleteAll(entriesToDelete)
   await current.setAll(entries)
-}
+}, 'updateTopLevelPathIndex')
 
 export const overrideTopLevelPathIndex = async (
   current: PathIndex,

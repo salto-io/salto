@@ -121,17 +121,24 @@ type WorkspaceDetailedChange = {
   change: DetailedChange
   origin: WorkspaceDetailedChangeOrigin
 }
+
+type detailedChangesResult = {
+    changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+    changes: DetailedChange<Element>[]
+}
+
 const getDetailedChangeTree = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
-): Promise<collections.treeMap.TreeMap<WorkspaceDetailedChange>> => (
-  new collections.treeMap.TreeMap(
-    wu(await getDetailedChanges(before, after, topLevelFilters))
-      .map(change => [change.id.getFullName(), [{ change, origin }]])
+): Promise<detailedChangesResult> => {
+  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changesTree = new collections.treeMap.TreeMap(
+    wu(changes).map(change => [change.id.getFullName(), [{ change, origin }]])
   )
-)
+  return { changesTree, changes }
+}
 
 const findNestedElementPath = (
   changeElemID: ElemID,
@@ -254,7 +261,8 @@ const toFetchChanges = (
 }
 
 export type FetchChangesResult = {
-  changes: Iterable<FetchChange>
+  changes: FetchChange[]
+  serviceToStateChanges: DetailedChange[]
   elements: Element[]
   errors: SaltoError[]
   unmergedElements: Element[]
@@ -564,7 +572,7 @@ export const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
-): Promise<Iterable<FetchChange>> => {
+): Promise<{ changes: FetchChange[]; serviceToStateChanges: DetailedChange<Element>[]}> => {
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
     || mergedAccountElements.has(id)
@@ -584,7 +592,8 @@ export const calcFetchChanges = async (
     list: () => mergedAccountElements.list(),
   }
 
-  const serviceChanges = await log.time(
+  // Changes from the service that are not in the state
+  const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time(
     () => getDetailedChangeTree(
       stateElements,
       partialFetchElementSource,
@@ -602,7 +611,8 @@ export const calcFetchChanges = async (
   )
   const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
 
-  const pendingChanges = await log.time(
+  // Changes from the nacls that are not in the state
+  const { changesTree: pendingChanges } = await log.time(
     () => getDetailedChangeTree(
       stateElements,
       workspaceElements,
@@ -611,7 +621,9 @@ export const calcFetchChanges = async (
     ),
     'calculate pending changes',
   )
-  const workspaceToServiceChanges = await log.time(
+
+  // Changes from the service that are not in the nacls
+  const { changesTree: workspaceToServiceChanges } = await log.time(
     () => getDetailedChangeTree(
       workspaceElements,
       partialFetchElementSource,
@@ -629,10 +641,19 @@ export const calcFetchChanges = async (
     e => e.elemID.getFullName()
   )
 
-  return awu(fetchChanges)
+  const changes = await awu(fetchChanges)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
+  return { changes, serviceToStateChanges }
+}
+
+const createFirstFetchChanges = (elements: Element[]): {
+  changes: FetchChange[]
+  serviceToStateChanges: DetailedChange<Element>[]
+} => {
+  const changes = elements.map(toAddFetchChange)
+  return { changes, serviceToStateChanges: changes.map(change => change.change) }
 }
 
 type CreateFetchChangesParams = {
@@ -663,8 +684,9 @@ const createFetchChanges = async ({
     .concat(await stateElements.list())
     .filter(e => !e.isConfigType())
     .isEmpty()
-  const changes = isFirstFetch
-    ? unmergedElements.map(toAddFetchChange)
+
+  const { changes, serviceToStateChanges } = isFirstFetch
+    ? createFirstFetchChanges(unmergedElements)
     : await calcFetchChanges(
       unmergedElements,
       elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
@@ -712,6 +734,7 @@ const createFetchChanges = async ({
     : processErrorsResult.keptElements
   return {
     changes,
+    serviceToStateChanges,
     elements,
     errors,
     unmergedElements,
@@ -774,6 +797,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   log.warn(`creating empty fetch result due to ${errMsg}`)
   return {
     changes: [],
+    serviceToStateChanges: [],
     elements: [],
     mergeErrors: [],
     unmergedElements: [],
@@ -855,7 +879,7 @@ const fixStaticFilesForFromStateChanges = async (
     })
   return {
     ...fetchChangesResult,
-    changes: wu(fetchChangesResult.changes)
+    changes: fetchChangesResult.changes
       .filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
       Array.from(invalidChangeIDs).map(invalidChangeElemID => ({

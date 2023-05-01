@@ -117,7 +117,7 @@ const fetchDiffToWorkspace = async (
   }
 
   outputLine(`Calculating difference between ${input.fromDir} and ${input.toDir}`, output)
-  const changes = await calcFetchChanges(
+  const { changes } = await calcFetchChanges(
     afterElements,
     elementSource.createInMemoryElementSource(mergedAfterElements),
     elementSource.createInMemoryElementSource(mergedBeforeElements),

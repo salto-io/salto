@@ -261,7 +261,7 @@ export const fetch: FetchFunc = async (
   }
   try {
     const {
-      changes, elements, mergeErrors, errors, updatedConfig,
+      changes, serviceToStateChanges, elements, mergeErrors, errors, updatedConfig,
       configChanges, accountNameToConfigMessage, unmergedElements,
     } = await fetchChanges(
       accountToAdapter,
@@ -274,7 +274,7 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await workspace.state().updateStateFromChanges({
-      changes: await awu(changes).map(change => change.change).toArray(),
+      serviceToStateChanges,
       unmergedElements,
       fetchAccounts,
     })
@@ -321,7 +321,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   const {
-    changes, elements, mergeErrors, errors,
+    changes, serviceToStateChanges, elements, mergeErrors, errors,
     configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
@@ -336,7 +336,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
   await workspace.state().updateStateFromChanges({
-    changes: await awu(changes).map(change => change.change).toArray(),
+    serviceToStateChanges,
     unmergedElements,
     fetchAccounts,
   })

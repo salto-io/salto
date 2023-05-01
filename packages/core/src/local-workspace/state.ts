@@ -365,12 +365,12 @@ export const localState = (
       await Promise.all(stateFiles.map(filename => rm(filename)))
       setDirty()
     },
-    updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
-      changes: DetailedChange[]
+    updateStateFromChanges: async ({ serviceToStateChanges, unmergedElements, fetchAccounts } : {
+      serviceToStateChanges: DetailedChange[]
       unmergedElements?: Element[]
       fetchAccounts?: string[]
     }) => {
-      await inMemState.updateStateFromChanges({ changes, unmergedElements, fetchAccounts })
+      await inMemState.updateStateFromChanges({ serviceToStateChanges, unmergedElements, fetchAccounts })
       setDirty()
     },
   }

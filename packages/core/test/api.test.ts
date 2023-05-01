@@ -152,6 +152,7 @@ describe('api.ts', () => {
       mockPartiallyFetchedAccounts.mockReturnValue(new Set())
       mockFetchChanges.mockImplementation(async () => ({
         changes: [],
+        serviceToStateChanges: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
         updatedConfig: {},
@@ -662,6 +663,7 @@ describe('api.ts', () => {
     beforeAll(() => {
       mockFetchChangesFromWorkspace.mockResolvedValue({
         changes: [],
+        serviceToStateChanges: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
         unmergedElements: fetchedElements,

@@ -32,7 +32,7 @@ import {
   overrideTopLevelPathIndex, updateTopLevelPathIndex, updatePathIndexTemp,
 } from '../path_index'
 import { RemoteMap } from '../remote_map'
-import { State, StateData } from './state'
+import { State, StateData, updateStateElementsArgs } from './state'
 import { mergeElements } from '../../merger'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
@@ -88,14 +88,16 @@ export const buildInMemState = (
     )
   }
 
-  // Some salesforce objects are split into multiple files, we want to merge them before setting them in the state
-  const mergeAdditionsToElement = async (changes: DetailedChange[], elemID: ElemID): Promise<Element | undefined> => {
+  // Some addition changes may be split into multiple changes of the same objects
+  // want to merge them before setting them in the state so they won't override each other
+  const mergeAdditionsToElement = async (changes: DetailedChange<Element>[], elemID: ElemID)
+      : Promise<Element | undefined> => {
     const additionChanges = changes.filter(isAdditionChange).filter(change => change.id.isEqual(elemID))
     const combinedElement = await mergeElements(awu(additionChanges).map(getChangeData))
     return combinedElement.merged.get(elemID.getFullName())
   }
 
-  const updateStateElements = async (changes: DetailedChange[]): Promise<void> => {
+  const updateStateElements = async (changes: DetailedChange<Element>[]): Promise<void> => log.time(async () => {
     const state = (await stateData()).elements
     const changesByTopLevelElement = _.groupBy(
       changes,
@@ -121,7 +123,7 @@ export const buildInMemState = (
       applyDetailedChanges(updatedElem, elemChanges)
       await state.set(updatedElem)
     })
-  }
+  }, 'updateStateElements')
 
 
   return {
@@ -142,7 +144,6 @@ export const buildInMemState = (
       (await stateData()).elements.setAll(elements),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    updateAccounts,
     override: (elements: AsyncIterable<Element>, accounts?: string[])
       : Promise<void> => log.time(
       async () => {
@@ -221,25 +222,19 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
-    updateStateFromChanges: async ({ changes, unmergedElements, fetchAccounts } : {
-        changes: DetailedChange[]
-        unmergedElements?: Element[]
-        fetchAccounts?: string[]
-}) => {
-      await log.time(async () => {
-        await updateStateElements(changes)
-        if (!_.isEmpty(fetchAccounts)) {
-          await updateAccounts(fetchAccounts)
-        }
-      }, 'state update')
-      log.debug('finished updating state elements with %d changes', changes.length)
+    updateStateFromChanges: async (
+      { serviceToStateChanges, unmergedElements, fetchAccounts }: updateStateElementsArgs) => {
+      await updateStateElements(serviceToStateChanges)
+      if (!_.isEmpty(fetchAccounts)) {
+        await updateAccounts(fetchAccounts)
+      }
 
       if (unmergedElements === undefined || _.isEmpty(unmergedElements)) {
         return
       }
 
       const changedElementsFullNames = new Set(Object.keys(_.groupBy(
-        changes,
+        serviceToStateChanges,
         change => change.id.createTopLevelParentID().parent.getFullName()
       )))
       const changedUnmergedElements = unmergedElements.filter(
@@ -247,12 +242,9 @@ export const buildInMemState = (
       )
       const unmergedElementIDs = new Set(unmergedElements.map(elem => elem.elemID.getFullName()))
 
-      await log.time(async () => {
-        const currentStateData = await stateData()
-        await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
-        await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
-      }, 'update path index')
-      log.debug('finished updating path index with %d elements', unmergedElements.length)
+      const currentStateData = await stateData()
+      await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
+      await updatePathIndexTemp(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
     },
   }
 }

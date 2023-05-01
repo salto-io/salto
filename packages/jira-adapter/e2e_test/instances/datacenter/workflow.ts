@@ -44,6 +44,10 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'initial',
+      from: [{
+        sourceAngle: 33.45,
+        targetAngle: 99.89,
+      }],
       rules: {
         validators: [
           {
@@ -201,7 +205,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         key: 'jira.issue.editable',
         value: 'true',
       }],
-      direction: {
+      location: {
         x: 12.34,
         y: 56.78,
       },
@@ -213,7 +217,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         key: 'jira.issue.editable',
         value: 'true',
       }],
-      direction: {
+      location: {
         x: 67.89,
         y: 20.78,
       },

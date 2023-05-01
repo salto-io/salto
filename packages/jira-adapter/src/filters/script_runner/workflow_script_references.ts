@@ -15,10 +15,10 @@
 */
 
 import { extractTemplate, walkOnValue, WalkOnFunc, WALK_NEXT_STEP, resolveValues } from '@salto-io/adapter-utils'
-import { InstanceElement, isInstanceElement, TemplateExpression, ReferenceExpression, ElemID, Element, Value, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, TemplateExpression, ReferenceExpression, Element, Value, isAdditionOrModificationChange, getChangeData } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { FilterCreator } from '../../filter'
-import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
+import { WORKFLOW_TYPE_NAME } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
 import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow_cloud'
@@ -30,14 +30,16 @@ const CUSTOM_FIELD_PATTERN = /(customfield_\d+)/
 const SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
 const SCRIPT_CLOUD_FIELDS = ['expression', 'additionalCode', 'emailCode']
 
-const referenceCustomFields = (script: string): TemplateExpression | string => extractTemplate(
+const referenceCustomFields = (script: string, fieldInstancesById: Map<string, InstanceElement>)
+  : TemplateExpression | string => extractTemplate(
   script,
   [CUSTOM_FIELD_PATTERN],
   expression => {
-    if (!expression.match(CUSTOM_FIELD_PATTERN)) {
+    const instance = fieldInstancesById.get(expression)
+    if (!expression.match(CUSTOM_FIELD_PATTERN) || instance === undefined) {
       return expression
     }
-    return new ReferenceExpression(new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'ido_date__datepicker__c@suuuu'))
+    return new ReferenceExpression(instance.elemID, instance)
   }
 )
 
@@ -46,14 +48,18 @@ const isCloudScriptRunnerItem = (value: Value): boolean =>
   SCRIPT_RUNNER_CLOUD_TYPES.includes(value.type) && value.configuration.scriptRunner !== undefined
 
 
-const transformScriptsCloud: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const transformScriptsCloud = (fieldInstancesById: Map<string, InstanceElement>)
+  : WalkOnFunc => ({ value }): WALK_NEXT_STEP => {
   if (value === undefined) {
     return WALK_NEXT_STEP.SKIP
   }
   if (isCloudScriptRunnerItem(value)) {
     SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
       if (value.configuration.scriptRunner[fieldName] !== undefined) {
-        value.configuration.scriptRunner[fieldName] = referenceCustomFields(value.configuration.scriptRunner[fieldName])
+        value.configuration.scriptRunner[fieldName] = referenceCustomFields(
+          value.configuration.scriptRunner[fieldName],
+          fieldInstancesById
+        )
       }
     })
     return WALK_NEXT_STEP.SKIP
@@ -64,7 +70,8 @@ const transformScriptsCloud: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
 const isDCScriptRunnerItem = (value: Value): boolean =>
   SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined
 
-const transformScriptsDC: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
+const transformScriptsDC = (fieldInstancesById: Map<string, InstanceElement>)
+  : WalkOnFunc => ({ value }): WALK_NEXT_STEP => {
   if (value === undefined) {
     return WALK_NEXT_STEP.SKIP
   }
@@ -74,7 +81,10 @@ const transformScriptsDC: WalkOnFunc = ({ value }): WALK_NEXT_STEP => {
     }
     SCRIPT_DC_FIELDS.forEach(fieldName => {
       if (value.configuration[fieldName]?.script !== undefined) {
-        value.configuration[fieldName].script = referenceCustomFields(value.configuration[fieldName].script)
+        value.configuration[fieldName].script = referenceCustomFields(
+          value.configuration[fieldName].script,
+          fieldInstancesById
+        )
       }
     })
     return WALK_NEXT_STEP.SKIP
@@ -92,15 +102,20 @@ const filter: FilterCreator = ({ config, client }) => {
       if (!config.fetch.enableScriptRunnerAddon) {
         return
       }
-      elements
-        .filter(isInstanceElement)
+      const instances = elements.filter(isInstanceElement)
+      const fieldInstances = instances.filter(instance => instance.elemID.typeName === FIELD_TYPE_NAME)
+      const fieldInstancesById = new Map(
+        fieldInstances.map(instance => [instance.value.id, instance] as [string, InstanceElement])
+      )
+
+      instances
         .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)
         .forEach(instance => {
           walkOnValue({ elemId: instance.elemID.createNestedID('transitions'),
             value: instance.value.transitions,
             func: client.isDataCenter
-              ? transformScriptsDC
-              : transformScriptsCloud })
+              ? transformScriptsDC(fieldInstancesById)
+              : transformScriptsCloud(fieldInstancesById) })
         })
     },
     preDeploy: async changes => {

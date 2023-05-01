@@ -37,8 +37,8 @@ describe('enabledAuthenticatorsValidator', () => {
       settings: {
         authenticators: [
           { key: new ReferenceExpression(auth1.elemID, auth1), enroll: { self: 'OPTIONAL' } },
-          { key: new ReferenceExpression(auth2.elemID, auth2), enroll: { self: 'NOT_ALLOWED' } },
-          { key: new ReferenceExpression(auth3.elemID, auth3), enroll: { self: 'REQUIRED' } },
+          { key: new ReferenceExpression(auth2.elemID, auth2), enroll: { self: 'NOT_ALLOWED' }, extraField: 'field' },
+          { key: new ReferenceExpression(auth3.elemID, auth3), enroll: { self: 'REQUIRED', something: 'some' } },
         ],
       },
     },

@@ -170,7 +170,7 @@ const deployPlan = async (
     ) : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions)
     .filter(action =>
-      !result.errors.map(error => error !== undefined && error.elementId).includes(action))
+      !result.errors.map(error => error !== undefined && error.groupId).includes(action))
   outputLine(deployPhaseEpilogue(
     nonErroredActions.length,
     result.errors.length,

@@ -41,11 +41,22 @@ export type DeployExtraProperties = {
   groups?: Group[]
 }
 
-export type DeployResult = {
+type SaltoDeploymentErrors = {
+  errors: ReadonlyArray<SaltoError | SaltoElementError>
+}
+
+type AdapterDeploymentErrors = {
+  errors: ReadonlyArray<SaltoError | SaltoElementError | Error>
+}
+
+type BaseDeployResult = {
   appliedChanges: ReadonlyArray<Change>
-  errors: ReadonlyArray<Error>
   extraProperties?: DeployExtraProperties
 }
+
+export type AdapterDeployResult = SaltoDeploymentErrors & BaseDeployResult
+
+export type DeployResult = AdapterDeploymentErrors & BaseDeployResult
 
 export type Progress = {
   message: string

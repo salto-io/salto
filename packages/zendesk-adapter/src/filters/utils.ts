@@ -34,7 +34,7 @@ export type Condition = {
   value?: unknown
 }
 export type SubjectCondition = {
-  subject: string
+  subject: string | ReferenceExpression
   value?: unknown
 }
 
@@ -81,7 +81,7 @@ const CONDITION_SCHEMA = Joi.array().items(Joi.object({
 }).unknown(true)).required()
 
 const CONDITION_SUBJECT_SCHEMA = Joi.array().items(Joi.object({
-  subject: Joi.string().required(),
+  subject: [Joi.string().required(), Joi.object().required()],
   value: Joi.optional(),
 }).unknown(true)).required()
 

@@ -838,7 +838,7 @@ const fixStaticFilesForFromStateChanges = async (
   env: string,
 ): Promise<FetchChangesResult> => {
   const invalidChangeIDs: Set<string> = new Set()
-  const filteredChanges = wu(fetchChangesResult.changes)
+  const filteredChanges = fetchChangesResult.changes
     .map(fetchChange => fetchChange.change)
     .filter(isAdditionOrModificationChange)
   await awu(filteredChanges)

@@ -37,6 +37,8 @@ export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
+export const DEFAULT_AXIOS_TIMEOUT_IN_SECONDS = 60 * 20
+
 
 const REQUIRED_FEATURE_SUFFIX = ':required'
 export const isRequiredFeature = (featureName: string): boolean =>
@@ -92,6 +94,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
 
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
+  httpTimeoutLimitInSeconds?: number
 }
 
 export type NetsuiteConfig = {
@@ -186,6 +189,15 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
           max: 50,
+        }),
+      },
+    },
+    httpTimeoutLimitInSeconds: {
+      refType: BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_AXIOS_TIMEOUT_IN_SECONDS,
+        [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
+          min: 1,
         }),
       },
     },

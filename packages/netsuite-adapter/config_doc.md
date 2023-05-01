@@ -49,6 +49,7 @@ netsuite {
   }
   suiteAppClient = {
    suiteAppConcurrencyLimit = 4 
+   httpTimeoutLimitInSeconds = 1200
   }
 }
 ```
@@ -130,6 +131,7 @@ netsuite {
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
 | suiteAppConcurrencyLimit            | 4                       | Limits the max number of concurrent Salto SuiteApp API calls. The number should not exceed the concurrency limit enforced by the upstream service.
+| httpTimeoutLimitInSeconds           | 1200 (20 minutes)       | Set a timeout, in seconds, for HTTP calls. Restricted to a value greater than 1.
 
 
 ### Skip list configuration options

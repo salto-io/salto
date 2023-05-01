@@ -232,6 +232,7 @@ describe('NetsuiteAdapter creator', () => {
         ...config.value,
         suiteAppClient: {
           suiteAppConcurrencyLimit: 5,
+          httpTimeoutLimitInSeconds: 60,
         },
       }
 
@@ -244,6 +245,7 @@ describe('NetsuiteAdapter creator', () => {
         credentials: { ...cred.value, accountId: 'FOO_A' },
         config: {
           suiteAppConcurrencyLimit: 5,
+          httpTimeoutLimitInSeconds: 60,
         },
         globalLimiter: expect.any(Bottleneck),
       })

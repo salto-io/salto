@@ -254,7 +254,7 @@ const toFetchChanges = (
 }
 
 export type FetchChangesResult = {
-  changes: Iterable<FetchChange>
+  changes: FetchChange[]
   elements: Element[]
   errors: SaltoError[]
   unmergedElements: Element[]
@@ -564,7 +564,7 @@ export const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
-): Promise<Iterable<FetchChange>> => {
+): Promise<FetchChange[]> => {
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
     || mergedAccountElements.has(id)
@@ -814,7 +814,7 @@ const fixStaticFilesForFromStateChanges = async (
   env: string,
 ): Promise<FetchChangesResult> => {
   const invalidChangeIDs: Set<string> = new Set()
-  const filteredChanges = wu(fetchChangesResult.changes)
+  const filteredChanges = fetchChangesResult.changes
     .map(fetchChange => fetchChange.change)
     .filter(isAdditionOrModificationChange)
   await awu(filteredChanges)
@@ -855,7 +855,7 @@ const fixStaticFilesForFromStateChanges = async (
     })
   return {
     ...fetchChangesResult,
-    changes: wu(fetchChangesResult.changes)
+    changes: fetchChangesResult.changes
       .filter(change => !invalidChangeIDs.has(change.change.id.getFullName())),
     errors: fetchChangesResult.errors.concat(
       Array.from(invalidChangeIDs).map(invalidChangeElemID => ({

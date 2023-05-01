@@ -456,7 +456,7 @@ describe('workflowDeployFilter', () => {
               {
                 name: 'Resolved',
                 id: '5',
-                direction: {
+                location: {
                   x: -33,
                   y: 3,
                 },
@@ -464,7 +464,7 @@ describe('workflowDeployFilter', () => {
               {
                 name: 'Open',
                 id: '1',
-                direction: {
+                location: {
                   x: -3,
                   y: 3,
                 },
@@ -472,7 +472,7 @@ describe('workflowDeployFilter', () => {
               {
                 name: 'The best name',
                 id: '10007',
-                direction: {
+                location: {
                   x: 3,
                   y: -3,
                 },
@@ -480,7 +480,7 @@ describe('workflowDeployFilter', () => {
               {
                 name: 'Create',
                 id: '5',
-                direction: {
+                location: {
                   x: 3,
                   y: 33,
                 },
@@ -488,13 +488,13 @@ describe('workflowDeployFilter', () => {
               {
                 name: 'Building',
                 id: '400',
-                direction: {
+                location: {
                   x: 33,
                   y: 3,
                 },
               },
               {
-                name: 'without direction',
+                name: 'without location',
                 id: '500',
               },
             ],
@@ -547,6 +547,14 @@ describe('workflowDeployFilter', () => {
                     sourceAngle: 111,
                     targetAngle: 1,
                   },
+                ],
+                to: '10007',
+                type: 'directed',
+              },
+              {
+                name: 'with from as string',
+                from: [
+                  '5',
                 ],
                 to: '10007',
                 type: 'directed',
@@ -646,6 +654,14 @@ describe('workflowDeployFilter', () => {
                   targetId: 'S<4>',
                   sourceAngle: -78.11,
                   targetAngle: 173.58,
+                },
+                {
+                  id: 'A<51:S<3>:S<4>>',
+                  name: 'with from as string',
+                  sourceId: 'S<4>',
+                  targetId: 'S<2>',
+                  sourceAngle: 78.11,
+                  targetAngle: 122.58,
                 },
                 {
                   id: 'A<11:S<1>:S<1>>',
@@ -759,9 +775,15 @@ describe('workflowDeployFilter', () => {
         )])
         expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to post Workflow workflowName diagram values with status 400')
       })
-      it('should work ok with no statuses and no transitions', async () => {
-        instance.value.statuses = undefined
-        instance.value.transitions = undefined
+      it('should log error when status does not have id ', async () => {
+        instance.value.statuses[2].id = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Status The best name Diagram values')
+      })
+      it('should work ok with partial transition from values', async () => {
+        instance.value.transitions[2].from[0].targetAngle = undefined
         await filter.deploy([toChange(
           { after: instance }
         )])

@@ -27,7 +27,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
-import { buildDiagramMaps, deployWorkflowDiagram, insertWorkflowDiagramFields, isHasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
+import { deployWorkflowDiagram, hasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
 
 const log = logger(module)
 
@@ -92,7 +92,7 @@ export const deployWorkflow = async (
   }
   const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
-  instance.value.transitions?.forEach(transition => {
+  instance.value.transitions.forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
 
@@ -111,11 +111,9 @@ export const deployWorkflow = async (
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
-  if (!isRemovalChange(resolvedChange) && isHasDiagramFields(instanceCopy)) {
+  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instanceCopy)) {
     try {
-      const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instanceCopy })
-      await deployWorkflowDiagram(instanceCopy, client, workflowDiagramMaps)
-      insertWorkflowDiagramFields(instance, workflowDiagramMaps)
+      await deployWorkflowDiagram({ instance, instanceCopy, client })
     } catch (e) {
       log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
     }

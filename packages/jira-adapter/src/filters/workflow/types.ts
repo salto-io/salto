@@ -133,9 +133,9 @@ const rulesSchema = Joi.object({
   conditions: conditionScheme.optional(),
 }).unknown(true)
 
-export type StatusDirection ={
-  x: string
-  y: string
+export type StatusLocation ={
+  x?: string
+  y?: string
 }
 
 export type TransitionFrom = {
@@ -168,7 +168,7 @@ export type Status = {
   id?: string
   name?: string
   properties?: Values
-  direction?: StatusDirection
+  location?: StatusLocation
 }
 
 const statusSchema = Joi.object({
@@ -189,7 +189,7 @@ export const workflowSchema = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
-  transitions: Joi.array().items(transitionsSchema).optional(),
+  transitions: Joi.array().items(transitionsSchema).required(),
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true).required()
 

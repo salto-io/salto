@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, ObjectType, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { elements as adapterComponentsElements } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { logger } from '@salto-io/logging'
-import { addAnnotationRecursively, findObject } from '../../utils'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, TransitionFrom, WorkflowInstance } from './types'
@@ -30,8 +30,8 @@ const log = logger(module)
 type StatusDiagramFields = {
     id: string
     name: string
-    x: string
-    y: string
+    x?: string
+    y?: string
     statusId: string
     initial?: boolean
 }
@@ -41,8 +41,8 @@ type TransitionDiagramFields = {
     name: string
     sourceId: string
     targetId: string
-    sourceAngle: string
-    targetAngle: string
+    sourceAngle?: string
+    targetAngle?: string
 }
 
 type WorkflowLayout = {
@@ -87,7 +87,7 @@ const addObjectTypesAnnotation = async (objectTypes: ObjectType[]): Promise<void
 
 const createWorkflowDiagramFieldsTypes = (): {
   transitionFromType: ObjectType
-  statusDirectionType: ObjectType
+  statusLocationType: ObjectType
 } => {
   const transitionFromType = new ObjectType({
     elemID: new ElemID(JIRA, 'TransitionFrom'),
@@ -98,42 +98,36 @@ const createWorkflowDiagramFieldsTypes = (): {
     },
     path: [JIRA, adapterComponentsElements.TYPES_PATH, adapterComponentsElements.SUBTYPES_PATH, 'TransitionFrom'],
   })
-  const statusDirectionType = new ObjectType({
-    elemID: new ElemID(JIRA, 'StatusDirection'),
+  const statusLocationType = new ObjectType({
+    elemID: new ElemID(JIRA, 'StatusLocation'),
     fields: {
       x: { refType: BuiltinTypes.NUMBER },
       y: { refType: BuiltinTypes.NUMBER },
     },
-    path: [JIRA, adapterComponentsElements.TYPES_PATH, adapterComponentsElements.SUBTYPES_PATH, 'StatusDirection'],
+    path: [JIRA, adapterComponentsElements.TYPES_PATH, adapterComponentsElements.SUBTYPES_PATH, 'StatusLocation'],
   })
-  return { transitionFromType, statusDirectionType }
+  return { transitionFromType, statusLocationType }
 }
+const WORKFLOW_DIAGRAM_SCHEME = Joi.object({
+  layout: Joi.object({
+    statuses: Joi.array().items(Joi.object({
+      statusId: Joi.number(),
+      id: Joi.string().required(),
+      x: Joi.number(),
+      y: Joi.number(),
+    }).unknown(true)),
+    transitions: Joi.array().items(Joi.object({
+      name: Joi.string().required(),
+      id: Joi.string().required(),
+      sourceId: Joi.string(),
+      targetId: Joi.string(),
+      sourceAngle: Joi.number(),
+      targetAngle: Joi.number(),
+    }).unknown(true)),
+  }).unknown(true).required(),
+}).unknown(true).required()
 
-const isValidDiagramResponse = (response: unknown): response is WorkflowDiagramResponse => {
-  const { error } = Joi.object({
-    layout: Joi.object({
-      statuses: Joi.array().items(Joi.object({
-        statusId: Joi.number(),
-        id: Joi.string(),
-        x: Joi.number(),
-        y: Joi.number(),
-      }).unknown(true)),
-      transitions: Joi.array().items(Joi.object({
-        name: Joi.string(),
-        id: Joi.string(),
-        sourceId: Joi.string(),
-        targetId: Joi.string(),
-        sourceAngle: Joi.number(),
-        targetAngle: Joi.number(),
-      }).unknown(true)),
-    }).unknown(true).required(),
-  }).unknown(true).required().validate(response)
-
-  if (error !== undefined) {
-    return false
-  }
-  return true
-}
+const isWorkflowDiagramResponse = createSchemeGuard<WorkflowDiagramResponse>(WORKFLOW_DIAGRAM_SCHEME, 'Received an invalid workflow diagram response')
 
 const getTransitionKey = (from: string, name: string): string =>
   [from, name].join('-')
@@ -144,9 +138,11 @@ const convertTransitionKeyToActionKey = (key: string, statusIdToStepId: Record<s
 }
 
 const getTransitionFrom = (transitionName: string, statusIdToStepId: Record<string, string>,
-  actionKeyToTransition: Record<string, TransitionDiagramFields>, statusId?: string)
+  actionKeyToTransition: Record<string, TransitionDiagramFields>, statusId: string)
   : TransitionFrom => {
-  const actionKey = convertTransitionKeyToActionKey(getTransitionKey(statusId ?? '', transitionName), statusIdToStepId)
+  const actionKey = convertTransitionKeyToActionKey(
+    getTransitionKey(statusId, transitionName), statusIdToStepId
+  )
   if (actionKeyToTransition[actionKey] === undefined) {
     throw new Error(`Fail to get Workflow Transition ${transitionName} Diagram values`)
   }
@@ -155,20 +151,25 @@ const getTransitionFrom = (transitionName: string, statusIdToStepId: Record<stri
     targetAngle: actionKeyToTransition[actionKey].targetAngle }
 }
 
+const getTransitionFromValue = (transitionFrom: TransitionFrom | string): string =>
+  (typeof transitionFrom === 'string'
+    ? transitionFrom
+    : transitionFrom.id as string)
+
 export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => {
   element.value.statuses
-    ?.filter(status => status.direction !== undefined)
+    ?.filter(status => status.location !== undefined)
     .forEach(status => {
-      delete status.direction
+      delete status.location
     })
   element.value.transitions
-    ?.filter((transition:Values) => transition.from !== undefined)
-    .forEach((transition: Values) => {
+    ?.filter(transition => transition.from !== undefined)
+    .forEach(transition => {
       const { type } = transition
       if (type === INITIAL_TRANSITION_TYPE) {
         delete transition.from
-      } else {
-        transition.from = transition.from.map((from:TransitionFrom) => from.id)
+      } else if (transition.from !== undefined) {
+        transition.from = transition.from.map(getTransitionFromValue)
       }
     })
 }
@@ -176,11 +177,15 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
 const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>)
   :StatusDiagramDeploy[] | undefined =>
   workflow.value.statuses
-    ?.map(status => (
-      { id: statusIdToStepId[status.id as string],
-        x: status.direction?.x,
-        y: status.direction?.y }
-    ))
+    ?.map(status => {
+      if (status.id === undefined) {
+        throw new Error(`Fail to deploy Workflow ${workflow.value.name} Status ${status.name} Diagram values`)
+      }
+      return { id: statusIdToStepId[status.id],
+        x: status.location?.x,
+        y: status.location?.y }
+    })
+
 
 const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>,
   actionKeyToTransition: Record<string, TransitionDiagramFields>)
@@ -210,42 +215,24 @@ const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToSte
           }
           return undefined
         })
-    }).filter(val => !_.isUndefined(val))
+    }).filter(val => val !== undefined)
 
-export const isHasDiagramFields = (instance: WorkflowInstance): boolean => {
-  const statusesDirections = instance.value.statuses
-    ?.map(status => status.direction)
-    .filter(direction => !_.isUndefined(direction))
+export const hasDiagramFields = (instance: WorkflowInstance): boolean => {
+  const statusesLocations = instance.value.statuses
+    ?.map(status => status.location)
+    .filter(location => location !== undefined)
   const transitionsFrom = instance.value.transitions
     .flatMap(transition => transition.from)
-    .filter(from => !_.isUndefined(from) && typeof from !== 'string'
-      && (!_.isUndefined(from.targetAngle) || !_.isUndefined(from.sourceAngle)))
-  return (!_.isUndefined(statusesDirections) && statusesDirections.length > 0)
-    || (!_.isUndefined(transitionsFrom) && transitionsFrom.length > 0)
+    .filter(from => from !== undefined && typeof from !== 'string'
+      && (from.targetAngle !== undefined || from.sourceAngle !== undefined))
+  return (statusesLocations !== undefined && statusesLocations.length > 0)
+    || (transitionsFrom !== undefined && transitionsFrom.length > 0)
 }
 
 
-export const deployWorkflowDiagram = async (workflow: WorkflowInstance, client: JiraClient,
-  { statusIdToStepId, actionKeyToTransition }
-  : WorkflowDiagramMaps): Promise<void> => {
-  const statuses = buildStatusDiagramFields(workflow, statusIdToStepId)
-  const transitions = buildTransitionsDiagramFields(workflow, statusIdToStepId, actionKeyToTransition)
-
-  const response = await client.postPrivate({
-    url: '/rest/workflowDesigner/latest/workflows',
-    data: {
-      draft: false,
-      name: workflow.value.name,
-      layout: { statuses, transitions },
-    },
-  })
-  if (response.status !== 200) {
-    throw new Error(`Fail to post Workflow ${workflow.value.name} diagram values with status ${response.status}`)
-  }
-}
-
-export const buildDiagramMaps = (async ({ client, workflow }:
-  {client: JiraClient
+const buildDiagramMaps = async ({ client, workflow }:
+  {
+    client: JiraClient
     workflow: WorkflowInstance
   }):Promise<WorkflowDiagramMaps> => {
   const { name } = workflow.value
@@ -253,7 +240,7 @@ export const buildDiagramMaps = (async ({ client, workflow }:
   const statusIdToStepId: Record<string, string> = {}
   const actionKeyToTransition: Record<string, TransitionDiagramFields> = {}
   if (name === undefined) {
-    throw new Error('Fail to get workflow diagram values because it\'s name is undefined')
+    throw new Error('Fail to get workflow diagram values because its name is undefined')
   }
   const response = await client.getPrivate({
     url: '/rest/workflowDesigner/1.0/workflows',
@@ -261,7 +248,7 @@ export const buildDiagramMaps = (async ({ client, workflow }:
       name,
     },
   })
-  if (!isValidDiagramResponse(response.data)) {
+  if (!isWorkflowDiagramResponse(response.data)) {
     throw new Error(`Fail to get the workflow ${workflow.value.name} diagram values due to an invalid response`)
   }
   const { layout } = response.data
@@ -273,59 +260,90 @@ export const buildDiagramMaps = (async ({ client, workflow }:
   })
   workflow.value.statuses?.forEach(status => {
     if (status.id !== undefined) {
-      statusIdToStepId[status.id as string] = statusIdToStatus[status.id].id
+      statusIdToStepId[status.id] = statusIdToStatus[status.id].id
     }
   })
-  const initialStepId = layout.statuses
+  const [initialStepId] = layout.statuses
     .filter(status => status.initial) // there is always only one initial status
-    .map(status => status.id)[0]
+    .map(status => status.id)
   statusIdToStepId.initial = initialStepId
   return { statusIdToStatus, statusIdToStepId, actionKeyToTransition }
-})
+}
 
-export const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
+const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
   { statusIdToStatus, statusIdToStepId, actionKeyToTransition }: WorkflowDiagramMaps)
   : void => {
   workflow.value.statuses?.forEach(status => {
     if (status.id !== undefined) {
-      status.direction = { x: statusIdToStatus[status.id].x,
+      status.location = { x: statusIdToStatus[status.id].x,
         y: statusIdToStatus[status.id].y }
     }
   })
-  workflow.value.transitions?.forEach(transition => {
-    if (transition.type === INITIAL_TRANSITION_TYPE) {
-      transition.from = [getTransitionFrom(transition.name ?? '', statusIdToStepId, actionKeyToTransition, INITIAL_TRANSITION_TYPE)]
-    } else {
+  workflow.value.transitions.forEach(transition => {
+    const transitionName = transition.name
+    if (transition.type === INITIAL_TRANSITION_TYPE && transitionName !== undefined) {
+      transition.from = [getTransitionFrom(
+        transitionName, statusIdToStepId, actionKeyToTransition, INITIAL_TRANSITION_TYPE
+      )]
+    } else if (transition.from !== undefined && transitionName !== undefined) {
       transition.from = transition
-        .from?.map(from => (
+        .from.map(from => (
           typeof from === 'string'
-            ? getTransitionFrom(transition.name ?? '', statusIdToStepId, actionKeyToTransition, from)
+            ? getTransitionFrom(transitionName, statusIdToStepId, actionKeyToTransition, from)
             : from
         ))
     }
   })
 }
 
+export const deployWorkflowDiagram = async (
+  {
+    instance,
+    instanceCopy,
+    client,
+  }
+  : {
+    instance: WorkflowInstance
+    instanceCopy: WorkflowInstance
+    client: JiraClient
+  }): Promise<void> => {
+  const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instanceCopy })
+  const { statusIdToStepId, actionKeyToTransition } = workflowDiagramMaps
+  const statuses = buildStatusDiagramFields(instanceCopy, statusIdToStepId)
+  const transitions = buildTransitionsDiagramFields(instanceCopy, statusIdToStepId, actionKeyToTransition)
+
+  const response = await client.postPrivate({
+    url: '/rest/workflowDesigner/latest/workflows',
+    data: {
+      draft: false,
+      name: instanceCopy.value.name,
+      layout: { statuses, transitions },
+    },
+  })
+  if (response.status !== 200) {
+    throw new Error(`Fail to post Workflow ${instanceCopy.value.name} diagram values with status ${response.status}`)
+  }
+  insertWorkflowDiagramFields(instance, workflowDiagramMaps)
+}
+
 const filter: FilterCreator = ({ client }) => ({
   name: 'workflowDiagramFilter',
   onFetch: async (elements: Element[]) => {
-    const { transitionFromType, statusDirectionType } = createWorkflowDiagramFieldsTypes()
-    await addObjectTypesAnnotation([transitionFromType, statusDirectionType])
+    const { transitionFromType, statusLocationType } = createWorkflowDiagramFieldsTypes()
+    await addObjectTypesAnnotation([transitionFromType, statusLocationType])
 
     const transitionType = findObject(elements, WORKFLOW_TRANSITION_TYPE_NAME)
     if (transitionType !== undefined) {
       transitionType.fields.from = new Field(transitionType, 'transitionFrom', new ListType(transitionFromType))
-      transitionType.fields.from.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      transitionType.fields.from.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+      setFieldDeploymentAnnotations(transitionFromType, 'from')
     }
     const workflowStatusType = findObject(elements, WORKFLOW_STATUS_TYPE_NAME)
     if (workflowStatusType !== undefined) {
-      workflowStatusType.fields.direction = new Field(workflowStatusType, 'direction', statusDirectionType)
-      workflowStatusType.fields.direction.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      workflowStatusType.fields.direction.annotations[CORE_ANNOTATIONS.CREATABLE] = true
+      workflowStatusType.fields.location = new Field(workflowStatusType, 'location', statusLocationType)
+      setFieldDeploymentAnnotations(statusLocationType, 'location')
     }
     elements.push(transitionFromType)
-    elements.push(statusDirectionType)
+    elements.push(statusLocationType)
 
     await Promise.all(elements
       .filter(isInstanceElement)
@@ -337,7 +355,7 @@ const filter: FilterCreator = ({ client }) => ({
           )
           insertWorkflowDiagramFields(workflow, workflowDiagramMaps)
         } catch (e) {
-          log.error(e.message)
+          log.error(`Failed to get the workflow diagram of ${workflow.elemID.getFullName()}: ${e.message}`)
         }
       }))
   },

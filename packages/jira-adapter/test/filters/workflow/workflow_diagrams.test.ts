@@ -216,10 +216,10 @@ describe('workflowDiagramFilter', () => {
       jest.clearAllMocks()
     })
 
-    it('should set the direction field in WorkflowStatus', async () => {
+    it('should set the location field in WorkflowStatus', async () => {
       const elements = [workflowStatusType]
       await filter.onFetch(elements)
-      expect(workflowStatusType.fields.direction).toBeDefined()
+      expect(workflowStatusType.fields.location).toBeDefined()
       expect(elements).toHaveLength(3)
     })
 
@@ -230,7 +230,7 @@ describe('workflowDiagramFilter', () => {
       expect(elements).toHaveLength(3)
     })
 
-    it('should add direction fields to the statuses', async () => {
+    it('should add location fields to the statuses', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
       expect(mockConnection.get).toHaveBeenCalledWith(
@@ -241,9 +241,9 @@ describe('workflowDiagramFilter', () => {
         },
       )
       expect(elements).toHaveLength(3)
-      expect(instance.value.statuses[0].direction).toBeDefined()
-      expect(instance.value.statuses[0].direction.x).toEqual(-3)
-      expect(instance.value.statuses[0].direction.y).toEqual(6)
+      expect(instance.value.statuses[0].location).toBeDefined()
+      expect(instance.value.statuses[0].location.x).toEqual(-3)
+      expect(instance.value.statuses[0].location.y).toEqual(6)
     })
 
     it('should add angles to from values in transitions', async () => {
@@ -307,13 +307,13 @@ describe('workflowDiagramFilter', () => {
         client,
       })) as typeof filter
       await filter.onFetch(elements)
-      expect(logErrorSpy).toHaveBeenCalledWith('Fail to get the workflow workflowName diagram values due to an invalid response')
+      expect(logErrorSpy).toHaveBeenCalledWith('Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get the workflow workflowName diagram values due to an invalid response')
     })
     it('should log error when workflow does not have a name', async () => {
       instance.value.name = undefined
       const elements = [instance]
       await filter.onFetch(elements)
-      expect(logErrorSpy).toHaveBeenCalledWith('Fail to get workflow diagram values because it\'s name is undefined')
+      expect(logErrorSpy).toHaveBeenCalledWith('Failed to get the workflow diagram of jira.Workflow.instance.instance: Fail to get workflow diagram values because its name is undefined')
     })
   })
 })

@@ -20,7 +20,7 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { Transition, TransitionFrom, Workflow, WorkflowInstance, workflowSchema } from './types'
+import { Transition, Workflow, WorkflowInstance, workflowSchema } from './types'
 
 const { awu } = collections.asynciterable
 
@@ -59,7 +59,7 @@ const getTransitionsFromService = async (
 }
 
 export const getTransitionKey = (transition: Transition): string => {
-  const fromIds = _.sortBy(transition.from?.map((from:TransitionFrom | string) => (
+  const fromIds = _.sortBy(transition.from?.map(from => (
     typeof from === 'string' ? from : from.id
   )) ?? [])
   return [fromIds, transition.name ?? ''].join('-')

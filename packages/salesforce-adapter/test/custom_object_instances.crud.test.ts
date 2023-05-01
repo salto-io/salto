@@ -194,10 +194,7 @@ describe('Custom Object Instances CRUD', () => {
     let connection: MockInterface<Connection>
     let mockBulkLoad: jest.Mock
     let partialBulkLoad: jest.Mock
-    const errorMsgs = [
-      'Error message1',
-      'Error message2',
-    ]
+    const errorMsgs = ['Error message1', 'Error message2']
     const getBulkLoadMock = (mode: string): jest.Mock<Batch> =>
       (jest.fn().mockImplementation(
         (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
@@ -227,12 +224,6 @@ describe('Custom Object Instances CRUD', () => {
         }
       ))
 
-    // Should include the error msgs and the instance name
-    const validateErrorMsg = (errMsg: string, instName: string): void => {
-      expect(errMsg.includes(instName)).toBeTruthy()
-      errorMsgs.forEach(msg =>
-        expect(errMsg.includes(msg)))
-    }
     beforeEach(() => {
       ({ connection, adapter } = mockAdapter({
         adapterParams: {
@@ -716,11 +707,41 @@ describe('Custom Object Instances CRUD', () => {
           expect(updateCall).toBeDefined()
         })
 
-        it('Should have three errors (1 for update and 2 for add)', () => {
-          expect(result.errors).toHaveLength(3)
-          validateErrorMsg(result.errors[0].message, 'newInstanceWithRef')
-          validateErrorMsg(result.errors[1].message, 'newInstanceWithRef')
-          validateErrorMsg(result.errors[2].message, 'Instance')
+        it('Should have six errors (2 for update and 4 for add)', () => {
+          expect(result.errors).toBeArrayOfSize(6)
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: newInstanceWithRef.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: newInstanceWithRef.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: newInstanceWithRef.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: newInstanceWithRef.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+
+          ])
         })
 
         it('Should have three applied add change with the right ids', () => {
@@ -782,8 +803,19 @@ describe('Custom Object Instances CRUD', () => {
         })
 
         it('should return one error and one applied change', async () => {
-          expect(result.errors).toHaveLength(1)
-          validateErrorMsg(result.errors[0].message, 'Instance')
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+          ])
+
           expect(result.appliedChanges).toHaveLength(1)
           expect(isModificationChange(result.appliedChanges[0])).toBeTruthy()
           const changeData = getChangeData(result.appliedChanges[0])
@@ -799,9 +831,29 @@ describe('Custom Object Instances CRUD', () => {
         })
 
         it('should return only errors', async () => {
-          expect(result.errors).toHaveLength(2)
-          validateErrorMsg(result.errors[0].message, 'Instance')
-          validateErrorMsg(result.errors[1].message, 'AnotherInstance')
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: existingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: anotherExistingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[0]),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: anotherExistingInstance.elemID,
+              message: expect.stringContaining(errorMsgs[1]),
+              severity: 'Error',
+            }),
+          ])
+
           expect(result.appliedChanges).toHaveLength(0)
         })
       })
@@ -845,9 +897,19 @@ describe('Custom Object Instances CRUD', () => {
             result = await adapter.deploy({ changeGroup: removeChangeGroup })
           })
 
-          it('should return one error', () => {
-            expect(result.errors).toHaveLength(1)
-            validateErrorMsg(result.errors[0].message, 'Instance')
+          it('should return two error', () => {
+            expect(result.errors).toEqual([
+              expect.objectContaining({
+                elemID: existingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[0]),
+                severity: 'Error',
+              }),
+              expect.objectContaining({
+                elemID: existingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[1]),
+                severity: 'Error',
+              }),
+            ])
           })
 
           it('should return one applied change', () => {
@@ -866,9 +928,28 @@ describe('Custom Object Instances CRUD', () => {
           })
 
           it('should return only errors', () => {
-            expect(result.errors).toHaveLength(2)
-            validateErrorMsg(result.errors[1].message, 'Instance')
-            validateErrorMsg(result.errors[1].message, 'AnotherInstance')
+            expect(result.errors).toEqual([
+              expect.objectContaining({
+                elemID: existingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[0]),
+                severity: 'Error',
+              }),
+              expect.objectContaining({
+                elemID: existingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[1]),
+                severity: 'Error',
+              }),
+              expect.objectContaining({
+                elemID: anotherExistingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[0]),
+                severity: 'Error',
+              }),
+              expect.objectContaining({
+                elemID: anotherExistingInstance.elemID,
+                message: expect.stringContaining(errorMsgs[1]),
+                severity: 'Error',
+              }),
+            ])
             expect(result.appliedChanges).toHaveLength(0)
           })
         })
@@ -925,8 +1006,12 @@ describe('Custom Object Instances CRUD', () => {
           })
         })
         afterEach(() => {
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group should have a single type but got: Type,anotherType'))
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              message: expect.stringContaining('Custom Object Instances change group should have a single type but got: Type,anotherType'),
+              severity: 'Error',
+            }),
+          ])
         })
       })
 
@@ -944,8 +1029,13 @@ describe('Custom Object Instances CRUD', () => {
               ],
             },
           })
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Failed to update as api name prev=modifyId and new=anotherModifyId are different'))
+          expect(result.errors).toEqual([
+            expect.objectContaining({
+              elemID: instanceToModify.elemID,
+              message: expect.stringContaining('Failed to update as api name prev=modifyId and new=anotherModifyId are different'),
+              severity: 'Error',
+            }),
+          ])
         })
       })
 
@@ -960,8 +1050,12 @@ describe('Custom Object Instances CRUD', () => {
               ],
             },
           })
-          expect(result.errors).toHaveLength(1)
-          expect(result.errors[0]).toEqual(new Error('Custom Object Instances change group must have one action'))
+          expect(result.errors).toEqual(([
+            expect.objectContaining({
+              severity: 'Error',
+              message: expect.stringContaining('Custom Object Instances change group must have one action'),
+            }),
+          ]))
         })
       })
     })
@@ -995,8 +1089,12 @@ describe('Custom Object Instances CRUD', () => {
           ],
         },
       })
-      expect(result.errors).toHaveLength(1)
-      expect(result.errors[0]).toEqual(new Error('Failed to add instances of type Type due to invalid SaltoIdFields - NonExistingFields'))
+      expect(result.errors).toEqual(([
+        expect.objectContaining({
+          severity: 'Error',
+          message: expect.stringContaining('Failed to add instances of type Type due to invalid SaltoIdFields - NonExistingFields'),
+        }),
+      ]))
     })
   })
 
@@ -1050,8 +1148,12 @@ describe('Custom Object Instances CRUD', () => {
     })
 
     afterEach(() => {
-      expect(result.errors).toHaveLength(1)
-      expect(result.errors[0]).toEqual(new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances'))
+      expect(result.errors).toEqual(([
+        expect.objectContaining({
+          severity: 'Error',
+          message: expect.stringContaining('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances'),
+        }),
+      ]))
     })
   })
 })

@@ -15,12 +15,15 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings, promises } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
 import {
   getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
   TypeElement,
+  SaltoElementError,
+  SaltoError,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
@@ -46,7 +49,7 @@ const log = logger(module)
 
 type ActionResult = {
   successInstances: InstanceElement[]
-  errorMessages: string[]
+  errorMessages: (SaltoElementError | SaltoError)[]
 }
 
 type InstanceAndResult = {
@@ -66,12 +69,18 @@ ${safeJsonStringify(instance.value, undefined, 2,)}
   })
 )
 
-const getErrorMessagesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): string[] =>
+const getErrorMessagesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] =>
   instancesAndResults
-    .map(({ instance, result }) => `${instance.elemID.name}:
-    \t${result.errors?.join('\n\t')}`)
+    .flatMap(({ instance, result }) => {
+      let instanceErrors: SaltoElementError[] = []
+      if (values.isDefined(result.errors)) {
+        instanceErrors = instanceErrors.concat(result.errors.map(error =>
+          ({ elemID: instance.elemID, message: error, severity: 'Error' } as SaltoElementError)))
+      }
+      return instanceErrors
+    })
 
-const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): string[] => {
+const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] => {
   const errored = instancesAndResults
     .filter(({ result }) => !result.success && result.errors !== undefined)
   logErroredInstances(errored)
@@ -193,7 +202,7 @@ export const retryFlow = async (
   const { retryDelay, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
-  let errMsgs: string[] = []
+  let errMsgs: (SaltoElementError | SaltoError)[] = []
 
   const instanceResults = await crudFn({ typeName, instances, client })
 
@@ -358,7 +367,7 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorMessages, ...updateErrorMessages].map(error => new Error(error)),
+    errors: [...insertErrorMessages, ...updateErrorMessages],
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -377,7 +386,7 @@ const deployRemoveInstances = async (
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
-    errors: errorMessages.map(error => new Error(error)),
+    errors: errorMessages,
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -405,10 +414,12 @@ const deployModifyChanges = async (
   const successData = validData
     .filter(changeData =>
       successInstances.find(instance => instance.isEqual(changeData.after)))
-  const diffApiNameErrors = await awu(diffApiNameData).map(async data => new Error(`Failed to update as api name prev=${await apiName(
-    data.before
-  )} and new=${await apiName(data.after)} are different`)).toArray()
-  const errors = errorMessages.map(error => new Error(error)).concat(diffApiNameErrors)
+  const diffApiNameErrors: SaltoElementError[] = await awu(diffApiNameData).map(async data => ({
+    elemID: data.before.elemID,
+    message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
+    severity: 'Error' as SeverityLevel,
+  })).toArray()
+  const errors: (SaltoElementError | SaltoError)[] = [...errorMessages, ...diffApiNameErrors]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
@@ -469,10 +480,10 @@ export const deployCustomObjectInstancesGroup = async (
       return await deployModifyChanges(changes, client, groupId)
     }
     throw new Error('Custom Object Instances change group must have one action')
-  } catch (error) {
+  } catch (error: unknown) {
     return {
       appliedChanges: [],
-      errors: [error],
+      errors: [{ message: (error as Error).message, severity: 'Error' }],
     }
   }
 }

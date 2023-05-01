@@ -13,29 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, InstanceElement, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
-import { INACTIVE_STATUS, APPLICATION_TYPE_NAME, CUSTOM_NAME_FIELD } from '../constants'
-
-const isDeactivatedCustomAppChange = (change: ModificationChange<InstanceElement>): boolean =>
-  change.data.before.value.status === INACTIVE_STATUS
-    && change.data.after.value.status === INACTIVE_STATUS
-    // customName field only exist in custom applications
-    && getChangeData(change).value[CUSTOM_NAME_FIELD] !== undefined
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { isInactiveCustomAppChange } from '../filters/app_deployment'
+import { INACTIVE_STATUS, APPLICATION_TYPE_NAME } from '../constants'
 
 /**
- * Modification of custom application in status 'INACTIVE' is not supported via the Okta API
+ * Modifications of custom application in status 'INACTIVE' are not supported via the Okta API
+ * Therefore, we notify the user the application will be activated in order to apply changes
  */
 export const customApplicationStatusValidator: ChangeValidator = async changes => {
   const relevantChanges = changes
     .filter(isInstanceChange)
     .filter(isModificationChange)
     .filter(instance => getChangeData(instance).elemID.typeName === APPLICATION_TYPE_NAME)
-    .filter(change => isDeactivatedCustomAppChange(change))
+    .filter(change => isInactiveCustomAppChange(change))
 
   return relevantChanges.map(change => ({
     elemID: getChangeData(change).elemID,
-    severity: 'Error',
-    message: `Cannot change custom application in status ${INACTIVE_STATUS}`,
-    detailedMessage: `Modifications of custom applications in status ${INACTIVE_STATUS} is not supported via the Okta API. Please make this change in Okta and fetch, or activate the application and try again.`,
+    severity: 'Warning',
+    message: 'Application will be activated in order to apply those changes',
+    detailedMessage: `Modifications of custom applications in status ${INACTIVE_STATUS} are not supported via the Okta API. Therefore, Salto will activate the application in order to apply changes, and deactivate it afterwards. Alternatively, you can make this change in Okta and fetch.`,
   }))
 }

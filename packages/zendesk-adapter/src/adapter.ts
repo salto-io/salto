@@ -134,6 +134,7 @@ import sideConversationsFilter from './filters/side_conversation'
 import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
+import customRoleDeployFilter from './filters/custom_role_deploy'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -188,6 +189,7 @@ export const DEFAULT_FILTERS = [
   macroFilter,
   macroAttachmentsFilter,
   ticketFormDeploy,
+  customRoleDeployFilter,
   sideConversationsFilter,
   brandLogoFilter,
   // removeBrandLogoFilter should be after brandLogoFilter
@@ -494,16 +496,17 @@ export default class ZendeskAdapter implements AdapterOperations {
 
   @logDuration('generating instances and types from service')
   private async getElements(): Promise<ReturnType<typeof getAllElements>> {
-    const isGuideDisabled = !isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideEnabledInConfig = isGuideEnabled(this.userConfig[FETCH_CONFIG])
+    const isGuideInFetch = isGuideEnabledInConfig && !_.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)
     const { supportedTypes: allSupportedTypes } = this.userConfig.apiDefinitions
-    const supportedTypes = isGuideDisabled
-      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
-      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
+    const supportedTypes = isGuideEnabledInConfig
+      ? _.omit(allSupportedTypes, ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES))
+      : _.omit(allSupportedTypes, ...Object.keys(GUIDE_SUPPORTED_TYPES))
     // Zendesk Support and (if enabled) global Zendesk Guide types
-    const defaultSubdomainElements = await getAllElements({
+    const defaultSubdomainResult = await getAllElements({
       adapterName: ZENDESK,
       types: this.userConfig.apiDefinitions.types,
-      shouldAddRemainingTypes: isGuideDisabled,
+      shouldAddRemainingTypes: !isGuideInFetch,
       supportedTypes,
       fetchQuery: this.fetchQuery,
       paginator: this.paginator,
@@ -513,12 +516,18 @@ export default class ZendeskAdapter implements AdapterOperations {
       getElemIdFunc: this.getElemIdFunc,
     })
 
-    if (isGuideDisabled || _.isEmpty(this.userConfig[FETCH_CONFIG].guide?.brands)) {
-      return defaultSubdomainElements
+    if (!isGuideInFetch) {
+      return defaultSubdomainResult
+    }
+
+    const combinedRes = {
+      configChanges: (defaultSubdomainResult.configChanges ?? []),
+      elements: defaultSubdomainResult.elements,
+      errors: (defaultSubdomainResult.errors ?? []),
     }
 
     const brandsList = getBrandsForGuide(
-      defaultSubdomainElements.elements.filter(isInstanceElement),
+      defaultSubdomainResult.elements.filter(isInstanceElement),
       this.userConfig[FETCH_CONFIG]
     )
 
@@ -526,54 +535,45 @@ export default class ZendeskAdapter implements AdapterOperations {
       const brandPatterns = Array.from(this.userConfig[FETCH_CONFIG].guide?.brands ?? []).join(', ')
       const message = `Could not find any brands matching the included patterns: [${brandPatterns}]. Please update the configuration under fetch.guide.brands in the configuration file`
       log.warn(message)
-      return {
-        configChanges: defaultSubdomainElements.configChanges,
-        elements: defaultSubdomainElements.elements,
-        errors: (defaultSubdomainElements.errors ?? []).concat([
-          {
-            message,
-            severity: 'Warning',
-          },
-        ]),
-      }
+      combinedRes.errors = (combinedRes.errors).concat([{
+        message,
+        severity: 'Warning',
+      }])
+    } else {
+      const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
+        [
+          brandInstance.elemID.name,
+          createPaginator({
+            client: this.createClientBySubdomain(brandInstance.value.subdomain),
+            paginationFuncCreator: paginate,
+          }),
+        ]
+      )))
+
+      const zendeskGuideElements = await getGuideElements({
+        brandsList,
+        brandToPaginator,
+        apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
+        fetchQuery: this.fetchQuery,
+        getElemIdFunc: this.getElemIdFunc,
+      })
+
+      combinedRes.configChanges = combinedRes.configChanges.concat(zendeskGuideElements.configChanges ?? [])
+      combinedRes.elements = combinedRes.elements.concat(zendeskGuideElements.elements)
+      combinedRes.errors = combinedRes.errors.concat(zendeskGuideElements.errors ?? [])
     }
-
-    const brandToPaginator = Object.fromEntries(brandsList.map(brandInstance => (
-      [
-        brandInstance.elemID.name,
-        createPaginator({
-          client: this.createClientBySubdomain(brandInstance.value.subdomain),
-          paginationFuncCreator: paginate,
-        }),
-      ]
-    )))
-
-    const zendeskGuideElements = await getGuideElements({
-      brandsList,
-      brandToPaginator,
-      apiDefinitions: this.userConfig[API_DEFINITIONS_CONFIG],
-      fetchQuery: this.fetchQuery,
-      getElemIdFunc: this.getElemIdFunc,
-    })
 
     // Remaining types should be added once to avoid overlaps between the generated elements,
     // so we add them once after all elements are generated
-    const zendeskElements = defaultSubdomainElements.elements.concat(zendeskGuideElements.elements)
     addRemainingTypes({
       adapterName: ZENDESK,
-      elements: zendeskElements,
+      elements: combinedRes.elements,
       typesConfig: this.userConfig.apiDefinitions.types,
       supportedTypes: _.merge(supportedTypes, GUIDE_BRAND_SPECIFIC_TYPES),
       typeDefaultConfig: this.userConfig.apiDefinitions.typeDefaults,
     })
 
-    return {
-      configChanges: (defaultSubdomainElements.configChanges ?? [])
-        .concat(zendeskGuideElements.configChanges ?? []),
-      elements: zendeskElements,
-      errors: (defaultSubdomainElements.errors ?? [])
-        .concat(zendeskGuideElements.errors ?? []),
-    }
+    return combinedRes
   }
 
   private async isLocaleEnUs(): Promise<SaltoError | undefined> {

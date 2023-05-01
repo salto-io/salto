@@ -43,22 +43,29 @@ export const createDucktypeAdapterApiConfigType = ({
   additionalFields,
   additionalRequestFields,
   additionalTransformationFields,
+  elemIdPrefix = '',
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalTransformationFields?: Record<string, FieldDefinition>
+  elemIdPrefix?: string
 }): ObjectType => {
-  const transformationTypes = createTransformationConfigTypes(adapter, {
-    hasDynamicFields: { refType: BuiltinTypes.BOOLEAN },
-    sourceTypeName: { refType: BuiltinTypes.STRING },
-    ...additionalTransformationFields,
+  const transformationTypes = createTransformationConfigTypes({
+    adapter,
+    additionalFields: {
+      hasDynamicFields: { refType: BuiltinTypes.BOOLEAN },
+      sourceTypeName: { refType: BuiltinTypes.STRING },
+      ...additionalTransformationFields,
+    },
+    elemIdPrefix,
   })
   return createAdapterApiConfigType({
     adapter,
     additionalRequestFields,
     transformationTypes,
     additionalFields,
+    elemIdPrefix,
   })
 }
 

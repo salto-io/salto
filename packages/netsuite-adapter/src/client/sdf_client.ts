@@ -15,7 +15,7 @@
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
-import { mkdirp, readDir, readFile, writeFile, rm, rename } from '@salto-io/file'
+import { mkdirp, readDir, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
   CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
@@ -56,7 +56,8 @@ import {
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph, SDFObjectNode } from './graph_utils'
-import { reorderDeployXml, getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
+import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
+import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -545,7 +546,7 @@ export default class SdfClient {
         return await this.runImportObjectsCommand(executor, ALL, ALL, suiteAppId)
       } catch (e) {
         log.warn(`Attempt to fetch all custom objects has failed with suiteApp: ${suiteAppId}`)
-        log.warn(e)
+        log.warn(toError(e))
         return undefined
       }
     }
@@ -605,7 +606,7 @@ export default class SdfClient {
         return failedTypeToInstances
       } catch (e) {
         log.warn('Failed to fetch chunk %d/%d with %d objects of type: %s with suiteApp: %s', index, total, ids.length, type, suiteAppId)
-        log.warn(e)
+        log.warn(toError(e))
         const [objectId] = ids
         if (retriesLeft === 0) {
           throw new Error(`Failed to fetch object '${objectId}' of type '${type}' with error: ${toError(e).message}. Exclude it and fetch again.`)
@@ -773,7 +774,7 @@ export default class SdfClient {
         .map(result => result.path)
     } catch (e) {
       if (filePaths.length === 1) {
-        log.error(`Failed to import file ${filePaths[0]} due to: ${e.message}`)
+        log.error(`Failed to import file ${filePaths[0]} due to: ${toError(e).message}`)
         throw new Error(`Failed to import file: ${filePaths[0]}. Consider adding it to the skip list. To learn more visit https://github.com/salto-io/salto/blob/main/packages/netsuite-adapter/config_doc.md`)
       }
       const middle = (filePaths.length + 1) / 2
@@ -786,13 +787,28 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
     Promise<ImportFileCabinetResult> {
     if (!query.areSomeFilesMatch()) {
       return {
         elements: [],
-        failedPaths: { lockedError: [], otherError: [] },
+        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
       }
+    }
+
+    const filesToSize = async (
+      filePaths: string[],
+      fileCabinetDirPath: string
+    ): Promise<FileSize[]> => {
+      const normalizedPath = (filePath: string): string => {
+        const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
+        return osPath.join(fileCabinetDirPath, ...filePathParts)
+      }
+
+      return withLimitedConcurrency(
+        filePaths.map(path => async () => ({ path, size: (await stat(normalizedPath(path))).size })),
+        READ_CONCURRENCY
+      )
     }
 
     const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
@@ -844,12 +860,19 @@ export default class SdfClient {
     const importFilesResult = await this.importFiles(filePathsToImport, project.executor)
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResult)
-    const [attributesPaths, filePaths] = _.partition(importedPaths,
+
+    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const largeFolders: string[] = [] // largeFoldersToExclude(
+    largeFoldersToExclude(
+      await filesToSize(importedPaths, fileCabinetDirPath), maxFileCabinetSizeInGB
+    )
+    const listedPaths = importedPaths // Salto 3853: Will change to filtered files on full deployment
+    // const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
+    const [attributesPaths, filePaths] = _.partition(listedPaths,
       p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
     const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
       p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
 
-    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
     const elements = (await Promise.all(
       [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
         transformFolders(folderAttrsPaths, fileCabinetDirPath)]
@@ -857,7 +880,11 @@ export default class SdfClient {
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
-      failedPaths: { lockedError: [], otherError: listFilesResults.failedPaths },
+      failedPaths: {
+        lockedError: [],
+        otherError: listFilesResults.failedPaths,
+        largeFolderError: largeFolders,
+      },
     }
   }
 
@@ -888,7 +915,7 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly, dependencyGraph)
+    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
@@ -962,29 +989,14 @@ ${this.deployXmlContent}
     return error
   }
 
-  private async fixDeployXml(
-    dependencyGraph: Graph<SDFObjectNode>,
-    projectName: string,
-  ): Promise<void> {
-    const deployFilePath = SdfClient.getDeployFilePath(projectName)
-    const deployXmlContent = (await readFile(deployFilePath)).toString()
-    this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
-    await writeFile(
-      deployFilePath,
-      this.deployXmlContent
-    )
-  }
-
   private async runDeployCommands(
     { executor, projectName, type }: Project,
     customizationInfos: CustomizationInfo[],
     manifestDependencies: ManifestDependencies,
     validateOnly: boolean,
-    dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await this.fixManifest(projectName, customizationInfos, manifestDependencies)
-    await this.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -1070,10 +1082,6 @@ ${this.deployXmlContent}
 
   private static getManifestFilePath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
-  }
-
-  private static getDeployFilePath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'deploy.xml')
   }
 
   private static getFeaturesXmlPath(projectName: string): string {

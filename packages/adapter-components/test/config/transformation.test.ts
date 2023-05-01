@@ -64,7 +64,7 @@ describe('shouldNestFiles', () => {
 describe('config_transformation', () => {
   describe('createTransformationConfigTypes', () => {
     it('should return default config type when no custom fields were added', async () => {
-      const { transformation, transformationDefault } = createTransformationConfigTypes('myAdapter')
+      const { transformation, transformationDefault } = createTransformationConfigTypes({ adapter: 'myAdapter' })
       expect(Object.keys(transformation.fields).sort()).toEqual(['dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.idFields.annotations[CORE_ANNOTATIONS.REQUIRED]).toBeFalsy()
       const idFieldsType = await transformation.fields.idFields.getType() as ListType
@@ -78,10 +78,10 @@ describe('config_transformation', () => {
     })
 
     it('should include additional fields when added', () => {
-      const { transformation, transformationDefault } = createTransformationConfigTypes(
-        'myAdapter',
-        { a: { refType: BuiltinTypes.STRING } },
-      )
+      const { transformation, transformationDefault } = createTransformationConfigTypes({
+        adapter: 'myAdapter',
+        additionalFields: { a: { refType: BuiltinTypes.STRING } },
+      })
       expect(Object.keys(transformation.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])
       expect(transformation.fields.a.refType.elemID).toEqual(BuiltinTypes.STRING.elemID)
       expect(Object.keys(transformationDefault.fields).sort()).toEqual(['a', 'dataField', 'fieldTypeOverrides', 'fieldsToHide', 'fieldsToOmit', 'fileNameFields', 'idFields', 'standaloneFields'])

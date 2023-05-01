@@ -19,7 +19,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { fileCabinetTopLevelFolders } from '../client/constants'
 import { isFileCabinetType } from '../types'
-import * as suiteAppFileCabinet from '../suiteapp_file_cabinet'
+import * as suiteAppFileCabinet from '../client/suiteapp_client/suiteapp_file_cabinet'
 import { NetsuiteChangeValidator } from './types'
 import { isPathAllowedBySdf } from '../types/file_cabinet_types'
 

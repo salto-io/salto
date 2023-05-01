@@ -123,6 +123,7 @@ export type ReferenceContextStrategyName = (
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
   | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
+  | 'parentSObjectTypeLookupTopLevel'
 )
 
 type SourceDef = {
@@ -633,6 +634,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'elementReference', parentTypes: ['FlowElementReferenceOrValue'] },
     serializationStrategy: 'customLabel',
     target: { type: CUSTOM_LABEL_METADATA_TYPE },
+  },
+  {
+    src: { field: 'name', parentTypes: ['WorkflowActionReference'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentSObjectTypeLookupTopLevel', typeContext: 'neighborTypeWorkflow' },
   },
   {
     src: { field: 'milestoneName', parentTypes: ['EntitlementProcessMilestoneItem'] },

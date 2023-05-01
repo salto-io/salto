@@ -26,10 +26,10 @@ module.exports = deepMerge(
     ],
     coverageThreshold: {
       'global': {
-        branches: 32,
-        functions: 52,
-        lines: 65,
-        statements: 66,
+        branches: 81,
+        functions: 92,
+        lines: 92,
+        statements: 92,
       },
     },
     setupFilesAfterEnv: ['jest-extended/all'],

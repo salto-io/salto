@@ -62,7 +62,7 @@ import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import { Filter, FilterCreator } from './filter'
-import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies } from './config'
+import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
@@ -157,14 +157,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
       currencyExchangeRate,
       // AuthorInformation filters must run after SDFInternalIds filter
       systemNoteAuthorInformation,
-      // savedSearchesAutorInformation must run before suiteAppConfigElementsFilter
+      // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
       savedSearchesAuthorInformation,
       translationConverter,
       accountSpecificValues,
       suiteAppConfigElementsFilter,
       configFeaturesFilter,
       customRecordsFilter,
-      // serviceUrls must run after suiteAppInternalIds filter
+      // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
       serviceUrls,
       // omitFieldsFilter should be the last onFetch filter to run
       omitFieldsFilter,
@@ -202,10 +202,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       include: {
         features: config.deploy?.additionalDependencies?.include?.features ?? [],
         objects: config.deploy?.additionalDependencies?.include?.objects ?? [],
+        files: config.deploy?.additionalDependencies?.include?.files ?? [],
       },
       exclude: {
         features: config.deploy?.additionalDependencies?.exclude?.features ?? [],
         objects: config.deploy?.additionalDependencies?.exclude?.objects ?? [],
+        files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
     this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
@@ -254,7 +256,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
       getStandardTypesNames(),
       updatedFetchQuery
     )
-    const importFileCabinetResult = this.client.importFileCabinetContent(updatedFetchQuery)
+    const importFileCabinetResult = this.client.importFileCabinetContent(
+      updatedFetchQuery,
+      this.userConfig.client?.maxFileCabinetSizeInGB ?? DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB
+    )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
     const {

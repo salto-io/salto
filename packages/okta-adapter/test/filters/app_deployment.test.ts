@@ -16,13 +16,13 @@
 
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement, ModificationChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFilterParams, mockClient } from '../utils'
 import OktaClient from '../../src/client/client'
-import appDeploymentFilter from '../../src/filters/app_deployment'
-import { APPLICATION_TYPE_NAME, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
+import appDeploymentFilter, { isInactiveCustomAppChange } from '../../src/filters/app_deployment'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
 
 
 describe('appDeploymentFilter', () => {
@@ -274,6 +274,47 @@ describe('appDeploymentFilter', () => {
       expect(customAppInstance?.value.id).toEqual('1')
       expect(customAppInstance?.value.customName).toEqual('oktaSubdomain_link')
     })
+    it('Should activate custom application to apply changes and deactivate afterwards', async () => {
+      mockConnection.put.mockResolvedValue({
+        status: 200,
+        data: { id: '1a', name: 'test', status: 'ACTIVE' },
+      })
+      mockConnection.post.mockResolvedValue({
+        status: 200,
+        data: {},
+      })
+      const customApp = new InstanceElement(
+        'customApp',
+        appType,
+        { id: '1a', customName: 'test', name: 'test', settings: { notes: { admin: 'note' } }, status: INACTIVE_STATUS },
+      )
+      const customAppAfter = customApp.clone()
+      customAppAfter.value.settings.notes.enduser = 'another note'
+      const changes = [toChange({ before: customApp, after: customAppAfter })]
+      const res = await filter.deploy(changes)
+      expect(mockConnection.put).toHaveBeenCalledWith(
+        '/api/v1/apps/1a',
+        { name: 'test', settings: { notes: { admin: 'note', enduser: 'another note' } }, status: INACTIVE_STATUS },
+        undefined,
+      )
+      expect(mockConnection.post).toHaveBeenCalledTimes(2)
+      expect(mockConnection.post).toHaveBeenNthCalledWith(
+        1,
+        '/api/v1/apps/1a/lifecycle/activate',
+        {},
+        undefined
+      )
+      expect(mockConnection.post).toHaveBeenNthCalledWith(
+        2,
+        '/api/v1/apps/1a/lifecycle/deactivate',
+        {},
+        undefined
+      )
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      const customAppInstance = res.deployResult.appliedChanges
+        .map(getChangeData).filter(isInstanceElement).find(i => i.elemID.name === 'customApp')
+      expect(customAppInstance?.value.status).toEqual('INACTIVE')
+    })
   })
 
   describe('onDeploy', () => {
@@ -298,6 +339,32 @@ describe('appDeploymentFilter', () => {
       const customSwa = instances.find(i => i.elemID.name === 'custom swa app')
       expect(customSwa?.value).toEqual({ customName: 'oktaSubdomain_swa_link', signOnMode: 'AUTO_LOGIN' })
       expect(customApp?.value).toEqual({ customName: 'oktaSubdomain_saml_link', signOnMode: 'SAML_2_0' })
+    })
+  })
+
+  describe('isInactiveCustomAppChange', () => {
+    const customApp = new InstanceElement(
+      'custom',
+      appType,
+      { customName: 'a', id: 'aa', status: 'INACTIVE' }
+    )
+    it('should return true for custom app change in status INACTIVE', () => {
+      const change = toChange({ before: customApp, after: customApp }) as ModificationChange<InstanceElement>
+      expect(isInactiveCustomAppChange(change)).toEqual(true)
+    })
+
+    it('should return false for regular app change in status INACTIVE', () => {
+      const app = customApp.clone()
+      delete app.value.customName
+      const change = toChange({ before: app, after: app }) as ModificationChange<InstanceElement>
+      expect(isInactiveCustomAppChange(change)).toEqual(false)
+    })
+
+    it('should return false for custom app change with change in status', () => {
+      const activeApp = customApp.clone()
+      activeApp.value.status = 'ACTIVE'
+      const change = toChange({ before: customApp, after: activeApp }) as ModificationChange<InstanceElement>
+      expect(isInactiveCustomAppChange(change)).toEqual(false)
     })
   })
 })

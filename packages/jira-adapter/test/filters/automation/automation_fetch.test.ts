@@ -18,6 +18,7 @@ import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { filterUtils, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
+import { HTTPError } from '@salto-io/adapter-components/src/client'
 import { getFilterParams, mockClient } from '../../utils'
 import automationFetchFilter from '../../../src/filters/automation/automation_fetch'
 import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
@@ -405,6 +406,54 @@ describe('automationFetchFilter', () => {
 
       const elements = [projectInstance]
       await expect(filter.onFetch(elements)).rejects.toThrow()
+    })
+  })
+  it('should warn if response is 403', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    connection = conn
+
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+        throw new HTTPError('failed', { data: {}, status: 403 })
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationFetchFilter(getFilterParams({
+      client,
+    })) as filterUtils.FilterWith<'onFetch'>
+    const elements = [projectInstance]
+    expect(await filter.onFetch(elements)).toEqual({
+      errors: [{
+        message: 'Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }],
+    })
+  })
+  it('should warn if response is 405', async () => {
+    const { client: cli, connection: conn } = mockClient(true)
+    client = cli
+    connection = conn
+
+    conn.get.mockImplementation(async url => {
+      if (url === '/rest/cb-automation/latest/project/GLOBAL/rule') {
+        throw new HTTPError('failed', { data: {}, status: 405 })
+      }
+
+      throw new Error(`Unexpected url ${url}`)
+    })
+
+    filter = automationFetchFilter(getFilterParams({
+      client,
+    })) as filterUtils.FilterWith<'onFetch'>
+    const elements = [projectInstance]
+    expect(await filter.onFetch(elements)).toEqual({
+      errors: [{
+        message: 'Salto could not access the Automation resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto\'s fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource',
+        severity: 'Warning',
+      }],
     })
   })
 })

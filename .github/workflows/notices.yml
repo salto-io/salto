@@ -4,6 +4,7 @@ on:
   schedule:
     # every saturday on 3 am
     - cron: '0 3 * * 6'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -19,7 +20,7 @@ jobs:
 
     - run: |
         npm i -g synp yarn@1.22.0
-        yarn
+        yarn || yarn || yarn
         synp --source-file yarn.lock
 
     - name: ClearlyNoticed Action

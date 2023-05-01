@@ -547,10 +547,12 @@ describe('NetsuiteAdapter creator', () => {
                   include: {
                     features: ['feature1'],
                     objects: ['object1'],
+                    files: ['file1'],
                   },
                   exclude: {
                     features: ['feature2'],
                     objects: ['object2'],
+                    files: ['fil2'],
                   },
                 },
               },
@@ -592,6 +594,27 @@ describe('NetsuiteAdapter creator', () => {
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when files in additionalDependencies is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { files: ['should be list of strings', 1] },
                 },
               },
             }
@@ -679,6 +702,29 @@ describe('NetsuiteAdapter creator', () => {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
                   exclude: { objects: ['script_id'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+
+        it('should throw an Error when additionalDependencies has conflicting files', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { files: ['/Folder/filePath'] },
+                  exclude: { files: ['/Folder/filePath'] },
                 },
               },
             }

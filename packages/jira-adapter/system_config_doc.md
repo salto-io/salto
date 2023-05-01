@@ -940,6 +940,16 @@ jira {
         request = {
           url = "/rest/api/3/permissions"
         }
+        transformation = {
+          dataField = "."
+          isSingleton = true
+          fieldTypeOverrides = [
+            {
+              fieldName = "permissions"
+              fieldType = "Map<UserPermission>"
+            },
+          ]
+        }
       }
       PermissionSchemes = {
         request = {
@@ -1853,11 +1863,6 @@ jira {
           serviceUrl = "/secure/admin/ViewAttachmentSettings.jspa"
         }
       }
-      Permissions_permissions = {
-        transformation = {
-          isSingleton = true
-        }
-      }
       Boards = {
         request = {
           url = "/rest/agile/1.0/board"
@@ -2218,7 +2223,7 @@ jira {
       NotificationScheme = [
         "NotificationSchemes",
       ]
-      Permissions_permissions = [
+      Permissions = [
         "Permissions",
       ]
       PermissionScheme = [

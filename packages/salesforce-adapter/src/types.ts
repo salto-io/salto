@@ -106,6 +106,8 @@ export type ChangeValidatorName = (
   | 'lastLayoutRemoval'
   | 'accountSettings'
   | 'unknownPicklistValues'
+  | 'installedPackages'
+  | 'dataCategoryGroup'
 )
 
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -603,6 +605,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
+    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
+    installedPackages: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

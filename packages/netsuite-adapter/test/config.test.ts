@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -61,7 +61,7 @@ describe('config', () => {
   it('should return undefined when having no currentConfig suggestions', () => {
     expect(getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       currentConfigWithFetch
     )).toBeUndefined()
@@ -72,7 +72,7 @@ describe('config', () => {
     const lockedTypes = { lockedType: ['lockedInstance'] }
     const configFromConfigChanges = getConfigFromConfigChanges(
       true,
-      { lockedError: lockedFiles, otherError: [newFailedFilePath] },
+      { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
       { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes },
       {}
     )?.config as InstanceElement[]
@@ -109,18 +109,20 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
+    const newLargeFolderPath = '/largeFolder/'
+    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newExclude = {
       types: [
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
       ],
-      fileCabinet: ['SomeRegex'],
+      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
+      customRecords: [],
     }
-    newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
       true,
-      { lockedError: [], otherError: [newFailedFilePath] },
+      { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
       { lockedError: {}, unexpectedError: suggestedSkipListTypes },
       currentConfigWithFetch,
     )
@@ -142,7 +144,7 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(STOP_MANAGING_ITEMS_MSG)
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
   })
 
   it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
@@ -164,7 +166,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -192,7 +194,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -224,7 +226,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -250,7 +252,7 @@ describe('config', () => {
 
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config,
     )
@@ -283,7 +285,7 @@ describe('config', () => {
 
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: ['someFailedFile'] },
+      { lockedError: [], otherError: ['someFailedFile'], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
@@ -296,7 +298,7 @@ describe('config', () => {
       skipList: currentConfigWithSkipList.skipList }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       conf
     )
@@ -338,7 +340,7 @@ describe('config', () => {
     }
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: [] },
+      { lockedError: [], otherError: [], largeFolderError: [] },
       { lockedError: {}, unexpectedError: {} },
       conf,
     )

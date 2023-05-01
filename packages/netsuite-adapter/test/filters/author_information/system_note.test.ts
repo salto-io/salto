@@ -51,19 +51,19 @@ describe('netsuite system note author information', () => {
   beforeEach(async () => {
     runSuiteQLMock.mockReset()
     runSuiteQLMock.mockResolvedValueOnce([
-      { id: '1', entityid: 'user 1 name', date: '2022-01-01' },
-      { id: '2', entityid: 'user 2 name', date: '2022-01-01' },
-      { id: '3', entityid: 'user 3 name', date: '2022-01-01' },
+      { id: '1', entityid: 'user 1 name', date: '2022-01-01 00:00:00' },
+      { id: '2', entityid: 'user 2 name', date: '2022-01-01 00:00:00' },
+      { id: '3', entityid: 'user 3 name', date: '2022-01-01 00:00:00' },
     ])
     runSuiteQLMock.mockResolvedValueOnce([
-      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01' },
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '2022-01-01 00:00:00' },
       // Should ignore this record because it has a date in the future
-      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01' },
-      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01' },
-      { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01' },
-      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01' },
-      { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
-      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01' },
+      { recordid: '1', recordtypeid: '-112', field: '', name: '1', date: '3022-03-01 00:00:00' },
+      { recordid: '1', recordtypeid: '-123', field: '', name: '2', date: '2022-01-01 00:00:00' },
+      { recordid: '2', recordtypeid: '-112', field: '', name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '123', recordtypeid: '1', field: '', name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '2', field: FOLDER_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
+      { recordid: '2', field: FILE_FIELD_IDENTIFIER, name: '3', date: '2022-01-01 00:00:00' },
     ])
     accountInstance = new InstanceElement('account', new ObjectType({ elemID: new ElemID(NETSUITE, 'account') }))
     accountInstance.value.internalId = '1'
@@ -109,7 +109,7 @@ describe('netsuite system note author information', () => {
   it('should query information from api', async () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     const fieldSystemNotesQuery = `SELECT name, field, recordid, date from (SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date FROM (SELECT name, REGEXP_SUBSTR(field, '^(MEDIAITEMFOLDER.|MEDIAITEM.)') AS field, recordid, date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND (field LIKE 'MEDIAITEM.%' OR field LIKE 'MEDIAITEMFOLDER.%')) GROUP BY name, field, recordid) ORDER BY name, field, recordid ASC`
-    const recordTypeSystemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND (recordtypeid = '-112' OR recordtypeid = '1' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
+    const recordTypeSystemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, fieldSystemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(3, recordTypeSystemNotesQuery)
@@ -120,7 +120,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(
       [accountInstance, customRecordType, customRecord, customRecordTypeWithNoInstances, missingInstance]
     )
-    const systemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND (recordtypeid = '-112' OR recordtypeid = '1' OR recordtypeid = '-123') GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
+    const systemNotesQuery = `SELECT name, recordid, recordtypeid, date FROM (SELECT name, recordid, recordtypeid, ${toSuiteQLSelectDateString('MAX(date)')} as date FROM systemnote WHERE date >= ${toSuiteQLWhereDateString(new Date('2022-01-01'))} AND recordtypeid IN (-112, 1, -123) GROUP BY name, recordid, recordtypeid) ORDER BY name, recordid, recordtypeid ASC`
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(1, EMPLOYEE_NAME_QUERY)
     expect(runSuiteQLMock).toHaveBeenNthCalledWith(2, systemNotesQuery)
     expect(runSuiteQLMock).toHaveBeenCalledTimes(2)
@@ -136,7 +136,7 @@ describe('netsuite system note author information', () => {
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 1 name').toBeTruthy()
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 2 name').toBeTruthy()
     expect(customRecord.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
-    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(missingInstance.annotations).toEqual({})
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_BY] === 'user 3 name').toBeTruthy()
   })
@@ -145,7 +145,7 @@ describe('netsuite system note author information', () => {
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(accountInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('2022-01-01T00:00:00Z')
     expect(customRecordType.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
-    expect(Object.values(missingInstance.annotations)).toHaveLength(0)
+    expect(missingInstance.annotations).toEqual({})
     expect(fileInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
     expect(folderInstance.annotations[CORE_ANNOTATIONS.CHANGED_AT] === '2022-01-01T00:00:00Z').toBeTruthy()
   })

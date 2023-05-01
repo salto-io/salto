@@ -16,11 +16,13 @@
 import _ from 'lodash'
 import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../constants'
 
 const log = logger(module)
+const { createMissingInstance } = referenceUtils
 
 const USER_SCHEMA_REGEX = /(user\.[a-zA-Z0-9_]+)/g // pattern: user.someString
 const USER_SCHEMA_IE_REGEX = /(user\.profile\.[a-zA-Z0-9_]+)/g // pattern: user.profile.someString
@@ -29,7 +31,7 @@ const BEHAVIOR_REGEX = /(security\.behaviors\.contains\(.+?\))/g // pattern: sec
 const USER_SCHEMA_PREFIX = 'user.'
 const USER_SCHEMA_IE_PREFIX = 'user.profile.'
 const BEHAVIOR_EXPRESSION_PREFIX = 'security.behaviors.contains'
-const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
+const USER_SCHEMA_CUSTOM_PATH = ['definitions', 'custom', 'properties']
 const USER_SCHEMA_BASE_PATH = ['definitions', 'base', 'properties']
 
 type ExpressionLanguageDef = {
@@ -54,7 +56,7 @@ const TYPE_TO_DEF: Record<string, ExpressionLanguageDef> = {
   },
 }
 
-const getUserSchemaReference = (
+export const getUserSchemaReference = (
   userAttribute: string,
   userSchemaInstance: InstanceElement,
 ): ReferenceExpression | undefined => {
@@ -77,19 +79,24 @@ const getUserSchemaReference = (
   return undefined
 }
 
+export const resolveUserSchemaRef = (ref: ReferenceExpression): string | undefined => {
+  const topLevelParentId = ref.elemID.createTopLevelParentID().parent
+  const parentId = ref.elemID.createParentID()
+  if (
+    (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
+      || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
+  ) {
+    return ref.elemID.name
+  }
+  log.error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${ref.elemID.getFullName()}`)
+  return undefined
+}
+
 const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression) => TemplatePart => {
   const prepRef = (part: ReferenceExpression): TemplatePart => {
     if (part.elemID.typeName === USER_SCHEMA_TYPE_NAME) {
-      const topLevelParentId = part.elemID.createTopLevelParentID().parent
-      const parentId = part.elemID.createParentID()
-      if (
-        (topLevelParentId.createNestedID(...USER_SCHEMA_CUSTOM_PATH).isEqual(parentId))
-        || (topLevelParentId.createNestedID(...USER_SCHEMA_BASE_PATH).isEqual(parentId))
-      ) {
-        const userSchemaField = part.elemID.getFullNameParts().pop()
-        if (!_.isString(userSchemaField)) {
-          throw new Error(`Received an invalid reference for ${USER_SCHEMA_TYPE_NAME} attribute: ${part.elemID.getFullName()}`)
-        }
+      const userSchemaField = resolveUserSchemaRef(part)
+      if (userSchemaField !== undefined) {
         return `${isIdentityEngine ? USER_SCHEMA_IE_PREFIX : USER_SCHEMA_PREFIX}${userSchemaField}`
       }
     }
@@ -129,9 +136,16 @@ const stringToTemplate = (
       if (expression.match(/^["'][a-zA-Z0-9]+?['"]$/)) { // check if the string is a potential id
         const id = expression.slice(1, -1)
         const matchingInstance = groupInstances.find(instance => instance.value.id === id)
-        return matchingInstance !== undefined
-          ? new ReferenceExpression(matchingInstance.elemID, matchingInstance)
-          : expression
+        if (matchingInstance !== undefined) {
+          return new ReferenceExpression(matchingInstance.elemID, matchingInstance)
+        }
+        // hack to verify this is a group id, because group ids in okta starts with '00g'
+        if (id.startsWith('00g') && id.length > 10) {
+          // create missing reference for group
+          const missingInstance = createMissingInstance(OKTA, GROUP_TYPE_NAME, id)
+          return new ReferenceExpression(missingInstance.elemID, missingInstance)
+        }
+        return expression
       }
       if (expression.startsWith(USER_SCHEMA_PREFIX)) {
         if (userSchemaInstance === undefined) {

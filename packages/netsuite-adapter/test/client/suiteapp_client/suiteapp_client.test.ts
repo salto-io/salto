@@ -17,11 +17,11 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
-import SoapClient from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../src/client/suiteapp_client/errors'
-import SuiteAppClient, { PAGE_SIZE } from '../../src/client/suiteapp_client/suiteapp_client'
-import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../src/types'
+import SoapClient from '../../../src/client/suiteapp_client/soap_client/soap_client'
+import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
+import SuiteAppClient, { PAGE_SIZE } from '../../../src/client/suiteapp_client/suiteapp_client'
+import { InvalidSuiteAppCredentialsError } from '../../../src/client/types'
+import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../../src/types'
 
 
 describe('SuiteAppClient', () => {
@@ -111,6 +111,16 @@ describe('SuiteAppClient', () => {
         it('exception thrown', async () => {
           mockAxiosAdapter.onPost().reply(() => [])
           expect(await client.runSuiteQL('')).toBeUndefined()
+        })
+        it('should throw customize error', async () => {
+          mockAxiosAdapter.onPost().reply(400, {
+            code: 'SOME_CODE',
+            'o:errorDetails': [{
+              detail: 'some error',
+            }],
+          })
+          await expect(client.runSuiteQL('query', { 'some err': 'custom error1' })).rejects.toThrow('custom error1')
+          await expect(client.runSuiteQL('query', { 'other error': 'custom error2' })).resolves.not.toThrow()
         })
         it('with concurrency error retry', async () => {
           jest.spyOn(global, 'setTimeout').mockImplementation((cb: TimerHandler) => (_.isFunction(cb) ? cb() : undefined))

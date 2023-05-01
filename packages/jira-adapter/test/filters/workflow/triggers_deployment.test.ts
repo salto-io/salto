@@ -21,6 +21,7 @@ import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { mockClient } from '../../utils'
 import { PRIVATE_API_HEADERS } from '../../../src/client/headers'
+import { WorkflowInstance } from '../../../src/filters/workflow/types'
 
 describe('triggersDeployment', () => {
   let workflowType: ObjectType
@@ -68,7 +69,7 @@ describe('triggersDeployment', () => {
   })
 
   it('should call the deploy triggers endpoint', async () => {
-    await deployTriggers(toChange({ after: instance }) as AdditionChange<InstanceElement>, client)
+    await deployTriggers(toChange({ after: instance }) as AdditionChange<WorkflowInstance>, client)
 
     expect(mockConnection.put).toHaveBeenCalledWith(
       '/rest/triggers/1.0/workflow/config',
@@ -89,7 +90,7 @@ describe('triggersDeployment', () => {
   it('should throw when workflow does not have a name', async () => {
     delete instance.value.name
     await expect(
-      deployTriggers(toChange({ after: instance }) as AdditionChange<InstanceElement>, client)
+      deployTriggers(toChange({ after: instance }) as AdditionChange<WorkflowInstance>, client)
     ).rejects.toThrow()
   })
 })

@@ -17,6 +17,7 @@ import _ from 'lodash'
 
 import { ChangeError, getChangeData, ChangeValidator, Change, ChangeDataType, isFieldChange, isAdditionOrRemovalChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import inactiveParent from './change_validators/inactive_parent'
 import accountSpecificValuesValidator from './change_validators/account_specific_values'
 import dataAccountSpecificValuesValidator from './change_validators/data_account_specific_values'
 import removeStandardTypesValidator from './change_validators/remove_standard_types'
@@ -27,6 +28,7 @@ import removeSdfElementsValidator from './change_validators/remove_sdf_elements'
 import reportTypesMoveEnvironment from './change_validators/report_types_move_environment'
 import fileValidator from './change_validators/file_changes'
 import immutableChangesValidator from './change_validators/immutable_changes'
+import uniqueFieldsValidator from './change_validators/unique_fields'
 import subInstancesValidator from './change_validators/subinstances'
 import standardTypesInvalidValuesValidator from './change_validators/standard_types_invalid_values'
 import safeDeployValidator, { FetchByQueryFunc } from './change_validators/safe_deploy'
@@ -60,8 +62,10 @@ const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
   instanceChangesValidator,
   reportTypesMoveEnvironment,
   immutableChangesValidator,
+  inactiveParent,
   removeListItemValidator,
   fileValidator,
+  uniqueFieldsValidator,
   subInstancesValidator,
   standardTypesInvalidValuesValidator,
   mappedListsIndexesValidator,

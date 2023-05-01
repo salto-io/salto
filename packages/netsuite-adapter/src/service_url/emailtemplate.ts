@@ -15,16 +15,16 @@
 */
 
 import { isInstanceElement } from '@salto-io/adapter-api'
+import { EMAIL_TEMPLATE } from '../constants'
 import { setElementsUrls } from './elements_urls'
 import { ServiceUrlSetter } from './types'
 
 
-const setServiceUrl: ServiceUrlSetter = async (elements, client) => {
-  await setElementsUrls({
+const setServiceUrl: ServiceUrlSetter = (elements, client) => {
+  setElementsUrls({
     elements: elements.filter(isInstanceElement),
     client,
-    filter: element => element.refType.elemID.name === 'emailtemplate',
-    query: 'SELECT id, scriptid FROM emailtemplate ORDER BY id ASC',
+    filter: element => element.refType.elemID.name === EMAIL_TEMPLATE,
     generateUrl: id => `app/crm/common/merge/emailtemplate.nl?id=${id}&cp=F`,
   })
 }

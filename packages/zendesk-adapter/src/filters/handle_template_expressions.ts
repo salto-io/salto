@@ -15,7 +15,7 @@
 */
 import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
-  ReferenceExpression, TemplateExpression, TemplatePart, Values,
+  ReferenceExpression, TemplateExpression, TemplatePart, UnresolvedReference, Values,
 } from '@salto-io/adapter-api'
 import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
@@ -287,6 +287,14 @@ const replaceFormulasWithTemplates = async (
 }
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
+  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
+  // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
+  // This fix is enough since the .before value is not used in the deployment process
+  if (part.value instanceof UnresolvedReference) {
+    log.debug('prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ', part.elemID.getFullName())
+    return ''
+  }
   if (Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE).includes(part.elemID.typeName)) {
     return `${part.value.value[ZENDESK_TYPE_TO_FIELD[part.elemID.typeName]]}`
   }

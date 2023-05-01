@@ -804,6 +804,17 @@ value
       expect(result.errors).not.toHaveLength(0)
       expect(result.errors[0].summary).toEqual('Invalid attribute key')
     })
+
+    it('fails on invalid character', async () => {
+      const body = `
+        salesforce.Type inst {
+          val = 'aaa"
+        }
+      `
+      const result = await parse(Buffer.from(body), 'none', functions)
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].summary).toEqual('Invalid string character')
+    })
   })
 
   it('fails on invalid top level syntax', async () => {

@@ -23,7 +23,7 @@ describe('permissionType change validator', () => {
   let elements: InstanceElement[]
   const permissionObject = new ObjectType({ elemID: new ElemID(JIRA, PERMISSIONS) })
   const permissionsInstance = new InstanceElement('_config', permissionObject, {
-    additionalProperties: {
+    permissions: {
       validPermission: {
         key: 'validPermission',
       },

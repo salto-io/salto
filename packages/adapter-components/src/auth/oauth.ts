@@ -41,11 +41,13 @@ export const oauthClientCredentialsBearerToken = async ({
   clientSecret,
   retryOptions,
   additionalHeaders = {},
+  additionalData = {},
 }: OAuthClientCredentialsArgs & {
   endpoint?: string
   baseURL: string
   retryOptions: RetryOptions
   additionalHeaders?: Record<string, string>
+  additionalData?: Record<string, string>
 }): Promise<{ headers?: Record<string, unknown> }> => {
   const httpClient = axios.create({
     baseURL,
@@ -65,6 +67,7 @@ export const oauthClientCredentialsBearerToken = async ({
       client_secret: clientSecret,
       // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
+      ...additionalData,
     }),
   )
   const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data

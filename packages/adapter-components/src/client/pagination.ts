@@ -127,12 +127,15 @@ export const traverseRequests: (
         ? response.data.items
         : makeArray(response.data)
     ).flatMap(extractPageEntries)
-    const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
 
-    if (page.length === 0) {
+    // checking original entries and not the ones that passed the custom extractor, because even if all entries are
+    // filtered out we should still continue querying
+    if (entries.length === 0) {
       // eslint-disable-next-line no-continue
       continue
     }
+    const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
+
     yield page
     numResults += page.length
 

@@ -27,7 +27,7 @@ import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
   isRemovalChange,
-  getChangeData, TemplateExpression,
+  getChangeData, TemplateExpression, isObjectType,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -679,7 +679,14 @@ describe('adapter', () => {
           'zendesk.automation.instance.Tag_tickets_from_Social@s',
           'zendesk.automation_order.instance',
           'zendesk.custom_role.instance.Advisor',
+          'zendesk.organization_field_order.instance',
+          'zendesk.sla_policy_order.instance',
           'zendesk.tag.instance.Social',
+          'zendesk.ticket_form_order.instance',
+          'zendesk.trigger_order.instance',
+          'zendesk.user_field_order.instance',
+          'zendesk.view_order.instance',
+          'zendesk.workspace_order.instance',
         ])
       })
       it('should return an 403 error for custom statuses', async () => {
@@ -767,9 +774,10 @@ describe('adapter', () => {
           .map(e => e.elemID.getFullName()).sort()).toEqual([
           'zendesk.article.instance.Title_Yo___greatSection_greatCategory_brandWithGuide@ssauuu',
         ])
+        expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
 
-      it('should return fetch error when no brand matches brands config ', async () => {
+      it('should return fetch error when no brand matches brands config, and still generate types', async () => {
         mockAxiosAdapter.onGet().reply(callbackResponseFunc)
         const creds = new InstanceElement(
           'config',
@@ -791,17 +799,19 @@ describe('adapter', () => {
             },
           }
         )
-        const { errors } = await adapter.operations({
+        const fetchRes = await adapter.operations({
           credentials: creds,
           config,
           elementsSource: buildElementsSourceFromElements([]),
         }).fetch({ progressReporter: { reportProgress: () => null } })
-        expect(errors).toEqual([
+        expect(fetchRes.errors).toEqual([
           {
             message: 'Could not find any brands matching the included patterns: [BestBrand]. Please update the configuration under fetch.guide.brands in the configuration file',
             severity: 'Warning',
           },
         ])
+        expect(fetchRes.elements.filter(isInstanceElement).find(e => e.elemID.typeName === 'article')).not.toBeDefined()
+        expect(fetchRes.elements.filter(isObjectType).find(e => e.elemID.typeName === 'article')).toBeDefined()
       })
     })
 

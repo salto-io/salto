@@ -448,6 +448,11 @@ export const mockTypes = {
       },
     },
   }),
+  DataCategoryGroup: createMetadataObjectType({
+    annotations: {
+      [METADATA_TYPE]: 'DataCategoryGroup',
+    },
+  }),
 }
 
 export const lwcJsResourceContent = "import { LightningElement } from 'lwc';\nexport default class BikeCard extends LightningElement {\n   name = 'Electra X4';\n   description = 'A sweet bike built for comfort.';\n   category = 'Mountain';\n   material = 'Steel';\n   price = '$2,700';\n   pictureUrl = 'https://s3-us-west-1.amazonaws.com/sfdc-demo/ebikes/electrax4.jpg';\n }"
@@ -598,6 +603,12 @@ export const mockDefaultValues = {
     contentType: 'text/xml',
     description: 'Test Static Resource Description',
     content: Buffer.from('<xml/>'),
+  },
+  [INSTALLED_PACKAGE_METADATA]: {
+    [INSTANCE_FULL_NAME_FIELD]: 'test_namespace',
+  },
+  DataCategoryGroup: {
+    [INSTANCE_FULL_NAME_FIELD]: 'TestDataCategoryGroup',
   },
 }
 

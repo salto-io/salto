@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, getChangeData, ProgressReporter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, objects } from '@salto-io/lowerdash'
 import OktaClient from './client/client'
 import changeValidator from './change_validators'
-import { OktaConfig, API_DEFINITIONS_CONFIG } from './config'
+import { OktaConfig, API_DEFINITIONS_CONFIG, CLIENT_CONFIG } from './config'
 import fetchCriteria from './fetch_criteria'
 import { paginate } from './client/pagination'
 import { dependencyChanger } from './dependency_changers'
@@ -31,7 +31,6 @@ import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
-import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
@@ -40,17 +39,21 @@ import oktaExpressionLanguageFilter from './filters/expression_language'
 import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
+import privateApiDeployFilter from './filters/private_api_deploy'
+import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
+import groupRolesFilter from './filters/group_roles'
 import userFilter from './filters/user'
+import templateUrlsFilter from './filters/template_urls'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
+import serviceUrlFilter from './filters/service_url'
+import groupSchemaFieldsRemovalFilter from './filters/group_schema_field_removal'
 
 const { awu } = collections.asynciterable
 
-const {
-  generateTypes,
-  getAllInstances,
-} = elementUtils.swagger
-
+const { generateTypes, getAllInstances } = elementUtils.swagger
+const { getAllElements } = elementUtils.ducktype
+const { findDataField, computeGetArgs } = elementUtils
 const { createPaginator } = clientUtils
 const log = logger(module)
 
@@ -59,6 +62,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   queryFilter,
   standardRolesFilter,
+  groupRolesFilter,
   userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,
@@ -68,13 +72,18 @@ export const DEFAULT_FILTERS = [
   replaceObjectWithIdFilter,
   userFilter,
   oktaExpressionLanguageFilter,
+  profileEnrollmentAttributesFilter,
+  templateUrlsFilter,
   fieldReferencesFilter,
-  groupDeploymentFilter,
+  // should run before appDeploymentFilter and after userSchemaFilter
+  serviceUrlFilter,
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
+  groupSchemaFieldsRemovalFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
+  privateApiDeployFilter,
   // should run last
   defaultDeployFilter,
 ]
@@ -85,6 +94,7 @@ export interface OktaAdapterParams {
   config: OktaConfig
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
+  adminClient?: OktaClient
 }
 
 export default class OktaAdapter implements AdapterOperations {
@@ -94,6 +104,7 @@ export default class OktaAdapter implements AdapterOperations {
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
   private fetchQuery: elementUtils.query.ElementQuery
+  private adminClient?: OktaClient
 
   public constructor({
     filterCreators = DEFAULT_FILTERS,
@@ -101,10 +112,12 @@ export default class OktaAdapter implements AdapterOperations {
     getElemIdFunc,
     config,
     elementsSource,
+    adminClient,
   }: OktaAdapterParams) {
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.adminClient = adminClient
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -128,6 +141,7 @@ export default class OktaAdapter implements AdapterOperations {
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
+          adminClient,
         },
         filterCreators,
         objects.concatObjects
@@ -136,7 +150,7 @@ export default class OktaAdapter implements AdapterOperations {
   }
 
   @logDuration('generating types from swagger')
-  private async getAllTypes(): Promise<{
+  private async getSwaggerTypes(): Promise<{
     allTypes: TypeMap
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   }> {
@@ -147,7 +161,7 @@ export default class OktaAdapter implements AdapterOperations {
   }
 
   @logDuration('generating instances from service')
-  private async getInstances(
+  private async getSwaggerInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
@@ -171,18 +185,54 @@ export default class OktaAdapter implements AdapterOperations {
     })
   }
 
-  @logDuration('fetching account configuration')
-  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    log.debug('going to fetch okta account configuration..')
+  private async getPrivateApiElements(): Promise<elementUtils.FetchElements<Element[]>> {
+    const { privateApiDefinitions } = this.userConfig
+    if (this.adminClient === undefined || this.userConfig[CLIENT_CONFIG]?.usePrivateAPI !== true) {
+      return { elements: [] }
+    }
+
+    const paginator = createPaginator({
+      client: this.adminClient,
+      paginationFuncCreator: paginate,
+    })
+
+    return getAllElements({
+      adapterName: OKTA,
+      types: privateApiDefinitions.types,
+      shouldAddRemainingTypes: false,
+      supportedTypes: privateApiDefinitions.supportedTypes,
+      fetchQuery: this.fetchQuery,
+      paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: privateApiDefinitions.typeDefaults,
+      getElemIdFunc: this.getElemIdFunc,
+    })
+  }
+
+  @logDuration('generating instances from service')
+  private async getAllElements(
+    progressReporter: ProgressReporter
+  ): Promise<elementUtils.FetchElements<Element[]>> {
     progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes()
+    const { allTypes, parsedConfigs } = await this.getSwaggerTypes()
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
+    const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
+
+    const privateApiElements = await this.getPrivateApiElements()
 
     const elements = [
       ...Object.values(allTypes),
       ...instances,
+      ...privateApiElements.elements,
     ]
+    return { elements, errors: (errors ?? []).concat(privateApiElements.errors ?? []) }
+  }
+
+  @logDuration('fetching account configuration')
+  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+    log.debug('going to fetch okta account configuration..')
+    const { elements, errors } = await this.getAllElements(progressReporter)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
@@ -190,7 +240,10 @@ export default class OktaAdapter implements AdapterOperations {
 
     // TODO SALTO-2690: addDeploymentAnnotations
 
-    return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
+    return {
+      elements,
+      errors: (errors ?? []).concat(filterResult.errors ?? []),
+    }
   }
 
   /**
@@ -235,9 +288,11 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
-  static get deployModifiers(): AdapterOperations['deployModifiers'] {
+  public get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(),
+      changeValidator: changeValidator({
+        client: this.client,
+      }),
       dependencyChanger,
     }
   }

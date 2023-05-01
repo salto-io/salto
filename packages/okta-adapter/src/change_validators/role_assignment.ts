@@ -69,16 +69,14 @@ export const roleAssignmentValidator: ChangeValidator = async (changes, elementS
 
   const targetGroupIdtoRuleIds = _.groupBy(groupRuleInstances.flatMap(rule => {
     const groups = getTargetGroupsForRule(rule)
-    return groups.map(groupId => ({ ruleId: rule.elemID.name, groupName: groupId })).filter(isDefined)
+    return groups.map(groupName => ({ ruleId: rule.elemID.name, groupName })).filter(isDefined)
   }), 'groupName')
-  if (_.isEmpty(targetGroupIdtoRuleIds)) {
-    return []
-  }
 
   return roleAssignmentInstances
     .filter(role => {
       const parent = getParents(role)?.[0]
-      return isReferenceExpression(parent) && targetGroupIdtoRuleIds[parent.elemID.name] !== undefined
+      return isReferenceExpression(parent) && parent.elemID.typeName === GROUP_TYPE_NAME
+       && targetGroupIdtoRuleIds[parent.elemID.name] !== undefined
     })
     .map(
       instance => {

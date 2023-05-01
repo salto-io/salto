@@ -1146,7 +1146,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       // TODO: should change to reference in SALTO-3806
       fieldTypeOverrides: [{ fieldName: 'uiSchemaId', fieldType: 'string' }],
-      fieldsToOmit: [{ fieldName: 'uiSchemaId' }],
+      fieldsToHide: [{ fieldName: 'uiSchemaId' }],
     },
   },
 }

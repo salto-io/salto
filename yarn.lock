@@ -3007,9 +3007,9 @@
     napi-macros "^2.0.0"
     node-gyp-build "^4.3.0"
 
-"@salto-io/salesforce-formula-parser@https://github.com/salto-io/salesforce-formula-parser.git#fce3510":
+"@salto-io/salesforce-formula-parser@https://github.com/salto-io/salesforce-formula-parser.git#108a8c3":
   version "0.3.37"
-  resolved "https://github.com/salto-io/salesforce-formula-parser.git#fce3510d8bb382f73af33e1a0ad38886a2193ca0"
+  resolved "https://github.com/salto-io/salesforce-formula-parser.git#108a8c39a9e0e9cf4a9f2db06350418bb4259137"
   dependencies:
     lodash "^4.17.21"
 

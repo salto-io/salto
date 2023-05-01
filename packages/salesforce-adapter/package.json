@@ -38,7 +38,7 @@
     "@salto-io/file": "0.3.38",
     "@salto-io/logging": "0.3.38",
     "@salto-io/lowerdash": "0.3.38",
-    "@salto-io/salesforce-formula-parser": "https://github.com/salto-io/salesforce-formula-parser.git#fce3510",
+    "@salto-io/salesforce-formula-parser": "https://github.com/salto-io/salesforce-formula-parser.git#108a8c3",
     "bottleneck": "^2.19.5",
     "fast-xml-parser": "^3.15.0",
     "formulon": "^6.24.1",

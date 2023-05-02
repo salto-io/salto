@@ -93,6 +93,16 @@ jest.mock('@salto-io/adapter-components', () => {
             url: '/MCMFormulas',
           },
         },
+        GridTypes: {
+          request: {
+            url: '/GridTypes',
+          },
+        },
+        OrdererTypes: {
+          request: {
+            url: '/OrdererTypes',
+          },
+        },
       },
     }
   }

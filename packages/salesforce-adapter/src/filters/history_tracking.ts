@@ -154,15 +154,23 @@ const filter: LocalFilterCreator = () => {
         })
 
       // Existing object types that changed
-      const changedObjectTypes = await awu(changes)
+      const modifiedObjectTypes = await awu(changes)
         .filter(isObjectTypeChange)
         .filter(isModificationChange)
         .filter(change => isCustomObject(getChangeData(change)))
         .toArray()
 
+      // - and save the objects where the list of tracked fields changed, because if it's the *only* thing that changed
+      //   we may not receive these changes in onDeploy (since we removed the HISTORY_TRACKED_FIELDS annotation).
+      const actuallyModifiedObjectTypes = modifiedObjectTypes
+        .filter(change => {
+          const [before, after] = getAllChangeData(change)
+          return !_.isEqual(before?.annotations[HISTORY_TRACKED_FIELDS], after.annotations[HISTORY_TRACKED_FIELDS])
+        })
+
       //  - if the list of tracked fields changed, create field changes that represent the changes to the trackHistory
       //    annotations
-      const additionalChanges = await awu(changedObjectTypes)
+      const additionalChanges = await awu(actuallyModifiedObjectTypes)
         .flatMap(change => awu(Object.values(getChangeData(change).fields))
           .filter(field => fieldHistoryTrackingChanged(field, change))
           .map(field => createHistoryTrackingFieldChange(field, change)))
@@ -171,18 +179,11 @@ const filter: LocalFilterCreator = () => {
       additionalChanges.forEach(change => changes.push(change))
 
       //  - now set the annotations on the type and its fields
-      changedObjectTypes
+      modifiedObjectTypes
         .map(getChangeData)
         .forEach(distributeTrackingInfo)
 
-      // - and save the objects where the list of tracked fields changed, because if it's the *only* thing that changed
-      //   we may not receive these changes in onDeploy (since we removed the HISTORY_TRACKED_FIELDS annotation).
-      const actuallyChangedObjectTypes = changedObjectTypes
-        .filter(change => {
-          const [before, after] = getAllChangeData(change)
-          return !_.isEqual(before?.annotations[HISTORY_TRACKED_FIELDS], after.annotations[HISTORY_TRACKED_FIELDS])
-        })
-      objectTypesChangedInPreDeploy = await awu(actuallyChangedObjectTypes)
+      objectTypesChangedInPreDeploy = await awu(actuallyModifiedObjectTypes)
         .map(change => change.data.before)
         .keyBy(objectType => apiName(objectType))
 
@@ -191,6 +192,7 @@ const filter: LocalFilterCreator = () => {
         .filter(isAdditionOrModificationChange)
         .filter(isObjectTypeChange)
         .map(getChangeData)
+        .filter(isCustomObject)
         .forEach(objType => {
           delete objType.annotations[HISTORY_TRACKED_FIELDS]
         })
@@ -253,7 +255,10 @@ const filter: LocalFilterCreator = () => {
 
           const changedObjectType = getChangeData(additionalChanges[parentTypeName])
           if (trackedAfter) {
-            // field is added to tracked fields
+            // field is added to tracked fields. Note that we're sure changedObjectType has the HISTORY_TRACKED_FIELDS
+            // annotation because we got here because there were field changes that show a field was added to this
+            // annotation, and because if the object was lacking this annotation and it was added, it would mean there
+            // was an object-level change which would put this object type in typesToIgnore.
             changedObjectType.annotations[HISTORY_TRACKED_FIELDS][after.name] = new ReferenceExpression(after.elemID)
           } else {
             // field is removed from tracked fields

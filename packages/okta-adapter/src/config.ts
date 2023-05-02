@@ -407,7 +407,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'properties' }
       ),
       fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
-      nestStandaloneInstances: false,
     },
     deployRequests: {
       modify: {
@@ -423,6 +422,13 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       fieldTypeOverrides: [
         { fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' },
+      ],
+    },
+  },
+  GroupSchemaCustom: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.GroupSchemaAttribute>' },
       ],
     },
   },
@@ -1228,7 +1234,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
-    // UserSchema and AppUserSchema are from the same swagger endpoint, but have different names.
+    // AppUserSchema returns UserSchema items, but we separate types because the endpoints for deploy are different
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
   ],
   typeNameOverrides: [

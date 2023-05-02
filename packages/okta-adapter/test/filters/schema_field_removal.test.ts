@@ -37,10 +37,8 @@ describe('schemaFieldRemovalFilter', () => {
         definitions: {
           custom: {
             properties: {
-              additionalProperties: {
-                property1: {},
-                property2: {},
-              },
+              property1: {},
+              property2: {},
             },
           },
         },
@@ -53,9 +51,7 @@ describe('schemaFieldRemovalFilter', () => {
         definitions: {
           custom: {
             properties: {
-              additionalProperties: {
-                property1: {},
-              },
+              property1: {},
             },
           },
         },
@@ -67,7 +63,7 @@ describe('schemaFieldRemovalFilter', () => {
         const groupSchemaAfterInstanceCopy = groupSchemaAfterInstance.clone()
         await filter.preDeploy([
           toChange({ before: groupSchemaBeforeInstanceCopy, after: groupSchemaAfterInstanceCopy })])
-        expect(groupSchemaAfterInstanceCopy.value.definitions.custom.properties.additionalProperties.property2)
+        expect(groupSchemaAfterInstanceCopy.value.definitions.custom.properties.property2)
           .toBeNull()
       })
       it('should add null when changing property name', async () => {
@@ -78,10 +74,8 @@ describe('schemaFieldRemovalFilter', () => {
             definitions: {
               custom: {
                 properties: {
-                  additionalProperties: {
-                    property1: {},
-                    property3: {},
-                  },
+                  property1: {},
+                  property3: {},
                 },
               },
             },
@@ -89,7 +83,7 @@ describe('schemaFieldRemovalFilter', () => {
         )
         await filter.preDeploy([
           toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterModifyedInstance })])
-        expect(groupSchemaAfterModifyedInstance.value.definitions.custom.properties.additionalProperties.property2)
+        expect(groupSchemaAfterModifyedInstance.value.definitions.custom.properties.property2)
           .toBeNull()
       })
     })
@@ -102,10 +96,8 @@ describe('schemaFieldRemovalFilter', () => {
             definitions: {
               custom: {
                 properties: {
-                  additionalProperties: {
-                    property1: {},
-                    property2: null,
-                  },
+                  property1: {},
+                  property2: null,
                 },
               },
             },
@@ -113,7 +105,7 @@ describe('schemaFieldRemovalFilter', () => {
         )
         await filter.onDeploy([
           toChange({ before: groupSchemaBeforeInstance, after: groupSchemaAfterInstanceTwo })])
-        expect(groupSchemaAfterInstanceTwo.value.definitions.custom.properties.additionalProperties.property2)
+        expect(groupSchemaAfterInstanceTwo.value.definitions.custom.properties.property2)
           .toBeUndefined()
       })
     })

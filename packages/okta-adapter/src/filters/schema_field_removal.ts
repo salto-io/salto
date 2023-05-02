@@ -19,11 +19,10 @@ import { resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { APP_USER_SCHEMA_TYPE_NAME, GROUP_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
-const CUSTOM_ADDITONAL_PROPERTIES_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
 const CUSTOM_PROPERTIES_PATH = ['definitions', 'custom', 'properties']
 
 const SCHEMAS_TO_PATH: Record<string, string[]> = {
-  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_ADDITONAL_PROPERTIES_PATH,
+  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
   [APP_USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
   [USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
 }
@@ -49,8 +48,8 @@ const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>)
 
 const deletePropertiesWithNull = (instance: InstanceElement): void => {
   const path = SCHEMAS_TO_PATH[instance.elemID.typeName]
-  const customAdditionalPropertiesPath = instance.elemID.createNestedID(...path)
-  const customProperties = resolvePath(instance, customAdditionalPropertiesPath)
+  const customPropertiesPath = instance.elemID.createNestedID(...path)
+  const customProperties = resolvePath(instance, customPropertiesPath)
 
   Object.keys(customProperties).forEach(property => {
     if (customProperties[property] === null) {

@@ -24,7 +24,7 @@ const TYPES_TO_FIELDS: Record<string, string[]> = {
 
 /**
  * Delete fields that are added by the recurseInto function. This is needed because
- * the recurseInto function cannot be removes with fieldsToOmit.
+ * fields added with recurseInto cannot be removed with fieldsToOmit.
  */
 const filter: FilterCreator = () => ({
   name: 'deleteFieldsFilter',

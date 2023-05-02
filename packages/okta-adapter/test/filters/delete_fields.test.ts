@@ -17,10 +17,10 @@
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
-import deleteRecurseIntoFilter from '../../src/filters/delete__fields'
+import deleteRecurseIntoFilter from '../../src/filters/delete_fields'
 import { getFilterParams } from '../utils'
 
-describe('deleteRecurseIntoFilter', () => {
+describe('deleteFieldsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
   const applicationType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })

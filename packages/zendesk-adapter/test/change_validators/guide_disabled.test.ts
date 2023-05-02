@@ -20,8 +20,8 @@ import { guideDisabledValidator } from '../../src/change_validators/guide_disabl
 import { ZENDESK, CATEGORY_TYPE_NAME } from '../../src/constants'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 
-const msg = 'Cannot add this element because help center is not enabled for its associated brand, or the brand itself may not be enabled in the configuration.'
-
+const msgForNoHelpCenter = 'Cannot add this element because help center is not enabled for its associated brand.'
+const msgNotInConfig = 'Cannot add this element because its associated brand is not enabled in the configuration.'
 describe('guideDisabledValidator', () => {
   const categoryType = new ObjectType({ elemID: new ElemID(ZENDESK, CATEGORY_TYPE_NAME) })
   const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
@@ -68,8 +68,8 @@ describe('guideDisabledValidator', () => {
     expect(changesErrors).toEqual([{
       elemID: categoryToBrandWithHelpCenterFalse.elemID,
       severity: 'Error',
-      message: msg,
-      detailedMessage: `please enable help center for brand "${brandWithHelpCenterFalse.elemID.name}" or enable the brand in the configuration in order to add this element.`,
+      message: msgForNoHelpCenter,
+      detailedMessage: `Please enable help center for brand "${brandWithHelpCenterFalse.elemID.name}" in order to add this element.`,
     }])
   })
 
@@ -121,8 +121,8 @@ describe('guideDisabledValidator', () => {
     expect(changesErrors).toEqual([{
       elemID: categoryToBrandWithHelpCenterTrue.elemID,
       severity: 'Error',
-      message: msg,
-      detailedMessage: `please enable help center for brand "${brandWithHelpCenterTrue.elemID.name}" or enable the brand in the configuration in order to add this element.`,
+      message: msgNotInConfig,
+      detailedMessage: `Please enable the brand "${brandWithHelpCenterTrue.elemID.name}" in the configuration in order to add this element.`,
     }])
   })
   it('should return errors because there is no guide in the config', async () => {
@@ -136,8 +136,8 @@ describe('guideDisabledValidator', () => {
     expect(changesErrors).toEqual([{
       elemID: categoryToBrandWithHelpCenterTrue.elemID,
       severity: 'Error',
-      message: msg,
-      detailedMessage: `please enable help center for brand "${brandWithHelpCenterTrue.elemID.name}" or enable the brand in the configuration in order to add this element.`,
+      message: msgNotInConfig,
+      detailedMessage: `Please enable the brand "${brandWithHelpCenterTrue.elemID.name}" in the configuration in order to add this element.`,
     }])
   })
 })

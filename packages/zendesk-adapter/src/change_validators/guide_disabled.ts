@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, isInstanceChange, getChangeData, isAdditionChange, isInstanceElement, isReferenceExpression, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
@@ -24,6 +24,13 @@ import { GUIDE_TYPES_TO_HANDLE_BY_BRAND, ZendeskFetchConfig } from '../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
+const isBrandWithHelpCenterFalse = (instance: InstanceElement, brandByBrandId: Record<string, InstanceElement>):
+boolean => {
+  const brandRef = instance.value.brand
+  const brand = brandByBrandId[brandRef.elemID.getFullName()]
+  return brand.value.has_help_center === false
+}
 
 export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
  => ChangeValidator = fetchConfig => async (changes, elementSource) => {
@@ -40,26 +47,39 @@ export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
      return []
    }
 
-   const brandsInstances = await awu(await elementSource.list())
+   const brandByBrandId = Object.fromEntries((await awu(await elementSource.list())
      .filter(id => id.typeName === BRAND_TYPE_NAME)
      .map(id => elementSource.get(id))
      .filter(isInstanceElement)
-     .toArray()
+     .toArray())
+     .map(instance => [instance.elemID.getFullName(), instance]))
 
-   const brandsWithGuide = new Set(getBrandsForGuide(brandsInstances, fetchConfig)
+   const brandsWithGuide = new Set(getBrandsForGuide(Object.values(brandByBrandId), fetchConfig)
      .map(brand => brand.elemID.getFullName()))
 
    if (brandsWithGuide === undefined) {
      return []
    }
 
-   return relevantInstances
+   const allErrorInstances = relevantInstances
      .filter(instance => isReferenceExpression(instance.value.brand))
      .filter(instance => !brandsWithGuide.has(instance.value.brand.elemID.getFullName()))
-     .map(instance => ({
-       elemID: instance.elemID,
-       severity: 'Error',
-       message: 'Cannot add this element because help center is not enabled for its associated brand, or the brand itself may not be enabled in the configuration.',
-       detailedMessage: `please enable help center for brand "${instance.value.brand.elemID.name}" or enable the brand in the configuration in order to add this element.`,
-     }))
+
+   return allErrorInstances
+     .map(instance => {
+       if (isBrandWithHelpCenterFalse(instance, brandByBrandId)) {
+         return ({
+           elemID: instance.elemID,
+           severity: 'Error',
+           message: 'Cannot add this element because help center is not enabled for its associated brand.',
+           detailedMessage: `Please enable help center for brand "${instance.value.brand.elemID.name}" in order to add this element.`,
+         })
+       }
+       return ({
+         elemID: instance.elemID,
+         severity: 'Error',
+         message: 'Cannot add this element because its associated brand is not enabled in the configuration.',
+         detailedMessage: `Please enable the brand "${instance.value.brand.elemID.name}" in the configuration in order to add this element.`,
+       })
+     })
  }

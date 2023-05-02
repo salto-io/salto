@@ -54,7 +54,7 @@ describe('remote map location cache pool', () => {
 
   it('should destroy cache when the last reference to it is returned', () => {
     const cache = pool.get(LOCATION1)
-    pool.release(cache)
+    pool.return(cache)
     expect(poolContents.size).toEqual(0)
     pool.get(LOCATION1)
     expect(poolContents.size).toEqual(1)

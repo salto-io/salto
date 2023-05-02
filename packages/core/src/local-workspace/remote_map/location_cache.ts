@@ -31,7 +31,7 @@ export class LocationCache extends LRU<string, unknown> {
 export type LocationCachePool = {
   get: (location: string) => LocationCache
 
-  release: (cache: LocationCache) => void
+  return: (cache: LocationCache) => void
 }
 
 export type LocationCachePoolContents = Map<string, { cache: LocationCache; refcnt: number }>
@@ -59,10 +59,11 @@ export const createLocationCachePool = (
       pool.set(location, { cache: newCache, refcnt: 1 })
       if (pool.size > poolSizeWatermark) {
         poolSizeWatermark = pool.size
+        log.debug('Max location cache pool size: %o', poolSizeWatermark)
       }
       return newCache
     },
-    release: ({ location }) => {
+    return: ({ location }) => {
       const poolEntry = pool.get(location)
       if (poolEntry === undefined || poolEntry.refcnt === 0) {
         log.warn('Returning a locationCache for an unknown location %s. poolEntry=%o', location, poolEntry)
@@ -73,7 +74,7 @@ export const createLocationCachePool = (
       if (poolEntry.refcnt === 0) {
         pool.delete(location)
         if (pool.size === 0) {
-          log.debug('Max location cache pool size: %o', poolSizeWatermark)
+          log.debug('Last location closed. Max location cache pool size: %o', poolSizeWatermark)
           poolSizeWatermark = 0
         }
       }

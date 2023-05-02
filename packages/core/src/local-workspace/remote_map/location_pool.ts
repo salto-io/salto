@@ -35,7 +35,7 @@ const createRemoteMapLocationPool = (): RemoteMapLocationPool => (
       cache: locationCaches.get(location),
     }),
     return: location => {
-      locationCaches.release(location.cache)
+      locationCaches.return(location.cache)
       counters.return(location.name)
     },
   }

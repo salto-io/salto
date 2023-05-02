@@ -13,7 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+
+const { DefaultMap } = collections.map
 
 const log = logger(module)
 
@@ -65,19 +68,18 @@ const createLocationCounters = (location: string): LocationCounters => {
 }
 
 const createStatCounters = (): StatCounters => {
-  const locations: Record<string, { refCnt: number; counters: LocationCounters }> = {}
+  const locations = new DefaultMap(
+    (location: string) => ({ refCnt: 0, counters: createLocationCounters(location) })
+  )
   return {
     get: location => {
-      if (!(location in locations)) {
-        locations[location] = { refCnt: 0, counters: createLocationCounters(location) }
-      }
-      locations[location].refCnt += 1
-      return locations[location].counters
+      locations.get(location).refCnt += 1
+      return locations.get(location).counters
     },
     return: location => {
-      locations[location].refCnt -= 1
-      if (locations[location].refCnt === 0) {
-        delete locations[location]
+      locations.get(location).refCnt -= 1
+      if (locations.get(location).refCnt === 0) {
+        locations.delete(location)
       }
     },
   }

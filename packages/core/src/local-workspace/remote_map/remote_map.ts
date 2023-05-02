@@ -429,9 +429,7 @@ ReadIterator => {
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false):
 remoteMap.RemoteMapCreator => {
-  const locationResources = remoteMapLocations.get(location)
-  const statCounters = locationResources.counters
-  const locationCache = locationResources.cache
+  const { counters: statCounters, cache: locationCache } = remoteMapLocations.get(location)
 
   let persistentDB: rocksdb
   let tmpDB: rocksdb

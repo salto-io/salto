@@ -1055,17 +1055,6 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
-  const validateBaseIdAndRunOnEnvState = async <T>(
-    id: ElemID,
-    envName: string,
-    call: (envState: SingleState) => T
-  ): Promise<T> => {
-    if (!id.isBaseID()) {
-      throw new Error(`only base ids are supported, received ${id.getFullName()}`)
-    }
-    return call((await getWorkspaceState()).states[envName])
-  }
-
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1160,21 +1149,27 @@ export const loadWorkspace = async (
       .states[envName].referenceSources,
     getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceTargets,
-    getElementOutgoingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
-      id,
-      envName,
-      async envState => await envState.referenceTargets.get(id.getFullName()) ?? []
-    ),
-    getElementIncomingReferences: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
-      id,
-      envName,
-      async envState => await envState.referenceSources.get(id.getFullName()) ?? []
-    ),
-    getElementAuthorInformation: async (id, envName = currentEnv()) => validateBaseIdAndRunOnEnvState(
-      id,
-      envName,
-      async envState => await envState.authorInformation.get(id.getFullName()) ?? {}
-    ),
+    getElementOutgoingReferences: async (id, envName = currentEnv()) => {
+      if (!id.isBaseID()) {
+        throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[envName]
+        .referenceTargets.get(id.getFullName()) ?? []
+    },
+    getElementIncomingReferences: async (id, envName = currentEnv()) => {
+      if (!id.isBaseID()) {
+        throw new Error(`getElementIncomingReferences only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[envName]
+        .referenceSources.get(id.getFullName()) ?? []
+    },
+    getElementAuthorInformation: async (id, envName = currentEnv()) => {
+      if (!id.isBaseID()) {
+        throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[envName]
+        .authorInformation.get(id.getFullName()) ?? {}
+    },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,
     getElementNaclFiles: async id => (

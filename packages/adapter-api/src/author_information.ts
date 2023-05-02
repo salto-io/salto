@@ -26,7 +26,7 @@ export type AuthorInformation = {
 export const getAuthorInformation = (
   element: Element | undefined
 ): AuthorInformation => {
-  if (!element) {
+  if (element === undefined) {
     return {}
   }
   return _.pickBy({

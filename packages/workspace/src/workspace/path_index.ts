@@ -172,24 +172,6 @@ RemoteMapEntry<Path[]>[] => {
     ))
 }
 
-export const updatePathIndex = async (
-  current: PathIndex,
-  changedUnmergedElements: Element[],
-  unmergedElementIDs?: Set<string>,
-): Promise<void> => log.time(async () => {
-  // If no unmergedElementIDs were passed, override the index with the new elements
-  if (unmergedElementIDs === undefined) {
-    await current.clear()
-  } else {
-    // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
-    const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
-    await current.deleteAll(entriesToDelete)
-  }
-
-  const entriesToSet = getElementsPathHints(changedUnmergedElements)
-  await current.setAll(entriesToSet)
-}, 'updatePathIndex')
-
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
@@ -201,11 +183,12 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
     }))
 }
 
-export const updateTopLevelPathIndex = async (
+const updateIndex = async (
   current: PathIndex,
   changedUnmergedElements: Element[],
-  unmergedElementIDs?: Set<string>,
-): Promise<void> => log.time(async () => {
+  unmergedElementIDs: Set<string> | undefined,
+  getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]
+): Promise<void> => {
   // If no unmergedElementIDs were passed, override the index with the new elements
   if (unmergedElementIDs === undefined) {
     await current.clear()
@@ -215,8 +198,25 @@ export const updateTopLevelPathIndex = async (
     await current.deleteAll(entriesToDelete)
   }
 
-  const entries = getTopLevelPathHints(changedUnmergedElements)
-  await current.setAll(entries)
+  const entriesToSet = getHintsFunction(changedUnmergedElements)
+  await current.setAll(entriesToSet)
+}
+
+// TODO Seroussi - make the args a type?
+export const updatePathIndex = async (
+  current: PathIndex,
+  changedUnmergedElements: Element[],
+  unmergedElementIDs?: Set<string>,
+): Promise<void> => log.time(async () => {
+  await updateIndex(current, changedUnmergedElements, unmergedElementIDs, getElementsPathHints)
+}, 'updatePathIndex')
+
+export const updateTopLevelPathIndex = async (
+  current: PathIndex,
+  changedUnmergedElements: Element[],
+  unmergedElementIDs?: Set<string>,
+): Promise<void> => log.time(async () => {
+  await updateIndex(current, changedUnmergedElements, unmergedElementIDs, getTopLevelPathHints)
 }, 'updateTopLevelPathIndex')
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

@@ -135,7 +135,7 @@ const getDetailedChangeTree = async (
 ): Promise<detailedChangesResult> => {
   const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
   const changesTree = new collections.treeMap.TreeMap(
-    wu(changes).map(change => [change.id.getFullName(), [{ change, origin }]])
+    changes.map(change => [change.id.getFullName(), [{ change, origin }]])
   )
   return { changesTree, changes }
 }
@@ -563,6 +563,11 @@ export const getAdaptersFirstFetchPartial = async (
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
+type FetchChangesReturnType = {
+    changes: FetchChange[]
+    serviceToStateChanges: DetailedChange<Element>[]
+}
+
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all account elements should be consider as "add" changes.
 export const calcFetchChanges = async (
@@ -572,7 +577,7 @@ export const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
-): Promise<{ changes: FetchChange[]; serviceToStateChanges: DetailedChange<Element>[]}> => {
+): Promise<FetchChangesReturnType> => {
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
     || mergedAccountElements.has(id)
@@ -648,12 +653,13 @@ export const calcFetchChanges = async (
   return { changes, serviceToStateChanges }
 }
 
-const createFirstFetchChanges = (elements: Element[]): {
-  changes: FetchChange[]
-  serviceToStateChanges: DetailedChange<Element>[]
-} => {
-  const changes = elements.map(toAddFetchChange)
-  return { changes, serviceToStateChanges: changes.map(change => change.change) }
+const createFirstFetchChanges = async (unmergedElements: Element[], mergedElementsSource: elementSource.ElementsSource):
+  Promise<FetchChangesReturnType> => {
+  const mergedElements = await awu(await mergedElementsSource.getAll()).toArray()
+  return {
+    changes: unmergedElements.map(toAddFetchChange),
+    serviceToStateChanges: mergedElements.map(toAddFetchChange).map(change => change.change),
+  }
 }
 
 type CreateFetchChangesParams = {
@@ -685,11 +691,13 @@ const createFetchChanges = async ({
     .filter(e => !e.isConfigType())
     .isEmpty()
 
+  const mergedElementsSource = elementSource.createInMemoryElementSource(processErrorsResult.keptElements)
+
   const { changes, serviceToStateChanges } = isFirstFetch
-    ? createFirstFetchChanges(unmergedElements)
+    ? await createFirstFetchChanges(unmergedElements, mergedElementsSource)
     : await calcFetchChanges(
       unmergedElements,
-      elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
+      mergedElementsSource,
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.

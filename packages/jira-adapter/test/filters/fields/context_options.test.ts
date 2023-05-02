@@ -128,6 +128,44 @@ describe('context options', () => {
       )).rejects.toThrow()
     })
 
+    it('when option name and value are different deploy successfully', async () => {
+      contextInstance.value.options = {
+        p1: {
+          value: 'p2',
+          disabled: false,
+          position: 0,
+        },
+      }
+      client.post.mockResolvedValue({
+        data: {
+          options: [
+            {
+              id: '10',
+              value: 'p2',
+            },
+          ],
+        },
+        status: 200,
+      })
+      await setContextOptions(
+        toChange({ after: contextInstance }),
+        client,
+        elementSource
+      )
+      expect(client.post).toHaveBeenCalledWith({
+        url: '/rest/api/3/field/2/context/3/option',
+        data: {
+          options: [
+            expect.objectContaining({
+              value: 'p2',
+              disabled: false,
+            }),
+          ],
+        },
+      })
+      expect(contextInstance.value.options.p1.id).toEqual('10')
+    })
+
     describe('options were changed', () => {
       let contextInstanceAfter: InstanceElement
 

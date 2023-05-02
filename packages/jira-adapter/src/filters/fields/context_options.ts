@@ -96,6 +96,12 @@ type UpdateContextOptionsParams = {
   baseUrl: string
   contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
 }
+const getFieldName = (
+  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
+  newOption: Value
+): Value =>
+  Object.entries(contextChange.data.after.value.options)
+    .find(([key, _value]) => contextChange.data.after.value.options[key].value === newOption)?.[0]
 
 const updateContextOptions = async ({
   addedOptions,
@@ -125,7 +131,9 @@ const updateContextOptions = async ({
           idToOption[newOption.optionId]
             .cascadingOptions[naclCase(newOption.value)].id = newOption.id
         } else {
-          contextChange.data.after.value.options[naclCase(newOption.value)].id = newOption.id
+          (contextChange.data.after.value.options[naclCase(newOption.value)]
+            ?? contextChange.data.after.value.options[getFieldName(contextChange, newOption.value)])
+            .id = newOption.id
         }
       })
     }

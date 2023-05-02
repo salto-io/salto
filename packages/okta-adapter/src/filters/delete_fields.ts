@@ -15,11 +15,13 @@
 */
 import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME } from '../constants'
+import { APPLICATION_TYPE_NAME, AUTHORIZATION_POLICY_RULE, GROUP_TYPE_NAME, POLICY_TYPE_NAMES } from '../constants'
 
 const TYPES_TO_FIELDS: Record<string, string[]> = {
   [GROUP_TYPE_NAME]: ['roles'],
   [APPLICATION_TYPE_NAME]: ['appUserSchema'],
+  [AUTHORIZATION_POLICY_RULE]: ['policyRules'],
+  ...Object.fromEntries(POLICY_TYPE_NAMES.map(typeName => [typeName, ['policyRules']])),
 }
 
 /**

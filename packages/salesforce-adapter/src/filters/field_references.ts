@@ -88,6 +88,7 @@ const contextStrategyLookup: Record<
   neighborCPQRuleLookup: neighborContextFunc({ contextFieldName: CPQ_RULE_LOOKUP_OBJECT_FIELD }),
   neighborLookupValueTypeLookup: neighborContextFunc({ contextFieldName: 'lookupValueType' }),
   neighborObjectLookup: neighborContextFunc({ contextFieldName: 'object' }),
+  neighborSobjectLookup: neighborContextFunc({ contextFieldName: 'sobjectType' }),
   parentObjectLookup: neighborContextFunc({ contextFieldName: 'object', levelsUp: 1 }),
   parentInputObjectLookup: neighborContextFunc({ contextFieldName: 'inputObject', levelsUp: 1 }),
   parentOutputObjectLookup: neighborContextFunc({ contextFieldName: 'outputObject', levelsUp: 1 }),

@@ -16,16 +16,17 @@
 
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { GROUP_TYPE_NAME, OKTA } from '../../src/constants'
-import groupRolesFilter from '../../src/filters/group_roles'
+import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
+import deleteRecurseIntoFilter from '../../src/filters/delete_fields'
 import { getFilterParams } from '../utils'
 
-describe('groupRolesFilter', () => {
+describe('deleteFieldsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
+  const applicationType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
 
   beforeEach(() => {
-    filter = groupRolesFilter(getFilterParams()) as typeof filter
+    filter = deleteRecurseIntoFilter(getFilterParams()) as typeof filter
   })
 
   describe('onFetch', () => {
@@ -35,18 +36,31 @@ describe('groupRolesFilter', () => {
         groupType,
         { id: 'AAA', profile: { name: 'everyone' }, roles: ['123', '1234'] },
       )
-      await filter.onFetch?.([groupType, groupInstance])
+      const applicationInstance = new InstanceElement(
+        'application',
+        applicationType,
+        { label: 'app', appUserSchema: { id: '123' } },
+      )
+      await filter.onFetch?.([groupType, groupInstance, applicationInstance])
       expect(groupInstance.value.roles).toEqual(undefined)
       expect(groupInstance.value).toEqual({ id: 'AAA', profile: { name: 'everyone' } },)
+      expect(applicationInstance.value.appUserSchema).toEqual(undefined)
+      expect(applicationInstance.value).toEqual({ label: 'app' })
     })
-    it('should do nothing if roles field is missing', async () => {
+    it('should do nothing if field is missing', async () => {
       const groupInstance = new InstanceElement(
         'group',
         groupType,
         { id: 'BBB', profile: { name: 'nobody', description: 'hi' } },
       )
-      await filter.onFetch?.([groupInstance, groupType])
+      const applicationInstance = new InstanceElement(
+        'application',
+        applicationType,
+        { label: 'app', status: 'ACTIVE' },
+      )
+      await filter.onFetch?.([groupInstance, groupType, applicationInstance])
       expect(groupInstance.value).toEqual({ id: 'BBB', profile: { name: 'nobody', description: 'hi' } })
+      expect(applicationInstance.value).toEqual({ label: 'app', status: 'ACTIVE' })
     })
   })
 })

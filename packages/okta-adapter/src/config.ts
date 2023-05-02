@@ -328,6 +328,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
         },
+        {
+          type: 'AppUserSchema',
+          toField: 'appUserSchema',
+          context: [{ name: 'appId', fromField: 'id' }],
+        },
       ],
     },
   },
@@ -341,6 +346,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
+        { fieldName: 'appUserSchema', fieldType: 'list<AppUserSchema>' },
       ],
       idFields: ['label'],
       serviceIdField: 'id',
@@ -351,6 +357,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
+      standaloneFields: [{ fieldName: 'appUserSchema' }],
     },
     deployRequests: {
       add: {
@@ -385,6 +392,44 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           applicationId: 'id',
         },
       },
+    },
+  },
+  AppUserSchema: {
+    request: {
+      url: '/api/v1/meta/schemas/apps/{appId}/default',
+    },
+    transformation: {
+      idFields: ['title'],
+      dataField: '.',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
+        { fieldName: '$schema' },
+        { fieldName: 'type' },
+        { fieldName: 'properties' }
+      ),
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/meta/schemas/apps/{applicationId}/default',
+        method: 'post',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+        },
+      },
+    },
+  },
+  UserSchemaPublic: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' },
+      ],
+    },
+  },
+  GroupSchemaCustom: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.GroupSchemaAttribute>' },
+      ],
     },
   },
   ApplicationCredentials: {
@@ -1186,9 +1231,11 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
       .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
     ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
-    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
+    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
+    // AppUserSchema returns UserSchema items, but we separate types because the endpoints for deploy are different
+    { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },

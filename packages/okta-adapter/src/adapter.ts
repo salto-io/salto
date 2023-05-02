@@ -41,13 +41,13 @@ import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
-import groupRolesFilter from './filters/group_roles'
+import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
 import templateUrlsFilter from './filters/template_urls'
 import { OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
-import groupSchemaFieldsRemovalFilter from './filters/group_schema_field_removal'
+import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 
 const { awu } = collections.asynciterable
 
@@ -62,7 +62,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   queryFilter,
   standardRolesFilter,
-  groupRolesFilter,
+  deleteFieldsFilter,
   userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,
@@ -80,7 +80,7 @@ export const DEFAULT_FILTERS = [
   appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
-  groupSchemaFieldsRemovalFilter,
+  schemaFieldsRemovalFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,

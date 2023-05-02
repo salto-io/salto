@@ -17,13 +17,20 @@
 import { Change, InstanceElement, ModificationChange, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
-import { GROUP_SCHEMA_TYPE_NAME } from '../constants'
+import { APP_USER_SCHEMA_TYPE_NAME, GROUP_SCHEMA_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../constants'
 
-const CUSTOM_ADDITONAL_PROPERTIES_PATH = ['definitions', 'custom', 'properties', 'additionalProperties']
+const CUSTOM_PROPERTIES_PATH = ['definitions', 'custom', 'properties']
+
+const SCHEMAS_TO_PATH: Record<string, string[]> = {
+  [GROUP_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+  [APP_USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+  [USER_SCHEMA_TYPE_NAME]: CUSTOM_PROPERTIES_PATH,
+}
 
 const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>): void => {
   const { before, after } = change.data
-  const customPropertiesPath = before.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
+  const path = SCHEMAS_TO_PATH[before.elemID.typeName]
+  const customPropertiesPath = before.elemID.createNestedID(...path)
   const beforeCustomProperties = resolvePath(before, customPropertiesPath)
   const afterCustomProperties = resolvePath(after, customPropertiesPath)
   if (beforeCustomProperties === undefined || afterCustomProperties === undefined) {
@@ -40,8 +47,9 @@ const addNullToRemovedProperties = (change: ModificationChange<InstanceElement>)
 }
 
 const deletePropertiesWithNull = (instance: InstanceElement): void => {
-  const customAdditionalPropertiesPath = instance.elemID.createNestedID(...CUSTOM_ADDITONAL_PROPERTIES_PATH)
-  const customProperties = resolvePath(instance, customAdditionalPropertiesPath)
+  const path = SCHEMAS_TO_PATH[instance.elemID.typeName]
+  const customPropertiesPath = instance.elemID.createNestedID(...path)
+  const customProperties = resolvePath(instance, customPropertiesPath)
 
   Object.keys(customProperties).forEach(property => {
     if (customProperties[property] === null) {
@@ -49,18 +57,19 @@ const deletePropertiesWithNull = (instance: InstanceElement): void => {
     }
   })
 }
+
 /**
- * When a user wants to delete a custom property from the group schema, the custom property is set to null.
- * This is in order for Okta to delete the property from the group schema.
+ * When a user wants to delete a custom property from a schema, the custom property is set to null.
+ * This is in order for Okta to delete the property from the schema.
  * This filter removes the custom properties that are set to null in the onDeploy.
  */
-const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
-  name: 'groupSchemaFieldsRemovalFilter',
+const schemaFieldsRemovalFilter: FilterCreator = () => ({
+  name: 'schemaFieldsRemovalFilter',
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes
       .filter(isModificationChange)
       .filter(isInstanceChange)
-      .filter(change => getChangeData(change).elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
+      .filter(change => Object.keys(SCHEMAS_TO_PATH).includes(getChangeData(change).elemID.typeName))
       .forEach(change => addNullToRemovedProperties(change))
   },
   onDeploy: async (changes: Change<InstanceElement>[]) => {
@@ -68,10 +77,10 @@ const groupSchemaFieldsRemovalFilter: FilterCreator = () => ({
       .filter(isModificationChange)
       .filter(isInstanceChange)
       .map(getChangeData)
-      .filter(instance => instance.elemID.typeName === GROUP_SCHEMA_TYPE_NAME)
+      .filter(instance => Object.keys(SCHEMAS_TO_PATH).includes(instance.elemID.typeName))
       .forEach(instance => deletePropertiesWithNull(instance))
   },
 }
 )
 
-export default groupSchemaFieldsRemovalFilter
+export default schemaFieldsRemovalFilter

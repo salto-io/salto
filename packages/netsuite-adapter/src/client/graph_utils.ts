@@ -18,6 +18,7 @@ import _ from 'lodash'
 import wu from 'wu'
 import { CustomizationInfo } from './types'
 
+
 export type SDFObjectNode = {
   elemIdFullName: string
   serviceid: string
@@ -28,15 +29,26 @@ export type SDFObjectNode = {
 export class GraphNode<T> {
   edges: Map<T[keyof T], GraphNode<T>>
   value: T
+  id: string
 
-  constructor(value: T) {
+  constructor(value: T, id: string) {
     this.value = value
     this.edges = new Map<T[keyof T], GraphNode<T>>()
+    this.id = id
   }
 
   addEdge(key: keyof T, node: GraphNode<T>): void {
     this.edges.set(node.value[key], node)
   }
+}
+
+type DFSParameters<T>= {
+  node: GraphNode<T>
+  visited: Set<T[keyof T]>
+  resultArray?: GraphNode<T>[]
+  // optional parameters for cycle detection
+  path?: T[keyof T][]
+  cycle?: T[keyof T][]
 }
 
 export class Graph<T> {
@@ -57,13 +69,19 @@ export class Graph<T> {
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Set<T[keyof T]>, resultArray: GraphNode<T>[]): void {
+  private dfs(dfsParams: DFSParameters<T>): void {
+    const { node, visited, resultArray = [], path = [], cycle = [] } = dfsParams
     if (visited.has(node.value[this.key])) {
+      const cycleStartIndex = path.indexOf(node.value[this.key])
+      if (cycleStartIndex !== -1) {
+        // node is visited & in path mean its a cycle
+        cycle.push(...(path.slice(cycleStartIndex)))
+      }
       return
     }
     visited.add(node.value[this.key])
     node.edges.forEach(dependency => {
-      this.dfs(dependency, visited, resultArray)
+      this.dfs({ node: dependency, visited, resultArray, path: path.concat(node.value[this.key]), cycle })
     })
     resultArray.push(node)
   }
@@ -72,7 +90,7 @@ export class Graph<T> {
     const visited = new Set<T[keyof T]>()
     const sortedNodes: GraphNode<T>[] = []
     Array.from(this.nodes.values()).forEach(node => {
-      this.dfs(node, visited, sortedNodes)
+      this.dfs({ node, visited, resultArray: sortedNodes })
     })
     return sortedNodes.reverse()
   }
@@ -83,7 +101,7 @@ export class Graph<T> {
     }
     const visited = new Set<T[keyof T]>()
     const dependencies: GraphNode<T>[] = []
-    this.dfs(startNode, visited, dependencies)
+    this.dfs({ node: startNode, visited, resultArray: dependencies })
     return dependencies
   }
 
@@ -107,5 +125,17 @@ export class Graph<T> {
       })
       this.nodes.delete(key)
     }
+  }
+
+  findCycle(): T[keyof T][] {
+    const visited = new Set<T[keyof T]>()
+    const nodesInCycle: T[keyof T][] = []
+
+    Array.from(this.nodes.values()).forEach(node => {
+      if (!visited.has(node.value[this.key])) {
+        this.dfs({ node, visited, cycle: nodesInCycle })
+      }
+    })
+    return nodesInCycle
   }
 }

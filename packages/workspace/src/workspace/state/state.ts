@@ -71,6 +71,10 @@ export interface State extends ElementsSource {
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
+  updatePathIndex(
+      changedUnmergedElements: Element[],
+      unmergedElementIDs?: Set<string>,
+  ): Promise<void>
   updateStateFromChanges(args: updateStateElementsArgs): Promise<void>
 }
 

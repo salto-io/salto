@@ -722,7 +722,7 @@ describe('handleHiddenChanges', () => {
         const hiddenObjClone = hiddenObj.clone()
         delete hiddenObjClone.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
         await state.set(hiddenObjClone)
-        await state.overridePathIndex([obj, hiddenObj, inst, hidden1, hidden2])
+        await state.updatePathIndex([obj, hiddenObj, inst, hidden1, hidden2])
 
         const fromHiddenChange = createRemoveChange(
           true,

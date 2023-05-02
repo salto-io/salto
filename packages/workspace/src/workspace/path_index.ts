@@ -214,13 +214,18 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
 export const updateTopLevelPathIndex = async (
   current: PathIndex,
   changedUnmergedElements: Element[],
-  unmergedElementIDs: Set<string>,
+  unmergedElementIDs?: Set<string>,
 ): Promise<void> => log.time(async () => {
-  // Entries that exists in the index but not in the unmerged elements were deleted and should be removed from the index
-  const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
-  const entries = getTopLevelPathHints(changedUnmergedElements)
+  // If no unmergedElementIDs were passed, override the index with the new elements
+  if (unmergedElementIDs === undefined) {
+    await current.clear()
+  } else {
+    // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
+    const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
+    await current.deleteAll(entriesToDelete)
+  }
 
-  await current.deleteAll(entriesToDelete)
+  const entries = getTopLevelPathHints(changedUnmergedElements)
   await current.setAll(entries)
 }, 'updateTopLevelPathIndex')
 

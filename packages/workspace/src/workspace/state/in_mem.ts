@@ -92,6 +92,15 @@ export const buildInMemState = (
     return combinedElement.merged.get(elemID.getFullName())
   }
 
+  const updateStatePathIndex = async (
+    changedUnmergedElements: Element[],
+    unmergedElementIDs?: Set<string>,
+  ): Promise<void> => {
+    const currentStateData = await stateData()
+    await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
+    await updatePathIndex(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
+  }
+
   const updateStateElements = async (changes: DetailedChange<Element>[]): Promise<void> => log.time(async () => {
     const state = (await stateData()).elements
     const changesByTopLevelElement = _.groupBy(
@@ -190,6 +199,7 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
+    updatePathIndex: updateStatePathIndex,
     updateStateFromChanges: async (
       { serviceToStateChanges, unmergedElements, fetchAccounts }: updateStateElementsArgs) => {
       await updateStateElements(serviceToStateChanges)
@@ -210,9 +220,7 @@ export const buildInMemState = (
       )
       const unmergedElementIDs = new Set(unmergedElements.map(elem => elem.elemID.getFullName()))
 
-      const currentStateData = await stateData()
-      await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
-      await updatePathIndex(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
+      await updateStatePathIndex(changedUnmergedElements, unmergedElementIDs)
     },
   }
 }

@@ -15,8 +15,10 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference, createRefToElmWithValue, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
-  overridePathIndex, splitElementByPath, getTopLevelPathHints } from '../../src/workspace/path_index'
+import {
+  updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
+  overridePathIndex, splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex,
+} from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
@@ -179,9 +181,9 @@ describe('topLevelPathIndex', () => {
   it('should only add new top level elements paths to index', async () => {
     const topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
     await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updatePathIndex({
-      index: topLevelPathIndex,
-      elements: [
+    await updateTopLevelPathIndex(
+      topLevelPathIndex,
+      [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -189,10 +191,8 @@ describe('topLevelPathIndex', () => {
         // when there is a partial fetch, the account name will be in accountsToMaintain
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
-      ],
-      accountsToMaintain: ['salto'],
-      isTopLevel: true,
-    })
+      ]
+    )
     expect(await awu(topLevelPathIndex.entries()).toArray()).toEqual(
       [
         ...getTopLevelPathHints(
@@ -215,9 +215,9 @@ describe('updatePathIndex', () => {
   beforeAll(async () => {
     index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(getElementsPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updatePathIndex({
+    await updatePathIndex(
       index,
-      elements: [
+      [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -225,10 +225,8 @@ describe('updatePathIndex', () => {
         // when there is a partial fetch, the account name will be in accountsToMaintain
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
-      ],
-      accountsToMaintain: ['salto'],
-      isTopLevel: false,
-    })
+      ]
+    )
   })
   it('should add new elements with proper paths', async () => {
     expect(await index.get(multiPathObjID.getFullName()))

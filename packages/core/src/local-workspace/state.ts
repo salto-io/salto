@@ -31,7 +31,6 @@ import { hash, collections, promises, values as lowerdashValues } from '@salto-i
 import origGlob from 'glob'
 import semver from 'semver'
 import { promisify } from 'util'
-
 import { version } from '../generated/version.json'
 
 const { isDefined } = lowerdashValues
@@ -354,6 +353,13 @@ export const localState = (
       const stateFiles = await findStateFiles(currentFilePrefix)
       await inMemState.clear()
       await Promise.all(stateFiles.map(filename => rm(filename)))
+      setDirty()
+    },
+    updatePathIndex: async (
+      changedUnmergedElements: Element[],
+      unmergedElementIDs: Set<string>
+    ): Promise<void> => {
+      await inMemState.updatePathIndex(changedUnmergedElements, unmergedElementIDs)
       setDirty()
     },
     updateStateFromChanges: async ({ serviceToStateChanges, unmergedElements, fetchAccounts } : {

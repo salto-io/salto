@@ -319,14 +319,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc
     )
 
-    const { elements: dataElements, largeTypesError } = await dataElementsPromise
-    if (!_.isEmpty(largeTypesError)) {
-      failedTypes.excludedTypes = (failedTypes.excludedTypes ?? []).concat(largeTypesError)
+    const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
+    if (!_.isEmpty(dataTypeError)) {
+      failedTypes.excludedTypes = (failedTypes.excludedTypes ?? []).concat(dataTypeError)
     }
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
-    const customRecords = await customRecordsPromise
+    const { elements: customRecords, largeTypesError: customRecordTypeError } = await customRecordsPromise
+    if (!_.isEmpty(customRecordTypeError)) {
+      failedTypes.excludedTypes = (failedTypes.excludedTypes ?? []).concat(customRecordTypeError)
+    }
 
     const elements = [
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),

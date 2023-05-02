@@ -131,6 +131,7 @@ export type GetAllResponse = {
 export type CustomRecordTypeRecords = {
   type: string
   records: RecordValue[]
+  largeTypesError: boolean
 }
 
 export const SOAP_FIELDS_TYPES = {

@@ -596,6 +596,35 @@ describe('soap_client', () => {
         largeTypesError: [],
       })
     })
+    it('should exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 51,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
+          },
+        },
+      }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 5000,
+      )
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [],
+        largeTypesError: ['subsidiary'],
+      })
+    })
 
     it('should return empty record list when subsidiaries is disabled', async () => {
       searchAsyncMock.mockResolvedValue([{
@@ -674,33 +703,6 @@ describe('soap_client', () => {
           },
         },
       })
-    })
-
-    it('should exclude types with too many instances from search', async () => {
-      searchAsyncMock.mockResolvedValue([{
-        searchResult: {
-          totalPages: 51,
-          searchId: 'someId',
-          recordList: {
-            record: [{
-              id: 'id1',
-              attributes: {
-                internalId: '1',
-              },
-            }],
-          },
-        },
-      }])
-      client = new SoapClient(
-        {
-          accountId: 'ACCOUNT_ID',
-          suiteAppTokenId: 'tokenId',
-          suiteAppTokenSecret: 'tokenSecret',
-        },
-        fn => fn(),
-        (_type: string, count: number) => count > 5000,
-      )
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [], largeTypesError: ['subsidiary'] })
     })
 
     it('Should throw an error if got invalid search results', async () => {
@@ -915,7 +917,35 @@ describe('soap_client', () => {
             internalId: '2',
           },
         }],
+        largeTypesError: false,
       }])
+    })
+
+    it('should exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 51,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
+          },
+        },
+      }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 5000,
+      )
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{ largeTypesError: true, records: [], type: 'custrecord' }])
     })
   })
 

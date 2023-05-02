@@ -88,6 +88,11 @@ export type DataElementsResult = {
   largeTypesError: string[]
 }
 
+export type CustomRecordResult = {
+  elements: InstanceElement[]
+  largeTypesError: string[]
+}
+
 type OptionalFeature = { status: 'optional'; canBeRequired: boolean }
 type RequiredFeature = { status: 'required' }
 type ExcludedFeature = { status: 'excluded' }

@@ -410,7 +410,7 @@ export default class SoapClient {
 
         if (namespace !== undefined) {
           const response = await this.search(type, namespace, subtypes)
-          return (typeof response === 'string') ? { largeTypesError: [response] } : { records: response }
+          return response.largeTypesError ? { largeTypesError: [type] } : { records: response.records }
         }
         log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
         const response = await this.sendGetAllRequest(type)
@@ -423,10 +423,7 @@ export default class SoapClient {
 
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
     return Promise.all(
-      customRecordTypes.map(async type => ({
-        type,
-        records: await this.searchCustomRecords(type),
-      }))
+      customRecordTypes.map(async type => this.searchCustomRecords(type))
     )
   }
 
@@ -590,10 +587,16 @@ export default class SoapClient {
   private async getAllSearchPages(
     initialSearchResponse: SearchResponse,
     type: string
-  ): Promise<SearchResponse[]> {
+  ): Promise<{ records: RecordValue[]; largeTypesError: boolean }> {
+    const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
+      searchResponse.searchResult.recordList?.record || []
     const { totalPages, searchId } = initialSearchResponse.searchResult
     if (totalPages <= 1) {
-      return [initialSearchResponse]
+      return { records: recordFromSearchResponse(initialSearchResponse), largeTypesError: false }
+    }
+    if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
+      log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
+      return { records: [], largeTypesError: true }
     }
     const responses = await Promise.all(
       _.range(2, totalPages + 1).map(async i => {
@@ -602,34 +605,31 @@ export default class SoapClient {
         return res
       })
     )
-    return [initialSearchResponse].concat(responses)
+    return {
+      records: [initialSearchResponse].concat(responses).flatMap(recordFromSearchResponse),
+      largeTypesError: false,
+    }
   }
 
   private async search(
     type: string,
     namespace: string,
     subtypes?: string[]
-  ): Promise<RecordValue[] | string> {
-    const firstSearchPage = await this.sendSearchRequest(type, namespace, subtypes)
-    if (this.instanceLimiter(type, firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE)) {
-      log.info(`Excluding type ${type} as it has about ${firstSearchPage.searchResult.totalPages * SEARCH_PAGE_SIZE} elements.`)
-      return type
-    }
-    const responses = await this.getAllSearchPages(
-      firstSearchPage,
+  ): Promise<{ records: RecordValue[]; largeTypesError: boolean }> {
+    return this.getAllSearchPages(
+      await this.sendSearchRequest(type, namespace, subtypes),
       type
     )
-    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
   }
 
   private async searchCustomRecords(
     customRecordType: string
-  ): Promise<RecordValue[]> {
+  ): Promise<CustomRecordTypeRecords> {
     const responses = await this.getAllSearchPages(
       await this.sendCustomRecordsSearchRequest(customRecordType),
       customRecordType
     )
-    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
+    return { type: customRecordType, ...responses }
   }
 
   @retryOnBadResponse

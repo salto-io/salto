@@ -83,7 +83,7 @@ describe('custom records', () => {
       }),
     ]
     it('should return elements', async () => {
-      const instances = await getCustomRecords(
+      const { elements: instances } = await getCustomRecords(
         client as unknown as NetsuiteClient,
         customRecordTypes,
         query as unknown as NetsuiteQuery,

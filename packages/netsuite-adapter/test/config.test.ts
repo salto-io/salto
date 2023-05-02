@@ -17,7 +17,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiter, UNLIMITED_INSTANCES_VALUE, validateClientConfig, LARGE_TYPES_EXCLUDED_MESSAGE } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -117,6 +117,7 @@ describe('config', () => {
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
+        { name: 'excludedTypeTest' },
       ],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
       customRecords: [],
@@ -124,7 +125,7 @@ describe('config', () => {
     const configChange = getConfigFromConfigChanges(
       true,
       { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
-      { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
+      { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
       currentConfigWithFetch,
     )
     expect(configChange?.config[0]
@@ -145,8 +146,9 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message)
-      .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
+    expect(configChange?.message).toBe(formatConfigSuggestionsReasons([
+      STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE, LARGE_TYPES_EXCLUDED_MESSAGE,
+    ]))
   })
 
   it('should combine configuration messages when needed', () => {
@@ -179,6 +181,87 @@ describe('config', () => {
         .toContainEqual({
           name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
         })
+    })
+  })
+
+  describe('instanceLimiter', () => {
+    describe('with maxInstancesPerType in the config', () => {
+      const limiter = instanceLimiter({ maxInstancesPerType: [
+        { name: 'customsegment', limit: 30 },
+        { name: 'unlimited', limit: UNLIMITED_INSTANCES_VALUE },
+      ] })
+
+      it('should limit according to type if exists', () => {
+        expect(limiter('customsegment', 31)).toBeTruthy()
+        expect(limiter('customsegment', 29)).toBeFalsy()
+      })
+      it('should limit according to default if type does not exist', () => {
+        expect(limiter('test', 2001)).toBeTruthy()
+        expect(limiter('test', 1999)).toBeFalsy()
+      })
+      it('should not limit at all if the type is unlimited', () => {
+        expect(limiter('unlimited', 100_000_000)).toBeFalsy()
+      })
+    })
+    describe('without maxInstancesPerType in the config', () => {
+      const limiter = instanceLimiter({})
+
+      it('should limit according to type if exists', () => {
+        expect(limiter('customrecordtype', 10_001)).toBeTruthy()
+        expect(limiter('customrecordtype', 9999)).toBeFalsy()
+      })
+      it('should limit according to default if type does not exist', () => {
+        expect(limiter('test', 2001)).toBeTruthy()
+        expect(limiter('test', 1999)).toBeFalsy()
+      })
+    })
+
+    it('should limit according to the largest matching limit', () => {
+      const limiter = instanceLimiter({ maxInstancesPerType: [
+        { name: 'customsegment', limit: 500 },
+        { name: 'custom.*', limit: 400 },
+        { name: '.*', limit: 300 },
+      ] })
+      expect(limiter('customsegment', 499)).toBeFalsy()
+      expect(limiter('customsegment', 501)).toBeTruthy()
+
+      expect(limiter('customrecordtype', 399)).toBeFalsy()
+      expect(limiter('customrecordtype', 401)).toBeTruthy()
+
+      expect(limiter('test', 299)).toBeFalsy()
+      expect(limiter('test', 301)).toBeTruthy()
+    })
+  })
+
+  describe('validateClientConfig', () => {
+    describe('validateMaxInstancesPerType', () => {
+      it('should validate maxInstancesPerType is the correct object with valid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should validate also customrecordtype instances', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customrecordForTesting', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the wrong object', () => {
+        const config = {
+          maxInstancesPerType: [{ wrong_name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the correct object with invalid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'not_supported_type', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
     })
   })
 })

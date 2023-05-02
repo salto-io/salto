@@ -444,6 +444,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
     },
   },
+  ApplicationVisibility: {
+    transformation: {
+      // The field cannot be changed and might include non multienv values
+      fieldsToOmit: [{ fieldName: 'appLinks' }],
+    },
+  },
   api__v1__meta__types__user: {
     transformation: {
       // by default there is an unwanted traversal here

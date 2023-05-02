@@ -207,8 +207,8 @@ describe('config', () => {
       const limiter = instanceLimiter({})
 
       it('should limit according to type if exists', () => {
-        expect(limiter('customrecordtype', 10_001)).toBeTruthy()
-        expect(limiter('customrecordtype', 9999)).toBeFalsy()
+        expect(limiter('customrecord_type', 10_001)).toBeTruthy()
+        expect(limiter('customrecord_type', 9999)).toBeFalsy()
       })
       it('should limit according to default if type does not exist', () => {
         expect(limiter('test', 2001)).toBeTruthy()

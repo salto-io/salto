@@ -22,7 +22,7 @@ import {
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
-  CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
+  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
@@ -42,7 +42,7 @@ export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 export const DEFAULT_MAX_INSTANCES_VALUE = 2000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
-  { name: 'customrecord.*', limit: 10_000 },
+  { name: `${CUSTOM_RECORD_TYPE_PREFIX}.*`, limit: 10_000 },
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20

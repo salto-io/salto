@@ -50,6 +50,51 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: SAPApiConfig['types'] = {
       idFields: ['idText'],
     },
   },
+  EnergySourceTypes: {
+    request: {
+      url: '/EnergySourceTypes?$expand=texts,localized',
+    },
+  },
+  GridTypes: {
+    request: {
+      url: '/GridTypes?$expand=texts,localized',
+    },
+  },
+  OrdererTypes: {
+    request: {
+      url: '/OrdererTypes?$expand=texts,localized',
+    },
+  },
+  MCMService_EnergySourceTypes: {
+    transformation: {
+      standaloneFields: [{ fieldName: 'texts' }],
+    },
+  },
+  MCMService_GridTypes: {
+    transformation: {
+      standaloneFields: [{ fieldName: 'texts' }],
+    },
+  },
+  MCMService_OrdererTypes: {
+    transformation: {
+      standaloneFields: [{ fieldName: 'texts' }],
+    },
+  },
+  MCMService_EnergySourceTypes_texts: {
+    transformation: {
+      idFields: ['locale'],
+    },
+  },
+  MCMService_GridTypes_texts: {
+    transformation: {
+      idFields: ['locale'],
+    },
+  },
+  MCMService_OrdererTypes_texts: {
+    transformation: {
+      idFields: ['locale'],
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: SAPApiConfig['swagger'] = {
@@ -62,6 +107,8 @@ export const SUPPORTED_TYPES = {
   MCMService_MCIRateTypes: ['MCIRateTypes'],
   MCMService_PowerRangeTypes: ['PowerRangeTypes'],
   MCMService_MCMFormulas: ['MCMFormulas'],
+  MCMService_GridTypes: ['GridTypes'],
+  MCMService_OrdererTypes: ['OrdererTypes'],
 }
 
 export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {
@@ -70,6 +117,7 @@ export const DEFAULT_API_DEFINITIONS: SAPApiConfig = {
     transformation: {
       idFields: DEFAULT_ID_FIELDS,
       fieldsToOmit: FIELDS_TO_OMIT,
+      nestStandaloneInstances: true,
     },
   },
   types: DEFAULT_TYPE_CUSTOMIZATIONS,

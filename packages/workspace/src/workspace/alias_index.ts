@@ -39,10 +39,11 @@ const getAlias = (element: Element): string | undefined => element.annotations[C
 
 const calculateAliasChange = (
   afterElement: Element,
-  aliasBefore: string | undefined,
-  aliasAfter: string | undefined
+  beforeElement: Element,
 )
   : Change<Element>[] => {
+  const aliasBefore = getAlias(beforeElement)
+  const aliasAfter = getAlias(afterElement)
   if (aliasBefore !== aliasAfter) {
     if (aliasAfter !== undefined) {
       return [toChange({ after: afterElement })]
@@ -66,7 +67,7 @@ const getChangedFields = (change: ModificationChange<ObjectType>): Change<Elemen
     .flatMap(afterField => {
       const field = change.data.before.fields[afterField.name]
       return isField(field)
-        ? calculateAliasChange(afterField, getAlias(field), getAlias(afterField))
+        ? calculateAliasChange(afterField, field)
         : []
     })
   return fieldAliasChanges
@@ -81,16 +82,14 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
         const changedFields = getChangedFields(change)
         const objAliasModification = calculateAliasChange(
           change.data.after,
-          getAlias(change.data.before),
-          getAlias(change.data.after)
+          change.data.before,
         )
         return changedFields.concat(objAliasModification)
       }
       if (isInstanceChange(change)) {
         const instAliasModification = calculateAliasChange(
           change.data.after,
-          getAlias(change.data.before),
-          getAlias(change.data.after)
+          change.data.before,
         )
         return _.isEmpty(instAliasModification) ? undefined : instAliasModification
       }
@@ -115,18 +114,18 @@ const getAllRelevantChanges = (changes: Change<Element>[]): Change<Element>[] =>
   }).filter(isDefined)
 
 const getRemovalsAndAdditions = (changes: Change<Element>[]):
-  {additions: Change<Element>[]; removals:Change<Element>[] } => {
+  {overrides: Change<Element>[]; removals:Change<Element>[] } => {
   const [additions, removals] = _.partition(
     getAllRelevantChanges(changes),
     isAdditionChange
   )
-  return { additions, removals }
+  return { overrides: additions, removals }
 }
 
 const getInfoForIndex = (changes: Change<Element>[]):
   { removalNames: string[]; additionsIdsToAlias: Record<string, string> } => {
-  const { additions, removals } = getRemovalsAndAdditions(changes)
-  const filteredAdditions = additions.map(getChangeData)
+  const { overrides, removals } = getRemovalsAndAdditions(changes)
+  const filteredAdditions = overrides.map(getChangeData)
     .filter(elem => getAlias(elem) !== undefined)
   const additionsIdsToAlias: Record<string, string> = _.mapValues(
     _.keyBy(

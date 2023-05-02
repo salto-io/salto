@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, ChangeDataType, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import immutableChangesValidator from '../../src/change_validators/immutable_changes'
-import { NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
 import { fileType } from '../../src/types/file_cabinet_types'
@@ -42,13 +42,14 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
       })
 
-      it('should have change error for type', async () => {
+      it('should have change error for customrecord type', async () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotationRefsOrTypes: {
             [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
           },
           annotations: {
+            metadataType: CUSTOM_RECORD_TYPE,
             [SCRIPT_ID]: 'customrecord1',
           },
         })
@@ -62,9 +63,30 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(type.elemID)
       })
 
-      it('should have change error for field', async () => {
+      it('should not have change error for non customrecord type', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'non_customrecord1'),
+          annotationRefsOrTypes: {
+            [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+          annotations: {
+            [SCRIPT_ID]: 'non_customrecord1',
+          },
+        })
+        const after = type.clone()
+        after.annotations[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: type, after })]
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have change error for custom field', async () => {
         const field = new Field(
-          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            annotations: { metadataType: CUSTOM_RECORD_TYPE },
+          }),
           'custom_field',
           BuiltinTypes.STRING,
           { [SCRIPT_ID]: 'custom_field' },
@@ -78,6 +100,21 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
       })
+
+      it('should not have change error for internal field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'non_custom_field',
+          BuiltinTypes.STRING,
+          { [SCRIPT_ID]: 'non_custom_field' },
+        )
+        const after = field.clone()
+        after.annotations[SCRIPT_ID] = 'modified'
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ before: field, after })]
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
     })
     describe('is missing on added change', () => {
       it('should have change error for custom type', async () => {
@@ -90,11 +127,14 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(entityCustomFieldInstance.elemID)
       })
 
-      it('should have change error for type', async () => {
+      it('should have change error for customrecord type', async () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotationRefsOrTypes: {
             [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+          annotations: {
+            metadataType: CUSTOM_RECORD_TYPE,
           },
         })
         const changeErrors = await immutableChangesValidator(
@@ -105,9 +145,25 @@ describe('customization type change validator', () => {
         expect(changeErrors[0].elemID).toEqual(type.elemID)
       })
 
-      it('should have change error for field', async () => {
+      it('should not have change error for non customrecord type', async () => {
+        const type = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'non_customrecord1'),
+          annotationRefsOrTypes: {
+            [SCRIPT_ID]: BuiltinTypes.SERVICE_ID,
+          },
+        })
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: type })]
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should have change error for custom field with customrecord parent', async () => {
         const field = new Field(
-          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          new ObjectType({
+            elemID: new ElemID(NETSUITE, 'customrecord1'),
+            annotations: { metadataType: CUSTOM_RECORD_TYPE },
+          }),
           'custom_field',
           BuiltinTypes.STRING,
         )
@@ -117,6 +173,30 @@ describe('customization type change validator', () => {
         expect(changeErrors).toHaveLength(1)
         expect(changeErrors[0].severity).toEqual('Error')
         expect(changeErrors[0].elemID).toEqual(field.elemID)
+      })
+
+      it('should not have change error for custom field with non customrecord parent', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'non_customrecord1') }),
+          'custom_field',
+          BuiltinTypes.STRING,
+        )
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: field })]
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('should not have change error for internal field', async () => {
+        const field = new Field(
+          new ObjectType({ elemID: new ElemID(NETSUITE, 'customrecord1') }),
+          'non_custom_field',
+          BuiltinTypes.STRING,
+        )
+        const changeErrors = await immutableChangesValidator(
+          [toChange({ after: field })]
+        )
+        expect(changeErrors).toHaveLength(0)
       })
     })
 
@@ -143,6 +223,9 @@ describe('customization type change validator', () => {
         const type = new ObjectType({
           elemID: new ElemID(NETSUITE, 'customrecord1'),
           annotationRefsOrTypes: {
+          },
+          annotations: {
+            metadataType: CUSTOM_RECORD_TYPE,
           },
         })
         const changeErrors = await immutableChangesValidator(

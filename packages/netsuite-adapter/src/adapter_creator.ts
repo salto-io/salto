@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams, validateFetchConfig } from './config'
+import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, NetsuiteConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
 import { NETSUITE } from './constants'
 import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
@@ -99,6 +99,7 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
     client,
     filePathRegexSkipList,
     typesToSkip,
+    suiteAppClient,
   } = _.pick(config, Object.values(CONFIG))
 
   if (filePathRegexSkipList !== undefined) {
@@ -145,6 +146,11 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
   if (deploy !== undefined) {
     validatePlainObject(deploy, CONFIG.deploy)
     validateDeployParams(deploy)
+  }
+
+  if (suiteAppClient !== undefined) {
+    validatePlainObject(suiteAppClient, CONFIG.suiteAppClient)
+    validateSuiteAppClientParams(suiteAppClient)
   }
 }
 

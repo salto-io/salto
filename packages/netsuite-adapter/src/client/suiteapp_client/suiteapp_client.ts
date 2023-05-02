@@ -36,7 +36,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
-import { DEFAULT_AXIOS_TIMEOUT_IN_SECONDS, DEFAULT_CONCURRENCY } from '../../config'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
@@ -122,7 +122,7 @@ export default class SuiteAppClient {
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
 
     this.axiosClient = axios.create({ timeout:
-      (params.config?.httpTimeoutLimitInSeconds ?? DEFAULT_AXIOS_TIMEOUT_IN_SECONDS) * 1000 })
+      (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000 })
     const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
     axiosRetry(
       this.axiosClient,

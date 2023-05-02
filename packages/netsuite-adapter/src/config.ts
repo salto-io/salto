@@ -37,7 +37,7 @@ export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_AXIOS_TIMEOUT_IN_SECONDS = 60 * 20
+export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
 
 
 const REQUIRED_FEATURE_SUFFIX = ':required'
@@ -94,7 +94,7 @@ export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
 
 export type SuiteAppClientConfig = {
   suiteAppConcurrencyLimit?: number
-  httpTimeoutLimitInSeconds?: number
+  httpTimeoutLimitInMinutes?: number
 }
 
 export type NetsuiteConfig = {
@@ -192,10 +192,10 @@ const suiteAppClientConfigType = createMatchingObjectType<SuiteAppClientConfig>(
         }),
       },
     },
-    httpTimeoutLimitInSeconds: {
+    httpTimeoutLimitInMinutes: {
       refType: BuiltinTypes.NUMBER,
       annotations: {
-        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_AXIOS_TIMEOUT_IN_SECONDS,
+        [CORE_ANNOTATIONS.DEFAULT]: DEFAULT_AXIOS_TIMEOUT_IN_MINUTES,
         [CORE_ANNOTATIONS.RESTRICTION]: createRestriction({
           min: 1,
         }),
@@ -513,6 +513,22 @@ export const validateDeployParams = (
   if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
+  }
+}
+
+export const validateSuiteAppClientParams = (
+  {
+    suiteAppConcurrencyLimit,
+    httpTimeoutLimitInMinutes,
+  }: Record<keyof SuiteAppClientConfig, unknown>
+): void => {
+  if (suiteAppConcurrencyLimit !== undefined
+    && typeof suiteAppConcurrencyLimit !== 'number') {
+    throw new Error(`Expected "suiteAppConcurrencyLimit" to be a number or to be undefined, but received:\n ${suiteAppConcurrencyLimit}`)
+  }
+  if (httpTimeoutLimitInMinutes !== undefined
+    && typeof httpTimeoutLimitInMinutes !== 'number') {
+    throw new Error(`Expected "httpTimeoutLimitInMinutes" to be a boolean or to be undefined, but received:\n ${httpTimeoutLimitInMinutes}`)
   }
 }
 

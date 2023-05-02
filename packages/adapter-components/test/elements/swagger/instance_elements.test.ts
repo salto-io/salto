@@ -409,7 +409,7 @@ describe('swagger_instance_elements', () => {
         [ADAPTER_NAME, 'Records', 'Owner', 'cat__o2'],
         [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
         [ADAPTER_NAME, 'Records', 'Owner', 'mouse__o3'],
-      ]))
+      ])
     })
     it('should extract standalone fields', async () => {
       const objectTypes = generateObjectTypes()

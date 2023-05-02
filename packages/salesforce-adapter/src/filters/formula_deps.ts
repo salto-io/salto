@@ -70,11 +70,23 @@ const referencesFromIdentifiers = async (typeInfos: FormulaIdentifierInfo[]): Pr
     ))
 )
 
+// First character in an identifier. Some identifiers start with '$', Formula Builder ones are surrounded by square
+// brackets.
+const FIRST_IDENTIFIER_CHAR = 'a-zA-Z_\\$\\['
+// Rest of the characters in an identifier
+const NOT_IDENTIFIER_CHARS = '\\s\'"()&|+/*=\\-,'
+const IDENTIFIER_CHAR = `[^${NOT_IDENTIFIER_CHARS}]`
+// If it has an open-brace after it, it's not an identifier but a function call
+const AFTER_IDENTIFIER = `[${NOT_IDENTIFIER_CHARS.replace('(', '')}]`
+const IDENTIFIER_REGEX = new RegExp(`(?:^|[^${FIRST_IDENTIFIER_CHAR}]+)([${FIRST_IDENTIFIER_CHAR}]${IDENTIFIER_CHAR}*)(?:${AFTER_IDENTIFIER}|$)`, 'mgi')
 
-const IDENTIFIER_REGEX = /(?:^|[^'"\w$]+)([^\s'"()&|+/*=\-,]+)(?:[\s),]|$)/mgi
-const extractIdentifiers = (formula: string): string[] => {
-  formula.replace(/"[^"]"/g, '""')
-  formula.replace(/'[^']'/g, '\'\'')
+const extractIdentifiers = (formulaWithStrings: string): string[] => {
+  // Just in case there's anything inside a string that looks like an identifier, let's delete the entire content of
+  // every string. We also make sure we deal with escaped quotes.
+  const formula = formulaWithStrings
+    .replace(/\\["']/g, '^')
+    .replace(/"[^"]+"/g, '""')
+    .replace(/'[^']+'/g, '\'\'')
   const identifiers: string[] = []
   let match = IDENTIFIER_REGEX.exec(formula)
   while (match) {

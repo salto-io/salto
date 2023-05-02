@@ -204,6 +204,37 @@ describe('Formula dependencies', () => {
       expect(deps).toHaveLength(1)
       expect(deps[0].reference.elemID.typeName).not.toEqual('GarbageType')
     })
+    it('should not return a reference if it is inside a string', async () => {
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = '"ISBLANK(someField__c)"'
+
+      await filter.onFetch([typeUnderTest])
+      // eslint-disable-next-line no-underscore-dangle
+      const deps1 = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps1).not.toBeDefined()
+
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = '\'ISBLANK(someField__c)\''
+      await filter.onFetch([typeUnderTest])
+      // eslint-disable-next-line no-underscore-dangle
+      const deps2 = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps2).not.toBeDefined()
+    })
+
+    it('should not return a reference if it is inside a string with escaped quotes', async () => {
+      const typeUnderTest = typeWithFormula.clone()
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = '"\\"ISBLANK(someField__c)"'
+
+      await filter.onFetch([typeUnderTest])
+      // eslint-disable-next-line no-underscore-dangle
+      const deps = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps).not.toBeDefined()
+
+      typeUnderTest.fields.someFormulaField__c.annotations[FORMULA] = '\'\\\'ISBLANK(someField__c)\''
+      await filter.onFetch([typeUnderTest])
+      // eslint-disable-next-line no-underscore-dangle
+      const deps2 = typeUnderTest.fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps2).not.toBeDefined()
+    })
   })
 
   describe('When referencing RecordType', () => {

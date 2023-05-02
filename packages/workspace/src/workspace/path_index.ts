@@ -190,16 +190,6 @@ export const updatePathIndex = async (
   await current.setAll(entriesToSet)
 }, 'updatePathIndex')
 
-
-export const overridePathIndex = async (
-  current: PathIndex,
-  unmergedElements: Element[],
-): Promise<void> => {
-  const entries = getElementsPathHints(unmergedElements)
-  await current.clear()
-  await current.setAll(entries)
-}
-
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
@@ -228,15 +218,6 @@ export const updateTopLevelPathIndex = async (
   const entries = getTopLevelPathHints(changedUnmergedElements)
   await current.setAll(entries)
 }, 'updateTopLevelPathIndex')
-
-export const overrideTopLevelPathIndex = async (
-  current: PathIndex,
-  unmergedElements: Element[],
-): Promise<void> => {
-  const entries = getTopLevelPathHints(unmergedElements)
-  await current.clear()
-  await current.setAll(entries)
-}
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>
   parsedEntries.flatMap(e => ({ key: e[0], value: e[1] }))

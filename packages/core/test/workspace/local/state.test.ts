@@ -281,18 +281,11 @@ describe('local state', () => {
     expect(await state.getStateSaltoVersion()).toBe('0.1.2')
   })
 
-  it('should override path index when asked to', async () => {
-    const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
-    await state.overridePathIndex([mockElement])
-    const entries = await awu((await state.getPathIndex()).entries()).toArray()
-    expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
-  })
-
   it('should update path index when asked to', async () => {
     const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
-    await state.updatePathIndex([mockElement], [])
+    await state.updatePathIndex([mockElement])
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
     expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })

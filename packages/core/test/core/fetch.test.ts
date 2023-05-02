@@ -1713,7 +1713,7 @@ describe('fetch from workspace', () => {
     )
 
     beforeEach(async () => {
-      await pathIndex.overridePathIndex(pi, unmergedElements.filter(
+      await pathIndex.updatePathIndex(pi, unmergedElements.filter(
         e => !e.elemID.isEqual(noPathElemID)
       ))
     })

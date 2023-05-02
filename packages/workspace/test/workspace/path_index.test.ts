@@ -17,7 +17,7 @@ import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeRefere
 import { collections } from '@salto-io/lowerdash'
 import {
   updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
-  overridePathIndex, splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex,
+  splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex,
 } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
 
@@ -428,7 +428,7 @@ describe('split element by path', () => {
   const pi = new InMemoryRemoteMap<Path[]>()
 
   beforeAll(async () => {
-    await overridePathIndex(pi, unmergedElements)
+    await updatePathIndex(pi, unmergedElements)
   })
 
   it('should split an element with multiple pathes', async () => {

@@ -225,7 +225,7 @@ const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
   }
 }
 
-const customrecordInstance = (name: string): boolean => name.startsWith('customrecord')
+const customrecordInstance = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_PREFIX)
 
 function validateMaxInstancesPerType(maxInstancesPerType: unknown): asserts maxInstancesPerType is MaxType[] {
   if (Array.isArray(maxInstancesPerType) && maxInstancesPerType.every(val => 'name' in val && 'limit' in val)) {

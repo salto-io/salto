@@ -337,6 +337,80 @@ describe('swagger_instance_elements', () => {
       expect(mockPaginator).toHaveBeenCalledWith({ url: '/owner', queryParams: undefined, recursiveQueryParams: undefined, paginationField: 'abc' }, expect.anything())
     })
 
+    it('should not extract standalone fields', async () => {
+      const objectTypes = generateObjectTypes()
+      const res = await getAllInstances({
+        paginator: mockPaginator,
+        apiConfig: {
+          typeDefaults: {
+            transformation: {
+              idFields: ['id'],
+              nestStandaloneInstances: true,
+            },
+          },
+          types: {
+            Owner: {
+              request: {
+                url: '/owner',
+              },
+              transformation: {
+                idFields: ['name'],
+              },
+            },
+            Pet: {
+              request: {
+                url: '/pet',
+                queryParams: {
+                  a: 'b',
+                },
+              },
+              transformation: {
+                standaloneFields: [
+                  { fieldName: 'owners' },
+                  { fieldName: 'primaryOwner' },
+                ],
+                nestStandaloneInstances: false,
+              },
+            },
+          },
+        },
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'Owner' },
+            { type: 'Pet' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          Owner: ['Owner'],
+          Pet: ['Pet'],
+        },
+        objectTypes,
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+      })
+      expect(res.elements).toHaveLength(8)
+      expect(res.elements.map(e => e.elemID.getFullName())).toEqual([
+        `${ADAPTER_NAME}.Owner.instance.owner2`,
+        `${ADAPTER_NAME}.Pet.instance.dog`,
+        `${ADAPTER_NAME}.Owner.instance.dog__o1`,
+        `${ADAPTER_NAME}.Owner.instance.dog__primary`,
+        `${ADAPTER_NAME}.Pet.instance.cat`,
+        `${ADAPTER_NAME}.Owner.instance.cat__o2`,
+        `${ADAPTER_NAME}.Pet.instance.mouse`,
+        `${ADAPTER_NAME}.Owner.instance.mouse__o3`,
+      ])
+      expect(res.elements.map(e => e.path)).toEqual([
+        [ADAPTER_NAME, 'Records', 'Owner', 'owner2'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'dog__o1'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'dog__primary'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'cat'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'cat__o2'],
+        [ADAPTER_NAME, 'Records', 'Pet', 'mouse'],
+        [ADAPTER_NAME, 'Records', 'Owner', 'mouse__o3'],
+      ]))
+    })
     it('should extract standalone fields', async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({
@@ -429,7 +503,8 @@ describe('swagger_instance_elements', () => {
             x: { nested: 'value' },
           },
         },
-        [ADAPTER_NAME, 'Records', 'Owner', 'dog__o1'],
+        // path has no effect on equality
+        [],
         {
           _parent: [
             new ReferenceExpression(petInst.elemID),
@@ -442,7 +517,8 @@ describe('swagger_instance_elements', () => {
         {
           name: 'primary',
         },
-        [ADAPTER_NAME, 'Records', 'Owner', 'dog__primary'],
+        // path has no effect on equality
+        [],
         {
           _parent: [
             new ReferenceExpression(petInst.elemID),
@@ -464,7 +540,8 @@ describe('swagger_instance_elements', () => {
             food2: { id: 'f2' },
           },
         },
-        [ADAPTER_NAME, 'Records', 'Pet', 'dog'],
+        // path has no effect on equality
+        [],
       ))).toBeTruthy()
     })
 

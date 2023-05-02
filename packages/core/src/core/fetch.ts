@@ -21,8 +21,8 @@ import {
   toServiceIdsString, Field, OBJECT_SERVICE_ID, InstanceElement, isInstanceElement, isObjectType,
   FIELD_NAME, INSTANCE_NAME, OBJECT_NAME, ElemIdGetter, DetailedChange, SaltoError,
   isSaltoElementError, ProgressReporter, ReadOnlyElementsSource, TypeMap, isServiceId,
-  CORE_ANNOTATIONS, AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
-  isAdditionOrModificationChange, Value, StaticFile, isElement,
+  AdapterOperationsContext, FetchResult, isAdditionChange, isStaticFile,
+  isAdditionOrModificationChange, Value, StaticFile, isElement, AuthorInformation, getAuthorInformation,
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -39,14 +39,10 @@ const { mapValuesAsync } = promises.object
 const { withLimitedConcurrency } = promises.array
 const { mergeElements } = merger
 const log = logger(module)
-const { isDefined } = values
 
 const MAX_SPLIT_CONCURRENCY = 2000
-type ChangeAuthorInformation = {
-  changedBy?: string
-  changedAt?: string
- }
-export type FetchChangeMetadata = ChangeAuthorInformation
+
+export type FetchChangeMetadata = AuthorInformation
 
 export type FetchChange = {
   // The actual change to apply to the workspace
@@ -59,18 +55,8 @@ export type FetchChange = {
   metadata?: FetchChangeMetadata
 }
 
-const getAuthorInformationFromElement = (
-  element: Element | undefined
-): ChangeAuthorInformation => {
-  if (!element) {
-    return {}
-  }
-  return _.pickBy({ changedAt: element.annotations?.[CORE_ANNOTATIONS.CHANGED_AT],
-    changedBy: element.annotations?.[CORE_ANNOTATIONS.CHANGED_BY] }, isDefined)
-}
-
 const getFetchChangeMetadata = (changedElement: Element | undefined): FetchChangeMetadata =>
-  getAuthorInformationFromElement(changedElement)
+  getAuthorInformation(changedElement)
 
 export const toAddFetchChange = (elem: Element): FetchChange => {
   const change: DetailedChange = {

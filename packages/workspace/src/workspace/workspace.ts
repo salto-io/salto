@@ -17,7 +17,7 @@ import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
-  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
@@ -47,6 +47,7 @@ import { updateChangedAtIndex } from './changed_at_index'
 import { updateReferencedStaticFilesIndex } from './static_files_index'
 import { resolve } from '../expressions'
 import { updateAliasIndex } from './alias_index'
+import { updateAuthorInformationIndex } from './author_information_index'
 
 const log = logger(module)
 
@@ -184,6 +185,7 @@ export type Workspace = {
   getReferenceTargetsIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
+  getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
   getAllChangedByAuthors: (envName?: string) => Promise<Author[]>
   getChangedElementsByAuthors: (authors: Author[], envName?: string) => Promise<ElemID[]>
   getElementNaclFiles: (id: ElemID) => Promise<string[]>
@@ -269,6 +271,7 @@ type SingleState = {
   validationErrors: RemoteMap<ValidationError[]>
   changedBy: RemoteMap<ElemID[]>
   changedAt: RemoteMap<ElemID[]>
+  authorInformation: RemoteMap<AuthorInformation>
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
@@ -391,6 +394,12 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('changedAt', envName),
             serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          authorInformation: await remoteMapCreator<AuthorInformation>({
+            namespace: getRemoteMapNamespace('authorInformation', envName),
+            serialize: async val => safeJsonStringify(val),
+            deserialize: data => JSON.parse(data),
             persistent,
           }),
           alias: await remoteMapCreator<string>({
@@ -650,6 +659,15 @@ export const loadWorkspace = async (
         stateToBuild.states[envName].merged,
         changeResult.cacheValid,
       )
+
+      await updateAuthorInformationIndex(
+        changes,
+        stateToBuild.states[envName].authorInformation,
+        stateToBuild.states[envName].mapVersions,
+        stateToBuild.states[envName].merged,
+        changeResult.cacheValid,
+      )
+
       await updateAliasIndex(
         changes,
         stateToBuild.states[envName].alias,
@@ -1144,6 +1162,13 @@ export const loadWorkspace = async (
       }
       return await (await getWorkspaceState()).states[envName]
         .referenceSources.get(id.getFullName()) ?? []
+    },
+    getElementAuthorInformation: async (id, envName = currentEnv()) => {
+      if (!id.isBaseID()) {
+        throw new Error(`getElementAuthorInformation only support base ids, received ${id.getFullName()}`)
+      }
+      return await (await getWorkspaceState()).states[envName]
+        .authorInformation.get(id.getFullName()) ?? {}
     },
     getAllChangedByAuthors,
     getChangedElementsByAuthors,

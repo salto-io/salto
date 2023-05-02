@@ -23,16 +23,14 @@ import {
   isModificationChange,
   ObjectType, isObjectTypeChange, ModificationChange, isField, isInstanceChange,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { getRelevantNamesFromChange, prettifyName } from '@salto-io/adapter-utils'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
-import { getAllElementsChanges } from './index_utils'
+import { updateIndex } from './index_utils'
 import { RemoteMap } from './remote_map'
 
 const { isDefined } = lowerdashValues
-const log = logger(module)
 export const ALIAS_INDEX_VERSION = 2
 const ALIAS_INDEX_KEY = 'alias_index'
 
@@ -118,23 +116,14 @@ export const updateAliasIndex = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean
-): Promise<void> =>
-  log.time(async () => {
-    let relevantChanges = changes
-    const isVersionMatch = (await mapVersions.get(ALIAS_INDEX_KEY)) === ALIAS_INDEX_VERSION
-    if (!isCacheValid || !isVersionMatch) {
-      if (!isVersionMatch) {
-        relevantChanges = await getAllElementsChanges(changes, elementsSource)
-        log.info('alias index map is out of date, re-indexing')
-      }
-      if (!isCacheValid) {
-        // When cache is invalid, changes will include all the elements in the workspace.
-        log.info('cache is invalid, re-indexing alias index')
-      }
-      await Promise.all([
-        aliasIndex.clear(),
-        mapVersions.set(ALIAS_INDEX_KEY, ALIAS_INDEX_VERSION),
-      ])
-    }
-    await updateChanges(relevantChanges, aliasIndex)
-  }, 'updating alias index')
+): Promise<void> => updateIndex({
+  changes,
+  index: aliasIndex,
+  indexVersionKey: ALIAS_INDEX_KEY,
+  indexVersion: ALIAS_INDEX_VERSION,
+  indexName: 'alias',
+  mapVersions,
+  elementsSource,
+  isCacheValid,
+  updateChanges,
+})

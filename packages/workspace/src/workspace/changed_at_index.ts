@@ -27,16 +27,14 @@ import {
   isModificationChange,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
-import { getAllElementsChanges } from './index_utils'
+import { updateIndex } from './index_utils'
 import { RemoteMap } from './remote_map'
 
 const { isDefined } = values
 
-const log = logger(module)
 export const CHANGED_AT_INDEX_VERSION = 4
 const CHANGED_AT_INDEX_KEY = 'changed_at_index'
 
@@ -159,24 +157,14 @@ export const updateChangedAtIndex = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean
-): Promise<void> =>
-  log.time(async () => {
-    let relevantChanges = changes
-    const isVersionMatch = (await mapVersions.get(CHANGED_AT_INDEX_KEY))
-      === CHANGED_AT_INDEX_VERSION
-    if (!isCacheValid || !isVersionMatch) {
-      if (!isVersionMatch) {
-        relevantChanges = await getAllElementsChanges(changes, elementsSource)
-        log.info('changed at index map is out of date, re-indexing')
-      }
-      if (!isCacheValid) {
-        // When cache is invalid, changes will include all of the elements in the workspace.
-        log.info('cache is invalid, re-indexing changed at index')
-      }
-      await Promise.all([
-        changedAtIndex.clear(),
-        mapVersions.set(CHANGED_AT_INDEX_KEY, CHANGED_AT_INDEX_VERSION),
-      ])
-    }
-    await updateChanges(relevantChanges, changedAtIndex)
-  }, 'updating changed at index')
+): Promise<void> => updateIndex({
+  changes,
+  index: changedAtIndex,
+  indexVersionKey: CHANGED_AT_INDEX_KEY,
+  indexVersion: CHANGED_AT_INDEX_VERSION,
+  indexName: 'changed at',
+  mapVersions,
+  elementsSource,
+  isCacheValid,
+  updateChanges,
+})

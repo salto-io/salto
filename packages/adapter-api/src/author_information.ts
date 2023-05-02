@@ -13,15 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/author_information'
-export * from './src/authentication_types'
-export * from './src/elements'
-export * from './src/element_id'
-export * from './src/values'
-export * from './src/builtins'
-export * from './src/adapter'
-export * from './src/dependency_changer'
-export * from './src/change'
-export * from './src/change_group'
-export * from './src/utils'
-export * from './src/error'
+import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
+import { Element } from './elements'
+import { CORE_ANNOTATIONS } from './constants'
+
+export type AuthorInformation = {
+  changedBy?: string
+  changedAt?: string
+}
+
+export const getAuthorInformation = (
+  element: Element | undefined
+): AuthorInformation => {
+  if (element === undefined) {
+    return {}
+  }
+  return _.pickBy({
+    changedAt: element.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+    changedBy: element.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+  }, values.isDefined)
+}

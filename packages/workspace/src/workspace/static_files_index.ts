@@ -14,14 +14,12 @@
 * limitations under the License.
 */
 import { Change, getChangeData, Element, isAdditionOrModificationChange, isRemovalChange } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import _, { isEmpty } from 'lodash'
 import { ElementsSource } from './elements_source'
-import { getAllElementsChanges } from './index_utils'
+import { updateIndex } from './index_utils'
 import { getNestedStaticFiles } from './nacl_files'
 import { RemoteMap } from './remote_map'
 
-const log = logger(module)
 export const STATIC_FILES_INDEX_VERSION = 1
 const STATIC_FILES_INDEX_KEY = 'static_files_index'
 
@@ -57,23 +55,14 @@ export const updateReferencedStaticFilesIndex = async (
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
   isCacheValid: boolean,
-): Promise<void> => log.time(async () => {
-  let relevantChanges = changes
-  const isVersionMatch = await mapVersions.get(STATIC_FILES_INDEX_KEY)
-    === STATIC_FILES_INDEX_VERSION
-  if (!isCacheValid || !isVersionMatch) {
-    if (!isVersionMatch) {
-      relevantChanges = await getAllElementsChanges(changes, elementsSource)
-      log.info('static files index is out of date, re-indexing')
-    }
-    if (!isCacheValid) {
-      // When cache is invalid, changes will include all of the elements in the workspace.
-      log.info('cache is invalid, re-indexing static files index')
-    }
-    await Promise.all([
-      staticFilesIndex.clear(),
-      mapVersions.set(STATIC_FILES_INDEX_KEY, STATIC_FILES_INDEX_VERSION),
-    ])
-  }
-  await updateChanges(relevantChanges, staticFilesIndex)
-}, 'updating static files index')
+): Promise<void> => updateIndex({
+  changes,
+  index: staticFilesIndex,
+  indexVersionKey: STATIC_FILES_INDEX_KEY,
+  indexVersion: STATIC_FILES_INDEX_VERSION,
+  indexName: 'static files',
+  mapVersions,
+  elementsSource,
+  isCacheValid,
+  updateChanges,
+})

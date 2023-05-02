@@ -82,7 +82,7 @@ describe('groupRuleAdministratorValidator', () => {
       elemID: groupRule1.elemID,
       severity: 'Error',
       message: msg,
-      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group2.elemID.getFullName()].join(', ')}. Please remove role assignemnts from groups or choose different groups as targets for this rule.`,
+      detailedMessage: `Rules cannot assign users to groups with administrator roles. The following groups have administrator roles: ${[group2.elemID.name].join(', ')}. Please remove role assignemnts from groups or choose different groups as targets for this rule.`,
     }])
   })
 

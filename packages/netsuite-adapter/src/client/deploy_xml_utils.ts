@@ -18,8 +18,8 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Graph, SDFObjectNode } from './graph_utils'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from './types'
+import { Graph } from './graph_utils'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
 import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
 
 type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo

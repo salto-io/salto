@@ -46,7 +46,7 @@ import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams,
+  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams, SDFObjectNode,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
@@ -55,7 +55,7 @@ import {
 } from './utils'
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
-import { Graph, SDFObjectNode } from './graph_utils'
+import { Graph } from './graph_utils'
 import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
 import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX, reorderDeployXml } from './deploy_xml_utils'
 

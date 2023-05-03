@@ -15,11 +15,12 @@
 */
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData, ChangeDataType, isField, isFieldChange, isInstanceChange, isObjectTypeChange, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData, ChangeDataType, isField, isFieldChange } from '@salto-io/adapter-api'
 import { AdditionalDependencies } from '../config'
 import { getGroupItemFromRegex } from '../client/utils'
 import NetsuiteClient from '../client/client'
 import { getChangeGroupIdsFunc } from '../group_changes'
+import { getDeployableChanges } from '../client/types'
 import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../client/errors'
 import { detectLanguage, multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
 import { SCRIPT_ID } from '../constants'
@@ -118,9 +119,7 @@ const changeValidator: ClientChangeValidator = async (
         additionalDependencies,
       )
       if (errors.length > 0) {
-        const topLevelChanges = groupChanges.filter(
-          change => isInstanceChange(change) || isObjectTypeChange(change)
-        ) as Change<InstanceElement | ObjectType>[]
+        const topLevelChanges = getDeployableChanges(groupChanges)
         const { dependencyMap } = await NetsuiteClient.createDependencyMapAndGraph(topLevelChanges)
         return awu(errors).flatMap(async error => {
           if (error instanceof ObjectsDeployError) {

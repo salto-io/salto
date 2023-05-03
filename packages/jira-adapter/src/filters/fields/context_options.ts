@@ -100,8 +100,8 @@ const getFieldName = (
   contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
   newOption: Value
 ): Value =>
-  Object.entries(contextChange.data.after.value.options)
-    .find(([key, _value]) => contextChange.data.after.value.options[key].value === newOption)?.[0]
+  Object.keys(contextChange.data.after.value.options)
+    .find(key => contextChange.data.after.value.options[key].value === newOption)
 
 const updateContextOptions = async ({
   addedOptions,

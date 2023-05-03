@@ -43,9 +43,11 @@ describe('custom records', () => {
             internalId: '4',
           },
         }],
+        largeTypesError: false,
       }, {
         type: 'custrecord2',
         records: [],
+        largeTypesError: false,
       }]),
       runSuiteQL: async _query => ([
         { id: '1', scriptid: 'val_1' },

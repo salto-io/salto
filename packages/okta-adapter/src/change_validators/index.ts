@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { createChangeValidator } from '@salto-io/adapter-utils'
@@ -31,7 +32,12 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
 import OktaClient from '../client/client'
-import { OktaConfig } from '../config'
+import { API_DEFINITIONS_CONFIG, OktaConfig, PRIVATE_API_DEFINITIONS_CONFIG } from '../config'
+
+const {
+  createCheckDeploymentBasedOnConfigValidator,
+  getDefaultChangeValidators,
+} = deployment.changeValidators
 
 export default ({
   client,
@@ -41,7 +47,10 @@ export default ({
   config: OktaConfig
 }): ChangeValidator => {
   const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(),
+    ...getDefaultChangeValidators(),
+    createCheckDeploymentBasedOnConfigValidator({
+      typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
+    }),
     applicationValidator,
     appGroupValidator,
     groupRuleStatusValidator,

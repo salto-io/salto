@@ -93,7 +93,7 @@ export default ({
     ...getDefaultChangeValidators(),
     deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfigValidator(
-      { apiConfig, typesDeployedViaParent, typesWithNoDeploy }
+      { typesConfig: apiConfig.types, typesDeployedViaParent, typesWithNoDeploy }
     ),
     accountSettingsValidator,
     emptyCustomFieldOptionsValidator,

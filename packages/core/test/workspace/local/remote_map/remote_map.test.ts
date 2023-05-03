@@ -25,11 +25,11 @@ import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
-  RocksDBValue,
   TMP_DB_DIR,
   closeRemoteMapsOfLocation,
   cleanDatabases,
 } from '../../../../src/local-workspace/remote_map/remote_map'
+import { RocksDBValue } from '../../../../src/local-workspace/remote_map/db_iterator'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb').default

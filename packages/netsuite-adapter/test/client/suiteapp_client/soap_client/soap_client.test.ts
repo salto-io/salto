@@ -21,7 +21,8 @@ import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suite
 import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
 import { InvalidSuiteAppCredentialsError } from '../../../../src/client/types'
-import { CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import { CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, PLATFORM_CORE_CUSTOM_FIELD, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import * as filterUneditableLockedFieldModule from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -1025,10 +1026,13 @@ describe('soap_client', () => {
         subsidiaryType,
         { name: 'name' }
       )
-      expect(await client.updateInstances([
-        instance1,
-        instance2,
-      ])).toEqual([
+      expect(await client.updateInstances(
+        [
+          instance1,
+          instance2,
+        ],
+        async (_elemID: ElemID) => true,
+      )).toEqual([
         1,
         new Error(`SOAP api call updateList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
       ])
@@ -1044,24 +1048,30 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.updateInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' }
-        ),
-      ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
+      await expect(client.updateInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' }
+          ),
+        ],
+        async (_elemID: ElemID) => true,
+      )).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
     it('should throw an error if received invalid response', async () => {
       updateListAsyncMock.mockResolvedValue([{}])
-      await expect(client.updateInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' },
-        ),
-      ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
+      await expect(client.updateInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' },
+          ),
+        ],
+        async (_elemID: ElemID) => true,
+      )).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
   })
 
@@ -1139,11 +1149,14 @@ describe('soap_client', () => {
         { name: 'record1' },
       )
 
-      expect(await client.addInstances([
-        instance1,
-        instance2,
-        customRecord,
-      ])).toEqual([
+      expect(await client.addInstances(
+        [
+          instance1,
+          instance2,
+          customRecord,
+        ],
+        async (_elemID: ElemID) => true,
+      )).toEqual([
         1,
         new Error(`SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
         3,
@@ -1160,24 +1173,30 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.addInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' }
-        ),
-      ])).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
+      await expect(client.addInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' }
+          ),
+        ],
+        async (_elemID: ElemID) => true,
+      )).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
     it('should throw an error if received invalid response', async () => {
       addListAsyncMock.mockResolvedValue([{}])
-      await expect(client.addInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' },
-        ),
-      ])).rejects.toThrow('Got invalid response from addList request. Errors:')
+      await expect(client.addInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' },
+          ),
+        ],
+        async (_elemID: ElemID) => true,
+      )).rejects.toThrow('Got invalid response from addList request. Errors:')
     })
   })
 
@@ -1348,8 +1367,8 @@ describe('soap_client', () => {
       attributes: {
         internalId: '1',
       },
-      customFieldList: {
-        'platformCore:customField': [customField1, customField2],
+      [CUSTOM_FIELD_LIST]: {
+        [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
       },
     })
 
@@ -1447,19 +1466,21 @@ describe('soap_client', () => {
 
     it('Should redeploy at most 5 times', async () => {
       updateListAsyncMock.mockResolvedValue([writeResponseListError1])
+      jest.spyOn(filterUneditableLockedFieldModule, 'getModifiedInstances')
+        .mockResolvedValue({
+          modifiedInstances: [instance],
+          allInstancesUpdated: [instance],
+          indicesMap: new Map([[0, 0]]),
+        })
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const redeployLockedFieldsMock = jest.spyOn(SoapClient.prototype as any, 'redeployLockedFields')
-      redeployLockedFieldsMock.mockResolvedValue({
-        redeployWriteResponseList: writeResponseListError1.writeResponseList.writeResponse,
-        indicesMap: new Map([[0, 0]]),
-        updatedInstances: [instance],
-      })
+      const runDeployActionMock = jest.spyOn(SoapClient.prototype as any, 'runDeployAction')
 
       expect(await client.updateInstances([instance], elementsSource.has))
         .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
         + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
-      expect(redeployLockedFieldsMock).toHaveBeenCalledTimes(5)
+      // 1 original deploy call + 5 redeploys
+      expect(runDeployActionMock).toHaveBeenCalledTimes(6)
     })
   })
 })

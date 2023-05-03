@@ -18,6 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix } from '../types'
+import { PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST } from '../constants'
 
 const { awu } = collections.asynciterable
 
@@ -39,8 +40,8 @@ const filterCreator: LocalFilterCreator = () => ({
             : key))
           .value()
         if (!_.isEmpty(nullFields)) {
-          change.data.after.value['platformCore:nullFieldList'] = {
-            'platformCore:name': nullFields,
+          change.data.after.value[PLATFORM_CORE_NULL_FIELD_LIST] = {
+            [PLATFORM_CORE_NAME]: nullFields,
           }
         }
       })

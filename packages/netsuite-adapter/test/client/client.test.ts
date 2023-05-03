@@ -69,7 +69,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [objectsDeployError],
           appliedChanges: [successChange],
@@ -89,7 +90,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [objectsDeployError],
           appliedChanges: [],
@@ -110,7 +112,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [settingsDeployError],
           appliedChanges: [successChange],
@@ -127,7 +130,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [settingsDeployError],
           appliedChanges: [],
@@ -149,7 +153,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [manifestValidationError],
           appliedChanges: [successChange],
@@ -171,7 +176,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [manifestValidationError],
           appliedChanges: [successChange],
@@ -193,7 +199,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [manifestValidationError],
           appliedChanges: [],
@@ -218,7 +225,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange, failedChangeDependency],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [manifestValidationError],
           appliedChanges: [successChange],
@@ -244,7 +252,8 @@ describe('NetsuiteClient', () => {
         expect(await client.deploy(
           [successChange, failedChange, failedChangeDependency],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [manifestValidationError],
           appliedChanges: [successChange, failedChangeDependency],
@@ -288,6 +297,7 @@ describe('NetsuiteClient', () => {
               files: [],
             },
           },
+          async (_elemID: ElemID) => true,
         )
         expect(mockSdfDeploy).toHaveBeenCalledWith(
           undefined,
@@ -343,6 +353,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               files: [],
             },
           },
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [
             missingManifestFeaturesError,
@@ -408,6 +419,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           [change],
           SDF_CREATE_OR_UPDATE_GROUP_ID,
           ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [missingManifestFeaturesError],
           appliedChanges: [],
@@ -490,7 +502,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
-            ...deployParams
+            ...deployParams,
+            async (_elemID: ElemID) => true,
           )).toEqual({
             errors: [],
             appliedChanges: [change],
@@ -541,7 +554,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           expect(await client.deploy(
             [successTypeChange, successFieldChange, failedChange],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
-            ...deployParams
+            ...deployParams,
+            async (_elemID: ElemID) => true,
           )).toEqual({
             errors: [objectsDeployError],
             appliedChanges: [successTypeChange, successFieldChange],
@@ -580,7 +594,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
-            ...deployParams
+            ...deployParams,
+            async (_elemID: ElemID) => true,
           )).toEqual({
             errors: [featuresDeployError],
             appliedChanges: [],
@@ -611,7 +626,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           expect(await client.deploy(
             [change],
             SDF_CREATE_OR_UPDATE_GROUP_ID,
-            ...deployParams
+            ...deployParams,
+            async (_elemID: ElemID) => true,
           )).toEqual({
             errors: [featuresDeployError],
             appliedChanges: [change],
@@ -726,7 +742,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         expect(await clientWithoutSuiteApp.deploy(
           [change1, change2],
           SUITEAPP_UPDATING_RECORDS_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
           elemIdToInternalId: {},
@@ -735,7 +752,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         expect(await clientWithoutSuiteApp.deploy(
           [change1, change2],
           SUITEAPP_UPDATING_CONFIG_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
           appliedChanges: [],
@@ -743,7 +761,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         expect(await clientWithoutSuiteApp.deploy(
           [change1, change2],
           SDF_DELETE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )).toEqual({
           errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`)],
           elemIdToInternalId: {},
@@ -755,7 +774,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
         const results = await client.deploy(
           [change1, change2],
           SUITEAPP_UPDATING_RECORDS_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )
         expect(results.appliedChanges).toEqual([change1])
         expect(results.errors).toEqual([new Error('error')])
@@ -770,7 +790,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             toChange({ after: instance2 }),
           ],
           SUITEAPP_CREATING_RECORDS_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
         expect(results.errors).toEqual([new Error('error')])
@@ -785,7 +806,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             toChange({ before: instance2 }),
           ],
           SUITEAPP_DELETING_RECORDS_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
         expect(results.errors).toEqual([new Error('error')])
@@ -816,7 +838,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             }),
           ],
           SUITEAPP_UPDATING_CONFIG_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )
         expect(results.appliedChanges.length).toEqual(1)
         expect(results.errors.length).toEqual(0)
@@ -830,7 +853,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             toChange({ before: instance2 }),
           ],
           SDF_DELETE_GROUP_ID,
-          ...deployParams
+          ...deployParams,
+          async (_elemID: ElemID) => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
         expect(results.errors).toEqual([new Error('error')])

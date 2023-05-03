@@ -25,7 +25,7 @@ import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credential
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
@@ -36,7 +36,6 @@ import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_eleme
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
-import { HasElemIDFunc } from './suiteapp_client/soap_client/filter_uneditable_locked_field'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -379,7 +378,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
-    hasElemID?: HasElemIDFunc,
+    hasElemID: HasElemIDFunc,
   ): Promise<DeployResult> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return this.sdfDeploy({
@@ -405,7 +404,7 @@ export default class NetsuiteClient {
     return this.deployRecords(changes, groupID, hasElemID)
   }
 
-  private async deployRecords(changes: Change[], groupID: string, hasElemID?: HasElemIDFunc): Promise<DeployResult> {
+  private async deployRecords(changes: Change[], groupID: string, hasElemID: HasElemIDFunc): Promise<DeployResult> {
     const relevantChanges = getDeployableChanges(changes)
     const relevantInstances = relevantChanges.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance)
 
@@ -425,7 +424,7 @@ export default class NetsuiteClient {
     return { errors, appliedChanges, elemIdToInternalId }
   }
 
-  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string, hasElemID?: HasElemIDFunc):
+  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string, hasElemID: HasElemIDFunc):
   Promise<(number | Error)[]> {
     if (this.suiteAppClient === undefined) {
       return [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)]

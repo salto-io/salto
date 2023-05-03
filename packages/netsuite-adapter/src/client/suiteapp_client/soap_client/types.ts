@@ -69,6 +69,9 @@ export type WriteResponse = WriteResponseSuccess | WriteResponseError
 export const isWriteResponseSuccess = (result: WriteResponse): result is WriteResponseSuccess =>
   result.status.attributes.isSuccess === 'true'
 
+export const isWriteResponseError = (result: WriteResponse): result is WriteResponseError =>
+  result.status.attributes.isSuccess === 'false'
+
 
 export type DeployListSuccess = {
   writeResponseList: {

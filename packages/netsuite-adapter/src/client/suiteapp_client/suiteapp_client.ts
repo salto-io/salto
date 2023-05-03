@@ -33,7 +33,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
@@ -42,7 +42,6 @@ import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
-import { HasElemIDFunc } from './soap_client/filter_uneditable_locked_field'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
@@ -572,11 +571,11 @@ export default class SuiteAppClient {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
     return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[], hasElemID?: HasElemIDFunc): Promise<(number | Error)[]> {
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
     return this.soapClient.addInstances(instances, hasElemID)
   }
 

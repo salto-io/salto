@@ -15,89 +15,125 @@
 */
 
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { CRM_CUSTOM_FIELD, ENTITY_CUSTOM_FIELD, ITEM_CUSTOM_FIELD, NETSUITE, OTHER_CUSTOM_FIELD, SOAP_SCRIPT_ID } from '../../../constants'
-import { WriteResponse, WriteResponseError, isWriteResponseSuccess } from './types'
+import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, ENTITY_CUSTOM_FIELD,
+  ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, NETSUITE, OTHER_CUSTOM_FIELD,
+  OTHER_CUSTOM_FIELD_PREFIX, PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST, SOAP_SCRIPT_ID } from '../../../constants'
+import { WriteResponse, isWriteResponseError } from './types'
+import { HasElemIDFunc } from '../types'
+import { getGroupItemFromRegex } from '../../utils'
 
-const log = logger(module)
+const { awu } = collections.asynciterable
 const { isDefined } = values
-
-export type HasElemIDFunc = (elemID: ElemID) => Promise<boolean>
+const log = logger(module)
 
 const INSUFFICIENT_PERMISSION_ERROR = 'INSUFFICIENT_PERMISSION'
-const CUSTOM_FIELD_LIST = 'customFieldList'
-const fieldNameRegex = new RegExp('You do not have permissions to set a value for element [\\w]+')
+const FIELD_NAME = 'fieldName'
+const fieldNameRegex = new RegExp(`You do not have permissions to set a value for element (?<${FIELD_NAME}>\\w+)`, 'g')
 
 const extractFieldName = (errorMessage: string): string | undefined => {
-  const matchedField = errorMessage.match(fieldNameRegex)
-  if (matchedField?.length !== 1) {
-    return undefined
-  }
-  return matchedField[0].split(' ').pop() as string
+  const errorFields = getGroupItemFromRegex(errorMessage, fieldNameRegex, FIELD_NAME)
+  return errorFields.length === 1 ? errorFields[0] : undefined
 }
 
-const getFieldFullName = (fieldName: string): string | undefined => {
-  let dirName: string | undefined
-  if (fieldName.startsWith('custrecord')) {
-    dirName = OTHER_CUSTOM_FIELD
-  } else if (fieldName.startsWith('custentity')) {
-    dirName = ENTITY_CUSTOM_FIELD
-  } else if (fieldName.startsWith('custitem')) {
-    dirName = ITEM_CUSTOM_FIELD
-  } else if (fieldName.startsWith('custevent')) {
-    dirName = CRM_CUSTOM_FIELD
+const getFieldElemID = (fieldName: string): ElemID | undefined => {
+  if (fieldName.startsWith(OTHER_CUSTOM_FIELD_PREFIX)) {
+    return ElemID.fromFullName(`${NETSUITE}.${OTHER_CUSTOM_FIELD}.instance.${fieldName}`)
   }
-  return isDefined(dirName) ? `${NETSUITE}.${dirName}.instance.${fieldName}` : undefined
+  if (fieldName.startsWith(ENTITY_CUSTOM_FIELD_PREFIX)) {
+    return ElemID.fromFullName(`${NETSUITE}.${ENTITY_CUSTOM_FIELD}.instance.${fieldName}`)
+  }
+  if (fieldName.startsWith(ITEM_CUSTOM_FIELD_PREFIX)) {
+    return ElemID.fromFullName(`${NETSUITE}.${ITEM_CUSTOM_FIELD}.instance.${fieldName}`)
+  }
+  if (fieldName.startsWith(CRM_CUSTOM_FIELD_PREFIX)) {
+    return ElemID.fromFullName(`${NETSUITE}.${CRM_CUSTOM_FIELD}.instance.${fieldName}`)
+  }
+  return undefined
 }
 
-const isLockedElement = async (fieldName: string, hasElemID: HasElemIDFunc) : Promise<boolean> => {
-  const fieldFullName = getFieldFullName(fieldName)
-  return (isDefined(fieldFullName) ? !(await hasElemID(ElemID.fromFullName(fieldFullName))) : false)
+const isLockedElement = async (fieldName: string, hasElemID: HasElemIDFunc): Promise<boolean> => {
+  const fieldElemID = getFieldElemID(fieldName)
+  return (isDefined(fieldElemID) ? !(await hasElemID(fieldElemID)) : false)
 }
 
 const removeUneditableLockedField = (
-  instance: InstanceElement,
+  originalInstance: InstanceElement,
   fieldName: string
 ): InstanceElement | undefined => {
+  const instance = originalInstance.clone()
   const customFields = instance.value[CUSTOM_FIELD_LIST]
-  if (_.isUndefined(customFields)) {
+  if (customFields === undefined) {
     return undefined
   }
-  const validCustomFields = customFields['platformCore:customField']
-    .filter((customField: { attributes: { [x: string]: string } }) =>
+  const validCustomFields = customFields[PLATFORM_CORE_CUSTOM_FIELD]
+    .filter((customField: { attributes: Record<string, string> }) =>
       customField.attributes[SOAP_SCRIPT_ID] !== fieldName)
-  if (validCustomFields.length === customFields['platformCore:customField'].length) {
+  if (validCustomFields.length === customFields[PLATFORM_CORE_CUSTOM_FIELD].length) {
+    log.debug('The field "%s" was suspected as a locked field of the instance "%s", but wasn\'t found in its custom fields.',
+      fieldName, instance.elemID.getFullName())
     return undefined
   }
 
   log.debug('Removing locked custom field: %s from instance: %s', fieldName, instance.elemID.getFullName())
+
   if (validCustomFields.length > 0) {
-    customFields['platformCore:customField'] = validCustomFields
+    customFields[PLATFORM_CORE_CUSTOM_FIELD] = validCustomFields
   } else {
     delete instance.value[CUSTOM_FIELD_LIST]
   }
-  if (isDefined(instance.value['platformCore:nullFieldList']?.['platformCore:name'])) {
-    instance.value['platformCore:nullFieldList']['platformCore:name'].push(fieldName)
-  } else {
-    instance.value['platformCore:nullFieldList'] = { 'platformCore:name': [fieldName] }
+
+  const nullCustomFields = Array.isArray(instance.value[PLATFORM_CORE_NULL_FIELD_LIST]?.[PLATFORM_CORE_NAME])
+    ? instance.value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]
+    : []
+  instance.value[PLATFORM_CORE_NULL_FIELD_LIST] = {
+    [PLATFORM_CORE_NAME]: [...nullCustomFields, fieldName],
   }
   return instance
 }
 
-export const getModifiedInstance = async (
+const getModifiedInstance = async (
   writeResponse: WriteResponse,
   instance: InstanceElement,
   hasElemID: HasElemIDFunc,
 ): Promise<InstanceElement | undefined> => {
-  if (isWriteResponseSuccess(writeResponse)
-    || (writeResponse.status.statusDetail[0].code !== INSUFFICIENT_PERMISSION_ERROR)) {
-    return undefined
+  if (isWriteResponseError(writeResponse)
+    && (writeResponse.status.statusDetail[0].code === INSUFFICIENT_PERMISSION_ERROR)) {
+    const fieldName = extractFieldName(writeResponse.status.statusDetail[0].message)
+    if (isDefined(fieldName) && await isLockedElement(fieldName, hasElemID)) {
+      // we suspect this is an uneditable field, but since we can't say for sure
+      // removeUneditableLockedField might return undefined.
+      return removeUneditableLockedField(instance, fieldName)
+    }
   }
-  const fieldName = extractFieldName((writeResponse as WriteResponseError).status.statusDetail[0].message)
-  if (isDefined(fieldName) && await isLockedElement(fieldName, hasElemID)) {
-    return removeUneditableLockedField(instance, fieldName)
-  }
+
   return undefined
+}
+
+
+export const getModifiedInstances = async (
+  instances: InstanceElement[],
+  writeResponseList: WriteResponse[],
+  hasElemID: HasElemIDFunc,
+): Promise<{
+  modifiedInstances: InstanceElement[]
+  allInstancesUpdated: InstanceElement[]
+  indicesMap: Map<number, number>
+}> => {
+  const modifiedOrUndefinedInstances = await awu(writeResponseList)
+    .map((writeResponse, index) => getModifiedInstance(writeResponse, instances[index], hasElemID))
+    .toArray()
+  const allInstancesUpdated = modifiedOrUndefinedInstances
+    .map((modifiedInstance, index) => (isDefined(modifiedInstance) ? modifiedInstance : instances[index]))
+  const indicesMap = new Map(modifiedOrUndefinedInstances
+    .map((modifiedInstance, originalIdx) => (isDefined(modifiedInstance) ? originalIdx : undefined))
+    .filter(isDefined)
+    .map((originalIdx, reducedIdx) => [originalIdx, reducedIdx]))
+
+  return {
+    modifiedInstances: modifiedOrUndefinedInstances.filter(isDefined),
+    allInstancesUpdated,
+    indicesMap,
+  }
 }

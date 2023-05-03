@@ -15,9 +15,12 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { WriteResponseError } from '../../../../src/client/suiteapp_client/soap_client/types'
-import { getModifiedInstance } from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
-import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, ENTITY_CUSTOM_FIELD, ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, NETSUITE, OTHER_CUSTOM_FIELD, OTHER_CUSTOM_FIELD_PREFIX, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import { getModifiedInstances } from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
+import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, ENTITY_CUSTOM_FIELD,
+  ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, NETSUITE, OTHER_CUSTOM_FIELD,
+  OTHER_CUSTOM_FIELD_PREFIX, PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST, SOAP_SCRIPT_ID } from '../../../../src/constants'
 
 describe('Filter uneditable locked fields', () => {
   const otherCustomField = {
@@ -75,32 +78,32 @@ describe('Filter uneditable locked fields', () => {
     attributes: {
       internalId: '1',
     },
-    customFieldList: {
-      'platformCore:customField': [otherCustomField],
+    [CUSTOM_FIELD_LIST]: {
+      [PLATFORM_CORE_CUSTOM_FIELD]: [otherCustomField],
     },
   })
   const entityInstance = new InstanceElement('testEntity', testType, {
     attributes: {
       internalId: '2',
     },
-    customFieldList: {
-      'platformCore:customField': [entityCustomField],
+    [CUSTOM_FIELD_LIST]: {
+      [PLATFORM_CORE_CUSTOM_FIELD]: [entityCustomField],
     },
   })
   const itemInstance = new InstanceElement('testItem', testType, {
     attributes: {
       internalId: '3',
     },
-    customFieldList: {
-      'platformCore:customField': [itemCustomField],
+    [CUSTOM_FIELD_LIST]: {
+      [PLATFORM_CORE_CUSTOM_FIELD]: [itemCustomField],
     },
   })
   const crmInstance = new InstanceElement('testCRM', testType, {
     attributes: {
       internalId: '4',
     },
-    customFieldList: {
-      'platformCore:customField': [crmCustomField],
+    [CUSTOM_FIELD_LIST]: {
+      [PLATFORM_CORE_CUSTOM_FIELD]: [crmCustomField],
     },
   })
 
@@ -134,71 +137,66 @@ describe('Filter uneditable locked fields', () => {
     crmCustomField.attributes[SOAP_SCRIPT_ID]
   )
 
+  const allInstances = [otherInstance, entityInstance, itemInstance, crmInstance]
+  const allErrors = [otherError, entityError, itemError, crmError]
+
   describe('Should return a modified instance - without the locked field', () => {
     const elementsSource = buildElementsSourceFromElements([])
 
-    describe('Sanity - all custom record fields', () => {
-      it('Other Custom Field - should return a modified instance', async () => {
-        const modifiedInstance = await getModifiedInstance(otherError, otherInstance, elementsSource.has)
-        expect(modifiedInstance).toBeDefined()
-        expect((modifiedInstance as InstanceElement).value.customFieldList).toBeUndefined()
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']?.['platformCore:name']).toBeInstanceOf(Array)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toHaveLength(1)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name'][0]).toEqual(otherCustomField.attributes[SOAP_SCRIPT_ID])
-      })
+    it('Sanity - all custom record fields', async () => {
+      const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
+        allInstances,
+        allErrors,
+        elementsSource.has,
+      )
+      expect(modifiedInstances).toHaveLength(4)
+      expect(
+        modifiedInstances
+          .map(modifiedInstance => modifiedInstance.value[CUSTOM_FIELD_LIST])
+          .filter(_.isUndefined)
+      ).toHaveLength(4)
+      const nullFieldsList = modifiedInstances
+        .map(modifiedInstance => modifiedInstance.value['platformCore:nullFieldList']?.['platformCore:name'])
+      expect(nullFieldsList.filter(nullFields => Array.isArray(nullFields))).toHaveLength(4)
+      expect(nullFieldsList.filter(nullFields => nullFields.length === 1)).toHaveLength(4)
+      expect(nullFieldsList.map(nullFields => nullFields[0])).toEqual(expect.arrayContaining(
+        [
+          otherCustomField.attributes[SOAP_SCRIPT_ID],
+          entityCustomField.attributes[SOAP_SCRIPT_ID],
+          itemCustomField.attributes[SOAP_SCRIPT_ID],
+          crmCustomField.attributes[SOAP_SCRIPT_ID],
+        ]
+      ))
 
-      it('Entity Custom Field - should return a modified instance', async () => {
-        const modifiedInstance = await getModifiedInstance(entityError, entityInstance, elementsSource.has)
-        expect(modifiedInstance).toBeDefined()
-        expect((modifiedInstance as InstanceElement).value.customFieldList).toBeUndefined()
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']?.['platformCore:name']).toBeInstanceOf(Array)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toHaveLength(1)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name'][0]).toEqual(entityCustomField.attributes[SOAP_SCRIPT_ID])
-      })
-
-      it('Item Custom Field - should return a modified instance', async () => {
-        const modifiedInstance = await getModifiedInstance(itemError, itemInstance, elementsSource.has)
-        expect(modifiedInstance).toBeDefined()
-        expect((modifiedInstance as InstanceElement).value.customFieldList).toBeUndefined()
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']?.['platformCore:name']).toBeInstanceOf(Array)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toHaveLength(1)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name'][0]).toEqual(itemCustomField.attributes[SOAP_SCRIPT_ID])
-      })
-
-      it('CRM Custom Field - should return a modified instance', async () => {
-        const modifiedInstance = await getModifiedInstance(crmError, crmInstance, elementsSource.has)
-        expect(modifiedInstance).toBeDefined()
-        expect((modifiedInstance as InstanceElement).value.customFieldList).toBeUndefined()
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']?.['platformCore:name']).toBeInstanceOf(Array)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toHaveLength(1)
-        expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name'][0]).toEqual(crmCustomField.attributes[SOAP_SCRIPT_ID])
-      })
+      expect(allInstancesUpdated).toEqual(modifiedInstances)
+      expect(indicesMap).toEqual(new Map([[0, 0], [1, 1], [2, 2], [3, 3]]))
     })
+
 
     it('Should append to null list of custom records if such exists', async () => {
       const otherComplexInstance = new InstanceElement('testOther', testType, {
         attributes: {
           internalId: '1',
         },
-        customFieldList: {
-          'platformCore:customField': [otherCustomField],
+        [CUSTOM_FIELD_LIST]: {
+          [PLATFORM_CORE_CUSTOM_FIELD]: [otherCustomField],
         },
-        'platformCore:nullFieldList': {
-          'platformCore:name': ['randomField'],
+        [PLATFORM_CORE_NULL_FIELD_LIST]: {
+          [PLATFORM_CORE_NAME]: ['randomField'],
         },
       })
-      const modifiedInstance = await getModifiedInstance(otherError, otherComplexInstance, elementsSource.has)
-      expect(modifiedInstance).toBeDefined()
-      expect((modifiedInstance as InstanceElement).value.customFieldList).toBeUndefined()
-      expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']?.['platformCore:name']).toBeInstanceOf(Array)
-      expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toHaveLength(2)
-      expect((modifiedInstance as InstanceElement).value['platformCore:nullFieldList']['platformCore:name']).toEqual(
+      const { modifiedInstances } = await getModifiedInstances([otherComplexInstance], [otherError], elementsSource.has)
+      expect(modifiedInstances).toHaveLength(1)
+      expect(modifiedInstances[0].value[CUSTOM_FIELD_LIST]).toBeUndefined()
+      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST]?.[PLATFORM_CORE_NAME]).toBeInstanceOf(Array)
+      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toHaveLength(2)
+      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toEqual(
         expect.arrayContaining(['randomField', otherCustomField.attributes[SOAP_SCRIPT_ID]])
       )
     })
   })
 
-  describe('Should return undefined when the INSUFFICIENT PERMISSION error is caused by unlocked element', () => {
+  it('Should return no modified instances when the INSUFFICIENT PERMISSION error is caused by unlocked element', async () => {
     const elementsSource = buildElementsSourceFromElements([
       otherCustomFieldInstance,
       entityCustomFieldInstance,
@@ -206,28 +204,18 @@ describe('Filter uneditable locked fields', () => {
       crmCustomFieldInstance,
     ])
 
-    it('Other Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(otherError, otherInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
+    const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
+      allInstances,
+      allErrors,
+      elementsSource.has,
+    )
 
-    it('Entity Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(entityError, entityInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
-
-    it('Item Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(itemError, itemInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
-
-    it('CRM Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(crmError, crmInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
+    expect(modifiedInstances).toHaveLength(0)
+    expect(allInstancesUpdated).toEqual(allInstances)
+    expect(indicesMap.size).toBe(0)
   })
 
-  describe('Should return undefined when error code is different than \'INSUFFICIENT PERMISSION\'', () => {
+  it('Should return undefined when error code is different than \'INSUFFICIENT PERMISSION\'', async () => {
     const error: WriteResponseError = {
       status: {
         attributes: {
@@ -243,24 +231,14 @@ describe('Filter uneditable locked fields', () => {
     }
     const elementsSource = buildElementsSourceFromElements([])
 
-    it('Other Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(error, otherInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
+    const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
+      allInstances,
+      [error, error, error, error],
+      elementsSource.has,
+    )
 
-    it('Entity Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(error, entityInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
-
-    it('Item Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(error, itemInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
-
-    it('CRM Custom Field - should return undefined', async () => {
-      const modifiedInstance = await getModifiedInstance(error, crmInstance, elementsSource.has)
-      expect(modifiedInstance).toBeUndefined()
-    })
+    expect(modifiedInstances).toHaveLength(0)
+    expect(allInstancesUpdated).toEqual(allInstances)
+    expect(indicesMap.size).toBe(0)
   })
 })

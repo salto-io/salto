@@ -59,6 +59,38 @@ export type FilterCreator<
   DeployInfo=void,
 > = (opts: T) => Filter<R, DeployInfo>
 
+export type LocalFilterCreatorDefinition<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = {
+  creator: FilterCreator<R, T, DeployInfo>
+  addsNewInformation?: false
+}
+
+export type RemoteFilterCreatorDefinition<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = {
+  creator: FilterCreator<R, T, DeployInfo>
+  addsNewInformation: true
+}
+
+export const isLocalFilterCreator = <
+  RLocal extends FilterResult | void,
+  RRemote extends FilterResult | void,
+  TLocal,
+  TRemote,
+  DLocal=void,
+  DRemote=void,
+>(
+    filterDef: LocalFilterCreatorDefinition<RLocal, TLocal, DLocal>
+      | RemoteFilterCreatorDefinition<RRemote, TRemote, DRemote>
+  ): filterDef is LocalFilterCreatorDefinition<RLocal, TLocal, DLocal> => (
+    filterDef.addsNewInformation !== true
+  )
+
 export const filtersRunner = <
   R extends FilterResult | void,
   T,

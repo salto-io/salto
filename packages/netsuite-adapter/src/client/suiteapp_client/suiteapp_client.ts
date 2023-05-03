@@ -36,7 +36,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
-import { DEFAULT_CONCURRENCY } from '../../config'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
 import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
@@ -47,7 +47,6 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
-const AXIOS_TIMEOUT = 1000 * 60 * 12 // 12 minutes timeout
 
 const log = logger(module)
 
@@ -122,7 +121,8 @@ export default class SuiteAppClient {
     this.ajv = new Ajv({ allErrors: true, strict: false })
     this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
 
-    this.axiosClient = axios.create({ timeout: AXIOS_TIMEOUT })
+    this.axiosClient = axios.create({ timeout:
+      (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000 })
     const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
     axiosRetry(
       this.axiosClient,

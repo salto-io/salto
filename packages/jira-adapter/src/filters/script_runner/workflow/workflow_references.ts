@@ -17,9 +17,9 @@
 import { resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import { isInstanceChange, isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { FilterCreator } from '../../filter'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
-import { getLookUpName } from '../../reference_mapping'
+import { FilterCreator } from '../../../filter'
+import { WORKFLOW_TYPE_NAME } from '../../../constants'
+import { getLookUpName } from '../../../reference_mapping'
 
 const { awu } = collections.asynciterable
 

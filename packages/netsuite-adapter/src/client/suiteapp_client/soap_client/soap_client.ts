@@ -403,22 +403,29 @@ export default class SoapClient {
       typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
     }
 
-    return Object.assign(
-      { records: [], largeTypesError: [] },
-      ...await Promise.all(typesToSearch.flatMap(async ({ type, subtypes }) => {
-        const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
+    const responses = await Promise.all(typesToSearch.flatMap(async ({ type, subtypes }) => {
+      const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
-        if (namespace !== undefined) {
-          const response = await this.search(type, namespace, subtypes)
-          return response.largeTypesError ? { largeTypesError: [type] } : { records: response.records }
-        }
-        log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-        const response = await this.sendGetAllRequest(type)
+      if (namespace !== undefined) {
+        const response = await this.search(type, namespace, subtypes)
+        return response.largeTypesError ? { largeTypesError: [type] } : { records: response.records }
+      }
+      log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+      const response = await this.sendGetAllRequest(type)
 
-        log.debug(`Finished getting all records of ${type}`)
-        return { records: response }
-      }))
-    )
+      log.debug(`Finished getting all records of ${type}`)
+      return { records: response }
+    }))
+
+    return responses.reduce((prevResponses, { records, largeTypesError }) => {
+      if (records) {
+        prevResponses.records = prevResponses.records.concat(records)
+      }
+      if (largeTypesError) {
+        prevResponses.largeTypesError = prevResponses.largeTypesError.concat(largeTypesError)
+      }
+      return prevResponses
+    }, { records: [] as RecordValue[], largeTypesError: [] as string[] })
   }
 
   public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {

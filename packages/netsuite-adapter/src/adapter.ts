@@ -321,14 +321,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
     if (!_.isEmpty(dataTypeError)) {
-      failedTypes.excludedTypes = (failedTypes.excludedTypes ?? []).concat(dataTypeError)
+      failedTypes.excludedTypes = dataTypeError.concat(failedTypes.excludedTypes)
     }
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
     const { elements: customRecords, largeTypesError: customRecordTypeError } = await customRecordsPromise
     if (!_.isEmpty(customRecordTypeError)) {
-      failedTypes.excludedTypes = (failedTypes.excludedTypes ?? []).concat(customRecordTypeError)
+      failedTypes.excludedTypes = customRecordTypeError.concat(failedTypes.excludedTypes)
     }
 
     const elements = [

@@ -390,7 +390,7 @@ export const calculatePatch = async (
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const { loadElementsFromFolder } = adapterCreators[accountToServiceNameMap[accountName]]
   if (loadElementsFromFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support fetch diff`)
+    throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support calculate patch`)
   }
 
   const wsElements = await workspace.elements()

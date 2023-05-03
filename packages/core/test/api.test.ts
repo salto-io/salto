@@ -755,7 +755,7 @@ describe('api.ts', () => {
     })
   })
 
-  describe('fetchDiffToWorkspace', () => {
+  describe('calculatePatch', () => {
     const type = new ObjectType({
       elemID: new ElemID('salesforce', 'type'),
       fields: {

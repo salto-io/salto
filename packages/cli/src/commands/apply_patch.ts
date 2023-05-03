@@ -97,7 +97,7 @@ const applyPatchToWorkspace = async (
   }
   if (fetchErrors.length > 0) {
     // We currently assume all fetchErrors are warnings
-    log.debug(`fetch-diff had ${fetchErrors.length} warnings`)
+    log.debug(`apply-patch had ${fetchErrors.length} warnings`)
     outputLine(
       formatFetchWarnings(fetchErrors.map(fetchError => fetchError.message)),
       output,

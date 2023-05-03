@@ -244,7 +244,7 @@ describe('config', () => {
 
       it('should validate also customrecordtype instances', () => {
         const config = {
-          maxInstancesPerType: [{ name: 'customrecordForTesting', limit: 3 }],
+          maxInstancesPerType: [{ name: 'customrecord_ForTesting', limit: 3 }],
         }
         expect(() => validateClientConfig(config, false)).not.toThrow()
       })

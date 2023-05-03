@@ -150,20 +150,14 @@ export default class NetsuiteClient {
   private static async getSDFObjectGraphNodes(
     changes: Change<InstanceElement | ObjectType>[],
   ): Promise<GraphNode<SDFObjectNode>[]> {
-    const changesWithChangeType = changes
+    return awu(changes)
       .filter(isAdditionOrModificationChange)
-      .map(change => ({
-        change,
-        changeType: getChangeType(change),
-      }))
-
-    return awu(changesWithChangeType)
-      .map(async ({ change, changeType }) => new GraphNode(
+      .map(async change => new GraphNode(
         getChangeNodeId(change),
         {
           change,
           serviceid: getServiceIdFromElement(getChangeData(change)),
-          changeType,
+          changeType: getChangeType(change),
           customizationInfo: await toCustomizationInfo(
             getOrTransformCustomRecordTypeToInstance(getChangeData(change))
           ),
@@ -177,7 +171,7 @@ export default class NetsuiteClient {
   ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const nodes = await NetsuiteClient.getSDFObjectGraphNodes(changes)
-    const dependencyGraph = new Graph<SDFObjectNode>(nodes)
+    const dependencyGraph = new Graph(nodes)
     nodes.forEach(node => {
       const currSet = dependencyMap.get(node.id)
       lookupValue(node.value.customizationInfo.values, val => {

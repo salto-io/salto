@@ -19,8 +19,8 @@ import { isInstanceElement, Element, isInstanceChange, isAdditionOrModificationC
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import Joi from 'joi'
-import { FilterCreator } from '../../filter'
-import { WORKFLOW_TYPE_NAME } from '../../constants'
+import { FilterCreator } from '../../../filter'
+import { WORKFLOW_TYPE_NAME } from '../../../constants'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
 
 const log = logger(module)

@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import { createSchemeGuard, safeJsonStringify, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { Value } from '@salto-io/adapter-api'
-import { renameKey } from '../../utils'
+import { renameKey } from '../../../utils'
 
 const log = logger(module)
 const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'

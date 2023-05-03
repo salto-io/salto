@@ -27,7 +27,7 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getElemIdNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
+import { FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
@@ -170,9 +170,8 @@ export default class NetsuiteClient {
     changes: Change<InstanceElement | ObjectType>[],
   ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const nodes = await NetsuiteClient.getSDFObjectGraphNodes(changes)
-    const dependencyGraph = new Graph(nodes)
-    nodes.forEach(node => {
+    const dependencyGraph = new Graph(await NetsuiteClient.getSDFObjectGraphNodes(changes))
+    dependencyGraph.nodes.forEach(node => {
       const currSet = dependencyMap.get(node.id)
       lookupValue(node.value.customizationInfo.values, val => {
         if (!_.isString(val)) {
@@ -197,7 +196,7 @@ export default class NetsuiteClient {
     elemIds: ElemID[],
     dependencyGraph: Graph<SDFObjectNode>
   ): Set<string> {
-    return new Set(elemIds.map(id => dependencyGraph.getNode(getElemIdNodeId(id)))
+    return new Set(elemIds.map(id => dependencyGraph.getNode(getNodeId(id)))
       .filter(values.isDefined)
       .flatMap(node => dependencyGraph.getNodeDependencies(node))
       .map(node => node.id))

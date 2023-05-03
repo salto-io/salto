@@ -116,10 +116,10 @@ export type SDFObjectNode = {
   customizationInfo: CustomizationInfo
 }
 
-export const getElemIdNodeId = (elemId: ElemID): string => elemId.getFullName()
+export const getNodeId = (elemId: ElemID): string => elemId.getFullName()
 
 export const getChangeNodeId = (change: DeployableChange): string =>
-  getElemIdNodeId(getChangeData(change).elemID)
+  getNodeId(getChangeData(change).elemID)
 
 export const getDeployableChanges = (
   changes: ReadonlyArray<Change>

@@ -22,6 +22,7 @@ import { groupRuleActionsValidator } from './group_rule_actions'
 import { defaultPoliciesValidator } from './default_policies'
 import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
+import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
@@ -38,6 +39,7 @@ export default ({
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(),
     applicationValidator,
+    appGroupValidator,
     groupRuleStatusValidator,
     groupRuleActionsValidator,
     defaultPoliciesValidator,

@@ -77,8 +77,13 @@ const createStatCounters = (): StatCounters => {
       return locations.get(location).counters
     },
     return: location => {
-      locations.get(location).refCnt -= 1
-      if (locations.get(location).refCnt === 0) {
+      if (!locations.has(location)) {
+        log.warn('Returning counters that were never acquired. Location=%s', location)
+        return
+      }
+      const locationInfo = locations.get(location)
+      locationInfo.refCnt -= 1
+      if (locationInfo.refCnt === 0) {
         locations.delete(location)
       }
     },

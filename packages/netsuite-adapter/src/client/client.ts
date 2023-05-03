@@ -27,14 +27,14 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { FeaturesMap, GetCustomObjectsResult, getDeployableChanges, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
+import { FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getElemIdNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
 import { APPLICATION_ID, PATH, SCRIPT_ID } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
-import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
+import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 
 const { awu } = collections.asynciterable
@@ -147,20 +147,28 @@ export default class NetsuiteClient {
     return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
   }
 
-  private static async getSDFObjectNodes(
+  private static async getSDFObjectGraphNodes(
     changes: Change<InstanceElement | ObjectType>[],
-  ): Promise<SDFObjectNode[]> {
-    const elementsAndChangeTypes = changes
+  ): Promise<GraphNode<SDFObjectNode>[]> {
+    const changesWithChangeType = changes
       .filter(isAdditionOrModificationChange)
-      .map(change =>
-        ({ element: getChangeData(change), changeType: getChangeType(change) }))
-    return awu(elementsAndChangeTypes)
-      .map(async ({ element, changeType }) => ({
-        elemIdFullName: element.elemID.getFullName(),
-        serviceid: getServiceIdFromElement(element),
-        changeType,
-        customizationInfo: await toCustomizationInfo(getOrTransformCustomRecordTypeToInstance(element)),
+      .map(change => ({
+        change,
+        changeType: getChangeType(change),
       }))
+
+    return awu(changesWithChangeType)
+      .map(async ({ change, changeType }) => new GraphNode(
+        getChangeNodeId(change),
+        {
+          change,
+          serviceid: getServiceIdFromElement(getChangeData(change)),
+          changeType,
+          customizationInfo: await toCustomizationInfo(
+            getOrTransformCustomRecordTypeToInstance(getChangeData(change))
+          ),
+        }
+      ))
       .toArray()
   }
 
@@ -168,14 +176,11 @@ export default class NetsuiteClient {
     changes: Change<InstanceElement | ObjectType>[],
   ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(changes)
-    const dependencyGraph = new Graph<SDFObjectNode>(
-      'elemIdFullName', elemIdsAndCustInfos.map(elemIdsAndCustInfo => new GraphNode(elemIdsAndCustInfo, elemIdsAndCustInfo.elemIdFullName))
-    )
-    elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
-      const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
-      const endNode = dependencyGraph.findNode(elemIdAndCustInfo)
-      lookupValue(elemIdAndCustInfo.customizationInfo.values, val => {
+    const nodes = await NetsuiteClient.getSDFObjectGraphNodes(changes)
+    const dependencyGraph = new Graph<SDFObjectNode>(nodes)
+    nodes.forEach(node => {
+      const currSet = dependencyMap.get(node.id)
+      lookupValue(node.value.customizationInfo.values, val => {
         if (!_.isString(val)) {
           return
         }
@@ -183,10 +188,10 @@ export default class NetsuiteClient {
         serviceIdInfoArray.forEach(serviceIdInfo => {
           currSet.add(serviceIdInfo.serviceId)
           const startNode = dependencyGraph.findNodeByField(
-            'serviceid', (serviceIdInfo.serviceIdType === PATH ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
+            'serviceid', (serviceIdInfo.serviceIdType === 'path' ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
           )
-          if (startNode && endNode && isLegalEdge(startNode, endNode)) {
-            startNode.addEdge(dependencyGraph.key, endNode)
+          if (startNode && isLegalEdge(startNode, node)) {
+            startNode.addEdge(node)
           }
         })
       })
@@ -198,7 +203,7 @@ export default class NetsuiteClient {
     elemIds: ElemID[],
     dependencyGraph: Graph<SDFObjectNode>
   ): Set<string> {
-    return new Set(elemIds.map(id => dependencyGraph.findNodeByKey(id.getFullName()))
+    return new Set(elemIds.map(id => dependencyGraph.getNode(getElemIdNodeId(id)))
       .filter(values.isDefined)
       .flatMap(node => dependencyGraph.getNodeDependencies(node))
       .map(node => node.id))
@@ -284,20 +289,21 @@ export default class NetsuiteClient {
     additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
   }): Promise<DeployResult> {
-    const changesToDeploy = getDeployableChanges(changes)
     const fieldChangesByType = _.groupBy(
       changes.filter(isFieldChange),
       change => getChangeData(change).parent.elemID.getFullName()
     )
 
-    const someElementToDeploy = getChangeData(changes[0])
+    const deployableChanges = getDeployableChanges(changes)
+    const someElementToDeploy = getChangeData(deployableChanges[0])
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
     const errors: Error[] = []
-    const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(changesToDeploy)
+    const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(deployableChanges)
     const featuresMap = NetsuiteClient.createFeaturesMap(additionalDependencies)
 
-    while (changesToDeploy.length > 0) {
+    while (dependencyGraph.nodes.size > 0) {
+      const changesToDeploy = Array.from(dependencyGraph.nodes.values()).map(node => node.value.change)
       const changesToApply = changesToDeploy.flatMap(change => [
         change,
         ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
@@ -305,7 +311,7 @@ export default class NetsuiteClient {
       const manifestDependencies = NetsuiteClient.toManifestDependencies(additionalDependencies, featuresMap)
 
       try {
-        log.debug('deploying %d changes', changesToDeploy.length)
+        log.debug('deploying %d changes', dependencyGraph.nodes.size)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
           () => this.sdfClient.deploy(
@@ -334,23 +340,23 @@ export default class NetsuiteClient {
           // eslint-disable-next-line no-continue
           continue
         }
-        const elemIdsToRemove = NetsuiteClient.getDependenciesFromGraph(
+        const nodeIdsToRemove = NetsuiteClient.getDependenciesFromGraph(
           getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy),
           dependencyGraph
         )
-        elemIdsToRemove.forEach(elemIdName => dependencyGraph.removeNode(elemIdName))
-        const removedChanges = _.remove(
-          changesToDeploy,
-          change => elemIdsToRemove.has(getChangeData(change).elemID.getFullName())
-        )
-        if (removedChanges.length === 0) {
+        const numOfDeployedNodes = dependencyGraph.nodes.size
+        nodeIdsToRemove.forEach(nodeId => dependencyGraph.removeNode(nodeId))
+        const numOfRemovedNodes = numOfDeployedNodes - dependencyGraph.nodes.size
+        if (numOfRemovedNodes === 0) {
           log.error('no changes were removed from error: %o', error)
           return { errors, appliedChanges: [] }
         }
         log.debug(
           'removed %d changes (%o) from error: %o',
-          removedChanges.length,
-          removedChanges.map(change => getChangeData(change).elemID.getFullName()),
+          numOfRemovedNodes,
+          changesToDeploy
+            .map(getChangeNodeId)
+            .filter(nodeId => dependencyGraph.getNode(nodeId) === undefined),
           error
         )
       }

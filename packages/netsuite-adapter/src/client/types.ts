@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
+import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
 import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
 
@@ -107,15 +107,29 @@ export class InvalidSuiteAppCredentialsError extends Error {
   }
 }
 
+type DeployableChange = Change<ObjectType | InstanceElement>
+
+export type SDFObjectNode = {
+  change: DeployableChange
+  serviceid: string
+  changeType: 'addition' | 'modification'
+  customizationInfo: CustomizationInfo
+}
+
+export const getElemIdNodeId = (elemId: ElemID): string => elemId.getFullName()
+
+export const getChangeNodeId = (change: DeployableChange): string =>
+  getElemIdNodeId(getChangeData(change).elemID)
+
 export const getDeployableChanges = (
   changes: ReadonlyArray<Change>
-): Change<ObjectType | InstanceElement>[] =>
+): DeployableChange[] =>
   changes.filter(
     change => isInstanceChange(change) || isObjectTypeChange(change)
-  ) as Change<InstanceElement | ObjectType>[]
+  ) as DeployableChange[]
 
 export const getOrTransformCustomRecordTypeToInstance = (
-  element: ObjectType | InstanceElement
+  element: ChangeData<DeployableChange>
 ): InstanceElement => (
   isObjectType(element)
     ? toCustomRecordTypeInstance(element)

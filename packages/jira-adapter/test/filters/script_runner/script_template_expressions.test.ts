@@ -16,7 +16,7 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import referencesFilter from '../../../src/filters/script_runner/workflow_script_references'
+import referencesFilter from '../../../src/filters/script_runner/script_template_expressions'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
 
@@ -107,8 +107,8 @@ describe('workflow_script_references', () => {
         {
           transitions: [
             {
-              undefined, // to test cases of undefined fields
               rules: {
+                undefined, // to test cases of undefined fields
                 postFunctions: [
                   {
                     type: 'com.onresolve.jira.groovy.groovyrunner__script-postfunction',
@@ -184,6 +184,18 @@ describe('workflow_script_references', () => {
     it('onDeploy should not restore references when script runner is disabled', async () => {
       // just for coverage
       await filterOff.onDeploy([toChange({ after: instance })])
+      // another for coverage
+      const emptyInstance = new InstanceElement(
+        'instance',
+        createEmptyType('Workflow'),
+        {
+          transitions: [
+            {
+            },
+          ],
+        }
+      )
+      await filter.onDeploy([toChange({ after: emptyInstance })])
     })
     it('onDeploy should restore references when script runner is enabled', async () => {
       await filter.onFetch([instance, ...fields])
@@ -211,8 +223,8 @@ describe('workflow_script_references', () => {
         {
           transitions: [
             {
-              undefined, // to test cases of undefined fields
               rules: {
+                undefined, // to test cases of undefined fields
                 postFunctions: [
                   {
                     type: 'com.onresolve.jira.groovy.GroovyFunctionPlugin',

@@ -121,7 +121,7 @@ import scriptRunnerWorkflowFilter from './filters/script_runner/workflow_filter'
 import pluginVersionFliter from './filters/data_center/plugin_version'
 import scriptRunnerWorkflowListsFilter from './filters/script_runner/workflow_lists_parsing'
 import scriptRunnerWorkflowReferencesFilter from './filters/script_runner/workflow_references'
-import scriptRunnerScriptsFilter from './filters/script_runner/workflow_script_references'
+import scriptRunnerTemplateExpressionFilter from './filters/script_runner/script_template_expressions'
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
@@ -177,7 +177,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowListsFilter,
   // must run after scriptRunnerWorkflowListsFilter
   scriptRunnerWorkflowReferencesFilter,
-  scriptRunnerScriptsFilter,
+  scriptRunnerTemplateExpressionFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,

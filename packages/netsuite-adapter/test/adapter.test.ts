@@ -1340,7 +1340,7 @@ describe('Adapter', () => {
         expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
           false,
           expect.anything(),
-          { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeDataElements', 'excludedTypeCustomRecord'] },
+          { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeCustomRecord', 'excludedTypeDataElements'] },
           config,
         )
       })

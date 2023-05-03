@@ -96,12 +96,6 @@ type UpdateContextOptionsParams = {
   baseUrl: string
   contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
 }
-const getFieldName = (
-  contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  newOption: Value
-): Value =>
-  Object.keys(contextChange.data.after.value.options)
-    .find(key => contextChange.data.after.value.options[key].value === newOption)
 
 const updateContextOptions = async ({
   addedOptions,
@@ -126,14 +120,14 @@ const updateContextOptions = async ({
 
     if (Array.isArray(resp.data.options)) {
       const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
+      const optionsMap = _(contextChange.data.after.value.options).values()
+        .keyBy(option => naclCase(option.value)).value()
       resp.data.options.forEach(newOption => {
         if (newOption.optionId !== undefined) {
           idToOption[newOption.optionId]
             .cascadingOptions[naclCase(newOption.value)].id = newOption.id
         } else {
-          (contextChange.data.after.value.options[naclCase(newOption.value)]
-            ?? contextChange.data.after.value.options[getFieldName(contextChange, newOption.value)])
-            .id = newOption.id
+          optionsMap[naclCase(newOption.value)].id = newOption.id
         }
       })
     }

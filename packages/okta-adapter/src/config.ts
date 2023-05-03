@@ -266,8 +266,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   Group: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'apps', fieldType: 'list<Application>' },
         { fieldName: 'roles', fieldType: 'list<RoleAssignment>' },
+        { fieldName: 'source', fieldType: 'Group__source' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -1242,6 +1242,8 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
     // AppUserSchema returns UserSchema items, but we separate types because the endpoints for deploy are different
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
+    // This is not the right type to cloneFrom, but a workaround to define type for Group__source with 'id' field
+    { typeName: 'Group__source', cloneFrom: 'AppAndInstanceConditionEvaluatorAppOrInstance' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },

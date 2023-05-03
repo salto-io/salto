@@ -27,13 +27,17 @@ import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
 import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
-import OktaClient from '../client/client'
 import { roleAssignmentValidator } from './role_assignment'
+import { usersValidator } from './user'
+import OktaClient from '../client/client'
+import { OktaConfig } from '../config'
 
 export default ({
   client,
+  config,
 }: {
   client: OktaClient
+  config: OktaConfig
 }): ChangeValidator => {
   const validators: ChangeValidator[] = [
     ...deployment.changeValidators.getDefaultChangeValidators(),
@@ -49,6 +53,7 @@ export default ({
     groupSchemaModifyBaseValidator,
     enabledAuthenticatorsValidator,
     roleAssignmentValidator,
+    usersValidator(client, config),
   ]
 
   return createChangeValidator(validators)

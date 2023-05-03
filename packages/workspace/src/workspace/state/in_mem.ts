@@ -28,7 +28,6 @@ import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData, updateStateElementsArgs } from './state'
-import { mergeElements } from '../../merger'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -83,15 +82,6 @@ export const buildInMemState = (
     )
   }
 
-  // Some addition changes may be split into multiple changes of the same objects
-  // want to merge them before setting them in the state so they won't override each other
-  const mergeAdditionsToElement = async (changes: DetailedChange<Element>[], elemID: ElemID)
-      : Promise<Element | undefined> => {
-    const additionChanges = changes.filter(isAdditionChange).filter(change => change.id.isEqual(elemID))
-    const combinedElement = await mergeElements(awu(additionChanges).map(getChangeData))
-    return combinedElement.merged.get(elemID.getFullName())
-  }
-
   const updateStatePathIndex = async (
     changedUnmergedElements: Element[],
     unmergedElementIDs?: Set<string>,
@@ -113,12 +103,7 @@ export const buildInMemState = (
         if (isRemovalChange(elemChanges[0])) {
           await state.delete(elemID)
         } else if (isAdditionChange(elemChanges[0])) {
-          const mergedElement = await mergeAdditionsToElement(elemChanges, elemID)
-          if (mergedElement !== undefined) {
-            await state.set(mergedElement)
-          } else {
-            await state.set(getChangeData(elemChanges[0]))
-          }
+          await state.set(getChangeData(elemChanges[0]))
         }
         return
       }

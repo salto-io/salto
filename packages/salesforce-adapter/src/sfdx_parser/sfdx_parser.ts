@@ -26,7 +26,6 @@ import { xmlToValues, isComplexType, complexTypesMap, PACKAGE } from '../transfo
 import { METADATA_TYPES_TO_RENAME, createInstanceElement, createMetadataObjectType, MetadataValues } from '../transformers/transformer'
 import { buildFetchProfile } from '../fetch_profile/fetch_profile'
 import { CUSTOM_OBJECT, METADATA_CONTENT_FIELD, SALESFORCE, RECORDS_PATH } from '../constants'
-import { isLocalFilterCreator } from '../filter'
 import { sfdxFilters } from './filters'
 
 
@@ -140,7 +139,7 @@ const getElementsFromDXFolder = async (
     .toArray()
 
   const localFilters = allFilters
-    .filter(isLocalFilterCreator)
+    .filter(filter.isLocalFilterCreator)
     .map(({ creator }) => creator)
   const filtersToRun = sfdxFilters.concat(localFilters)
   const filterRunner = filter.filtersRunner(

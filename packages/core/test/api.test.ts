@@ -865,6 +865,14 @@ describe('api.ts', () => {
         expect(firstChange.pendingChanges).toHaveLength(1)
       })
     })
+
+    describe('when used with an account that does not support loadElementsFromFolder', () => {
+      it('Should throw an error', async () => {
+        await expect(
+          api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'notSalesforce' }),
+        ).rejects.toThrow()
+      })
+    })
   })
 
   describe('rename', () => {

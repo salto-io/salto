@@ -374,9 +374,7 @@ type CalculatePatchArgs = {
   workspace: Workspace
   fromDir: string
   toDir: string
-  // This currently restricts the account name to be salesforce
-  // when using this feature
-  accountName: 'salesforce'
+  accountName: string
 }
 
 export const calculatePatch = async (
@@ -392,20 +390,37 @@ export const calculatePatch = async (
   if (loadElementsFromFolder === undefined) {
     throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support calculate patch`)
   }
-
   const wsElements = await workspace.elements()
   const resolvedWSElements = await expressions.resolve(
     await awu(await wsElements.getAll()).toArray(),
     wsElements,
   )
   const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
-
-  const { elements: beforeElements, errors: beforeLoadErrors } = await loadElementsFromFolder({
-    baseDir: fromDir,
-    elementSource: resolvedWSElementSource,
-  })
-  const beforeMergeResult = await merger.mergeElements(awu(beforeElements))
-  const beforeMergeErrors = await awu(beforeMergeResult.errors.values()).flat().toArray()
+  const loadElementsAndMerge = async (
+    dir: string,
+  ): Promise<{
+    elements: Element[]
+    loadErrors?: SaltoError[]
+    mergeErrors: MergeErrorWithElements[]
+    mergedElements: Element[]
+  }> => {
+    const { elements, errors } = await loadElementsFromFolder({
+      baseDir: dir,
+      elementSource: resolvedWSElementSource,
+    })
+    const mergeResult = await merger.mergeElements(awu(elements))
+    return {
+      elements,
+      loadErrors: errors,
+      mergeErrors: await awu(mergeResult.errors.values()).flat().toArray(),
+      mergedElements: await awu(mergeResult.merged.values()).toArray(),
+    }
+  }
+  const {
+    loadErrors: beforeLoadErrors,
+    mergeErrors: beforeMergeErrors,
+    mergedElements: mergedBeforeElements,
+  } = await loadElementsAndMerge(fromDir)
   if (beforeMergeErrors.length > 0) {
     return {
       changes: [],
@@ -415,13 +430,12 @@ export const calculatePatch = async (
       updatedConfig: {},
     }
   }
-
-  const { elements: afterElements, errors: afterLoadErrors } = await loadElementsFromFolder({
-    baseDir: toDir,
-    elementSource: resolvedWSElementSource,
-  })
-  const afterMergeResult = await merger.mergeElements(awu(afterElements))
-  const afterMergeErrors = await awu(afterMergeResult.errors.values()).flat().toArray()
+  const {
+    elements: afterElements,
+    loadErrors: afterLoadErrors,
+    mergeErrors: afterMergeErrors,
+    mergedElements: mergedAfterElements,
+  } = await loadElementsAndMerge(toDir)
   if (afterMergeErrors.length > 0) {
     return {
       changes: [],
@@ -431,10 +445,6 @@ export const calculatePatch = async (
       updatedConfig: {},
     }
   }
-
-  const mergedBeforeElements = await awu(beforeMergeResult.merged.values()).toArray()
-  const mergedAfterElements = await awu(afterMergeResult.merged.values()).toArray()
-
   const changes = await calcFetchChanges(
     afterElements,
     elementSource.createInMemoryElementSource(mergedAfterElements),

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -92,6 +92,58 @@ describe('context options', () => {
             ],
           },
           status: 200,
+        })
+        await setContextOptions(
+          toChange({ after: contextInstance }),
+          client,
+          elementSource
+        )
+      })
+
+      it('should call the add endpoint with all of the options', () => {
+        expect(client.post).toHaveBeenCalledWith({
+          url: '/rest/api/3/field/2/context/3/option',
+          data: {
+            options: [
+              expect.objectContaining({
+                value: 'p1',
+                disabled: false,
+              }),
+            ],
+          },
+        })
+        expect(contextInstance.value.options.p1.id).toEqual('4')
+      })
+    })
+
+    describe('change has over 1000 additions', () => {
+      beforeEach(async () => {
+        const generateOptions = (count: number): Values =>
+          Array.from({ length: count }, (_, i) => ({
+            [`p${i}`]: {
+              value: `p${i}`,
+              disabled: false,
+              position: i,
+            },
+          })).reduce((acc, option) => ({ ...acc, ...option }), {})
+        const largeOptionsObject = generateOptions(1001)
+        contextInstance.value.options = largeOptionsObject
+        client.post.mockImplementation(async args => {
+          const { options } = args.data as { options: unknown[] }
+          if (options.length > 1000) {
+            throw Error('bad')
+          }
+          return {
+            data: {
+              options: [
+                {
+                  id: '4',
+                  value: 'p1',
+                },
+              ],
+            },
+            status: 200,
+          }
         })
         await setContextOptions(
           toChange({ after: contextInstance }),

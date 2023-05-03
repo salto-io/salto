@@ -143,6 +143,11 @@ export type ConfigCreator = {
     => Promise<InstanceElement>
 }
 
+export type LoadElementsFromFolderArgs = {
+  baseDir: string
+  elementSource: ReadOnlyElementsSource
+}
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -150,6 +155,7 @@ export type Adapter = {
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
+  loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

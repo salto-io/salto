@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, ObjectType, isFieldChange, ElemID } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -27,7 +27,7 @@ import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
+import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
@@ -48,7 +48,7 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getServiceIdFromElement = (changeData: ObjectType | InstanceElement): string => {
+const getServiceIdFromElement = (changeData: ChangeData<DeployableChange>): string => {
   if (isFileCabinetInstance(changeData)) {
     return getElementValueOrAnnotations(changeData)[PATH]
   }
@@ -148,7 +148,7 @@ export default class NetsuiteClient {
   }
 
   private static async getSDFObjectGraphNodes(
-    changes: Change<InstanceElement | ObjectType>[],
+    changes: DeployableChange[],
   ): Promise<GraphNode<SDFObjectNode>[]> {
     return awu(changes)
       .filter(isAdditionOrModificationChange)
@@ -167,7 +167,7 @@ export default class NetsuiteClient {
   }
 
   public static async createDependencyMapAndGraph(
-    changes: Change<InstanceElement | ObjectType>[],
+    changes: DeployableChange[],
   ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
     const dependencyGraph = new Graph(await NetsuiteClient.getSDFObjectGraphNodes(changes))
@@ -337,9 +337,9 @@ export default class NetsuiteClient {
           getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy),
           dependencyGraph
         )
-        const numOfDeployedNodes = dependencyGraph.nodes.size
+        const numOfAttemptedNodesToDeploy = dependencyGraph.nodes.size
         nodeIdsToRemove.forEach(nodeId => dependencyGraph.removeNode(nodeId))
-        const numOfRemovedNodes = numOfDeployedNodes - dependencyGraph.nodes.size
+        const numOfRemovedNodes = numOfAttemptedNodesToDeploy - dependencyGraph.nodes.size
         if (numOfRemovedNodes === 0) {
           log.error('no changes were removed from error: %o', error)
           return { errors, appliedChanges: [] }

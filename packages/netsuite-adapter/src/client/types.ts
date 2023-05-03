@@ -107,7 +107,7 @@ export class InvalidSuiteAppCredentialsError extends Error {
   }
 }
 
-type DeployableChange = Change<ObjectType | InstanceElement>
+export type DeployableChange = Change<ObjectType | InstanceElement>
 
 export type SDFObjectNode = {
   change: DeployableChange

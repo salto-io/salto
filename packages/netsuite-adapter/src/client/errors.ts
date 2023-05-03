@@ -15,8 +15,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { CONFIG_FEATURES, SCRIPT_ID } from '../constants'
+import { DeployableChange } from './types'
 
 export class FeaturesDeployError extends Error {
   ids: string[]
@@ -96,7 +97,7 @@ const getFailedManifestErrorElemIds = (
 
 const getFailedSdfDeployChangesElemIDs = (
   error: ObjectsDeployError,
-  changes: Change<InstanceElement | ObjectType>[],
+  changes: DeployableChange[],
 ): ElemID[] => changes
   .map(getChangeData)
   .filter(elem => (
@@ -108,7 +109,7 @@ const getFailedSdfDeployChangesElemIDs = (
 
 const getFailedSettingsErrorChanges = (
   error: SettingsDeployError,
-  changes: Change<InstanceElement | ObjectType>[],
+  changes: DeployableChange[],
 ): ElemID[] => changes
   .map(change => getChangeData(change).elemID)
   .filter(changeElemId => error.failedConfigTypes.has(changeElemId.typeName))
@@ -116,7 +117,7 @@ const getFailedSettingsErrorChanges = (
 export const getChangesElemIdsToRemove = (
   error: unknown,
   dependencyMap: Map<string, Set<string>>,
-  changes: Change<InstanceElement | ObjectType>[]
+  changes: DeployableChange[]
 ): ElemID[] => {
   if (error instanceof ManifestValidationError) {
     return getFailedManifestErrorElemIds(error, dependencyMap)

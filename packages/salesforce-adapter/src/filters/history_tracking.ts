@@ -110,8 +110,8 @@ const filter: LocalFilterCreator = () => {
         .forEach(centralizeHistoryTrackingAnnotations)
     },
     preDeploy: async changes => {
-      const trackedFields = (type: ObjectType): string[] => (
-        Object.keys(type.annotations[HISTORY_TRACKED_FIELDS] ?? {})
+      const trackedFields = (type: ObjectType | undefined): string[] => (
+        Object.keys(type?.annotations[HISTORY_TRACKED_FIELDS] ?? {})
       )
 
       const isHistoryTrackedField = (field: Field): boolean => (
@@ -163,10 +163,7 @@ const filter: LocalFilterCreator = () => {
       // - and save the objects where the list of tracked fields changed, because if it's the *only* thing that changed
       //   we may not receive these changes in onDeploy (since we removed the HISTORY_TRACKED_FIELDS annotation).
       const actuallyModifiedObjectTypes = modifiedObjectTypes
-        .filter(change => {
-          const [before, after] = getAllChangeData(change)
-          return !_.isEqual(before?.annotations[HISTORY_TRACKED_FIELDS], after.annotations[HISTORY_TRACKED_FIELDS])
-        })
+        .filter(change => !_.isEqual(trackedFields(change.data.before), trackedFields(change.data.after)))
 
       //  - if the list of tracked fields changed, create field changes that represent the changes to the trackHistory
       //    annotations

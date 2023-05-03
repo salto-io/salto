@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, Element, getChangeData, InstanceElement, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -206,6 +206,7 @@ const filter: FilterCreator = () => {
 
     preDeploy: async (changes: Change<InstanceElement>[]) => {
       changes
+        .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
@@ -245,6 +246,7 @@ const filter: FilterCreator = () => {
 
     onDeploy: async (changes: Change<InstanceElement>[]) => {
       changes
+        .filter(isAdditionOrModificationChange)
         .map(getChangeData)
         .filter(isInstanceElement)
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))

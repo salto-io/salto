@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
+import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { pathNaclCase } from '@salto-io/adapter-utils'
 import {
   createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
@@ -50,6 +50,7 @@ export type CustomObjectFetchSetting = {
   objectType: ObjectType
   isBase: boolean
   idFields: Field[]
+  aliasFields: Field[]
   invalidIdFields?: string[]
 }
 
@@ -107,6 +108,7 @@ type recordToInstanceParams = {
   type: ObjectType
   record: SalesforceRecord
   instanceSaltoName: string
+  instanceAlias: string
 }
 
 const transformCompoundNameValues = async (
@@ -141,7 +143,7 @@ export const transformRecordToValues = async (
 }
 
 const recordToInstance = async (
-  { type, record, instanceSaltoName }: recordToInstanceParams
+  { type, record, instanceSaltoName, instanceAlias }: recordToInstanceParams
 ): Promise<InstanceElement> => {
   const getInstancePath = async (instanceName: string): Promise<string[]> => {
     const typeNamespace = await getNamespace(type)
@@ -162,6 +164,7 @@ const recordToInstance = async (
     type,
     await transformRecordToValues(type, record),
     await getInstancePath(name),
+    { [CORE_ANNOTATIONS.ALIAS]: instanceAlias }
   )
 }
 
@@ -177,6 +180,7 @@ const typesRecordsToInstances = async (
     typesToUnresolvedRefFields[typeName].add(unresolvedFieldName)
   }
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
+  const aliasByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const setSaltoName = (typeName: TypeName, recordId: string, saltoName: string): void => {
     if (saltoNameByIdAndType[typeName] === undefined) {
       saltoNameByIdAndType[typeName] = {}
@@ -185,6 +189,15 @@ const typesRecordsToInstances = async (
   }
   const getSaltoName = (typeName: TypeName, recordId: string): string | undefined =>
     saltoNameByIdAndType[typeName]?.[recordId]
+
+  const getAlias = (typeName: TypeName, recordId: string): string | undefined =>
+    aliasByIdAndType[typeName]?.[recordId]
+  const setAlias = (typeName: TypeName, recordId: string, alias: string): void => {
+    if (saltoNameByIdAndType[typeName] === undefined) {
+      aliasByIdAndType[typeName] = {}
+    }
+    aliasByIdAndType[typeName][recordId] = alias
+  }
 
   const getRecordSaltoName = async (
     typeName: string,
@@ -226,6 +239,44 @@ const typesRecordsToInstances = async (
     return fullName
   }
 
+  const getRecordAlias = async (
+    typeName: string,
+    record: SalesforceRecord,
+  ): Promise<string> => {
+    const fieldToSaltoName = async (field: Field): Promise<string | undefined> => {
+      const fieldValue = record[field.name]
+      if (fieldValue === null || fieldValue === undefined) {
+        return undefined
+      }
+      if (!isReferenceField(field)) {
+        return fieldValue.toString()
+      }
+      const referencedTypeNames = getReferenceTo(field)
+      const referencedName = await awu(referencedTypeNames).map(referencedTypeName => {
+        const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
+        if (rec === undefined) {
+          log.debug(`Failed to find record with id ${fieldValue} of type ${referencedTypeName} when looking for reference`)
+          return undefined
+        }
+        return getRecordAlias(referencedTypeName, rec)
+      }).find(isDefined)
+      if (referencedName === undefined) {
+        addUnresolvedRefFieldByType(typeName, field.name)
+      }
+      return referencedName
+    }
+    const existingAlias = getAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD])
+    if (existingAlias !== undefined) {
+      return existingAlias
+    }
+    const alias = (await awu(customObjectFetchSetting[typeName].aliasFields)
+      .map(field => fieldToSaltoName(field))
+      .filter(isDefined)
+      .toArray()).join(nameSeparator)
+    setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)
+    return alias
+  }
+
   const instances = await awu(Object.entries(recordByIdAndType))
     .flatMap(async ([typeName, idToRecord]) =>
       (awu(Object.values(idToRecord))
@@ -233,6 +284,7 @@ const typesRecordsToInstances = async (
           type: customObjectFetchSetting[typeName].objectType,
           record,
           instanceSaltoName: await getRecordSaltoName(typeName, record),
+          instanceAlias: await getRecordAlias(typeName, record),
         }))
         .filter(async recToInstanceParams =>
           !Object.keys(typesToUnresolvedRefFields).includes(
@@ -353,33 +405,37 @@ const getParentFieldNames = (fields: Field[]): string[] =>
 export const getIdFields = async (
   type: ObjectType,
   dataManagement: DataManagement
-): Promise<{ idFields: Field[]; invalidFields?: string[] }> => {
-  const idFieldsNames = dataManagement.getObjectIdsFields(await apiName(type))
+): Promise<{ idFields: Field[]; aliasFields: Field[]; invalidFields?: string[] }> => {
+  const typeName = await apiName(type)
+  const idFieldsNames = dataManagement.getObjectIdsFields(typeName)
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
+    ((fieldName === detectsParentsIndicator)
+      ? getParentFieldNames(Object.values(type.fields)) : fieldName))
+  const aliasFieldNames = dataManagement.getObjectAliasFields(typeName)
+  const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
     ((fieldName === detectsParentsIndicator)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
   const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
   ))
   if (invalidIdFieldNames.length > 0) {
-    return { idFields: [], invalidFields: invalidIdFieldNames }
+    return { idFields: [], aliasFields: [], invalidFields: invalidIdFieldNames }
   }
-  return { idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]) }
+  return {
+    idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]),
+    aliasFields: aliasFieldsWithParents.map(fieldName => type.fields[fieldName]),
+  }
 }
 
 export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
-    const fields = await getIdFields(type, dataManagement)
-    return {
-      objectType: type,
-      isBase: dataManagement.isObjectMatch(await apiName(type)),
-      idFields: fields.idFields,
-      invalidIdFields: fields.invalidFields,
-    }
-  }
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
+    objectType: type,
+    isBase: dataManagement.isObjectMatch(await apiName(type)),
+    ...await getIdFields(type, dataManagement),
+  })
 
   return awu(types)
     .filter(async type => dataManagement.isObjectMatch(await apiName(type))

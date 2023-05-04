@@ -390,6 +390,9 @@ export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'
 // If this changes in the future we need to change this and add further logic where it's used
 export const KEY_PREFIX_LENGTH = 3
 
+// Magics
+export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
+
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'

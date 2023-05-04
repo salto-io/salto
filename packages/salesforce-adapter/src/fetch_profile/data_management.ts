@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { DataManagementConfig } from '../types'
+import { DETECTS_PARENTS_INDICATOR } from '../constants'
 
 const { makeArray } = collections.array
 
@@ -26,7 +27,64 @@ export type DataManagement = {
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
+  getObjectAliasFields: (name: string) => string[]
   showReadOnlyValues?: boolean
+}
+
+
+const DEFALT_ALIAS_FIELDS: types.NonEmptyArray<string> = ['Name']
+const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
+  SBQQ__ProductFeature__c: [
+    DETECTS_PARENTS_INDICATOR,
+    'SBQQ__ConfiguredSKU__c',
+    'Name',
+  ],
+  SBQQ__LineColumn__c: [
+    '##allMasterDetailFields##',
+    'SBQQ__FieldName__c',
+    'Name',
+  ],
+  SBQQ__LookupQuery__c: [
+    '##allMasterDetailFields##',
+    'SBQQ__PriceRule2__c',
+    'Name',
+  ],
+  SBQQ__Dimension__c: [
+    '##allMasterDetailFields##',
+    'SBQQ__Product__c',
+    'Name',
+  ],
+  PricebookEntry: [
+    'Pricebook2Id',
+    'Name',
+  ],
+  Product2: [
+    'ProductCode',
+    'Family',
+    'Name',
+  ],
+  sbaa__ApprovalRule__c: [
+    'Name',
+  ],
+  '98in': [
+    'Name',
+  ],
+  sbaa__EmailTemplate__c: [
+    'Name',
+  ],
+  sbaa__ApprovalCondition__c: [
+    'sbaa__ApprovalRule__c',
+    'sbaa__Index__c',
+  ],
+  sbaa__ApprovalChain__c: [
+    'Name',
+  ],
+  sbaa__ApprovalVariable__c: [
+    'Name',
+  ],
+  sbaa__TrackedField__c: [
+    'Name',
+  ],
 }
 
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => (
@@ -45,6 +103,7 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
       return matchedOverride?.idFields ?? params.saltoIDSettings.defaultIdFields
     },
+    getObjectAliasFields: name => ALIAS_FIELDS_BY_TYPE[name] ?? DEFALT_ALIAS_FIELDS,
     showReadOnlyValues: params.showReadOnlyValues,
   }
 )

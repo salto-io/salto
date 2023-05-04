@@ -162,7 +162,6 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
       add: {
         url: '/api/v1/policies',
         method: 'post',
-        fieldsToIgnore: ['policyRules'],
       },
       modify: {
         url: '/api/v1/policies/{policyId}',
@@ -170,7 +169,6 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         urlParamsToFields: {
           policyId: 'id',
         },
-        fieldsToIgnore: ['policyRules'],
       },
       remove: {
         url: '/api/v1/policies/{policyId}',

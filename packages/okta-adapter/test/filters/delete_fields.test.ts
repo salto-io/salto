@@ -16,7 +16,7 @@
 
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
+import { ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_TYPE_NAME, OKTA } from '../../src/constants'
 import deleteRecurseIntoFilter from '../../src/filters/delete_fields'
 import { getFilterParams } from '../utils'
 
@@ -24,6 +24,7 @@ describe('deleteFieldsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   const groupType = new ObjectType({ elemID: new ElemID(OKTA, GROUP_TYPE_NAME) })
   const applicationType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
+  const accessType = new ObjectType({ elemID: new ElemID(OKTA, ACCESS_POLICY_TYPE_NAME) })
 
   beforeEach(() => {
     filter = deleteRecurseIntoFilter(getFilterParams()) as typeof filter
@@ -41,11 +42,17 @@ describe('deleteFieldsFilter', () => {
         applicationType,
         { label: 'app', appUserSchema: { id: '123' } },
       )
-      await filter.onFetch?.([groupType, groupInstance, applicationInstance])
+      const accessPolicy = new InstanceElement(
+        'access',
+        accessType,
+        { id: 'BBB', policyRules: { someProp: 'something' } },
+      )
+      await filter.onFetch?.([groupType, groupInstance, applicationInstance, accessPolicy, accessType])
       expect(groupInstance.value.roles).toEqual(undefined)
       expect(groupInstance.value).toEqual({ id: 'AAA', profile: { name: 'everyone' } },)
       expect(applicationInstance.value.appUserSchema).toEqual(undefined)
       expect(applicationInstance.value).toEqual({ label: 'app' })
+      expect(accessPolicy.value).toEqual({ id: 'BBB' })
     })
     it('should do nothing if field is missing', async () => {
       const groupInstance = new InstanceElement(

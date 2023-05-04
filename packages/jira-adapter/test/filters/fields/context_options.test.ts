@@ -303,7 +303,7 @@ describe('context options', () => {
         )
       })
 
-      it('should call post twice with only 1000 or less batches', () => {
+      it('should call put with only 1000 or less batches', () => {
         expect(client.put).toHaveBeenCalledTimes(4)
         expect(client.put).toHaveBeenNthCalledWith(2, {
           url: '/rest/api/3/field/2/context/3/option',
@@ -314,6 +314,16 @@ describe('context options', () => {
                 value: 'p1000',
               }),
             ],
+          },
+        })
+        // check reorder is also using up to 1000 options at a time.
+        expect(client.put).toHaveBeenNthCalledWith(4, {
+          url: '/rest/api/3/field/2/context/3/option/move',
+          data: {
+            customFieldOptionIds: [
+              undefined,
+            ],
+            position: 'Last',
           },
         })
       })

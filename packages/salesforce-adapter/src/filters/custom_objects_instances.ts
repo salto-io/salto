@@ -26,7 +26,7 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE,
+  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, DETECTS_PARENTS_INDICATOR,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
@@ -57,7 +57,6 @@ export type CustomObjectFetchSetting = {
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
 const aliasSeparator = ' '
-const detectsParentsIndicator = '##allMasterDetailFields##'
 
 const isReferenceField = (field: Field): boolean => (
   isMasterDetailField(field) || isLookupField(field)
@@ -410,11 +409,11 @@ export const getIdFields = async (
   const typeName = await apiName(type)
   const idFieldsNames = dataManagement.getObjectIdsFields(typeName)
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
-    ((fieldName === detectsParentsIndicator)
+    ((fieldName === DETECTS_PARENTS_INDICATOR)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
   const aliasFieldNames = dataManagement.getObjectAliasFields(typeName)
   const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
-    ((fieldName === detectsParentsIndicator)
+    ((fieldName === DETECTS_PARENTS_INDICATOR)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
   const invalidIdFieldNames = idFieldsWithParents.concat(aliasFieldsWithParents).filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])

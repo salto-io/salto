@@ -27,7 +27,7 @@ export type DataManagement = {
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
-  getObjectAliasFields: (name: string) => string[]
+  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
 }
 

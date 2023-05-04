@@ -98,7 +98,7 @@ describe('alias index', () => {
       },
     },
   })
-  const settingInstanceWithAlias = new InstanceElement(
+  const settingInstanceNoAlias = new InstanceElement(
     ElemID.CONFIG_NAME,
     objectWithAnnotation,
     {},
@@ -126,12 +126,21 @@ describe('alias index', () => {
     undefined,
     {},
   )
-  const fourthInstance = new InstanceElement(
+  const fourthInstanceBefore = new InstanceElement(
     'instance4',
     objectWithAnnotation,
     {},
     undefined,
     {},
+  )
+  const fourthInstanceAfter = new InstanceElement(
+    'instance4',
+    objectWithAnnotation,
+    {},
+    undefined,
+    {
+      _alias: 'new alias',
+    },
   )
   const fifthInstanceBefore = new InstanceElement(
     'instance5',
@@ -151,6 +160,22 @@ describe('alias index', () => {
       _alias: 'alias after',
     },
   )
+  const sixthInstanceBefore = new InstanceElement(
+    'instance6',
+    objectWithAnnotation,
+    {},
+    undefined,
+    {
+      _alias: 'alias before',
+    },
+  )
+  const sixthInstanceAfter = new InstanceElement(
+    'instance6',
+    objectWithAnnotation,
+    {},
+    undefined,
+    {},
+  )
 
 
   beforeEach(() => {
@@ -163,15 +188,17 @@ describe('alias index', () => {
   describe('mixed changes', () => {
     beforeEach(async () => {
       const changes = [
-        toChange({ after: firstInstanceWithAlias }),
-        toChange({ after: settingInstanceWithAlias }),
-        toChange({ after: secondInstanceNoAlias }),
-        toChange({ before: thirdInstance, after: thirdInstance }),
-        toChange({ after: objectWithAnnotation }),
+        toChange({ after: firstInstanceWithAlias }), // inst addition with alias
+        toChange({ after: settingInstanceNoAlias }), // setting instance no alias
+        toChange({ after: secondInstanceNoAlias }), // inst addition no alias
+        toChange({ before: thirdInstance, after: thirdInstance }), // no change in alias
+        toChange({ after: objectWithAnnotation }), // add obj with alias and alias on some fields
+        // obj with modification of alias
         toChange({ before: objectWithAnnotationBefore, after: objectWithAnnotationAfter }),
-        toChange({ before: fourthInstance }),
-        toChange({ before: objectToDelete }),
-        toChange({ before: fifthInstanceBefore, after: fifthInstanceAfter }),
+        toChange({ before: objectToDelete }), // removal of obj
+        toChange({ before: fifthInstanceBefore, after: fifthInstanceAfter }), // modification change of alias
+        toChange({ before: fourthInstanceBefore, after: fourthInstanceAfter }), // modification to add alias
+        toChange({ before: sixthInstanceBefore, after: sixthInstanceAfter }), // modification to remove alias
       ]
       await updateAliasIndex(
         changes,
@@ -182,42 +209,22 @@ describe('alias index', () => {
       )
     })
     it('should add all addition and alias modification elements to index', () => {
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: settingInstanceWithAlias.elemID.getFullName(), value: 'Object' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: secondInstanceNoAlias.elemID.getFullName(), value: 'Instance2' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: fifthInstanceAfter.elemID.getFullName(), value: 'alias after' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotation.fields.fieldNoAlias.elemID.getFullName(), value: 'Field No Alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotationAfter.elemID.getFullName(), value: 'object2 alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotationAfter.fields.fieldWithAnnotation.elemID.getFullName(), value: 'field2 alias' }]
-      ))
-      expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-        [{ key: objectWithAnnotationAfter.fields.fieldNoAliasNew.elemID.getFullName(), value: 'Field No Alias New' }]
-      ))
+      expect(aliasIndex.setAll).toHaveBeenCalledWith(
+        [
+          { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+          { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+          { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+          { key: objectWithAnnotationAfter.fields.fieldWithAnnotation.elemID.getFullName(), value: 'field2 alias' },
+          { key: objectWithAnnotationAfter.elemID.getFullName(), value: 'object2 alias' },
+          { key: fifthInstanceAfter.elemID.getFullName(), value: 'alias after' },
+          { key: fourthInstanceAfter.elemID.getFullName(), value: 'new alias' },
+        ]
+      )
       expect(aliasIndex.deleteAll).toHaveBeenCalledWith(
         [
-          objectWithAnnotationBefore.fields.fieldNoAlias.elemID.getFullName(),
-          fourthInstance.elemID.getFullName(),
           objectToDelete.elemID.getFullName(),
           ...Object.values(objectToDelete.fields).map(field => field.elemID.getFullName()),
+          sixthInstanceAfter.elemID.getFullName(),
         ]
       )
     })
@@ -241,21 +248,13 @@ describe('alias index', () => {
       })
       it('should update alias index with all additions', () => {
         expect(aliasIndex.clear).toHaveBeenCalled()
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: secondInstanceNoAlias.elemID.getFullName(), value: 'Instance2' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.fields.fieldNoAlias.elemID.getFullName(), value: 'Field No Alias' }]
-        ))
+        expect(aliasIndex.setAll).toHaveBeenCalledWith(
+          [
+            { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+            { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+            { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+          ]
+        )
         expect(aliasIndex.deleteAll).toHaveBeenCalledWith([])
       })
     })
@@ -276,21 +275,13 @@ describe('alias index', () => {
       })
       it('should update alias index using the element source', () => {
         expect(aliasIndex.clear).toHaveBeenCalled()
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: secondInstanceNoAlias.elemID.getFullName(), value: 'Instance2' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' }]
-        ))
-        expect(aliasIndex.setAll).toHaveBeenCalledWith(expect.arrayContaining(
-          [{ key: objectWithAnnotation.fields.fieldNoAlias.elemID.getFullName(), value: 'Field No Alias' }]
-        ))
+        expect(aliasIndex.setAll).toHaveBeenCalledWith(
+          [
+            { key: objectWithAnnotation.fields.fieldWithAlias.elemID.getFullName(), value: 'field alias' },
+            { key: objectWithAnnotation.elemID.getFullName(), value: 'object alias' },
+            { key: firstInstanceWithAlias.elemID.getFullName(), value: 'instance alias' },
+          ]
+        )
       })
     })
   })

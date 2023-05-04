@@ -186,7 +186,7 @@ export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig): 
         ? accountIdsScenarios(value.value, path, callback, config)
         : WALK_NEXT_STEP.EXIT
     }
-    if (value !== undefined) {
+    if (value != null) { // null or undefined
       return accountIdsScenarios(value, path, callback, config)
     }
     return WALK_NEXT_STEP.SKIP

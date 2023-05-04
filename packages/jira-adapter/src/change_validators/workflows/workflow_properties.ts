@@ -22,7 +22,7 @@ import { isWorkflowInstance, Status, Transition } from '../../filters/workflow/t
 
 const { awu } = collections.asynciterable
 
-const getPropertiesKeyGroups = (statusesOrTransitions: Status[]| Transition[]):
+const getPropertiesKeyGroups = (statusesOrTransitions: (Status| Transition)[]):
   string[][] => Array.from(statusesOrTransitions).map(param =>
   (param.properties ?? []).map(((property: Values) => property.key)))
 

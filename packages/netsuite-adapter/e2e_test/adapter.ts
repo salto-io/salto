@@ -22,7 +22,7 @@ import Bottleneck from 'bottleneck'
 import { Credentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter, { NetsuiteAdapterParams } from '../src/adapter'
-import { NetsuiteConfig } from '../src/config'
+import { instanceLimiter, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from '../test/utils'
 import { credsSpec } from './jest_environment'
 import NetsuiteClient from '../src/client/client'
@@ -51,13 +51,13 @@ export const realAdapter = (
       credentials: netsuiteCredentials,
       config: config?.client,
       globalLimiter,
-      instanceLimiter: (_t: string, _c: number) => false,
+      instanceLimiter: instanceLimiter(config?.client),
     }),
     withSuiteApp ? new SuiteAppClient({
       credentials: netsuiteCredentials,
       config: config?.suiteAppClient,
       globalLimiter,
-      instanceLimiter: (_t: string, _c: number) => false,
+      instanceLimiter: instanceLimiter(config?.client),
     }) : undefined)
   const adapter = new NetsuiteAdapter({
     client,

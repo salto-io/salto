@@ -773,6 +773,64 @@ describe('Netsuite adapter E2E with real account', () => {
       })
     })
 
+    describe('Fetch with limits', () => {
+      beforeAll(async () => {
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp },
+          { client: { maxInstancesPerType: [
+            { name: 'account', limit: 0 },
+            { name: EMAIL_TEMPLATE, limit: 0 },
+            { name: 'customrecord_slt_e2e_test', limit: 0 },
+          ] } }
+        )
+        adapter = adapterAttr.adapter
+
+        const mockFetchOpts: MockInterface<FetchOptions> = {
+          progressReporter: { reportProgress: jest.fn() },
+        }
+        logMessage('running fetch with limits')
+        fetchResult = await adapter.fetch(mockFetchOpts)
+        fetchedElements = fetchResult.elements
+      })
+
+      it('should not fetch account instances and should add to the config suggestions', async () => {
+        if (withSuiteApp) {
+          const fetchAccount = findElement(
+            fetchedElements,
+            accountInstance.elemID
+          )
+          expect(fetchAccount).not.toBeDefined()
+          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
+            (t: { name: string }) => t.name === 'account'
+          )).toBeTruthy()
+        }
+      })
+
+      it('should not fetch email template instances and should add to the config suggestions', async () => {
+        const fetchEmailTemplate = findElement(
+          fetchedElements,
+          emailTemplateToCreate.elemID
+        )
+        expect(fetchEmailTemplate).not.toBeDefined()
+        expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
+          (t: { name: string }) => t.name === EMAIL_TEMPLATE
+        )).toBeTruthy()
+      })
+
+      it('should not fetch custom record instances and should add to the config suggestions', async () => {
+        if (withSuiteApp) {
+          const fetchCustomRecord = findElement(
+            fetchedElements,
+            customRecordInstance.elemID
+          )
+          expect(fetchCustomRecord).not.toBeDefined()
+          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
+            (t: { name: string }) => t.name === 'customrecord_slt_e2e_test'
+          )).toBeTruthy()
+        }
+      })
+    })
+
     describe('Delete records', () => {
       // TODO: merge revertChanges & revertChangesWithDependencies when SALTO-3036 is resolved
       const revertChanges: Map<ChangeId, Change<InstanceElement>> = new Map([

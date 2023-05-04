@@ -598,12 +598,12 @@ export default class SoapClient {
     const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
       searchResponse.searchResult.recordList?.record || []
     const { totalPages, searchId } = initialSearchResponse.searchResult
-    if (totalPages <= 1) {
-      return { records: recordFromSearchResponse(initialSearchResponse), largeTypesError: false }
-    }
     if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
       log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
       return { records: [], largeTypesError: true }
+    }
+    if (totalPages <= 1) {
+      return { records: recordFromSearchResponse(initialSearchResponse), largeTypesError: false }
     }
     const responses = await Promise.all(
       _.range(2, totalPages + 1).map(async i => {

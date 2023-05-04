@@ -300,7 +300,7 @@ describe('context options', () => {
           }
           return {
             data: {
-              options: Object.entries(largeCascadingOptions).map(([key, value], index) => ({
+              options: Object.entries(largeCascadingOptions).map(([_, value], index) => ({
                 id: `${index + 4}`,
                 value: (value as {value: unknown}).value,
                 optionId: '10047',

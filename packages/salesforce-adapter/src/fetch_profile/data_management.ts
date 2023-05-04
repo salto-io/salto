@@ -63,27 +63,9 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
     'Family',
     'Name',
   ],
-  sbaa__ApprovalRule__c: [
-    'Name',
-  ],
-  '98in': [
-    'Name',
-  ],
-  sbaa__EmailTemplate__c: [
-    'Name',
-  ],
   sbaa__ApprovalCondition__c: [
     'sbaa__ApprovalRule__c',
     'sbaa__Index__c',
-  ],
-  sbaa__ApprovalChain__c: [
-    'Name',
-  ],
-  sbaa__ApprovalVariable__c: [
-    'Name',
-  ],
-  sbaa__TrackedField__c: [
-    'Name',
   ],
 }
 

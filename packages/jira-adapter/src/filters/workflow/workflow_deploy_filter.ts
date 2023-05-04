@@ -97,12 +97,13 @@ export const deployWorkflow = async (
   })
 
   fixGroupNames(instance)
-  const instanceCopy = instance.clone() as WorkflowInstance
+  const resolvedChangeWithoutDiagram = _.cloneDeep(resolvedChange)
+  const instanceWithoutDiagram = getChangeData(resolvedChangeWithoutDiagram)
   if (!isRemovalChange(resolvedChange)) {
-    removeWorkflowDiagramFields(instance)
+    removeWorkflowDiagramFields(instanceWithoutDiagram)
   }
   await defaultDeployChange({
-    change: resolvedChange,
+    change: resolvedChangeWithoutDiagram,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
@@ -111,9 +112,10 @@ export const deployWorkflow = async (
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
 
-  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instanceCopy)) {
+  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
     try {
-      await deployWorkflowDiagram({ instance, instanceCopy, client })
+      instance.value.entityId = instanceWithoutDiagram.value.entityId
+      await deployWorkflowDiagram({ instance, client })
     } catch (e) {
       log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
     }

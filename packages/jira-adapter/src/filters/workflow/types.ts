@@ -165,7 +165,7 @@ export const transitionsSchema = Joi.object({
 }).unknown(true)
 
 export type Status = {
-  id?: string
+  id?: unknown
   name?: string
   properties?: Values
   location?: StatusLocation

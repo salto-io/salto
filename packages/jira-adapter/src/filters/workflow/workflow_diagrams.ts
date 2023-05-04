@@ -80,8 +80,6 @@ const addObjectTypesAnnotation = async (objectTypes: ObjectType[]): Promise<void
   objectTypes.forEach(async objectType => {
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.CREATABLE)
     await addAnnotationRecursively(objectType, CORE_ANNOTATIONS.UPDATABLE)
-    objectType.annotations[CORE_ANNOTATIONS.CREATABLE] = true
-    objectType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
   })
 }
 
@@ -151,10 +149,6 @@ const getTransitionFrom = (transitionName: string, statusIdToStepId: Record<stri
     targetAngle: actionKeyToTransition[actionKey].targetAngle }
 }
 
-const getTransitionFromValue = (transitionFrom: TransitionFrom | string): string =>
-  (typeof transitionFrom === 'string'
-    ? transitionFrom
-    : transitionFrom.id as string)
 
 export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => {
   element.value.statuses
@@ -169,7 +163,9 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
       if (type === INITIAL_TRANSITION_TYPE) {
         delete transition.from
       } else if (transition.from !== undefined) {
-        transition.from = transition.from.map(getTransitionFromValue)
+        transition.from = transition.from.map(from => (typeof from !== 'string' && from.id !== undefined
+          ? from.id
+          : from))
       }
     })
 }
@@ -178,7 +174,7 @@ const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: 
   :StatusDiagramDeploy[] | undefined =>
   workflow.value.statuses
     ?.map(status => {
-      if (status.id === undefined) {
+      if (typeof status.id !== 'string') {
         throw new Error(`Fail to deploy Workflow ${workflow.value.name} Status ${status.name} Diagram values`)
       }
       return { id: statusIdToStepId[status.id],
@@ -259,8 +255,8 @@ const buildDiagramMaps = async ({ client, workflow }:
     actionKeyToTransition[getTransitionKey(transition.sourceId, transition.name)] = transition
   })
   workflow.value.statuses?.forEach(status => {
-    if (status.id !== undefined) {
-      statusIdToStepId[status.id] = statusIdToStatus[status.id].id
+    if (typeof status.id === 'string') {
+      statusIdToStepId[status.id as string] = statusIdToStatus[status.id as string].id
     }
   })
   const [initialStepId] = layout.statuses
@@ -274,9 +270,9 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
   { statusIdToStatus, statusIdToStepId, actionKeyToTransition }: WorkflowDiagramMaps)
   : void => {
   workflow.value.statuses?.forEach(status => {
-    if (status.id !== undefined) {
-      status.location = { x: statusIdToStatus[status.id].x,
-        y: statusIdToStatus[status.id].y }
+    if (typeof status.id === 'string') {
+      status.location = { x: statusIdToStatus[status.id as string].x,
+        y: statusIdToStatus[status.id as string].y }
     }
   })
   workflow.value.transitions.forEach(transition => {
@@ -299,31 +295,28 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
 export const deployWorkflowDiagram = async (
   {
     instance,
-    instanceCopy,
     client,
   }
   : {
     instance: WorkflowInstance
-    instanceCopy: WorkflowInstance
     client: JiraClient
   }): Promise<void> => {
-  const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instanceCopy })
+  const workflowDiagramMaps = await buildDiagramMaps({ client, workflow: instance })
   const { statusIdToStepId, actionKeyToTransition } = workflowDiagramMaps
-  const statuses = buildStatusDiagramFields(instanceCopy, statusIdToStepId)
-  const transitions = buildTransitionsDiagramFields(instanceCopy, statusIdToStepId, actionKeyToTransition)
+  const statuses = buildStatusDiagramFields(instance, statusIdToStepId)
+  const transitions = buildTransitionsDiagramFields(instance, statusIdToStepId, actionKeyToTransition)
 
   const response = await client.postPrivate({
     url: '/rest/workflowDesigner/latest/workflows',
     data: {
       draft: false,
-      name: instanceCopy.value.name,
+      name: instance.value.name,
       layout: { statuses, transitions },
     },
   })
   if (response.status !== 200) {
-    throw new Error(`Fail to post Workflow ${instanceCopy.value.name} diagram values with status ${response.status}`)
+    throw new Error(`Fail to post Workflow ${instance.value.name} diagram values with status ${response.status}`)
   }
-  insertWorkflowDiagramFields(instance, workflowDiagramMaps)
 }
 
 const filter: FilterCreator = ({ client }) => ({
@@ -335,12 +328,12 @@ const filter: FilterCreator = ({ client }) => ({
     const transitionType = findObject(elements, WORKFLOW_TRANSITION_TYPE_NAME)
     if (transitionType !== undefined) {
       transitionType.fields.from = new Field(transitionType, 'transitionFrom', new ListType(transitionFromType))
-      setFieldDeploymentAnnotations(transitionFromType, 'from')
+      setFieldDeploymentAnnotations(transitionType, 'from')
     }
     const workflowStatusType = findObject(elements, WORKFLOW_STATUS_TYPE_NAME)
     if (workflowStatusType !== undefined) {
       workflowStatusType.fields.location = new Field(workflowStatusType, 'location', statusLocationType)
-      setFieldDeploymentAnnotations(statusLocationType, 'location')
+      setFieldDeploymentAnnotations(workflowStatusType, 'location')
     }
     elements.push(transitionFromType)
     elements.push(statusLocationType)

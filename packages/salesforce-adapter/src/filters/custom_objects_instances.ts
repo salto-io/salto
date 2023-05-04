@@ -56,6 +56,7 @@ export type CustomObjectFetchSetting = {
 
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
+const aliasSeparator = ' '
 const detectsParentsIndicator = '##allMasterDetailFields##'
 
 const isReferenceField = (field: Field): boolean => (
@@ -193,7 +194,7 @@ const typesRecordsToInstances = async (
   const getAlias = (typeName: TypeName, recordId: string): string | undefined =>
     aliasByIdAndType[typeName]?.[recordId]
   const setAlias = (typeName: TypeName, recordId: string, alias: string): void => {
-    if (saltoNameByIdAndType[typeName] === undefined) {
+    if (aliasByIdAndType[typeName] === undefined) {
       aliasByIdAndType[typeName] = {}
     }
     aliasByIdAndType[typeName][recordId] = alias
@@ -272,7 +273,7 @@ const typesRecordsToInstances = async (
     const alias = (await awu(customObjectFetchSetting[typeName].aliasFields)
       .map(field => fieldToSaltoName(field))
       .filter(isDefined)
-      .toArray()).join(nameSeparator)
+      .toArray()).join(aliasSeparator)
     setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)
     return alias
   }
@@ -415,7 +416,7 @@ export const getIdFields = async (
   const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
     ((fieldName === detectsParentsIndicator)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
-  const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
+  const invalidIdFieldNames = idFieldsWithParents.concat(aliasFieldsWithParents).filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
   ))
   if (invalidIdFieldNames.length > 0) {

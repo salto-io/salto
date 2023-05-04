@@ -32,7 +32,7 @@ export type DataManagement = {
 }
 
 
-const DEFALT_ALIAS_FIELDS: types.NonEmptyArray<string> = ['Name']
+const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = ['Name']
 const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   SBQQ__ProductFeature__c: [
     DETECTS_PARENTS_INDICATOR,
@@ -40,17 +40,17 @@ const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
     'Name',
   ],
   SBQQ__LineColumn__c: [
-    '##allMasterDetailFields##',
+    DETECTS_PARENTS_INDICATOR,
     'SBQQ__FieldName__c',
     'Name',
   ],
   SBQQ__LookupQuery__c: [
-    '##allMasterDetailFields##',
+    DETECTS_PARENTS_INDICATOR,
     'SBQQ__PriceRule2__c',
     'Name',
   ],
   SBQQ__Dimension__c: [
-    '##allMasterDetailFields##',
+    DETECTS_PARENTS_INDICATOR,
     'SBQQ__Product__c',
     'Name',
   ],
@@ -103,7 +103,7 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
         ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
       return matchedOverride?.idFields ?? params.saltoIDSettings.defaultIdFields
     },
-    getObjectAliasFields: name => ALIAS_FIELDS_BY_TYPE[name] ?? DEFALT_ALIAS_FIELDS,
+    getObjectAliasFields: name => ALIAS_FIELDS_BY_TYPE[name] ?? DEFAULT_ALIAS_FIELDS,
     showReadOnlyValues: params.showReadOnlyValues,
   }
 )

@@ -158,13 +158,12 @@ const updateContextOptions = async ({
       })
     })
   }
-
   if (removedOptions.length !== 0) {
-    await awu(removedOptions).forEach(async (option: Value) => {
+    await Promise.all(removedOptions.map(async (option: Value) => {
       await client.delete({
         url: `${baseUrl}/${option.id}`,
       })
-    })
+    }))
   }
 }
 
@@ -190,15 +189,16 @@ const reorderContextOptions = async (
   }
 
   const optionsGroups = _(afterOptions).groupBy(option => option.optionId).values().value()
-  await Promise.all(optionsGroups.map(
-    group => client.put({
-      url: `${baseUrl}/move`,
-      data: {
-        customFieldOptionIds: group.map(option => option.id),
-        position: 'First',
-      },
-    })
-  ))
+  const requestBodies = optionsGroups.map(group =>
+    chunkArray(group).map((chunk, index) =>
+      ({
+        url: `${baseUrl}/move`,
+        data: {
+          customFieldOptionIds: chunk.map(option => option.id),
+          position: index === 0 ? 'First' : 'Last',
+        },
+      })))
+  await awu(requestBodies).map(async bodies => awu(bodies).map(body => client.put(body)).toArray()).toArray()
 }
 
 export const setContextOptions = async (

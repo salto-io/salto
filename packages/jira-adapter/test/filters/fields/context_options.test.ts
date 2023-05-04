@@ -27,6 +27,15 @@ describe('context options', () => {
     let contextInstance: InstanceElement
     let elementSource: ReadOnlyElementsSource
 
+    const generateOptions = (count: number): Values =>
+      Array.from({ length: count }, (_, i) => ({
+        [`p${i}`]: {
+          value: `p${i}`,
+          disabled: false,
+          position: i,
+        },
+      })).reduce((acc, option) => ({ ...acc, ...option }), {})
+
     beforeEach(() => {
       client = {
         post: mockFunction<clientUtils.HTTPWriteClientInterface['post']>(),
@@ -118,14 +127,6 @@ describe('context options', () => {
 
     describe('change has over 1000 additions', () => {
       beforeEach(async () => {
-        const generateOptions = (count: number): Values =>
-          Array.from({ length: count }, (_, i) => ({
-            [`p${i}`]: {
-              value: `p${i}`,
-              disabled: false,
-              position: i,
-            },
-          })).reduce((acc, option) => ({ ...acc, ...option }), {})
         const largeOptionsObject = generateOptions(1001)
         contextInstance.value.options = largeOptionsObject
         client.post.mockImplementation(async args => {
@@ -272,60 +273,45 @@ describe('context options', () => {
     })
     describe('over 1000 options were changed', () => {
       let contextInstanceAfter: InstanceElement
+      let contextInstanceBefore: InstanceElement
 
       beforeEach(async () => {
         contextInstanceAfter = contextInstance.clone()
-        const generateCascadingOptions = (count: number): Values =>
-          Array.from({ length: count }, (_, i) => ({
-            [`c${i + 1}`]: {
-              value: `c${i + 1}`,
-              disabled: false,
-              position: i,
-            },
-          })).reduce((acc, option) => ({ ...acc, ...option }), {})
-        const largeCascadingOptions = generateCascadingOptions(1001)
-        contextInstanceAfter.value.options = {
-          p2: {
-            id: '10047',
-            value: 'p2',
-            disabled: true,
-            position: 1,
-            cascadingOptions: largeCascadingOptions,
-          },
-        }
-        client.post.mockImplementation(async args => {
-          const { options } = args.data as { options: unknown[] }
-          if (options.length > 1000) {
+        contextInstanceBefore = contextInstance.clone()
+        const largeOptionsObject = generateOptions(1001)
+        contextInstanceAfter.value.options = largeOptionsObject
+        contextInstanceBefore.value.options = Object.fromEntries(
+          Object.entries(largeOptionsObject)
+            .map(([key, option]) => [key, { ...option, disabled: true }])
+        )
+        client.put.mockImplementation(async args => {
+          const { customFieldOptionIds, options } = args.data as { customFieldOptionIds: unknown[]; options: unknown[] }
+          if (customFieldOptionIds?.length > 1000 || options?.length > 1000) {
             throw Error('bad')
           }
           return {
             data: {
-              options: Object.entries(largeCascadingOptions).map(([_, value], index) => ({
-                id: `${index + 4}`,
-                value: (value as {value: unknown}).value,
-                optionId: '10047',
-              })),
+              options: [],
             },
             status: 200,
           }
         })
         await setContextOptions(
-          toChange({ before: contextInstance, after: contextInstanceAfter }),
+          toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
           client,
           elementSource
         )
       })
 
       it('should call post twice with only 1000 or less batches', () => {
-        expect(client.post).toHaveBeenCalledTimes(2)
-        expect(client.post).toHaveBeenNthCalledWith(2, {
+        expect(client.put).toHaveBeenCalledTimes(4)
+        expect(client.put).toHaveBeenNthCalledWith(2, {
           url: '/rest/api/3/field/2/context/3/option',
           data: {
             options: [
               expect.objectContaining({
                 disabled: false,
-                optionId: '10047',
-                value: 'c1001',
+                value: 'p1000',
               }),
             ],
           },

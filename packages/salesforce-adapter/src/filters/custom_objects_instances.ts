@@ -244,7 +244,7 @@ const typesRecordsToInstances = async (
     typeName: string,
     record: SalesforceRecord,
   ): Promise<string> => {
-    const fieldToSaltoName = async (field: Field): Promise<string | undefined> => {
+    const fieldToAlias = async (field: Field): Promise<string | undefined> => {
       const fieldValue = record[field.name]
       if (fieldValue === null || fieldValue === undefined) {
         return undefined
@@ -271,7 +271,7 @@ const typesRecordsToInstances = async (
       return existingAlias
     }
     const alias = (await awu(customObjectFetchSetting[typeName].aliasFields)
-      .map(field => fieldToSaltoName(field))
+      .map(field => fieldToAlias(field))
       .filter(isDefined)
       .toArray()).join(aliasSeparator)
     setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)

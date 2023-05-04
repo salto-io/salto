@@ -19,6 +19,7 @@ import { Functions } from '../../../src/parser/functions'
 import { getStaticFilesFunctions } from '../../../src/workspace/static_files/functions'
 import { StaticFilesSource } from '../../../src/workspace/static_files'
 import { mockStaticFilesSource } from '../../utils'
+import { MissingStaticFile } from '../../../src/workspace/static_files/common'
 
 describe('Functions', () => {
   let functions: Functions
@@ -31,6 +32,8 @@ describe('Functions', () => {
     expect(functions).toHaveProperty('file'))
   it('should identify static file values', () =>
     expect(functions.file.isSerializedAsFunction(new StaticFile({ filepath: 'aa', hash: 'hash', encoding: 'binary' }))).toBeTruthy())
+  it('should identify invalid static file values', () =>
+    expect(functions.file.isSerializedAsFunction(new MissingStaticFile('aa'))).toBeTruthy())
   it('should not identify for other values', () =>
     expect(functions.file.isSerializedAsFunction('a' as Value)).toBeFalsy())
   it('should convert valid function expression to valid static metadata', async () => {
@@ -55,5 +58,11 @@ describe('Functions', () => {
     expect(dumped).toHaveProperty('funcName', 'file')
     expect(dumped).toHaveProperty('parameters', ['filepath'])
     expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(1)
+  })
+  it('should not persist when dumping invalid static file', async () => {
+    const dumped = await functions.file.dump(new MissingStaticFile('filepath'))
+    expect(dumped).toHaveProperty('funcName', 'file')
+    expect(dumped).toHaveProperty('parameters', ['filepath'])
+    expect(mockedStaticFilesSource.persistStaticFile).toHaveBeenCalledTimes(0)
   })
 })

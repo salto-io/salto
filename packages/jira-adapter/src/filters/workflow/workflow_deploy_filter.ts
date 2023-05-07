@@ -111,10 +111,9 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-
+  instance.value.entityId = instanceWithoutDiagram.value.entityId
   if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
     try {
-      instance.value.entityId = instanceWithoutDiagram.value.entityId
       await deployWorkflowDiagram({ instance, client })
     } catch (e) {
       log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)

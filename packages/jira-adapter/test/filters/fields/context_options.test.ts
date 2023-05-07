@@ -326,7 +326,7 @@ describe('context options', () => {
           position: 0,
         },
       }
-      client.post.mockResolvedValue({
+      connection.post.mockResolvedValue({
         data: {
           options: [
             {
@@ -342,9 +342,9 @@ describe('context options', () => {
         client,
         elementSource
       )
-      expect(client.post).toHaveBeenCalledWith({
-        url: '/rest/api/3/field/2/context/3/option',
-        data: {
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/field/2/context/3/option',
+        {
           options: [
             expect.objectContaining({
               value: 'p2',
@@ -352,7 +352,8 @@ describe('context options', () => {
             }),
           ],
         },
-      })
+        undefined
+      )
       expect(contextInstance.value.options.p1.id).toEqual('10')
     })
 
@@ -369,7 +370,7 @@ describe('context options', () => {
           position: 0,
         },
       }
-      client.post.mockResolvedValue({
+      connection.post.mockResolvedValue({
         data: {
           options: [
             {
@@ -389,9 +390,9 @@ describe('context options', () => {
         client,
         elementSource
       )
-      expect(client.post).toHaveBeenCalledWith({
-        url: '/rest/api/3/field/2/context/3/option',
-        data: {
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/field/2/context/3/option',
+        {
           options: [
             expect.objectContaining({
               value: 'p2',
@@ -403,7 +404,8 @@ describe('context options', () => {
             }),
           ],
         },
-      })
+        undefined
+      )
       expect(contextInstance.value.options.p1.id).toEqual('10')
       expect(contextInstance.value.options.p2.id).toEqual('20')
     })

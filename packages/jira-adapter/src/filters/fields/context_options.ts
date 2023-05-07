@@ -190,15 +190,7 @@ const reorderContextOptions = async (
   }
 
   const optionsGroups = _(afterOptions).groupBy(option => option.optionId).values().value()
-  await Promise.all(optionsGroups.map(
-    group => client.put({
-      url: `${baseUrl}/move`,
-      data: {
-        customFieldOptionIds: group.map(option => option.id),
-        position: 'First',
-      },
-    })
-  ))
+  // Data center plugin expects all options in one request.
   const requestBodies = client.isDataCenter ? optionsGroups.map(
     group => [{
       url: `${baseUrl}/move`,

@@ -68,7 +68,6 @@ const resolveReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'foreignKeyReferencesFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const elementsWithFields = flatMapAsync(

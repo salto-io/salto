@@ -49,7 +49,6 @@ const addGlobalValueSetRefToObject = (
  */
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'globalValueSetFilter',
-  local: true,
   /**
    * @param elements the already fetched elements
    */

@@ -822,7 +822,6 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   let originalChanges: Record<string, Change[]> = {}
   return {
     name: 'customObjectsToObjectTypeFilter',
-    local: true,
     onFetch: async (elements: Element[]): Promise<void> => {
       log.debug('Replacing custom object instances with object types')
       const typesFromInstance = await typesToMergeFromInstance(elements)

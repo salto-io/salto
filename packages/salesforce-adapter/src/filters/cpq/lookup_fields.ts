@@ -255,7 +255,6 @@ const applyFuncOnCustomObjectWithMappingLookupChange = async (
 
 const filter: LocalFilterCreator = () => ({
   name: 'cpqLookupFieldsFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     log.debug('Started replacing lookupObject values with references')
     await replaceLookupObjectValueSetValuesWithReferences(

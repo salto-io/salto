@@ -190,7 +190,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to query your 
  */
 const creator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'extraDependenciesFilter',
-  local: false,
+  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

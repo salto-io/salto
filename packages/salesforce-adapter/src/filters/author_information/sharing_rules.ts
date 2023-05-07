@@ -69,7 +69,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'sharingRulesAuthorFilter',
-  local: false,
+  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

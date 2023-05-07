@@ -102,7 +102,6 @@ const filterCreator: LocalFilterCreator = () => {
   let originalChanges: Record<string, Change>
   return {
     name: 'minifyDeployFilter',
-    local: true,
     preDeploy: async changes => {
       const relatedChanges = await awu(changes)
         .filter(isInstanceChange)

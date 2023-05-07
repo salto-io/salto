@@ -122,7 +122,7 @@ const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional i
  */
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsFromDescribeFilter',
-  local: false,
+  remote: true,
   onFetch: ensureSafeFilterFetch({
     filterName: 'describeSObjects',
     warningMessage: WARNING_MESSAGE,

@@ -72,7 +72,6 @@ const isProfileInstance = async (elem: Element): Promise<boolean> => (
  */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'profileInstanceSplitFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     const profileInstances = await removeAsync(elements, isProfileInstance) as InstanceElement[]
     if (profileInstances.length === 0) {

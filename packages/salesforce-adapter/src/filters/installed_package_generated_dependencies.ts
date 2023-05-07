@@ -43,7 +43,6 @@ const addInstalledPackageReference = async (
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'installedPackageGeneratedDependencies',
-  local: true,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const installedPackageNamespaceToRef = await multiIndex.keyByAsync({

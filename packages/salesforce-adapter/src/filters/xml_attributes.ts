@@ -57,7 +57,6 @@ const removeAttributePrefix = async (instance: InstanceElement): Promise<void> =
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'xmlAttributesFilter',
-  local: true,
   /**
    * Upon fetch remove the XML_ATTRIBUTE_PREFIX from the instance.value keys so it'll match the type
    */

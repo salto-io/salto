@@ -168,7 +168,6 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'formula_deps',
-  local: true,
   onFetch: async fetchedElements => {
     if (config.fetchProfile.isFeatureEnabled('skipParsingFormulas')) {
       log.info('Formula parsing is disabled. Skipping formula_deps filter.')

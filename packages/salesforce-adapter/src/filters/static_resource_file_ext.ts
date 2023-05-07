@@ -66,7 +66,6 @@ const modifyFileExtension = async (staticResourceInstance: InstanceElement): Pro
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'staticResourceFileExtFilter',
-  local: true,
   /**
    * Upon fetch modify the extension of the StaticResource's static file CONTENT field
    * from '.resource' to the correct extension based on the CONTENT_TYPE field

@@ -493,7 +493,7 @@ const filterTypesWithManyInstances = async (
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
-  local: false,
+  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {

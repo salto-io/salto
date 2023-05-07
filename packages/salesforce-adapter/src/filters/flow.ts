@@ -29,7 +29,6 @@ export const FLOW_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'FlowMetadataValue')
  */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'flowFilter',
-  local: true,
   /**
    * Upon fetch remove restriction values from flowMetadataValue.name.
    *

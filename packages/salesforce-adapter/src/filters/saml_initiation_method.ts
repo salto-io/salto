@@ -32,7 +32,6 @@ export const SAML_INIT_METHOD_FIELD_NAME = 'samlInitiationMethod'
 */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'samlInitMethodFilter',
-  local: true,
   /**
    * Upon discover, rename assignment rules instances
    *

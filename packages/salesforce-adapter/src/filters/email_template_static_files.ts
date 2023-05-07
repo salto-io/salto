@@ -92,7 +92,6 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
  */
 const filter: LocalFilterCreator = () => ({
   name: 'emailTemplateFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

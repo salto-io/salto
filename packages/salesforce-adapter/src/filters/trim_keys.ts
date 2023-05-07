@@ -39,7 +39,6 @@ const trimKeys: MapKeyFunc = ({ key }) => {
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'trimKeysFilter',
-  local: true,
   /**
    * Remove the leading and trailing whitespaces and new line chars from the
    * LightningComponentBundle keys to fix potential parsing error

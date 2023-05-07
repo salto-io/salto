@@ -251,7 +251,6 @@ const removeUnfethcedCustomObjects = (instance: InstanceElement, customObjects: 
 
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'enumFieldPermissionsFilter',
-  local: true,
   onFetch: async elements => {
     log.info('Running fieldPermissionsEnum onFetch - reducing fieldPermissions size')
     const relevantInstances = await awu(elements)

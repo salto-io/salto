@@ -147,7 +147,6 @@ const filterCreator: LocalFilterCreator = () => {
   let customLabelChanges: Change[]
   return {
     name: 'splitCustomLabels',
-    local: true,
     onFetch: async elements => {
       const customLabelType = await awu(elements)
         .filter(isObjectType)

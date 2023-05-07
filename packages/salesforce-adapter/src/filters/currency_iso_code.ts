@@ -105,7 +105,6 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
  */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'currencyIsoCodeFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
     if (affectedElements.length === 0) {

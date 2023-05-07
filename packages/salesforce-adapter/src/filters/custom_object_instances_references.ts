@@ -277,7 +277,7 @@ const buildCustomObjectPrefixKeyMap = async (
 
 const filter: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectInstanceReferencesFilter',
-  local: false,
+  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {

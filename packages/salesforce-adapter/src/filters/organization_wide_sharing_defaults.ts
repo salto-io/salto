@@ -89,7 +89,7 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
 
 const filterCreator: RemoteFilterCreator = ({ client }) => ({
   name: 'organizationWideSharingDefaultsFilter',
-  local: false,
+  remote: true,
   onFetch: async elements => {
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)

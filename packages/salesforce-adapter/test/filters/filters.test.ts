@@ -26,7 +26,7 @@ import { FilterWith } from './mocks'
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {
     let adapter: SalesforceAdapter
-    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'> & { local: true }>
+    let filter: MockInterface<FilterWith<'onFetch' | 'onDeploy' | 'deploy' | 'preDeploy' | 'onPostFetch'>>
     let filterCreator: jest.MockedFunction<LocalFilterCreator>
     let connection: ReturnType<typeof mockAdapter>['connection']
     const mockFetchOpts: MockInterface<FetchOptions> = {
@@ -36,7 +36,6 @@ describe('SalesforceAdapter filters', () => {
     beforeEach(() => {
       filter = {
         name: 'salesforceTestFilters',
-        local: true,
         onFetch: mockFunction<(typeof filter)['onFetch']>().mockResolvedValue(),
         preDeploy: mockFunction<(typeof filter)['preDeploy']>().mockResolvedValue(),
         deploy: mockFunction<(typeof filter)['deploy']>(),

@@ -50,7 +50,6 @@ export const hasValueSetNameAnnotation = (field: Field): boolean =>
  */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'valueSetFilter',
-  local: true,
   onDeploy: async changes => {
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType

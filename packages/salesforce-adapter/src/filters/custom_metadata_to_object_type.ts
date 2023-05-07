@@ -70,7 +70,6 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
   let groupedOriginalChangesByApiName: Record<string, Change[]>
   return {
     name: 'customMetadataToObjectTypeFilter',
-    local: true,
     onFetch: async elements => {
       const customMetadataType = await awu(elements)
         .filter(isObjectType)

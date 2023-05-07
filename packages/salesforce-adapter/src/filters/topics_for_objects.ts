@@ -60,7 +60,6 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
 
 const filterCreator: LocalFilterCreator = () => ({
   name: 'topicsForObjectsFilter',
-  local: true,
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]
     if (_.isEmpty(customObjectTypes)) {

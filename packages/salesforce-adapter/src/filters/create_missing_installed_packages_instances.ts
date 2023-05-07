@@ -36,7 +36,7 @@ const createMissingInstalledPackageInstance = (file: FileProperties, installedPa
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'createMissingInstalledPackagesInstancesFilter',
-  local: false,
+  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult | undefined> => {
     const installedPackageType = await awu(elements)
       .filter(isObjectType)

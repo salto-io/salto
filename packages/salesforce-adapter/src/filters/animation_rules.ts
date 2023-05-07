@@ -35,7 +35,6 @@ export const RECORD_TYPE_CONTEXT = 'recordTypeContext'
  */
 const filterCreator: LocalFilterCreator = () => ({
   name: 'animationRulesFilter',
-  local: true,
   /**
    * Upon fetch, transforms ANIMATION_FREQUENCY & RECORD_TYPE_CONTEXT values of animation rule
    *

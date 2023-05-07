@@ -71,7 +71,6 @@ const convertAnnotationsToReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'referenceAnnotationsFilter',
-  local: true,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const typeToElemID = await multiIndex.keyByAsync({

@@ -367,7 +367,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme',
-        undefined
+        { headers: undefined, params: { maxResults: '1000' }, responseType: undefined }
       )
 
       expect(instance.value.statusMigrations).toBeUndefined()

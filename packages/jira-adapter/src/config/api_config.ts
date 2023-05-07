@@ -17,6 +17,7 @@ import { config as configUtils } from '@salto-io/adapter-components'
 import { AUTOMATION_LABEL_TYPE, AUTOMATION_TYPE, BOARD_COLUMN_CONFIG_TYPE, BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, RESOLUTION_TYPE_NAME, STATUS_TYPE_NAME } from '../constants'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../filters/fields/constants'
 
+const DEFAULT_MAX_RESULTS = '1000'
 
 export type JspUrls = {
   add: string
@@ -67,6 +68,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
       queryParams: {
         expand: 'description,owner,sharePermissions',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
       recurseInto: [
         {
@@ -177,6 +179,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
       queryParams: {
         expand: 'searcherKey,isLocked',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
       recurseInto: [
         {
@@ -224,12 +227,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/field/{fieldId}/context/issuetypemapping',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   PageBeanCustomFieldContextProjectMapping: {
     request: {
       url: '/rest/api/3/field/{fieldId}/context/projectmapping',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   Field: {
@@ -286,6 +295,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/field/{fieldId}/context',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'PageBeanCustomFieldContextOption',
@@ -354,12 +366,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/field/{fieldId}/context/{contextId}/option',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   FieldConfigurations: {
     request: {
       url: '/rest/api/3/fieldconfiguration',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'PageBeanFieldConfigurationItem',
@@ -402,12 +420,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/fieldconfiguration/{id}/fields',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   FieldsConfigurationScheme: {
     request: {
       url: '/rest/api/3/fieldconfigurationscheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'FieldsConfigurationIssueTypeItem',
@@ -447,6 +471,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/fieldconfigurationscheme/mapping?fieldConfigurationSchemeId={schemeId}',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   FieldConfigurationIssueTypeItem: {
@@ -459,6 +486,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/filter/search',
       queryParams: {
         expand: 'description,owner,jql,sharePermissions,editPermissions',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
       paginationField: 'startAt',
       recurseInto: [
@@ -515,6 +543,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'IssueTypeSchemeMappings',
@@ -575,6 +606,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescheme/mapping?issueTypeSchemeId={schemeId}',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   IssueTypeSchemeMapping: {
@@ -586,6 +620,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'IssueTypeScreenSchemeItems',
@@ -608,6 +645,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescreenscheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
     deployRequests: {
       add: {
@@ -634,6 +674,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/issuetypescreenscheme/mapping?issueTypeScreenSchemeId={schemeId}',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   IssueTypeScreenSchemeItem: {
@@ -647,6 +690,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/api/3/notificationscheme',
       queryParams: {
         expand: 'all',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
       paginationField: 'startAt',
     },
@@ -924,6 +968,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/screens',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
       recurseInto: [
         {
           type: 'rest__api__3__screens___screenId___tabs@uuuuuuuu_00123_00125uu',
@@ -1039,12 +1086,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/screenscheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
   Statuses: {
     request: {
       url: '/rest/api/3/statuses/search',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: '200', // statuses search fail for max result over 200
+      },
     },
   },
   Workflows: {
@@ -1053,6 +1106,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
       queryParams: {
         expand: 'transitions,transitions.rules,transitions.properties,statuses,statuses.properties,operations',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
     },
   },
@@ -1105,6 +1159,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/workflowscheme',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
 
@@ -1318,6 +1375,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       paginationField: 'startAt',
       queryParams: {
         expand: 'admins,permissions',
+        maxResults: DEFAULT_MAX_RESULTS,
       },
       recurseInto: [
         {
@@ -1369,6 +1427,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
     request: {
       url: '/rest/api/3/group/bulk',
       paginationField: 'startAt',
+      queryParams: {
+        maxResults: DEFAULT_MAX_RESULTS,
+      },
     },
   },
 

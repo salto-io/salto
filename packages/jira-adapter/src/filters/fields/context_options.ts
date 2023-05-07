@@ -19,6 +19,7 @@ import { getParents, naclCase, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
 
@@ -170,7 +171,7 @@ const updateContextOptions = async ({
 
 const reorderContextOptions = async (
   contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   baseUrl: string,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
@@ -189,7 +190,24 @@ const reorderContextOptions = async (
   }
 
   const optionsGroups = _(afterOptions).groupBy(option => option.optionId).values().value()
-  const requestBodies = optionsGroups.map(group =>
+  await Promise.all(optionsGroups.map(
+    group => client.put({
+      url: `${baseUrl}/move`,
+      data: {
+        customFieldOptionIds: group.map(option => option.id),
+        position: 'First',
+      },
+    })
+  ))
+  const requestBodies = client.isDataCenter ? optionsGroups.map(
+    group => [{
+      url: `${baseUrl}/move`,
+      data: {
+        customFieldOptionIds: group.map(option => option.id),
+        position: 'First',
+      },
+    }]
+  ) : optionsGroups.map(group =>
     chunkArray(group).map((chunk, index) =>
       ({
         url: `${baseUrl}/move`,
@@ -203,7 +221,7 @@ const reorderContextOptions = async (
 
 export const setContextOptions = async (
   contextChange: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   elementsSource?: ReadOnlyElementsSource
 ): Promise<void> => {
   if (isRemovalChange(contextChange)) {

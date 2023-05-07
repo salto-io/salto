@@ -39,6 +39,7 @@ const logInvalidCustomSettings = async (
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customSettingsFilter',
+  local: false,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     if (!config.fetchProfile.shouldFetchAllCustomSettings()) {
       return {}

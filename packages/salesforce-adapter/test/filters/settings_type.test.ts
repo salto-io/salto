@@ -18,13 +18,12 @@ import {
 } from '@salto-io/adapter-api'
 import filterCreator, { } from '../../src/filters/settings_type'
 import mockClient from '../client'
-import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties, mockDescribeValueResult, mockValueTypeField } from '../connection'
 import { defaultFilterContext } from '../utils'
 import { API_NAME } from '../../src/constants'
-
+import { FilterWith } from './mocks'
 
 describe('Test Settings Type', () => {
   const MACRO_SETTINGS = 'MacroSettings'

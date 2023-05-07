@@ -17,7 +17,7 @@ import { Element, ElemID, isObjectType, ReferenceExpression } from '@salto-io/ad
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { extendGeneratedDependencies } from '@salto-io/adapter-utils'
-import { FilterWith, LocalFilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { INSTALLED_PACKAGE_METADATA } from '../constants'
 import { buildElementsSourceForFetch, getNamespace, isInstanceOfType, isStandardObject } from './utils'
 import { apiName } from '../transformers/transformer'
@@ -41,8 +41,9 @@ const addInstalledPackageReference = async (
 }
 
 
-const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'installedPackageGeneratedDependencies',
+  local: true,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const installedPackageNamespaceToRef = await multiIndex.keyByAsync({

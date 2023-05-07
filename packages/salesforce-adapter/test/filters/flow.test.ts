@@ -15,9 +15,10 @@
 */
 import { ObjectType, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction } from '@salto-io/adapter-api'
 import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
+import { FilterContext } from '../../src/filter'
 
 describe('flow filter', () => {
-  const filter = filterCreator()
+  const filter = filterCreator({ config: {} as FilterContext })
   const elemID = FLOW_METADATA_TYPE_ID
   const values = ['ObjectType', 'TriggerType', 'ObjectVariable', 'OldObjectVariable',
     'RecursiveCountVariable', 'EventType']
@@ -34,7 +35,7 @@ describe('flow filter', () => {
   })
 
   it('remove restriction values from flow_metadata_value.name', async () => {
-    await filter.onFetch([mockFlow])
+    await filter.onFetch?.([mockFlow])
     expect(getRestriction(mockFlow.fields.name).values).toEqual(values)
     expect(getRestriction(mockFlow.fields.name).enforce_value).toBe(false)
   })

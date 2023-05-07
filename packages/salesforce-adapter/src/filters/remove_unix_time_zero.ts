@@ -47,6 +47,7 @@ const removeUnixTimeZero = async (
  */
 const filter: LocalFilterCreator = () => ({
   name: 'removeUnixTimeZero',
+  local: true,
   onFetch: async (elements: Element[]) => {
     await removeUnixTimeZero(elements)
   },

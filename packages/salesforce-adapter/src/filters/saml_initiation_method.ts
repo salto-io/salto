@@ -20,7 +20,7 @@ import {
 import {
   findObjectType, findInstances,
 } from '@salto-io/adapter-utils'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 
 export const CANVAS_METADATA_TYPE_ID = new ElemID(SALESFORCE, 'CanvasMetadata')
@@ -30,8 +30,9 @@ export const SAML_INIT_METHOD_FIELD_NAME = 'samlInitiationMethod'
 * Declare the assignment rules filter, this filter renames assignment rules instances to match
 * the names in the Salesforce UI
 */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'samlInitMethodFilter',
+  local: true,
   /**
    * Upon discover, rename assignment rules instances
    *

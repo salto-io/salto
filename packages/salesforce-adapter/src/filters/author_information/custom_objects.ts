@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { CUSTOM_FIELD, CUSTOM_OBJECT } from '../../constants'
 import { apiName, getAuthorAnnotations, isCustomObject } from '../../transformers/transformer'
-import { FilterWith, RemoteFilterCreator } from '../../filter'
+import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch } from '../utils'
 
@@ -102,8 +102,9 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
 /*
  * add author information to object types and fields.
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectAuthorFilter',
+  local: false,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

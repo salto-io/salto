@@ -93,6 +93,7 @@ const extractToStaticFile = async (instance: InstanceElement): Promise<void> => 
  */
 const filter: LocalFilterCreator = () => ({
   name: 'valueToStaticFileFilter',
+  local: true,
   onFetch: async (elements: Element[]) => {
     await awu(elements)
       .filter(isInstanceElement)

@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, isObjectType, ReferenceExpression } from '@salto-io/adapter-api'
-import { FilterWith } from '../../../src/filter'
 import { SALESFORCE, CPQ_PRODUCT_RULE, CPQ_LOOKUP_OBJECT_NAME, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_LOOKUP_QUERY, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_MESSAGE_FIELD, API_NAME_SEPARATOR } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/field_references'
 import { defaultFilterContext } from '../../utils'
+import { FilterWith } from '../mocks'
 
 describe('fields with context references filter', () => {
   type FilterType = FilterWith<'onFetch'>

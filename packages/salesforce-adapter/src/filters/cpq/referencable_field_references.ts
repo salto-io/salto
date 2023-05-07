@@ -149,6 +149,7 @@ const filter: LocalFilterCreator = () => {
   let originalChangesByFullName: Record<string, Change<InstanceElement>>
   return {
     name: 'cpqReferencableFieldReferencesFilter',
+    local: true,
     onFetch: async (elements: Element[]) => {
       const customObjects = await awu(elements)
         .filter(isObjectType)

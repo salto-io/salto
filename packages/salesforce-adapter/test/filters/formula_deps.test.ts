@@ -25,10 +25,10 @@ import {
 import { FlatDetailedDependency } from '@salto-io/adapter-utils'
 import formulaDepsFilter from '../../src/filters/formula_deps'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
-import { FilterWith } from '../../src/filter'
 import { createInstanceElement, formulaTypeName, Types } from '../../src/transformers/transformer'
 import { FIELD_TYPE_NAMES, FORMULA, SALESFORCE } from '../../src/constants'
 import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 const depNameToRefExpr = (typeName: string, fieldName: string|undefined = undefined): FlatDetailedDependency => {
   const additionalParams = fieldName ? [fieldName] : []

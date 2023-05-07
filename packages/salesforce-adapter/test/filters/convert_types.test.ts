@@ -21,8 +21,8 @@ import {
 } from '@salto-io/adapter-api'
 import makeFilter from '../../src/filters/convert_types'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('convert types filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'test')

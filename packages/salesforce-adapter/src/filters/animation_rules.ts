@@ -20,7 +20,7 @@ import {
 import {
   findObjectType, findInstances,
 } from '@salto-io/adapter-utils'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { SALESFORCE } from '../constants'
 
 export const ANIMATION_RULE_TYPE_ID = new ElemID(SALESFORCE, 'AnimationRule')
@@ -33,8 +33,9 @@ export const RECORD_TYPE_CONTEXT = 'recordTypeContext'
  * returns only the first letter of the picklist value
  *
  */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'animationRulesFilter',
+  local: true,
   /**
    * Upon fetch, transforms ANIMATION_FREQUENCY & RECORD_TYPE_CONTEXT values of animation rule
    *

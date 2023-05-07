@@ -23,6 +23,7 @@ const { awu } = collections.asynciterable
 
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'hideReadOnlyValuesFilter',
+  local: true,
   onFetch: async (elements: Element[]) => {
     if (config.fetchProfile.dataManagement?.showReadOnlyValues === true) {
       // eslint-disable-next-line no-useless-return

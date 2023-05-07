@@ -376,6 +376,7 @@ export const findTypeToConvert = async (
  */
 const filter: LocalFilterCreator = () => ({
   name: 'convertMapsFilter',
+  local: true,
   onFetch: async (elements: Element[]) => {
     await awu(Object.keys(metadataTypeToFieldToMapDef)).forEach(async targetMetadataType => {
       const instancesToConvert = await findInstancesToConvert(elements, targetMetadataType)

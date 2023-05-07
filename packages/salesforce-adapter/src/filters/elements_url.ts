@@ -32,6 +32,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate UR
 
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'elementsUrlFilter',
+  local: false,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

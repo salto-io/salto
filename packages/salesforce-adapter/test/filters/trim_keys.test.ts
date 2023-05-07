@@ -15,14 +15,15 @@
 */
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/trim_keys'
-import { FilterWith } from '../../src/filter'
 import {
   LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE, METADATA_TYPE, SALESFORCE,
 } from '../../src/constants'
+import { FilterContext } from '../../src/filter'
+import { FilterWith } from './mocks'
 
 describe('trim keys filter', () => {
   const notTrimmed = '\ntrimMe\n'
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: {} as FilterContext }) as FilterWith<'onFetch'>
   const origInstance = new InstanceElement(
     'test',
     new ObjectType({ elemID: new ElemID(SALESFORCE, 'instanceType') }),

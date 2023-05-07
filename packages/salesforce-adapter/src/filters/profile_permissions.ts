@@ -121,6 +121,7 @@ const filterCreator: LocalFilterCreator = () => {
   let isPartialAdminProfile = false
   return {
     name: 'profilePermissionsFilter',
+    local: true,
     preDeploy: async changes => {
       const allAdditions = changes.filter(isAdditionChange)
 

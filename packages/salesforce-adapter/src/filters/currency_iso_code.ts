@@ -23,7 +23,7 @@ import {
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import {
   SALESFORCE,
   FIELD_ANNOTATIONS,
@@ -103,8 +103,9 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
  * Build a global list of available currency code, and a replace all the explicit ValueSets
  * with ValueSetName which points to it
  */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'currencyIsoCodeFilter',
+  local: true,
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
     if (affectedElements.length === 0) {

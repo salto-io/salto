@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { metadataType } from '../transformers/transformer'
 import { LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../constants'
 
@@ -37,8 +37,9 @@ const trimKeys: MapKeyFunc = ({ key }) => {
   return trimmedKey
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'trimKeysFilter',
+  local: true,
   /**
    * Remove the leading and trailing whitespaces and new line chars from the
    * LightningComponentBundle keys to fix potential parsing error

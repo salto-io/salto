@@ -17,7 +17,7 @@
 import _ from 'lodash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { FilterWith } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import { queryClient } from './utils'
 import { apiName, getSObjectFieldElement, getTypePath } from '../transformers/transformer'
 import {
@@ -87,8 +87,9 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   )
 )
 
-const filterCreator = ({ client }: { client: SalesforceClient}): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client }) => ({
   name: 'organizationWideSharingDefaultsFilter',
+  local: false,
   onFetch: async elements => {
     const objectType = createOrganizationType()
     await enrichTypeWithFields(client, objectType)

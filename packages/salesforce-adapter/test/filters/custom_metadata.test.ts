@@ -25,7 +25,6 @@ import { collections } from '@salto-io/lowerdash'
 import { mockTypes, mockInstances } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
 import makeFilter, { ServiceMDTRecordValue } from '../../src/filters/custom_metadata'
-import { FilterWith } from '../../src/filter'
 import {
   MetadataInstanceElement,
   createInstanceElement,
@@ -41,6 +40,7 @@ import {
   SALESFORCE,
   XML_ATTRIBUTE_PREFIX,
 } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

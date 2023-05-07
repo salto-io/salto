@@ -245,6 +245,7 @@ const filterCreator: LocalFilterCreator = () => {
   let originalChangesByApiName: Record<string, Change>
   return {
     name: 'customMetadataRecordsFilter',
+    local: true,
     onFetch: async elements => {
       const customMetadataRecordTypes = await awu(elements)
         .filter(isObjectType)

@@ -170,6 +170,7 @@ const filterCreator: LocalFilterCreator = () => {
   let originalWorkflowChanges: Record<string, Change<InstanceElement>[]> = {}
   return {
     name: 'workflowFilter',
+    local: true,
     /**
      * Upon fetch, modify the full_names of the inner types of the workflow to contain
      * the workflow full_name (e.g. MyWorkflowAlert -> Lead.MyWorkflowAlert)

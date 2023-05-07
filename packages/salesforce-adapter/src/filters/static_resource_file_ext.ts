@@ -21,7 +21,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import mime from 'mime-types'
 import { collections } from '@salto-io/lowerdash'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { SALESFORCE, METADATA_CONTENT_FIELD } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -64,8 +64,9 @@ const modifyFileExtension = async (staticResourceInstance: InstanceElement): Pro
   })
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'staticResourceFileExtFilter',
+  local: true,
   /**
    * Upon fetch modify the extension of the StaticResource's static file CONTENT field
    * from '.resource' to the correct extension based on the CONTENT_TYPE field

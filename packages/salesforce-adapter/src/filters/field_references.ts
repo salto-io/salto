@@ -150,6 +150,7 @@ export const addReferences = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
+  local: true,
   onFetch: async elements => {
     const refDef = config.enumFieldPermissions
       ? defaultFieldNameToTypeMappingDefs

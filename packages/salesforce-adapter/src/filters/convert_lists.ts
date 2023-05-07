@@ -193,6 +193,7 @@ export const makeFilter = (
   hardcodedLists: ReadonlyArray<string>
 ): LocalFilterCreator => () => ({
   name: 'convertListsFilter',
+  local: true,
   /**
    * Upon fetch, mark all list fields as list fields in all fetched types
    *

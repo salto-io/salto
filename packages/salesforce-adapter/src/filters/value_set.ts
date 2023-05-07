@@ -20,7 +20,7 @@ import {
   InstanceElement, isInstanceChange, ModificationChange, isFieldChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { FIELD_ANNOTATIONS, VALUE_SET_FIELDS } from '../constants'
 import { PicklistValue } from '../client/types'
 import { Types, metadataType } from '../transformers/transformer'
@@ -48,8 +48,9 @@ export const hasValueSetNameAnnotation = (field: Field): boolean =>
  *  - Global value set
  *  - Restricted custom value set
  */
-const filterCreator = (): FilterWith<'onDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'valueSetFilter',
+  local: true,
   onDeploy: async changes => {
     const isRestrictedPicklistField = (
       changedElement: ChangeDataType

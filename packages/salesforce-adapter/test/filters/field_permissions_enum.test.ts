@@ -25,11 +25,11 @@ import {
   Change,
   ListType,
 } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import fieldPermissionsEnumFilter, { enumFieldPermissions, profileFieldLevelSecurity } from '../../src/filters/field_permissions_enum'
 import { generateProfileType, defaultFilterContext } from '../utils'
 import { API_NAME, CUSTOM_OBJECT, METADATA_TYPE, PERMISSION_SET_METADATA_TYPE, SALESFORCE } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 describe('FieldPermissionsEnum filter', () => {
   let filter: FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>

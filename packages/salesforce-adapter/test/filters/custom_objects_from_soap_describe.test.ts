@@ -34,10 +34,10 @@ import {
 import mockAdapter from '../adapter'
 import { findElements, defaultFilterContext } from '../utils'
 import filterCreator from '../../src/filters/custom_objects_from_soap_describe'
-import { FilterWith } from '../../src/filter'
 import { INSTANCE_TYPE_FIELD, INSTANCE_REQUIRED_FIELD } from '../../src/filters/custom_objects_to_object_type'
 import { generateCustomObjectType } from './custom_objects_to_object_type.test'
 import { mockSObjectDescribeGlobal, mockSObjectDescribe, mockFileProperties } from '../connection'
+import { FilterWith } from './mocks'
 
 describe('Custom Objects from describe filter', () => {
   let connection: MockInterface<Connection>

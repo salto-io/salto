@@ -16,8 +16,8 @@
 import { ObjectType, ElemID, BuiltinTypes, Element, InstanceElement } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_fields_and_values'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('remove fields filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'typeRemoval')

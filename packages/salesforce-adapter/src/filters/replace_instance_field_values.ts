@@ -119,6 +119,7 @@ const replaceInstancesValues = async (
  */
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'replaceFieldValuesFilter',
+  local: true,
   onFetch: async (elements: Element[]) => {
     const referenceElements = buildElementsSourceForFetch(elements, config)
     const idToApiNameLookUp = await getRelevantFieldMapping({

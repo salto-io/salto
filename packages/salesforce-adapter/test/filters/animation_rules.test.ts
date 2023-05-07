@@ -18,7 +18,8 @@ import { ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, c
 import { findElement } from '@salto-io/adapter-utils'
 import filterCreator, { ANIMATION_FREQUENCY, ANIMATION_RULE_TYPE_ID, RECORD_TYPE_CONTEXT } from '../../src/filters/animation_rules'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
+import { FilterContext } from '../../src/filter'
+import { FilterWith } from './mocks'
 
 describe('animation rules filter', () => {
   const animationRuleType = new ObjectType({
@@ -52,7 +53,7 @@ describe('animation rules filter', () => {
 
   let testElements: Element[]
 
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: {} as FilterContext }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     testElements = [_.clone(mockAnimationRuleInstance), animationRuleType]

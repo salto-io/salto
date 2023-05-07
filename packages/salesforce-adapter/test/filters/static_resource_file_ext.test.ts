@@ -19,11 +19,12 @@ import {
 import filterCreator, {
   CONTENT_TYPE, STATIC_RESOURCE_METADATA_TYPE_ID,
 } from '../../src/filters/static_resource_file_ext'
-import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, METADATA_CONTENT_FIELD } from '../../src/constants'
+import { FilterContext } from '../../src/filter'
+import { FilterWith } from './mocks'
 
 describe('Static Resource File Extension Filter', () => {
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: {} as FilterContext }) as FilterWith<'onFetch'>
   const baseStaticResourceInstance = new InstanceElement(
     'testStaticResourceInstance',
     new ObjectType({

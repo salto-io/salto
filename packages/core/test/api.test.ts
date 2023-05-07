@@ -561,7 +561,7 @@ describe('api.ts', () => {
         ])
 
         adapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => {
-          const changeInstance = getChangeData(changeGroup.changes[0]) as InstanceElement
+          const changeInstance = getChangeData(changeGroup.changes[0]).clone() as InstanceElement
           changeInstance.value.id = 1
           return {
             appliedChanges: [toChange({ after: changeInstance })],

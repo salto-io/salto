@@ -77,11 +77,13 @@ export const buildElementsSourceFromElements = (
       return element
     }
 
-    return (await awu(fallbackSources).find(async source => source.has(id)))?.get(id)
+    return awu(fallbackSources).map(source => source.get(id)).find(values.isDefined)
   }
 
-  const has = async (id: ElemID): Promise<boolean> => elementsMap[id.getFullName()] !== undefined
+  const has = async (id: ElemID): Promise<boolean> => (
+    elementsMap[id.getFullName()] !== undefined
     || awu(fallbackSources).some(async source => source.has(id))
+  )
 
   self = {
     getAll: async () => getElements(),

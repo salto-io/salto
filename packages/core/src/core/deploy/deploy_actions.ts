@@ -21,10 +21,7 @@ import {
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
 import { Plan, PlanItem, PlanItemId } from '../plan'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -102,7 +99,7 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
-  checkOnly: boolean,
+  checkOnly: boolean
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: Group[] = []
@@ -112,9 +109,7 @@ export const deployActions = async (
       reportProgress(item, 'started')
       try {
         const result = await deployAction(item, adapters, checkOnly)
-        await awu(result.appliedChanges).forEach(async appliedChange => {
-          appliedChanges.push(appliedChange)
-        })
+        result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
         if (result.extraProperties?.groups !== undefined) {
           groups.push(...result.extraProperties.groups)
         }

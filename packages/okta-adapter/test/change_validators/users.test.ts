@@ -107,7 +107,7 @@ describe('usersValidator', () => {
     ])
     expect(changeErrors).toHaveLength(0)
   })
-  it('should not return error if there are no users in instance', async () => {
+  it('should not return error if users path does not exist', async () => {
     mockGet.mockResolvedValue(
       {
         status: 200,

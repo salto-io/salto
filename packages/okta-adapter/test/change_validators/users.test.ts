@@ -107,4 +107,24 @@ describe('usersValidator', () => {
     ])
     expect(changeErrors).toHaveLength(0)
   })
+  it('should not return error if users path does not exist', async () => {
+    mockGet.mockResolvedValue(
+      {
+        status: 200,
+        data: [
+          { id: '1', profile: { login: 'a@a' } },
+        ],
+      }
+    )
+    const changeValidator = usersValidator(client, DEFAULT_CONFIG)
+    const instance = new InstanceElement(
+      'no users',
+      accessRuleType,
+      { name: 'policy', conditions: { people: { groups: { include: ['groupId'] } } } },
+    )
+    const changeErrors = await changeValidator([
+      toChange({ after: instance }),
+    ])
+    expect(changeErrors).toEqual([])
+  })
 })

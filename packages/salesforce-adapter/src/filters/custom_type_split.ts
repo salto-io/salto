@@ -71,7 +71,7 @@ const splitFields = async (
       ],
     }
   )
-  return [standardFieldsObject, customFieldsObject]
+  return [customFieldsObject, standardFieldsObject]
 }
 
 const customObjectToSplitElements = async (

@@ -32,7 +32,7 @@ export type DataManagement = {
 }
 
 
-const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = ['Name']
+const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']
 const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
   SBQQ__ProductFeature__c: [
     DETECTS_PARENTS_INDICATOR,

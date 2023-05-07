@@ -164,7 +164,9 @@ const recordToInstance = async (
     type,
     await transformRecordToValues(type, record),
     await getInstancePath(name),
-    { [CORE_ANNOTATIONS.ALIAS]: instanceAlias }
+    instanceAlias !== ''
+      ? { [CORE_ANNOTATIONS.ALIAS]: instanceAlias }
+      : {}
   )
 }
 
@@ -267,7 +269,7 @@ const typesRecordsToInstances = async (
     }
     const alias = (await awu(customObjectFetchSetting[typeName].aliasFields)
       .map(field => fieldToAlias(field))
-      .filter(isDefined)
+      .filter(fieldAlias => fieldAlias !== undefined && fieldAlias !== '')
       .toArray()).join(aliasSeparator)
     setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)
     return alias

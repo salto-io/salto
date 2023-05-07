@@ -51,7 +51,7 @@ describe('buildDataManagement', () => {
     expect(dataManagement.getObjectIdsFields('aaab')).toEqual(['field'])
   })
   it('getObjectAliasFields should return correct results', () => {
-    expect(dataManagement.getObjectAliasFields('Account')).toEqual(['Name'])
+    expect(dataManagement.getObjectAliasFields('Account')).toEqual([DETECTS_PARENTS_INDICATOR, 'Name'])
     expect(dataManagement.getObjectAliasFields('SBQQ__LookupQuery__c')).toEqual([
       DETECTS_PARENTS_INDICATOR,
       'SBQQ__PriceRule2__c',

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { strings, types as lowerdashTypes, values } from '@salto-io/lowerdash'
+import { types as lowerdashTypes, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
@@ -24,7 +24,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from './query'
-import { ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from './data_elements/types'
+import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { FailedFiles, FailedTypes } from './client/types'
 import { netsuiteSupportedTypes } from './types'
 
@@ -589,15 +589,6 @@ export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Ne
 export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders were excluded from the fetch.'
  + ' To include them, increase the File Cabinet\'s size limitations and remove their exclusion rules.'
 
-export const UPDATE_FETCH_CONFIG_FORMAT = 'The configuration options "typeToSkip", "filePathRegexSkipList" and "skipList" are deprecated.'
-  + ' To skip items in fetch, please use the "fetch.exclude" option.'
-  + ' The following configuration will update the deprecated fields to "fetch.exclude" field.'
-
-export const UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT = 'Some type names have been changed. The following changes will update the type names in the adapter configuration.'
-
-export const UPDATE_DEPLOY_CONFIG = 'All deploy\'s configuration flags are under "deploy" configuration.'
-+ ' you may leave "deploy" section as undefined to set all deploy\'s configuration flags to their default value.'
-
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
 
@@ -642,20 +633,6 @@ const toConfigSuggestions = (
     }
   }
   return config
-}
-
-
-const convertDeprecatedFilePathRegex = (filePathRegex: string): string => {
-  let newPathRegex = filePathRegex
-  newPathRegex = newPathRegex.startsWith('^')
-    ? newPathRegex.substring(1)
-    : `.*${newPathRegex}`
-
-  newPathRegex = newPathRegex.endsWith('$')
-    ? newPathRegex.substring(0, newPathRegex.length - 1)
-    : `${newPathRegex}.*`
-
-  return newPathRegex
 }
 
 // uniting first's and second's types. without duplications
@@ -767,87 +744,6 @@ const updateConfigFromFailures = (
   }
 }
 
-const updateConfigSkipListFormat = (config: NetsuiteConfig): void => {
-  const { skipList = {}, typesToSkip, filePathRegexSkipList } = config
-  if (typesToSkip === undefined && filePathRegexSkipList === undefined) {
-    return
-  }
-  if (typesToSkip !== undefined) {
-    skipList.types = {
-      ...skipList.types,
-      ...Object.fromEntries(typesToSkip.map(type => [type, ['.*']])),
-    }
-  }
-  if (filePathRegexSkipList !== undefined) {
-    skipList.filePaths = (skipList.filePaths ?? [])
-      .concat(filePathRegexSkipList.map(convertDeprecatedFilePathRegex))
-  }
-  config.skipList = skipList
-  delete config.typesToSkip
-  delete config.filePathRegexSkipList
-}
-
-const updateConfigFetchFormat = (config: NetsuiteConfig): boolean => {
-  const { skipList, fetch } = config
-  if (skipList === undefined) {
-    return false
-  }
-
-  const typesToExclude = convertToQueryParams(skipList)
-  delete config.skipList
-
-  config.fetch = fetch !== undefined ? {
-    include: fetch.include,
-    exclude: combineQueryParams(fetch.exclude, typesToExclude),
-  } : {
-    include: fetchDefault.include,
-    exclude: combineQueryParams(typesToExclude, fetchDefault.exclude),
-  }
-  return true
-}
-
-const updateSuiteAppTypes = (config: NetsuiteConfig): boolean => {
-  let didUpdate = false
-  config.fetch?.exclude?.types.forEach(excludeItem => {
-    const fixedName = strings.lowerCaseFirstLetter(excludeItem.name)
-    if (excludeItem.name !== fixedName && fixedName in TYPES_TO_INTERNAL_ID) {
-      excludeItem.name = fixedName
-      didUpdate = true
-    }
-  })
-  return didUpdate
-}
-
-const updateConfigDeployFormat = (config: NetsuiteConfig): boolean => {
-  const { deployReferencedElements } = config
-  if (deployReferencedElements === undefined) {
-    return false
-  }
-  // we want to migrate deployReferencedElements only if its value is 'true'
-  // (and not if it evaluated to true)
-  if (deployReferencedElements === true) {
-    config.deploy = {
-      ...config.deploy,
-      deployReferencedElements,
-    }
-  }
-  delete config.deployReferencedElements
-  return true
-}
-
-const updateConfigFormat = (config: NetsuiteConfig): {
-  didUpdateFetchFormat: boolean
-  didUpdateDeployFormat: boolean
-  didUpdateSuiteAppTypesFormat: boolean
-} => {
-  updateConfigSkipListFormat(config)
-  return {
-    didUpdateFetchFormat: updateConfigFetchFormat(config),
-    didUpdateDeployFormat: updateConfigDeployFormat(config),
-    didUpdateSuiteAppTypesFormat: updateSuiteAppTypes(config),
-  }
-}
-
 const toConfigInstance = (config: NetsuiteConfig): InstanceElement =>
   new InstanceElement(ElemID.CONFIG_NAME, configType, _.pickBy(config, values.isDefined))
 
@@ -882,11 +778,6 @@ export const getConfigFromConfigChanges = (
 ): { config: InstanceElement[]; message: string } | undefined => {
   const config = _.cloneDeep(currentConfig)
   const {
-    didUpdateFetchFormat,
-    didUpdateDeployFormat,
-    didUpdateSuiteAppTypesFormat,
-  } = updateConfigFormat(config)
-  const {
     didUpdateFromFailures,
     didUpdateLargeFolders,
   } = updateConfigFromFailures(
@@ -901,15 +792,6 @@ export const getConfigFromConfigChanges = (
       : undefined,
     didUpdateLargeFolders
       ? LARGE_FOLDERS_EXCLUDED_MESSAGE
-      : undefined,
-    didUpdateFetchFormat
-      ? UPDATE_FETCH_CONFIG_FORMAT
-      : undefined,
-    !didUpdateFetchFormat && didUpdateSuiteAppTypesFormat
-      ? UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT
-      : undefined,
-    didUpdateDeployFormat
-      ? UPDATE_DEPLOY_CONFIG
       : undefined,
   ].filter(values.isDefined)
 

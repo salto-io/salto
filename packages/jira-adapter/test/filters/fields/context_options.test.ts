@@ -77,7 +77,6 @@ describe('context options', () => {
 
     it('if change is removal, should do nothing', async () => {
       await setContextOptions(toChange({ before: contextInstance }), client, elementSource)
-      // expect(client.post).toHaveBeenCalledWith(undefined)
       expect(connection.post).not.toHaveBeenCalled()
       expect(connection.put).not.toHaveBeenCalled()
       expect(connection.delete).not.toHaveBeenCalled()

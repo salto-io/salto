@@ -31,7 +31,7 @@ import {
   INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
 } from '../src/constants'
-import { createInstanceElement, createMetadataObjectType } from '../src/transformers/transformer'
+import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
 import { API_VERSION } from '../src/client/client'
 import { WORKFLOW_FIELD_TO_TYPE } from '../src/filters/workflow'
@@ -451,6 +451,18 @@ export const mockTypes = {
   DataCategoryGroup: createMetadataObjectType({
     annotations: {
       [METADATA_TYPE]: 'DataCategoryGroup',
+    },
+  }),
+  SBQQ__Template__c: createCustomObjectType('SBQQ__Template__c', {}),
+  SBQQ__LineColumn__c: createCustomObjectType('SBQQ__LineColumn__c', {
+    fields: {
+      SBQQ__Template__c: {
+        refType: Types.primitiveDataTypes.MasterDetail,
+        annotations: {
+          referenceTo: ['SBQQ__Template__c'],
+        },
+      },
+      SBQQ__FieldName__c: { refType: BuiltinTypes.STRING },
     },
   }),
 }

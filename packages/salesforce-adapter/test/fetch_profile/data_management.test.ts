@@ -15,6 +15,7 @@
 */
 
 import { buildDataManagement, DataManagement } from '../../src/fetch_profile/data_management'
+import { DETECTS_PARENTS_INDICATOR } from '../../src/constants'
 
 describe('buildDataManagement', () => {
   let dataManagement: DataManagement
@@ -48,5 +49,13 @@ describe('buildDataManagement', () => {
   it('getObjectIdsFields should return currect results', () => {
     expect(dataManagement.getObjectIdsFields('aaa')).toEqual(['default'])
     expect(dataManagement.getObjectIdsFields('aaab')).toEqual(['field'])
+  })
+  it('getObjectAliasFields should return correct results', () => {
+    expect(dataManagement.getObjectAliasFields('Account')).toEqual(['Name'])
+    expect(dataManagement.getObjectAliasFields('SBQQ__LookupQuery__c')).toEqual([
+      DETECTS_PARENTS_INDICATOR,
+      'SBQQ__PriceRule2__c',
+      'Name',
+    ])
   })
 })

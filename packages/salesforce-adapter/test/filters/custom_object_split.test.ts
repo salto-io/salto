@@ -364,12 +364,14 @@ describe('Custom Object Split filter', () => {
 
     it('should split the selected type', () => {
       const elements = elementsByElemId['salesforce.SpecialObject__c']
-      expect(elements).toBeArrayOfSize(4)
-      expect(getElementPaths(elements)).toEqual(
+      expect(elements).toBeArrayOfSize(6)
+      expect(getElementPaths(elements)).toIncludeSameMembers(
         [
           `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Custom__c`,
           `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/OtherCustom__c`,
           `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Standard`,
+          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Id`,
+          `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/Fields/Name`,
           `${SALESFORCE}/${OBJECTS_PATH}/SpecialObject__c/SpecialObject__cAnnotations`,
         ]
       )

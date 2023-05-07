@@ -137,7 +137,7 @@ export default ({
     defaultGroupChangeValidator,
     organizationExistenceValidator(client, fetchConfig),
     badFormatWebhookActionValidator,
-    guideDisabledValidator,
+    guideDisabledValidator(fetchConfig),
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

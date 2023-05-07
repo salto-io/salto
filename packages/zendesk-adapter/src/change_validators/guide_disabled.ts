@@ -34,16 +34,17 @@ boolean => {
 
 export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
  => ChangeValidator = fetchConfig => async (changes, elementSource) => {
+   if (elementSource === undefined) {
+     log.error('Failed to run guideDisabledValidator because no element source was provided')
+     return []
+   }
+
    const relevantInstances = changes
      .filter(isInstanceChange)
      .filter(isAdditionChange)
      .map(getChangeData)
      .filter(instance => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(instance.elemID.typeName))
    if (_.isEmpty(relevantInstances)) {
-     return []
-   }
-   if (elementSource === undefined) {
-     log.error('Failed to run guideDisabledValidator because no element source was provided')
      return []
    }
 
@@ -62,7 +63,13 @@ export const guideDisabledValidator: (fetchConfig: ZendeskFetchConfig)
    }
 
    const allErrorInstances = relevantInstances
-     .filter(instance => isReferenceExpression(instance.value.brand))
+     .filter(instance => {
+       const isRef = isReferenceExpression(instance.value.brand)
+       if (!isRef) {
+         log.debug(`instance ${instance.elemID.getFullName()} has no brand reference`)
+       }
+       return isRef
+     })
      .filter(instance => !brandsWithGuide.has(instance.value.brand.elemID.getFullName()))
 
    return allErrorInstances

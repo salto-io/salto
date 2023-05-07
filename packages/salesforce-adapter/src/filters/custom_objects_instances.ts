@@ -411,7 +411,7 @@ export const getIdFields = async (
   const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
     ((fieldName === DETECTS_PARENTS_INDICATOR)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
-  const invalidIdFieldNames = idFieldsWithParents.concat(aliasFieldsWithParents).filter(fieldName => (
+  const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
   ))
   if (invalidIdFieldNames.length > 0) {
@@ -419,7 +419,14 @@ export const getIdFields = async (
   }
   return {
     idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]),
-    aliasFields: aliasFieldsWithParents.map(fieldName => type.fields[fieldName]),
+    aliasFields: aliasFieldsWithParents
+      .map(fieldName => {
+        const field = type.fields[fieldName]
+        if (field === undefined) {
+          log.warn('Alias field with name %s does not exist in type %s', fieldName, typeName)
+        }
+        return field
+      }).filter(isDefined),
   }
 }
 
@@ -427,11 +434,16 @@ export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
-    objectType: type,
-    isBase: dataManagement.isObjectMatch(await apiName(type)),
-    ...await getIdFields(type, dataManagement),
-  })
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
+    const { idFields, aliasFields, invalidFields: invalidIdFields } = await getIdFields(type, dataManagement)
+    return {
+      objectType: type,
+      isBase: dataManagement.isObjectMatch(await apiName(type)),
+      idFields,
+      aliasFields,
+      invalidIdFields,
+    }
+  }
 
   return awu(types)
     .filter(async type => dataManagement.isObjectMatch(await apiName(type))

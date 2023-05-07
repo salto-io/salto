@@ -22,6 +22,7 @@ import { NetsuiteTypesQueryParams } from '../query'
 const { matchAll } = strings
 const { isDefined } = values
 
+export const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
 
 export const isCustomTypeInfo = (customizationInfo: CustomizationInfo):
   customizationInfo is CustomTypeInfo => 'scriptId' in customizationInfo

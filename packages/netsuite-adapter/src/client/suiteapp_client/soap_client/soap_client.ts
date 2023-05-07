@@ -33,6 +33,7 @@ import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
+import { toError } from '../../utils'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -83,8 +84,9 @@ const retryOnBadResponseWithDelay = (
           // eslint-disable-next-line @typescript-eslint/return-await
           return await call.call()
         } catch (e) {
+          const error = toError(e)
           if (shouldRetry(e) && retriesLeft > 0) {
-            log.warn('Retrying soap request with error: %s. Retries left: %d', e.message, retriesLeft)
+            log.warn('Retrying soap request with error: %s. Retries left: %d', error.message, retriesLeft)
             if (retryDelay) {
               await new Promise(f => setTimeout(f, retryDelay))
             }
@@ -92,9 +94,9 @@ const retryOnBadResponseWithDelay = (
           }
 
           if (retriesLeft === 0) {
-            log.error('Soap request exceed max retries with error: %s', e.message)
+            log.error('Soap request exceed max retries with error: %s', error.message)
           } else {
-            log.error('Soap request had error: %s', e.message)
+            log.error('Soap request had error: %s', error.message)
           }
 
           throw e
@@ -372,10 +374,11 @@ export default class SoapClient {
       )
     } catch (e) {
       log.warn('Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o', operation, body, e)
-      if (e.message.includes('Invalid login attempt.')) {
+      const error = toError(e)
+      if (error.message.includes('Invalid login attempt.')) {
         throw new InvalidSuiteAppCredentialsError()
       }
-      throw e
+      throw error
     }
   }
 

@@ -63,13 +63,13 @@ export type LocalFilterCreator<
   R extends FilterResult | void,
   T,
   DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo> & { local: true }
+> = (opts: T) => Filter<R, DeployInfo> & { remote?: false }
 
 export type RemoteFilterCreator<
   R extends FilterResult | void,
   T,
   DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo> & { local: false }
+> = (opts: T) => Filter<R, DeployInfo> & { remote: true }
 
 export type LocalFilterCreatorDefinition<
   R extends FilterResult | void,

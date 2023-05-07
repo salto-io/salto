@@ -20,9 +20,8 @@ import filterCreator, { shouldBeList } from '../../src/filters/parse_report_type
 import { savedsearchType } from '../../src/autogen/types/standard_types/savedsearch'
 import { reportdefinitionType } from '../../src/autogen/types/standard_types/reportdefinition'
 import { financiallayoutType } from '../../src/autogen/types/standard_types/financiallayout'
-import NetsuiteClient from '../../src/client/client'
 import { NETSUITE, SAVED_SEARCH } from '../../src/constants'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 import { savedsearchType as newSavedSearchType } from '../../src/type_parsers/saved_search_parsing/parsed_saved_search'
 import { layoutDefinition, layoutDefinitionResult } from '../type_parsers/financial_layout_consts'
@@ -37,7 +36,7 @@ const { awu } = collections.asynciterable
 describe('parse_report_types filter', () => {
   let savedSearchInstance: InstanceElement
   let sourceSavedSearchInstance: InstanceElement
-  let fetchOpts: FilterOpts
+  let fetchOpts: LocalFilterOpts
   let financialLayoutInstance: InstanceElement
   let sourceFinancialLayoutInstance: InstanceElement
   let reportDefinitionInstance: InstanceElement
@@ -45,7 +44,6 @@ describe('parse_report_types filter', () => {
 
   beforeEach(async () => {
     fetchOpts = {
-      client: {} as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
@@ -124,7 +122,6 @@ describe('parse_report_types filter', () => {
     })
     it('should keeps old definition', async () => {
       fetchOpts = {
-        client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
         },

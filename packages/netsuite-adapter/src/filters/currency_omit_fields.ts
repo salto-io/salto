@@ -18,11 +18,11 @@ import { Change, isInstanceChange, getChangeData, InstanceElement, isAdditionCha
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { CURRENCY } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 export const FIELDS_TO_OMIT = ['currencyPrecision', 'locale', 'formatSample']
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'currencyUndeployableFieldsFilter',
   preDeploy: async changes => {
     changes

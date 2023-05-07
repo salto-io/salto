@@ -16,6 +16,7 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_attributes'
 import { NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_attributes', () => {
   it('on fetch should remove the attributes value', async () => {
@@ -25,7 +26,7 @@ describe('data_instances_attributes', () => {
       { attributes: { internalId: '1', 'xsi:type': 'listAcct:Subsidiary' } }
     )
 
-    await filterCreator().onFetch([instance])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
     expect(instance.value.internalId).toEqual('1')
     expect(instance.value.attributes).toBeUndefined()
   })
@@ -45,7 +46,7 @@ describe('data_instances_attributes', () => {
       { internalId: '1', attrField: '2', otherField: '3' }
     )
 
-    await filterCreator().preDeploy?.([
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([
       toChange({ before: instance, after: instance }),
       toChange({ before: type, after: type }),
     ])

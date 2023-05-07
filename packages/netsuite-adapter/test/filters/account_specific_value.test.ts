@@ -17,6 +17,7 @@ import { BuiltinTypes, ElemID, getChangeData, InstanceElement, ObjectType, toCha
 import filterCreator from '../../src/filters/account_specific_values'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import { addressFormType } from '../../src/autogen/types/standard_types/addressForm'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('account_specific_values filter', () => {
   it('should remove account specific values from instance', async () => {
@@ -34,7 +35,7 @@ describe('account_specific_values filter', () => {
       }
     )
     const change = toChange({ after: instance })
-    await filterCreator().preDeploy([change])
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
     expect(getChangeData(change).value).toEqual({ a: 2, c: { e: 3 }, [APPLICATION_ID]: 'a.b.c' })
   })
   it('should remove account specific values from custom record type', async () => {
@@ -65,7 +66,7 @@ describe('account_specific_values filter', () => {
       },
     })
     const change = toChange({ after: type })
-    await filterCreator().preDeploy([change])
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
     expect(getChangeData(change).annotations).toEqual({ a: 2, c: { e: 3 }, [APPLICATION_ID]: 'a.b.c', [METADATA_TYPE]: CUSTOM_RECORD_TYPE })
     expect(getChangeData(change).fields.custom_field.annotations).toEqual({ a: 2, c: { e: 3 } })
   })

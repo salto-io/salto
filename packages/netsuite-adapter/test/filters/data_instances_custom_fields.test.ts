@@ -17,6 +17,7 @@ import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@sa
 import filterCreator from '../../src/filters/data_instances_custom_fields'
 import { NETSUITE } from '../../src/constants'
 import { SOAP_FIELDS_TYPES } from '../../src/client/suiteapp_client/soap_client/types'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_custom_fields', () => {
   describe('onFetch', () => {
@@ -41,14 +42,14 @@ describe('data_instances_custom_fields', () => {
       )
     })
     it('should add an integer field', async () => {
-      await filterCreator().onFetch([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.value.customFieldList).toBeUndefined()
       expect(instance.value.custom_someId).toBe(123)
     })
 
     it('should do nothing if there are no custom fields values', async () => {
       delete instance.value.customFieldList
-      await filterCreator().onFetch([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({})
     })
   })
@@ -75,7 +76,7 @@ describe('data_instances_custom_fields', () => {
       )
     })
     it('should convert all custom fields to customFieldList on instance addition', async () => {
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         customFieldList: {
           'platformCore:customField': [
@@ -135,7 +136,7 @@ describe('data_instances_custom_fields', () => {
     it('should convert only changed custom fields to customFieldList on instance modification', async () => {
       const before = instance.clone()
       instance.value.custom_a = false
-      await filterCreator().preDeploy([toChange({ before, after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ before, after: instance })])
       expect(instance.value).toEqual({
         customFieldList: {
           'platformCore:customField': [

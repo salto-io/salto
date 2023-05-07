@@ -25,7 +25,7 @@ import { getMetadataTypes, metadataTypesToList } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
-import { FilterCreator } from '../src/filter'
+import { LocalFilterCreator } from '../src/filter'
 import resolveValuesFilter from '../src/filters/element_references'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
@@ -75,12 +75,12 @@ getChangeValidatorMock.mockImplementation(({}: {
 jest.mock('../src/changes_detector/changes_detector')
 
 const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
-const firstDummyFilter: FilterCreator = () => ({
+const firstDummyFilter: LocalFilterCreator = () => ({
   name: 'firstDummyFilter',
   onFetch: () => onFetchMock(1),
 })
 
-const secondDummyFilter: FilterCreator = () => ({
+const secondDummyFilter: LocalFilterCreator = () => ({
   name: 'secondDummyFilter',
   onFetch: () => onFetchMock(2),
 })

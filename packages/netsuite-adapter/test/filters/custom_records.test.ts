@@ -16,6 +16,7 @@
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/custom_records'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('fix custom record objects filter', () => {
   let type: ObjectType
@@ -46,7 +47,7 @@ describe('fix custom record objects filter', () => {
           },
         }
       )
-      await filterCreator().onFetch([
+      await filterCreator({} as LocalFilterOpts).onFetch?.([
         type,
         instance,
       ])
@@ -72,7 +73,7 @@ describe('fix custom record objects filter', () => {
         type,
         { internalId: '2' }
       )
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
     })
     it('should add fields to type', () => {
       expect(Object.keys(type.fields)).toEqual([

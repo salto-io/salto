@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import { getChangeData, isAdditionChange, isInstanceElement } from '@salto-io/adapter-api'
-import { FilterWith } from '../../filter'
+import { LocalFilterCreator } from '../../filter'
 
-const filterCreator = (): FilterWith<'onDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'suiteAppInternalIds',
   onDeploy: async (changes, { elemIdToInternalId = {} }) => {
     changes

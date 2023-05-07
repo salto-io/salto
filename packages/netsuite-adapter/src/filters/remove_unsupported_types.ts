@@ -17,17 +17,14 @@ import _ from 'lodash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { isObjectType } from '@salto-io/adapter-api'
 import { NETSUITE } from '../constants'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { getMetadataTypes, isCustomRecordType, isDataObjectType, metadataTypesToList } from '../types'
 import { SUPPORTED_TYPES, TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
 
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'removeUnsupportedTypes',
   onFetch: async elements => {
-    if (!client.isSuiteAppConfigured()) {
-      return
-    }
     const sdfTypeNames = new Set(
       metadataTypesToList(getMetadataTypes())
         .map(e => e.elemID.getFullName().toLowerCase())

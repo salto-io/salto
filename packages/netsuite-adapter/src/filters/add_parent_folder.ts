@@ -16,12 +16,12 @@
 import { CORE_ANNOTATIONS, getChangeData } from '@salto-io/adapter-api'
 import path from 'path'
 import { isFileCabinetInstance } from '../types'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { SUITEAPP_CREATING_FILES_GROUP_ID } from '../group_changes'
 import { FILE_CABINET_PATH_SEPARATOR, PARENT } from '../constants'
 import { getParentInternalId } from '../change_validators/file_cabinet_internal_ids'
 
-const filterCreator: FilterCreator = ({ changesGroupId }) => ({
+const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
   name: 'addParentFolder',
   onFetch: async elements => {
     elements

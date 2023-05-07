@@ -16,6 +16,7 @@
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_null_fields'
 import { NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_null_fields', () => {
   it('preDeploy should remove identical fields', async () => {
@@ -40,7 +41,7 @@ describe('data_instances_null_fields', () => {
         notRemoved: 1,
       }
     )
-    await filterCreator().preDeploy?.([
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([
       toChange({ before: beforeInstance, after: afterInstance }),
       toChange({ before: type, after: type }),
     ])

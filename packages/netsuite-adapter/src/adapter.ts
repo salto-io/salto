@@ -61,7 +61,7 @@ import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
-import { Filter, FilterCreator } from './filter'
+import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
@@ -84,11 +84,59 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
+  { creator: customRecordTypesType },
+  { creator: omitSdfUntypedValues },
+  { creator: dataInstancesIdentifiers },
+  { creator: dataInstancesDiff },
+  // addParentFolder must run before replaceInstanceReferencesFilter
+  { creator: addParentFolder },
+  { creator: parseReportTypes },
+  { creator: convertLists },
+  { creator: consistentValues },
+  // convertListsToMaps must run after convertLists and consistentValues
+  // and must run before replaceInstanceReferencesFilter
+  { creator: convertListsToMaps },
+  { creator: replaceElementReferences },
+  { creator: currencyUndeployableFieldsFilter },
+  { creator: SDFInternalIds, addsNewInformation: true },
+  { creator: dataInstancesAttributes },
+  { creator: redundantFields },
+  { creator: hiddenFields },
+  { creator: replaceRecordRef },
+  { creator: dataTypesCustomFields },
+  { creator: dataInstancesCustomFields },
+  { creator: dataInstancesNullFields },
+  { creator: removeUnsupportedTypes },
+  { creator: dataInstancesReferences },
+  { creator: dataInstancesInternalId },
+  { creator: suiteAppInternalIds },
+  { creator: currencyExchangeRate },
+  // AuthorInformation filters must run after SDFInternalIds filter
+  { creator: systemNoteAuthorInformation, addsNewInformation: true },
+  // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
+  { creator: savedSearchesAuthorInformation, addsNewInformation: true },
+  { creator: translationConverter },
+  { creator: accountSpecificValues },
+  { creator: suiteAppConfigElementsFilter },
+  { creator: configFeaturesFilter },
+  { creator: customRecordsFilter },
+  // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
+  { creator: serviceUrls, addsNewInformation: true },
+  // omitFieldsFilter should be the last onFetch filter to run
+  { creator: omitFieldsFilter },
+  // additionalChanges should be the first preDeploy filter to run
+  { creator: additionalChanges },
+]
+
+// By default we run all filters and provide a client
+const defaultFilters = allFilters.map(({ creator }) => creator)
+
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
   elementsSource: ReadOnlyElementsSource
   // Filters to support special cases upon fetch
-  filtersCreators?: FilterCreator[]
+  filtersCreators?: Array<LocalFilterCreator | RemoteFilterCreator>
   // Types that we skip their deployment and fetch
   typesToSkip?: string[]
   // File paths regular expression that we skip their fetch
@@ -127,50 +175,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public constructor({
     client,
     elementsSource,
-    filtersCreators = [
-      customRecordTypesType,
-      omitSdfUntypedValues,
-      dataInstancesIdentifiers,
-      dataInstancesDiff,
-      // addParentFolder must run before replaceInstanceReferencesFilter
-      addParentFolder,
-      parseReportTypes,
-      convertLists,
-      consistentValues,
-      // convertListsToMaps must run after convertLists and consistentValues
-      // and must run before replaceInstanceReferencesFilter
-      convertListsToMaps,
-      replaceElementReferences,
-      currencyUndeployableFieldsFilter,
-      SDFInternalIds,
-      dataInstancesAttributes,
-      redundantFields,
-      hiddenFields,
-      replaceRecordRef,
-      dataTypesCustomFields,
-      dataInstancesCustomFields,
-      dataInstancesNullFields,
-      removeUnsupportedTypes,
-      dataInstancesReferences,
-      dataInstancesInternalId,
-      suiteAppInternalIds,
-      currencyExchangeRate,
-      // AuthorInformation filters must run after SDFInternalIds filter
-      systemNoteAuthorInformation,
-      // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
-      savedSearchesAuthorInformation,
-      translationConverter,
-      accountSpecificValues,
-      suiteAppConfigElementsFilter,
-      configFeaturesFilter,
-      customRecordsFilter,
-      // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
-      serviceUrls,
-      // omitFieldsFilter should be the last onFetch filter to run
-      omitFieldsFilter,
-      // additionalChanges should be the first preDeploy filter to run
-      additionalChanges,
-    ],
+    filtersCreators = defaultFilters,
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
       // integrations and contains only SCRIPT_ID attribute for custom ones.

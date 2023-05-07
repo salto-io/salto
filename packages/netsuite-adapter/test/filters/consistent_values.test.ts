@@ -20,6 +20,7 @@ import { transactionFormType } from '../../src/autogen/types/standard_types/tran
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { entryFormType } from '../../src/autogen/types/standard_types/entryForm'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('consistent_values filter', () => {
   const instanceName = 'instanceName'
@@ -49,20 +50,20 @@ describe('consistent_values filter', () => {
   })
 
   it('should modify field with inconsistent value', async () => {
-    await filterCreator().onFetch([instance, customRecordType])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instance, customRecordType])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('JOURNALENTRY')
   })
 
   it('should modify custom record type annotations with inconsistent value', async () => {
-    await filterCreator().onFetch([instance, customRecordType])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instance, customRecordType])
     expect(customRecordType.annotations.permissions.permission[0][PERMITTED_ROLE])
       .toEqual('AP_CLERK')
   })
 
   it('should not modify field with consistent value', async () => {
     instance.value[RECORD_TYPE] = 'some consistent value'
-    await filterCreator().onFetch([instance, customRecordType])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instance, customRecordType])
     expect(instance.value.name).toEqual(instanceName)
     expect(instance.value[RECORD_TYPE]).toEqual('some consistent value')
   })
@@ -74,7 +75,7 @@ describe('consistent_values filter', () => {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
-    await filterCreator().onFetch([entryFormInstance])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([entryFormInstance])
     expect(entryFormInstance.value.name).toEqual(instanceName)
     expect(entryFormInstance.value[RECORD_TYPE]).toEqual('INTERCOMPANYJOURNALENTRY')
   })
@@ -86,7 +87,7 @@ describe('consistent_values filter', () => {
         name: instanceName,
         [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
-    await filterCreator().onFetch([instanceWithNoMappings])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instanceWithNoMappings])
     expect(instanceWithNoMappings.value.name).toEqual(instanceName)
     expect(instanceWithNoMappings.value[RECORD_TYPE]).toEqual('INTERCOMPANYJOURNALENTRY')
   })

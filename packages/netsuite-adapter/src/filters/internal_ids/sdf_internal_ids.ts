@@ -17,7 +17,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, Element, Field, getChangeData, 
 import _ from 'lodash'
 import Ajv from 'ajv'
 import { logger } from '@salto-io/logging'
-import { FilterCreator } from '../../filter'
+import { RemoteFilterCreator } from '../../filter'
 import { RECORD_ID_SCHEMA, SAVED_SEARCH_RESULTS_SCHEMA, TABLE_NAME_TO_ID_PARAMETER_MAP } from './constants'
 import NetsuiteClient from '../../client/client'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../../types'
@@ -267,8 +267,9 @@ const addInternalIdToSavedSearches = async (client: NetsuiteClient, elements: El
  * so we will be able to reference them in other instances
  * that are returned from SOAP API (e.g., Employee)
  */
-const filterCreator: FilterCreator = ({ client }) => ({
+const filterCreator: RemoteFilterCreator = ({ client }) => ({
   name: 'SDFInternalIds',
+  remote: true,
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return

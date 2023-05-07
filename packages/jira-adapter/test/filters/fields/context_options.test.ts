@@ -153,12 +153,13 @@ describe('context options', () => {
       })
 
       it('should call the add endpoint with all of the options', () => {
-        expect(client.post).toHaveBeenCalledWith({
+        expect(client.post).toHaveBeenCalledTimes(2)
+        expect(client.post).toHaveBeenNthCalledWith(2, {
           url: '/rest/api/3/field/2/context/3/option',
           data: {
             options: [
               expect.objectContaining({
-                value: 'p1',
+                value: 'p1000',
                 disabled: false,
               }),
             ],

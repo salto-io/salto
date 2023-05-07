@@ -152,7 +152,7 @@ describe('context options', () => {
         )
       })
 
-      it('should call the add endpoint with all of the options', () => {
+      it('should call post with 1000 or less batches', () => {
         expect(client.post).toHaveBeenCalledTimes(2)
         expect(client.post).toHaveBeenNthCalledWith(2, {
           url: '/rest/api/3/field/2/context/3/option',
@@ -269,6 +269,68 @@ describe('context options', () => {
       })
       expect(contextInstance.value.options.p1.id).toEqual('10')
       expect(contextInstance.value.options.p2.id).toEqual('20')
+    })
+    describe('over 1000 options were changed', () => {
+      let contextInstanceAfter: InstanceElement
+
+      beforeEach(async () => {
+        contextInstanceAfter = contextInstance.clone()
+        const generateCascadingOptions = (count: number): Values =>
+          Array.from({ length: count }, (_, i) => ({
+            [`c${i + 1}`]: {
+              value: `c${i + 1}`,
+              disabled: false,
+              position: i,
+            },
+          })).reduce((acc, option) => ({ ...acc, ...option }), {})
+        const largeCascadingOptions = generateCascadingOptions(1001)
+        contextInstanceAfter.value.options = {
+          p2: {
+            id: '10047',
+            value: 'p2',
+            disabled: true,
+            position: 1,
+            cascadingOptions: largeCascadingOptions,
+          },
+        }
+        client.post.mockImplementation(async args => {
+          const { options } = args.data as { options: unknown[] }
+          if (options.length > 1000) {
+            throw Error('bad')
+          }
+          return {
+            data: {
+              options: Object.entries(largeCascadingOptions).map(([key, value], index) => ({
+                id: `${index + 4}`,
+                value: (value as {value: unknown}).value,
+                optionId: '10047',
+              })),
+            },
+            status: 200,
+          }
+        })
+        await setContextOptions(
+          toChange({ before: contextInstance, after: contextInstanceAfter }),
+          client,
+          elementSource
+        )
+      })
+
+      it('should call post twice with only 1000 or less batches', () => {
+        expect(client.post).toHaveBeenCalledTimes(2)
+        expect(client.post).toHaveBeenNthCalledWith(2, {
+          url: '/rest/api/3/field/2/context/3/option',
+          data: {
+            options: [
+              expect.objectContaining({
+                disabled: false,
+                optionId: '10047',
+                value: 'c1001',
+              }),
+            ],
+          },
+        })
+      })
     })
 
     describe('options were changed', () => {

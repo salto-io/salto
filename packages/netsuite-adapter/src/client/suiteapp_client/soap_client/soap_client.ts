@@ -75,7 +75,7 @@ const retryOnBadResponseWithDelay = (
       call: decorators.OriginalCall,
     ): Promise<unknown> => {
       const shouldRetry = (e: Value): boolean =>
-        retryableMessages.some(message => e?.message?.toUpperCase?.()?.includes?.(message)
+        retryableMessages.some(message => toError(e).message.toUpperCase().includes(message)
           || e?.code?.toUpperCase?.()?.includes?.(message))
         || retryableStatuses.some(status => String(e?.response?.status).startsWith(status))
 
@@ -374,11 +374,10 @@ export default class SoapClient {
       )
     } catch (e) {
       log.warn('Received error from NetSuite SuiteApp Soap request: operation - %s, body - %o, error - %o', operation, body, e)
-      const error = toError(e)
-      if (error.message.includes('Invalid login attempt.')) {
+      if (toError(e).message.includes('Invalid login attempt.')) {
         throw new InvalidSuiteAppCredentialsError()
       }
-      throw error
+      throw e
     }
   }
 

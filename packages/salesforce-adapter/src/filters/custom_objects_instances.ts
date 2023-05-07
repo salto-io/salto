@@ -252,7 +252,7 @@ const typesRecordsToInstances = async (
         return fieldValue.toString()
       }
       const referencedTypeNames = getReferenceTo(field)
-      const referencedAlias = await awu(referencedTypeNames).map(referencedTypeName => {
+      return awu(referencedTypeNames).map(referencedTypeName => {
         const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
         if (rec === undefined) {
           log.debug(`Failed to find record with id ${fieldValue} of type ${referencedTypeName} when looking for reference`)
@@ -260,10 +260,6 @@ const typesRecordsToInstances = async (
         }
         return getRecordAlias(referencedTypeName, rec)
       }).find(isDefined)
-      if (referencedAlias === undefined) {
-        addUnresolvedRefFieldByType(typeName, field.name)
-      }
-      return referencedAlias
     }
     const existingAlias = getAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD])
     if (existingAlias !== undefined) {

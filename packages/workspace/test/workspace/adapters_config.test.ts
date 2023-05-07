@@ -42,6 +42,8 @@ describe('adapters config', () => {
     jest.resetAllMocks()
     mockNaclFilesSource = createMockNaclFileSource([])
 
+    mockNaclFilesSource.has.mockResolvedValue(true)
+
     mockNaclFilesSource.get.mockResolvedValue(new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),

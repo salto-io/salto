@@ -23,22 +23,157 @@ import JiraClient from '../../../src/client/client'
 import { mockClient } from '../../utils'
 
 describe('context options', () => {
-  describe('setContextOptions', () => {
-    let client: JiraClient
-    let connection: MockInterface<clientUtils.APIConnection>
-    let parentField: InstanceElement
-    let contextInstance: InstanceElement
-    let elementSource: ReadOnlyElementsSource
+  let client: JiraClient
+  let connection: MockInterface<clientUtils.APIConnection>
+  let parentField: InstanceElement
+  let contextInstance: InstanceElement
+  let elementSource: ReadOnlyElementsSource
 
-    const generateOptions = (count: number): Values =>
-      Array.from({ length: count }, (_, i) => ({
-        [`p${i}`]: {
-          value: `p${i}`,
-          disabled: false,
-          position: i,
+  const generateOptions = (count: number): Values =>
+    Array.from({ length: count }, (_, i) => ({
+      [`p${i}`]: {
+        value: `p${i}`,
+        disabled: false,
+        position: i,
+      },
+    })).reduce((acc, option) => ({ ...acc, ...option }), {})
+
+  describe('data center', () => {
+    describe('setContextOptions', () => {
+      beforeEach(() => {
+        const { client: cli, connection: conn } = mockClient(true)
+        connection = conn
+        client = cli
+        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
+        contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
+          id: 3,
+          options: [
+            {
+              id: '10047',
+              value: 'p1',
+              disabled: false,
+              position: 0,
+            },
+            {
+              id: '10048',
+              value: 'p2',
+              disabled: false,
+              position: 1,
+            },
+          ],
         },
-      })).reduce((acc, option) => ({ ...acc, ...option }), {})
-
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        })
+        const sourceParentField = parentField.clone()
+        delete sourceParentField.value.id
+        elementSource = buildElementsSourceFromElements([
+          sourceParentField,
+        ])
+      })
+      describe('over 1000 options were changed', () => {
+        let contextInstanceAfter: InstanceElement
+        let contextInstanceBefore: InstanceElement
+        beforeEach(async () => {
+          contextInstanceAfter = contextInstance.clone()
+          contextInstanceBefore = contextInstance.clone()
+          const largeOptionsObject = generateOptions(1001)
+          contextInstanceAfter.value.options = largeOptionsObject
+          contextInstanceBefore.value.options = Object.fromEntries(
+            Object.entries(largeOptionsObject)
+              .map(([key, option]) => [key, { ...option, disabled: true }])
+          )
+          connection.post.mockResolvedValue({
+            data: {
+              options: [],
+            },
+            status: 200,
+          })
+          await setContextOptions(
+            toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
+            client,
+            elementSource
+          )
+        })
+        it('should not batch on reorder but batch modifications', () => {
+          expect(connection.put).toHaveBeenCalledTimes(3)
+          expect(connection.put).toHaveBeenNthCalledWith(2,
+            '/rest/salto/1.0/field/2/context/3/option',
+            {
+              options: [
+                expect.objectContaining({
+                  disabled: false,
+                  value: 'p1000',
+                }),
+              ],
+            },
+            undefined)
+          expect(connection.put).toHaveBeenNthCalledWith(3,
+            '/rest/salto/1.0/field/2/context/3/option/move',
+            {
+              customFieldOptionIds: expect.toBeArrayOfSize(1001),
+              position: 'First',
+            },
+            undefined)
+        })
+      })
+      describe('change has over 1000 additions', () => {
+        beforeEach(async () => {
+          const largeOptionsObject = generateOptions(1001)
+          contextInstance.value.options = largeOptionsObject
+          connection.post.mockImplementation(async (_, data) => {
+            const { options } = data as { options: unknown[] }
+            if (options.length > 1000) {
+              throw Error('bad')
+            }
+            return {
+              data: {
+                options: [
+                  {
+                    id: '4',
+                    value: 'p1',
+                  },
+                ],
+              },
+              status: 200,
+            }
+          })
+          await setContextOptions(
+            toChange({ after: contextInstance }),
+            client,
+            elementSource
+          )
+        })
+        it('should not batch on reorder', () => {
+          expect(connection.put).toHaveBeenCalledTimes(1)
+          expect(connection.put).toHaveBeenNthCalledWith(1,
+            '/rest/salto/1.0/field/2/context/3/option/move',
+            {
+              customFieldOptionIds: expect.toBeArrayOfSize(1001),
+              position: 'First',
+            },
+            undefined)
+        })
+        it('should call post with 1000 or less batches', () => {
+          expect(connection.post).toHaveBeenCalledTimes(2)
+          expect(connection.post).toHaveBeenNthCalledWith(2,
+            '/rest/salto/1.0/field/2/context/3/option',
+            {
+              options: [
+                expect.objectContaining({
+                  value: 'p1000',
+                  disabled: false,
+                }),
+              ],
+            },
+            undefined)
+          expect(contextInstance.value.options.p1.id).toEqual('4')
+        })
+      })
+    })
+  })
+  describe('setContextOptions', () => {
     beforeEach(() => {
       const { client: cli, connection: conn } = mockClient()
       connection = conn

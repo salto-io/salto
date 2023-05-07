@@ -200,12 +200,12 @@ const reorderContextOptions = async (
       },
     }]
   ) : optionsGroups.map(group =>
-    chunkArray(group).map(chunk =>
+    chunkArray(group).map((chunk, index) =>
       ({
         url: `${baseUrl}/move`,
         data: {
           customFieldOptionIds: chunk.map(option => option.id),
-          position: 'First',
+          position: index === 0 ? 'First' : 'Last',
         },
       })))
   await awu(requestBodies).map(async bodies => awu(bodies).map(body => client.put(body)).toArray()).toArray()

@@ -961,6 +961,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/admin/access/api/trusted_origins',
     },
+    deployRequests: {
+      add: {
+        url: '/api/v1/trustedOrigins',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}',
+        method: 'put',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}',
+        method: 'delete',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+    },
   },
   UserType: {
     transformation: {

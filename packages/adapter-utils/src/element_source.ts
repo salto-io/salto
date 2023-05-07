@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID, Value, isElement, WritableElementsSource } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -27,53 +27,67 @@ const log = logger(module)
 
 export const buildElementsSourceFromElements = (
   elements: ReadonlyArray<Readonly<Element>>,
-  fallbackSource?: ReadOnlyElementsSource
-): WritableElementsSource => {
+  fallbackSources: ReadOnlyElementsSource[] = []
+): ReadOnlyElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
   if (Object.keys(elementsMap).length !== elements.length) {
     const duplicateNames = findDuplicates(elements.map(e => e.elemID.getFullName()))
     log.warn(`duplicate ElemIDs of elementSource found. the duplicates are ${duplicateNames}`)
   }
-  const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
 
-  let self: WritableElementsSource
+  let self: ReadOnlyElementsSource
 
   async function *getIds(): AsyncIterable<ElemID> {
-    for (const element of Object.values(elementsMap)) {
+    for (const element of elements) {
       yield element.elemID
     }
-    if (fallbackSource === undefined) {
-      return
-    }
-    for await (const elemID of await fallbackSource.list()) {
-      if (!isIDInElementsMap(elemID)) {
-        yield elemID
+    const returnedIds = new Set(Object.keys(elementsMap))
+
+    for await (const fallbackSource of fallbackSources) {
+      for await (const elemID of await fallbackSource.list()) {
+        if (!returnedIds.has(elemID.getFullName())) {
+          returnedIds.add(elemID.getFullName())
+          yield elemID
+        }
       }
     }
   }
 
   async function *getElements(): AsyncIterable<Element> {
-    for (const element of Object.values(elementsMap)) {
+    for (const element of elements) {
       yield element.clone()
     }
-    if (fallbackSource === undefined) {
-      return
-    }
-    for await (const element of await fallbackSource.getAll()) {
-      if (!isIDInElementsMap(element.elemID)) {
-        const clonedElement = element.clone()
-        await resolveTypeShallow(clonedElement, self)
-        yield clonedElement
+    const returnedIds = new Set(Object.keys(elementsMap))
+
+    for await (const fallbackSource of fallbackSources) {
+      for await (const element of await fallbackSource.getAll()) {
+        if (!returnedIds.has(element.elemID.getFullName())) {
+          returnedIds.add(element.elemID.getFullName())
+          const clonedElement = element.clone()
+          await resolveTypeShallow(clonedElement, self)
+          yield clonedElement
+        }
       }
     }
   }
 
+  const get = async (id: ElemID): Promise<Value> => {
+    const element = elementsMap[id.getFullName()]
+    if (element !== undefined) {
+      return element
+    }
+
+    return (await awu(fallbackSources).find(async source => source.has(id)))?.get(id)
+  }
+
+  const has = async (id: ElemID): Promise<boolean> => elementsMap[id.getFullName()] !== undefined
+    || awu(fallbackSources).some(async source => source.has(id))
+
   self = {
     getAll: async () => getElements(),
-    get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
+    get,
     list: async () => getIds(),
-    has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
-    set: async element => { elementsMap[element.elemID.getFullName()] = element },
+    has,
   }
   return self
 }

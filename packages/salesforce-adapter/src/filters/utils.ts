@@ -389,7 +389,7 @@ export const buildElementsSourceForFetch = (
 ): ReadOnlyElementsSource => (
   buildElementsSourceFromElements(
     elements,
-    config.fetchProfile.metadataQuery.isPartialFetch() ? config.elementsSource : undefined,
+    config.fetchProfile.metadataQuery.isPartialFetch() ? [config.elementsSource] : [],
   )
 )
 

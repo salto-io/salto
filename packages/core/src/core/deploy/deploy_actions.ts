@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import {
   AdapterOperations, getChangeData, Change,
-  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions, Group, WritableElementsSource,
+  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions, Group,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -103,7 +103,6 @@ export const deployActions = async (
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
   checkOnly: boolean,
-  adaptersElementSource: WritableElementsSource,
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: Group[] = []
@@ -115,9 +114,6 @@ export const deployActions = async (
         const result = await deployAction(item, adapters, checkOnly)
         await awu(result.appliedChanges).forEach(async appliedChange => {
           appliedChanges.push(appliedChange)
-          if (isAdditionOrModificationChange(appliedChange)) {
-            await adaptersElementSource.set(getChangeData(appliedChange))
-          }
         })
         if (result.extraProperties?.groups !== undefined) {
           groups.push(...result.extraProperties.groups)

@@ -16,12 +16,15 @@
 import _ from 'lodash'
 import {
   AdapterOperations, getChangeData, Change,
-  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions, Group,
+  isAdditionOrModificationChange, DeployResult, DeployExtraProperties, DeployOptions, Group, WritableElementsSource,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import { Plan, PlanItem, PlanItemId } from '../plan'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 
@@ -99,7 +102,8 @@ export const deployActions = async (
   adapters: Record<string, AdapterOperations>,
   reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
   postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
-  checkOnly: boolean
+  checkOnly: boolean,
+  adaptersElementSource: WritableElementsSource,
 ): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: Group[] = []
@@ -109,7 +113,12 @@ export const deployActions = async (
       reportProgress(item, 'started')
       try {
         const result = await deployAction(item, adapters, checkOnly)
-        result.appliedChanges.forEach(appliedChange => appliedChanges.push(appliedChange))
+        await awu(result.appliedChanges).forEach(async appliedChange => {
+          appliedChanges.push(appliedChange)
+          if (isAdditionOrModificationChange(appliedChange)) {
+            await adaptersElementSource.set(getChangeData(appliedChange))
+          }
+        })
         if (result.extraProperties?.groups !== undefined) {
           groups.push(...result.extraProperties.groups)
         }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ReadOnlyElementsSource, Element, ElemID, Value, isElement } from '@salto-io/adapter-api'
+import { ReadOnlyElementsSource, Element, ElemID, Value, isElement, WritableElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -26,9 +26,9 @@ const { isDefined } = values
 const log = logger(module)
 
 export const buildElementsSourceFromElements = (
-  elements: ReadonlyArray<Element>,
+  elements: ReadonlyArray<Readonly<Element>>,
   fallbackSource?: ReadOnlyElementsSource
-): ReadOnlyElementsSource => {
+): WritableElementsSource => {
   const elementsMap = _.keyBy(elements, e => e.elemID.getFullName())
   if (Object.keys(elementsMap).length !== elements.length) {
     const duplicateNames = findDuplicates(elements.map(e => e.elemID.getFullName()))
@@ -36,10 +36,10 @@ export const buildElementsSourceFromElements = (
   }
   const isIDInElementsMap = (id: ElemID): boolean => id.getFullName() in elementsMap
 
-  let self: ReadOnlyElementsSource
+  let self: WritableElementsSource
 
   async function *getIds(): AsyncIterable<ElemID> {
-    for (const element of elements) {
+    for (const element of Object.values(elementsMap)) {
       yield element.elemID
     }
     if (fallbackSource === undefined) {
@@ -53,8 +53,8 @@ export const buildElementsSourceFromElements = (
   }
 
   async function *getElements(): AsyncIterable<Element> {
-    for (const element of elements) {
-      yield element
+    for (const element of Object.values(elementsMap)) {
+      yield element.clone()
     }
     if (fallbackSource === undefined) {
       return
@@ -73,6 +73,7 @@ export const buildElementsSourceFromElements = (
     get: async id => elementsMap[id.getFullName()] ?? fallbackSource?.get(id),
     list: async () => getIds(),
     has: async id => isIDInElementsMap(id) || (fallbackSource?.has(id) ?? false),
+    set: async element => { elementsMap[element.elemID.getFullName()] = element },
   }
   return self
 }

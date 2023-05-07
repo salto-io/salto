@@ -623,6 +623,10 @@ export type ReadOnlyElementsSource = {
   get(id: ElemID): Promise<Value>
 }
 
+export type WritableElementsSource = ReadOnlyElementsSource & {
+  set(element: Readonly<Element>): Promise<void>
+}
+
 // This is a hack for the places we don't really need types in
 // transformElement. We need to replace this with not using transformElement.
 export const placeholderReadonlyElementsSource = {

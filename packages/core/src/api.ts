@@ -25,6 +25,7 @@ import _ from 'lodash'
 import { promises, collections } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -149,11 +150,12 @@ export const deploy = async (
   checkOnly = false,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
+  const adaptersElementSource = buildElementsSourceFromElements([], await workspace.elements())
   const adapters = await getAdapters(
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
+    adaptersElementSource,
     getAccountToServiceNameMap(workspace, accounts)
   )
 
@@ -184,7 +186,7 @@ export const deploy = async (
     }))
   }
   const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan, adapters, reportProgress, postDeployAction, checkOnly,
+    actionPlan, adapters, reportProgress, postDeployAction, checkOnly, adaptersElementSource
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

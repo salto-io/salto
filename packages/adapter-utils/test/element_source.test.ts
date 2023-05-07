@@ -69,6 +69,14 @@ describe('elementSource', () => {
           expect(await elementsSource.has(new ElemID('adapter', 'type3'))).toBeFalsy()
         })
       })
+
+      describe('set', () => {
+        it('should add the element', async () => {
+          const newElem = new ObjectType({ elemID: new ElemID('adapter', 'type3') })
+          await elementsSource.set(newElem)
+          expect(await elementsSource.get(newElem.elemID)).toBe(newElem)
+        })
+      })
     })
 
     describe('with fallback element source', () => {

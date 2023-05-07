@@ -42,6 +42,9 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         .filter(isInstanceChange)
         .map(getChangeData)
         .filter(instance => Object.keys(USER_MAPPING).includes(instance.elemID.typeName))
+        .filter(instance =>
+          USER_MAPPING[instance.elemID.typeName]
+            .some(path => resolvePath(instance, instance.elemID.createNestedID(...path)) !== undefined))
 
       if (_.isEmpty(relevantInstances)) {
         return []
@@ -60,6 +63,7 @@ export const usersValidator: (client: OktaClient, config: OktaConfig) =>
         const userPaths = USER_MAPPING[instance.elemID.typeName]
         const missingUsers = userPaths
           .flatMap(path => resolvePath(instance, instance.elemID.createNestedID(...path)))
+          .filter(user => user !== undefined)
           .filter(user => !existingUsers.has(user))
         if (!_.isEmpty(missingUsers)) {
           return [instance.elemID.getFullName(), missingUsers]

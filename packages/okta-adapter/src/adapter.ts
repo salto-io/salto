@@ -292,6 +292,7 @@ export default class OktaAdapter implements AdapterOperations {
     return {
       changeValidator: changeValidator({
         client: this.client,
+        config: this.userConfig,
       }),
       dependencyChanger,
     }

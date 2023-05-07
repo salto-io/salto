@@ -51,7 +51,7 @@ const areUsers = createSchemeGuard<User[]>(
 const EXCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'exclude']
 const INCLUDE_USERS_PATH = ['conditions', 'people', 'users', 'include']
 
-const USER_MAPPING: Record<string, string[][]> = {
+export const USER_MAPPING: Record<string, string[][]> = {
   [GROUP_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
   [ACCESS_POLICY_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH, INCLUDE_USERS_PATH],
   [PASSWORD_RULE_TYPE_NAME]: [EXCLUDE_USERS_PATH],
@@ -65,7 +65,7 @@ const isRelevantInstance = (instance: InstanceElement): boolean => (
   Object.keys(USER_MAPPING).includes(instance.elemID.typeName)
 )
 
-const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
+export const getUsers = async (paginator: clientUtils.Paginator): Promise<User[]> => {
   const paginationArgs = {
     url: '/api/v1/users',
     paginationField: 'after',

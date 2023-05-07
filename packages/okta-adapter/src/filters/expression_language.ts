@@ -18,6 +18,7 @@ import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificati
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import { FETCH_CONFIG } from '../config'
 import { FilterCreator } from '../filter'
 import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../constants'
 
@@ -124,7 +125,8 @@ const createPrepRefFunc = (isIdentityEngine: boolean):(part: ReferenceExpression
 const stringToTemplate = (
   expressionValue: string,
   patterns: RegExp[],
-  instances: InstanceElement[]
+  instances: InstanceElement[],
+  enableMissingReferences?: boolean
 ): string | TemplateExpression => {
   const groupInstances = instances.filter(i => i.elemID.typeName === GROUP_TYPE_NAME)
   const userSchemaInstance = instances.find(i => i.elemID.typeName === USER_SCHEMA_TYPE_NAME && i.elemID.name === 'user')
@@ -140,7 +142,7 @@ const stringToTemplate = (
           return new ReferenceExpression(matchingInstance.elemID, matchingInstance)
         }
         // hack to verify this is a group id, because group ids in okta starts with '00g'
-        if (id.startsWith('00g') && id.length > 10) {
+        if (enableMissingReferences && id.startsWith('00g') && id.length > 10) {
           // create missing reference for group
           const missingInstance = createMissingInstance(OKTA, GROUP_TYPE_NAME, id)
           return new ReferenceExpression(missingInstance.elemID, missingInstance)
@@ -177,12 +179,13 @@ const stringToTemplate = (
 /**
  * Create template expressions for okta expression language references
  */
-const filter: FilterCreator = () => {
+const filter: FilterCreator = ({ config }) => {
   const changeToTemplateMapping: Record<string, TemplateExpression> = {}
   const ErrorByChangeId: Record<string, Error> = {}
   return ({
     name: 'oktaExpressionLanguageFilter',
     onFetch: async (elements: Element[]) => {
+      const { enableMissingReferences } = config[FETCH_CONFIG]
       const instances = elements.filter(isInstanceElement)
       const potentialExpressionInstances = instances
         .filter(instance => Object.keys(TYPE_TO_DEF).includes(instance.elemID.typeName))
@@ -196,7 +199,9 @@ const filter: FilterCreator = () => {
           const container = resolvePath(instance, instance.elemID.createNestedID(...pathToContainer))
           const expressionValue = container?.[fieldName]
           if (_.isString(expressionValue)) {
-            const template = stringToTemplate(expressionValue, patterns, potentialTargetInstances)
+            const template = stringToTemplate(
+              expressionValue, patterns, potentialTargetInstances, enableMissingReferences
+            )
             if (isTemplateExpression(template)) {
               _.set(container, fieldName, template)
             }

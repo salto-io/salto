@@ -200,7 +200,7 @@ const reorderContextOptions = async (
           position: index === 0 ? 'First' : 'Last',
         },
       })))
-  await awu(requestBodies).map(async bodies => awu(bodies).map(body => client.put(body)).toArray()).toArray()
+  await awu(requestBodies).flat().forEach(async body => client.put(body))
 }
 
 export const setContextOptions = async (

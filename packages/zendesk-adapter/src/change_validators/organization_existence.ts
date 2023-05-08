@@ -85,11 +85,12 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
 
           // If the instance includes an organization that does not exist, we won't allow a change to that instance
           if (nonExistingOrgs.size > 0) {
+            const resolveOrgsRecommendation = !orgIdsResolved ? ', We recommend you to set resolveOrganizationIDs=true in your fetch config' : ''
             return {
               elemID: entries[0].instance.elemID,
               severity: 'Error',
               message: 'Referenced organizations do not exist',
-              detailedMessage: `The following referenced organizations do not exist: ${Array.from(nonExistingOrgs).join(', ')}`,
+              detailedMessage: `The following referenced organizations do not exist: ${Array.from(nonExistingOrgs).join(', ')}${resolveOrgsRecommendation}`,
             }
           }
           return undefined

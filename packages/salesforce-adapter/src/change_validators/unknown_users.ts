@@ -42,6 +42,7 @@ const TYPES_WITH_USER_FIELDS = [
   'CaseSettings',
   'FolderShare',
   'WorkflowAlert',
+  'WorkflowTask',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -78,17 +79,19 @@ const userFieldValue = (expectedFieldName: string): GetUserField => (
   }
 )
 
-const getFolderShareUser: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'sharedTo') {
-    log.error(`Unexpected field name: ${fieldName}.`)
-    return []
+const getUserDependingOnType = (typeField: string, expectedType: string, userField: string): GetUserField => (
+  (instance: InstanceElement, fieldName: string) => {
+    if (fieldName !== userField) {
+      log.warn('Expected field name %s. Got %s', userField, fieldName)
+      return []
+    }
+    if (instance.value[typeField] !== expectedType) {
+      log.trace('%s is not %s. Skipping.', typeField, expectedType)
+      return []
+    }
+    return [instance.value[userField]]
   }
-  if (instance.value.sharedToType !== 'User') {
-    log.debug('sharedToType is not User. Skipping.')
-    return []
-  }
-  return [instance.value.sharedTo]
-}
+)
 
 type EmailRecipientValue = {
   type: string
@@ -128,13 +131,19 @@ const USER_GETTERS: TypesWithUserFields = {
   FolderShare: [
     {
       field: 'sharedTo',
-      getter: getFolderShareUser,
+      getter: getUserDependingOnType('sharedToType', 'User', 'sharedTo'),
     },
   ],
   WorkflowAlert: [
     {
       field: 'recipients',
       getter: getEmailRecipients,
+    },
+  ],
+  WorkflowTask: [
+    {
+      field: 'assignedTo',
+      getter: getUserDependingOnType('assignedToType', 'user', 'assignedTo'),
     },
   ],
 }

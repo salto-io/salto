@@ -51,7 +51,7 @@ import {
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
-  mergeTypeToInstances, getGroupItemFromRegex,
+  mergeTypeToInstances, getGroupItemFromRegex, toError,
 } from './utils'
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
@@ -114,8 +114,6 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
   ignoreAttributes: false,
   tagValueProcessor: val => he.decode(val),
 }
-
-const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
 
 const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {

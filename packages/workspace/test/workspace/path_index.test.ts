@@ -279,6 +279,8 @@ describe('getFromPathIndex', () => {
   const index: PathIndex = new InMemoryRemoteMap<Path[]>()
   const parentID = new ElemID('salto.parent')
   const nestedID = parentID.createNestedID('attr', 'one')
+  const nestedWithNoPathID = parentID.createNestedID('attr', 'two')
+  const nestedOfNestedWithNoPathID = nestedID.createNestedID('stam', 'something')
   const nestedPath = ['salto', 'one']
   const parentPath = ['salto', 'two']
   beforeAll(async () => {
@@ -293,15 +295,14 @@ describe('getFromPathIndex', () => {
     expect(await getFromPathIndex(parentID, index)).toEqual([nestedPath, parentPath])
   })
 
-  it('should get the closest parent of the elemID if no exact match', async () => {
+  it('should get the closest parent of the elemID if no exact match, but only a single hint if parent has multiple', async () => {
     expect(await getFromPathIndex(
-      nestedID.createNestedID('stam', 'something'),
+      nestedOfNestedWithNoPathID,
       index
     )).toEqual([nestedPath])
-    expect(await getFromPathIndex(
-      parentID.createNestedID('attr', 'something'),
-      index
-    )).toEqual([nestedPath, parentPath])
+    const parentMissPaths = await getFromPathIndex(nestedWithNoPathID, index)
+    expect(parentMissPaths).toHaveLength(1)
+    expect([[nestedPath], [parentPath]]).toContainEqual(parentMissPaths)
   })
 
   it('should return an empty array if no parent matches are found', async () => {

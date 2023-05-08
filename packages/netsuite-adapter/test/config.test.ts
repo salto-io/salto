@@ -16,7 +16,7 @@
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -147,133 +147,9 @@ describe('config', () => {
     expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
   })
 
-  it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
-    const newFetch = {
-      include: fetchDefault.include,
-      exclude: combineQueryParams({
-        types: [
-          { name: 'someType', ids: ['.*'] },
-        ],
-        fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
-        customRecords: [],
-      },
-      fetchDefault.exclude),
-    }
-    const config = {
-      ..._.omit(currentConfigWithSkipList, CONFIG.skipList),
-      typesToSkip: ['someType'],
-      filePathRegexSkipList: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: newFetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
-  })
-
-  it('should convert deployReferencedElements when its value is "true" to deploy', () => {
-    const config = {
-      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
-      deployReferencedElements: true,
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config).toHaveLength(1)
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: configChange?.config[0].value.fetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-          deploy: {
-            deployReferencedElements: true,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
-  })
-
-  it('should delete deployReferencedElements when its value is "false" without adding deploy section', () => {
-    const config = {
-      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
-      deployReferencedElements: false,
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config?.[0].value.deployReferencedElements).toBe(undefined)
-    expect(configChange?.config?.[0].value.deploy).toBe(undefined)
-    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
-  })
-
-  it('should convert skipList to fetch', () => {
-    const config = {
-      ...currentConfigWithSkipList,
-    }
-    const newFetch = {
-      include: fetchDefault.include,
-      exclude: {
-        ...combineQueryParams(
-          currentConfigWithFetch.fetch.exclude,
-          fetchDefault.exclude
-        ),
-        customRecords: [],
-      },
-    }
-
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config,
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: newFetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
-  })
-
   it('should combine configuration messages when needed', () => {
+    const newLargeFolderPath = '/largeFolder/'
+    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newSkipList = _.cloneDeep(skipList)
     newSkipList.types = { ...newSkipList.types, someType: ['.*'] }
     newSkipList.filePaths?.push('.*someRegex.*')
@@ -281,80 +157,17 @@ describe('config', () => {
       ...currentConfigWithSkipList,
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
+      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
     }
 
     const configChange = getConfigFromConfigChanges(
       false,
-      { lockedError: [], otherError: ['someFailedFile'], largeFolderError: [] },
+      { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
       { lockedError: {}, unexpectedError: {} },
       config
     )
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_FETCH_CONFIG_FORMAT}`)
-  })
-
-  it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
-    const conf = { ...currentConfigWithFetch,
-      skipList: currentConfigWithSkipList.skipList }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      conf
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: {
-            include: fetchDefault.include,
-            exclude: {
-              fileCabinet: ['SomeRegex'],
-              types: [
-                { name: 'testAll', ids: ['.*'] },
-                { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
-              ],
-              customRecords: [],
-            },
-          },
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-  })
-
-  it('should convert PascalCase typeNames to camelCase', () => {
-    const conf = {
-      fetch: {
-        exclude: {
-          types: [{
-            name: 'Subsidiary',
-          }],
-          fileCabinet: [],
-        },
-      },
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [], largeFolderError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      conf,
-    )
-    expect(configChange?.config?.[0].value).toEqual({
-      fetch: {
-        exclude: {
-          types: [{
-            name: 'subsidiary',
-          }],
-          fileCabinet: [],
-        },
-      },
-    })
-    expect(configChange?.message).toBe(UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT)
+    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
   })
 
   describe('should have a correct default fetch config', () => {

@@ -14,35 +14,27 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { AdapterApiConfig } from '../../../src/config/shared'
+import { TypeConfig } from '../../../src/config/shared'
 import { createCheckDeploymentBasedOnConfigValidator } from '../../../src/deployment/change_validators/check_deployment_based_on_config'
 
 describe('checkDeploymentBasedOnConfigValidator', () => {
   let type: ObjectType
-  const apiConfig: AdapterApiConfig = {
-    typeDefaults: {
-      transformation: {
-        idFields: ['id'],
-      },
-    },
-    types: {
-      test: {
-        deployRequests: {
-          add: {
-            url: '/test',
-            method: 'post',
-          },
+  const typesConfig: Record<string, TypeConfig> = {
+    test: {
+      deployRequests: {
+        add: {
+          url: '/test',
+          method: 'post',
         },
       },
     },
-    supportedTypes: {},
   }
   beforeEach(() => {
     type = new ObjectType({ elemID: new ElemID('dum', 'test') })
   })
 
   it('should not return an error when the changed element is not an instance', async () => {
-    const errors = await createCheckDeploymentBasedOnConfigValidator({ apiConfig })([
+    const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig })([
       toChange({ after: type }),
     ])
     expect(errors).toEqual([])
@@ -53,7 +45,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       'test2',
       new ObjectType({ elemID: new ElemID('dum', 'test2') }),
     )
-    const errors = await createCheckDeploymentBasedOnConfigValidator({ apiConfig })(
+    const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig })(
       [toChange({ after: instance })],
     )
     expect(errors).toEqual([{
@@ -66,7 +58,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
 
   it('should return an error when type does not support specific method', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await createCheckDeploymentBasedOnConfigValidator({ apiConfig })(
+    const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig })(
       [toChange({ before: instance })],
     )
     expect(errors).toEqual([{
@@ -79,7 +71,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
 
   it('should not return an error when operation is supported', async () => {
     const instance = new InstanceElement('test', type)
-    const errors = await createCheckDeploymentBasedOnConfigValidator({ apiConfig })(
+    const errors = await createCheckDeploymentBasedOnConfigValidator({ typesConfig })(
       [toChange({ after: instance })],
     )
     expect(errors).toEqual([])
@@ -95,7 +87,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
     )
     const errors = await createCheckDeploymentBasedOnConfigValidator({
-      apiConfig, typesDeployedViaParent: [childTypeName],
+      typesConfig, typesDeployedViaParent: [childTypeName],
     })(
       [toChange({ after: instance })],
     )
@@ -112,7 +104,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInst.elemID, parentInst)] },
     )
     const errors = await createCheckDeploymentBasedOnConfigValidator({
-      apiConfig, typesDeployedViaParent: [childTypeName],
+      typesConfig, typesDeployedViaParent: [childTypeName],
     })(
       [toChange({ before: instance })],
     )
@@ -130,7 +122,7 @@ describe('checkDeploymentBasedOnConfigValidator', () => {
       new ObjectType({ elemID: new ElemID('dum', typeName) }),
     )
     const errors = await createCheckDeploymentBasedOnConfigValidator({
-      apiConfig, typesDeployedViaParent: [], typesWithNoDeploy: [typeName],
+      typesConfig, typesDeployedViaParent: [], typesWithNoDeploy: [typeName],
     })(
       [toChange({ after: instance })],
     )

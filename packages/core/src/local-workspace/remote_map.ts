@@ -450,11 +450,12 @@ remoteMap.RemoteMapCreator => {
     counters[location][counter] += 1
   }
   if (location in counters) {
-    log.debug('Expected one RemoteMapCreator per location, but looks like a more than one is being created')
+    log.debug('More than one RemoteMapCreator was created for location %s.', location)
   } else {
     counters[location] = Object.fromEntries(
       COUNTER_TYPES.map(counterName => [counterName, 0])
     ) as Record<CounterType, number>
+    log.debug('There are now %d RemoteMap stat counters', counters.size)
   }
 
   // Note: once we set a non-zero cache size,

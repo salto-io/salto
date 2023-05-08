@@ -2606,11 +2606,8 @@ describe('workspace', () => {
         expect(result).toEqual(
           {
             'salesforce.lead.field.singleDef': 'single Def alias',
-            'salesforce.lead.field.multiDef': 'Multi Def',
             'salesforce.lead': 'lead alias',
             'salesforce.lead.instance.someName1': 'some name alias',
-            'salesforce.lead.instance.someName2': 'Some Name2',
-            'salesforce.text': 'Text',
           }
         )
       })

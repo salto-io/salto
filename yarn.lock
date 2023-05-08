@@ -3007,12 +3007,13 @@
     napi-macros "^2.0.0"
     node-gyp-build "^4.3.0"
 
-"@salto-io/salesforce-formula-parser@0.0.2":
-  version "0.0.2"
-  resolved "https://registry.yarnpkg.com/@salto-io/salesforce-formula-parser/-/salesforce-formula-parser-0.0.2.tgz#967beff406465f53aec1aa470f11064c372e6f25"
-  integrity sha512-TJj9hVOPCWhu64pgqHzeePnlrXr7T9RE847L85cgXhIrm6kW3r/KPD0ZZdzlNAth3vZZuKYtOR8F63lVs6g7qg==
+"@salto-io/salesforce-formula-parser@0.1.3":
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/@salto-io/salesforce-formula-parser/-/salesforce-formula-parser-0.1.3.tgz#bc3d10edcd7b0080120b8ee7be549bb6a7fd0000"
+  integrity sha512-+ev/2vuvpBmZ4lV3FPur2zaQjjcpXZNzyER1NGMHGf3P/0LdYKEu6pKUUlXg/1kLlW3Tkf3gM7q5J+MlnOH3Yg==
   dependencies:
     lodash "^4.17.21"
+    moo "^0.5.2"
 
 "@salto-io/suitecloud-cli@1.6.2-salto-2":
   version "1.6.2-salto-2"
@@ -5550,11 +5551,6 @@ decimal.js@^10.2.1:
   resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.3.1.tgz#d8c3a444a9c6774ba60ca6ad7261c3a94fd5e783"
   integrity sha512-V0pfhfr8suzyPGOx3nmq4aHqabehUZn6Ch9kyFpV79TGDTWFmHqUqXdabR7QHqxzrYolF4+tVmJhUG4OURg5dQ==
 
-decimal.js@^10.3.1:
-  version "10.4.3"
-  resolved "https://registry.yarnpkg.com/decimal.js/-/decimal.js-10.4.3.tgz#1044092884d245d1b7f65725fa4ad4c6f781cc23"
-  integrity sha512-VBBaLc1MgL5XpzgIP7ny5Z6Nx3UrRkIViUkPUdtl9aya5amy3De1gsUUSB1g3+3sExYNjCAsAznmukyxCb1GRA==
-
 decode-uri-component@^0.2.0:
   version "0.2.2"
   resolved "https://registry.yarnpkg.com/decode-uri-component/-/decode-uri-component-0.2.2.tgz#e69dbe25d37941171dd540e024c444cd5188e1e9"
@@ -6879,13 +6875,6 @@ formidable@^1.2.2:
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/formidable/-/formidable-1.2.2.tgz#bf69aea2972982675f00865342b982986f6b8dd9"
   integrity sha512-V8gLm+41I/8kguQ4/o1D3RIHRmhYFG4pnNyonvua+40rqcEmT4+V71yaZ3B457xbbgCsCfjSPi65u/W6vK1U5Q==
-
-formulon@^6.24.1:
-  version "6.24.2"
-  resolved "https://registry.yarnpkg.com/formulon/-/formulon-6.24.2.tgz#024cad2a4314c273b3ee9dba10b8a65a98d566c5"
-  integrity sha512-uEOO6dMGc9UfTzK+87n/rrGs6HepMBnsFwLChozp+pTGj/PzP1HDzdEdSFVw6d7K2xeh2x7GvC5BFe1PAGMv+g==
-  dependencies:
-    decimal.js "^10.3.1"
 
 forwarded@0.2.0:
   version "0.2.0"
@@ -9568,6 +9557,11 @@ moo@^0.5.0, moo@^0.5.1:
   version "0.5.1"
   resolved "https://registry.yarnpkg.com/moo/-/moo-0.5.1.tgz#7aae7f384b9b09f620b6abf6f74ebbcd1b65dbc4"
   integrity sha512-I1mnb5xn4fO80BH9BLcF0yLypy2UKl+Cb01Fu0hJRkJjlCRtxZMWkTdAtDd5ZqCOxtCkhmRwyI57vWT+1iZ67w==
+
+moo@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/moo/-/moo-0.5.2.tgz#f9fe82473bc7c184b0d32e2215d3f6e67278733c"
+  integrity sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==
 
 ms@2.1.2:
   version "2.1.2"

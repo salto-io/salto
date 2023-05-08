@@ -15,8 +15,9 @@
 */
 import { InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { ConfigChangeSuggestion, SalesforceConfig, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
-import { getConfigFromConfigChanges, getConfigChangeMessage, ConfigChange } from '../src/config_change'
+import { getConfigFromConfigChanges, ConfigChange } from '../src/config_change'
 import { MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/constants'
 
 describe('Config Changes', () => {
@@ -47,34 +48,6 @@ describe('Config Changes', () => {
     const suggestedInstance = getConfigFromConfigChanges([], cloneOfCurrentConfig)
     expect(suggestedInstance).toBeUndefined()
     expect(cloneOfCurrentConfig).toEqual(currentConfig)
-  })
-
-  describe('getConfigChangeMessage', () => {
-    const configChangeWithoutReason = {
-      type: 'dataObjectsExclude',
-      value: 'something',
-    } as ConfigChangeSuggestion
-
-    const configChangeWithReason = {
-      type: 'dataObjectsExclude',
-      value: 'somethingElse',
-      reason: 'because',
-    } as ConfigChangeSuggestion
-
-    it('should return a message with only into and summary without reasons intro/content if no reasons in config changes', () => {
-      const message = getConfigChangeMessage([configChangeWithoutReason])
-      expect(message).not.toMatch('Due to the following issues:')
-      expect(message).toMatch('Salto failed to fetch some items from salesforce.')
-      expect(message).toMatch('Salto needs to stop managing these items by applying the following configuration change:')
-    })
-
-    it('should return a message with into/summary + reasons content+intro when there are reasons', () => {
-      const message = getConfigChangeMessage([configChangeWithReason])
-      expect(message).toMatch('Due to the following issues:')
-      expect(message).toMatch('   * because')
-      expect(message).toMatch('Salto failed to fetch some items from salesforce.')
-      expect(message).toMatch('Salto needs to stop managing these items by applying the following configuration change:')
-    })
   })
 
   describe('getConfigFromConfigChanges - dataManagement suggestions', () => {
@@ -116,10 +89,12 @@ describe('Config Changes', () => {
         expect(cloneOfCurrentConfig).toEqual(currentConfig)
       })
 
-      it('should return the message for the suggestion', () => {
-        expect(newConfig?.message).toEqual(`Salto failed to fetch some items from salesforce. 
-
-In order to complete the fetch operation, Salto needs to stop managing these items by applying the following configuration change:`)
+      it('should return only the general message since the change doesn\'t have explicit reason', () => {
+        expect(newConfig?.message).toEqual(
+          formatConfigSuggestionsReasons([
+            'Salto failed to fetch some items from Salesforce. Failed items must be excluded from the fetch.',
+          ])
+        )
       })
     })
 

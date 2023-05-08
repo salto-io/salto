@@ -19,7 +19,7 @@ import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
@@ -584,10 +584,10 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
 })
 
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
-  + ' In order to complete the fetch operation, Salto needs to stop managing these items by modifying the configuration.'
+  + ' Failed items must be excluded from the fetch.'
 
-export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders were excluded from the fetch.'
- + ' To include them, increase the File Cabinet\'s size limitations and remove their exclusion rules.'
+export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceeds File Cabinet\'s size limitations.'
+ + ' To include them, increase the File Cabinet\'s size limitations and remove their exclusion rules from the configuration file.'
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)
@@ -797,6 +797,6 @@ export const getConfigFromConfigChanges = (
 
   return messages.length > 0 ? {
     config: splitConfig(config),
-    message: messages.join(' In addition, '),
+    message: formatConfigSuggestionsReasons(messages),
   } : undefined
 }

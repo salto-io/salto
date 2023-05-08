@@ -454,6 +454,7 @@ const fetchAndProcessMergeErrors = async (
               ? {
                 config: updatedConfig.config.map(flattenElementStr),
                 message: updatedConfig.message,
+                accountName,
               }
               : undefined,
             isPartial: fetchResult.isPartial ?? false,
@@ -465,7 +466,14 @@ const fetchAndProcessMergeErrors = async (
     const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
-      .filter(values.isDefined) as UpdatedConfig[]
+      .filter(values.isDefined)
+      .map(({ config, message, accountName }) =>
+        ({
+          config,
+          message: _.isEmpty(message)
+            ? ''
+            : `Issues which triggered changes in salto.config/adapters/${accountName}:\n${message}`,
+        })) as UpdatedConfig[]
 
     const partiallyFetchedAccounts = new Set(
       fetchResults

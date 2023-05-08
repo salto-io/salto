@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { getUpdatedConfig, FETCH_CONFIG, API_DEFINITIONS_CONFIG, SUPPORTED_TYPES, DEFAULT_CONFIG } from '../src/config'
 
 describe('config', () => {
@@ -45,7 +46,9 @@ describe('config', () => {
       }
       const res = getUpdatedConfig(initialConfig)
       expect(res).toBeDefined()
-      expect(res?.message).toEqual('Fixing system configuration for the following types: Settings_Gateway')
+      expect(res?.message).toEqual(
+        formatConfigSuggestionsReasons(['Incorrect configuration format for the following types: Settings_Gateway'])
+      )
       expect(res?.config).toHaveLength(1)
       expect(res?.config[0].value).toEqual({
         fetch: initialConfig[FETCH_CONFIG],

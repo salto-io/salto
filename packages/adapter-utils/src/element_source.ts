@@ -64,7 +64,11 @@ export const buildElementsSourceFromElements = (
         if (!returnedIds.has(element.elemID.getFullName())) {
           returnedIds.add(element.elemID.getFullName())
           const clonedElement = element.clone()
-          await resolveTypeShallow(clonedElement, self)
+          try {
+            await resolveTypeShallow(clonedElement, self)
+          } catch (err) {
+            log.warn(`failed to resolve type for ${element.elemID.getFullName()}: ${err.message}`)
+          }
           yield clonedElement
         }
       }

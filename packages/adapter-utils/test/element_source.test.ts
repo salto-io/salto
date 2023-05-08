@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID,
+  InstanceElement,
   ObjectType,
   ReadOnlyElementsSource,
   TypeReference,
@@ -39,6 +40,18 @@ describe('elementSource', () => {
         it('should return all the elements', async () => {
           const receivedElements = await toArrayAsync(await elementsSource.getAll())
           expect(receivedElements).toEqual(elements)
+        })
+
+        it('should return the element with unresolved type of the type is not in the source', async () => {
+          const instance = new InstanceElement(
+            'instance',
+            new TypeReference(new ElemID('adapter', 'unknownType'))
+          )
+          // I pass an inner elements source here because we try to resolve only elements that
+          // are coming from the fallback source, so passing it in the first param as elements will test nothing
+          const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
+          const receivedInstance = (await toArrayAsync(await source.getAll()))[0] as InstanceElement
+          expect(receivedInstance.refType.type).toBeUndefined()
         })
       })
 

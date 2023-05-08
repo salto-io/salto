@@ -100,14 +100,6 @@ type UpdateContextOptionsParams = {
   contextChange: ModificationChange<InstanceElement> | AdditionChange<InstanceElement>
 }
 
-const chunkArray = (array: Value[], size = OPTIONS_MAXIMUM_BATCH_SIZE): Value[][] => {
-  const chunks = []
-  for (let i = 0; i < array.length; i += size) {
-    chunks.push(array.slice(i, i + size))
-  }
-  return chunks
-}
-
 const updateContextOptions = async ({
   addedOptions,
   modifiedOptions,
@@ -117,7 +109,7 @@ const updateContextOptions = async ({
   contextChange,
 }: UpdateContextOptionsParams): Promise<void> => {
   if (addedOptions.length !== 0) {
-    const addedOptionsChunks = chunkArray(addedOptions)
+    const addedOptionsChunks = _.chunk(addedOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
 
     await awu(addedOptionsChunks).forEach(async chunk => {
       const resp = await client.post({
@@ -148,9 +140,9 @@ const updateContextOptions = async ({
   }
 
   if (modifiedOptions.length !== 0) {
-    const modifiedOptionsChunks = chunkArray(modifiedOptions)
+    const modifiedOptionsChunks = _.chunk(modifiedOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
 
-    modifiedOptionsChunks.forEach(async chunk => {
+    await awu(modifiedOptionsChunks).forEach(async chunk => {
       await client.put({
         url: baseUrl,
         data: {
@@ -200,7 +192,7 @@ const reorderContextOptions = async (
       },
     }]
   ) : optionsGroups.map(group =>
-    chunkArray(group).map((chunk, index) =>
+    _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) =>
       ({
         url: `${baseUrl}/move`,
         data: {

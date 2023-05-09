@@ -17,6 +17,15 @@
 import { InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { simpleGetArgs, computeGetArgs } from '../../src/elements/request_parameters'
 
+const logWarn = jest.fn()
+jest.mock('@salto-io/logging', () => {
+  const actual = jest.requireActual('@salto-io/logging')
+  return {
+    ...actual,
+    logger: () => ({ ...actual.logger('test'), warn: (...args: unknown[]) => logWarn(args) }),
+  }
+})
+
 describe('request_parameters', () => {
   describe('simpleGetArgs', () => {
     it('should pass standard args as provided', () => {
@@ -296,8 +305,8 @@ describe('request_parameters', () => {
         {},
       )).toThrow(new Error('could not resolve path param some_uncovered_id in url /a/b/{some_uncovered_id}'))
     })
-    it('should fail if referenced type has no instances', () => {
-      expect(() => computeGetArgs(
+    it('should not fail if referenced type has no instances', () => {
+      computeGetArgs(
         {
           url: '/a/b/{pet_id}',
           dependsOn: [
@@ -305,7 +314,8 @@ describe('request_parameters', () => {
           ],
         },
         { Pet: [] },
-      )).toThrow(new Error('no instances found for Pet, cannot call endpoint /a/b/{pet_id}'))
+      )
+      expect(logWarn).toHaveBeenCalledWith(['no instances found for Pet, cannot call endpoint /a/b/{pet_id}'])
     })
   })
 })

@@ -26,7 +26,7 @@ const destructiveDataCategoryGroupDeployError = (instance: InstanceElement): Cha
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'DataCategoryGroup deployments may be destructive',
-    detailedMessage: 'Deploying category changes from one environment to another may permanently remove some categories and record categorizations. It is recommended to manually create data categories and record associations via the Salesforce UI from ‘Setup’ by entering ‘Data Categories’ in the Quick Find box, then selecting ‘Data Categories’',
+    detailedMessage: 'Deploying category changes from one environment to another may permanently remove some categories and record categorizations. It is recommended to manually create data categories and record associations via the Salesforce UI from ‘Setup’ by entering ‘Data Categories’ in the Quick Find box, then selecting ‘Data Categories’.',
   }
 )
 

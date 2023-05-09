@@ -65,7 +65,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     await logInvalidCustomSettings(invalidFetchSettings)
     const customSettingsMap = await keyByAsync(validFetchSettings, obj => apiName(obj.objectType))
-    const { instances, configChangeSuggestions } = await getAllInstances(client, customSettingsMap)
+    const { instances, configChangeSuggestions } = await getAllInstances(client, customSettingsMap, config.fetchProfile.isFeatureEnabled('skipAliases'))
     elements.push(...instances)
     return {
       configSuggestions: [...configChangeSuggestions],

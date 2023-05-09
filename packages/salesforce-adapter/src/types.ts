@@ -78,6 +78,7 @@ export type OptionalFeatures = {
   describeSObjects?: boolean
   skipParsingFormulas?: boolean // Negative flag because we want it disabled by default and optional features are
                                 // enabled by default
+  skipAliases?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -571,6 +572,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
     skipParsingFormulas: { refType: BuiltinTypes.BOOLEAN },
+    skipAliases: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -38,7 +38,6 @@ const APP_LOGO_TYPE = new ObjectType({
       refType: BuiltinTypes.STRING,
       annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
     },
-    filename: { refType: BuiltinTypes.STRING },
     contentType: { refType: BuiltinTypes.STRING },
     content: { refType: BuiltinTypes.STRING },
   },
@@ -59,6 +58,11 @@ const getLogoContent = async (link: string,
   return content
 }
 
+const getLogoType = (contentType: string): string => {
+  const contentTypeParts = contentType.split('/')
+  return contentTypeParts[contentTypeParts.length - 1]
+}
+
 const getAppLogo = async (app: InstanceElement,
 ): Promise<InstanceElement | undefined> => {
   const appLogo = app.value[LINKS_FIELD]?.logo[0]
@@ -72,19 +76,14 @@ const getAppLogo = async (app: InstanceElement,
     return undefined
   }
   const appName = naclCase(app.value.label)
-  const name = elementsUtils.ducktype.toNestedTypeName(
-    appName, appLogo.name
-  )
-  const naclName = naclCase(name)
-  const pathName = pathNaclCase(naclName)
-  const resourcePathName = `${normalizeFilePathPart(name)}.png`
+  const pathName = pathNaclCase(appName)
+  const resourcePathName = `${normalizeFilePathPart(appName)}.${getLogoType(appLogo.type)}`
   const logoId = extractIdFromUrl(logoLink)
   const logo = new InstanceElement(
-    naclName,
+    appName,
     APP_LOGO_TYPE,
     {
       id: logoId,
-      filename: `${appLogo.name}.png`,
       contentType: appLogo.type,
       content: new StaticFile({
         filepath: `${OKTA}/${APP_LOGO_TYPE.elemID.name}/${resourcePathName}`,
@@ -107,7 +106,7 @@ const deployAppLogo = async (
   try {
     const appId = getParent(logoInstance).value.id
     const form = new FormData()
-    form.append('file', fileContent || Buffer.from(''), logoInstance.value.filename)
+    form.append('file', fileContent || Buffer.from(''))
     await client.post({
       url: `/api/v1/apps/${appId}/logo`,
       data: form,

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import {
   ElemID,
+  InstanceElement,
   ObjectType,
   ReadOnlyElementsSource,
   TypeReference,
@@ -39,6 +40,18 @@ describe('elementSource', () => {
         it('should return all the elements', async () => {
           const receivedElements = await toArrayAsync(await elementsSource.getAll())
           expect(receivedElements).toEqual(elements)
+        })
+
+        it('should return the element with unresolved type of the type is not in the source', async () => {
+          const instance = new InstanceElement(
+            'instance',
+            new TypeReference(new ElemID('adapter', 'unknownType'))
+          )
+          // I pass an inner elements source here because we try to resolve only elements that
+          // are coming from the fallback source, so passing it in the first param as elements will test nothing
+          const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
+          const receivedInstance = (await toArrayAsync(await source.getAll()))[0] as InstanceElement
+          expect(receivedInstance.refType.type).toBeUndefined()
         })
       })
 
@@ -72,29 +85,44 @@ describe('elementSource', () => {
     })
 
     describe('with fallback element source', () => {
-      let fallbackSource: ReadOnlyElementsSource
+      let fallbackSource1: ReadOnlyElementsSource
+      let fallbackSource2: ReadOnlyElementsSource
       let elementSource: ReadOnlyElementsSource
       beforeEach(() => {
-        fallbackSource = buildElementsSourceFromElements([
+        fallbackSource1 = buildElementsSourceFromElements([
           new ObjectType({
             elemID: new ElemID('adapter', 'type1'),
-            annotations: { fallback: true },
+            annotations: { fallback: 1 },
           }),
           new ObjectType({
             elemID: new ElemID('adapter', 'type3'),
+            annotations: { fallback: 1 },
           }),
+        ])
+
+        fallbackSource2 = buildElementsSourceFromElements([
+          new ObjectType({
+            elemID: new ElemID('adapter', 'type3'),
+            annotations: {
+              fallback: 2,
+            },
+          }),
+          new ObjectType({
+            elemID: new ElemID('adapter', 'type4'),
+          }),
+
         ])
         elementSource = buildElementsSourceFromElements(
           [
             new ObjectType({
               elemID: new ElemID('adapter', 'type1'),
-              annotations: { fallback: false },
+              annotations: { fallback: 0 },
             }),
             new ObjectType({
               elemID: new ElemID('adapter', 'type2'),
             }),
           ],
-          fallbackSource,
+          [fallbackSource1, fallbackSource2],
         )
       })
       it('should combine elements from both sources in list', async () => {
@@ -102,25 +130,45 @@ describe('elementSource', () => {
         expect(allIds).toContainEqual(new ElemID('adapter', 'type1'))
         expect(allIds).toContainEqual(new ElemID('adapter', 'type2'))
         expect(allIds).toContainEqual(new ElemID('adapter', 'type3'))
-        expect(allIds).toHaveLength(3)
+        expect(allIds).toContainEqual(new ElemID('adapter', 'type4'))
+        expect(allIds).toHaveLength(4)
       })
       it('should return element from element list over fallback source in get', async () => {
         const elem = await elementSource.get(new ElemID('adapter', 'type1'))
         expect(elem).toBeDefined()
-        expect(elem?.annotations.fallback).toEqual(false)
+        expect(elem?.annotations.fallback).toEqual(0)
       })
-      it('should return elements from element list over fallback source in getAll', async () => {
+
+      it('should return element from first fallback over the second fallback source in get', async () => {
+        const elem = await elementSource.get(new ElemID('adapter', 'type3'))
+        expect(elem).toBeDefined()
+        expect(elem.annotations.fallback).toBe(1)
+      })
+
+      it('should return element from the last fallback if not exist in other sources in get', async () => {
+        const elem = await elementSource.get(new ElemID('adapter', 'type4')) as ObjectType
+        expect(elem).toBeDefined()
+      })
+      it('should return elements from element by fallback orders in getAll', async () => {
         const elements = await toArrayAsync(await elementSource.getAll())
-        expect(elements).toHaveLength(3)
+        expect(elements).toHaveLength(4)
         const elementsByName = _.keyBy(elements, elem => elem.elemID.typeName)
         expect(elementsByName).toHaveProperty('type1')
-        expect(elementsByName.type1.annotations.fallback).toEqual(false)
+        expect(elementsByName).toHaveProperty('type2')
+        expect(elementsByName).toHaveProperty('type3')
+        expect(elementsByName).toHaveProperty('type4')
+        expect(elementsByName.type1.annotations.fallback).toBe(0)
+        expect(elementsByName.type3.annotations.fallback).toBe(1)
       })
       it('should contain elements that exist only in elements list', async () => {
         await expect(elementSource.has(new ElemID('adapter', 'type2'))).resolves.toEqual(true)
       })
-      it('should contain elements that exist only in fallback source', async () => {
+      it('should contain elements that exist only in first fallback source', async () => {
         await expect(elementSource.has(new ElemID('adapter', 'type3'))).resolves.toEqual(true)
+      })
+
+      it('should contain elements that exist only in second fallback source', async () => {
+        await expect(elementSource.has(new ElemID('adapter', 'type4'))).resolves.toEqual(true)
       })
       it('should not contain elements that do not exist', async () => {
         await expect(elementSource.get(new ElemID('adapter', 'none'))).resolves.toBeUndefined()

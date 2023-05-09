@@ -209,6 +209,9 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: APPLICATION_TYPE_NAME },
   },
+  { src: { field: 'include', parentTypes: ['DeviceCondition'] },
+    serializationStrategy: 'id',
+    target: { type: 'DeviceAssurance' } },
 ]
 
 // Resolve references to userSchema fields references to field name instead of full value

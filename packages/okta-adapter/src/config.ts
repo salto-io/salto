@@ -1261,6 +1261,42 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'uiSchemaId' }],
     },
   },
+  DevicePolicyRuleCondition: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'registered', fieldType: 'boolean' },
+        { fieldName: 'managed', fieldType: 'boolean' },
+        { fieldName: 'assurance', fieldType: 'DeviceCondition' },
+      ],
+    },
+  },
+  DeviceAssurance: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'lastUpdate', fieldType: 'string' }],
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'createdDate' }, { fieldName: 'lastUpdate' }, { fieldName: '_links' }]),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/device-assurances',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/device-assurances/{deviceAssuranceId}',
+        method: 'put',
+        urlParamsToFields: {
+          deviceAssuranceId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/device-assurances/{deviceAssuranceId}',
+        method: 'delete',
+        urlParamsToFields: {
+          deviceAssuranceId: 'id',
+        },
+      },
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
@@ -1277,6 +1313,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
     // This is not the right type to cloneFrom, but a workaround to define type for Group__source with 'id' field
     { typeName: 'Group__source', cloneFrom: 'AppAndInstanceConditionEvaluatorAppOrInstance' },
+    { typeName: 'DeviceCondition', cloneFrom: 'PolicyNetworkCondition' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
@@ -1324,6 +1361,7 @@ export const SUPPORTED_TYPES = {
   PerClientRateLimit: ['PerClientRateLimitSettings'],
   RateLimitAdmin: ['RateLimitAdminNotifications'],
   ResourceSet: ['ResourceSets'],
+  DeviceAssurance: ['api__v1__device_assurances@uuuub'],
 }
 
 const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {

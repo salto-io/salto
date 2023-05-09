@@ -58,10 +58,12 @@ const getTransitionsFromService = async (
   return workflowValues.transitions ?? []
 }
 
-export const getTransitionKey = (transition: Transition): string => [
-  ..._.sortBy(transition.from ?? []),
-  transition.name ?? '',
-].join('-')
+export const getTransitionKey = (transition: Transition): string => {
+  const fromIds = _.sortBy(transition.from?.map(from => (
+    typeof from === 'string' ? from : from.id
+  )) ?? [])
+  return [fromIds, transition.name ?? ''].join('-')
+}
 
 export const deployTriggers = async (
   change: AdditionChange<WorkflowInstance>,

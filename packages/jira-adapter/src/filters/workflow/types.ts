@@ -133,12 +133,23 @@ const rulesSchema = Joi.object({
   conditions: conditionScheme.optional(),
 }).unknown(true)
 
+export type StatusLocation ={
+  x?: string
+  y?: string
+}
+
+export type TransitionFrom = {
+  id?: string
+  sourceAngle?: string
+  targetAngle?: string
+}
+
 export type Transition = {
   id?: string
   type?: string
   rules?: Rules
   name?: string
-  from?: unknown[]
+  from?: (TransitionFrom | string)[]
   properties?: Values
   to?: unknown
 }
@@ -157,6 +168,7 @@ export type Status = {
   id?: unknown
   name?: string
   properties?: Values
+  location?: StatusLocation
 }
 
 const statusSchema = Joi.object({

@@ -62,6 +62,7 @@ import projectComponentFilter from './filters/project_component'
 import archivedProjectComponentsFilter from './filters/archived_project_components'
 import defaultInstancesDeployFilter from './filters/default_instances_deploy'
 import workflowStructureFilter from './filters/workflow/workflow_structure_filter'
+import workflowDiagramFilter from './filters/workflow/workflow_diagrams'
 import resolutionPropertyFilter from './filters/workflow/resolution_property_filter'
 import workflowPropertiesFilter from './filters/workflow/workflow_properties_filter'
 import transitionIdsFilter from './filters/workflow/transition_ids_filter'
@@ -185,6 +186,7 @@ export const DEFAULT_FILTERS = [
   groupNameFilter,
   workflowGroupsFilter,
   workflowSchemeFilter,
+  workflowDiagramFilter,
   issueTypeFilter,
   issueTypeSchemeReferences,
   issueTypeSchemeFilter,

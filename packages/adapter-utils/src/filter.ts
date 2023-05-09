@@ -57,7 +57,7 @@ export type LocalFilterCreator<
   R extends FilterResult | void,
   T,
   DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo> & { remote?: false }
+> = (opts: T) => Filter<R, DeployInfo>
 
 export type RemoteFilterCreator<
   R extends FilterResult | void,

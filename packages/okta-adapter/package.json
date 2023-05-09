@@ -41,7 +41,8 @@
     "parse-link-header": "^2.0.0",
     "uuid": "^8.3.0",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "xml-js": "^1.6.11",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.39",

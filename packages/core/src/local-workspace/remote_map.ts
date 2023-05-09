@@ -455,7 +455,7 @@ remoteMap.RemoteMapCreator => {
     counters[location] = Object.fromEntries(
       COUNTER_TYPES.map(counterName => [counterName, 0])
     ) as Record<CounterType, number>
-    log.debug('There are now %d RemoteMap stat counters', counters.size)
+    log.debug('There are now %d RemoteMap stat counters', Object.keys(counters).length)
   }
 
   // Note: once we set a non-zero cache size,

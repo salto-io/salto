@@ -805,7 +805,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'theme' }],
       nestStandaloneInstances: false,
       fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
-
     },
     deployRequests: {
       modify: {

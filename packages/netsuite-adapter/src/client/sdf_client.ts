@@ -172,7 +172,7 @@ export default class SdfClient {
     const netsuiteClient = new SdfClient({
       credentials,
       globalLimiter: new Bottleneck(),
-      instanceLimiter: (_t: string, _c: number) => false,
+      instanceLimiter: () => false,
     })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)

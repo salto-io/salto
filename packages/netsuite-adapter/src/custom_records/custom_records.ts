@@ -109,7 +109,7 @@ export const getCustomRecords = async (
     customRecordTypes,
     type => type.annotations[SCRIPT_ID] as string
   )
-  const customRecords = await client.getCustomRecords(
+  const { customRecords, largeTypesError } = await client.getCustomRecords(
     Object.keys(customRecordTypesMap).filter(query.isCustomRecordTypeMatch)
   )
 
@@ -122,8 +122,6 @@ export const getCustomRecords = async (
       instances: await createInstances(client, records, customRecordTypesMap[type], elemIdGetter),
     }
   )).toArray()
-
-  const largeTypesError = customRecords.filter(c => c.largeTypesError).map(({ type }) => type)
 
   return {
     elements: results.flatMap(({ type, instances }) => instances.filter(

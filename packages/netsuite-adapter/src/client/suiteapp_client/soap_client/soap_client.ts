@@ -27,7 +27,7 @@ import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
 import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { CustomRecordTypeRecords, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordValue, SearchErrorResponse, SearchResponse } from './types'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
@@ -64,6 +64,11 @@ const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 type SoapSearchType = {
   type: string
   subtypes?: string[]
+}
+
+type SearchPageResponse = {
+  records: RecordValue[]
+  excludedFromSearch: boolean
 }
 
 const retryOnBadResponseWithDelay = (
@@ -109,6 +114,9 @@ const retryOnBadResponseWithDelay = (
 )
 
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
+
+const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
+searchResponse.searchResult.recordList?.record || []
 
 export default class SoapClient {
   private credentials: SuiteAppSoapCredentials
@@ -237,7 +245,7 @@ export default class SoapClient {
 
   private static convertToDeletionRecord({
     id, type, isCustomRecord,
-  } : { id: number; type: string; isCustomRecord?: boolean }): object {
+  }: { id: number; type: string; isCustomRecord?: boolean }): object {
     return {
       attributes: isCustomRecord ? {
         typeId: type,
@@ -288,7 +296,7 @@ export default class SoapClient {
 
   @retryOnBadResponse
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: instances.map(SoapClient.convertToDeletionRecord),
     }
@@ -392,7 +400,7 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  public async getAllRecords(types: string[]): Promise<{ records: RecordValue[]; largeTypesError: string[] }> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
     const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
@@ -408,30 +416,31 @@ export default class SoapClient {
 
       if (namespace !== undefined) {
         const response = await this.search(type, namespace, subtypes)
-        return response.largeTypesError ? { largeTypesError: [type] } : { records: response.records }
+        return response.excludedFromSearch ? { largeTypesError: subtypes ?? [type] } : { records: response.records }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
+      // This type of query cannot be limited, so there are no cases of largeTypesError
       const response = await this.sendGetAllRequest(type)
 
       log.debug(`Finished getting all records of ${type}`)
       return { records: response }
     }))
 
-    return responses.reduce((prevResponses, { records, largeTypesError }) => {
-      if (records) {
-        prevResponses.records = prevResponses.records.concat(records)
-      }
-      if (largeTypesError) {
-        prevResponses.largeTypesError = prevResponses.largeTypesError.concat(largeTypesError)
-      }
-      return prevResponses
-    }, { records: [] as RecordValue[], largeTypesError: [] as string[] })
+    return {
+      records: responses.flatMap(res => res.records ?? []),
+      largeTypesError: responses.flatMap(res => res.largeTypesError ?? []),
+    }
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
-    return Promise.all(
-      customRecordTypes.map(async type => this.searchCustomRecords(type))
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
+    const responses = await Promise.all(
+      customRecordTypes.map(async type => ({ type, ...await this.searchCustomRecords(type) }))
     )
+    const [errorResults, searchResults] = _.partition(responses, res => res.excludedFromSearch)
+    return {
+      customRecords: searchResults.map(res => ({ type: res.type, records: res.records })),
+      largeTypesError: errorResults.map(res => res.type),
+    }
   }
 
   private static convertToSoapTypeName(type: ObjectType, isRecordRef: boolean): string {
@@ -559,7 +568,7 @@ export default class SoapClient {
   }
 
   public async deleteInstances(instances: InstanceElement[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: await awu(instances).map(async instance => {
         const isCustomRecord = isCustomRecordType(await instance.getType())
@@ -576,7 +585,7 @@ export default class SoapClient {
   }
 
   public async deleteSdfInstances(instances: InstanceElement[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: await awu(instances).map(async instance => {
         const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID)
@@ -594,16 +603,14 @@ export default class SoapClient {
   private async getAllSearchPages(
     initialSearchResponse: SearchResponse,
     type: string
-  ): Promise<{ records: RecordValue[]; largeTypesError: boolean }> {
-    const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
-      searchResponse.searchResult.recordList?.record || []
+  ): Promise<SearchPageResponse> {
     const { totalPages, searchId } = initialSearchResponse.searchResult
     if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
       log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
-      return { records: [], largeTypesError: true }
+      return { records: [], excludedFromSearch: true }
     }
     if (totalPages <= 1) {
-      return { records: recordFromSearchResponse(initialSearchResponse), largeTypesError: false }
+      return { records: recordFromSearchResponse(initialSearchResponse), excludedFromSearch: false }
     }
     const responses = await Promise.all(
       _.range(2, totalPages + 1).map(async i => {
@@ -614,7 +621,7 @@ export default class SoapClient {
     )
     return {
       records: [initialSearchResponse].concat(responses).flatMap(recordFromSearchResponse),
-      largeTypesError: false,
+      excludedFromSearch: false,
     }
   }
 
@@ -622,7 +629,7 @@ export default class SoapClient {
     type: string,
     namespace: string,
     subtypes?: string[]
-  ): Promise<{ records: RecordValue[]; largeTypesError: boolean }> {
+  ): Promise<SearchPageResponse> {
     return this.getAllSearchPages(
       await this.sendSearchRequest(type, namespace, subtypes),
       type
@@ -631,12 +638,11 @@ export default class SoapClient {
 
   private async searchCustomRecords(
     customRecordType: string
-  ): Promise<CustomRecordTypeRecords> {
-    const responses = await this.getAllSearchPages(
+  ): Promise<SearchPageResponse> {
+    return this.getAllSearchPages(
       await this.sendCustomRecordsSearchRequest(customRecordType),
       customRecordType
     )
-    return { type: customRecordType, ...responses }
   }
 
   @retryOnBadResponse

@@ -19,7 +19,7 @@ import { values, collections, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
 import { isCustomFieldName, isCustomRecordType } from '../types'
-import { NAME_FIELD, FINANCIAL_LAYOUT, SAVED_SEARCH, SCRIPT_ID } from '../constants'
+import { NAME_FIELD, FINANCIAL_LAYOUT, SAVED_SEARCH, SCRIPT_ID, CUSTOM_RECORD_TYPE_NAME_PREFIX } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 
 const { awu } = collections.asynciterable
@@ -28,7 +28,6 @@ const { mapValuesAsync } = promises.object
 
 
 const FIELD_DEFAULT_NAME = 'FIELD_DEFAULT_NAME'
-const CUSTOM_RECORD_TYPE_NAME_PREFIX = 'customrecord'
 
 type RestrictedType = 'savedSearch' | 'financialLayout' | 'customRecordField'
 

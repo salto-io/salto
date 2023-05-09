@@ -26,7 +26,7 @@ import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
+import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
@@ -486,7 +486,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getAllRecords(types: string[]): Promise<{ records: RecordValue[]; largeTypesError: string[] }> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
@@ -494,7 +494,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
     }

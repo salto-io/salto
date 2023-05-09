@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
 import Bottleneck from 'bottleneck'
-import { CONFIG, configType, DEFAULT_CONCURRENCY, instanceLimiter, NetsuiteConfig, validateClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
+import { CONFIG, configType, DEFAULT_CONCURRENCY, instanceLimiter as instanceLimiterCreator, NetsuiteConfig, validateClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
 import { NETSUITE } from './constants'
 import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
@@ -210,12 +210,14 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
       ),
   })
 
+  const instanceLimiter = instanceLimiterCreator(adapterConfig.client)
+
   const suiteAppClient = isSuiteAppCredentials(credentials) && credentials.suiteAppActivationKey
     ? new SuiteAppClient({
       credentials,
       config: adapterConfig.suiteAppClient,
       globalLimiter,
-      instanceLimiter: instanceLimiter(adapterConfig.client),
+      instanceLimiter,
     })
     : undefined
 
@@ -223,7 +225,7 @@ const getAdapterOperations = (context: AdapterOperationsContext): AdapterOperati
     credentials,
     config: adapterConfig.client,
     globalLimiter,
-    instanceLimiter: instanceLimiter(adapterConfig.client),
+    instanceLimiter,
   })
 
   return new NetsuiteAdapter({

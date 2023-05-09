@@ -904,21 +904,21 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{
-        type: 'custrecord',
-        records: [{
-          id: 'id1',
-          attributes: {
-            internalId: '1',
-          },
-        }, {
-          id: 'id2',
-          attributes: {
-            internalId: '2',
-          },
-        }],
-        largeTypesError: false,
-      }])
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }, {
+            id: 'id2',
+            attributes: {
+              internalId: '2',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
 
     it('should exclude types with too many instances from search', async () => {
@@ -945,7 +945,7 @@ describe('soap_client', () => {
         fn => fn(),
         (_type: string, count: number) => count > 5000,
       )
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{ largeTypesError: true, records: [], type: 'custrecord' }])
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({ largeTypesError: ['custrecord'], customRecords: [] })
     })
   })
 

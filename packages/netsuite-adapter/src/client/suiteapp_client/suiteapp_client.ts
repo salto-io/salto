@@ -39,7 +39,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
+import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
@@ -354,7 +354,7 @@ export default class SuiteAppClient {
     const client = new SuiteAppClient({
       credentials,
       globalLimiter: new Bottleneck(),
-      instanceLimiter: (_t: string, _c: number) => false,
+      instanceLimiter: () => false,
     })
     await client.sendRestletRequest('sysInfo')
   }
@@ -563,11 +563,11 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(types: string[]): Promise<{ records: RecordValue[]; largeTypesError: string[] }> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     return this.soapClient.getAllRecords(types)
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 

@@ -1162,11 +1162,13 @@ describe('Adapter', () => {
       })
 
       getCustomRecordsMock.mockReset()
-      getCustomRecordsMock.mockResolvedValue([{
-        type: 'testtype',
-        records: [],
-        largeTypesError: false,
-      }])
+      getCustomRecordsMock.mockResolvedValue({
+        customRecords: [{
+          type: 'testtype',
+          records: [],
+        }],
+        largeTypesError: [],
+      })
 
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
@@ -1228,7 +1230,7 @@ describe('Adapter', () => {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
           getConfigRecords: () => [],
-          getCustomRecords: () => [],
+          getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({
@@ -1328,11 +1330,10 @@ describe('Adapter', () => {
           largeTypesError: ['excludedTypeDataElements'],
         })
 
-        getCustomRecordsMock.mockResolvedValue([{
-          type: 'excludedTypeCustomRecord',
-          records: [],
-          largeTypesError: true,
-        }])
+        getCustomRecordsMock.mockResolvedValue({
+          customRecords: [],
+          largeTypesError: ['excludedTypeCustomRecord'],
+        })
       })
 
       it('should filter from data elements and custom records', async () => {

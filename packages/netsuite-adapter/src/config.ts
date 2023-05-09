@@ -21,8 +21,9 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { isValidRegex } from '@salto-io/lowerdash/src/regex'
 import {
-  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
+  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
@@ -42,7 +43,7 @@ export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
 export const DEFAULT_MAX_INSTANCES_VALUE = 2000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
-  { name: `${CUSTOM_RECORD_TYPE_PREFIX}.*`, limit: 10_000 },
+  { name: `${CUSTOM_RECORD_TYPE_NAME_PREFIX}.*`, limit: 10_000 },
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
@@ -85,7 +86,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   additionalDependencies: 'additionalDependencies',
 }
 
-type MaxType = {
+type MaxInstancesPerType = {
   name: string
   limit: number
 }
@@ -96,7 +97,7 @@ export type SdfClientConfig = {
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
-  maxInstancesPerType?: MaxType[]
+  maxInstancesPerType?: MaxInstancesPerType[]
   maxFileCabinetSizeInGB?: number
 }
 
@@ -143,7 +144,9 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   deployReferencedElements: 'deployReferencedElements',
 }
 
-const maxInstancesPerConfigType = createMatchingObjectType<MaxType>({
+export type InstanceLimiterFunc = (type: string, instanceCount: number) => boolean
+
+const maxInstancesPerConfigType = createMatchingObjectType<MaxInstancesPerType>({
   elemID: new ElemID(NETSUITE, 'maxType'),
   fields: {
     name: {
@@ -225,21 +228,24 @@ const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
   }
 }
 
-const customrecordInstance = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_PREFIX)
+const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
 
-function validateMaxInstancesPerType(maxInstancesPerType: unknown): asserts maxInstancesPerType is MaxType[] {
-  if (Array.isArray(maxInstancesPerType) && maxInstancesPerType.every(val => 'name' in val && 'limit' in val)) {
-    const invalidTypes = maxInstancesPerType.filter(
-      maxType => noSupportedTypeMatch(maxType.name) && !customrecordInstance(maxType.name)
-    )
+function validateMaxInstancesPerType(maxInstancesPerType: unknown):
+  asserts maxInstancesPerType is MaxInstancesPerType[] {
+  if (Array.isArray(maxInstancesPerType) && maxInstancesPerType.every(
+    val => 'name' in val && 'limit' in val && typeof val.name === 'string' && typeof val.limit === 'number'
+  )) {
+    const invalidTypes = maxInstancesPerType.filter(maxType =>
+      isValidRegex(maxType.name) && noSupportedTypeMatch(maxType.name) && !isCustomRecordTypeName(maxType.name))
     if (invalidTypes.length > 0) {
       throw new Error(
-        `${CLIENT_CONFIG.maxInstancesPerType} keys should include only supported NetSuite types.`
-        + ` The following keys are invalid: ${safeJsonStringify(invalidTypes)}`
+        `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}`
+        + ` do not match any supported type: ${safeJsonStringify(invalidTypes)}`
       )
     }
   } else {
-    throw new Error(`${CLIENT_CONFIG.maxInstancesPerType} should be a mapping of types to numbers`)
+    throw new Error(`Expected ${CLIENT_CONFIG.maxInstancesPerType} to be a list of { name: string, limit: number },`
+    + ` but found:\n${safeJsonStringify(maxInstancesPerType, undefined, 4)}.`)
   }
 }
 
@@ -266,10 +272,8 @@ export function validateClientConfig(
   }
 }
 
-export type InstanceLimiterFunc = (type: string, instanceCount: number) => boolean
-
 export const instanceLimiter = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
-  (type: string, instanceCount: number): boolean => {
+  (type, instanceCount): boolean => {
     const maxInstancesPerType = clientConfig?.maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE
     const maxInstancesOptions = maxInstancesPerType
       .filter(maxType => checkTypeNameRegMatch(maxType, type))

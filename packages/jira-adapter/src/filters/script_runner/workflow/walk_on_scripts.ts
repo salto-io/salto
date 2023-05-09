@@ -27,16 +27,16 @@ const SCRIPT_CLOUD_FIELDS = ['expression', 'additionalCode', 'emailCode', 'condi
 export type referenceFunc = (value: Value, fieldName: string) => void
 
 const isCloudScriptRunnerItem = (value: Value): boolean =>
-  SCRIPT_RUNNER_CLOUD_TYPES.includes(value.type) && value.configuration.scriptRunner !== undefined
+  SCRIPT_RUNNER_CLOUD_TYPES.includes(value.type) && value.configuration?.scriptRunner != null
 
 const walkOnCloudScripts = (func: (value: string, fieldName: string) => void)
   : WalkOnFunc => ({ value }): WALK_NEXT_STEP => {
-  if (value === undefined) {
+  if (value == null) {
     return WALK_NEXT_STEP.SKIP
   }
   if (isCloudScriptRunnerItem(value)) {
     SCRIPT_CLOUD_FIELDS.forEach(fieldName => {
-      if (value.configuration.scriptRunner[fieldName] !== undefined) {
+      if (value.configuration.scriptRunner[fieldName] != null) {
         func(value.configuration.scriptRunner, fieldName)
       }
     })
@@ -46,16 +46,16 @@ const walkOnCloudScripts = (func: (value: string, fieldName: string) => void)
 }
 
 const isDCScriptRunnerItem = (value: Value): boolean =>
-  SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration !== undefined
+  SCRIPT_RUNNER_DC_TYPES.includes(value.type) && value.configuration != null
 
 const walkOnDcScripts = (func: referenceFunc)
   : WalkOnFunc => ({ value }): WALK_NEXT_STEP => {
-  if (value === undefined) {
+  if (value == null) {
     return WALK_NEXT_STEP.SKIP
   }
   if (isDCScriptRunnerItem(value)) {
     SCRIPT_DC_FIELDS.forEach(fieldName => {
-      if (value.configuration[fieldName]?.script !== undefined) {
+      if (value.configuration[fieldName]?.script != null) {
         func(value.configuration[fieldName], 'script')
       }
     })

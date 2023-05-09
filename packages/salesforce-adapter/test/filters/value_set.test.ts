@@ -18,11 +18,11 @@ import filterCreator from '../../src/filters/value_set'
 import * as constants from '../../src/constants'
 import { GLOBAL_VALUE_SET, MASTER_LABEL, CUSTOM_VALUE } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
-import { FilterContext } from '../../src/filter'
+import { defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
 describe('value set filter', () => {
-  const filter = filterCreator({ config: {} as FilterContext }) as FilterWith<'onDeploy'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onDeploy'>
 
   describe('on deploy', () => {
     describe('Global value set', () => {

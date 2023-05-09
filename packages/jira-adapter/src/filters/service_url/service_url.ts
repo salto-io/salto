@@ -18,9 +18,19 @@ import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { FilterCreator, FilterResult } from '../../filter'
 
-const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<JiraClient, JiraConfig, FilterResult>(
+const filter: FilterCreator = params => {
+  const {
+    name,
+    onFetch,
+    onDeploy,
+  } = filters.serviceUrlFilterCreator<JiraClient, JiraConfig, FilterResult>(
     params.client.baseUrl
   )(params)
+  return {
+    name,
+    onFetch,
+    onDeploy,
+  }
+}
 
 export default filter

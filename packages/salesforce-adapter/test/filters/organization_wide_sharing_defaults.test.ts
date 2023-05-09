@@ -23,7 +23,7 @@ import {
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
-import { FilterContext } from '../../src/filter'
+import { defaultFilterContext } from '../utils'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -35,7 +35,7 @@ describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
   const { client, connection } = mockAdapter({})
   const filter = filterCreator({
-    config: {} as FilterContext,
+    config: defaultFilterContext,
     client,
   })
 

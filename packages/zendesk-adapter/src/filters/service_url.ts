@@ -18,9 +18,19 @@ import { FilterContext } from '../config'
 import { FilterCreator, FilterResult } from '../filter'
 import ZendeskClient from '../client/client'
 
-const filter: FilterCreator = params =>
-  filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
+const filter: FilterCreator = params => {
+  const {
+    name,
+    onFetch,
+    onDeploy,
+  } = filters.serviceUrlFilterCreator<ZendeskClient, FilterContext, FilterResult>(
     params.client.getUrl().href
   )(params)
+  return {
+    name,
+    onFetch,
+    onDeploy,
+  }
+}
 
 export default filter

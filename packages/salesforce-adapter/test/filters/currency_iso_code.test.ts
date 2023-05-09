@@ -18,8 +18,7 @@ import { findElements as findElementsByID } from '@salto-io/adapter-utils'
 import currencyIsoCodeFilter from '../../src/filters/currency_iso_code'
 import { FIELD_TYPE_NAMES, SALESFORCE, CURRENCY_CODE_TYPE_NAME } from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
-import { FilterContext } from '../../src/filter'
-import { createValueSetEntry, createCustomObjectType, findElements } from '../utils'
+import { createValueSetEntry, createCustomObjectType, findElements, defaultFilterContext } from '../utils'
 import { FilterWith } from './mocks'
 
 type PicklistDefinition = {
@@ -42,7 +41,7 @@ const createMockElemenet = (...picklists: PicklistDefinition[]): ObjectType => c
 })
 
 describe('currencyIsoCode filter', () => {
-  const filter = currencyIsoCodeFilter({ config: {} as FilterContext }) as FilterWith<'onFetch'>
+  const filter = currencyIsoCodeFilter({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   describe('when there are no currency fields', () => {
     let elements: Element[]

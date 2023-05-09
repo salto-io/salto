@@ -15,10 +15,10 @@
 */
 import { ObjectType, BuiltinTypes, CORE_ANNOTATIONS, getRestriction, createRestriction } from '@salto-io/adapter-api'
 import filterCreator, { FLOW_METADATA_TYPE_ID } from '../../src/filters/flow'
-import { FilterContext } from '../../src/filter'
+import { defaultFilterContext } from '../utils'
 
 describe('flow filter', () => {
-  const filter = filterCreator({ config: {} as FilterContext })
+  const filter = filterCreator({ config: defaultFilterContext })
   const elemID = FLOW_METADATA_TYPE_ID
   const values = ['ObjectType', 'TriggerType', 'ObjectVariable', 'OldObjectVariable',
     'RecursiveCountVariable', 'EventType']

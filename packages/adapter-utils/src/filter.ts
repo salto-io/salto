@@ -53,12 +53,6 @@ export type FilterWith<
   DeployInfo = void,
 > = types.HasMember<Filter<T, DeployInfo>, M>
 
-export type FilterCreator<
-  R extends FilterResult | void,
-  T,
-  DeployInfo=void,
-> = (opts: T) => Filter<R, DeployInfo>
-
 export type LocalFilterCreator<
   R extends FilterResult | void,
   T,
@@ -70,6 +64,12 @@ export type RemoteFilterCreator<
   T,
   DeployInfo=void,
 > = (opts: T) => Filter<R, DeployInfo> & { remote: true }
+
+export type FilterCreator<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = LocalFilterCreator<R, T, DeployInfo> | RemoteFilterCreator<R, T, DeployInfo>
 
 export type LocalFilterCreatorDefinition<
   R extends FilterResult | void,

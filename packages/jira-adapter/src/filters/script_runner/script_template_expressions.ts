@@ -63,7 +63,9 @@ const referenceCustomFields = (script: string, fieldInstancesById: Map<string, I
 
 export const addTemplateReferences = (fieldInstancesById: Map<string, InstanceElement>)
   : referenceFunc => (value: Value, fieldName: string): void => {
-  value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById)
+  if (typeof value[fieldName] === 'string') {
+    value[fieldName] = referenceCustomFields(value[fieldName], fieldInstancesById)
+  }
 }
 
 // This filter is used to add and remove template expressions in scriptRunner scripts

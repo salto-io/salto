@@ -22,7 +22,7 @@ import _ from 'lodash'
 import { collections, promises } from '@salto-io/lowerdash'
 import { TOPICS_FOR_OBJECTS_FIELDS, TOPICS_FOR_OBJECTS_ANNOTATION, TOPICS_FOR_OBJECTS_METADATA_TYPE, SALESFORCE } from '../constants'
 import { isCustomObject, apiName, metadataType, createInstanceElement, metadataAnnotationTypes, MetadataTypeAnnotations } from '../transformers/transformer'
-import { LocalFilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { TopicsForObjectsInfo } from '../client/types'
 import { boolValue, getInstancesOfMetadataType, isInstanceOfTypeChange } from './utils'
 
@@ -58,7 +58,7 @@ const createTopicsForObjectsInstance = (values: TopicsForObjectsInfo): InstanceE
   )
 )
 
-const filterCreator: LocalFilterCreator = (): FilterWith<'onFetch' | 'onDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'topicsForObjectsFilter',
   onFetch: async (elements: Element[]): Promise<void> => {
     const customObjectTypes = await awu(elements).filter(isCustomObject).toArray() as ObjectType[]

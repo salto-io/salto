@@ -38,10 +38,10 @@ import {
   INTERNAL_ID_FIELD, LABEL,
   METADATA_TYPE, PLURAL_LABEL,
 } from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
 import { isInstanceOfTypeChange } from '../../src/filters/utils'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

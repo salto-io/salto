@@ -19,8 +19,8 @@ import { mockTypes } from '../mock_elements'
 import { createCustomObjectType, createMetadataTypeElement, defaultFilterContext } from '../utils'
 import makeFilter, { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { getObjectDirectoryPath } from '../../src/filters/custom_objects_to_object_type'
+import { FilterWith } from './mocks'
 
 describe('Test layout filter', () => {
   describe('Test layout fetch', () => {

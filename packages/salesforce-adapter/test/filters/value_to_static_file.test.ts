@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, BuiltinTypes, StaticFile, FieldDefinition } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/value_to_static_file'
 import { SALESFORCE, WEBLINK_METADATA_TYPE, METADATA_TYPE } from '../../src/constants'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const LINK_TYPE_FIELD = 'linkType'
 const JAVASCRIPT = 'javascript'

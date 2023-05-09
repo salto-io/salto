@@ -31,7 +31,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
-import { FilterResult, FilterWith } from '../../src/filter'
+import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
@@ -51,6 +51,7 @@ import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

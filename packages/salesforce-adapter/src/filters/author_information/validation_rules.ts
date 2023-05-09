@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { VALIDATION_RULES_METADATA_TYPE } from '../../constants'
 import { getAuthorAnnotations } from '../../transformers/transformer'
-import { FilterWith, RemoteFilterCreator } from '../../filter'
+import { RemoteFilterCreator } from '../../filter'
 import SalesforceClient from '../../client/client'
 import { ensureSafeFilterFetch, isInstanceOfType } from '../utils'
 
@@ -53,8 +53,9 @@ export const WARNING_MESSAGE = 'Encountered an error while trying to populate au
 /*
  * Add author information to validation rules instances.
  */
-const filterCreator: RemoteFilterCreator = ({ client, config }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'validationRulesAuthorFilter',
+  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

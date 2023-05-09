@@ -15,9 +15,9 @@
 */
 import { Element, ElemID, ObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { SALESFORCE } from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/remove_unix_time_zero'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const UNIX_TIME_ZERO_STRING = '1970-01-01T00:00:00.000Z'
 const RANDOM_TIME_STRING = '2023-01-05T12:13:14.000Z'

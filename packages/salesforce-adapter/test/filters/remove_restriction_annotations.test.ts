@@ -16,8 +16,8 @@
 import { ObjectType, ElemID, BuiltinTypes, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { makeFilter } from '../../src/filters/remove_restriction_annotations'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('remove restriction annotations filter', () => {
   const mockObjId = new ElemID(constants.SALESFORCE, 'AnimationRule')

@@ -45,11 +45,10 @@ import filterCreator, {
   INSTANCE_REQUIRED_FIELD, INSTANCE_TYPE_FIELD, NESTED_INSTANCE_VALUE_TO_TYPE_NAME,
   CUSTOM_OBJECT_TYPE_ID, NESTED_INSTANCE_VALUE_NAME, NESTED_INSTANCE_TYPE_NAME,
 } from '../../src/filters/custom_objects_to_object_type'
-import { FilterWith } from '../../src/filter'
 import { Types, createInstanceElement, MetadataTypeAnnotations, metadataType, createMetadataObjectType } from '../../src/transformers/transformer'
 import { DEPLOY_WRAPPER_INSTANCE_MARKER } from '../../src/metadata_deploy'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-
+import { FilterWith } from './mocks'
 
 export const generateCustomObjectType = (): ObjectType => {
   const generateInnerMetadataTypeFields = (name: string): Record<string, FieldDefinition> => {

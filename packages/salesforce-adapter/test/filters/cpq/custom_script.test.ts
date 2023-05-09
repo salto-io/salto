@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, Element, InstanceElement, ListType, ChangeDataType, Change, toChange, getChangeData, isModificationChange, isAdditionChange, ModificationChange, isObjectTypeChange, AdditionChange, StaticFile, isFieldChange, Field, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { FilterWith } from '../../../src/filter'
 import { fullApiName } from '../../../src/filters/utils'
 import { SALESFORCE, CPQ_CUSTOM_SCRIPT, API_NAME, CPQ_CONSUMPTION_RATE_FIELDS, CPQ_GROUP_FIELDS, METADATA_TYPE, CUSTOM_OBJECT, CPQ_CODE_FIELD } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/cpq/custom_script'
 import { defaultFilterContext } from '../../utils'
+import { FilterWith } from '../mocks'
 
 describe('cpq custom script filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>

@@ -31,7 +31,7 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => (
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Invalid AnimationRule RecordType',
-    detailedMessage: `In ${instance.elemID.getFullName()}, The RecordTypeId field is missing even though RecordTypeContext requires a RecordTypeId.`,
+    detailedMessage: `In ${instance.elemID.getFullName()}, The RecordTypeId field is missing even though RecordTypeContext requires a RecordTypeId.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   }
 )
 

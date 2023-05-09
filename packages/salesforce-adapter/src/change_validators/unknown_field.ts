@@ -29,7 +29,7 @@ const createChangeError = (field: Field): ChangeError =>
     elemID: field.elemID,
     severity: 'Error',
     message: 'Cannot create or modify a field with unknown type',
-    detailedMessage: `You cannot create or modify the field ${field.name} of type ‘unknown’.\nIn Salto, fields are set with an unknown type in case the credentials used for fetch provides limited access rights to that field in salesforce.\nCheck your profile permissions on Salesforce to make sure you have access to the field.`,
+    detailedMessage: `You cannot create or modify the field ${field.name} of type ‘unknown’.\nIn Salto, fields are set with an unknown type in case the credentials used for fetch provides limited access rights to that field in salesforce.\nCheck your profile permissions on Salesforce to make sure you have access to the field.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   })
 
 /**

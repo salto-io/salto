@@ -23,7 +23,7 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Error',
   message: 'Data instances are not supported when executing a \'validate only\' deployment.',
-  detailedMessage: `Data instances are not supported when executing a 'validate only' deployment. Therefore, Instance ${instanceElemID.getFullName()} will be omitted from the deployment plan`,
+  detailedMessage: `Data instances are not supported when executing a 'validate only' deployment. Therefore, Instance ${instanceElemID.getFullName()} will be omitted from the deployment plan.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 /**

@@ -36,7 +36,7 @@ const createChangeErrors = ({ pickListField, gvsElemID }:
     elemID: pickListField.elemID,
     severity: 'Error',
     message: 'Cannot promote a picklist value set to a global value set via the API',
-    detailedMessage: `${pickListField.name} picklist value set cannot be promoted to a global value set via the API.\nYou can delete this change in Salto and do it directly in salesforce.`,
+    detailedMessage: `${pickListField.name} picklist value set cannot be promoted to a global value set via the API.\nYou can delete this change in Salto and do it directly in salesforce.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   }
   // picklistField valueSetName annotation points to a valid GVS
   if (gvsElemID) {
@@ -44,7 +44,7 @@ const createChangeErrors = ({ pickListField, gvsElemID }:
       elemID: gvsElemID,
       severity: 'Error',
       message: 'Cannot promote a picklist value set to a global value set via the API',
-      detailedMessage: `${gvsElemID.name} picklist value set cannot be promoted to a global value set via the API.\nYou can delete this change in Salto and do it directly in salesforce.`,
+      detailedMessage: `${gvsElemID.name} picklist value set cannot be promoted to a global value set via the API.\nYou can delete this change in Salto and do it directly in salesforce.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
     }
     return [picklistErr, gvsErr]
   }

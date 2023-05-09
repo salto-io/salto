@@ -58,8 +58,8 @@ const invalidListViewFilterScopeError = (element: InstanceElement): ChangeError 
   {
     elemID: element.elemID,
     severity: 'Error',
-    message: `${element.elemID.getFullName()} uses '${element.value.filterScope}' as the 'filterScope' property of a ListView element. This is not allowed by SalesForce. See https://developer.salesforce.com/docs/atlas.en-us.236.0.api_meta.meta/api_meta/meta_listview.htm#filterScope`,
-    detailedMessage: `You cannot use '${element.value.filterScope}' as a filterScope of a ListView`,
+    message: `${element.elemID.getFullName()} uses '${element.value.filterScope}' as the 'filterScope' property of a ListView element.`,
+    detailedMessage: `You cannot use '${element.value.filterScope}' as a filterScope of a ListView. This is not allowed by SalesForce. See https://developer.salesforce.com/docs/atlas.en-us.236.0.api_meta.meta/api_meta/meta_listview.htm#filterScope`,
   }
 )
 

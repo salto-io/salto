@@ -67,7 +67,7 @@ const createOrgHasNoMultiCurrencyEnabledError = (
 ): ChangeError => ({
   elemID,
   message: 'Organization doesnt support multi currency',
-  detailedMessage: 'Cannot deploy instance with CurrencyIsoCode field to organization that does not support multi currencies',
+  detailedMessage: 'Cannot deploy instance with CurrencyIsoCode field to organization that does not support multi currencies.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors',
   severity: 'Error',
 })
 
@@ -77,7 +77,7 @@ const createInstanceHasUnsupportedCurrencyError = (
 ): ChangeError => ({
   elemID: instance.elemID,
   message: `Unsupported currency ${instance.value[CURRENCY_ISO_CODE]}`,
-  detailedMessage: `Please set to one of the supported currencies or enable the currency you need directly in salesforce. Current supported currencies are: ${supportedIsoCodes}`,
+  detailedMessage: `Please set to one of the supported currencies or enable the currency you need directly in salesforce. Current supported currencies are: ${supportedIsoCodes}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   severity: 'Error',
 })
 

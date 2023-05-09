@@ -36,28 +36,28 @@ const createFieldAdditionChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Standard field does not exist in target organization',
-  detailedMessage: `The standard field ${field.name} of type ${field.parent} does not exist in your target organization. It is not possible to create a standard field through the API. You may need additional feature licenses.`,
+  detailedMessage: `The standard field ${field.name} of type ${field.parent} does not exist in your target organization. It is not possible to create a standard field through the API. You may need additional feature licenses. for more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const createObjectAdditionChangeError = async (objectType: ObjectType): Promise<ChangeError> => ({
   elemID: objectType.elemID,
   severity: 'Error',
   message: 'Standard object does not exist in target organization',
-  detailedMessage: `The standard object ${await apiName(objectType)} does not exist in your target organization.  You cannot create a standard object through the API. You may need additional feature licenses.`,
+  detailedMessage: `The standard object ${await apiName(objectType)} does not exist in your target organization.  You cannot create a standard object through the API. You may need additional feature licenses. for more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const createFieldRemovalChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Cannot delete a standard field',
-  detailedMessage: `Deletion of standard field ${field.name} through the API is forbidden.`,
+  detailedMessage: `Deletion of standard field ${field.name} through the API is forbidden.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const createObjectRemovalChangeError = async (objectType: ObjectType): Promise<ChangeError> => ({
   elemID: objectType.elemID,
   severity: 'Error',
   message: 'Cannot delete a standard object',
-  detailedMessage: `Deletion of standard object ${await apiName(objectType)} through the API is forbidden.`,
+  detailedMessage: `Deletion of standard object ${await apiName(objectType)} through the API is forbidden.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 /**

@@ -68,7 +68,7 @@ describe('getChangeValidators', () => {
   })
   describe('when checkOnly is false', () => {
     it('should call both the adapter change validators and the core change validators and use the deployModifiers', async () => {
-      const changesValidators = getChangeValidators(adapters, false)
+      const changesValidators = getChangeValidators(adapters, false, { found: [], missing: [] })
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
       expect(errors[0].message).toBe('Operation not supported')
@@ -80,7 +80,7 @@ describe('getChangeValidators', () => {
 
   describe('when checkOnly is true', () => {
     it('should call both the adapter change validators and the core change validators and use the validationModifiers', async () => {
-      const changesValidators = getChangeValidators(adapters, true)
+      const changesValidators = getChangeValidators(adapters, true, { found: [], missing: [] })
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
       expect(errors[0].message).toBe('Operation not supported')

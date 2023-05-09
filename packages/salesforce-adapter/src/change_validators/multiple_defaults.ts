@@ -71,7 +71,7 @@ const createInstanceChangeError = (field: Field, contexts: string[], instance: I
     elemID: instance.elemID,
     severity: 'Warning',
     message: 'Instances cannot have more than one default',
-    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name] ?? LABEL}s are set to default: ${contexts}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+    detailedMessage: `There cannot be more than one 'default' ${field.name} in instance: ${instanceName} type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name] ?? LABEL}s are set to default: ${contexts}.`,
   }
 }
 
@@ -80,7 +80,7 @@ const createFieldChangeError = (field: Field, contexts: string[]):
   elemID: field.elemID,
   severity: 'Warning',
   message: 'Types cannot have more than one default',
-  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name] ?? LABEL}s are set to default: ${contexts}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `There cannot be more than one 'default' ${field.name} in type ${field.parent.elemID.name}.\nThe following ${FIELD_NAME_TO_INNER_CONTEXT_FIELD[field.name] ?? LABEL}s are set to default: ${contexts}.`,
 })
 
 const getPicklistMultipleDefaultsErrors = (field: FieldWithValueSet): ChangeError[] => {

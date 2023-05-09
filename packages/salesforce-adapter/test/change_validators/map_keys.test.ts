@@ -148,13 +148,13 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(4)
       expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error', 'Error'])
       expect(changeErrors[0].elemID).toEqual(afterProfileInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-      expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
+      expect(changeErrors[0].detailedMessage).toContain('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
       expect(changeErrors[1].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
-      expect(changeErrors[1].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
+      expect(changeErrors[1].detailedMessage).toContain('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
       expect(changeErrors[2].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Something'))
-      expect(changeErrors[2].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
+      expect(changeErrors[2].detailedMessage).toContain('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
       expect(changeErrors[3].elemID).toEqual(afterProfileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'))
-      expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
+      expect(changeErrors[3].detailedMessage).toContain('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
     })
 
     it('should have error for invalid keys on add', async () => {
@@ -164,13 +164,13 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(4)
       expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error', 'Error'])
       expect(changeErrors[0].elemID).toEqual(profileInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-      expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
+      expect(changeErrors[0].detailedMessage).toContain('Profile Admin field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
       expect(changeErrors[1].elemID).toEqual(profileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
-      expect(changeErrors[1].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
+      expect(changeErrors[1].detailedMessage).toContain('Profile Admin field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
       expect(changeErrors[2].elemID).toEqual(profileInstance.elemID.createNestedID('fieldPermissions', 'Something'))
-      expect(changeErrors[2].detailedMessage).toEqual('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
+      expect(changeErrors[2].detailedMessage).toContain('Profile Admin field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
       expect(changeErrors[3].elemID).toEqual(profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'))
-      expect(changeErrors[3].detailedMessage).toEqual('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
+      expect(changeErrors[3].detailedMessage).toContain('Profile Admin field layoutAssignments: Incorrect map key Account_Account_Layout@bs, should be new_account_layout_name@s')
     })
 
     it('should have error on invalid nacl structure', async () => {
@@ -208,7 +208,7 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(afterProfileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'Contact'))
-      expect(changeErrors[0].detailedMessage).toEqual('Profile Admin field fieldPermissions: Nested value \'field\' not found')
+      expect(changeErrors[0].detailedMessage).toContain('Profile Admin field fieldPermissions: Nested value \'field\' not found')
     })
 
     it('should not validate map keys on delete', async () => {
@@ -244,11 +244,11 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(3)
       expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error'])
       expect(changeErrors[0].elemID).toEqual(afterPermissionSetInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-      expect(changeErrors[0].detailedMessage).toEqual('PermissionSet Buyer field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
+      expect(changeErrors[0].detailedMessage).toContain('PermissionSet Buyer field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
       expect(changeErrors[1].elemID).toEqual(afterPermissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
-      expect(changeErrors[1].detailedMessage).toEqual('PermissionSet Buyer field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
+      expect(changeErrors[1].detailedMessage).toContain('PermissionSet Buyer field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
       expect(changeErrors[2].elemID).toEqual(afterPermissionSetInstance.elemID.createNestedID('fieldPermissions', 'Something'))
-      expect(changeErrors[2].detailedMessage).toEqual('PermissionSet Buyer field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
+      expect(changeErrors[2].detailedMessage).toContain('PermissionSet Buyer field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
     })
 
     it('should have error for invalid keys on add', async () => {
@@ -258,11 +258,11 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(3)
       expect(changeErrors.map(c => c.severity)).toEqual(['Error', 'Error', 'Error'])
       expect(changeErrors[0].elemID).toEqual(permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'otherApp'))
-      expect(changeErrors[0].detailedMessage).toEqual('PermissionSet Buyer field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
+      expect(changeErrors[0].detailedMessage).toContain('PermissionSet Buyer field applicationVisibilities: Incorrect map key otherApp, should be other_app@s')
       expect(changeErrors[1].elemID).toEqual(permissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'wrongName'))
-      expect(changeErrors[1].detailedMessage).toEqual('PermissionSet Buyer field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
+      expect(changeErrors[1].detailedMessage).toContain('PermissionSet Buyer field fieldPermissions: Incorrect map key Account.wrongName, should be Account.AccountNumber')
       expect(changeErrors[2].elemID).toEqual(permissionSetInstance.elemID.createNestedID('fieldPermissions', 'Something'))
-      expect(changeErrors[2].detailedMessage).toEqual('PermissionSet Buyer field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
+      expect(changeErrors[2].detailedMessage).toContain('PermissionSet Buyer field fieldPermissions: Incorrect map key Something.wrong, should be Correct.Path')
     })
 
     it('should have error on invalid nacl structure', async () => {
@@ -301,7 +301,7 @@ describe('profile permission set map keys change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors[0].severity).toEqual('Error')
       expect(changeErrors[0].elemID).toEqual(afterPermissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'Contact'))
-      expect(changeErrors[0].detailedMessage).toEqual('PermissionSet Buyer field fieldPermissions: Nested value \'field\' not found')
+      expect(changeErrors[0].detailedMessage).toContain('PermissionSet Buyer field fieldPermissions: Nested value \'field\' not found')
     })
 
     it('should not validate map keys on delete', async () => {

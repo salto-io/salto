@@ -41,7 +41,7 @@ const getUpdateErrorsForNonUpdateableFields = async (
           elemID: beforeResolved.elemID,
           severity: 'Warning',
           message: 'Cannot modify the value of a non-updatable field',
-          detailedMessage: `Cannot modify ${field.name}’s value of ${beforeResolved.elemID.getFullName()} because its field is defined as non-updateable.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+          detailedMessage: `Cannot modify ${field.name}’s value of ${beforeResolved.elemID.getFullName()} because its field is defined as non-updateable.`,
         } as ChangeError
       }
       return undefined
@@ -60,7 +60,7 @@ const getCreateErrorsForNonCreatableFields = async (
           elemID: afterResolved.elemID,
           severity: 'Warning',
           message: 'Cannot set a value to a non-creatable field',
-          detailedMessage: `Cannot set a value for ${field.name} of ${afterResolved.elemID.getFullName()} because its field is defined as non-creatable.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+          detailedMessage: `Cannot set a value for ${field.name} of ${afterResolved.elemID.getFullName()} because its field is defined as non-creatable.`,
         } as ChangeError
       }
       return undefined

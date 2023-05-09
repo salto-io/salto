@@ -81,7 +81,7 @@ const createUnknownPicklistValueChangeError = (
 ): ChangeError => ({
   elemID: instance.elemID,
   message: `Unknown picklist value "${unknownValue}" on field ${field.elemID.name}`,
-  detailedMessage: `Unknown picklist value "${unknownValue}" on ${instance.elemID.getFullName()}.${field.elemID.name}, Supported values are ${safeJsonStringify(allowedValues)}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `Unknown picklist value "${unknownValue}" on ${instance.elemID.getFullName()}.${field.elemID.name}, Supported values are ${safeJsonStringify(allowedValues)}`,
   severity: 'Warning',
 })
 

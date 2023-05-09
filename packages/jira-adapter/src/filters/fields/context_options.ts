@@ -19,12 +19,15 @@ import { getParents, naclCase, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
 
 const log = logger(module)
 
 const { awu } = collections.asynciterable
+
+const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
 
 const convertOptionsToList = (options: Values): Values[] => (
   _(options)
@@ -106,56 +109,61 @@ const updateContextOptions = async ({
   contextChange,
 }: UpdateContextOptionsParams): Promise<void> => {
   if (addedOptions.length !== 0) {
-    const resp = await client.post({
-      url: baseUrl,
-      data: {
-        options: addedOptions.map(transformOption),
-      },
-    })
+    const addedOptionsChunks = _.chunk(addedOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
 
-    if (Array.isArray(resp.data)) {
-      log.error('Received unexpected array response from Jira API: %o', resp.data)
-      throw new Error('Received unexpected response from Jira API')
-    }
-
-    if (Array.isArray(resp.data.options)) {
-      const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
-      const optionsMap = _(contextChange.data.after.value.options).values()
-        .keyBy(option => naclCase(option.value)).value()
-      resp.data.options.forEach(newOption => {
-        if (newOption.optionId !== undefined) {
-          idToOption[newOption.optionId]
-            .cascadingOptions[naclCase(newOption.value)].id = newOption.id
-        } else {
-          optionsMap[naclCase(newOption.value)].id = newOption.id
-        }
+    await awu(addedOptionsChunks).forEach(async chunk => {
+      const resp = await client.post({
+        url: baseUrl,
+        data: {
+          options: chunk.map(transformOption),
+        },
       })
-    }
+
+      if (Array.isArray(resp.data)) {
+        log.error('Received unexpected array response from Jira API: %o', resp.data)
+        throw new Error('Received unexpected response from Jira API')
+      }
+      if (Array.isArray(resp.data.options)) {
+        const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
+        const optionsMap = _(contextChange.data.after.value.options).values()
+          .keyBy(option => naclCase(option.value)).value()
+        resp.data.options.forEach(newOption => {
+          if (newOption.optionId !== undefined) {
+            idToOption[newOption.optionId]
+              .cascadingOptions[naclCase(newOption.value)].id = newOption.id
+          } else {
+            optionsMap[naclCase(newOption.value)].id = newOption.id
+          }
+        })
+      }
+    })
   }
 
   if (modifiedOptions.length !== 0) {
-    await client.put({
-      url: baseUrl,
-      data: {
-        options: modifiedOptions
-          .map(transformOption)
-          .map(option => _.omit(option, 'optionId')),
-      },
-    })
-  }
+    const modifiedOptionsChunks = _.chunk(modifiedOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
 
-  if (removedOptions.length !== 0) {
-    await awu(removedOptions).forEach(async (option: Value) => {
-      await client.delete({
-        url: `${baseUrl}/${option.id}`,
+    await awu(modifiedOptionsChunks).forEach(async chunk => {
+      await client.put({
+        url: baseUrl,
+        data: {
+          options: chunk.map(transformOption).map(option => _.omit(option, 'optionId')),
+        },
       })
     })
   }
+  if (removedOptions.length !== 0) {
+    await Promise.all(removedOptions.map(async (option: Value) => {
+      await client.delete({
+        url: `${baseUrl}/${option.id}`,
+      })
+    }))
+  }
 }
+
 
 const reorderContextOptions = async (
   contextChange: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   baseUrl: string,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
@@ -174,20 +182,30 @@ const reorderContextOptions = async (
   }
 
   const optionsGroups = _(afterOptions).groupBy(option => option.optionId).values().value()
-  await Promise.all(optionsGroups.map(
-    group => client.put({
+  // Data center plugin expects all options in one request.
+  const requestBodies = client.isDataCenter ? optionsGroups.map(
+    group => [{
       url: `${baseUrl}/move`,
       data: {
         customFieldOptionIds: group.map(option => option.id),
         position: 'First',
       },
-    })
-  ))
+    }]
+  ) : optionsGroups.map(group =>
+    _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) =>
+      ({
+        url: `${baseUrl}/move`,
+        data: {
+          customFieldOptionIds: chunk.map(option => option.id),
+          position: index === 0 ? 'First' : 'Last',
+        },
+      })))
+  await awu(requestBodies).flat().forEach(async body => client.put(body))
 }
 
 export const setContextOptions = async (
   contextChange: Change<InstanceElement>,
-  client: clientUtils.HTTPWriteClientInterface,
+  client: JiraClient,
   elementsSource?: ReadOnlyElementsSource
 ): Promise<void> => {
   if (isRemovalChange(contextChange)) {

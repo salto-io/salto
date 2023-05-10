@@ -148,7 +148,7 @@ describe('automationFetchFilter', () => {
         '/gateway/api/automation/internal-api/jira/cloudId/pro/rest/GLOBAL/rules',
         {
           offset: 0,
-          limit: 100,
+          limit: 1000,
         },
         undefined,
       )

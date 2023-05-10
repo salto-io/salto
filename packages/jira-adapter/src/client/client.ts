@@ -35,7 +35,7 @@ const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitC
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: 50,
+  get: 1000,
 }
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<

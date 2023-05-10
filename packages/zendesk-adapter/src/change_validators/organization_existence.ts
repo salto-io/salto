@@ -88,7 +88,7 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
           if (nonExistingOrgs.size > 0) {
             // Check if any of the non-existing orgs are numbers, if so, we should recommend the user to resolve them
             const nonExistingOrgsAreIds = !orgIdsResolved || wu(nonExistingOrgs.values()).some(org => isNumber(org))
-            const resolveOrgsRecommendation = nonExistingOrgsAreIds ? 'Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
+            const resolveOrgsRecommendation = nonExistingOrgsAreIds ? '. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
                 + 'More information about Salto\'s config files can be found here' : ''
             return {
               elemID: entries[0].instance.elemID,

@@ -22,6 +22,7 @@ const testParams: GeneratorParams = {
   numOfProfiles: 10,
   numOfRecords: 10,
   numOfTypes: 10,
+  fieldsToOmit: ['fieldToOmit'],
 }
 
 export default testParams

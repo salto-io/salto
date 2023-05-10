@@ -20,17 +20,20 @@ import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from '
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
-  fields: { ..._.mapValues(defaultParams, defValue => ({
-    refType: _.isBoolean(defValue)
-      ? BuiltinTypes.BOOLEAN
-      : BuiltinTypes.NUMBER,
-    annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: defValue,
-    },
-  })),
-  changeErrors: { refType: new ListType(changeErrorType) },
-  extraNaclPath: { refType: BuiltinTypes.STRING },
-  generateEnvName: { refType: BuiltinTypes.STRING } },
+  fields: {
+    ..._.mapValues(defaultParams, defValue => ({
+      refType: _.isBoolean(defValue)
+        ? BuiltinTypes.BOOLEAN
+        : BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: defValue,
+      },
+    })),
+    changeErrors: { refType: new ListType(changeErrorType) },
+    extraNaclPath: { refType: BuiltinTypes.STRING },
+    generateEnvName: { refType: BuiltinTypes.STRING },
+    fieldsToOmit: { refType: new ListType(BuiltinTypes.STRING) },
+  },
 })
 
 export const adapter: Adapter = {

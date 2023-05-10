@@ -44,6 +44,13 @@ describe('role permission ids change validator tests', () => {
     expect(changeErrors).toHaveLength(0)
   })
 
+  it('should not have change error when deploying an undocumented permissions', async () => {
+    roleInstance.value.permissions.permission.NEW_PERMISSION = { permkey: 'NEW_PERMISSION', permlevel: 'EDIT' }
+    const changeErrors = await permissionIdsValidator([
+      toChange({ after: roleInstance })])
+    expect(changeErrors).toHaveLength(0)
+  })
+
   it('should have change error when deploying a role with invalid permissions levels', async () => {
     roleInstance.value.permissions.permission.REPO_PERIODENDFINANCIALS.permlevel = 'FULL'
     const changeErrors = await permissionIdsValidator([

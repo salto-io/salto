@@ -31,9 +31,8 @@ LICENSE_HEADER = '''/*
 '''
 
 role_permissions_file_template = LICENSE_HEADER +'''
-type ValidPermissionLevels = 'None' | 'View' | 'Create' | 'Edit' | 'Full'
 
-export const ID_TO_PERMISSION_INFO: Record<string, Set<ValidPermissionLevels>> = {{
+export const ID_TO_PERMISSION_INFO: Record<string, Set<string>> = {{
   {permission_id_to_valid_levels}
 }}
 '''
@@ -53,7 +52,6 @@ def parse_permissions_table():
 		driver.get(permissions_table_link)
 		html_content = driver.page_source
 		soup_parser = BeautifulSoup(html_content, 'html.parser')
-		# table = soup_parser.find('table')
 		table = soup_parser.select('table tr')
 		permissions = {}
 		for row in table:
@@ -63,7 +61,7 @@ def parse_permissions_table():
 		driver.quit()
 
 def create_permissions_file(permissions):
-	formatted_permissions = ["{key}: new Set({value}),".format(key = key,value = permissions[key]) for key in permissions]
+	formatted_permissions = ["{key}: new Set({value}),".format(key = key,value = [level.upper() for level in permissions[key]]) for key in permissions]
 	file_content = role_permissions_file_template.format(permission_id_to_valid_levels = '\n  '.join(formatted_permissions))
 	Path(PERMISSIONS_DIR).mkdir(parents=True, exist_ok=True)
 	with open(PERMISSIONS_DIR + 'role_permissions.ts', 'w') as file:

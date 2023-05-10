@@ -37,7 +37,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       relevantChanges,
       async change => {
         await deployChange(
-          change, client, config.apiDefinitions, ['values'],
+          change, client, config.apiDefinitions,
         )
       },
     )

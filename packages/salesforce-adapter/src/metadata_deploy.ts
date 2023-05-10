@@ -204,7 +204,7 @@ const processDeployResponse = (
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
   const testErrors = testFailures
     .map(failure => new Error(util.format(
-      'Test failed for class %s method %s with error:\n%s\n%o',
+      'Test failed for class %s method %s with error:\n%s\n%s',
       failure.name,
       failure.methodName,
       failure.message,

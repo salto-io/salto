@@ -14,14 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types as lowerdashTypes, values } from '@salto-io/lowerdash'
+import { types as lowerdashTypes, values, regex } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { isValidRegex } from '@salto-io/lowerdash/src/regex'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
@@ -236,7 +235,7 @@ function validateMaxInstancesPerType(maxInstancesPerType: unknown):
     val => 'name' in val && 'limit' in val && typeof val.name === 'string' && typeof val.limit === 'number'
   )) {
     const invalidTypes = maxInstancesPerType.filter(maxType =>
-      isValidRegex(maxType.name) && noSupportedTypeMatch(maxType.name) && !isCustomRecordTypeName(maxType.name))
+      regex.isValidRegex(maxType.name) && noSupportedTypeMatch(maxType.name) && !isCustomRecordTypeName(maxType.name))
     if (invalidTypes.length > 0) {
       throw new Error(
         `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}`

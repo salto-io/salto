@@ -13,8 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { ChangeValidator, InstanceElement, ModificationChange, getChangeData, isEqualValues, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 
+const isFaviconOrLogoChange = (change: ModificationChange<InstanceElement>): boolean => {
+  const { before, after } = change.data
+  return !isEqualValues(before.value.logo, after.value.logo)
+    || !isEqualValues(before.value.favicon, after.value.favicon)
+}
 /**
  * Deployment of brand logo and brand favicon is not supported yet
  * TODO: remove this validator after SALTO-4058
@@ -25,7 +30,7 @@ export const brandThemeFilesValidator: ChangeValidator = async changes => {
     .filter(isModificationChange)
     .find(change => getChangeData(change).elemID.typeName === 'BrandTheme')
 
-  if (brandThemeChange === undefined) {
+  if (brandThemeChange === undefined || !isFaviconOrLogoChange(brandThemeChange)) {
     return []
   }
 

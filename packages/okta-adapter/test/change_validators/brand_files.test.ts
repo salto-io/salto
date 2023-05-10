@@ -13,21 +13,42 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { toChange, ObjectType, ElemID, InstanceElement, ReferenceExpression, TemplateExpression } from '@salto-io/adapter-api'
 import { brandThemeFilesValidator } from '../../src/change_validators/brand_files'
-import { OKTA } from '../../src/constants'
+import { OKTA, ORG_SETTING_TYPE_NAME } from '../../src/constants'
 
 describe('brandThemeFilesValidator', () => {
   const brandTheme = new ObjectType({ elemID: new ElemID(OKTA, 'BrandTheme') })
+  const orgType = new ObjectType({ elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME) })
+  const orgInst = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    orgType,
+    { subdomain: 'myOkta', companyName: 'comp', status: 'ACTIVE' },
+  )
+
+  const faviconTemplate = new TemplateExpression({
+    parts: [
+      'https://',
+      new ReferenceExpression(orgInst.elemID.createNestedID('subdomain'), orgInst.value.subdomain),
+      '.oktapreview.com/favicon.ico',
+    ],
+  })
   const themeInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
     brandTheme,
-    { logo: 'https://okta.okta.com', favicon: 'https://www.preview.com/123123123', primaryColorHex: '#ffffff' },
+    { logo: 'https://okta.okta.com', favicon: faviconTemplate, primaryColorHex: '#ffffff' },
   )
 
-  it('should return info when modifying brand theme app', async () => {
+  it('should return info when modifying brand logo or theme', async () => {
+    const themeAfter = themeInstance.clone()
+    themeAfter.value.favicon = new TemplateExpression({
+      parts: [
+        'https://',
+        new ReferenceExpression(orgInst.elemID.createNestedID('subdomain'), orgInst.value.subdomain),
+      ],
+    })
     const errors = await brandThemeFilesValidator([
-      toChange({ before: themeInstance, after: themeInstance }),
+      toChange({ before: themeInstance, after: themeAfter }),
     ])
     expect(errors).toHaveLength(1)
     expect(errors).toEqual([
@@ -38,5 +59,11 @@ describe('brandThemeFilesValidator', () => {
         detailedMessage: 'Changes to brand logo and brand favicon will not be deployed, please use the admin console',
       },
     ])
+  })
+  it('should not return info when modifying brand theme without logo or favicon', async () => {
+    const errors = await brandThemeFilesValidator([
+      toChange({ before: themeInstance, after: themeInstance }),
+    ])
+    expect(errors).toHaveLength(0)
   })
 })

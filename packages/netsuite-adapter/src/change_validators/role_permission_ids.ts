@@ -14,18 +14,15 @@
 * limitations under the License.
 */
 
-import {
-  ChangeError,
-  getChangeData,
-  InstanceElement,
-  isInstanceChange,
-} from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { ROLE } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 import { ID_TO_PERMISSION_INFO } from '../autogen/role_permissions/role_permissions'
 
 const { isDefined } = values
+const log = logger(module)
 
 type RolePermissionType = {
   permkey: string
@@ -39,8 +36,14 @@ const permissionsToAdd: Record<string, Set<string>> = {
   LIST_DEPARTMENT: new Set(['VIEW']),
 }
 
-const isValidPermissions = (permkey: string, permlevel: string): boolean =>
-  (permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey])?.has(permlevel)
+const isValidPermissions = (permkey: string, permlevel: string): boolean => {
+  const validPermissionLevels = permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey]
+  if (!isDefined(validPermissionLevels)) {
+    log.debug(`The following permissions do not appear in the documentation: ${permkey}`)
+    return true
+  }
+  return validPermissionLevels.has(permlevel)
+}
 
 const findInvalidPermissions = (roleInstance: InstanceElement): RolePermissionType[] => {
   const permissions: RolePermissionType[] = Object.values(roleInstance.value?.permissions?.permission ?? [])

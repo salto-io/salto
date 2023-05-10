@@ -166,7 +166,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   return { errors, appliedChanges }
 }
 
-export const deployChangesSynchronously = async <T extends Change<ChangeDataType>>(
+export const deployChangesSequentially = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {

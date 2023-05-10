@@ -18,7 +18,7 @@ import {
   Change, getChangeData, InstanceElement,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
-import { deployChange, deployChangesSynchronously } from '../deployment'
+import { deployChange, deployChangesSequentially } from '../deployment'
 import { ROUTING_ATTRIBUTE_VALUE_TYPE } from '../constants'
 
 
@@ -33,7 +33,7 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
       change =>
         getChangeData(change).elemID.typeName === ROUTING_ATTRIBUTE_VALUE_TYPE,
     )
-    const deployResult = await deployChangesSynchronously(
+    const deployResult = await deployChangesSequentially(
       relevantChanges,
       async change => {
         await deployChange(

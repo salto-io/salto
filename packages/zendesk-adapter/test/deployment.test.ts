@@ -21,13 +21,13 @@ import { makeResolvablePromise, Resolvable } from '@salto-io/test-utils'
 import { Change, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { promises } from '@salto-io/lowerdash'
 import { ZENDESK } from '../src/constants'
-import { deployChangesSynchronously } from '../src/deployment'
+import { deployChangesSequentially } from '../src/deployment'
 
 const { sleep } = promises.timeout
 const mockDeployChangeFunc = jest.fn()
 
 
-describe('deployChangesSynchronously', () => {
+describe('deployChangesSequentially', () => {
   let p: Resolvable<number>
   const routingAttribute1 = new InstanceElement(
     'Test1',
@@ -50,7 +50,7 @@ describe('deployChangesSynchronously', () => {
   it('should work correctly', async () => {
     const change1: Change = { action: 'add', data: { after: routingAttribute1 } }
     const change2: Change = { action: 'add', data: { after: routingAttribute2 } }
-    const res = deployChangesSynchronously([change1, change2], mockDeployChangeFunc)
+    const res = deployChangesSequentially([change1, change2], mockDeployChangeFunc)
     await sleep(1)
     expect(mockDeployChangeFunc).toHaveBeenCalledTimes(1)
     expect(mockDeployChangeFunc).toHaveBeenCalledWith({ action: 'add', data: { after: routingAttribute1 } })

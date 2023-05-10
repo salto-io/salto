@@ -384,4 +384,54 @@ describe('Formula dependencies', () => {
         .toEqual(['salesforce.Account.field.COVID19_Status__c'])
     })
   })
+  describe('comments', () => {
+    const formulaWithComments = `
+      IF(NOT(ISBLANK(SBQQ__RequiredBy__r.SBQQ__RequiredBy__c)),SBQQ__RequiredBy__r.SBQQ__RequiredBy__r.SBQQ__Product__r.Sort_Category__c&"-"&TEXT(SBQQ__RequiredBy__r.SBQQ__RequiredBy__r.Product_Hierarchy__c)&"-"&SBQQ__RequiredBy__r.SBQQ__RequiredBy__r.Name&"-","")&
+      IF(ISBLANK(SBQQ__RequiredBy__c),SBQQ__Product__r.Sort_Category__c&"-"&TEXT(Product_Hierarchy__c)&"-"&Name,
+      IF(NOT(ISBLANK(SBQQ__RequiredBy__c)),SBQQ__RequiredBy__r.SBQQ__Product__r.Sort_Category__c&"-"&TEXT(SBQQ__RequiredBy__r.Product_Hierarchy__c)&"-"&SBQQ__RequiredBy__r.Name&"-"&
+      IF(NOT(ISBLANK(SBQQ__ProductOption__r.SBQQ__Number__c)),TEXT(SBQQ__ProductOption__r.SBQQ__Number__c),SBQQ__Product__r.Sort_Category__c&"-"&TEXT(Product_Hierarchy__c)),"Z"))
+
+      /*
+      IF(NOT(ISBLANK(SBQQ__RequiredBy__r.SBQQ__RequiredBy__c)),TEXT(SBQQ__RequiredBy__r.SBQQ__RequiredBy__r.Product_Hierarchy__c)&"-"&SBQQ__RequiredBy__r.SBQQ__RequiredBy__r.Name&"-","")&
+      IF(ISBLANK(SBQQ__RequiredBy__c),TEXT(Product_Hierarchy__c)&"-"&Name,
+      IF(NOT(ISBLANK(SBQQ__RequiredBy__c)),TEXT(SBQQ__RequiredBy__r.Product_Hierarchy__c)&"-"&SBQQ__RequiredBy__r.Name&"-"&
+      IF(NOT(ISBLANK(SBQQ__ProductOption__r.SBQQ__Number__c)),TEXT(SBQQ__ProductOption__r.SBQQ__Number__c),TEXT(Product_Hierarchy__c)),"999999"))
+      */
+      /*IF(ISBLANK(SBQQ__RequiredBy__c),TEXT(Product_Hierarchy__c)&"-"&Name,
+      IF(NOT(ISBLANK(SBQQ__RequiredBy__c)),TEXT(SBQQ__RequiredBy__r.Product_Hierarchy__c)&"-"&SBQQ__RequiredBy__r.Name&"-"&
+      IF(NOT(ISBLANK(SBQQ__ProductOption__r.SBQQ__Number__c)),TEXT(SBQQ__ProductOption__r.SBQQ__Number__c),TEXT(Product_Hierarchy__c)),"999999"))*/ 
+    `
+    const typeWithFormulaWithComments = createCustomObjectType('Account',
+      {
+        fields: {
+          Name: {
+            refType: BuiltinTypes.STRING,
+          },
+          SBQQ__RequiredBy__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          Product_Hierarchy__c: {
+            refType: BuiltinTypes.STRING,
+          },
+          someFormulaField__c: {
+            refType: Types.formulaDataTypes[formulaTypeName(FIELD_TYPE_NAMES.TEXT)],
+            annotations: {
+              [FORMULA]: '',
+            },
+          },
+        },
+      })
+    it('should handle formula with comments', async () => {
+      const elements = [typeWithFormulaWithComments.clone()]
+      elements[0].fields.someFormulaField__c.annotations[FORMULA] = formulaWithComments
+      await filter.onFetch(elements)
+      // eslint-disable-next-line no-underscore-dangle
+      const deps = elements[0].fields.someFormulaField__c.annotations._generated_dependencies
+      expect(deps).toBeDefined()
+      expect(deps.map((refExpr: {reference: ReferenceExpression}) => refExpr.reference.elemID.getFullName()).sort())
+        .toEqual(['salesforce.Account.field.Name',
+          'salesforce.Account.field.Product_Hierarchy__c',
+          'salesforce.Account.field.SBQQ__RequiredBy__c'])
+    })
+  })
 })

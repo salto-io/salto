@@ -12,6 +12,7 @@ PERMISSIONS_DIR = os.path.join(SRC_DIR, 'role_permissions/')
 
 permissions_table_link = 'https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N3236764.html'
 PERMISSION_TABLE_ROW_LENGTH = 4
+LINE_SEPERATOR = '\n  '
 
 LICENSE_HEADER = '''/*
 *                      Copyright 2023 Salto Labs Ltd.
@@ -37,15 +38,16 @@ export const ID_TO_PERMISSION_INFO: Record<string, Set<string>> = {{
 }}
 '''
 
-def is_valid_row(row_cells, permissions):
+def is_valid_row(row_cells, permissions, permission_id):
 	return (len(row_cells) == PERMISSION_TABLE_ROW_LENGTH
-	and row_cells[0].text.strip() not in permissions
-	and row_cells[0].text.strip() != '')
+	and permission_id not in permissions
+	and permission_id != '')
 
 def parse_table_row(row, permissions):
 	cells = row.find_all("td")
-	if is_valid_row(cells, permissions):
-		permissions[cells[0].text.strip()] = cells[3].text.strip().split(', ')
+	permission_id = cells[0].text.strip()
+	if is_valid_row(cells, permissions, permission_id):
+		permissions[permission_id] = cells[3].text.strip().split(', ')
 
 def parse_permissions_table():
 	try:	
@@ -62,7 +64,7 @@ def parse_permissions_table():
 
 def create_permissions_file(permissions):
 	formatted_permissions = ["{key}: new Set({value}),".format(key = key,value = [level.upper() for level in permissions[key]]) for key in permissions]
-	file_content = role_permissions_file_template.format(permission_id_to_valid_levels = '\n  '.join(formatted_permissions))
+	file_content = role_permissions_file_template.format(permission_id_to_valid_levels = LINE_SEPERATOR.join(formatted_permissions))
 	Path(PERMISSIONS_DIR).mkdir(parents=True, exist_ok=True)
 	with open(PERMISSIONS_DIR + 'role_permissions.ts', 'w') as file:
 		file.write(file_content)

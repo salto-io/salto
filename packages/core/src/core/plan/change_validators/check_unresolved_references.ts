@@ -23,8 +23,8 @@ export const checkUnresolvedReferencesValidator = (unresolvedElemIDs: Unresolved
     .filter(unresolvedElemID => changes.some(change => getChangeData(change).elemID.isEqual(unresolvedElemID)))
     .map(elemID => ({
       elemID,
-      severity: 'Info',
-      message: 'Unresolved reference for a changed element.',
-      detailedMessage: `The element ${elemID} references an element that will be changed and will not exist.`,
+      severity: 'Warning',
+      message: 'Unresolved reference to a changed element.',
+      detailedMessage: `There are unresolved references to ${elemID.getFullName()}. If this was removed on purpose you may continue`,
     }))
 )

@@ -47,7 +47,7 @@ const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
-export const MAX_SUPPORTED_RESULT_SIZE = 80000
+export const MAX_SUPPORTED_RESULT_SIZE = 80000 // num of results
 const AXIOS_TIMEOUT = 1000 * 60 * 12 // 12 minutes timeout
 
 const log = logger(module)

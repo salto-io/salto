@@ -164,17 +164,23 @@ describe('api.ts', () => {
       new InstanceElement('instance_3_hidden', typeWithHiddenField, { hidden: 'Hidden', regField: 'regValue' }),
     ]
 
+    const defaultFetchChanges = {
+      changes: [],
+      errors: [],
+      configChanges: mockPlan.createPlan([[]]),
+      updatedConfig: {},
+      unmergedElements: fetchedElements,
+      elements: fetchedElements,
+      deletedElements: [],
+      mergeErrors: [],
+      accountNameToConfigMessage: {},
+      partiallyFetchedAccounts: new Set(),
+    }
+
     beforeAll(() => {
       mockPartiallyFetchedAccounts.mockReturnValue(new Set())
       mockFetchChanges.mockImplementation(async () => ({
-        changes: [],
-        errors: [],
-        configChanges: mockPlan.createPlan([[]]),
-        updatedConfig: {},
-        unmergedElements: fetchedElements,
-        elements: fetchedElements,
-        mergeErrors: [],
-        accountNameToConfigMessage: {},
+        ...defaultFetchChanges,
         partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
       }))
     })
@@ -217,6 +223,8 @@ describe('api.ts', () => {
       let ws: workspace.Workspace
       let stateElements: InstanceElement[]
       let mockStateUpdatePathIndex: jest.SpyInstance
+      const deletedElemId = new ElemID('deletedElem')
+
       beforeAll(async () => {
         stateElements = [
           new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
@@ -224,12 +232,18 @@ describe('api.ts', () => {
         ]
         ws = mockWorkspace({ stateElements })
         mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
+        mockFetchChanges.mockImplementation(async () => ({
+          ...defaultFetchChanges,
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+          deletedElements: [deletedElemId],
+        }))
         mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
         await api.fetch(ws, undefined, [mockService])
       })
       it('should maintain path index entries', async () => {
         expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
           fetchedElements,
+          [deletedElemId],
           [mockService, 'salto2'],
         )
       })
@@ -756,6 +770,7 @@ describe('api.ts', () => {
         configChanges: mockPlan.createPlan([[]]),
         unmergedElements: fetchedElements,
         elements: fetchedElements,
+        deletedElements: [],
         mergeErrors: [],
         updatedConfig: {},
         accountNameToConfigMessage: {},
@@ -980,7 +995,7 @@ describe('api.ts', () => {
     })
 
     it('should return changes', () => {
-      expect(changes).toEqual(expectedChanges)
+      expect(changes).toEqual(expectedChanges) // TODO: check why changes have no path
     })
   })
   describe('getLoginStatuses', () => {

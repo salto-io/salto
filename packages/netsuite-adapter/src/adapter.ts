@@ -324,11 +324,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
       ...dataElements,
       ...suiteAppConfigElements,
-      ...instances,
+      // ...instances,
       ...(serverTimeElements ? [serverTimeElements.type, serverTimeElements.instance] : []),
       ...customRecordTypes,
       ...customRecords,
     ]
+
+    const deletedElements = instances.map(element => element.elemID)
 
     await this.createFiltersRunner({ isPartial }).onFetch(elements)
 
@@ -337,6 +339,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedFilePaths,
       failedTypes,
       elements,
+      deletedElements,
     }
   }
 
@@ -387,6 +390,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedFilePaths,
       failedTypes,
       elements,
+      deletedElements,
     } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
@@ -399,9 +403,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, isPartial }
+      return { elements, isPartial, deletedElements }
     }
-    return { elements, updatedConfig, isPartial }
+    return { elements, updatedConfig, isPartial, deletedElements }
   }
 
   private async runSuiteAppOperations(

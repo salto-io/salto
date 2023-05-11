@@ -60,7 +60,7 @@ export interface State extends ElementsSource {
   getServicesUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
   overridePathIndex(unmergedElements: Element[]): Promise<void>
-  updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
+  updatePathIndex(unmergedElements: Element[], deletedElements: ElemID[], accountsToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>

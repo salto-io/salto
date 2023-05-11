@@ -190,6 +190,7 @@ describe('topLevelPathIndex', () => {
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
       ],
+      deletedElements: [],
       accountsToMaintain: ['salto'],
       isTopLevel: true,
     })
@@ -226,6 +227,7 @@ describe('updatePathIndex', () => {
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
       ],
+      deletedElements: [],
       accountsToMaintain: ['salto'],
       isTopLevel: false,
     })

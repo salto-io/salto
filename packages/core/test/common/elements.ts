@@ -26,6 +26,7 @@ export const getAllElements = (): AllElementsTypes => {
       city: { refType: BuiltinTypes.STRING },
     },
     annotationRefsOrTypes: { label: BuiltinTypes.STRING },
+    path: ['salto', 'obj', 'address'],
   })
 
   const officeElemID = new ElemID('salto', 'office')
@@ -50,6 +51,7 @@ export const getAllElements = (): AllElementsTypes => {
       case_sensitive: BuiltinTypes.BOOLEAN,
       address: saltoAddr,
     },
+    path: ['salto', 'obj', 'office'],
   })
 
   const employeeElemID = new ElemID('salto', 'employee')
@@ -88,12 +90,14 @@ export const getAllElements = (): AllElementsTypes => {
         },
       },
     },
+    path: ['salto', 'obj', 'employee'],
   })
 
   const saltoEmployeeInstance = new InstanceElement(
     'instance',
     saltoEmployee,
-    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } }
+    { name: 'FirstEmployee', nicknames: ['you', 'hi'], office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } } },
+    ['salto', 'employee', 'inst', 'instance']
   )
 
   const saltoEmployeeToRename = new InstanceElement(
@@ -102,7 +106,8 @@ export const getAllElements = (): AllElementsTypes => {
     { name: 'FirstEmployee',
       nicknames: ['you', 'hi'],
       office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
-      friend: new ReferenceExpression(employeeElemID.createNestedID('instance', 'original')) }
+      friend: new ReferenceExpression(employeeElemID.createNestedID('instance', 'original')) },
+    ['salto', 'employee', 'inst', 'original']
   )
 
   const anotherSaltoEmployeeInstance = new InstanceElement(
@@ -112,7 +117,8 @@ export const getAllElements = (): AllElementsTypes => {
       nicknames: ['you', 'hi'],
       office: { label: 'bla', name: 'foo', seats: { c1: 'n1', c2: 'n2' } },
       friend: new ReferenceExpression(saltoEmployeeToRename.elemID),
-      parent: new ReferenceExpression(saltoEmployee.elemID) }
+      parent: new ReferenceExpression(saltoEmployee.elemID) },
+    ['salto', 'employee', 'inst', 'anotherInstance']
   )
 
   const fieldElement = new Field(saltoAddr, 'country', BuiltinTypes.STRING)

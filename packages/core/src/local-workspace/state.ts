@@ -319,9 +319,9 @@ export const localState = (
       await inMemState.overridePathIndex(unmergedElements)
       setDirty()
     },
-    updatePathIndex: async (unmergedElements: Element[], accountsToMaintain: string[]):
+    updatePathIndex: async (unmergedElements: Element[], deletedElements: ElemID[], accountsToMaintain: string[]):
      Promise<void> => {
-      await inMemState.updatePathIndex(unmergedElements, accountsToMaintain)
+      await inMemState.updatePathIndex(unmergedElements, deletedElements, accountsToMaintain)
       setDirty()
     },
     rename: async (newPrefix: string): Promise<void> => {

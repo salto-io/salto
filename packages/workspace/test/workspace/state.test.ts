@@ -28,8 +28,9 @@ const { awu } = collections.asynciterable
 
 describe('state', () => {
   const adapter = 'salesforce'
-  const elemID = new ElemID(adapter, 'elem')
-  const elem = new ObjectType({ elemID, path: ['test', 'new'] })
+  const elem = new ObjectType({ elemID: new ElemID(adapter, 'elem'), path: ['test', 'elem'] })
+  const secondElem = new ObjectType({ elemID: new ElemID(adapter, 'secondElem'), path: ['test', 'secondElem'] })
+  const thirdElem = new ObjectType({ elemID: new ElemID(adapter, 'thirdElem'), path: ['test', 'thirdElem'] })
   let pathIndex: PathIndex
   let topLevelPathIndex: PathIndex
   const updateDate = new Date()
@@ -120,13 +121,13 @@ describe('state', () => {
       expect(await awu(await state.getAll()).toArray()).toEqual([elem])
     })
     it('list', async () => {
-      expect(await awu(await state.list()).toArray()).toEqual([elemID])
+      expect(await awu(await state.list()).toArray()).toEqual([elem.elemID])
     })
     it('isEmpty', async () => {
       expect(await state.isEmpty()).toEqual(false)
     })
     it('get', async () => {
-      expect(await state.get(elemID)).toEqual(elem)
+      expect(await state.get(elem.elemID)).toEqual(elem)
     })
     it('set', async () => {
       await state.set(newElem)
@@ -171,14 +172,15 @@ describe('state', () => {
     })
 
     it('updatePathIndex', async () => {
-      const elements = [elem, newElem]
+      const elements = [elem, secondElem, newElem]
       await state.overridePathIndex(elements)
-      const oneElement = [newElem]
-      await state.updatePathIndex(oneElement, ['salesforce'])
+      await state.updatePathIndex([thirdElem], [elem.elemID], ['salesforce'])
       const index = await awu((await state.getPathIndex()).entries()).toArray()
       const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
-      expect(index).toEqual(getElementsPathHints([newElem, elem]))
-      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
+      // newElem is a dummy adapter elem, so will be removed as we flush this adapter totally
+      // (it's not mentioned in the accountsToMaintain)
+      expect(index).toEqual(getElementsPathHints([secondElem, thirdElem]))
+      expect(topLevelIndex).toEqual(getTopLevelPathHints([secondElem, thirdElem]))
     })
 
     it('clear should clear all data', async () => {

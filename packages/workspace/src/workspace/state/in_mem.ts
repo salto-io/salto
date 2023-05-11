@@ -115,13 +115,15 @@ export const buildInMemState = (
     },
     updatePathIndex: async (
       unmergedElements: Element[],
-      servicesNotToChange: string[]
+      deletedElements: ElemID[],
+      servicesNotToChange: string[],
     ): Promise<void> => {
       const currentStateData = await stateData()
       await updatePathIndex(
         {
           index: currentStateData.pathIndex,
           elements: unmergedElements,
+          deletedElements,
           accountsToMaintain: servicesNotToChange,
           isTopLevel: false,
         }
@@ -130,6 +132,7 @@ export const buildInMemState = (
         {
           index: currentStateData.topLevelPathIndex,
           elements: unmergedElements,
+          deletedElements,
           accountsToMaintain: servicesNotToChange,
           isTopLevel: true,
         }

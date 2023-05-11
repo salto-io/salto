@@ -201,6 +201,7 @@ export const overrideTopLevelPathIndex = async (
 type UpdateIndexParams = {
   index: PathIndex
   elements: Element[]
+  deletedElements: ElemID[]
   accountsToMaintain: string[]
   isTopLevel: boolean
 }
@@ -208,6 +209,7 @@ type UpdateIndexParams = {
 export const updatePathIndex = async (
   { index,
     elements,
+    deletedElements,
     accountsToMaintain,
     isTopLevel }: UpdateIndexParams
 ): Promise<void> => {
@@ -219,9 +221,11 @@ export const updatePathIndex = async (
     await overridePathIndex(index, elements)
     return
   }
+  const deletedElementNames = deletedElements?.map(elemId => elemId.getFullName())
   const entries = isTopLevel ? getTopLevelPathHints(elements) : getElementsPathHints(elements)
   const oldPathHintsToMaintain = await awu(index.entries())
     .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
+    .filter(e => !deletedElementNames.includes(ElemID.fromFullName(e.key).getFullName()))
     .toArray()
   const updatedEntries = _.unionBy(entries, oldPathHintsToMaintain, e => e.key)
   await index.clear()

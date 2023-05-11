@@ -99,8 +99,3 @@ export const WEB_SITE_HOSTING_FILES_FOLDER_NAME = 'Web Site Hosting Files'
 
 export const ACCOUNT_SPECIFIC_VALUE = '[ACCOUNT_SPECIFIC_VALUE]'
 export const NOT_YET_SUPPORTED_VALUE = '[NOT_YET_SUPPORTED]'
-
-// SuiteApp instance fields
-export const PLATFORM_CORE_CUSTOM_FIELD = 'platformCore:customField'
-export const PLATFORM_CORE_NULL_FIELD_LIST = 'platformCore:nullFieldList'
-export const PLATFORM_CORE_NAME = 'platformCore:name'

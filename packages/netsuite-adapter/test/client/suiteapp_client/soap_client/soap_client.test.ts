@@ -21,8 +21,9 @@ import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suite
 import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
 import { InvalidSuiteAppCredentialsError } from '../../../../src/client/types'
-import { CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, PLATFORM_CORE_CUSTOM_FIELD, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import { CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, SOAP_SCRIPT_ID } from '../../../../src/constants'
 import * as filterUneditableLockedFieldModule from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
+import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD } from '../../../../src/client/suiteapp_client/constants'
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -1345,8 +1346,6 @@ describe('soap_client', () => {
   })
 
   describe('Redeploy when update/addition fails on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields', () => {
-    const INSUFFICIENT_PERMISSION_ERROR = 'INSUFFICIENT_PERMISSION'
-
     const testType = new ObjectType({ elemID: new ElemID(NETSUITE, 'TestType') })
 
     const customField1 = {
@@ -1363,14 +1362,6 @@ describe('soap_client', () => {
         'platformCore:value': true,
       },
     }
-    const instance = new InstanceElement('testOther', testType, {
-      attributes: {
-        internalId: '1',
-      },
-      [CUSTOM_FIELD_LIST]: {
-        [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
-      },
-    })
 
     const errorMessage1 = `You do not have permissions to set a value for element ${customField1.attributes[SOAP_SCRIPT_ID]} due to one of the following reasons:`
     + ' 1) The field is read-only;'
@@ -1438,7 +1429,19 @@ describe('soap_client', () => {
 
     const elementsSource = buildElementsSourceFromElements([])
 
-    it('Update Sanity - Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = new InstanceElement('testOther', testType, {
+        attributes: {
+          internalId: '1',
+        },
+        [CUSTOM_FIELD_LIST]: {
+          [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
+        },
+      })
+    })
+
+    it('Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
       updateListAsyncMock
         .mockResolvedValueOnce([writeResponseListError1])
         .mockResolvedValueOnce([writeResponseListSuccess])
@@ -1446,7 +1449,7 @@ describe('soap_client', () => {
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
     })
 
-    it('Addition Sanity - Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
+    it('Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
       addListAsyncMock
         .mockResolvedValueOnce([writeResponseListError1])
         .mockResolvedValueOnce([writeResponseListSuccess])
@@ -1466,12 +1469,8 @@ describe('soap_client', () => {
 
     it('Should redeploy at most 5 times', async () => {
       updateListAsyncMock.mockResolvedValue([writeResponseListError1])
-      jest.spyOn(filterUneditableLockedFieldModule, 'getModifiedInstances')
-        .mockResolvedValue({
-          modifiedInstances: [instance],
-          allInstancesUpdated: [instance],
-          indicesMap: new Map([[0, 0]]),
-        })
+      jest.spyOn(filterUneditableLockedFieldModule, 'removeUneditableLockedField')
+        .mockResolvedValue(true)
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const runDeployActionMock = jest.spyOn(SoapClient.prototype as any, 'runDeployAction')

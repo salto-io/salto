@@ -15,8 +15,9 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_custom_fields'
-import { CUSTOM_FIELD_LIST, NETSUITE, PLATFORM_CORE_CUSTOM_FIELD } from '../../src/constants'
+import { CUSTOM_FIELD_LIST, NETSUITE } from '../../src/constants'
 import { SOAP_FIELDS_TYPES } from '../../src/client/suiteapp_client/soap_client/types'
+import { PLATFORM_CORE_CUSTOM_FIELD } from '../../src/client/suiteapp_client/constants'
 import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_custom_fields', () => {

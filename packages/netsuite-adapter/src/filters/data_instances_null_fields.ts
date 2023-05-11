@@ -18,7 +18,7 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix } from '../types'
-import { PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST } from '../constants'
+import { PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST } from '../client/suiteapp_client/constants'
 
 const { awu } = collections.asynciterable
 

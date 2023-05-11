@@ -16,11 +16,16 @@
 import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
+import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST }
+  from '../../../../src/client/suiteapp_client/constants'
 import { WriteResponseError } from '../../../../src/client/suiteapp_client/soap_client/types'
-import { getModifiedInstances } from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
-import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, ENTITY_CUSTOM_FIELD,
-  ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, NETSUITE, OTHER_CUSTOM_FIELD,
-  OTHER_CUSTOM_FIELD_PREFIX, PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_NAME, PLATFORM_CORE_NULL_FIELD_LIST, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import { removeUneditableLockedField } from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
+import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, ENTITY_CUSTOM_FIELD,
+  ENTITY_CUSTOM_FIELD_PREFIX, ITEM_CUSTOM_FIELD, ITEM_CUSTOM_FIELD_PREFIX, METADATA_TYPE, NETSUITE, OTHER_CUSTOM_FIELD,
+  OTHER_CUSTOM_FIELD_PREFIX, SOAP, SOAP_SCRIPT_ID } from '../../../../src/constants'
+
+const { awu } = collections.asynciterable
 
 describe('Filter uneditable locked fields', () => {
   const otherCustomField = {
@@ -74,6 +79,38 @@ describe('Filter uneditable locked fields', () => {
 
   const testType = new ObjectType({ elemID: new ElemID(NETSUITE, 'testType') })
 
+  const getWriteResponseError = (fieldName: string): WriteResponseError => ({
+    status: {
+      attributes: {
+        isSuccess: 'false',
+      },
+      statusDetail: [
+        {
+          code: INSUFFICIENT_PERMISSION_ERROR,
+          message: `You do not have permissions to set a value for element ${fieldName} due to one of the following reasons:`
+              + ' 1) The field is read-only;'
+              + ' 2) An associated feature is disabled;'
+              + ' 3) The field is available either when a record is created or updated, but not in both cases.',
+        },
+      ],
+    },
+  })
+
+  const otherError = getWriteResponseError(
+    otherCustomField.attributes[SOAP_SCRIPT_ID]
+  )
+  const entityError = getWriteResponseError(
+    entityCustomField.attributes[SOAP_SCRIPT_ID]
+  )
+  const itemError = getWriteResponseError(
+    itemCustomField.attributes[SOAP_SCRIPT_ID]
+  )
+  const crmError = getWriteResponseError(
+    crmCustomField.attributes[SOAP_SCRIPT_ID]
+  )
+
+  const allErrors = [otherError, entityError, itemError, crmError]
+
   const otherInstance = new InstanceElement('testOther', testType, {
     attributes: {
       internalId: '1',
@@ -107,55 +144,26 @@ describe('Filter uneditable locked fields', () => {
     },
   })
 
-  const getWriteResponseError = (fieldName: string): WriteResponseError => ({
-    status: {
-      attributes: {
-        isSuccess: 'false',
-      },
-      statusDetail: [
-        {
-          code: 'INSUFFICIENT_PERMISSION',
-          message: `You do not have permissions to set a value for element ${fieldName} due to one of the following reasons:`
-              + ' 1) The field is read-only;'
-              + ' 2) An associated feature is disabled;'
-              + ' 3) The field is available either when a record is created or updated, but not in both cases.',
-        },
-      ],
-    },
+  let allInstances: InstanceElement[]
+  beforeEach(() => {
+    allInstances = [otherInstance, entityInstance, itemInstance, crmInstance].map(instance => instance.clone())
   })
 
-  const otherError = getWriteResponseError(
-    otherCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const entityError = getWriteResponseError(
-    entityCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const itemError = getWriteResponseError(
-    itemCustomField.attributes[SOAP_SCRIPT_ID]
-  )
-  const crmError = getWriteResponseError(
-    crmCustomField.attributes[SOAP_SCRIPT_ID]
-  )
 
-  const allInstances = [otherInstance, entityInstance, itemInstance, crmInstance]
-  const allErrors = [otherError, entityError, itemError, crmError]
-
-  describe('Should return a modified instance - without the locked field', () => {
+  describe('Modify instances that have a locked field that failed with \'INSUFFICIENT_PERMISSION\'', () => {
     const elementsSource = buildElementsSourceFromElements([])
 
-    it('Sanity - all custom record fields', async () => {
-      const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
-        allInstances,
-        allErrors,
-        elementsSource.has,
-      )
-      expect(modifiedInstances).toHaveLength(4)
+    it('Should remove all locked custom fields of all field types', async () => {
+      const areModified = await awu(allInstances).map((instance, index) =>
+        removeUneditableLockedField(instance, allErrors[index], elementsSource.has)).toArray()
+
+      expect(areModified).toEqual([true, true, true, true])
       expect(
-        modifiedInstances
+        allInstances
           .map(modifiedInstance => modifiedInstance.value[CUSTOM_FIELD_LIST])
           .filter(_.isUndefined)
       ).toHaveLength(4)
-      const nullFieldsList = modifiedInstances
+      const nullFieldsList = allInstances
         .map(modifiedInstance => modifiedInstance.value['platformCore:nullFieldList']?.['platformCore:name'])
       expect(nullFieldsList.filter(nullFields => Array.isArray(nullFields))).toHaveLength(4)
       expect(nullFieldsList.filter(nullFields => nullFields.length === 1)).toHaveLength(4)
@@ -167,9 +175,6 @@ describe('Filter uneditable locked fields', () => {
           crmCustomField.attributes[SOAP_SCRIPT_ID],
         ]
       ))
-
-      expect(allInstancesUpdated).toEqual(modifiedInstances)
-      expect(indicesMap).toEqual(new Map([[0, 0], [1, 1], [2, 2], [3, 3]]))
     })
 
 
@@ -185,18 +190,45 @@ describe('Filter uneditable locked fields', () => {
           [PLATFORM_CORE_NAME]: ['randomField'],
         },
       })
-      const { modifiedInstances } = await getModifiedInstances([otherComplexInstance], [otherError], elementsSource.has)
-      expect(modifiedInstances).toHaveLength(1)
-      expect(modifiedInstances[0].value[CUSTOM_FIELD_LIST]).toBeUndefined()
-      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST]?.[PLATFORM_CORE_NAME]).toBeInstanceOf(Array)
-      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toHaveLength(2)
-      expect(modifiedInstances[0].value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toEqual(
+      const isModified = await removeUneditableLockedField(otherComplexInstance, otherError, elementsSource.has)
+      expect(isModified).toBeTruthy()
+      expect(otherComplexInstance.value[CUSTOM_FIELD_LIST]).toBeUndefined()
+      expect(otherComplexInstance.value[PLATFORM_CORE_NULL_FIELD_LIST]?.[PLATFORM_CORE_NAME]).toBeInstanceOf(Array)
+      expect(otherComplexInstance.value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toHaveLength(2)
+      expect(otherComplexInstance.value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]).toEqual(
         expect.arrayContaining(['randomField', otherCustomField.attributes[SOAP_SCRIPT_ID]])
       )
     })
   })
 
-  it('Should return no modified instances when the INSUFFICIENT PERMISSION error is caused by unlocked element', async () => {
+  it('Should not modify custom record instances', async () => {
+    const elementsSource = buildElementsSourceFromElements([])
+
+    const customRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      annotations: {
+        source: SOAP,
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
+    const customRecordInstance = new InstanceElement(
+      'customRecordInstance',
+      customRecordType,
+      {
+        attributes: {
+          internalId: '4',
+        },
+        [CUSTOM_FIELD_LIST]: {
+          [PLATFORM_CORE_CUSTOM_FIELD]: [crmCustomField],
+        },
+      }
+    )
+
+    const isModified = await removeUneditableLockedField(customRecordInstance, crmError, elementsSource.has)
+    expect(isModified).toBeFalsy()
+  })
+
+  it('Should not modify the instances when the INSUFFICIENT PERMISSION error is caused by unlocked element', async () => {
     const elementsSource = buildElementsSourceFromElements([
       otherCustomFieldInstance,
       entityCustomFieldInstance,
@@ -204,18 +236,13 @@ describe('Filter uneditable locked fields', () => {
       crmCustomFieldInstance,
     ])
 
-    const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
-      allInstances,
-      allErrors,
-      elementsSource.has,
-    )
+    const areModified = await awu(allInstances).map((instance, index) =>
+      removeUneditableLockedField(instance, allErrors[index], elementsSource.has)).toArray()
 
-    expect(modifiedInstances).toHaveLength(0)
-    expect(allInstancesUpdated).toEqual(allInstances)
-    expect(indicesMap.size).toBe(0)
+    expect(areModified).toEqual([false, false, false, false])
   })
 
-  it('Should return undefined when error code is different than \'INSUFFICIENT PERMISSION\'', async () => {
+  it('Should not modify the instances when the error code is different than \'INSUFFICIENT PERMISSION\'', async () => {
     const error: WriteResponseError = {
       status: {
         attributes: {
@@ -231,14 +258,9 @@ describe('Filter uneditable locked fields', () => {
     }
     const elementsSource = buildElementsSourceFromElements([])
 
-    const { modifiedInstances, allInstancesUpdated, indicesMap } = await getModifiedInstances(
-      allInstances,
-      [error, error, error, error],
-      elementsSource.has,
-    )
+    const areModified = await awu(allInstances).map(instance =>
+      removeUneditableLockedField(instance, error, elementsSource.has)).toArray()
 
-    expect(modifiedInstances).toHaveLength(0)
-    expect(allInstancesUpdated).toEqual(allInstances)
-    expect(indicesMap.size).toBe(0)
+    expect(areModified).toEqual([false, false, false, false])
   })
 })

@@ -20,11 +20,11 @@ import path from 'path'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
-import { collections, decorators, strings, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections, decorators, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
-import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
 import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
 import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
@@ -35,11 +35,10 @@ import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_T
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc } from '../../../config'
 import { toError } from '../../utils'
-import { getModifiedInstances } from './filter_uneditable_locked_field'
+import { removeUneditableLockedField } from './filter_uneditable_locked_field'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
-const { isDefined } = lowerdashValues
 
 export const { createClientAsync } = elementUtils.soap
 
@@ -60,7 +59,7 @@ const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.web
 
 const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
 
-const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
+const RETRYABLE_MESSAGES = [ECONN_ERROR, UNEXPECTED_ERROR, INSUFFICIENT_PERMISSION_ERROR, VALIDATION_ERROR]
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
@@ -549,7 +548,7 @@ export default class SoapClient {
     }
   }
 
-  static parseWriteResponseList(
+  private static parseWriteResponseList(
     writeResponseList: WriteResponse[],
     instances: InstanceElement[],
     action: 'updateList' | 'addList' | 'deleteList',
@@ -567,72 +566,85 @@ export default class SoapClient {
 
   private async redeployLockedFieldsWithRetry(
     retriesLeft: number,
-    prevWriteResponseList: WriteResponse[],
-    instances: InstanceElement[],
+    instancesToRedeploy: InstanceElement[],
+    fullNameToWriteResponse: Map<string, WriteResponse>,
     action: 'updateList' | 'addList',
     hasElemID: HasElemIDFunc,
-  ): Promise<WriteResponse[]> {
-    const {
-      modifiedInstances,
-      allInstancesUpdated,
-      indicesMap,
-    } = await getModifiedInstances(instances, prevWriteResponseList, hasElemID)
-    if (modifiedInstances.length === 0) return prevWriteResponseList
+  ): Promise<void> {
     if (retriesLeft === 0) {
       log.debug('Redeployment on locked fields exceed max retries.')
-      return prevWriteResponseList
+      return
     }
 
     log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
-+ ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft)
-    const redeployWriteResponseList = await this.runDeployAction(
-      await this.getAddAndUpdateDeployBody(modifiedInstances),
+                + ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft)
+    const writeResponseList = await this.runDeployAction(
+      await this.getAddAndUpdateDeployBody(instancesToRedeploy),
       action,
     )
-    const writeResponseList = prevWriteResponseList.map((writeResponse, index): WriteResponse => {
-      const redeployIndex = indicesMap.get(index)
-      return isDefined(redeployIndex)
-        ? redeployWriteResponseList[redeployIndex]
-        : writeResponse
-    })
-    return this.redeployLockedFieldsWithRetry(
-      retriesLeft - 1,
-      writeResponseList,
-      allInstancesUpdated,
-      action,
-      hasElemID,
-    )
+    _.forEach(instancesToRedeploy,
+      ({ elemID }, index) =>
+        fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index]))
+
+    const modifiedInstances = await awu(instancesToRedeploy)
+      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
+
+    if (modifiedInstances.length > 0) {
+      await this.redeployLockedFieldsWithRetry(
+        retriesLeft - 1,
+        modifiedInstances,
+        fullNameToWriteResponse,
+        action,
+        hasElemID
+      )
+    }
   }
 
   private async runFullDeploy(
     instances: InstanceElement[],
-    body: AddAndUpdateDeployBody | DeleteDeployBody,
     action: 'updateList' | 'addList',
     hasElemID: HasElemIDFunc,
   ): Promise<(number | Error)[]> {
-    const writeResponseList = await this.redeployLockedFieldsWithRetry(
-      LOCKED_FIELDS_MAX_REDEPLOYS,
-      await this.runDeployAction(body, action),
-      instances,
-      action,
-      hasElemID,
+    const writeResponseList = await this.runDeployAction(
+      await this.getAddAndUpdateDeployBody(instances),
+      action
     )
 
-    return SoapClient.parseWriteResponseList(writeResponseList, instances, action)
+    const fullNameToWriteResponse = new Map(
+      instances.map(({ elemID }, index) => [elemID.getFullName(), writeResponseList[index]])
+    )
+
+    const modifiedInstances = await awu(instances)
+      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
+
+    if (modifiedInstances.length > 0) {
+      await this.redeployLockedFieldsWithRetry(
+        LOCKED_FIELDS_MAX_REDEPLOYS,
+        modifiedInstances,
+        fullNameToWriteResponse,
+        action,
+        hasElemID
+      )
+    }
+    return SoapClient.parseWriteResponseList(
+      instances.map(({ elemID }) => fullNameToWriteResponse.get(elemID.getFullName())) as WriteResponse[],
+      instances,
+      action,
+    )
   }
 
   public async updateInstances(
     instances: InstanceElement[],
     hasElemID: HasElemIDFunc,
   ): Promise<(number | Error)[]> {
-    return this.runFullDeploy(instances, await this.getAddAndUpdateDeployBody(instances), 'updateList', hasElemID)
+    return this.runFullDeploy(instances, 'updateList', hasElemID)
   }
 
   public async addInstances(
     instances: InstanceElement[],
     hasElemID: HasElemIDFunc,
   ): Promise<(number | Error)[]> {
-    return this.runFullDeploy(instances, await this.getAddAndUpdateDeployBody(instances), 'addList', hasElemID)
+    return this.runFullDeploy(instances, 'addList', hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]):

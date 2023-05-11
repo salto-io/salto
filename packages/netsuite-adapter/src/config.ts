@@ -586,8 +586,8 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
 export const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from NetSuite.'
   + ' Failed items must be excluded from the fetch.'
 
-export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceeds File Cabinet\'s size limitations.'
- + ' To include them, increase the File Cabinet\'s size limitations and remove their exclusion rules from the configuration file.'
+export const LARGE_FOLDERS_EXCLUDED_MESSAGE = 'Some File Cabinet folders exceed File Cabinet\'s size limitation.'
+ + ' To include them, increase the File Cabinet\'s size limitation and remove their exclusion rules from the configuration file.'
 
 const createFolderExclude = (folderPaths: NetsuiteFilePathsQueryParams): string[] =>
   folderPaths.map(folder => `^${_.escapeRegExp(folder)}.*`)

@@ -194,7 +194,14 @@ const updateIndex = async (
     await current.clear()
   } else {
     // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
-    const entriesToDelete = await awu(current.keys()).filter(key => !unmergedElementIDs.has(key)).toArray()
+    const entriesToDelete = await awu(current.keys()).filter(key => {
+      // TODO seroussi - this is temp
+      const keyParts = key.split(ElemID.NAMESPACE_SEPARATOR)
+      if (keyParts[3] === 'instance') {
+        return !unmergedElementIDs.has(keyParts.slice(0, 4).join(ElemID.NAMESPACE_SEPARATOR))
+      }
+      return !unmergedElementIDs.has(keyParts.slice(0, 2).join(ElemID.NAMESPACE_SEPARATOR))
+    }).toArray()
     await current.deleteAll(entriesToDelete)
   }
 

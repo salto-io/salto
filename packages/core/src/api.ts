@@ -17,7 +17,7 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, DetailedChange, isCredentialError, DeployExtraProperties, Element,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -428,7 +428,7 @@ export const calculatePatch = async (
       updatedConfig: {},
     }
   }
-  const changes = await calcFetchChanges(
+  const { changes } = await calcFetchChanges(
     afterElements,
     elementSource.createInMemoryElementSource(mergedAfterElements),
     elementSource.createInMemoryElementSource(mergedBeforeElements),

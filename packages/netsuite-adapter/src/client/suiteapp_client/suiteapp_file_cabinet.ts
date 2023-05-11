@@ -379,6 +379,9 @@ SuiteAppFileCabinetOperations => {
         .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder }))
         // remove excluded folders before creating the query
         .filter(folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
+      const removedFolders = _.differenceBy(foldersResults, filteredFolderResults, folder => folder.name)
+        .map(folder => folder.name)
+      log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
       const filesResults = await queryFiles(
         filteredFolderResults.map(folder => folder.id)
       )

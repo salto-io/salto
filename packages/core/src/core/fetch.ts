@@ -108,7 +108,7 @@ type WorkspaceDetailedChange = {
   origin: WorkspaceDetailedChangeOrigin
 }
 
-type detailedChangesResult = {
+type DetailedChangeTreeResult = {
     changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
     changes: DetailedChange<Element>[]
 }
@@ -118,7 +118,7 @@ const getDetailedChangeTree = async (
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
-): Promise<detailedChangesResult> => {
+): Promise<DetailedChangeTreeResult> => {
   const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]])
@@ -549,7 +549,7 @@ export const getAdaptersFirstFetchPartial = async (
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
-type FetchChangesReturnType = {
+type CalcFetchChangesResult = {
     changes: FetchChange[]
     serviceToStateChanges: DetailedChange<Element>[]
 }
@@ -563,7 +563,7 @@ export const calcFetchChanges = async (
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
-): Promise<FetchChangesReturnType> => {
+): Promise<CalcFetchChangesResult> => {
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
     || mergedAccountElements.has(id)
@@ -640,7 +640,7 @@ export const calcFetchChanges = async (
 }
 
 const createFirstFetchChanges = async (unmergedElements: Element[], mergedElementsSource: elementSource.ElementsSource):
-  Promise<FetchChangesReturnType> => {
+  Promise<CalcFetchChangesResult> => {
   const mergedElements = await awu(await mergedElementsSource.getAll()).toArray()
   return {
     changes: unmergedElements.map(toAddFetchChange),

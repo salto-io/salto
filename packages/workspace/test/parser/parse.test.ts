@@ -218,7 +218,10 @@ template {{$\{te@mp.late.instance.multiline_stuff@us}}}
 value
 '''
       }
-
+      
+      type salesforce.escaped_templates {
+        tmpl = ">>>\\\${a.b}<<<"
+      }
       `
     beforeAll(async () => {
       const parsed = await parse(Buffer.from(body), 'none', functions)
@@ -232,7 +235,7 @@ value
 
     describe('parse result', () => {
       it('should have all types', () => {
-        expect(elements.length).toBe(24)
+        expect(elements.length).toBe(25)
         expect(genericTypes.length).toBe(2)
       })
     })
@@ -684,7 +687,7 @@ value
     })
 
     describe('escaped quotes', () => {
-      it('should parse a string value with escaped qoutes', () => {
+      it('should parse a string value with escaped quotes', () => {
         const element = elements[19]
         expect(isObjectType(element)).toBeTruthy()
         const obj = element as ObjectType
@@ -741,6 +744,31 @@ value
         expect(escapeObj.annotations.str).toEqual('you can\'t run away \\')
       })
     })
+
+    describe('escaped templates', () => {
+      let escapeTemplateObj: ObjectType
+      beforeAll(() => {
+        escapeTemplateObj = elements[24] as ObjectType
+      })
+
+      it('does not parse escaped references', () => {
+        // eslint-disable-next-line no-template-curly-in-string
+        expect(escapeTemplateObj.annotations.tmpl).toEqual('>>>${a.b}<<<')
+      })
+    })
+  })
+
+  it('parses loooong content strings', async () => {
+    const stringLength = 8498737
+    const body = `
+    type salesforce.escapedQuotes {
+      str = "${'a'.repeat(stringLength)}"
+    }
+    `
+    const parsed = await parse(Buffer.from(body), 'none', functions)
+    const elements = await awu(parsed.elements).filter(element => !isContainerType(element))
+      .toArray()
+    expect(elements[0].annotations.str.length).toEqual(stringLength)
   })
 
   describe('simple error tests', () => {

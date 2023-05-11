@@ -118,7 +118,7 @@ const createStringValue = (
     ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
     : tokens
 
-  const simpleString = _.every(trimmedTokens, token => token.type === TOKEN_TYPES.CONTENT)
+  const simpleString = _.every(trimmedTokens, token => [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE].includes(token.type))
   return simpleString
     ? createSimpleStringValue(context, trimmedTokens, transformFunc)
     : createTemplateExpressions(context, trimmedTokens, transformFunc)

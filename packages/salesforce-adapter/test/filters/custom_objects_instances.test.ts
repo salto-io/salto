@@ -31,7 +31,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
 import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
-import { FilterResult, FilterWith } from '../../src/filter'
+import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_objects_instances'
@@ -50,6 +50,8 @@ import {
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 
@@ -204,8 +206,7 @@ describe('Custom Object Instances filter', () => {
             ...defaultFilterContext,
             fetchProfile: buildFetchProfile({
               data: {
-                includeObjects: [
-                ],
+                includeObjects: [],
                 excludeObjects: [
                   '^TestNamespace__Exclude.*',
                   excludeOverrideObjectName,
@@ -856,7 +857,10 @@ describe('Custom Object Instances filter', () => {
                   defaultIdFields: ['##allMasterDetailFields##', 'Name'],
                   overrides: [
                     { objectsRegex: pricebookEntryName, idFields: ['Pricebook2Id', 'Name'] },
-                    { objectsRegex: SBQQCustomActionName, idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'] },
+                    {
+                      objectsRegex: SBQQCustomActionName,
+                      idFields: ['SBQQ__Location__c', 'SBQQ__DisplayOrder__c', 'Name'],
+                    },
                     { objectsRegex: badIdFieldsName, idFields: ['Bad'] },
                     { objectsRegex: productName, idFields: ['ProductCode', 'Name'] },
                     { objectsRegex: notQueryableIdFieldsName, idFields: ['NotQueryable'] },
@@ -1122,6 +1126,123 @@ describe('Custom Object Instances filter', () => {
           value: 'testElement',
           reason: "'testElement' has 3 instances so it was skipped and would be excluded from future fetch operations, as maxInstancesPerType is set to 2.\n      If you wish to fetch it anyway, remove it from your app configuration exclude block and increase maxInstancePerType to the desired value (-1 for unlimited).",
         }],
+      })
+    })
+  })
+  describe('Aliases', () => {
+    let instances: InstanceElement[]
+
+    const MASTER_DETAIL_TYPE = 'SBQQ__Template__c'
+    const MASTER_DETAIL_RECORD_ID = 'a0B8d000008r49lEAA'
+    const INSTANCE_TYPE = 'SBQQ__LineColumn__c'
+
+    const createFilterForAliases = (skipAliases: boolean): FilterType => filterCreator({
+      client,
+      config: {
+        ...defaultFilterContext,
+        fetchProfile: buildFetchProfile({
+          optionalFeatures: {
+            skipAliases,
+          },
+          data: {
+            includeObjects: ['.*'],
+            saltoIDSettings: {
+              defaultIdFields: ['Id'],
+            },
+          },
+        }),
+      },
+    }) as FilterType
+
+    describe('when calculated alias is not an empty string', () => {
+      const MASTER_DETAIL_RECORD = {
+        Id: MASTER_DETAIL_RECORD_ID,
+        Name: 'ParentName',
+      }
+
+      const INSTANCE_RECORD = {
+        Id: 'a0C8d000008r49lEAA',
+        Name: 'InstanceName',
+        SBQQ__FieldName__c: 'TestField',
+        SBQQ__Template__c: MASTER_DETAIL_RECORD_ID,
+      }
+
+      beforeEach(async () => {
+        connection.query = jest.fn().mockImplementation(((query: string) => {
+          if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
+            return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
+          }
+          if (query.includes(`FROM ${INSTANCE_TYPE}`)) {
+            return Promise.resolve({ records: [INSTANCE_RECORD] })
+          }
+          return []
+        }))
+        const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+        await filter.onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+
+      describe('when skipAliases feature is enabled', () => {
+        beforeEach(async () => {
+          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+          await createFilterForAliases(true).onFetch(elements)
+          instances = elements.filter(isInstanceElement)
+        })
+        it('should not create aliases', () => {
+          expect(instances).toHaveLength(2)
+          instances.forEach(instance => {
+            expect(instance.annotations).not.toContainKey(CORE_ANNOTATIONS.ALIAS)
+          })
+        })
+      })
+
+      describe('when skipAliases feature is disabled', () => {
+        beforeEach(async () => {
+          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+          await createFilterForAliases(false).onFetch(elements)
+          instances = elements.filter(isInstanceElement)
+        })
+        it('should create correct aliases', () => {
+          expect(instances).toEqual([
+            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
+            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName' }) }),
+          ])
+        })
+      })
+    })
+
+    describe('when calculated alias is an empty string', () => {
+      const MASTER_DETAIL_RECORD = {
+        Id: MASTER_DETAIL_RECORD_ID,
+        Name: '',
+      }
+
+      const INSTANCE_RECORD = {
+        Id: 'a0C8d000008r49lEAA',
+        Name: '',
+        SBQQ__FieldName__c: '',
+        SBQQ__Template__c: MASTER_DETAIL_RECORD_ID,
+      }
+
+      beforeEach(async () => {
+        connection.query = jest.fn().mockImplementation(((query: string) => {
+          if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
+            return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
+          }
+          if (query.includes(`FROM ${INSTANCE_TYPE}`)) {
+            return Promise.resolve({ records: [INSTANCE_RECORD] })
+          }
+          return []
+        }))
+        const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+        await createFilterForAliases(false).onFetch(elements)
+        instances = elements.filter(isInstanceElement)
+      })
+      it('should not create aliases', () => {
+        expect(instances).toHaveLength(2)
+        instances.forEach(instance => {
+          expect(instance.annotations).not.toContainKey(CORE_ANNOTATIONS.ALIAS)
+        })
       })
     })
   })

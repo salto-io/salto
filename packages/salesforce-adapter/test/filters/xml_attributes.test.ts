@@ -15,9 +15,10 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { FilterWith } from '../../src/filter'
 import { IS_ATTRIBUTE, METADATA_TYPE, SALESFORCE, XML_ATTRIBUTE_PREFIX, INSTANCE_FULL_NAME_FIELD, LIGHTNING_COMPONENT_BUNDLE_METADATA_TYPE } from '../../src/constants'
 import filterCreator from '../../src/filters/xml_attributes'
+import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const isAttributeTrue = 'isAttributeTrue'
 const isAttributeFalse = 'isAttributeFalse'
@@ -71,7 +72,7 @@ describe('XML Attributes Filter', () => {
     },
   })
 
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
 
   describe('onFetch', () => {

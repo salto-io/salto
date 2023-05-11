@@ -16,11 +16,11 @@
 import { ObjectType, ElemID, CORE_ANNOTATIONS, toChange, InstanceElement, Change, getChangeData, FieldDefinition, Values, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_permissions'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import { ProfileInfo } from '../../src/client/types'
 import { Types, createInstanceElement, metadataType, apiName } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('Object Permissions filter', () => {
   const createField = (

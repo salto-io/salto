@@ -105,7 +105,7 @@ export const createConditionConfigurationTypes = (): {
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       allowUserInField: {
-        refType: BuiltinTypes.BOOLEAN,
+        refType: BuiltinTypes.UNKNOWN,
         annotations: { [CORE_ANNOTATIONS.CREATABLE]: true },
       },
       projectRole: {

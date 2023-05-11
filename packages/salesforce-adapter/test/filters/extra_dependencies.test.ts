@@ -16,7 +16,7 @@
 import { Element, ElemID, ObjectType, InstanceElement, BuiltinTypes, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
-import { FilterResult, FilterWith } from '../../src/filter'
+import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/extra_dependencies'
 import mockClient from '../client'
@@ -29,7 +29,7 @@ import { SalesforceRecord } from '../../src/client/types'
 import { Types } from '../../src/transformers/transformer'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import Connection from '../../src/client/jsforce'
-
+import { FilterWith } from './mocks'
 
 const getGeneratedDeps = (elem: Element): ReferenceExpression[] => (
   elem.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]

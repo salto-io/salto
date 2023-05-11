@@ -17,7 +17,8 @@ import _ from 'lodash'
 import { ObjectType, InstanceElement, Element, BuiltinTypes, CORE_ANNOTATIONS, createRestriction } from '@salto-io/adapter-api'
 import filterCreator, { CANVAS_METADATA_TYPE_ID, SAML_INIT_METHOD_FIELD_NAME }
   from '../../src/filters/saml_initiation_method'
-import { FilterWith } from '../../src/filter'
+import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('saml initiation method filter', () => {
   const mockType = new ObjectType(
@@ -44,7 +45,7 @@ describe('saml initiation method filter', () => {
 
   let testElements: Element[]
 
-  const filter = filterCreator() as FilterWith<'onFetch'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onFetch'>
 
   beforeEach(() => {
     testElements = [

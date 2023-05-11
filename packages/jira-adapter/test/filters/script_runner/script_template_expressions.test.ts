@@ -171,6 +171,19 @@ describe('workflow_script_references', () => {
       await filter.onFetch(elements)
       checkValues(elements[0])
     })
+    it('fetch should not fail if a script is null', async () => {
+      const elements = [instance, ...fields]
+      elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.expression = null
+      await filter.onFetch(elements)
+      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.expression)
+        .toBeNull()
+    })
+    it('fetch should not fail if a scriptRunner object is null', async () => {
+      const elements = [instance, ...fields]
+      elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner = null
+      await filter.onFetch(elements)
+      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.scriptRunner).toBeNull()
+    })
     it('pre-deploy should not remove references when script runner is disabled', async () => {
       await filter.onFetch([instance, ...fields])
       await filterOff.preDeploy([toChange({ after: instance })])
@@ -290,6 +303,19 @@ describe('workflow_script_references', () => {
       const elements = [instance, ...fields]
       await filter.onFetch(elements)
       checkDcValues(elements[0])
+    })
+    it('fetch should not fail if a script is null', async () => {
+      const elements = [instance, ...fields]
+      elements[0].value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION = null
+      await filter.onFetch(elements)
+      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration.FIELD_CONDITION)
+        .toBeNull()
+    })
+    it('fetch should not fail if a scriptRunner object is null', async () => {
+      const elements = [instance, ...fields]
+      elements[0].value.transitions[0].rules.postFunctions[0].configuration = null
+      await filter.onFetch(elements)
+      expect(elements[0].value.transitions[0].rules.postFunctions[0].configuration).toBeNull()
     })
     it('pre-deploy should not remove references when script runner is disabled', async () => {
       await filter.onFetch([instance, ...fields])

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -182,6 +182,14 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
         delete app.value.name
       }
     })
+
+    // Set deployment annotaitons for `features` field which cannot be managed through the API
+    const appType = elements.filter(isObjectType).find(type => type.elemID.name === APPLICATION_TYPE_NAME)
+    if (appType?.fields.features !== undefined) {
+      appType.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+      appType.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+      appType.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE] = false
+    }
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes

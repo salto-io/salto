@@ -17,11 +17,11 @@ import _ from 'lodash'
 import { ObjectType, ElemID, Element, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { buildDataManagement } from '../../../src/fetch_profile/data_management'
 import { SaltoIDSettings, DataManagementConfig } from '../../../src/types'
-import { FilterWith } from '../../../src/filter'
 import { SALESFORCE, API_NAME, METADATA_TYPE, CUSTOM_OBJECT, CPQ_TESTED_OBJECT, FIELD_ANNOTATIONS } from '../../../src/constants'
 import { Types } from '../../../src/transformers/transformer'
 import filterCreator from '../../../src/filters/cpq/hide_read_only_values'
 import { defaultFilterContext } from '../../utils'
+import { FilterWith } from '../mocks'
 
 describe('hide read only values filter', () => {
   type FilterType = FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>

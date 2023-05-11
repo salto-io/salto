@@ -169,7 +169,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: installedPackageGeneratedDependencies, addsNewInformation: true },
+  { creator: installedPackageGeneratedDependencies },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero

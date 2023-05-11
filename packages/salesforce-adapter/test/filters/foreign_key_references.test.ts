@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import { InstanceElement, ObjectType, ElemID, BuiltinTypes, ReferenceExpression, ListType } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import { INSTANCE_FULL_NAME_FIELD, SALESFORCE, FOREIGN_KEY_DOMAIN } from '../../src/constants'
 import referenceAnnotationfilterCreator from '../../src/filters/reference_annotations'
 import filterCreator from '../../src/filters/foreign_key_references'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
+import { FilterWith } from './mocks'
 
 // Based on the instance_reference test scenarios
 describe('foregin_key_references filter', () => {

@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ObjectType, ElemID, BuiltinTypes, InstanceElement, toChange, Change, createRefToElmWithValue } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/territory'
 import { createMetadataTypeElement, defaultFilterContext } from '../utils'
 import { createInstanceElement, MetadataInstanceElement } from '../../src/transformers/transformer'
 import { CONTENT_FILENAME_OVERRIDE } from '../../src/transformers/xml_transformer'
 import { SALESFORCE, TERRITORY2_TYPE, TERRITORY2_MODEL_TYPE, CUSTOM_OBJECT } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 describe('territory filter', () => {
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

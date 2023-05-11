@@ -25,7 +25,6 @@ import {
 import { MetadataInfo } from 'jsforce'
 import _ from 'lodash'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import mockClient from '../client'
 import { makeFilter, STANDARD_VALUE_SET, STANDARD_VALUE } from '../../src/filters/standard_value_sets'
 import SalesforceClient from '../../src/client/client'
@@ -34,6 +33,7 @@ import { extractFullNamesFromValueList } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { API_NAME, VALUE_SET_FIELDS } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 const createStandardValueSetMetadataInfo = (name: string, values: string[]): MetadataInfo =>
   ({

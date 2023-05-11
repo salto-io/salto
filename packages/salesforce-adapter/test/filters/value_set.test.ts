@@ -15,13 +15,14 @@
 */
 import { ElemID, InstanceElement, ObjectType, CORE_ANNOTATIONS, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/value_set'
-import { FilterWith } from '../../src/filter'
 import * as constants from '../../src/constants'
 import { GLOBAL_VALUE_SET, MASTER_LABEL, CUSTOM_VALUE } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
+import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('value set filter', () => {
-  const filter = filterCreator() as FilterWith<'onDeploy'>
+  const filter = filterCreator({ config: defaultFilterContext }) as FilterWith<'onDeploy'>
 
   describe('on deploy', () => {
     describe('Global value set', () => {

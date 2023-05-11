@@ -18,7 +18,6 @@ import { FileProperties } from 'jsforce-types'
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface } from '@salto-io/test-utils'
 import filterCreator from '../../src/filters/create_missing_installed_packages_instances'
-import { FilterWith } from '../../src/filter'
 import { SalesforceClient } from '../../index'
 import Connection from '../../src/client/jsforce'
 import { defaultFilterContext } from '../utils'
@@ -28,6 +27,7 @@ import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD, RECORDS_PATH, SAL
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 import { mockFileProperties } from '../connection'
 import mockClient from '../client'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

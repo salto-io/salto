@@ -19,12 +19,12 @@ import {
   SALESFORCE,
 } from '../../src/constants'
 import filterCreator, { WARNING_MESSAGE } from '../../src/filters/profile_paths'
-import { FilterResult, FilterWith } from '../../src/filter'
+import { FilterResult } from '../../src/filter'
 import mockClient from '../client'
 import { mockQueryResult } from '../connection'
 import { defaultFilterContext } from '../utils'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-
+import { FilterWith } from './mocks'
 
 describe('profile paths filter', () => {
   const { connection, client } = mockClient()

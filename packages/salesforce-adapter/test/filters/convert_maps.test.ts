@@ -24,11 +24,11 @@ import {
   toChange,
   isObjectType,
 } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/convert_maps'
 import { generateProfileType, generatePermissionSetType, defaultFilterContext } from '../utils'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 type layoutAssignmentType = { layout: string; recordType?: string }
 

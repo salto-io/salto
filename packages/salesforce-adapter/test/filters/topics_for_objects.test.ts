@@ -17,9 +17,9 @@ import { ObjectType, ElemID, InstanceElement, isObjectType, BuiltinTypes, toChan
 import { collections } from '@salto-io/lowerdash'
 import { metadataType, apiName, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/topics_for_objects'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

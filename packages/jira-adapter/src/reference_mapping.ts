@@ -172,6 +172,11 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     target: { type: STATUS_TYPE_NAME },
   },
   {
+    src: { field: 'id', parentTypes: ['TransitionFrom'] },
+    serializationStrategy: 'id',
+    target: { type: STATUS_TYPE_NAME },
+  },
+  {
     src: { field: 'id', parentTypes: ['ProjectRoleConfig'] },
     serializationStrategy: 'id',
     target: { type: 'ProjectRole' },

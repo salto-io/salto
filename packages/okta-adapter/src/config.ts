@@ -711,6 +711,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',
+      recurseInto: [{
+        type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
+        toField: 'theme',
+        context: [{ name: 'brandId', fromField: 'id' }],
+      }],
     },
     transformation: {
       dataField: '.',
@@ -719,7 +724,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu': {
     request: {
       url: '/api/v1/brands/{brandId}/themes',
-      dependsOn: [{ pathParam: 'brandId', from: { type: 'api__v1__brands', field: 'id' } }],
     },
     transformation: {
       dataField: '.',
@@ -798,6 +802,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
+      standaloneFields: [{ fieldName: 'theme' }],
+      nestStandaloneInstances: false,
+      fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/brands/{brandId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: 'id',
+        },
+      },
     },
   },
   BrandTheme: {
@@ -806,6 +822,17 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}',
+        method: 'put',
+        urlParamsToFields: {
+          brandId: '_parent.0.id',
+          themeId: 'id',
+        },
+        fieldsToIgnore: ['id', 'logo', 'favicon'],
+      },
     },
   },
   EmailTemplate: {
@@ -960,6 +987,40 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
       serviceUrl: '/admin/access/api/trusted_origins',
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/trustedOrigins',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}',
+        method: 'put',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}',
+        method: 'delete',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      activate: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}/lifecycle/activate',
+        method: 'post',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
+      deactivate: {
+        url: '/api/v1/trustedOrigins/{trustedOriginId}/lifecycle/deactivate',
+        method: 'post',
+        urlParamsToFields: {
+          trustedOriginId: 'id',
+        },
+      },
     },
   },
   UserType: {
@@ -1227,6 +1288,42 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToHide: [{ fieldName: 'uiSchemaId' }],
     },
   },
+  DevicePolicyRuleCondition: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'registered', fieldType: 'boolean' },
+        { fieldName: 'managed', fieldType: 'boolean' },
+        { fieldName: 'assurance', fieldType: 'DeviceCondition' },
+      ],
+    },
+  },
+  DeviceAssurance: {
+    transformation: {
+      fieldTypeOverrides: [{ fieldName: 'lastUpdate', fieldType: 'string' }],
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat([{ fieldName: 'createdDate' }, { fieldName: 'lastUpdate' }, { fieldName: '_links' }]),
+    },
+    deployRequests: {
+      add: {
+        url: '/api/v1/device-assurances',
+        method: 'post',
+      },
+      modify: {
+        url: '/api/v1/device-assurances/{deviceAssuranceId}',
+        method: 'put',
+        urlParamsToFields: {
+          deviceAssuranceId: 'id',
+        },
+      },
+      remove: {
+        url: '/api/v1/device-assurances/{deviceAssuranceId}',
+        method: 'delete',
+        urlParamsToFields: {
+          deviceAssuranceId: 'id',
+        },
+      },
+    },
+  },
 }
 
 const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
@@ -1243,6 +1340,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
     { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
     // This is not the right type to cloneFrom, but a workaround to define type for Group__source with 'id' field
     { typeName: 'Group__source', cloneFrom: 'AppAndInstanceConditionEvaluatorAppOrInstance' },
+    { typeName: 'DeviceCondition', cloneFrom: 'PolicyNetworkCondition' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
@@ -1290,6 +1388,7 @@ export const SUPPORTED_TYPES = {
   PerClientRateLimit: ['PerClientRateLimitSettings'],
   RateLimitAdmin: ['RateLimitAdminNotifications'],
   ResourceSet: ['ResourceSets'],
+  DeviceAssurance: ['api__v1__device_assurances@uuuub'],
 }
 
 const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {

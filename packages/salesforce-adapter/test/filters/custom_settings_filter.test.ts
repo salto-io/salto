@@ -16,7 +16,6 @@
 import { ElemID, ObjectType, Element, ServiceIds, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { createCustomSettingsObject, defaultFilterContext } from '../utils'
-import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import Connection from '../../src/client/jsforce'
 import filterCreator from '../../src/filters/custom_settings_filter'
@@ -26,6 +25,7 @@ import {
   LIST_CUSTOM_SETTINGS_TYPE,
 } from '../../src/constants'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

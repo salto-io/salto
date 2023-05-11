@@ -13,27 +13,171 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, MapType, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { MockInterface } from '@salto-io/test-utils'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { setContextOptions, setOptionTypeDeploymentAnnotations } from '../../../src/filters/fields/context_options'
 import { JIRA } from '../../../src/constants'
+import JiraClient from '../../../src/client/client'
+import { mockClient } from '../../utils'
 
 describe('context options', () => {
-  describe('setContextOptions', () => {
-    let client: MockInterface<clientUtils.HTTPWriteClientInterface>
-    let parentField: InstanceElement
-    let contextInstance: InstanceElement
-    let elementSource: ReadOnlyElementsSource
+  let client: JiraClient
+  let connection: MockInterface<clientUtils.APIConnection>
+  let parentField: InstanceElement
+  let contextInstance: InstanceElement
+  let elementSource: ReadOnlyElementsSource
 
+  const generateOptions = (count: number): Values =>
+    Array.from({ length: count }, (_, i) => ({
+      [`p${i}`]: {
+        value: `p${i}`,
+        disabled: false,
+        position: i,
+      },
+    })).reduce((acc, option) => ({ ...acc, ...option }), {})
+
+  describe('data center', () => {
+    describe('setContextOptions', () => {
+      beforeEach(() => {
+        const { client: cli, connection: conn } = mockClient(true)
+        connection = conn
+        client = cli
+        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
+        contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
+          id: 3,
+          options: [
+            {
+              id: '10047',
+              value: 'p1',
+              disabled: false,
+              position: 0,
+            },
+            {
+              id: '10048',
+              value: 'p2',
+              disabled: false,
+              position: 1,
+            },
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        })
+        const sourceParentField = parentField.clone()
+        delete sourceParentField.value.id
+        elementSource = buildElementsSourceFromElements([
+          sourceParentField,
+        ])
+      })
+      describe('over 1000 options were changed', () => {
+        let contextInstanceAfter: InstanceElement
+        let contextInstanceBefore: InstanceElement
+        beforeEach(async () => {
+          contextInstanceAfter = contextInstance.clone()
+          contextInstanceBefore = contextInstance.clone()
+          const largeOptionsObject = generateOptions(1001)
+          contextInstanceAfter.value.options = largeOptionsObject
+          contextInstanceBefore.value.options = Object.fromEntries(
+            Object.entries(largeOptionsObject)
+              .map(([key, option]) => [key, { ...option, disabled: true }])
+          )
+          connection.post.mockResolvedValue({
+            data: {
+              options: [],
+            },
+            status: 200,
+          })
+          await setContextOptions(
+            toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
+            client,
+            elementSource
+          )
+        })
+        it('should not batch on reorder but batch modifications', () => {
+          expect(connection.put).toHaveBeenCalledTimes(3)
+          expect(connection.put).toHaveBeenNthCalledWith(2,
+            '/rest/salto/1.0/field/2/context/3/option',
+            {
+              options: [
+                expect.objectContaining({
+                  disabled: false,
+                  value: 'p1000',
+                }),
+              ],
+            },
+            undefined)
+          expect(connection.put).toHaveBeenNthCalledWith(3,
+            '/rest/salto/1.0/field/2/context/3/option/move',
+            {
+              customFieldOptionIds: expect.toBeArrayOfSize(1001),
+              position: 'First',
+            },
+            undefined)
+        })
+      })
+      describe('change has over 1000 additions', () => {
+        beforeEach(async () => {
+          const largeOptionsObject = generateOptions(1001)
+          contextInstance.value.options = largeOptionsObject
+          connection.post.mockImplementation(async (_, data) => {
+            const { options } = data as { options: unknown[] }
+            if (options.length > 1000) {
+              throw Error('bad')
+            }
+            return {
+              data: {
+                options: [
+                  {
+                    id: '4',
+                    value: 'p1',
+                  },
+                ],
+              },
+              status: 200,
+            }
+          })
+          await setContextOptions(
+            toChange({ after: contextInstance }),
+            client,
+            elementSource
+          )
+        })
+        it('should not batch on reorder', () => {
+          expect(connection.put).toHaveBeenCalledTimes(1)
+          expect(connection.put).toHaveBeenNthCalledWith(1,
+            '/rest/salto/1.0/field/2/context/3/option/move',
+            {
+              customFieldOptionIds: expect.toBeArrayOfSize(1001),
+              position: 'First',
+            },
+            undefined)
+        })
+        it('should call post with 1000 or less batches', () => {
+          expect(connection.post).toHaveBeenCalledTimes(2)
+          expect(connection.post).toHaveBeenNthCalledWith(2,
+            '/rest/salto/1.0/field/2/context/3/option',
+            {
+              options: [
+                expect.objectContaining({
+                  value: 'p1000',
+                  disabled: false,
+                }),
+              ],
+            },
+            undefined)
+          expect(contextInstance.value.options.p1.id).toEqual('4')
+        })
+      })
+    })
+  })
+  describe('setContextOptions', () => {
     beforeEach(() => {
-      client = {
-        post: mockFunction<clientUtils.HTTPWriteClientInterface['post']>(),
-        put: mockFunction<clientUtils.HTTPWriteClientInterface['put']>(),
-        delete: mockFunction<clientUtils.HTTPWriteClientInterface['delete']>(),
-        patch: mockFunction<clientUtils.HTTPWriteClientInterface['patch']>(),
-      }
+      const { client: cli, connection: conn } = mockClient()
+      connection = conn
+      client = cli
 
       parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
 
@@ -68,9 +212,9 @@ describe('context options', () => {
 
     it('if change is removal, should do nothing', async () => {
       await setContextOptions(toChange({ before: contextInstance }), client, elementSource)
-      expect(client.post).not.toHaveBeenCalled()
-      expect(client.put).not.toHaveBeenCalled()
-      expect(client.delete).not.toHaveBeenCalled()
+      expect(connection.post).not.toHaveBeenCalled()
+      expect(connection.put).not.toHaveBeenCalled()
+      expect(connection.delete).not.toHaveBeenCalled()
     })
 
     describe('change is addition', () => {
@@ -82,7 +226,7 @@ describe('context options', () => {
             position: 0,
           },
         }
-        client.post.mockResolvedValue({
+        connection.post.mockResolvedValue({
           data: {
             options: [
               {
@@ -101,9 +245,9 @@ describe('context options', () => {
       })
 
       it('should call the add endpoint with all of the options', () => {
-        expect(client.post).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option',
-          data: {
+        expect(connection.post).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option',
+          {
             options: [
               expect.objectContaining({
                 value: 'p1',
@@ -111,13 +255,59 @@ describe('context options', () => {
               }),
             ],
           },
+          undefined,
+        )
+        expect(contextInstance.value.options.p1.id).toEqual('4')
+      })
+    })
+
+    describe('change has over 1000 additions', () => {
+      beforeEach(async () => {
+        const largeOptionsObject = generateOptions(1001)
+        contextInstance.value.options = largeOptionsObject
+        connection.post.mockImplementation(async (_, data) => {
+          const { options } = data as { options: unknown[] }
+          if (options.length > 1000) {
+            throw Error('bad')
+          }
+          return {
+            data: {
+              options: [
+                {
+                  id: '4',
+                  value: 'p1',
+                },
+              ],
+            },
+            status: 200,
+          }
         })
+        await setContextOptions(
+          toChange({ after: contextInstance }),
+          client,
+          elementSource
+        )
+      })
+
+      it('should call post with 1000 or less batches', () => {
+        expect(connection.post).toHaveBeenCalledTimes(2)
+        expect(connection.post).toHaveBeenNthCalledWith(2,
+          '/rest/api/3/field/2/context/3/option',
+          {
+            options: [
+              expect.objectContaining({
+                value: 'p1000',
+                disabled: false,
+              }),
+            ],
+          },
+          undefined)
         expect(contextInstance.value.options.p1.id).toEqual('4')
       })
     })
 
     it('when response is invalid should throw an error', async () => {
-      client.post.mockResolvedValue({
+      connection.post.mockResolvedValue({
         data: [],
         status: 200,
       })
@@ -136,7 +326,7 @@ describe('context options', () => {
           position: 0,
         },
       }
-      client.post.mockResolvedValue({
+      connection.post.mockResolvedValue({
         data: {
           options: [
             {
@@ -152,9 +342,9 @@ describe('context options', () => {
         client,
         elementSource
       )
-      expect(client.post).toHaveBeenCalledWith({
-        url: '/rest/api/3/field/2/context/3/option',
-        data: {
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/field/2/context/3/option',
+        {
           options: [
             expect.objectContaining({
               value: 'p2',
@@ -162,7 +352,8 @@ describe('context options', () => {
             }),
           ],
         },
-      })
+        undefined
+      )
       expect(contextInstance.value.options.p1.id).toEqual('10')
     })
 
@@ -179,7 +370,7 @@ describe('context options', () => {
           position: 0,
         },
       }
-      client.post.mockResolvedValue({
+      connection.post.mockResolvedValue({
         data: {
           options: [
             {
@@ -199,9 +390,9 @@ describe('context options', () => {
         client,
         elementSource
       )
-      expect(client.post).toHaveBeenCalledWith({
-        url: '/rest/api/3/field/2/context/3/option',
-        data: {
+      expect(connection.post).toHaveBeenCalledWith(
+        '/rest/api/3/field/2/context/3/option',
+        {
           options: [
             expect.objectContaining({
               value: 'p2',
@@ -213,9 +404,67 @@ describe('context options', () => {
             }),
           ],
         },
-      })
+        undefined
+      )
       expect(contextInstance.value.options.p1.id).toEqual('10')
       expect(contextInstance.value.options.p2.id).toEqual('20')
+    })
+    describe('over 1000 options were changed', () => {
+      let contextInstanceAfter: InstanceElement
+      let contextInstanceBefore: InstanceElement
+
+      beforeEach(async () => {
+        contextInstanceAfter = contextInstance.clone()
+        contextInstanceBefore = contextInstance.clone()
+        const largeOptionsObject = generateOptions(1001)
+        contextInstanceAfter.value.options = largeOptionsObject
+        contextInstanceBefore.value.options = Object.fromEntries(
+          Object.entries(largeOptionsObject)
+            .map(([key, option]) => [key, { ...option, disabled: true }])
+        )
+        connection.put.mockImplementation(async (_, data) => {
+          const { customFieldOptionIds, options } = data as { customFieldOptionIds: unknown[]; options: unknown[] }
+          if (customFieldOptionIds?.length > 1000 || options?.length > 1000) {
+            throw Error('bad')
+          }
+          return {
+            data: {
+              options: [],
+            },
+            status: 200,
+          }
+        })
+        await setContextOptions(
+          toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
+          client,
+          elementSource
+        )
+      })
+
+      it('should call put with only 1000 or less batches', () => {
+        expect(connection.put).toHaveBeenCalledTimes(4)
+        expect(connection.put).toHaveBeenNthCalledWith(2,
+          '/rest/api/3/field/2/context/3/option',
+          {
+            options: [
+              expect.objectContaining({
+                disabled: false,
+                value: 'p1000',
+              }),
+            ],
+          },
+          undefined)
+        // check reorder is also using up to 1000 options at a time.
+        expect(connection.put).toHaveBeenNthCalledWith(4,
+          '/rest/api/3/field/2/context/3/option/move',
+          {
+            customFieldOptionIds: [
+              undefined,
+            ],
+            position: 'Last',
+          },
+          undefined)
+      })
     })
 
     describe('options were changed', () => {
@@ -243,7 +492,7 @@ describe('context options', () => {
             },
           },
         }
-        client.post.mockResolvedValue({
+        connection.post.mockResolvedValue({
           data: {
             options: [
               {
@@ -268,9 +517,9 @@ describe('context options', () => {
       })
 
       it('should call the add endpoint with the added options', () => {
-        expect(client.post).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option',
-          data: {
+        expect(connection.post).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option',
+          {
             options: [
               {
                 value: 'c12',
@@ -284,15 +533,16 @@ describe('context options', () => {
               },
             ],
           },
-        })
+          undefined
+        )
         expect(contextInstanceAfter.value.options.p2.cascadingOptions.c11.id).toEqual('4')
         expect(contextInstanceAfter.value.options.p2.cascadingOptions.c12.id).toEqual('5')
       })
 
       it('should call the modify endpoint with the modified options', () => {
-        expect(client.put).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option',
-          data: {
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option',
+          {
             options: [
               {
                 id: '10047',
@@ -301,36 +551,40 @@ describe('context options', () => {
               },
             ],
           },
-        })
+          undefined,
+        )
       })
 
       it('should call the delete endpoint with the removed options', () => {
-        expect(client.delete).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option/10048',
-        })
+        expect(connection.delete).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option/10048',
+          undefined,
+        )
       })
 
       it('should call the reorder endpoint with the after option ids', () => {
-        expect(client.put).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option/move',
-          data: {
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option/move',
+          {
             customFieldOptionIds: [
               '10047',
             ],
             position: 'First',
           },
-        })
+          undefined,
+        )
 
-        expect(client.put).toHaveBeenCalledWith({
-          url: '/rest/api/3/field/2/context/3/option/move',
-          data: {
+        expect(connection.put).toHaveBeenCalledWith(
+          '/rest/api/3/field/2/context/3/option/move',
+          {
             customFieldOptionIds: [
               '5',
               '4',
             ],
             position: 'First',
           },
-        })
+          undefined,
+        )
       })
     })
   })

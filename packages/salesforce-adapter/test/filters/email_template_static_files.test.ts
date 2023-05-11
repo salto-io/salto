@@ -15,10 +15,10 @@
 */
 import { Element, InstanceElement, StaticFile } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/email_template_static_files'
-import { FilterWith } from '../../src/filter'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
+import { FilterWith } from './mocks'
 
 describe('emailTemplate static files filter', () => {
   const ATTACHMENT_AS_STRING = 'attachment'

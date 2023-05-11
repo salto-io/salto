@@ -15,9 +15,9 @@
 */
 import { ObjectType, ElemID, BuiltinTypes, ReferenceExpression } from '@salto-io/adapter-api'
 import { SALESFORCE, FIELD_ANNOTATIONS, FOREIGN_KEY_DOMAIN } from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/reference_annotations'
 import { defaultFilterContext, createMetadataTypeElement } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('reference_annotations filter', () => {
   // Definitions

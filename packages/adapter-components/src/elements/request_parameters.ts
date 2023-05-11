@@ -96,7 +96,7 @@ const computeDependsOnURLs = (
       isInstanceElement
     )
     if (contextInstances.length === 0) {
-      throw new Error(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
+      log.warn(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
     }
     const potentialParams = contextInstances
       .map(e => e.value[referenceDetails.from.field])

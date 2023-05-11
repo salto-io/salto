@@ -29,6 +29,7 @@ import {
 import { FilterContext } from '../src/filter'
 import { SYSTEM_FIELDS } from '../src/adapter'
 import { buildFetchProfile } from '../src/fetch_profile/fetch_profile'
+import { FIELD_ANNOTATIONS } from '../src/constants'
 
 export const findElements = (
   elements: ReadonlyArray<Element>,
@@ -68,6 +69,11 @@ export const createCustomObjectType = (
   params: Partial<ConstructorParameters<typeof ObjectType>[0]>
 ): ObjectType => new ObjectType({
   ...params,
+  fields: {
+    Id: { refType: BuiltinTypes.SERVICE_ID, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true } },
+    Name: { refType: BuiltinTypes.STRING, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true } },
+    ...params.fields,
+  },
   annotations: {
     [constants.METADATA_TYPE]: constants.CUSTOM_OBJECT,
     [constants.API_NAME]: typeName,

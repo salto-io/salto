@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -27,6 +27,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
+import { deployWorkflowDiagram, hasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
 
 const log = logger(module)
 
@@ -91,14 +92,18 @@ export const deployWorkflow = async (
   }
   const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
-  instance.value.transitions?.forEach(transition => {
+  instance.value.transitions.forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
 
   fixGroupNames(instance)
-
+  const resolvedChangeWithoutDiagram = _.cloneDeep(resolvedChange)
+  const instanceWithoutDiagram = getChangeData(resolvedChangeWithoutDiagram)
+  if (!isRemovalChange(resolvedChange)) {
+    removeWorkflowDiagramFields(instanceWithoutDiagram)
+  }
   await defaultDeployChange({
-    change: resolvedChange,
+    change: resolvedChangeWithoutDiagram,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
@@ -106,7 +111,14 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-
+  instance.value.entityId = instanceWithoutDiagram.value.entityId
+  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
+    try {
+      await deployWorkflowDiagram({ instance, client })
+    } catch (e) {
+      log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
+    }
+  }
   if (isAdditionChange(resolvedChange)) {
     getChangeData(change).value.entityId = instance.value.entityId
     // If we created the workflow we can edit it

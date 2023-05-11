@@ -227,6 +227,7 @@ export const makeFilter = (
   let originalChanges: Record<string, Change>
   return {
     name: 'standardValueSetFilter',
+    remote: true,
     /**
      * Upon fetch, retrieve standard value sets and
      * modify references to them in fetched elements

@@ -15,7 +15,7 @@
 */
 import { Element, ObjectType, Field, ReferenceExpression, ElemID, isObjectType } from '@salto-io/adapter-api'
 import { multiIndex } from '@salto-io/lowerdash'
-import { FilterWith, LocalFilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { VALUE_SET_FIELDS } from '../constants'
 import { isCustomObject, apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildElementsSourceForFetch } from './utils'
@@ -47,7 +47,7 @@ const addGlobalValueSetRefToObject = (
 /**
  * Create filter that adds global value set references where needed
  */
-const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'globalValueSetFilter',
   /**
    * @param elements the already fetched elements

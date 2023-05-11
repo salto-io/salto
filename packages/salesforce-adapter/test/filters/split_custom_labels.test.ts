@@ -25,7 +25,6 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import filterCreator, { CUSTOM_LABEL_INSTANCES_FILE_PATH } from '../../src/filters/split_custom_labels'
 import { defaultFilterContext } from '../utils'
-import { FilterWith } from '../../src/filter'
 import {
   CUSTOM_LABEL_METADATA_TYPE,
   CUSTOM_LABELS_METADATA_TYPE,
@@ -33,6 +32,7 @@ import {
   SALESFORCE,
 } from '../../src/constants'
 import { isInstanceOfType } from '../../src/filters/utils'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

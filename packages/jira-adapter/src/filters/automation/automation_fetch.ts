@@ -27,7 +27,7 @@ import { createAutomationTypes } from './types'
 import { JiraConfig } from '../../config/config'
 import { getCloudId } from './cloud_id'
 
-const DEFAULT_PAGE_SIZE = 100
+const DEFAULT_PAGE_SIZE = 1000
 
 const log = logger(module)
 

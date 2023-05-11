@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { loadElementsFromFolder, adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
@@ -513,6 +513,80 @@ describe('api.ts', () => {
           expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
           expect(validateMock).toHaveBeenCalledTimes(1)
         })
+      })
+    })
+
+    describe('with element updates during deploy', () => {
+      let instance: InstanceElement
+      let adapterOps: MockInterface<AdapterOperations>
+      let adapter: Adapter
+      beforeAll(async () => {
+        adapterOps = {
+          fetch: mockFunction<AdapterOperations['fetch']>(),
+          deploy: mockFunction<AdapterOperations['deploy']>(),
+        }
+        adapter = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+        }
+        adapterCreators.test = adapter
+
+        instance = new InstanceElement(
+          'inst',
+          new ObjectType({ elemID: new ElemID('test', 'type') }),
+          { name: 'test' }
+        )
+
+        const mockWs = mockWorkspace({
+          elements: [instance],
+          stateElements: [],
+          accounts: ['test'],
+        })
+
+        mockWs.accountCredentials = mockFunction<workspace.Workspace['accountCredentials']>().mockResolvedValue({
+          test: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockConfigType,
+            {
+              username: 'test@test',
+              password: 'test',
+              token: 'test',
+              sandbox: false,
+            }
+          ),
+        })
+
+        const actionPlan = mockPlan.createPlan([
+          [{ action: 'add', data: { after: instance.clone() } }],
+        ])
+
+        adapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => {
+          const changeInstance = getChangeData(changeGroup.changes[0]).clone() as InstanceElement
+          changeInstance.value.id = 1
+          return {
+            appliedChanges: [toChange({ after: changeInstance })],
+            errors: [],
+          }
+        })
+
+        result = await api.deploy(mockWs, actionPlan, jest.fn(), ['test'])
+      })
+
+      it('should call adapter deploy function', () => {
+        expect(adapterOps.deploy).toHaveBeenCalledTimes(1)
+      })
+
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(1)
+        const [addedChange] = result.appliedChanges ?? []
+        expect((getChangeData(addedChange) as InstanceElement).value.id).toBe(1)
+      })
+
+      it('should update element source', async () => {
+        const elementSource = (adapter.operations as jest.Mock).mock.calls[0][0].elementsSource
+        const instanceFromSource = await elementSource.get(instance.elemID) as InstanceElement
+        expect(instanceFromSource.value.id).toBe(1)
       })
     })
   })

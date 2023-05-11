@@ -22,7 +22,6 @@ import {
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { defaultFilterContext } from '../../utils'
-import { FilterWith } from '../../../src/filter'
 import filterCreator from '../../../src/filters/cpq/referencable_field_references'
 import {
   API_NAME,
@@ -32,6 +31,7 @@ import {
   SALESFORCE,
 } from '../../../src/constants'
 import { mockTypes } from '../../mock_elements'
+import { FilterWith } from '../mocks'
 
 describe('cpqReferencableFieldReferences', () => {
   const MOCK_TYPE = 'SBQQ__MockType__c'

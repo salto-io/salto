@@ -29,6 +29,7 @@ import { WEBHOOK_TYPE_NAME } from '../constants'
 export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
   bearer_token: { token: '123456' },
   basic_auth: { username: 'user@name.com', password: 'password' },
+  api_key: { name: 'tempHeader', value: 'tempValue' },
 }
 
 /**

@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType, toChange, Value } from '@salto-io/
 import _ from 'lodash'
 
 import { getFilterParams, mockClient } from '../../utils'
-import workflowFilter from '../../../src/filters/script_runner/workflow_filter'
+import workflowFilter from '../../../src/filters/script_runner/workflow/workflow_filter'
 import { CONDITION_CONFIGURATION, JIRA, POST_FUNCTION_CONFIGURATION, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { getDefaultConfig } from '../../../src/config/config'
 

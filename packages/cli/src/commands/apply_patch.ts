@@ -14,38 +14,21 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { DetailedChange, Element, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
+import { DetailedChange, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
 import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { State, Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { expressions, elementSource, Workspace, merger, State } from '@salto-io/workspace'
-import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
-import { calcFetchChanges } from '@salto-io/core'
+import { calculatePatch } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { outputLine, errorOutputLine } from '../outputer'
 import { validateWorkspace, formatWorkspaceErrors } from '../workspace/workspace'
 import { CliExitCode, CliOutput } from '../types'
 import { UpdateModeArg, UPDATE_MODE_OPTION } from './common/update_mode'
+import { formatFetchWarnings } from '../formatter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-
-const mergeElements = async (
-  workspace: Workspace,
-  elements: Element[],
-  output: CliOutput,
-): Promise<{ elements: Element[]; success: boolean }> => {
-  const result = await merger.mergeElements(awu(elements))
-  const errors = await awu(result.errors.values()).flat().toArray()
-  if (errors.length > 0) {
-    errorOutputLine('Encountered merge errors in elements:', output)
-    errorOutputLine(await formatWorkspaceErrors(workspace, errors), output)
-  }
-  return {
-    elements: await awu(result.merged.values()).toArray(),
-    success: errors.length === 0,
-  }
-}
 
 const updateStateElements = async (
   state: State,
@@ -72,7 +55,7 @@ const updateStateElements = async (
   })
 }
 
-type FetchDiffArgs = {
+type ApplyPatchArgs = {
   fromDir: string
   toDir: string
   accountName: 'salesforce'
@@ -80,52 +63,25 @@ type FetchDiffArgs = {
   updateStateInEnvs?: string[]
 } & UpdateModeArg
 
-const fetchDiffToWorkspace = async (
+const applyPatchToWorkspace = async (
   workspace: Workspace,
-  input: FetchDiffArgs,
+  input: ApplyPatchArgs,
   updateState: boolean,
   output: CliOutput,
 ): Promise<boolean> => {
-  outputLine(`Loading elements from workspace env ${workspace.currentEnv()}`, output)
-  const wsElements = await workspace.elements()
-  const resolvedWSElements = await expressions.resolve(
-    await awu(await wsElements.getAll()).toArray(),
-    wsElements,
-  )
-  const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
-
-  outputLine(`Loading elements from ${input.fromDir}`, output)
-  const beforeElements = await loadElementsFromFolder(input.fromDir, resolvedWSElementSource)
-  const { elements: mergedBeforeElements, success: beforeMergeSuccess } = await mergeElements(
+  const { fromDir, toDir, accountName } = input
+  const { changes, fetchErrors, mergeErrors } = await calculatePatch({
     workspace,
-    beforeElements,
-    output,
-  )
-  if (!beforeMergeSuccess) {
+    fromDir,
+    toDir,
+    accountName,
+  })
+  if (mergeErrors.length > 0) {
+    const mergeErrorsValues = await awu(mergeErrors.values()).flat().toArray()
+    errorOutputLine('Encountered merge errors in elements:', output)
+    errorOutputLine(await formatWorkspaceErrors(workspace, mergeErrorsValues), output)
     return false
   }
-
-  outputLine(`Loading elements from ${input.toDir}`, output)
-  const afterElements = await loadElementsFromFolder(input.toDir, resolvedWSElementSource)
-  const { elements: mergedAfterElements, success: afterMergeSuccess } = await mergeElements(
-    workspace,
-    afterElements,
-    output,
-  )
-  if (!afterMergeSuccess) {
-    return false
-  }
-
-  outputLine(`Calculating difference between ${input.fromDir} and ${input.toDir}`, output)
-  const { changes } = await calcFetchChanges(
-    afterElements,
-    elementSource.createInMemoryElementSource(mergedAfterElements),
-    elementSource.createInMemoryElementSource(mergedBeforeElements),
-    resolvedWSElementSource,
-    new Set([input.accountName]),
-    new Set([input.accountName]),
-  )
-
   outputLine(`Found ${changes.length} changes to apply`, output)
   const conflicts = changes.filter(change => !_.isEmpty(change.pendingChanges))
   conflicts.forEach(change => {
@@ -138,6 +94,14 @@ const fetchDiffToWorkspace = async (
   if (conflicts.length > 0) {
     errorOutputLine(`Failed to update env ${workspace.currentEnv()} because there are ${conflicts.length} conflicting changes`, output)
     return false
+  }
+  if (fetchErrors.length > 0) {
+    // We currently assume all fetchErrors are warnings
+    log.debug(`apply-patch had ${fetchErrors.length} warnings`)
+    outputLine(
+      formatFetchWarnings(fetchErrors.map(fetchError => fetchError.message)),
+      output,
+    )
   }
   if (updateState) {
     outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)
@@ -155,7 +119,7 @@ const fetchDiffToWorkspace = async (
 }
 
 
-export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
+export const applyPatchAction: WorkspaceCommandAction<ApplyPatchArgs> = async ({
   workspace,
   input,
   output,
@@ -176,7 +140,7 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
     }
     await workspace.setCurrentEnv(env, false)
     const updateState = input.updateStateInEnvs?.includes(env) ?? false
-    success = await fetchDiffToWorkspace(workspace, input, updateState, output)
+    success = await applyPatchToWorkspace(workspace, input, updateState, output)
   })
 
   if (success) {
@@ -186,9 +150,9 @@ export const fetchDiffAction: WorkspaceCommandAction<FetchDiffArgs> = async ({
   return success ? CliExitCode.Success : CliExitCode.AppError
 }
 
-const fetchDiffCmd = createWorkspaceCommand({
+const ApplyPatchCmd = createWorkspaceCommand({
   properties: {
-    name: 'fetch-diff',
+    name: 'apply-patch',
     description: 'Calculate the difference between two SFDX folders and apply it to the workspace',
     keyedOptions: [
       {
@@ -229,7 +193,7 @@ const fetchDiffCmd = createWorkspaceCommand({
       },
     ],
   },
-  action: fetchDiffAction,
+  action: applyPatchAction,
 })
 
-export default fetchDiffCmd
+export default ApplyPatchCmd

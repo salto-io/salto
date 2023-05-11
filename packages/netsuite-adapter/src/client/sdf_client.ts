@@ -46,18 +46,18 @@ import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams,
+  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams, SDFObjectNode,
 } from './types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
-  mergeTypeToInstances, getGroupItemFromRegex,
+  mergeTypeToInstances, getGroupItemFromRegex, toError,
 } from './utils'
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
-import { Graph, SDFObjectNode } from './graph_utils'
-import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX } from './deploy_xml_utils'
+import { Graph } from './graph_utils'
 import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
+import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX, reorderDeployXml } from './deploy_xml_utils'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -114,8 +114,6 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
   ignoreAttributes: false,
   tagValueProcessor: val => he.decode(val),
 }
-
-const toError = (e: unknown): Error => (e instanceof Error ? e : new Error(String(e)))
 
 const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {
@@ -915,7 +913,7 @@ export default class SdfClient {
       }
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
-    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly)
+    await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly, dependencyGraph)
     await this.projectCleanup(project.projectName, project.authId)
   }
 
@@ -930,6 +928,19 @@ export default class SdfClient {
     await writeFile(
       manifestPath,
       this.manifestXmlContent
+    )
+  }
+
+  private async fixDeployXml(
+    dependencyGraph: Graph<SDFObjectNode>,
+    projectName: string,
+  ): Promise<void> {
+    const deployFilePath = SdfClient.getDeployFilePath(projectName)
+    const deployXmlContent = (await readFile(deployFilePath)).toString()
+    this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
+    await writeFile(
+      deployFilePath,
+      this.deployXmlContent
     )
   }
 
@@ -994,9 +1005,11 @@ ${this.deployXmlContent}
     customizationInfos: CustomizationInfo[],
     manifestDependencies: ManifestDependencies,
     validateOnly: boolean,
+    dependencyGraph: Graph<SDFObjectNode>,
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
     await this.fixManifest(projectName, customizationInfos, manifestDependencies)
+    await this.fixDeployXml(dependencyGraph, projectName)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -1082,6 +1095,10 @@ ${this.deployXmlContent}
 
   private static getManifestFilePath(projectName: string): string {
     return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
+  }
+
+  private static getDeployFilePath(projectName: string): string {
+    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'deploy.xml')
   }
 
   private static getFeaturesXmlPath(projectName: string): string {

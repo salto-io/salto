@@ -251,8 +251,10 @@ export const toBasicInstance = async ({
     isSettingType: type.isSettings,
     nameMapping,
     adapterName,
-    nestedPaths:
-    shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name]) ? nestedPath : undefined,
+    nestedPaths: parent && shouldNestFiles(
+      transformationDefaultConfig,
+      transformationConfigByType[parent.elemID.typeName]
+    ) ? nestedPath : undefined,
   })
   if (transformationConfigByType[type.elemID.name]?.standaloneFields !== undefined
     && shouldNestFiles(transformationDefaultConfig, transformationConfigByType[type.elemID.name])) {

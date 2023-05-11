@@ -13,27 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, ObjectType } from '@salto-io/adapter-api'
-import { loadElementsFromFolder } from '@salto-io/salesforce-adapter'
-import { updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { DetailedChange, Element, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { detailedCompare } from '@salto-io/adapter-utils'
+import { calculatePatch } from '@salto-io/core'
+import { merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import * as mocks from '../mocks'
-import { fetchDiffAction } from '../../src/commands/fetch_diff'
+import { applyPatchAction } from '../../src/commands/apply_patch'
 import { CliExitCode } from '../../src/types'
 
-jest.mock('@salto-io/salesforce-adapter', () => {
-  const actual = jest.requireActual<{ loadElementsFromFolder: typeof loadElementsFromFolder }>('@salto-io/salesforce-adapter')
+jest.mock('@salto-io/core', () => {
+  const actual = jest.requireActual('@salto-io/core')
   return {
     ...actual,
-    loadElementsFromFolder: jest.fn().mockImplementation(actual.loadElementsFromFolder),
+    calculatePatch: jest.fn().mockImplementation(actual.calculatePatch),
   }
 })
 
-const mockLoadElementsFromFolder = (
-  loadElementsFromFolder as jest.MockedFunction<typeof loadElementsFromFolder>
+const mockCalculatePatch = (
+  calculatePatch as jest.MockedFunction<typeof calculatePatch>
 )
 
-describe('fetch-diff command', () => {
-  const commandName = 'fetch-diff'
+describe('apply-patch command', () => {
+  const commandName = 'apply-patch'
   let workspace: mocks.MockWorkspace
   let baseElements: Element[]
   let cliCommandArgs: mocks.MockCommandArgs
@@ -49,7 +50,6 @@ describe('fetch-diff command', () => {
       getElements: () => baseElements,
     })
   })
-
   describe('when there is a difference between the folders', () => {
     let exitCode: CliExitCode
     let originalInstance: InstanceElement
@@ -61,18 +61,26 @@ describe('fetch-diff command', () => {
       updatedInstance = originalInstance.clone()
       updatedInstance.value.newVal = 'asd'
       newInstance = new InstanceElement('new', type, { val: 1 }, ['path'])
-      const beforeElements = [originalInstance]
-      const afterElements = [updatedInstance, newInstance]
-      // Response for env1
-      mockLoadElementsFromFolder
-        .mockResolvedValueOnce(beforeElements)
-        .mockResolvedValueOnce(afterElements)
-      // Response for env2
-      mockLoadElementsFromFolder
-        .mockResolvedValueOnce(beforeElements)
-        .mockResolvedValueOnce(afterElements)
+      const modifyInstanceChanges = detailedCompare(
+        originalInstance,
+        updatedInstance,
+      )
+      const additionChange = {
+        ...toChange({ after: newInstance }),
+        id: newInstance.elemID,
+      } as DetailedChange
+      mockCalculatePatch.mockResolvedValue({
+        changes: [
+          ...modifyInstanceChanges.map(c => ({ change: c, serviceChanges: [c] })),
+          { change: additionChange, serviceChanges: [additionChange] },
+        ],
+        mergeErrors: [],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+      })
 
-      exitCode = await fetchDiffAction({
+      exitCode = await applyPatchAction({
         ...cliCommandArgs,
         input: {
           fromDir: 'a',
@@ -102,12 +110,17 @@ describe('fetch-diff command', () => {
       expect(await workspace.state('env1').has(newInstance.elemID)).toBeFalsy()
     })
   })
-
   describe('when there is no difference between the folders', () => {
     let exitCode: CliExitCode
     beforeEach(async () => {
-      mockLoadElementsFromFolder.mockResolvedValue(baseElements)
-      exitCode = await fetchDiffAction({
+      mockCalculatePatch.mockResolvedValue({
+        changes: [],
+        mergeErrors: [],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+      })
+      exitCode = await applyPatchAction({
         ...cliCommandArgs,
         input: {
           fromDir: 'a',
@@ -125,7 +138,7 @@ describe('fetch-diff command', () => {
   describe('when target envs do not exist', () => {
     let exitCode: CliExitCode
     beforeEach(async () => {
-      exitCode = await fetchDiffAction({
+      exitCode = await applyPatchAction({
         ...cliCommandArgs,
         input: {
           fromDir: 'a',
@@ -144,21 +157,67 @@ describe('fetch-diff command', () => {
   describe('when there are conflicting changes', () => {
     let exitCode: CliExitCode
     beforeEach(async () => {
-      const unchangedEmployeeType = baseElements[3]
+      const unchangedEmployeeType = baseElements[3] as ObjectType
       const fromDirEmployeeType = unchangedEmployeeType.clone()
       const toDirEmployeeType = unchangedEmployeeType.clone()
       fromDirEmployeeType.annotations.conflict = 'from'
       toDirEmployeeType.annotations.conflict = 'to'
-      // Have a regular change (no conflict) on the first env
-      mockLoadElementsFromFolder
-        .mockResolvedValueOnce([unchangedEmployeeType])
-        .mockResolvedValueOnce([toDirEmployeeType])
-      // Have a conflicting change on the second env
-      mockLoadElementsFromFolder
-        .mockResolvedValueOnce([fromDirEmployeeType])
-        .mockResolvedValueOnce([toDirEmployeeType])
-
-      exitCode = await fetchDiffAction({
+      const modifyTypeChanges = detailedCompare(
+        fromDirEmployeeType,
+        toDirEmployeeType,
+      )
+      const pendingChange = detailedCompare(
+        unchangedEmployeeType,
+        toDirEmployeeType,
+      )
+      mockCalculatePatch.mockResolvedValue({
+        changes: [
+          { change: modifyTypeChanges[0], serviceChanges: [modifyTypeChanges[0]], pendingChanges: [pendingChange[0]] },
+        ],
+        mergeErrors: [],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+      })
+      exitCode = await applyPatchAction({
+        ...cliCommandArgs,
+        input: {
+          fromDir: 'a',
+          toDir: 'b',
+          targetEnvs: ['env1', 'env2'],
+          accountName: 'salesforce',
+          mode: 'default',
+        },
+        workspace,
+      })
+    })
+    it('should fail', () => {
+      expect(exitCode).toEqual(CliExitCode.AppError)
+    })
+    it('should not flush changes to any environment', () => {
+      expect(workspace.flush).not.toHaveBeenCalled()
+    })
+  })
+  describe('when there are merge errors', () => {
+    let exitCode: CliExitCode
+    beforeEach(async () => {
+      const employeeType = baseElements[3] as ObjectType
+      mockCalculatePatch.mockResolvedValue({
+        changes: [],
+        mergeErrors: [{
+          error: new merger.DuplicateAnnotationError({
+            elemID: employeeType.elemID,
+            key: 'conflict',
+            newValue: 'to',
+            existingValue: 'from',
+          }),
+          elements: [employeeType],
+        }],
+        fetchErrors: [],
+        success: true,
+        updatedConfig: {},
+      })
+      exitCode = await applyPatchAction({
         ...cliCommandArgs,
         input: {
           fromDir: 'a',

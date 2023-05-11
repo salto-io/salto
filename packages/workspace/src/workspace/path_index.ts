@@ -237,15 +237,21 @@ export const getFromPathIndex = async (
 ): Promise<Path[]> => {
   const idParts = elemID.getFullNameParts()
   const topLevelKey = elemID.createTopLevelParentID().parent.getFullName()
+  let isExactMatch = true
   let key: string
   do {
     key = idParts.join('.')
     // eslint-disable-next-line no-await-in-loop
     const pathHints = await index.get(key)
-    if (pathHints !== undefined) {
-      return pathHints
+    if (pathHints !== undefined && pathHints.length > 0) {
+      // If we found this elemID in the pathIndex we want to return all the hints.
+      // If this is not an exact match we want to return a single hint
+      // because otherwise, splitElementByPath will make it appear in multiple fragments
+      // and cause merge errors.
+      return isExactMatch ? pathHints : [pathHints[0]]
     }
     idParts.pop()
+    isExactMatch = false
   } while (idParts.length > 0 && key !== topLevelKey)
   return []
 }

@@ -18,8 +18,8 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Graph, SDFObjectNode } from './graph_utils'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from './types'
+import { Graph } from './graph_utils'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
 import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
 
 type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
@@ -63,7 +63,10 @@ export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
 ): string => {
+  const nodesInCycle = new Set(dependencyGraph.findCycle())
+  log.debug('The following %d objects will not be written explicity in the deploy xml since they contain a cycle: %o', nodesInCycle.size, [...nodesInCycle])
   const custInfosInTopologicalOrder = dependencyGraph.getTopologicalOrder()
+    .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
 
   const [fileCabinetCustInfos, customTypeInfos] = _.partition(

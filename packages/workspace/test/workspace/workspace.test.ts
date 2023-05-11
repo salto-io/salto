@@ -2606,11 +2606,8 @@ describe('workspace', () => {
         expect(result).toEqual(
           {
             'salesforce.lead.field.singleDef': 'single Def alias',
-            'salesforce.lead.field.multiDef': 'Multi Def',
             'salesforce.lead': 'lead alias',
             'salesforce.lead.instance.someName1': 'some name alias',
-            'salesforce.lead.instance.someName2': 'Some Name2',
-            'salesforce.text': 'Text',
           }
         )
       })
@@ -3290,6 +3287,22 @@ describe('workspace', () => {
 
     it('None-exist type should return empty array', async () => {
       expect(await workspace.getElementIncomingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
+    })
+  })
+
+  describe('getElementAuthorInformation', () => {
+    let workspace: Workspace
+
+    beforeAll(async () => {
+      workspace = await createWorkspace()
+    })
+
+    it('None-base type should throw', async () => {
+      await expect(workspace.getElementAuthorInformation(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+    })
+
+    it('None-exist type should return empty object', async () => {
+      expect(await workspace.getElementAuthorInformation(new ElemID('adapter', 'notExists'))).toEqual({})
     })
   })
 

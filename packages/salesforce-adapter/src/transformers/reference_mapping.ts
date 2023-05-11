@@ -119,7 +119,7 @@ const ReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
-  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
+  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborSobjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
   | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
@@ -657,6 +657,20 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'links', parentTypes: ['HomePageComponent'] },
     target: { type: 'CustomPageWebLink' },
+  },
+  {
+    src: { field: 'recordTypeName', parentTypes: ['AnimationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborSobjectLookup', type: 'RecordType' },
+  },
+  {
+    src: { field: 'targetField', parentTypes: ['AnimationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborSobjectLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
+    target: { type: CUSTOM_OBJECT },
   },
 ]
 

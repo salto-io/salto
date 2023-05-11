@@ -13,21 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement } from '@salto-io/adapter-api'
-import { FilterCreator } from '../filter'
-import { GROUP_TYPE_NAME } from '../constants'
+import _ from 'lodash'
+import { values } from '@salto-io/lowerdash'
+import { Element } from './elements'
+import { CORE_ANNOTATIONS } from './constants'
 
-/**
- * Delete roles field from Group type
- */
-const filter: FilterCreator = () => ({
-  name: 'groupRolesFilter',
-  onFetch: async (elements: Element[]) => {
-    const groups = elements.filter(isInstanceElement)
-      .filter(instance => instance.elemID.typeName === GROUP_TYPE_NAME)
-    // field cannot be removed with fieldsToOmit cause it's added with recurseInto
-    groups.forEach(group => delete group.value.roles)
-  },
-})
+export type AuthorInformation = {
+  changedBy?: string
+  changedAt?: string
+}
 
-export default filter
+export const getAuthorInformation = (
+  element: Element | undefined
+): AuthorInformation => {
+  if (element === undefined) {
+    return {}
+  }
+  return _.pickBy({
+    changedAt: element.annotations[CORE_ANNOTATIONS.CHANGED_AT],
+    changedBy: element.annotations[CORE_ANNOTATIONS.CHANGED_BY],
+  }, values.isDefined)
+}

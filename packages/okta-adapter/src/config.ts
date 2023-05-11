@@ -33,6 +33,7 @@ export type OktaStatusActionName = 'activate' | 'deactivate'
 export type OktaActionName = ActionName | OktaStatusActionName
 export type OktaFetchConfig = configUtils.UserFetchConfig & {
   convertUsersIds?: boolean
+  enableMissingReferences?: boolean
 }
 
 export type OktaSwaggerApiConfig = configUtils.AdapterSwaggerApiConfig<OktaActionName>
@@ -162,7 +163,6 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
       add: {
         url: '/api/v1/policies',
         method: 'post',
-        fieldsToIgnore: ['policyRules'],
       },
       modify: {
         url: '/api/v1/policies/{policyId}',
@@ -170,7 +170,6 @@ const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
         urlParamsToFields: {
           policyId: 'id',
         },
-        fieldsToIgnore: ['policyRules'],
       },
       remove: {
         url: '/api/v1/policies/{policyId}',
@@ -266,8 +265,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   Group: {
     transformation: {
       fieldTypeOverrides: [
-        { fieldName: 'apps', fieldType: 'list<Application>' },
         { fieldName: 'roles', fieldType: 'list<RoleAssignment>' },
+        { fieldName: 'source', fieldType: 'Group__source' },
       ],
       fieldsToHide: [
         { fieldName: 'id' },
@@ -328,6 +327,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           toField: 'assignedGroups',
           context: [{ name: 'appId', fromField: 'id' }],
         },
+        {
+          type: 'AppUserSchema',
+          toField: 'appUserSchema',
+          context: [{ name: 'appId', fromField: 'id' }],
+        },
       ],
     },
   },
@@ -341,6 +345,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'assignedGroups', fieldType: 'list<ApplicationGroupAssignment>' },
         { fieldName: 'profileEnrollment', fieldType: 'string' },
         { fieldName: 'accessPolicy', fieldType: 'string' },
+        { fieldName: 'appUserSchema', fieldType: 'list<AppUserSchema>' },
       ],
       idFields: ['label'],
       serviceIdField: 'id',
@@ -351,6 +356,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_embedded' }),
       serviceUrl: '/admin/app/{name}/instance/{id}/#tab-general',
+      standaloneFields: [{ fieldName: 'appUserSchema' }],
     },
     deployRequests: {
       add: {
@@ -387,6 +393,44 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
+  AppUserSchema: {
+    request: {
+      url: '/api/v1/meta/schemas/apps/{appId}/default',
+    },
+    transformation: {
+      idFields: ['title'],
+      dataField: '.',
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
+        { fieldName: '$schema' },
+        { fieldName: 'type' },
+        { fieldName: 'properties' }
+      ),
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: 'name' }],
+    },
+    deployRequests: {
+      modify: {
+        url: '/api/v1/meta/schemas/apps/{applicationId}/default',
+        method: 'post',
+        urlParamsToFields: {
+          applicationId: '_parent.0.id',
+        },
+      },
+    },
+  },
+  UserSchemaPublic: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.UserSchemaAttribute>' },
+      ],
+    },
+  },
+  GroupSchemaCustom: {
+    transformation: {
+      fieldTypeOverrides: [
+        { fieldName: 'properties', fieldType: 'Map<okta.GroupSchemaAttribute>' },
+      ],
+    },
+  },
   ApplicationCredentials: {
     transformation: {
       fieldTypeOverrides: [
@@ -397,6 +441,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'userName', fieldType: 'string' },
       ],
       fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
+    },
+  },
+  ApplicationVisibility: {
+    transformation: {
+      // The field cannot be changed and might include non multienv values
+      fieldsToOmit: [{ fieldName: 'appLinks' }],
     },
   },
   api__v1__meta__types__user: {
@@ -1186,9 +1236,13 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
       .map(policyTypeName => ({ typeName: getPolicyItemsName(policyTypeName), cloneFrom: 'api__v1__policies' })),
     ...Object.values(POLICY_TYPE_NAME_TO_PARAMS)
       .map(policy => ({ typeName: getPolicyRuleItemsName(policy.ruleName), cloneFrom: 'api__v1__policies___policyId___rules@uuuuuu_00123_00125uu' })),
-    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type
+    // IdentityProviderPolicy and MultifactorEnrollmentPolicy don't have their own 'rule' type.
     { typeName: 'IdentityProviderPolicyRule', cloneFrom: 'PolicyRule' },
     { typeName: 'MultifactorEnrollmentPolicyRule', cloneFrom: 'PolicyRule' },
+    // AppUserSchema returns UserSchema items, but we separate types because the endpoints for deploy are different
+    { typeName: 'AppUserSchema', cloneFrom: 'UserSchema' },
+    // This is not the right type to cloneFrom, but a workaround to define type for Group__source with 'id' field
+    { typeName: 'Group__source', cloneFrom: 'AppAndInstanceConditionEvaluatorAppOrInstance' },
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
@@ -1389,6 +1443,7 @@ export const DEFAULT_CONFIG: OktaConfig = {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
     convertUsersIds: true,
+    enableMissingReferences: true,
   },
   [API_DEFINITIONS_CONFIG]: DEFAULT_API_DEFINITIONS,
   [PRIVATE_API_DEFINITIONS_CONFIG]: DUCKTYPE_API_DEFINITIONS,
@@ -1416,6 +1471,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
         OKTA,
         {
           convertUsersIds: { refType: BuiltinTypes.BOOLEAN },
+          enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
     },
@@ -1439,7 +1495,8 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       PRIVATE_API_DEFINITIONS_CONFIG,
       CLIENT_CONFIG,
       `${FETCH_CONFIG}.hideTypes`,
-      `${FETCH_CONFIG}.convertUsersIds`
+      `${FETCH_CONFIG}.convertUsersIds`,
+      `${FETCH_CONFIG}.enableMissingReferences`,
     ),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },

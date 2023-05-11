@@ -120,12 +120,14 @@ const updateContextOptions = async ({
 
     if (Array.isArray(resp.data.options)) {
       const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
+      const optionsMap = _(contextChange.data.after.value.options).values()
+        .keyBy(option => naclCase(option.value)).value()
       resp.data.options.forEach(newOption => {
         if (newOption.optionId !== undefined) {
           idToOption[newOption.optionId]
             .cascadingOptions[naclCase(newOption.value)].id = newOption.id
         } else {
-          contextChange.data.after.value.options[naclCase(newOption.value)].id = newOption.id
+          optionsMap[naclCase(newOption.value)].id = newOption.id
         }
       })
     }

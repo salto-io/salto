@@ -93,6 +93,16 @@ jest.mock('@salto-io/adapter-components', () => {
             url: '/MCMFormulas',
           },
         },
+        GridTypes: {
+          request: {
+            url: '/GridTypes',
+          },
+        },
+        OrdererTypes: {
+          request: {
+            url: '/OrdererTypes',
+          },
+        },
       },
     }
   }
@@ -175,9 +185,10 @@ describe('adapter', () => {
           'MCMService_MCIRateTypes',
           'MCMService_MCMFormulas',
           'MCMService_MeasuringTypes',
+          'MCMService_OrdererTypes',
           'MCMService_PowerRangeTypes',
         ])
-        expect(elements.filter(isInstanceElement)).toHaveLength(12)
+        expect(elements.filter(isInstanceElement)).toHaveLength(39)
       })
       describe('deploy', () => {
         it('should throw not implemented', async () => {

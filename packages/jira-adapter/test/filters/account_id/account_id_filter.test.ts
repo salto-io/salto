@@ -164,6 +164,11 @@ describe('account_id_filter', () => {
       await filter.onFetch([currentObjectType])
       expect(await currentObjectType.fields.fakeAccountId.getType()).toEqual(BuiltinTypes.STRING)
     })
+    it('does not fail with a null value', async () => {
+      simpleInstances[1].value.nullValue = null
+      await filter.onFetch([simpleInstances[1]])
+      common.checkObjectedInstanceIds(simpleInstances[1], '1')
+    })
   })
   describe('deploy', () => {
     it('returns account id structure to a simple and correct string on pre deploy on all 5 types', async () => {

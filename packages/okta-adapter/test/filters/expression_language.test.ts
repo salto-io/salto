@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, isInstanceElement, toChange, getChangeData } from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
+import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../src/config'
 import { getFilterParams } from '../utils'
 import oktaExpressionLanguageFilter, { getUserSchemaReference, resolveUserSchemaRef } from '../../src/filters/expression_language'
 import { ACCESS_POLICY_RULE_TYPE_NAME, BEHAVIOR_RULE_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, OKTA, USER_SCHEMA_TYPE_NAME } from '../../src/constants'
@@ -91,6 +92,17 @@ describe('expression language filter', () => {
           },
         }
       )
+      const groupRuleWithMissingId = new InstanceElement(
+        'groupRuleWithMissingId',
+        groupRuleType,
+        {
+          conditions: {
+            expression: {
+              value: 'isMemberOfAnyGroup("00g11111111", "00g5555555555")',
+            },
+          },
+        }
+      )
       const userSchemaBaseAttRef = new ReferenceExpression(
         userSchemaInstance.elemID.createNestedID(...basePath),
         _.get(userSchemaInstance.value, basePath)
@@ -143,19 +155,8 @@ describe('expression language filter', () => {
             .toEqual(policyRuleTemplate)
         })
 
-        it('should create missing reference if there is no match and the id is in groupId format', async () => {
-          const groupRuleWithMissingId = new InstanceElement(
-            'groupRuleWithMissingId',
-            groupRuleType,
-            {
-              conditions: {
-                expression: {
-                  value: 'isMemberOfAnyGroup("00g11111111", "00g5555555555")',
-                },
-              },
-            }
-          )
-          const elements = [groupRuleType, groupType, groupRuleWithMissingId, ...groupInstances]
+        it('should create missing reference if there is no match and the id is in groupId format and enableMissingReferences flag enabled', async () => {
+          const elements = [groupRuleType, groupType, groupRuleWithMissingId.clone(), ...groupInstances]
           await filter.onFetch(elements)
           const missingInstance = referencesUtils.createMissingInstance(OKTA, GROUP_TYPE_NAME, '00g5555555555')
           const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleWithMissingId')
@@ -168,6 +169,25 @@ describe('expression language filter', () => {
                 ', ',
                 new ReferenceExpression(missingInstance.elemID, missingInstance),
                 ')',
+              ],
+            })
+          )
+        })
+
+        it('should not create missing reference if enableMissingReferences flag disabled', async () => {
+          const config = { ...DEFAULT_CONFIG }
+          config[FETCH_CONFIG].enableMissingReferences = false
+          const missingRefFilter = oktaExpressionLanguageFilter(getFilterParams({ config })) as typeof filter
+          const elements = [groupRuleType, groupType, groupRuleWithMissingId.clone(), ...groupInstances]
+          await missingRefFilter.onFetch(elements)
+          const groupRule = elements.filter(isInstanceElement).find(i => i.elemID.name === 'groupRuleWithMissingId')
+          expect(groupRule).toBeDefined()
+          expect(groupRule?.value?.conditions?.expression?.value).toEqual(
+            new TemplateExpression({
+              parts: [
+                'isMemberOfAnyGroup(',
+                new ReferenceExpression(groupInstances[0].elemID, groupInstances[0]),
+                ', "00g5555555555")',
               ],
             })
           )

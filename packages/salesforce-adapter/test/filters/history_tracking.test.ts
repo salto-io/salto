@@ -28,7 +28,6 @@ import {
 import filterCreator from '../../src/filters/history_tracking'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
-import { FilterWith } from '../../src/filter'
 import { Types } from '../../src/transformers/transformer'
 import {
   API_NAME,
@@ -36,6 +35,7 @@ import {
   HISTORY_TRACKED_FIELDS,
   OBJECT_HISTORY_TRACKING_ENABLED, SALESFORCE,
 } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 describe('historyTracking', () => {
   let filter: FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

@@ -54,18 +54,6 @@ type MissingUser = {
   userName: string
 }
 
-const getCaseSettingsOwner: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'defaultCaseOwner') {
-    log.error(`Unexpected field name: ${fieldName}.`)
-    return []
-  }
-  if (instance.value.defaultCaseOwnerType !== 'User') {
-    log.debug('defaultCaseOwnerType is not User. Skipping.')
-    return []
-  }
-  return [instance.value.defaultCaseOwner]
-}
-
 const userFieldValue = (expectedFieldName: string): GetUserField => (
   (instance, fieldName) => {
     if (fieldName !== expectedFieldName) {
@@ -125,7 +113,7 @@ const USER_GETTERS: TypesWithUserFields = {
     },
     {
       field: 'defaultCaseOwner',
-      getter: (instance, fieldName) => getCaseSettingsOwner(instance, fieldName),
+      getter: getUserDependingOnType('defaultCaseOwnerType', 'User', 'defaultCaseOwner'),
     },
   ],
   FolderShare: [

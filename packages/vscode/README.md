@@ -1,13 +1,7 @@
-<!-- markdownlint-disable -->
-<h1 align="center">
-  vscode-salto
-</h1>
+# Salto NACL Configuration Editor
+This [VS Code](https://code.visualstudio.com/) extension adds rich support for [Salto](https://salto.io) NACL Configuration files, which represent a business application configuration. By utilizing NACL files, users can easily perform impact analysis on the business application configuration, as well as deploy changes between environments, document these changes using git commits and more. The extension includes syntax highlighting, auto-complete, code navigation, error and warning highlighting, and more!
 
----
-
-<h4 align="center"Configure, preview and deploy .<a href="https://www.salto.io/">Salto</a> patches in vscode.</h4>
-
----
+Check out [Salto's OSS repository](https://github.com/salto-io/salto) for documentation, the code for this extension and more.
 
 ## Features at a glance
 
@@ -23,7 +17,8 @@
 - Copy salto reference
 
 ## Installation
-Salto is still not registered in the marketplace. To install:
+Salto VS Code extension can be installed through marketplace or by downloading vsix file and manually add it to your VS Code.
+To install manually:
 - Download the latest vsix file from [here](https://github.com/salto-io/salto/releases/latest)
 - Open the extension menu
 - Select install from .vsix

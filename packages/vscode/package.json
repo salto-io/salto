@@ -1,14 +1,14 @@
 {
     "name": "salto-vscode",
-    "displayName": "Salto",
-    "description": "Configure Salto patches in vscode.",
+    "displayName": "Salto NACL Configuration Editor",
+    "description": "Provides rich support for NACL Configuration files, including syntax highlighting, auto-complete, code navigation and more.",
     "version": "0.3.38",
     "publishConfig": {
         "access": "public"
     },
     "icon": "icons/images/file_type_salto_opaque.png",
     "galleryBanner": {
-        "color": "#C80000",
+        "color": "#4A5568",
         "theme": "dark"
     },
     "engines": {
@@ -50,35 +50,6 @@
                     "when": "resourceExtname == .nacl"
                 }
             ]
-        },
-        "configuration": {
-            "title": "Salto",
-            "properties": {
-                "salto.salto_exe_path": {
-                    "type": "string",
-                    "scope": "machine",
-                    "default": "/usr/local/bin/salto",
-                    "description": "Path to the salto executable"
-                },
-                "salto.additionalNaclFileDirs": {
-                    "type": "array",
-                    "default": [],
-                    "scope": "resource",
-                    "description": "Paths to additional NACL dirs that should be included"
-                },
-                "salto.additionalNaclFiles": {
-                    "type": "array",
-                    "default": [],
-                    "scope": "resource",
-                    "description": "Paths to additional NACL that should be included"
-                },
-                "salto.discover_output_dir": {
-                    "type": "string",
-                    "default": ".",
-                    "scope": "resource",
-                    "description": "Paths to discover output directory"
-                }
-            }
         },
         "languages": [
             {

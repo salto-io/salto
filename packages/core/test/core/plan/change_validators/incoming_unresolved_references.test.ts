@@ -47,4 +47,11 @@ describe('checkUnresolvedReferencesValidator', () => {
     expect(errors[0].elemID).toEqual(firstInstance.elemID)
     expect(errors[0].severity).toEqual('Warning')
   })
+
+  it('should filter addition errors', async () => {
+    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+      toChange({ after: firstInstance }),
+    ])
+    expect(errors).toEqual([])
+  })
 })

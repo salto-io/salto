@@ -143,6 +143,5 @@ export const mockWorkspace = ({
       (staticFilesSource
         ? staticFilesSource.getStaticFile(filepath, encoding)
         : undefined),
-    listUnresolvedReferences: (_completeFromEnv?: string) => jest.fn(),
   } as unknown as workspace.Workspace
 }

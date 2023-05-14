@@ -1,7 +1,7 @@
 # Salto NACL Configuration Editor
-This [VS Code] (https://code.visualstudio.com/) extension adds rich support for [Salto] (https://salto.io) NACL Configuration files, which represent a business application configuration. By utilizing NACL files, users can easily perform impact analysis on the business application configuration, as well as deploy changes between environments, document these changes using git commits and more. The extension includes syntax highlighting, auto-complete, code navigation, error and warning highlighting, and more!
+This [VS Code](https://code.visualstudio.com/) extension adds rich support for [Salto](https://salto.io) NACL Configuration files, which represent a business application configuration. By utilizing NACL files, users can easily perform impact analysis on the business application configuration, as well as deploy changes between environments, document these changes using git commits and more. The extension includes syntax highlighting, auto-complete, code navigation, error and warning highlighting, and more!
 
-Check out [Salto's OSS repository] (https://github.com/salto-io/salto) for documentation, the code for this extension and more.
+Check out [Salto's OSS repository](https://github.com/salto-io/salto) for documentation, the code for this extension and more.
 
 ## Features at a glance
 

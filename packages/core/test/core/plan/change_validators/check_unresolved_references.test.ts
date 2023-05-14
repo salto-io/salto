@@ -14,7 +14,8 @@
 * limitations under the License.
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { checkUnresolvedReferencesValidator } from '../../../../src/core/plan/change_validators/check_unresolved_references'
+import { errors as wsErrors } from '@salto-io/workspace'
+import { incomingUnresolvedReferencesValidator } from '../../../../src/core/plan/change_validators/incoming_unresolved_references'
 
 describe('checkUnresolvedReferencesValidator', () => {
   const type = new ObjectType({
@@ -25,24 +26,25 @@ describe('checkUnresolvedReferencesValidator', () => {
   })
   const firstInstance = new InstanceElement('instance1', type)
 
+  const firstInstanceError = new wsErrors.UnresolvedReferenceValidationError({
+    elemID: firstInstance.elemID, target: firstInstance.elemID,
+  })
+
   const secondInstance = new InstanceElement('instance2', type)
 
   it('should not return an error when the unresolved elemID is not in the plan', async () => {
-    const errors = await checkUnresolvedReferencesValidator({ found: [], missing: [firstInstance.elemID] })([
-      toChange({ after: secondInstance }),
+    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+      toChange({ before: secondInstance }),
     ])
     expect(errors).toEqual([])
   })
 
   it('should return an error when the unresolved elemID is in the plan', async () => {
-    const errors = await checkUnresolvedReferencesValidator({ found: [], missing: [firstInstance.elemID] })([
-      toChange({ after: firstInstance }),
+    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+      toChange({ before: firstInstance }),
     ])
-    expect(errors).toEqual([{
-      elemID: firstInstance.elemID,
-      severity: 'Warning',
-      message: 'Unresolved reference to a changed element.',
-      detailedMessage: `There are unresolved references to ${firstInstance.elemID.getFullName()}. If this was removed on purpose you may continue`,
-    }])
+    expect(errors.length).toEqual(1)
+    expect(errors[0].elemID).toEqual(firstInstance.elemID)
+    expect(errors[0].severity).toEqual('Warning')
   })
 })

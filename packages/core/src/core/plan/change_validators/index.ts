@@ -16,27 +16,27 @@
 
 import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
 import { createChangeValidator } from '@salto-io/adapter-utils'
-import { UnresolvedElemIDs } from '@salto-io/workspace'
+import { errors as wsErrors } from '@salto-io/workspace'
 import _ from 'lodash'
 import { getAdapterChangeValidators } from '../../adapters'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
-import { checkUnresolvedReferencesValidator } from './check_unresolved_references'
+import { incomingUnresolvedReferencesValidator } from './incoming_unresolved_references'
 
 
-const defaultChangeValidators = (unresolvedElemIDs: UnresolvedElemIDs): ChangeValidator[] => [
+const defaultChangeValidators = (errors: wsErrors.Errors): ChangeValidator[] => [
   checkDeploymentAnnotationsValidator,
-  checkUnresolvedReferencesValidator(unresolvedElemIDs),
+  incomingUnresolvedReferencesValidator(errors.validation),
 ]
 
 const getChangeValidators = (
   adapters: Record<string, AdapterOperations>,
   checkOnly: boolean,
-  unresolvedElemIDs: UnresolvedElemIDs,
+  errors: wsErrors.Errors,
 ): Record<string, ChangeValidator> =>
   _.mapValues(
     getAdapterChangeValidators(adapters, checkOnly),
     adapterValidator => createChangeValidator([
-      ...defaultChangeValidators(unresolvedElemIDs),
+      ...defaultChangeValidators(errors),
       adapterValidator,
     ])
   )

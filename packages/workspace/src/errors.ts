@@ -13,6 +13,47 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export { ValidationError, UnresolvedReferenceValidationError } from './validator'
+import { ElemID, SaltoElementError, SaltoError, SeverityLevel } from '@salto-io/adapter-api'
+import _ from 'lodash'
+import { UnresolvedReferenceValidationError, isUnresolvedRefError } from './validator'
+
+export { UnresolvedReferenceValidationError, ValidationError } from './validator'
+export { Errors, InvalidEnvNameError, UnknownEnvError } from './workspace/errors'
 export { WorkspaceError } from './workspace/workspace'
-export { Errors, UnknownEnvError, InvalidEnvNameError } from './workspace/errors'
+export class UnresolvedReferenceGroupError implements SaltoElementError {
+  readonly elemID: ElemID
+  readonly message: string
+  readonly severity: SeverityLevel
+  readonly sourceAmount?: number
+  constructor(
+    target: string,
+    refErrors: ReadonlyArray<UnresolvedReferenceValidationError>,
+  ) {
+    const [firstError] = refErrors
+    this.elemID = firstError.elemID
+    this.sourceAmount = refErrors.length
+    this.message = `Unresolved reference to ${target} in ${this.sourceAmount} places - if this was removed on purpose you may continue`
+    this.severity = 'Warning'
+  }
+}
+
+export const groupUnresolvedRefsByTarget = (
+  origErrors: ReadonlyArray<SaltoError>,
+): ReadonlyArray<UnresolvedReferenceGroupError> => {
+  const unresolvedRefs = origErrors.filter(isUnresolvedRefError)
+  const unresolvedTargets = new Set(unresolvedRefs.map(err => err.target.getFullName()))
+  const getBaseUnresolvedTarget = (id: ElemID): string => {
+    const parent = id.createParentID()
+    return (id.isTopLevel() || !unresolvedTargets.has(parent.getFullName()))
+      ? id.getFullName()
+      : getBaseUnresolvedTarget(parent)
+  }
+
+  return _(unresolvedRefs)
+    .groupBy(err => getBaseUnresolvedTarget(err.target))
+    .entries()
+    .map(([baseTarget, errors]) => (
+      errors.length > 1 ? new UnresolvedReferenceGroupError(baseTarget, errors) : errors[0]
+    ))
+    .value()
+}

@@ -15,7 +15,10 @@
 */
 import { AdapterOperations, ChangeValidator, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
+import { errors as wsErrors } from '@salto-io/workspace'
 import getChangeValidators from '../../../../src/core/plan/change_validators'
+
+const { Errors } = wsErrors
 
 describe('getChangeValidators', () => {
   let adapters: Record<string, AdapterOperations>
@@ -68,7 +71,9 @@ describe('getChangeValidators', () => {
   })
   describe('when checkOnly is false', () => {
     it('should call both the adapter change validators and the core change validators and use the deployModifiers', async () => {
-      const changesValidators = getChangeValidators(adapters, false, { found: [], missing: [] })
+      const changesValidators = getChangeValidators(
+        adapters, false, new Errors({ merge: [], parse: [], validation: [] })
+      )
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
       expect(errors[0].message).toBe('Operation not supported')
@@ -80,7 +85,9 @@ describe('getChangeValidators', () => {
 
   describe('when checkOnly is true', () => {
     it('should call both the adapter change validators and the core change validators and use the validationModifiers', async () => {
-      const changesValidators = getChangeValidators(adapters, true, { found: [], missing: [] })
+      const changesValidators = getChangeValidators(
+        adapters, true, new Errors({ merge: [], parse: [], validation: [] })
+      )
       const errors = await changesValidators.adapter(changes)
       expect(errors).toHaveLength(2)
       expect(errors[0].message).toBe('Operation not supported')

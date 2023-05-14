@@ -23,13 +23,14 @@ const log = logger(module)
 
 const getWarningsForLocale = (
 ): SaltoError[] => [{
-  message: 'Please be aware that your Zendesk account\'s default locale is not set to English, which may impact your ability to compare environments with different default locales',
+  message: 'Please be aware that your Zendesk account\'s default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales',
   severity: 'Warning',
 }]
 
 /**
  * This filter checks that the default locale is set to en-US, if not it will raise a warning. We have seen that the
- * default local determines the language of different values and therefore may affect the elemId.
+ * default locale determines the language of different values and therefore may affect the elemId. This can cause
+ * elements to unintentionally appear as removed/added when comparing environments
  */
 const filterCreator: FilterCreator = () => ({
   name: 'locale',

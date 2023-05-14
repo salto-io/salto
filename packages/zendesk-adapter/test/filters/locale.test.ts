@@ -29,7 +29,7 @@ describe('locale filter', () => {
   let filter: FilterType
 
   const localeType = new ObjectType({ elemID: new ElemID(ZENDESK, LOCALE_TYPE_NAME) })
-  const warningMsg = 'Please be aware that your Zendesk account\'s default locale is not set to English, which may impact your ability to compare environments with different default locales'
+  const warningMsg = 'Please be aware that your Zendesk account\'s default locale is not set to English (en-US), which may impact your ability to compare environments with different default locales'
 
   beforeEach(async () => {
     filter = filterCreator(createFilterCreatorParams({})) as FilterType

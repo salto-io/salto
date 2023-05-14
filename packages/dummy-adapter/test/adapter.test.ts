@@ -47,7 +47,7 @@ describe('dummy adapter', () => {
       })
     })
 
-    it('should omit fields from instances if defined in fieldsToOmit', async () => {
+    it('should omit fields from instances if defined in fieldsToOmitOnDeploy', async () => {
       const type = new ObjectType({
         elemID: new ElemID(DUMMY_ADAPTER, 'type'),
       })

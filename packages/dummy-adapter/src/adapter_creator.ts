@@ -32,7 +32,7 @@ export const configType = new ObjectType({
     changeErrors: { refType: new ListType(changeErrorType) },
     extraNaclPath: { refType: BuiltinTypes.STRING },
     generateEnvName: { refType: BuiltinTypes.STRING },
-    fieldsToOmit: { refType: new ListType(BuiltinTypes.STRING) },
+    fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
   },
 })
 

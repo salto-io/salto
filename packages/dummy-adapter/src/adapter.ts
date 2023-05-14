@@ -41,7 +41,7 @@ export default class DummyAdapter implements AdapterOperations {
       .map(getChangeData)
       .filter(isInstanceElement)
       .forEach(instance => {
-        instance.value = _.omit(instance.value, this.genParams.fieldsToOmit ?? [])
+        instance.value = _.omit(instance.value, this.genParams.fieldsToOmitOnDeploy ?? [])
       })
 
     return {

@@ -160,7 +160,7 @@ export type GeneratorParams = {
     changeErrors?: ChangeErrorFromConfigFile[]
     extraNaclPath?: string
     generateEnvName? : string
-    fieldsToOmit?: string[]
+    fieldsToOmitOnDeploy?: string[]
 }
 
 export const defaultParams: Omit<GeneratorParams, 'extraNaclPath'> = {

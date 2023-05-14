@@ -14,17 +14,34 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, getChangeData } from '@salto-io/adapter-api'
+import { Change, ChangeValidator, getChangeData, isModificationChange, isRemovalChange } from '@salto-io/adapter-api'
 import { UnresolvedElemIDs } from '@salto-io/workspace'
+
+const getChangeType = (change: Change): string => {
+  if (isModificationChange(change)) {
+    return 'modified'
+  }
+  if (isRemovalChange(change)) {
+    return 'deleted'
+  }
+  throw Error('Unexpected type?')
+}
 
 export const checkUnresolvedReferencesValidator = (unresolvedElemIDs: UnresolvedElemIDs)
   : ChangeValidator => async changes => (
-  unresolvedElemIDs.missing
-    .filter(unresolvedElemID => changes.some(change => getChangeData(change).elemID.isEqual(unresolvedElemID)))
-    .map(elemID => ({
-      elemID,
-      severity: 'Warning',
-      message: 'Unresolved references to a modified/deleted element.',
-      detailedMessage: '(The change to this element/Removing this element) created unresolved references in X other elements. If this was done on purpose, you may continue.',
-    }))
+  changes
+    .filter(change => unresolvedElemIDs.missing.some(
+      unresolvedElemID => getChangeData(change).elemID.isEqual(unresolvedElemID)
+    ))
+    .map(change => {
+      const { elemID } = getChangeData(change)
+      const changeType = getChangeType(change)
+      return {
+        elemID,
+        severity: 'Warning',
+        message: `Unresolved references to a ${changeType} element.`,
+        detailedMessage: `Some elements contain references to this ${changeType} element, which are no longer valid.`
+            + ' You may continue with deploying this change, but the deployment might fail.',
+      }
+    })
 )

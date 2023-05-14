@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import _, { isNumber } from 'lodash'
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import wu from 'wu'
 import {
@@ -87,13 +87,13 @@ export const organizationExistenceValidator: (client: ZendeskClient, fetchConfig
           // If the instance includes an organization that does not exist, we won't allow a change to that instance
           if (nonExistingOrgs.size > 0) {
             // Check if any of the non-existing orgs are numbers, if so, we should recommend the user to resolve them
-            const nonExistingOrgsAreIds = !orgIdsResolved || wu(nonExistingOrgs.values()).some(org => isNumber(org))
+            const nonExistingOrgsAreIds = !orgIdsResolved || wu(nonExistingOrgs.values()).some(org => _.isNumber(org))
             const resolveOrgsRecommendation = nonExistingOrgsAreIds ? '. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
-                + 'More information about Salto\'s config files can be found here' : ''
+                + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'' : ''
             return {
               elemID: entries[0].instance.elemID,
               severity: 'Error',
-              message: `Referenced organization ${orgIdsResolved ? 'names' : 'IDs'} do not exist`,
+              message: 'Referenced organizations do not exist',
               detailedMessage: `The following referenced organizations do not exist in the target environment: ${Array.from(nonExistingOrgs).join(', ')}${resolveOrgsRecommendation}`,
             }
           }

@@ -113,13 +113,13 @@ describe('OrganizationExistence', () => {
       {
         elemID: slaInstance.elemID,
         severity: 'Error',
-        message: 'Referenced organization names do not exist',
+        message: 'Referenced organizations do not exist',
         detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
-        message: 'Referenced organization names do not exist',
+        message: 'Referenced organizations do not exist',
         detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four',
       },
     ])
@@ -145,16 +145,16 @@ describe('OrganizationExistence', () => {
       {
         elemID: slaInstance.elemID,
         severity: 'Error',
-        message: 'Referenced organization IDs do not exist',
+        message: 'Referenced organizations do not exist',
         detailedMessage: 'The following referenced organizations do not exist in the target environment: 3, 4. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
-            + 'More information about Salto\'s config files can be found here',
+            + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
-        message: 'Referenced organization IDs do not exist',
+        message: 'Referenced organizations do not exist',
         detailedMessage: 'The following referenced organizations do not exist in the target environment: 3, 4. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
-            + 'More information about Salto\'s config files can be found here',
+            + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'',
       },
     ])
   })

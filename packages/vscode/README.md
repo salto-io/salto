@@ -16,9 +16,8 @@ Check out [Salto's OSS repository](https://github.com/salto-io/salto) for docume
 - Show types definition values on hover
 - Copy salto reference
 
-## Installation
-Salto VS Code extension can be installed through marketplace or by downloading vsix file and manually add it to your VS Code.
-To install manually:
+## Manual Installation
+In addition to installing through the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=salto-io.salto-vscode), the extension can also be manually installed by downloading a vsix file and manually adding it to your VS Code. Notice that auto-updates will not work if you manually install the extension. To install manually:
 - Download the latest vsix file from [here](https://github.com/salto-io/salto/releases/latest)
 - Open the extension menu
 - Select install from .vsix

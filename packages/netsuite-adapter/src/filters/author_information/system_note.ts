@@ -22,7 +22,7 @@ import Ajv from 'ajv'
 import moment from 'moment-timezone'
 import { TYPES_TO_INTERNAL_ID as ORIGINAL_TYPES_TO_INTERNAL_ID } from '../../data_elements/types'
 import NetsuiteClient from '../../client/client'
-import { FilterCreator, FilterWith } from '../../filter'
+import { RemoteFilterCreator } from '../../filter'
 import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
@@ -239,8 +239,9 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .filter(async instance => isCustomRecordType(await instance.getType()))
     .toArray()
 
-const filterCreator: FilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }) => ({
   name: 'systemNoteAuthorInformation',
+  remote: true,
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {

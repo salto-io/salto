@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, Element, getChangeData, isAdditionChange } from '@sal
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import NetsuiteClient from '../client/client'
-import { FilterCreator, FilterWith } from '../filter'
+import { RemoteFilterCreator } from '../filter'
 import setConstantUrls from '../service_url/constant_urls'
 import setCustomFieldsUrls from '../service_url/custom_field'
 import setCustomRecordTypesUrls from '../service_url/custom_record_type'
@@ -55,8 +55,9 @@ const setServiceUrls = async (elements: Element[], client: NetsuiteClient): Prom
   )
 }
 
-const filterCreator: FilterCreator = ({ client }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client }) => ({
   name: 'serviceUrls',
+  remote: true,
   onFetch: async elements => {
     if (!client.isSuiteAppConfigured()) {
       return

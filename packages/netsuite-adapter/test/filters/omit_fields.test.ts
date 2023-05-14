@@ -15,12 +15,11 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import NetsuiteClient from '../../src/client/client'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_fields'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { toAnnotationRefTypes } from '../../src/custom_records/custom_record_type'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 
@@ -28,7 +27,7 @@ describe('omit fields filter', () => {
   let type: ObjectType
   let innerType: ObjectType
   let instance: InstanceElement
-  let defaultOpts: FilterOpts
+  let defaultOpts: LocalFilterOpts
   beforeEach(async () => {
     innerType = new ObjectType({ elemID: new ElemID(NETSUITE, 'innerType') })
     type = new ObjectType({
@@ -43,7 +42,6 @@ describe('omit fields filter', () => {
       field2: { nested1: 'test', nested2: 'test2' },
     })
     defaultOpts = {
-      client: {} as NetsuiteClient,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,

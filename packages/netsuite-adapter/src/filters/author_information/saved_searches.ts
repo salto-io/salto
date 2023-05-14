@@ -20,7 +20,7 @@ import _ from 'lodash'
 import moment from 'moment-timezone'
 import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
 import { NETSUITE, SAVED_SEARCH, SCRIPT_ID } from '../../constants'
-import { FilterCreator, FilterWith } from '../../filter'
+import { RemoteFilterCreator } from '../../filter'
 import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation } from './constants'
 
@@ -149,8 +149,9 @@ export const getZoneAndFormat = async (
   return { timeZone, format }
 }
 
-const filterCreator: FilterCreator = ({ client, config, elementsSource, isPartial, elementsSourceIndex }): FilterWith<'onFetch'> => ({
+const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, isPartial, elementsSourceIndex }) => ({
   name: 'savedSearchesAuthorInformation',
+  remote: true,
   onFetch: async elements => {
     // if undefined, we want to be treated as true so we check `=== false`
     if (config.fetch?.authorInformation?.enable === false) {

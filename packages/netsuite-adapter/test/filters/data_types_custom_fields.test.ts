@@ -16,14 +16,13 @@
 import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/data_types_custom_fields'
-import NetsuiteClient from '../../src/client/client'
 import { NETSUITE } from '../../src/constants'
 import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('data_types_custom_fields', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: LocalFilterOpts
   let type: ObjectType
   let instance: InstanceElement
 
@@ -34,7 +33,6 @@ describe('data_types_custom_fields', () => {
     instance = new InstanceElement('name', entitycustomfieldType().type, { appliestocustomer: true, scriptid: 'someid' })
 
     filterOpts = {
-      client: {} as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
@@ -85,7 +83,6 @@ describe('data_types_custom_fields', () => {
     it('should use element index if field instance was not fetched', async () => {
       instance.value.fieldtype = 'INTEGER'
       filterOpts = {
-        client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
@@ -108,7 +105,6 @@ describe('data_types_custom_fields', () => {
       fetchedInstance.value.appliestocustomer = false
 
       filterOpts = {
-        client: {} as NetsuiteClient,
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),

@@ -17,7 +17,7 @@ import { BuiltinTypes, ElemID, Field, isContainerType, isObjectType, isPrimitive
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { NETSUITE, PARENT, RECORD_REF } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -417,7 +417,7 @@ const getFieldType = (
   return typeName !== undefined ? typeMap[typeName] : undefined
 }
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'replaceRecordRef',
   onFetch: async elements => {
     const recordRefElemId = new ElemID(NETSUITE, RECORD_REF)

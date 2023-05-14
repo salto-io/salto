@@ -15,11 +15,11 @@
 */
 import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
 import { isDataObjectType } from '../types'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const HIDDEN_FIELDS = ['internalId']
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'hiddenFields',
   onFetch: async elements => {
     elements

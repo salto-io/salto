@@ -19,7 +19,7 @@ import filterCreator, { FILE_FIELD_IDENTIFIER, FOLDER_FIELD_IDENTIFIER } from '.
 import { CUSTOM_RECORD_TYPE, FILE, FOLDER, METADATA_TYPE, NETSUITE } from '../../../src/constants'
 import { createServerTimeElements } from '../../../src/server_time'
 import NetsuiteClient from '../../../src/client/client'
-import { FilterOpts } from '../../../src/filter'
+import { RemoteFilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { EMPLOYEE_NAME_QUERY } from '../../../src/filters/author_information/constants'
@@ -27,7 +27,7 @@ import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../..
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../../src/changes_detector/date_formats'
 
 describe('netsuite system note author information', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: RemoteFilterOpts
   let elements: Element[]
   let fileInstance: InstanceElement
   let folderInstance: InstanceElement

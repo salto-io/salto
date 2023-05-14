@@ -18,6 +18,7 @@ import { ATTRIBUTE_PREFIX } from '../../src/client/constants'
 import { translationcollectionType } from '../../src/autogen/types/standard_types/translationcollection'
 import filterCreator from '../../src/filters/translation_converter'
 import { NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 
 describe('translation_converter filter', () => {
@@ -25,7 +26,7 @@ describe('translation_converter filter', () => {
 
   describe('onFetch', () => {
     it('should add nameTranslate to type', async () => {
-      await filterCreator().onFetch([translationcollection])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([translationcollection])
       expect(translationcollection.fields.nameTranslate).toBeDefined()
     })
 
@@ -36,7 +37,7 @@ describe('translation_converter filter', () => {
           translate: 'T',
         },
       })
-      await filterCreator().onFetch([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({ name: 'name', nameTranslate: true })
     })
 
@@ -44,7 +45,7 @@ describe('translation_converter filter', () => {
       const instance = new InstanceElement('instance', translationcollection, {
         name: 'name',
       })
-      await filterCreator().onFetch([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({ name: 'name' })
     })
 
@@ -70,7 +71,7 @@ describe('translation_converter filter', () => {
           metadataType: 'customrecordtype',
         },
       })
-      await filterCreator().onFetch([customRecordType])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([customRecordType])
       expect(customRecordType.annotations).toEqual({
         name: 'Custom Record',
         nameTranslate: true,
@@ -87,7 +88,7 @@ describe('translation_converter filter', () => {
         name: 'name',
         nameTranslate: true,
       })
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({ name: {
         '#text': 'name',
         [`${ATTRIBUTE_PREFIX}translate`]: 'T',
@@ -98,7 +99,7 @@ describe('translation_converter filter', () => {
       const instance = new InstanceElement('instance', translationcollection, {
         name: 'name',
       })
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({ name: 'name' })
     })
 
@@ -111,7 +112,7 @@ describe('translation_converter filter', () => {
           metadataType: 'customrecordtype',
         },
       })
-      await filterCreator().preDeploy([toChange({ after: customRecordType })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: customRecordType })])
       expect(customRecordType.annotations).toEqual({
         name: {
           '#text': 'Custom Record',
@@ -137,7 +138,7 @@ describe('translation_converter filter', () => {
           metadataType: 'customrecordtype',
         },
       })
-      await filterCreator().preDeploy([toChange({ after: customRecordType })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: customRecordType })])
       expect(customRecordType.fields.custom_field.annotations).toEqual({
         label: {
           '#text': 'label',

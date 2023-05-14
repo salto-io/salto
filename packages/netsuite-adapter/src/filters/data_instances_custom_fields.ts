@@ -16,7 +16,7 @@
 import { isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomFieldName } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
 import { XSI_TYPE } from '../client/constants'
@@ -26,7 +26,7 @@ import { SOAP_SCRIPT_ID } from '../constants'
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesCustomFields',
   onFetch: async elements => {
     await awu(elements)

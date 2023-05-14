@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
 import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
@@ -254,11 +254,11 @@ const applyValuesAndAnnotationsToElement = (element: Element, newElement: Elemen
   element.annotations = newElement.annotations
 }
 
-const filterCreator: FilterCreator = ({
+const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
   isPartial,
   changesGroupId,
-}): FilterWith<'onFetch' | 'preDeploy'> => ({
+}) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
     const serviceIdToElemID = Object.assign(

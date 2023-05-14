@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { getChangeData, isAdditionChange, isObjectType, ObjectType } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { getCustomField } from './data_types_custom_fields'
 import { isCustomRecordType } from '../types'
 import { CUSTOM_RECORD_TYPE, INDEX, METADATA_TYPE, SCRIPT_ID, SOAP, SOURCE } from '../constants'
@@ -71,11 +71,11 @@ const getElementsSourceCustomRecordTypes = async (
     })) : []
 )
 
-const filterCreator: FilterCreator = ({
+const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
   isPartial,
   config,
-}): FilterWith<'onFetch' | 'onDeploy'> => ({
+}) => ({
   name: 'customRecordTypesType',
   onFetch: async elements => {
     const types = elements.filter(isObjectType)

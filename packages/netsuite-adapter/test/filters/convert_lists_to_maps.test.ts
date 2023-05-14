@@ -20,7 +20,7 @@ import { getStandardTypes } from '../../src/autogen/types'
 import { getInnerStandardTypes, getTopLevelStandardTypes } from '../../src/types'
 import { CUSTOM_RECORD_TYPE, LIST_MAPPED_BY_FIELD, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import { TypeAndInnerTypes } from '../../src/types/object_types'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { workflowType as getWorkflowType } from '../../src/autogen/types/standard_types/workflow'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
 import { convertFieldsTypesFromListToMap } from '../../src/mapped_lists/utils'
@@ -173,7 +173,7 @@ describe('convert lists to maps filter', () => {
         },
       })
 
-      await filterCreator({} as FilterOpts).onFetch?.([
+      await filterCreator({} as LocalFilterOpts).onFetch?.([
         ...getTopLevelStandardTypes(standardTypes),
         ...getInnerStandardTypes(standardTypes),
         instance,
@@ -324,7 +324,7 @@ describe('convert lists to maps filter', () => {
             },
           }),
         })
-        await filterCreator({} as FilterOpts).preDeploy?.([dataInstanceChange])
+        await filterCreator({} as LocalFilterOpts).preDeploy?.([dataInstanceChange])
       })
       it('should modify data instance values', () => {
         expect(getChangeData(dataInstanceChange).value).toEqual({
@@ -400,7 +400,7 @@ describe('convert lists to maps filter', () => {
           }
         ),
       })
-      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts)
+      await filterCreator({ changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as LocalFilterOpts)
         .preDeploy?.([instanceChange])
     })
     it('should modify instance values', () => {

@@ -17,13 +17,12 @@ import { ElemID, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/remove_unsupported_types'
 import { NETSUITE } from '../../src/constants'
-import NetsuiteClient from '../../src/client/client'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { customrecordtypeType } from '../../src/autogen/types/standard_types/customrecordtype'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../utils'
 
 describe('remove_unsupported_types', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: LocalFilterOpts
   let elements: TypeElement[]
   const sdfType = customrecordtypeType().type
   const supportedSoapType = new ObjectType({ elemID: new ElemID(NETSUITE, 'subsidiary'), annotations: { source: 'soap' } })
@@ -37,7 +36,6 @@ describe('remove_unsupported_types', () => {
       metadataType: 'customrecordtype',
     },
   })
-  const isSuiteAppConfiguredMock = jest.fn()
 
   beforeEach(async () => {
     elements = [
@@ -48,10 +46,7 @@ describe('remove_unsupported_types', () => {
       sdfSoapType,
       customRecordType,
     ]
-    isSuiteAppConfiguredMock.mockReset()
-    isSuiteAppConfiguredMock.mockReturnValue(true)
     filterOpts = {
-      client: { isSuiteAppConfigured: isSuiteAppConfiguredMock } as unknown as NetsuiteClient,
       elementsSourceIndex: {
         getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
       },
@@ -84,11 +79,5 @@ describe('remove_unsupported_types', () => {
     })]
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(elements.map(e => e.elemID.name)).toEqual(['custrecord'])
-  })
-
-  it('should do nothing if suiteApp is not installed', async () => {
-    isSuiteAppConfiguredMock.mockReturnValue(false)
-    await filterCreator(filterOpts).onFetch?.(elements)
-    expect(elements.map(e => e.elemID.name)).toEqual(['customrecordtype', 'subsidiary', 'salesOrder', 'someType', 'CustomRecordType', 'custrecord'])
   })
 })

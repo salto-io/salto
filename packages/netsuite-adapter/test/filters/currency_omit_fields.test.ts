@@ -16,6 +16,7 @@
 import { getChangeData, InstanceElement, toChange } from '@salto-io/adapter-api'
 import { currencyType } from '../change_validators/currency_undeployable_fields.test'
 import filterCreator, { FIELDS_TO_OMIT } from '../../src/filters/currency_omit_fields'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('currency fields filter', () => {
   it(`should remove the following fields: ${FIELDS_TO_OMIT.join(' ,')}`, async () => {
@@ -34,7 +35,7 @@ describe('currency fields filter', () => {
         currencyPrecision: '_two',
       })
     const change = toChange({ after: instance })
-    await filterCreator().preDeploy([change])
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
     expect(getChangeData(change).value).toEqual(
       {
         name: 'instance',

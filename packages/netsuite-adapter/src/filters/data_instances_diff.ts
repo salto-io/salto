@@ -17,7 +17,7 @@ import { getChangeData, InstanceElement, isEqualValues, isInstanceChange, isModi
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
@@ -41,7 +41,7 @@ export const removeIdenticalValues = (change: ModificationChange<InstanceElement
   })
 }
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesDiff',
   preDeploy: async changes => {
     await awu(changes)

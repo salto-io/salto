@@ -20,7 +20,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectT
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { isStandardType, isDataObjectType, isFileCabinetType, isCustomFieldName } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, IS_SUB_INSTANCE, NAME_FIELD, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -52,7 +52,7 @@ const isNestedPath = (path: ElemID | undefined): path is ElemID =>
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesInternalId',
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}

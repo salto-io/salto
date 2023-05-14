@@ -17,12 +17,12 @@ import { Change, getChangeData, InstanceElement, isInstanceChange } from '@salto
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { IDENTIFIER_FIELD } from '../data_elements/types'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isDataObjectType } from '../types'
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesIdentifiers',
   preDeploy: async changes => {
     await awu(changes)

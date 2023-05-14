@@ -18,7 +18,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../../src/filters/internal_ids/sdf_internal_ids'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
-import { FilterOpts } from '../../../src/filter'
+import { RemoteFilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
@@ -26,7 +26,7 @@ import { clientscriptType } from '../../../src/autogen/types/standard_types/clie
 import { savedsearchType } from '../../../src/autogen/types/standard_types/savedsearch'
 
 describe('sdf internal ids tests', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: RemoteFilterOpts
   let elements: ChangeDataType[]
   let customRecordType: ObjectType
   let accountInstance: InstanceElement

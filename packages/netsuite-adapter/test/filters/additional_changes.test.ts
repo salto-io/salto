@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { BuiltinTypes, Change, ElemID, Field, getChangeData, InstanceElement, isInstanceChange, isObjectTypeChange, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE } from '../../src/constants'
 import filterCreator from '../../src/filters/additional_changes'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 
-const noParams = { config: { deploy: {} } } as FilterOpts
+const noParams = { config: { deploy: {} } } as LocalFilterOpts
 
 describe('additional changes filter', () => {
   let customRecordType: ObjectType

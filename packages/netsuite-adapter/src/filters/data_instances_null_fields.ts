@@ -16,12 +16,12 @@
 import { getChangeData, InstanceElement, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix } from '../types'
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesNullFields',
   preDeploy: async changes => {
     await awu(changes)

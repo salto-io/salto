@@ -16,7 +16,7 @@
 
 import { getChangeData, InstanceElement, isAdditionChange, isInstanceChange, Change } from '@salto-io/adapter-api'
 import { CURRENCY, EXCHANGE_RATE } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 export const DEFAULT_EXCHANGE_RATE = 1
 
@@ -31,7 +31,7 @@ export const getCurrencyAdditionsWithoutExchangeRate = (
     .filter(instance => !instance.value[EXCHANGE_RATE])
 )
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'currencyExchangeRate',
   preDeploy: async changes => {
     getCurrencyAdditionsWithoutExchangeRate(changes)

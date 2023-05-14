@@ -24,9 +24,8 @@ import { fileType } from '../../src/types/file_cabinet_types'
 import { customsegmentType } from '../../src/autogen/types/standard_types/customsegment'
 import { workflowType } from '../../src/autogen/types/standard_types/workflow'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
-import NetsuiteClient from '../../src/client/client'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../../src/group_changes'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { getDefaultAdapterConfig } from '../utils'
 
 
@@ -137,7 +136,6 @@ describe('instance_references filter', () => {
 
     it('should replace path references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -150,7 +148,6 @@ describe('instance_references filter', () => {
 
     it('should replace scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -164,7 +161,6 @@ describe('instance_references filter', () => {
 
     it('should replace annotations references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -180,7 +176,6 @@ describe('instance_references filter', () => {
 
     it('should replace references in custom record type', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -194,7 +189,6 @@ describe('instance_references filter', () => {
 
     it('should replace references to custom record type in instances', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -206,7 +200,6 @@ describe('instance_references filter', () => {
 
     it('parent should reference the element itself', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -220,7 +213,6 @@ describe('instance_references filter', () => {
 
     it('should replace scriptid with 1 nesting level references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -234,7 +226,6 @@ describe('instance_references filter', () => {
 
     it('should replace scriptid with 2 nesting level references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -248,7 +239,6 @@ describe('instance_references filter', () => {
 
     it('should replace inner scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -263,7 +253,6 @@ describe('instance_references filter', () => {
 
     it('should replace type and scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -277,7 +266,6 @@ describe('instance_references filter', () => {
 
     it('should not replace scriptid references for non existing scriptid', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -291,7 +279,6 @@ describe('instance_references filter', () => {
 
     it('should not replace type and scriptid references for non existing scriptid', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -305,7 +292,6 @@ describe('instance_references filter', () => {
 
     it('should not replace type and scriptid references when scriptid is of another type', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -319,7 +305,6 @@ describe('instance_references filter', () => {
 
     it('should not replace appid and scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -333,7 +318,6 @@ describe('instance_references filter', () => {
 
     it('should not replace appid, type and scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -347,7 +331,6 @@ describe('instance_references filter', () => {
 
     it('should not replace bundleid and scriptid references', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -361,7 +344,6 @@ describe('instance_references filter', () => {
 
     it('should not replace path references for unresolved ref', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -381,7 +363,6 @@ describe('instance_references filter', () => {
         internalIdsIndex: {},
       })
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: true,
@@ -401,7 +382,6 @@ describe('instance_references filter', () => {
         internalIdsIndex: {},
       })
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -415,7 +395,6 @@ describe('instance_references filter', () => {
 
     it('should create _genereated_dependencies annotation and not replace the value in complexed values', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -453,7 +432,6 @@ describe('instance_references filter', () => {
 
     it('should not replace complexed strings and ignore non existing refs', async () => {
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -499,7 +477,6 @@ describe('instance_references filter', () => {
         [PATH]: '/Templates/innerFileRef.name',
       })
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -547,7 +524,6 @@ describe('instance_references filter', () => {
         [PATH]: '/Templates/utils/ToastDalConfig.json',
       })
       await filterCreator({
-        client: {} as NetsuiteClient,
         elementsSourceIndex,
         elementsSource: buildElementsSourceFromElements([]),
         isPartial: false,
@@ -569,7 +545,7 @@ describe('instance_references filter', () => {
     let customRecordTypeWithReferences: ObjectType
     let fileInstanceWithContent: InstanceElement
 
-    const filterOpts = { changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as FilterOpts
+    const filterOpts = { changesGroupId: SDF_CREATE_OR_UPDATE_GROUP_ID } as LocalFilterOpts
 
     beforeEach(() => {
       const { type } = workflowType()
@@ -623,7 +599,7 @@ describe('instance_references filter', () => {
       expect(fileInstanceWithContent.value.content).toEqual(Buffer.from('some content'))
     })
     it('should not resolve when groupID is not SDF', async () => {
-      await filterCreator({} as FilterOpts).preDeploy?.([toChange({ after: instanceWithReferences })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instanceWithReferences })])
       expect(isReferenceExpression(instanceWithReferences.value.ref)).toBeTruthy()
     })
   })

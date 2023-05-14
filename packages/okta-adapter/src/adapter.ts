@@ -44,11 +44,11 @@ import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attr
 import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
 import templateUrlsFilter from './filters/template_urls'
-import { APP_LOGO_TYPE_NAME, OKTA } from './constants'
-import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
+import { APP_LOGO_TYPE_NAME, OKTA } from './constants'
+import { getLookUpName } from './reference_mapping'
 
 const { awu } = collections.asynciterable
 
@@ -75,14 +75,14 @@ export const DEFAULT_FILTERS = [
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
   templateUrlsFilter,
-  fieldReferencesFilter,
-  // should run before appDeploymentFilter and after userSchemaFilter
-  serviceUrlFilter,
-  appDeploymentFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
+  fieldReferencesFilter,
+  // should run before appDeploymentFilter and after userSchemaFilter
+  serviceUrlFilter,
+  appDeploymentFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,

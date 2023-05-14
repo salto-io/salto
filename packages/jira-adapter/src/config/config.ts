@@ -61,6 +61,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   parseTemplateExpressions?: boolean
   enableScriptRunnerAddon?: boolean
   addAlias?: boolean
+  splitFieldConfiguration?: boolean
 }
 
 export type MaskingConfig = {
@@ -197,6 +198,7 @@ const fetchConfigType = createUserFetchConfigType(
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
+    splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )

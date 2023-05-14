@@ -23,6 +23,7 @@ import { projectContextsDependencyChanger } from './project_contexts'
 import { removalsDependencyChanger } from './removals'
 import { workflowDependencyChanger } from './workflow'
 import { fieldContextDependencyChanger } from './field_contexts'
+import { fieldConfigurationDependencyChanger } from './field_configuration'
 
 const { awu } = collections.asynciterable
 
@@ -35,6 +36,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   globalFieldContextsDependencyChanger,
   projectContextsDependencyChanger,
   fieldContextDependencyChanger,
+  fieldConfigurationDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

@@ -16,16 +16,6 @@ Check out [Salto's OSS repository](https://github.com/salto-io/salto) for docume
 - Show types definition values on hover
 - Copy salto reference
 
-## Manual Installation
-In addition to installing through the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=salto-io.salto-vscode), the extension can also be manually installed by downloading a vsix file and manually adding it to your VS Code. Notice that auto-updates will not work if you manually install the extension. To install manually:
-- Download the latest vsix file from [here](https://github.com/salto-io/salto/releases/latest)
-- Open the extension menu
-- Select install from .vsix
-- Choose the downloaded file
-- Note: On version updates you might need to manually delete the extension directory in `$home/.vscode/extensions`
-
-<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/install.gif" alt="Installation" width="720"/>
-
 ## Auto-completion support
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/autocomplete.gif" alt="Auto completion" width="720"/>
@@ -52,3 +42,13 @@ In addition to installing through the [VS Code marketplace](https://marketplace.
  - Right click on the attribute, value, type or instance you would like to reference and select Copy Salto Reference from the menu.
 
 <img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/copy_ref.gif" alt="indexing" width="594"/>
+
+## Manual Installation
+In addition to installing through the [VS Code marketplace](https://marketplace.visualstudio.com/items?itemName=salto-io.salto-vscode), the extension can also be manually installed by downloading a vsix file and manually adding it to your VS Code. Notice that auto-updates will not work if you manually install the extension. To install manually:
+- Download the latest vsix file from [here](https://github.com/salto-io/salto/releases/latest)
+- Open the extension menu
+- Select install from .vsix
+- Choose the downloaded file
+- Note: On version updates you might need to manually delete the extension directory in `$home/.vscode/extensions`
+
+<img src="https://raw.githubusercontent.com/salto-io/extension_resources/master/install.gif" alt="Installation" width="720"/>

@@ -46,6 +46,7 @@ export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
   excludedTypes: string[]
+  excludedCustomRecordTypes?: string[]
 }
 
 export type GetCustomObjectsResult = {

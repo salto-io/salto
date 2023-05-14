@@ -278,9 +278,10 @@ describe('NetsuiteAdapter creator', () => {
       })
     })
 
-    it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
-      const conf = new InstanceElement(
-        ElemID.CONFIG_NAME,
+    describe('validateConfig', () => {
+      it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
+        const conf = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           client: {
@@ -290,97 +291,97 @@ describe('NetsuiteAdapter creator', () => {
             filePaths: ['aaa'],
           },
         }
-      )
+        )
 
-      adapter.operations({
-        credentials,
-        config: conf,
-        getElemIdFunc: mockGetElemIdFunc,
-        elementsSource,
-      })
-      expect(NetsuiteAdapter).toHaveBeenCalledWith({
-        client: expect.any(Object),
-        config: {
-          client: {
-            fetchAllTypesAtOnce: false,
+        adapter.operations({
+          credentials,
+          config: conf,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+        })
+        expect(NetsuiteAdapter).toHaveBeenCalledWith({
+          client: expect.any(Object),
+          config: {
+            client: {
+              fetchAllTypesAtOnce: false,
+            },
+            fetchTarget: expect.any(Object),
           },
-          fetchTarget: expect.any(Object),
-        },
-        elementsSource,
-        getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
       })
-    })
 
-    it('should create the adapter correctly when not having config', () => {
-      adapter.operations({
-        credentials,
-        getElemIdFunc: mockGetElemIdFunc,
-        elementsSource,
+      it('should create the adapter correctly when not having config', () => {
+        adapter.operations({
+          credentials,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+        })
+        expect(NetsuiteAdapter).toHaveBeenCalledWith({
+          client: expect.any(Object),
+          config: {},
+          elementsSource,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
       })
-      expect(NetsuiteAdapter).toHaveBeenCalledWith({
-        client: expect.any(Object),
-        config: {},
-        elementsSource,
-        getElemIdFunc: mockGetElemIdFunc,
-      })
-    })
 
-    it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           filePathRegexSkipList: ['\\'],
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when fetchTarget is invalid', () => {
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+      it('should throw an error when fetchTarget is invalid', () => {
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.types should be an object')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.types should be an object')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.customRecords should be an object')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.customRecords should be an object')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
@@ -389,16 +390,16 @@ describe('NetsuiteAdapter creator', () => {
                 },
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.types.type1 should be a list of strings')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.types.type1 should be a list of strings')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
@@ -407,16 +408,16 @@ describe('NetsuiteAdapter creator', () => {
                 },
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
-    })
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
+      })
 
-    it('should throw an error when include is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when include is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -425,20 +426,20 @@ describe('NetsuiteAdapter creator', () => {
             },
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when exclude is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when exclude is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -449,20 +450,20 @@ describe('NetsuiteAdapter creator', () => {
             },
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when fieldsToOmit is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when fieldsToOmit is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -471,15 +472,120 @@ describe('NetsuiteAdapter creator', () => {
             }],
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
+
+      describe('validateClientConfig', () => {
+        describe('validateMaxInstancesPerType', () => {
+          it('should validate maxInstancesPerType is the correct object with valid NS types', () => {
+            const invalidConfig = new InstanceElement(
+              ElemID.CONFIG_NAME,
+              adapter.configType as ObjectType,
+              {
+                client: {
+                  maxInstancesPerType: [{ name: 'customsegment', limit: 3 }],
+                },
+              }
+            )
+            expect(
+              () => adapter.operations({
+                credentials,
+                config: invalidConfig,
+                getElemIdFunc: mockGetElemIdFunc,
+                elementsSource: buildElementsSourceFromElements([]),
+              })
+            ).not.toThrow()
+          })
+
+          it('should validate also customrecordtype instances', () => {
+            const invalidConfig = new InstanceElement(
+              ElemID.CONFIG_NAME,
+              adapter.configType as ObjectType,
+              {
+                client: {
+                  maxInstancesPerType: [{ name: 'customrecord_For*', limit: 3 }],
+                },
+              }
+            )
+            expect(
+              () => adapter.operations({
+                credentials,
+                config: invalidConfig,
+                getElemIdFunc: mockGetElemIdFunc,
+                elementsSource: buildElementsSourceFromElements([]),
+              })
+            ).not.toThrow()
+          })
+
+          it('should throw if maxInstancesPerType has an invalid regex', () => {
+            const invalidConfig = new InstanceElement(
+              ElemID.CONFIG_NAME,
+              adapter.configType as ObjectType,
+              {
+                client: {
+                  maxInstancesPerType: [{ name: 'custom(.*', limit: 3 }],
+                },
+              }
+            )
+            expect(
+              () => adapter.operations({
+                credentials,
+                config: invalidConfig,
+                getElemIdFunc: mockGetElemIdFunc,
+                elementsSource: buildElementsSourceFromElements([]),
+              })
+            ).toThrow()
+          })
+
+          it('should throw if maxInstancesPerType is the wrong object', () => {
+            const invalidConfig = new InstanceElement(
+              ElemID.CONFIG_NAME,
+              adapter.configType as ObjectType,
+              {
+                client: {
+                  maxInstancesPerType: [{ wrong_name: 'customsegment', limit: 3 }],
+                },
+              }
+            )
+            expect(
+              () => adapter.operations({
+                credentials,
+                config: invalidConfig,
+                getElemIdFunc: mockGetElemIdFunc,
+                elementsSource: buildElementsSourceFromElements([]),
+              })
+            ).toThrow()
+          })
+
+          it('should throw if maxInstancesPerType is the correct object with invalid NS types', () => {
+            const invalidConfig = new InstanceElement(
+              ElemID.CONFIG_NAME,
+              adapter.configType as ObjectType,
+              {
+                client: {
+                  maxInstancesPerType: [{ name: 'not_supported_type', limit: 3 }],
+                },
+              }
+            )
+            expect(
+              () => adapter.operations({
+                credentials,
+                config: invalidConfig,
+                getElemIdFunc: mockGetElemIdFunc,
+                elementsSource: buildElementsSourceFromElements([]),
+              })
+            ).toThrow()
+          })
         })
-      ).toThrow()
+      })
     })
 
     describe('deploy params', () => {

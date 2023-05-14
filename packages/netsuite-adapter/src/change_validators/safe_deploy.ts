@@ -23,11 +23,15 @@ import { getTypeIdentifier } from '../data_elements/types'
 import { FailedFiles, FailedTypes } from '../client/types'
 import { getReferencedElements } from '../reference_dependencies'
 
-export type FetchByQueryReturnType = {
+export type FetchByQueryFailures = {
   failedToFetchAllAtOnce: boolean
   failedFilePaths: FailedFiles
   failedTypes: FailedTypes
+}
+
+export type FetchByQueryReturnType = {
   elements: ChangeDataType[]
+  failures: FetchByQueryFailures
 }
 
 export type FetchByQueryFunc = (

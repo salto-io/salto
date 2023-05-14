@@ -506,9 +506,11 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
+        },
         config,
       )
     })
@@ -563,9 +565,11 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        },
         config,
       )
       expect(fetchResult.updatedConfig).toBeUndefined()
@@ -582,9 +586,11 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -603,9 +609,11 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -623,9 +631,11 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        true,
-        { lockedError: [], otherError: [], largeFolderError: [] },
-        { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        {
+          failedToFetchAllAtOnce: true,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -1339,9 +1349,16 @@ describe('Adapter', () => {
       it('should filter from data elements and custom records', async () => {
         await adapter.fetch(mockFetchOpts)
         expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-          false,
-          expect.anything(),
-          { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeCustomRecord', 'excludedTypeDataElements'] },
+          {
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: expect.anything(),
+            failedTypes: {
+              lockedError: {},
+              unexpectedError: {},
+              excludedTypes: ['excludedTypeDataElements'],
+              excludedCustomRecordTypes: ['excludedTypeCustomRecord'],
+            },
+          },
           config,
         )
       })

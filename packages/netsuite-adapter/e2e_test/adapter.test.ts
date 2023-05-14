@@ -37,7 +37,7 @@ import {
   CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
-import { mockDefaultValues } from './mock_elements'
+import { CUSTOM_RECORD_SCRIPT_ID, mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 
@@ -780,8 +780,22 @@ describe('Netsuite adapter E2E with real account', () => {
           { client: { maxInstancesPerType: [
             { name: 'account', limit: 0 },
             { name: EMAIL_TEMPLATE, limit: 0 },
-            { name: 'customrecord_slt_e2e_test', limit: 0 },
-          ] } }
+            { name: CUSTOM_RECORD_SCRIPT_ID, limit: 0 },
+          ] },
+          fetch: {
+            include: {
+              types: [
+                { name: 'account' },
+                { name: EMAIL_TEMPLATE },
+                { name: CUSTOM_RECORD_TYPE, ids: [CUSTOM_RECORD_SCRIPT_ID] },
+              ],
+              fileCabinet: [
+                '^/SuiteScripts.*',
+                '^/Templates.*',
+              ],
+              customRecords: [{ name: CUSTOM_RECORD_SCRIPT_ID }],
+            },
+          } }
         )
         adapter = adapterAttr.adapter
 
@@ -824,8 +838,8 @@ describe('Netsuite adapter E2E with real account', () => {
             customRecordInstance.elemID
           )
           expect(fetchCustomRecord).not.toBeDefined()
-          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
-            (t: { name: string }) => t.name === 'customrecord_slt_e2e_test'
+          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.customRecords.some(
+            (t: { name: string }) => t.name === CUSTOM_RECORD_SCRIPT_ID
           )).toBeTruthy()
         }
       })

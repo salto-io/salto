@@ -104,6 +104,16 @@ export type SearchResponse = {
   }
 }
 
+export type SoapSearchType = {
+  type: string
+  subtypes?: string[]
+}
+
+export type SearchPageResponse = {
+  records: RecordValue[]
+  excludedFromSearch: boolean
+}
+
 export type SearchErrorResponse = {
   searchResult: {
     status: {

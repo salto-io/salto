@@ -555,30 +555,27 @@ export default class SdfClient {
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
 
-    const excludedTypes: string[] = []
-    const filterLargeTypes = ([type, instances]: [string, ObjectID[]]): boolean => {
-      if (this.instanceLimiter(type, instances.length)) {
-        log.info(`Excluding type ${type} as it has about ${instances.length} elements.`)
-        excludedTypes.push(type)
-        return false
-      }
-      return true
-    }
+    const [excludedGroups, instancesToFetch] = _.partition(
+      Object.entries(instancesIdsByType),
+      ([type, instances]) => this.instanceLimiter(type, instances.length)
+    )
+    const excludedTypes = excludedGroups.map(([type, instances]) => {
+      log.info(`Excluding type ${type} as it has about ${instances.length} elements.`)
+      return type
+    })
 
-    const idsChunks = Object.entries(instancesIdsByType)
-      .filter(filterLargeTypes)
-      .flatMap(([type, ids]: [string, ObjectID[]]) =>
-        wu(ids)
-          .map(id => id.instanceId)
-          .chunk(this.maxItemsInImportObjectsRequest)
-          .enumerate()
-          .map(([chunk, index]) => ({
-            type,
-            ids: chunk,
-            index: index + 1,
-            total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
-          }))
-          .toArray())
+    const idsChunks = instancesToFetch.flatMap(([type, ids]) =>
+      wu(ids)
+        .map(id => id.instanceId)
+        .chunk(this.maxItemsInImportObjectsRequest)
+        .enumerate()
+        .map(([chunk, index]) => ({
+          type,
+          ids: chunk,
+          index: index + 1,
+          total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
+        }))
+        .toArray())
 
     log.debug('Fetching custom objects by types in chunks')
     const results = await withLimitedConcurrency( // limit the number of open promises

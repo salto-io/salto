@@ -15,8 +15,9 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, FetchOptions,
-  DeployOptions, DeployModifiers,
+  DeployOptions, DeployModifiers, getChangeData, isInstanceElement,
 } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import { generateElements, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
 
@@ -36,6 +37,13 @@ export default class DummyAdapter implements AdapterOperations {
 
   // eslint-disable-next-line class-methods-use-this
   public async deploy({ changeGroup }: DeployOptions): Promise<DeployResult> {
+    changeGroup.changes
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .forEach(instance => {
+        instance.value = _.omit(instance.value, this.genParams.fieldsToOmitOnDeploy ?? [])
+      })
+
     return {
       appliedChanges: changeGroup.changes,
       errors: [],

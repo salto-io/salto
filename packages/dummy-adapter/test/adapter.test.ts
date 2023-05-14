@@ -13,11 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, toChange, InstanceElement } from '@salto-io/adapter-api'
+import { ElemID, ObjectType, toChange, InstanceElement, getChangeData } from '@salto-io/adapter-api'
 import DummyAdapter from '../src/adapter'
 import * as generator from '../src/generator'
 import testParams from './test_params'
-import { ChangeErrorFromConfigFile } from '../src/generator'
+import { ChangeErrorFromConfigFile, DUMMY_ADAPTER } from '../src/generator'
 
 const mockChangeError: ChangeErrorFromConfigFile = {
   elemID: 'dummy.Full.instance.myIns2',
@@ -45,6 +45,23 @@ describe('dummy adapter', () => {
         appliedChanges: [],
         errors: [],
       })
+    })
+
+    it('should omit fields from instances if defined in fieldsToOmitOnDeploy', async () => {
+      const type = new ObjectType({
+        elemID: new ElemID(DUMMY_ADAPTER, 'type'),
+      })
+
+      const instance = new InstanceElement(
+        'instance',
+        type,
+        { fieldToOmit: 'val1', field2: 'val2' }
+      )
+      const res = await adapter.deploy({ changeGroup: { changes: [toChange({ after: instance })], groupID: ':)' } })
+
+      const appliedInstance = getChangeData(res.appliedChanges[0]) as InstanceElement
+
+      expect(appliedInstance.value).toEqual({ field2: 'val2' })
     })
   })
   describe('validate', () => {

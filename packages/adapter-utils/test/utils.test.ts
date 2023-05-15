@@ -36,6 +36,7 @@ import {
   createSchemeGuard,
   getParent,
   getPath,
+  getSubtypes,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2484,6 +2485,35 @@ describe('Test utils.ts', () => {
       const schemeGuard = createSchemeGuard<{a: string}>(scheme, 'message')
       expect(schemeGuard({ a: 'string' })).toBeTruthy()
       expect(schemeGuard({ a: 2 })).toBeFalsy()
+    })
+  })
+  describe('getSubtypes', () => {
+    it('should return the expected subtypes', async () => {
+      const typeA = new ObjectType({ elemID: new ElemID('adapter', 'A') })
+      const typeB = new ObjectType({ elemID: new ElemID('adapter', 'B') })
+      const typeC = new ObjectType({
+        elemID: new ElemID('adapter', 'C'),
+        fields: {
+          b: { refType: typeB },
+          a: { refType: new MapType(typeA) },
+        },
+      })
+      const typeD = new ObjectType({
+        elemID: new ElemID('adapter', 'D'),
+        fields: {
+          c: { refType: new ListType(typeC) },
+        },
+      })
+      const typeE = new ObjectType({ elemID: new ElemID('adapter', 'E') })
+      const typeF = new ObjectType({
+        elemID: new ElemID('adapter', 'F'),
+        fields: {
+          d: { refType: typeD },
+          e: { refType: typeE },
+        },
+      })
+      const subtypes = await getSubtypes([typeD, typeF])
+      expect(_.sortBy(subtypes, type => type.elemID.name)).toEqual([typeA, typeB, typeC, typeE])
     })
   })
 })

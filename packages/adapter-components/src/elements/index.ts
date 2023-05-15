@@ -16,7 +16,6 @@
 import * as ducktype from './ducktype'
 import * as swagger from './swagger'
 import * as soap from './soap'
-import * as subtypes from './subtypes'
 import * as query from './query'
 import { computeGetArgs, simpleGetArgs, createUrl, replaceUrlParams } from './request_parameters'
 import { RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH } from './constants'
@@ -29,7 +28,6 @@ export {
   ducktype,
   swagger,
   soap,
-  subtypes,
   computeGetArgs, simpleGetArgs,
   findDataField, returnFullEntry, FindNestedFieldFunc,
   RECORDS_PATH, TYPES_PATH, SUBTYPES_PATH, SETTINGS_NESTED_PATH,

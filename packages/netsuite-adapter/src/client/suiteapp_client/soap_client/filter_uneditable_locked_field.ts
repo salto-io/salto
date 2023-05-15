@@ -24,8 +24,7 @@ import { CRM_CUSTOM_FIELD, CRM_CUSTOM_FIELD_PREFIX, CUSTOM_FIELD_LIST, ENTITY_CU
 import { WriteResponse, isWriteResponseError } from './types'
 import { HasElemIDFunc } from '../types'
 import { getGroupItemFromRegex } from '../../utils'
-import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD, PLATFORM_CORE_NAME,
-  PLATFORM_CORE_NULL_FIELD_LIST } from '../constants'
+import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD } from '../constants'
 
 const { isDefined } = values
 const log = logger(module)
@@ -51,7 +50,7 @@ const getFieldElemID = (fieldName: string): ElemID | undefined => {
   if (fieldName.startsWith(CRM_CUSTOM_FIELD_PREFIX)) {
     return new ElemID(NETSUITE, CRM_CUSTOM_FIELD, 'instance', fieldName)
   }
-  log.debug('The field "%s" was suspected as a locked custom field,'
+  log.warn('The field "%s" was suspected as a locked custom field,'
   + ' but its prefix didn\'t match any of the known custom fields prefixes', fieldName)
   return undefined
 }
@@ -73,8 +72,11 @@ const removeCustomField = (
     .filter((customField: { attributes: Record<string, string> }) =>
       customField.attributes[SOAP_SCRIPT_ID] !== fieldName)
   if (validCustomFields.length === customFields[PLATFORM_CORE_CUSTOM_FIELD].length) {
-    log.debug('The field "%s" was suspected as a locked field of the instance "%s", but wasn\'t found in its custom fields.',
-      fieldName, instance.elemID.getFullName())
+    log.warn(
+      'The field "%s" was suspected as a locked field of the instance "%s", but wasn\'t found in its custom fields.',
+      fieldName,
+      instance.elemID.getFullName(),
+    )
     return false
   }
 
@@ -84,13 +86,6 @@ const removeCustomField = (
     customFields[PLATFORM_CORE_CUSTOM_FIELD] = validCustomFields
   } else {
     delete instance.value[CUSTOM_FIELD_LIST]
-  }
-
-  const nullCustomFields = Array.isArray(instance.value[PLATFORM_CORE_NULL_FIELD_LIST]?.[PLATFORM_CORE_NAME])
-    ? instance.value[PLATFORM_CORE_NULL_FIELD_LIST][PLATFORM_CORE_NAME]
-    : []
-  instance.value[PLATFORM_CORE_NULL_FIELD_LIST] = {
-    [PLATFORM_CORE_NAME]: [...nullCustomFields, fieldName],
   }
   return true
 }

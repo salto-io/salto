@@ -16,13 +16,13 @@
 import { isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { CUSTOM_FIELD, PLATFORM_CORE_CUSTOM_FIELD } from '../client/suiteapp_client/constants'
+import { PLATFORM_CORE_CUSTOM_FIELD } from '../client/suiteapp_client/constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomFieldName } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
 import { XSI_TYPE } from '../client/constants'
 import { getDifferentKeys } from './data_instances_diff'
-import { CUSTOM_FIELD_LIST, SOAP_SCRIPT_ID } from '../constants'
+import { CUSTOM_FIELD, CUSTOM_FIELD_LIST, SOAP_SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array

@@ -48,7 +48,7 @@ export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
-const LOCKED_FIELDS_MAX_REDEPLOYS = 5
+const LOCKED_FIELDS_MAX_DEPLOYS = 6
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
@@ -566,30 +566,32 @@ export default class SoapClient {
 
   private async redeployLockedFieldsWithRetry(
     retriesLeft: number,
-    instancesToRedeploy: InstanceElement[],
+    instancesToDeploy: InstanceElement[],
     fullNameToWriteResponse: Map<string, WriteResponse>,
     action: 'updateList' | 'addList',
     hasElemID: HasElemIDFunc,
   ): Promise<void> {
     if (retriesLeft === 0) {
-      log.debug('Redeployment on locked fields exceed max retries.')
+      log.warn('Redeployment on locked fields exceed max retries.')
       return
     }
 
-    log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
-                + ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft)
     const writeResponseList = await this.runDeployAction(
-      await this.getAddAndUpdateDeployBody(instancesToRedeploy),
+      await this.getAddAndUpdateDeployBody(instancesToDeploy),
       action,
     )
-    _.forEach(instancesToRedeploy,
+    instancesToDeploy.forEach(
       ({ elemID }, index) =>
-        fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index]))
+        fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index])
+    )
 
-    const modifiedInstances = await awu(instancesToRedeploy)
+    const modifiedInstances = await awu(instancesToDeploy)
       .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
 
     if (modifiedInstances.length > 0) {
+      log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
+      + ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft - 1)
+
       await this.redeployLockedFieldsWithRetry(
         retriesLeft - 1,
         modifiedInstances,
@@ -605,27 +607,16 @@ export default class SoapClient {
     action: 'updateList' | 'addList',
     hasElemID: HasElemIDFunc,
   ): Promise<(number | Error)[]> {
-    const writeResponseList = await this.runDeployAction(
-      await this.getAddAndUpdateDeployBody(instances),
-      action
+    const fullNameToWriteResponse = new Map<string, WriteResponse>()
+
+    await this.redeployLockedFieldsWithRetry(
+      LOCKED_FIELDS_MAX_DEPLOYS,
+      instances,
+      fullNameToWriteResponse,
+      action,
+      hasElemID
     )
 
-    const fullNameToWriteResponse = new Map(
-      instances.map(({ elemID }, index) => [elemID.getFullName(), writeResponseList[index]])
-    )
-
-    const modifiedInstances = await awu(instances)
-      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
-
-    if (modifiedInstances.length > 0) {
-      await this.redeployLockedFieldsWithRetry(
-        LOCKED_FIELDS_MAX_REDEPLOYS,
-        modifiedInstances,
-        fullNameToWriteResponse,
-        action,
-        hasElemID
-      )
-    }
     return SoapClient.parseWriteResponseList(
       instances.map(({ elemID }) => fullNameToWriteResponse.get(elemID.getFullName())) as WriteResponse[],
       instances,

@@ -1032,7 +1032,7 @@ describe('soap_client', () => {
           instance1,
           instance2,
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).toEqual([
         1,
         new Error(`SOAP api call updateList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
@@ -1057,7 +1057,7 @@ describe('soap_client', () => {
             { name: 'name' }
           ),
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
@@ -1071,7 +1071,7 @@ describe('soap_client', () => {
             { name: 'name' },
           ),
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
   })
@@ -1156,7 +1156,7 @@ describe('soap_client', () => {
           instance2,
           customRecord,
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).toEqual([
         1,
         new Error(`SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
@@ -1182,7 +1182,7 @@ describe('soap_client', () => {
             { name: 'name' }
           ),
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
@@ -1196,7 +1196,7 @@ describe('soap_client', () => {
             { name: 'name' },
           ),
         ],
-        async (_elemID: ElemID) => true,
+        async () => true,
       )).rejects.toThrow('Got invalid response from addList request. Errors:')
     })
   })
@@ -1429,17 +1429,22 @@ describe('soap_client', () => {
 
     const elementsSource = buildElementsSourceFromElements([])
 
+    const originalInstance = new InstanceElement('testOther', testType, {
+      attributes: {
+        internalId: '1',
+      },
+      [CUSTOM_FIELD_LIST]: {
+        [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
+      },
+    })
+
     let instance: InstanceElement
     beforeEach(() => {
-      instance = new InstanceElement('testOther', testType, {
-        attributes: {
-          internalId: '1',
-        },
-        [CUSTOM_FIELD_LIST]: {
-          [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
-        },
-      })
+      instance = originalInstance.clone()
     })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const getAddAndUpdateDeployBodyMock = jest.spyOn(SoapClient.prototype as any, 'getAddAndUpdateDeployBody')
 
     it('Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
       updateListAsyncMock
@@ -1447,6 +1452,9 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
+      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST][PLATFORM_CORE_CUSTOM_FIELD])
+        .toEqual([customField2]) // without the problematic field
     })
 
     it('Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
@@ -1455,6 +1463,9 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.addInstances([instance], elementsSource.has)).toEqual([1])
+      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
+      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST][PLATFORM_CORE_CUSTOM_FIELD])
+        .toEqual([customField2]) // without the problematic field
     })
 
     it('Should redeploy with success when updating instances that failed to deploy several uneditable locked elements', async () => {
@@ -1464,10 +1475,13 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
+      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST])
+        .toBeUndefined()
     })
 
 
-    it('Should redeploy at most 5 times', async () => {
+    it('Should deploy at most 6 times - 1 original + 5 redeploys', async () => {
       updateListAsyncMock.mockResolvedValue([writeResponseListError1])
       jest.spyOn(filterUneditableLockedFieldModule, 'removeUneditableLockedField')
         .mockResolvedValue(true)
@@ -1478,7 +1492,6 @@ describe('soap_client', () => {
       expect(await client.updateInstances([instance], elementsSource.has))
         .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
         + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
-      // 1 original deploy call + 5 redeploys
       expect(runDeployActionMock).toHaveBeenCalledTimes(6)
     })
   })

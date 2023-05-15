@@ -92,8 +92,8 @@ const buildFieldSystemNotesQuery = (
     .join(' OR ')
   return `SELECT name, field, recordid, ${toSuiteQLSelectDateString('MAX(date)')} AS date`
     + ` FROM systemnote WHERE ${toDateQuery(lastFetchTime)} AND (${whereQuery})`
-    + ` GROUP BY name, field, recordid, ${toSuiteQLSelectDateString('date')}`
-    + ' ORDER BY name, field, recordid, date ASC'
+    + ' GROUP BY name, field, recordid'
+    + ' ORDER BY name, field, recordid ASC'
 }
 
 const querySystemNotesByField = async (

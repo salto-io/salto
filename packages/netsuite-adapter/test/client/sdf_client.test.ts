@@ -28,7 +28,8 @@ import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
-import { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/deploy_xml_utils'
+import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
@@ -46,126 +47,14 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
   new Graph(),
 ]
 
-
-const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
-const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
-const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
-const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
-
-const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-<frameworkversion>1.0</frameworkversion>
-<dependencies>
-  <features>
-    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
-    <feature required="true">SFA</feature>
-    <feature required="true">MULTICURRENCYVENDOR</feature>
-    <feature required="true">ACCOUNTING</feature>
-    <feature required="true">SUBSCRIPTIONBILLING</feature>
-    <feature required="true">ADDRESSCUSTOMIZATION</feature>
-    <feature required="true">WMSSYSTEM</feature>
-    <feature required="true">SUBSIDIARIES</feature>
-    <feature required="true">RECEIVABLES</feature>
-    <feature required="true">BILLINGACCOUNTS</feature>
-  </features>
-  <objects>
-    <object>custentity2edited</object>
-    <object>custentity13</object>
-    <object>custentity_14</object>
-    <object>custentity10</object>
-    <object>custentitycust_active</object>
-    <object>custentity11</object>
-    <object>custentity_slt_tax_reg</object>
-  </objects>
-  <files>
-    <file>/SuiteScripts/clientScript_2_0.js</file>
-  </files>
-</dependencies>
-</manifest>`
-
-const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-  <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-  <frameworkversion>1.0</frameworkversion>
-  <dependencies>
-    <features>
-      <feature required="true">SFA</feature>
-      <feature required="true">MULTICURRENCYVENDOR</feature>
-      <feature required="true">ACCOUNTING</feature>
-      <feature required="true">ADDRESSCUSTOMIZATION</feature>
-      <feature required="true">SUBSIDIARIES</feature>
-      <feature required="true">RECEIVABLES</feature>
-    </features>
-    <objects>
-      <object>custentity2edited</object>
-      <object>custentity13</object>
-      <object>custentity_14</object>
-      <object>custentity10</object>
-      <object>custentitycust_active</object>
-      <object>custentity11</object>
-      <object>custentity_slt_tax_reg</object>
-    </objects>
-    <files>
-      <file>/SuiteScripts/clientScript_2_0.js</file>
-    </files>
-  </dependencies>
-</manifest>
-`
-
-const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
-
-const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
-    <configuration>
-        <path>~/AccountConfiguration/*</path>
-    </configuration>
-    <files>
-        <path>~/FileCabinet/*</path>
-    </files>
-    <objects>
-        <path>~/Objects/*</path>
-    </objects>
-    <translationimports>
-        <path>~/Translations/*</path>
-    </translationimports>
-</deploy>
-`
-
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
-  readFile: jest.fn().mockImplementation(filePath => {
-    if (filePath.includes('.template.')) {
-      return MOCK_TEMPLATE_CONTENT
-    }
-    if (filePath.endsWith(MOCK_FILE_PATH)) {
-      return 'dummy file content'
-    }
-    if (filePath.endsWith(MOCK_FILE_ATTRS_PATH)) {
-      return '<file><description>file description</description></file>'
-    }
-    if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
-      return '<folder><description>folder description</description></folder>'
-    }
-
-    if (filePath.endsWith('manifest.xml')) {
-      return MOCK_MANIFEST_INVALID_DEPENDENCIES
-    }
-    if (filePath.endsWith('/features.xml')) {
-      return MOCK_FEATURES_XML
-    }
-    if (filePath.endsWith('/deploy.xml')) {
-      return MOCK_ORIGINAL_DEPLOY_XML
-    }
-    return `<addressForm filename="${filePath.split('/').pop()}">`
-  }),
+  readDir: jest.fn().mockImplementation(() => readDirMockFunction()),
+  readFile: jest.fn().mockImplementation(path => readFileMockFunction(path)),
   writeFile: jest.fn(),
   rename: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
-  stat: jest.fn().mockImplementation(filePath => {
-    if (filePath.endsWith(MOCK_FILE_PATH)) {
-      return { size: 33 }
-    }
-    return { size: 0 }
-  }),
+  stat: jest.fn().mockImplementation(path => statMockFunction(path)),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock

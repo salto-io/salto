@@ -40,6 +40,8 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
 }
 
+export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomizationInfo
+
 export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
@@ -58,7 +60,7 @@ export type FailedFiles = {
 }
 
 export type ImportFileCabinetResult = {
-  elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
+  elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
 }
 

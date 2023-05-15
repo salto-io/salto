@@ -20,6 +20,7 @@ import { LocalFilterCreator } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
 import { FeaturesDeployError } from '../client/errors'
 import { featuresType } from '../types/configuration_types'
+import { FEATURES_LIST_TAG } from '../client/sdf_parser'
 
 const log = logger(module)
 
@@ -40,7 +41,7 @@ const filterCreator: LocalFilterCreator = () => ({
     }
 
     const type = await featuresInstance.getType()
-    const features = _.keyBy(featuresInstance.value.feature, feature => feature.id)
+    const features = _.keyBy(featuresInstance.value[FEATURES_LIST_TAG], feature => feature.id)
 
     type.fields = _.mapValues(features, feature => new Field(
       type,
@@ -68,7 +69,7 @@ const filterCreator: LocalFilterCreator = () => ({
 
     Object.values(featuresChange.data).forEach(instance => {
       instance.value = {
-        feature: Object.entries(instance.value)
+        [FEATURES_LIST_TAG]: Object.entries(instance.value)
           .map(([id, value]) => {
             if (!_.isBoolean(value)) {
               log.warn('value of feature %s is not boolean: %o', id, value)

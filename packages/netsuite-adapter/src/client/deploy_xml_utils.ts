@@ -18,34 +18,14 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
-import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
-import { isCustomTypeInfo, isFileCustomizationInfo } from './utils'
+import { SDFObjectNode } from './types'
+import { isCustomTypeInfo } from './utils'
+import { OBJECTS_DIR, getCustomTypeInfoPath } from './sdf_parser'
 
-type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
 const log = logger(module)
 
-export const XML_FILE_SUFFIX = '.xml'
-export const FILE_CABINET_DIR = 'FileCabinet'
-export const OBJECTS_DIR = 'Objects'
-export const ATTRIBUTES_FOLDER_NAME = '.attributes'
-export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
-export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
-
-export const getCustomTypeInfoPath = (
-  dirPath: string,
-  customTypeInfo: CustomTypeInfo,
-  fileExtension = XML_FILE_SUFFIX
-): string =>
-  osPath.resolve(dirPath, OBJECTS_DIR, `${customTypeInfo.scriptId}${fileExtension}`)
-
-export const getFileCabinetTypesPath = (dirPath: string, fileCabinetCustTypeInfo: FileCabinetCustomType): string => {
-  if (isFileCustomizationInfo(fileCabinetCustTypeInfo)) {
-    return osPath.resolve(dirPath, FILE_CABINET_DIR, ...fileCabinetCustTypeInfo.path.slice(0, -1))
-  }
-  return osPath.resolve(dirPath, FILE_CABINET_DIR, ...fileCabinetCustTypeInfo.path)
-}
 
 export const reorderDeployXml = (
   deployContent: string,
@@ -68,7 +48,6 @@ export const reorderDeployXml = (
       customTypeInfos.map(custTypeInfo => custTypeInfo.scriptId)
     )
     objects.path = customTypeInfos
-      .filter(isCustomTypeInfo)
       .map(custTypeInfo => getCustomTypeInfoPath(PROJECT_ROOT_TILDE_PREFIX, custTypeInfo))
       .map(path => path.slice(1)) // remove the '/' prefix
     objects.path.push(['~', OBJECTS_DIR, '*'].join(osPath.sep))

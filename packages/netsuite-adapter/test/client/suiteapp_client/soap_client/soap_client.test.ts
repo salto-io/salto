@@ -25,6 +25,11 @@ import { CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PRE
 import * as filterUneditableLockedFieldModule from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
 import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD } from '../../../../src/client/suiteapp_client/constants'
 
+jest.mock('uuid', () => ({
+  ...jest.requireActual('uuid'),
+  v4: jest.fn().mockReturnValue(''),
+}))
+
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
   const updateListAsyncMock = jest.fn()
@@ -38,7 +43,7 @@ describe('soap_client', () => {
   let client: SoapClient
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    jest.clearAllMocks()
     wsdl = {
       definitions: {
         schemas: {
@@ -1438,13 +1443,35 @@ describe('soap_client', () => {
       },
     })
 
+    const instanceWithoutOneField = expect.objectContaining(
+      {
+        record: [
+          expect.objectContaining({
+            [`pre:${CUSTOM_FIELD_LIST}`]: {
+              [PLATFORM_CORE_CUSTOM_FIELD]: [{
+                attributes: expect.objectContaining({
+                  scriptId: customField2.attributes[SOAP_SCRIPT_ID],
+                }),
+              }],
+            },
+          }),
+        ],
+      }
+    )
+    const instanceWithoutBothFields = expect.objectContaining(
+      {
+        record: [
+          expect.not.objectContaining({
+            [`pre:${CUSTOM_FIELD_LIST}`]: expect.objectContaining({}),
+          }),
+        ],
+      }
+    )
+
     let instance: InstanceElement
     beforeEach(() => {
       instance = originalInstance.clone()
     })
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getAddAndUpdateDeployBodyMock = jest.spyOn(SoapClient.prototype as any, 'getAddAndUpdateDeployBody')
 
     it('Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
       updateListAsyncMock
@@ -1452,9 +1479,8 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
-      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
-      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST][PLATFORM_CORE_CUSTOM_FIELD])
-        .toEqual([customField2]) // without the problematic field
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(2)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
     })
 
     it('Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
@@ -1463,9 +1489,8 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.addInstances([instance], elementsSource.has)).toEqual([1])
-      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
-      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST][PLATFORM_CORE_CUSTOM_FIELD])
-        .toEqual([customField2]) // without the problematic field
+      expect(addListAsyncMock).toHaveBeenCalledTimes(2)
+      expect(addListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
     })
 
     it('Should redeploy with success when updating instances that failed to deploy several uneditable locked elements', async () => {
@@ -1475,24 +1500,20 @@ describe('soap_client', () => {
         .mockResolvedValueOnce([writeResponseListSuccess])
 
       expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
-      const redeployedInstances = getAddAndUpdateDeployBodyMock.mock.calls[1][0] as InstanceElement[]
-      expect(redeployedInstances[0].value[CUSTOM_FIELD_LIST])
-        .toBeUndefined()
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(3)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(3, instanceWithoutBothFields)
     })
-
 
     it('Should deploy at most 6 times - 1 original + 5 redeploys', async () => {
       updateListAsyncMock.mockResolvedValue([writeResponseListError1])
       jest.spyOn(filterUneditableLockedFieldModule, 'removeUneditableLockedField')
         .mockResolvedValue(true)
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const runDeployActionMock = jest.spyOn(SoapClient.prototype as any, 'runDeployAction')
-
       expect(await client.updateInstances([instance], elementsSource.has))
         .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
         + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
-      expect(runDeployActionMock).toHaveBeenCalledTimes(6)
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(6)
     })
   })
 })

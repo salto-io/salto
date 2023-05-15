@@ -283,6 +283,32 @@ describe('Filter uneditable locked fields', () => {
     expect(instance).toEqual(otherInstance)
   })
 
+  it('Should not modify instance with no custom fields', async () => {
+    const instanceOriginal = new InstanceElement(
+      'testUnknown',
+      testType,
+      {
+        attributes: {
+          internalId: '6',
+        },
+      }
+    )
+
+    const instance = instanceOriginal.clone()
+    const isModified = await removeUneditableLockedField(instance, otherError, emptyElementsSource.has)
+    expect(isModified).toBeFalsy()
+    expect(instance).toEqual(instanceOriginal)
+  })
+
+  it('Should not modify instance when the error message contains 2 fields', async () => {
+    const error = getWriteResponseError(otherCustomField.attributes[SOAP_SCRIPT_ID])
+    error.status.statusDetail[0].message += error.status.statusDetail[0].message
+    const instance = otherInstance.clone()
+    const isModified = await removeUneditableLockedField(instance, error, emptyElementsSource.has)
+    expect(isModified).toBeFalsy()
+    expect(instance).toEqual(otherInstance)
+  })
+
   it('Should not modify instance with WriteResponseSuccess', async () => {
     const writeResponseSuccess: WriteResponse = {
       status: {

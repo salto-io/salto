@@ -192,7 +192,6 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
-    updatePathIndex: updateStatePathIndex,
     updateStateFromChanges: async (
       { serviceToStateChanges, unmergedElements, fetchAccounts }: updateStateElementsArgs) => {
       await updateStateElements(serviceToStateChanges)

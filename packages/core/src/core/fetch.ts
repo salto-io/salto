@@ -110,7 +110,7 @@ type WorkspaceDetailedChange = {
 
 type DetailedChangeTreeResult = {
     changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
-    changes: DetailedChange<Element>[]
+    changes: DetailedChange[]
 }
 
 const getDetailedChangeTree = async (
@@ -551,7 +551,7 @@ export const getAdaptersFirstFetchPartial = async (
 
 type CalcFetchChangesResult = {
     changes: FetchChange[]
-    serviceToStateChanges: DetailedChange<Element>[]
+    serviceToStateChanges: DetailedChange[]
 }
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,

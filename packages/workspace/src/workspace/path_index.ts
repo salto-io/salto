@@ -200,7 +200,7 @@ const updateIndex = async (
   } else {
     // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
     const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
-      // Entries in the index are not top level (e.g. adapter.instanceType.instance.instanceName.field.fieldName)
+      // Entries in the index are not top level (e.g. adapter.instanceType.field.fieldName)
       const tempElemID = ElemID.fromFullName(key)
       return !unmergedElementIDs.has(tempElemID.createTopLevelParentID().parent.getFullName())
     }).toArray()

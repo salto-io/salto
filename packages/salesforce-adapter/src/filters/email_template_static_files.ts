@@ -16,7 +16,7 @@
 import { Element, InstanceElement, isInstanceElement, StaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import _ from 'lodash'
 import path from 'path'
@@ -65,25 +65,37 @@ const findFolderPath = (instance: InstanceElement): string =>
   `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  const folderPath = findFolderPath(instance)
-  if (_.isUndefined(folderPath)) {
-    const instApiName = await apiName(instance)
-    log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
-  } else {
-    const emailName = `${folderPath.split('/').pop()}.email`
-    instance.value.content = new StaticFile({
-      filepath: path.join(folderPath, emailName),
-      content: await instance.value.content.getContent(),
-    })
-    instance.value.attachments = makeArray(instance.value.attachments)
-    if (isEmailAttachmentsArray(instance.value)) {
-      instance.value.attachments.forEach(attachment => {
-        attachment.content = createStaticFile(
-          // attachmen.content type is a string before the creation of the static file
-          folderPath, attachment.name, attachment.content as string
-        )
+  try {
+    const folderPath = findFolderPath(instance)
+    if (_.isUndefined(folderPath)) {
+      const instApiName = await apiName(instance)
+      log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
+    } else {
+      const emailName = `${folderPath.split('/').pop()}.email`
+      instance.value.content = new StaticFile({
+        filepath: path.join(folderPath, emailName),
+        content: await instance.value.content.getContent(),
       })
+      instance.value.attachments = makeArray(instance.value.attachments)
+      if (isEmailAttachmentsArray(instance.value)) {
+        instance.value.attachments.forEach(attachment => {
+          attachment.content = createStaticFile(
+            // attachment.content type is a string before the creation of the static file
+            folderPath, attachment.name, attachment.content as string
+          )
+        })
+      } else if (!Array.isArray(instance.value.attachments)) {
+        log.debug('email template attachments are not an array: %s',
+          safeJsonStringify(instance.value.attachments,
+            (_key, value) => (_.isString(value) ? _.truncate(value) : value)))
+      } else if (instance.value.attachments.length > 0) {
+        log.debug('email template attachments exist, but failed JOI validation: %s',
+          safeJsonStringify(instance.value.attachments,
+            (_key, value) => (_.isString(value) ? _.truncate(value) : value)))
+      }
     }
+  } catch (err) {
+    log.warn('Error when handling email template attachments: %o', err.message)
   }
 }
 

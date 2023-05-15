@@ -18,7 +18,7 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group, ElemID,
-  isSaltoElementError, SaltoElementError, SaltoError, SeverityLevel, AdapterDeployResult,
+  isSaltoElementError, SaltoElementError, SaltoError, SeverityLevel, AdapterDeployResult, DeployResult,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -35,6 +35,15 @@ type DeployOrValidateParams = {
   checkOnly: boolean
 }
 
+const extractErrors = (deployRes: DeployResult, opts: DeployOptions): ReadonlyArray<SaltoElementError | SaltoError> =>
+  (deployRes.errors.map(error => (
+    error instanceof Error
+      ? { message: error.message,
+        severity: 'Error' as SeverityLevel,
+        group: opts.changeGroup.groupID }
+      : error))
+  )
+
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
 ): Promise<AdapterDeployResult> => {
@@ -43,10 +52,7 @@ const deployOrValidate = async (
     return {
       appliedChanges: deployRes.appliedChanges,
       extraProperties: deployRes.extraProperties,
-      errors: deployRes.errors.map(error => (
-        error instanceof Error
-          ? { message: error.message, severity: 'Error' as SeverityLevel, group: opts.changeGroup.groupID }
-          : error)),
+      errors: extractErrors(deployRes, opts),
     }
   }
   if (_.isUndefined(adapter.validate)) {
@@ -56,10 +62,7 @@ const deployOrValidate = async (
   return {
     appliedChanges: validateRes.appliedChanges,
     extraProperties: validateRes.extraProperties,
-    errors: validateRes.errors.map(error => (
-      error instanceof Error
-        ? { message: error.message, severity: 'Error' as SeverityLevel, group: opts.changeGroup.groupID }
-        : error)),
+    errors: extractErrors(validateRes, opts),
   }
 }
 
@@ -75,15 +78,12 @@ const deployAction = (
     throw new Error(`Missing adapter for ${adapterName}`)
   }
   const opts = { changeGroup: { groupID: planItem.groupKey, changes } }
-  // TODOADI wrap deployOrValidate to make sure that the correct errors are returned
   return deployOrValidate({ adapter, adapterName, opts, checkOnly })
 }
 
 export class DeployError extends Error {
-  public readonly elemID?: ElemID
-  constructor(readonly groupId: string | string[], message: string, elementId?: ElemID) {
+  constructor(readonly groupId: string | string[], message: string, public readonly elemID?: ElemID) {
     super(message)
-    this.elemID = elementId
     this.groupId = groupId
   }
 }
@@ -118,10 +118,8 @@ const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>
 }
 
 class WalkDeployError extends Error {
-  public errors: ReadonlyArray<SaltoElementError | SaltoError>
-  constructor(deployErrors: ReadonlyArray<SaltoElementError | SaltoError>) {
+  constructor(public errors: ReadonlyArray<SaltoElementError | SaltoError>) {
     super()
-    this.errors = deployErrors
   }
 }
 

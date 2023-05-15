@@ -84,7 +84,7 @@ export const walkOnValue = (
     if (e instanceof ExitWalk) {
       return
     }
-    log.error(`Failed to walk on element ${elemId.getFullName()}: ${e}`)
+    log.warn(`Failed to walk on element ${elemId.getFullName()}: ${e}`)
     throw e
   }
 }

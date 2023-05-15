@@ -19,9 +19,9 @@ import { FieldDefinition, Field, CORE_ANNOTATIONS, TypeElement, isObjectType, is
   getDeepInnerType, ObjectType, BuiltinTypes, createRestriction, createRefToElmWithValue, PrimitiveType, LIST_ID_PREFIX, GENERIC_ID_PREFIX, GENERIC_ID_SUFFIX, MAP_ID_PREFIX, ListType, MapType, isEqualElements, isPrimitiveType, PrimitiveTypes, isTypeReference } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values, collections } from '@salto-io/lowerdash'
+import { getSubtypes } from '@salto-io/adapter-utils'
 import { FieldToHideType, FieldTypeOverrideType, getTypeTransformationConfig } from '../config/transformation'
 import { SUBTYPES_PATH, TYPES_PATH } from './constants'
-import { getSubtypes } from './subtypes'
 import { TypeConfig, TypeDefaultsConfig } from '../config/shared'
 
 const { awu } = collections.asynciterable

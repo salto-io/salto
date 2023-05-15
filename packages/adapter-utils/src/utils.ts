@@ -1114,3 +1114,37 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     }
     return true
   }
+
+export const getSubtypes = async (
+  types: ObjectType[],
+  validateUniqueness = false,
+): Promise<ObjectType[]> => {
+  const subtypes: Record<string, ObjectType> = {}
+
+  const findSubtypes = async (type: ObjectType): Promise<void> => {
+    await awu(Object.values(type.fields)).forEach(async field => {
+      const fieldContainerOrType = await field.getType()
+      const fieldType = isContainerType(fieldContainerOrType)
+        ? await fieldContainerOrType.getInnerType()
+        : fieldContainerOrType
+
+      if (!isObjectType(fieldType)
+          || types.includes(fieldType)) {
+        return
+      }
+      if (fieldType.elemID.getFullName() in subtypes) {
+        if (validateUniqueness && !subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+          log.warn(`duplicate ElemIDs of subtypes found. The duplicate is ${fieldType.elemID.getFullName()}`)
+        }
+        return
+      }
+
+      subtypes[fieldType.elemID.getFullName()] = fieldType
+      await findSubtypes(fieldType)
+    })
+  }
+
+  await awu(types).forEach(findSubtypes)
+
+  return Object.values(subtypes)
+}

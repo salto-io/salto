@@ -87,8 +87,16 @@ export const buildInMemState = (
     unmergedElementIDs?: Set<string>,
   ): Promise<void> => {
     const currentStateData = await stateData()
-    await updateTopLevelPathIndex(currentStateData.topLevelPathIndex, changedUnmergedElements, unmergedElementIDs)
-    await updatePathIndex(currentStateData.pathIndex, changedUnmergedElements, unmergedElementIDs)
+    await updateTopLevelPathIndex({
+      pathIndex: currentStateData.topLevelPathIndex,
+      changedUnmergedElements: changedUnmergedElements,
+      unmergedElementIDs: unmergedElementIDs
+    })
+    await updatePathIndex({
+      pathIndex: currentStateData.pathIndex,
+      changedUnmergedElements: changedUnmergedElements,
+      unmergedElementIDs: unmergedElementIDs
+    })
   }
 
   const updateStateElements = async (changes: DetailedChange<Element>[]): Promise<void> => log.time(async () => {

@@ -183,47 +183,40 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
     }))
 }
 
+type pathIndexArgs = {
+    pathIndex: PathIndex
+    changedUnmergedElements: Element[]
+    unmergedElementIDs?: Set<string>
+}
+
 const updateIndex = async (
-  current: PathIndex,
-  changedUnmergedElements: Element[],
-  unmergedElementIDs: Set<string> | undefined,
-  getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]
+    { pathIndex, changedUnmergedElements, unmergedElementIDs, getHintsFunction }:
+      pathIndexArgs &
+      { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
   // If no unmergedElementIDs were passed, override the index with the new elements
   if (unmergedElementIDs === undefined) {
-    await current.clear()
+    await pathIndex.clear()
   } else {
     // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
-    const entriesToDelete = await awu(current.keys()).filter(key => {
-      // TODO seroussi - this is temp
-      const keyParts = key.split(ElemID.NAMESPACE_SEPARATOR)
-      if (keyParts[3] === 'instance') {
-        return !unmergedElementIDs.has(keyParts.slice(0, 4).join(ElemID.NAMESPACE_SEPARATOR))
-      }
-      return !unmergedElementIDs.has(keyParts.slice(0, 2).join(ElemID.NAMESPACE_SEPARATOR))
+    const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
+      // Entries in the index are not top level (e.g. adapter.instanceType.instance.instanceName.field.fieldName)
+      const tempElemID = ElemID.fromFullName(key)
+      return !unmergedElementIDs.has(tempElemID.createTopLevelParentID().parent.getFullName())
     }).toArray()
-    await current.deleteAll(entriesToDelete)
+    await pathIndex.deleteAll(entriesToDelete)
   }
 
   const entriesToSet = getHintsFunction(changedUnmergedElements)
-  await current.setAll(entriesToSet)
+  await pathIndex.setAll(entriesToSet)
 }
 
-// TODO Seroussi - make the args a type?
-export const updatePathIndex = async (
-  current: PathIndex,
-  changedUnmergedElements: Element[],
-  unmergedElementIDs?: Set<string>,
-): Promise<void> => log.time(async () => {
-  await updateIndex(current, changedUnmergedElements, unmergedElementIDs, getElementsPathHints)
+export const updatePathIndex = async (args: pathIndexArgs): Promise<void> => log.time(async () => {
+  await updateIndex({ ...args, getHintsFunction: getElementsPathHints})
 }, 'updatePathIndex')
 
-export const updateTopLevelPathIndex = async (
-  current: PathIndex,
-  changedUnmergedElements: Element[],
-  unmergedElementIDs?: Set<string>,
-): Promise<void> => log.time(async () => {
-  await updateIndex(current, changedUnmergedElements, unmergedElementIDs, getTopLevelPathHints)
+export const updateTopLevelPathIndex = async (args: pathIndexArgs): Promise<void> => log.time(async () => {
+  await updateIndex({ ...args, getHintsFunction: getTopLevelPathHints })
 }, 'updateTopLevelPathIndex')
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>

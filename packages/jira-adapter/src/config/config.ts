@@ -60,6 +60,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
   enableScriptRunnerAddon?: boolean
+  removeDuplicateProjectRoles?: boolean
   addAlias?: boolean
 }
 
@@ -194,6 +195,7 @@ const fetchConfigType = createUserFetchConfigType(
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
     showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
     enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
+    removeDuplicateProjectRoles: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },

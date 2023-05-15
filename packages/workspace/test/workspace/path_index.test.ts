@@ -181,9 +181,9 @@ describe('topLevelPathIndex', () => {
   it('should only add new top level elements paths to index', async () => {
     const topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
     await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updateTopLevelPathIndex(
-      topLevelPathIndex,
-      [
+    await updateTopLevelPathIndex({
+      pathIndex: topLevelPathIndex,
+      changedUnmergedElements: [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -191,8 +191,8 @@ describe('topLevelPathIndex', () => {
         // when there is a partial fetch, the account name will be in accountsToMaintain
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
-      ]
-    )
+      ],
+    })
     expect(await awu(topLevelPathIndex.entries()).toArray()).toEqual(
       [
         ...getTopLevelPathHints(
@@ -215,9 +215,9 @@ describe('updatePathIndex', () => {
   beforeAll(async () => {
     index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(getElementsPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updatePathIndex(
-      index,
-      [
+    await updatePathIndex({
+      pathIndex: index,
+      changedUnmergedElements: [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -225,8 +225,8 @@ describe('updatePathIndex', () => {
         // when there is a partial fetch, the account name will be in accountsToMaintain
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
-      ]
-    )
+      ],
+    })
   })
   it('should add new elements with proper paths', async () => {
     expect(await index.get(multiPathObjID.getFullName()))
@@ -429,7 +429,7 @@ describe('split element by path', () => {
   const pi = new InMemoryRemoteMap<Path[]>()
 
   beforeAll(async () => {
-    await updatePathIndex(pi, unmergedElements)
+    await updatePathIndex({ pathIndex: pi, changedUnmergedElements: unmergedElements })
   })
 
   it('should split an element with multiple pathes', async () => {

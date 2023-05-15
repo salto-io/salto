@@ -121,12 +121,15 @@ export type ServiceIds = Record<string, string>
 
 export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
 
-export type AdapterOperationsContext = {
-  credentials: InstanceElement
+type AdapterBaseContext = {
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
 }
+
+export type AdapterOperationsContext = {
+  credentials: InstanceElement
+} & AdapterBaseContext
 
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
 export type AdapterFailureInstallResult = { success: false; errors: string[] }
@@ -145,8 +148,7 @@ export type ConfigCreator = {
 
 export type LoadElementsFromFolderArgs = {
   baseDir: string
-  elementSource: ReadOnlyElementsSource
-}
+} & AdapterBaseContext
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations

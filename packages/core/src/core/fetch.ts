@@ -553,9 +553,9 @@ export const getAdaptersFirstFetchPartial = async (
 // o/w all account elements should be consider as "add" changes.
 export const calcFetchChanges = async (
   accountElements: ReadonlyArray<Element>,
-  mergedAccountElements: elementSource.ElementsSource,
-  stateElements: elementSource.ElementsSource,
-  workspaceElements: elementSource.ElementsSource,
+  mergedAccountElements: ReadOnlyElementsSource,
+  stateElements: ReadOnlyElementsSource,
+  workspaceElements: ReadOnlyElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
 ): Promise<FetchChange[]> => {
@@ -1081,7 +1081,8 @@ export const getFetchAdapterAndServicesSetup = async (
   workspace: Workspace,
   fetchServices: string[],
   accountToServiceNameMap: Record<string, string>,
-  ignoreStateElemIdMapping?: boolean
+  ignoreStateElemIdMapping?: boolean,
+  elementsSource?: ReadOnlyElementsSource,
 ): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
@@ -1097,7 +1098,7 @@ export const getFetchAdapterAndServicesSetup = async (
     fetchServices,
     await workspace.accountCredentials(fetchServices),
     workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
+    elementsSource ?? await workspace.elements(),
     accountToServiceNameMap,
     elemIDGetters,
   )

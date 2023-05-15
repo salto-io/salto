@@ -73,5 +73,3 @@ driver = webdriver.Chrome()
 def main():
 	permissions = parse_permissions_table()
 	create_permissions_file(permissions)
-
-main()

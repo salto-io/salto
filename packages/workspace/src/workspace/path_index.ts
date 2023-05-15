@@ -190,9 +190,9 @@ type pathIndexArgs = {
 }
 
 const updateIndex = async (
-    { pathIndex, changedUnmergedElements, unmergedElementIDs, getHintsFunction }:
-      pathIndexArgs &
-      { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
+  { pathIndex, changedUnmergedElements, unmergedElementIDs, getHintsFunction }:
+    pathIndexArgs &
+    { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
   // If no unmergedElementIDs were passed, override the index with the new elements
   if (unmergedElementIDs === undefined) {
@@ -212,7 +212,7 @@ const updateIndex = async (
 }
 
 export const updatePathIndex = async (args: pathIndexArgs): Promise<void> => log.time(async () => {
-  await updateIndex({ ...args, getHintsFunction: getElementsPathHints})
+  await updateIndex({ ...args, getHintsFunction: getElementsPathHints })
 }, 'updatePathIndex')
 
 export const updateTopLevelPathIndex = async (args: pathIndexArgs): Promise<void> => log.time(async () => {

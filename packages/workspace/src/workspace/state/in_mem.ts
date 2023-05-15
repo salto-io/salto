@@ -89,13 +89,13 @@ export const buildInMemState = (
     const currentStateData = await stateData()
     await updateTopLevelPathIndex({
       pathIndex: currentStateData.topLevelPathIndex,
-      changedUnmergedElements: changedUnmergedElements,
-      unmergedElementIDs: unmergedElementIDs
+      changedUnmergedElements,
+      unmergedElementIDs,
     })
     await updatePathIndex({
       pathIndex: currentStateData.pathIndex,
-      changedUnmergedElements: changedUnmergedElements,
-      unmergedElementIDs: unmergedElementIDs
+      changedUnmergedElements,
+      unmergedElementIDs,
     })
   }
 

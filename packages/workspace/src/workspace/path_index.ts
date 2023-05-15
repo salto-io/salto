@@ -185,29 +185,34 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
 
 type pathIndexArgs = {
     pathIndex: PathIndex
-    changedUnmergedElements: Element[]
-    unmergedElementIDs?: Set<string>
+    unmergedElements: Element[]
+    topLevelRemovalFullNames?: Set<string>
 }
 
+/** Currently because a change in an element's path is not a change, we are unable to detect it
+ *  Until this is solved, we have to override the path index with all the elements, and delete the elements that
+ *  were removed
+* */
 const updateIndex = async (
-  { pathIndex, changedUnmergedElements, unmergedElementIDs, getHintsFunction }:
+  { pathIndex, unmergedElements, topLevelRemovalFullNames, getHintsFunction }:
     pathIndexArgs &
     { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
-  // If no unmergedElementIDs were passed, override the index with the new elements
-  if (unmergedElementIDs === undefined) {
+  const entriesToSet = getHintsFunction(unmergedElements)
+
+  // If no removals were passed, override the index with the new elements
+  if (topLevelRemovalFullNames === undefined) {
     await pathIndex.clear()
   } else {
-    // Entries that exists in the index but not in the unmerged elements were deleted and will be removed from the index
+    // Entries that are related to an element that was removed should be deleted
     const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
       // Entries in the index are not top level (e.g. adapter.instanceType.field.fieldName)
       const tempElemID = ElemID.fromFullName(key)
-      return !unmergedElementIDs.has(tempElemID.createTopLevelParentID().parent.getFullName())
+      return topLevelRemovalFullNames.has(tempElemID.createTopLevelParentID().parent.getFullName())
     }).toArray()
     await pathIndex.deleteAll(entriesToDelete)
   }
 
-  const entriesToSet = getHintsFunction(changedUnmergedElements)
   await pathIndex.setAll(entriesToSet)
 }
 

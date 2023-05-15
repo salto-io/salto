@@ -1715,7 +1715,7 @@ describe('fetch from workspace', () => {
     beforeEach(async () => {
       await pathIndex.updatePathIndex({
         pathIndex: pi,
-        changedUnmergedElements: unmergedElements.filter(
+        unmergedElements: unmergedElements.filter(
           e => !e.elemID.isEqual(noPathElemID)
         ),
       })

@@ -183,7 +183,7 @@ describe('topLevelPathIndex', () => {
     await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject, oldPartiallyFetchedObject]))
     await updateTopLevelPathIndex({
       pathIndex: topLevelPathIndex,
-      changedUnmergedElements: [
+      unmergedElements: [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -217,7 +217,7 @@ describe('updatePathIndex', () => {
     await index.setAll(getElementsPathHints([singlePathObject, oldPartiallyFetchedObject]))
     await updatePathIndex({
       pathIndex: index,
-      changedUnmergedElements: [
+      unmergedElements: [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -429,7 +429,7 @@ describe('split element by path', () => {
   const pi = new InMemoryRemoteMap<Path[]>()
 
   beforeAll(async () => {
-    await updatePathIndex({ pathIndex: pi, changedUnmergedElements: unmergedElements })
+    await updatePathIndex({ pathIndex: pi, unmergedElements })
   })
 
   it('should split an element with multiple pathes', async () => {

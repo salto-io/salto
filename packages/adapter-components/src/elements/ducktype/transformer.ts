@@ -369,11 +369,14 @@ export const getAllElements = async ({
     supportedTypes,
     typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
   )
-  const supportedTypesReversedMapping = Object.fromEntries(
-    Object.entries(supportedTypesWithEndpoints)
-      .flatMap(([typeName, values]) =>
-        values.map(value => [value, typeName] as [string, string]))
+
+  const supportedTypesReversedMapping = _(
+    Object.entries(supportedTypes)
+      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
   )
+    .groupBy(entry => entry.wrapperType)
+    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
+    .value()
 
   const configSuggestions: ConfigChangeSuggestion[] = []
   const { elements, errors } = await getElementsWithContext({
@@ -389,8 +392,9 @@ export const getAllElements = async ({
       } catch (e) {
         if (isErrorTurnToConfigSuggestion?.(e)
           && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
-          configSuggestions.push({
-            typeToExclude: supportedTypesReversedMapping[args.typeName],
+          const typesToExclude = supportedTypesReversedMapping[args.typeName]
+          typesToExclude.forEach(type => {
+            configSuggestions.push({ typeToExclude: type })
           })
           return { elements: [], errors: [] }
         }

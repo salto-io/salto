@@ -58,6 +58,7 @@ type GetEntriesParams = {
   requestContext?: Record<string, unknown>
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
+  reversedSupportedTypes: Record<string, string[]>
 }
 
 type Entries = {
@@ -122,7 +123,7 @@ const getEntriesForType = async (
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
     requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
-    getEntriesResponseValuesFunc,
+    getEntriesResponseValuesFunc, reversedSupportedTypes,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -142,7 +143,7 @@ const getEntriesForType = async (
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
   const getEntries = async (context: Values | undefined): Promise<Values[]> => {
-    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context)
+    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context, reversedSupportedTypes)
     return (await Promise.all(
       getArgs.map(async args => (
         getEntriesResponseValuesFunc
@@ -281,6 +282,7 @@ export const getTypeAndInstances = async ({
   contextElements,
   getElemIdFunc,
   getEntriesResponseValuesFunc,
+  reversedSupportedTypes,
 }: {
   adapterName: string
   typeName: string
@@ -292,6 +294,7 @@ export const getTypeAndInstances = async ({
   contextElements?: Record<string, Element[]>
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
+  reversedSupportedTypes: Record<string, string[]>
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -304,6 +307,7 @@ export const getTypeAndInstances = async ({
     contextElements,
     getElemIdFunc,
     getEntriesResponseValuesFunc,
+    reversedSupportedTypes,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = getTransformationConfigByType(typesConfig)
@@ -354,6 +358,19 @@ export const getAllElements = async ({
   getEntriesResponseValuesFunc?: EntriesRequester
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
 }): Promise<FetchElements<Element[]>> => {
+  const supportedTypesWithEndpoints = _.mapValues(
+    supportedTypes,
+    typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
+  )
+
+  const reversedSupportedTypes = _(
+    Object.entries(supportedTypesWithEndpoints)
+      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
+  )
+    .groupBy(entry => entry.wrapperType)
+    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
+    .value()
+
   const elementGenerationParams = {
     adapterName,
     paginator,
@@ -363,20 +380,8 @@ export const getAllElements = async ({
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,
     getEntriesResponseValuesFunc,
+    reversedSupportedTypes,
   }
-
-  const supportedTypesWithEndpoints = _.mapValues(
-    supportedTypes,
-    typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
-  )
-
-  const supportedTypesReversedMapping = _(
-    Object.entries(supportedTypes)
-      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
-  )
-    .groupBy(entry => entry.wrapperType)
-    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
-    .value()
 
   const configSuggestions: ConfigChangeSuggestion[] = []
   const { elements, errors } = await getElementsWithContext({
@@ -391,8 +396,8 @@ export const getAllElements = async ({
         }
       } catch (e) {
         if (isErrorTurnToConfigSuggestion?.(e)
-          && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
-          const typesToExclude = supportedTypesReversedMapping[args.typeName]
+          && (reversedSupportedTypes[args.typeName] !== undefined)) {
+          const typesToExclude = reversedSupportedTypes[args.typeName]
           typesToExclude.forEach(type => {
             configSuggestions.push({ typeToExclude: type })
           })

@@ -1377,7 +1377,7 @@ export const SUPPORTED_TYPES = {
   UserType: ['api__v1__meta__types__user'],
   OrgSettings: ['OrgSetting'],
   ...Object.fromEntries(
-    Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => ([typeName, getPolicyItemsName(typeName)]))
+    Object.keys(POLICY_TYPE_NAME_TO_PARAMS).map(typeName => ([typeName, [getPolicyItemsName(typeName)]]))
   ),
   SmsTemplate: ['api__v1__templates__sms'],
   TrustedOrigin: ['api__v1__trustedOrigins'],

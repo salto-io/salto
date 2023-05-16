@@ -43,8 +43,7 @@ const filter: FilterCreator = ({ config }) => ({
       return
     }
     // as this is a built-in role, we assume that the one with the lowest id is the global one
-    const originalElementId = builtInProjectRoles
-      .reduce((minVal, instance) => Math.min(minVal, instance.value.id), builtInProjectRoles[0].value.id)
+    const originalElementId = _.minBy(builtInProjectRoles, instance => instance.value.id)?.value.id
     log.info(`Found ${builtInProjectRoles.length} instances of ${BUILT_IN_PROJECT_ROLE_NAME} role, keeping only lowest id ${originalElementId}`)
     _.remove(
       elements,

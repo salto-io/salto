@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, StaticFile } from '@salto-io/adapter-api'
+import { ObjectType, ElemID, StaticFile, toChange, Value, BuiltinTypes, Field } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import { serialize } from '../../src/serializer'
@@ -23,6 +23,18 @@ import { createInMemoryElementSource } from '../../src/workspace/elements_source
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 import { mockStaticFilesSource } from '../utils'
+
+const updatePathMock = jest.fn()
+const updateTopLevelPathMock = jest.fn()
+
+jest.mock('../../src/workspace/path_index', () => {
+  const actual = jest.requireActual('../../src/workspace/path_index')
+  return {
+    ...actual,
+    updatePathIndex: (args: Value) => updatePathMock(args),
+    updateTopLevelPathIndex: (args: Value) => updateTopLevelPathMock(args),
+  }
+})
 
 const { awu } = collections.asynciterable
 
@@ -181,6 +193,81 @@ describe('state', () => {
 
     it('should return the salto version that was provided in load data', async () => {
       expect(await state.getStateSaltoVersion()).toEqual('0.0.1')
+    })
+
+    describe('updateStateFromChanges', () => {
+      it('should update changed elements correctly without changing non-changed elements', async () => {
+        const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
+        const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
+        const toModify = new ObjectType({
+          elemID: new ElemID(adapter, 'modify', 'type'),
+          fields: { removeMe: { refType: BuiltinTypes.STRING }, modifyMe: { refType: BuiltinTypes.STRING } },
+        })
+
+        const fieldToAdd = new Field(toModify, 'addMe', BuiltinTypes.STRING)
+        const fieldToModify = new Field(toModify, 'modifyMe', BuiltinTypes.NUMBER)
+        const fieldToRemove = new Field(toModify, 'removeMe', BuiltinTypes.STRING)
+        const fieldToAddElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'addMe')
+        const fieldToModifyElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'modifyMe')
+        const fieldToRemoveElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'removeMe')
+
+        await state.clear()
+        await state.setAll(awu([toRemove, toModify, newElem]))
+
+        await state.updateStateFromChanges({
+          serviceToStateChanges: [
+            { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
+            { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
+
+            { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be removed
+            { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be added
+            { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
+          ],
+        })
+
+        const allElements = await awu(await state.getAll()).toArray()
+        expect(allElements).toHaveLength(3)
+        expect(allElements[0]).toEqual(newElem)
+        expect(allElements[1]).toEqual(toAdd)
+        expect(allElements[2].isEqual(new ObjectType({
+          elemID: new ElemID(adapter, 'modify', 'type'),
+          fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
+        }))).toBeTruthy()
+      })
+      it('should update the accounts update dates', async () => {
+        const accountsUpdateDates = await state.getAccountsUpdateDates()
+        await state.updateStateFromChanges({
+          serviceToStateChanges: [],
+          fetchAccounts: [adapter],
+        })
+        const newAccountsUpdateDates = await state.getAccountsUpdateDates()
+        expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
+      })
+      it('should call updatePathIndex functions with all elements and top level removals', async () => {
+        const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
+        const unmergedElements = [newElem, elem, nonTopLevelElem]
+        await state.updateStateFromChanges({
+          serviceToStateChanges: [
+            { ...toChange({ before: elem }), id: elem.elemID }, // Removal
+            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Non top-level removal
+            { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
+            { ...toChange({ before: elem, after: newElem }), id: newElem.elemID }, // Modification
+          ],
+          unmergedElements,
+        })
+
+        const topLevelRemovalFullNames = new Set<string>([elem.elemID.getFullName()])
+        expect(updatePathMock).toHaveBeenCalledWith({
+          pathIndex,
+          unmergedElements,
+          topLevelRemovalFullNames,
+        })
+        expect(updateTopLevelPathMock).toHaveBeenCalledWith({
+          pathIndex: topLevelPathIndex,
+          unmergedElements,
+          topLevelRemovalFullNames,
+        })
+      })
     })
   })
 

@@ -355,13 +355,6 @@ export const localState = (
       await Promise.all(stateFiles.map(filename => rm(filename)))
       setDirty()
     },
-    updatePathIndex: async (
-      changedUnmergedElements: Element[],
-      unmergedElementIDs: Set<string>
-    ): Promise<void> => {
-      await inMemState.updatePathIndex(changedUnmergedElements, unmergedElementIDs)
-      setDirty()
-    },
     updateStateFromChanges: async ({ serviceToStateChanges, unmergedElements, fetchAccounts } : {
       serviceToStateChanges: DetailedChange[]
       unmergedElements?: Element[]

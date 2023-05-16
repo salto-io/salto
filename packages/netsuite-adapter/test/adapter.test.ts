@@ -24,8 +24,8 @@ import NetsuiteAdapter from '../src/adapter'
 import { getMetadataTypes, metadataTypesToList } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
 import { LocalFilterCreator } from '../src/filter'
+import SdfClient from '../src/client/sdf_client'
 import resolveValuesFilter from '../src/filters/element_references'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
@@ -174,10 +174,15 @@ describe('Adapter', () => {
         },
       }
 
-      const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
-        + '  <label>elementName</label>'
-        + '</entitycustomfield>'
-      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
+      const customTypeInfo = {
+        typeName: 'entitycustomfield',
+        values: {
+          '@_scriptid': 'custentity_my_script_id',
+          label: 'elementName',
+        },
+        scriptId: 'custentity_my_script_id',
+      }
+
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [folderCustomizationInfo, fileCustomizationInfo],
@@ -499,10 +504,13 @@ describe('Adapter', () => {
     })
 
     it('should ignore instances of unknown type', async () => {
-      const xmlContent = '<unknowntype scriptid="unknown">\n'
-        + '  <label>elementName</label>'
-        + '</unknowntype>'
-      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
+      const customTypeInfo = {
+        typeName: 'unknowntype',
+        values: {
+          label: 'elementName',
+        },
+        scriptId: 'unknown',
+      }
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],

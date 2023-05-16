@@ -15,14 +15,12 @@
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
 import { Values, AccountId } from '@salto-io/adapter-api'
-import { mkdirp, readDir, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
+import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
   CommandsMetadataService, CommandActionExecutor, CLIConfigurationService, NodeConsoleLogger,
   ActionResult, ActionResultUtils, SdkProperties,
 } from '@salto-io/suitecloud-cli'
-import xmlParser from 'fast-xml-parser'
-import he from 'he'
 import Bottleneck from 'bottleneck'
 import osPath from 'path'
 import os from 'os'
@@ -46,9 +44,9 @@ import { SdfCredentials } from './credentials'
 import {
   CustomizationInfo, CustomTypeInfo, FailedImport, FailedTypes, FileCustomizationInfo,
   FolderCustomizationInfo, GetCustomObjectsResult, ImportFileCabinetResult, ImportObjectsResult,
-  TemplateCustomTypeInfo, ManifestDependencies, SdfDeployParams, SDFObjectNode,
+  ManifestDependencies, SdfDeployParams, SDFObjectNode,
 } from './types'
-import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME, fileCabinetTopLevelFolders } from './constants'
+import { fileCabinetTopLevelFolders } from './constants'
 import {
   isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo,
   mergeTypeToInstances, getGroupItemFromRegex, toError,
@@ -57,7 +55,8 @@ import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph } from './graph_utils'
 import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
-import { getCustomTypeInfoPath, getFileCabinetTypesPath, OBJECTS_DIR, FILE_CABINET_DIR, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FILE_SUFFIX, reorderDeployXml } from './deploy_xml_utils'
+import { reorderDeployXml } from './deploy_xml_utils'
+import { OBJECTS_DIR, FILE_CABINET_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML, SRC_DIR, getCustomTypeInfoPath, getFileCabinetCustomInfoPath } from './sdf_parser'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -90,30 +89,16 @@ export const COMMANDS = {
   IMPORT_CONFIGURATION: 'configuration:import',
 }
 
-const SRC_DIR = 'src'
-const FILE_SEPARATOR = '.'
 const ALL = 'ALL'
-const ADDITIONAL_FILE_PATTERN = '.template.'
-
 const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
-const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
-const FEATURES_XML = 'features.xml'
-const FEATURES_TAG = 'features'
 
 // e.g. *** ERREUR ***
 const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
 
 export const MINUTE_IN_MILLISECONDS = 1000 * 60
 const SINGLE_OBJECT_RETRIES = 3
-const READ_CONCURRENCY = 100
 
 const baseExecutionPath = os.tmpdir()
-
-const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
-  attributeNamePrefix: ATTRIBUTE_PREFIX,
-  ignoreAttributes: false,
-  tagValueProcessor: val => he.decode(val),
-}
 
 const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {
@@ -121,51 +106,6 @@ const safeQuoteArgument = (argument: unknown): unknown => {
   }
   return argument
 }
-
-export const convertToCustomizationInfo = (xmlContent: string):
-  CustomizationInfo => {
-  const parsedXmlValues = xmlParser.parse(xmlContent, XML_PARSE_OPTIONS)
-  const typeName = Object.keys(parsedXmlValues)[0]
-  return { typeName, values: parsedXmlValues[typeName] }
-}
-
-export const convertToCustomTypeInfo = (xmlContent: string, scriptId: string): CustomTypeInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { scriptId }
-  )
-
-export const convertToTemplateCustomTypeInfo = (xmlContent: string, scriptId: string,
-  fileExtension: string, fileContent: Buffer): TemplateCustomTypeInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { fileExtension, fileContent, scriptId }
-  )
-
-export const convertToFileCustomizationInfo = (xmlContent: string, path: string[],
-  fileContent: Buffer): FileCustomizationInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { path, fileContent }
-  )
-
-export const convertToFolderCustomizationInfo = (xmlContent: string, path: string[]):
-  FolderCustomizationInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { path }
-  )
-
-export const convertToXmlContent = (customizationInfo: CustomizationInfo): string =>
-  // eslint-disable-next-line new-cap
-  new xmlParser.j2xParser({
-    attributeNamePrefix: ATTRIBUTE_PREFIX,
-    // We convert to an not formatted xml since the CDATA transformation is wrong when having format
-    format: false,
-    ignoreAttributes: false,
-    cdataTagName: CDATA_TAG_NAME,
-    tagValueProcessor: val => he.encode(val),
-  }).parse({ [customizationInfo.typeName]: customizationInfo.values })
 
 const writeFileInFolder = async (folderPath: string, filename: string, content: string | Buffer):
   Promise<void> => {
@@ -424,22 +364,6 @@ export default class SdfClient {
     ])
   }
 
-  private static async transformCustomObject(
-    scriptId: string, objectFileNames: string[], objectsDirPath: string
-  ): Promise<CustomTypeInfo> {
-    const [[additionalFilename], [contentFilename]] = _.partition(objectFileNames,
-      filename => filename.includes(ADDITIONAL_FILE_PATTERN))
-    const xmlContent = readFile(osPath.resolve(objectsDirPath, contentFilename))
-    if (_.isUndefined(additionalFilename)) {
-      return convertToCustomTypeInfo((await xmlContent).toString(), scriptId)
-    }
-    const additionalFileContent = readFile(
-      osPath.resolve(objectsDirPath, additionalFilename)
-    )
-    return convertToTemplateCustomTypeInfo((await xmlContent).toString(), scriptId,
-      additionalFilename.split(FILE_SEPARATOR)[2], await additionalFileContent)
-  }
-
   @SdfClient.logDecorator
   async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
     Promise<GetCustomObjectsResult> {
@@ -462,18 +386,7 @@ export default class SdfClient {
             query,
             suiteAppId,
           )
-          const objectsDirPath = SdfClient.getObjectsDirPath(projectName)
-          const filenames = await readDir(objectsDirPath)
-          const scriptIdToFiles = _.groupBy(
-            filenames,
-            filename => filename.split(FILE_SEPARATOR)[0]
-          )
-
-          const elements = await withLimitedConcurrency(
-            Object.entries(scriptIdToFiles).map(([scriptId, objectFileNames]) =>
-              () => SdfClient.transformCustomObject(scriptId, objectFileNames, objectsDirPath)),
-            READ_CONCURRENCY
-          )
+          const elements = await parseObjectsDir(SdfClient.getObjectsDirPath(projectName))
 
           if (suiteAppId !== undefined) {
             elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
@@ -516,11 +429,8 @@ export default class SdfClient {
       await this.executeProjectAction(
         COMMANDS.IMPORT_CONFIGURATION, { configurationid: ALL_FEATURES }, executor
       )
-      const xmlContent = await readFile(SdfClient.getFeaturesXmlPath(projectName))
-      const featuresXml = xmlParser.parse(xmlContent.toString(), XML_PARSE_OPTIONS)
-
-      const feature = makeArray(featuresXml.features?.feature)
-      return { typeName: CONFIG_FEATURES, values: { feature } }
+      const featuresObject = await parseFeaturesXml(SdfClient.getFeaturesXmlPath(projectName))
+      return featuresObject
     } catch (e) {
       log.error('Attempt to import features object has failed with error: %o', e)
       return { typeName: CONFIG_FEATURES, values: { feature: [] } }
@@ -809,48 +719,6 @@ export default class SdfClient {
       )
     }
 
-    const transformFiles = (filePaths: string[], fileAttrsPaths: string[],
-      fileCabinetDirPath: string): Promise<FileCustomizationInfo[]> => {
-      const filePathToAttrsPath = _.fromPairs(
-        fileAttrsPaths.map(fileAttrsPath => {
-          const fileName = fileAttrsPath.split(FILE_CABINET_PATH_SEPARATOR).slice(-1)[0]
-            .slice(0, -ATTRIBUTES_FILE_SUFFIX.length)
-          const folderName = fileAttrsPath.split(ATTRIBUTES_FOLDER_NAME)[0]
-          return [`${folderName}${fileName}`, fileAttrsPath]
-        })
-      )
-
-      const transformFile = async (filePath: string): Promise<FileCustomizationInfo> => {
-        const attrsPath = filePathToAttrsPath[filePath]
-        const xmlContent = readFile(osPath.resolve(fileCabinetDirPath,
-          ...attrsPath.split(FILE_CABINET_PATH_SEPARATOR)))
-        const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
-        const fileContent = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
-        return convertToFileCustomizationInfo((await xmlContent).toString(),
-          filePathParts.slice(1), await fileContent)
-      }
-
-      return withLimitedConcurrency(
-        filePaths.map(filePath => () => transformFile(filePath)),
-        READ_CONCURRENCY
-      )
-    }
-
-    const transformFolders = (folderAttrsPaths: string[], fileCabinetDirPath: string):
-      Promise<FolderCustomizationInfo[]> => {
-      const transformFolder = async (folderAttrsPath: string): Promise<FolderCustomizationInfo> => {
-        const folderPathParts = folderAttrsPath.split(FILE_CABINET_PATH_SEPARATOR)
-        const xmlContent = readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
-        return convertToFolderCustomizationInfo((await xmlContent).toString(),
-          folderPathParts.slice(1, -2))
-      }
-
-      return withLimitedConcurrency(
-        folderAttrsPaths.map(folderAttrsPath => () => transformFolder(folderAttrsPath)),
-        READ_CONCURRENCY
-      )
-    }
-
     const project = await this.initProject()
     const listFilesResults = await this.listFilePaths(project.executor)
     const filePathsToImport = listFilesResults.listedPaths
@@ -866,15 +734,7 @@ export default class SdfClient {
     )
     const listedPaths = importedPaths // Salto 3853: Will change to filtered files on full deployment
     // const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
-    const [attributesPaths, filePaths] = _.partition(listedPaths,
-      p => p.endsWith(ATTRIBUTES_FILE_SUFFIX))
-    const [folderAttrsPaths, fileAttrsPaths] = _.partition(attributesPaths,
-      p => p.endsWith(FOLDER_ATTRIBUTES_FILE_SUFFIX))
-
-    const elements = (await Promise.all(
-      [transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
-        transformFolders(folderAttrsPaths, fileCabinetDirPath)]
-    )).flat()
+    const elements = await parseFileCabinetDir(fileCabinetDirPath, listedPaths)
     await this.projectCleanup(project.projectName, project.authId)
     return {
       elements,
@@ -1044,20 +904,16 @@ ${this.deployXmlContent}
     customizationInfo: CustomizationInfo,
     projectName: string
   ): Promise<void> {
-    const { feature } = customizationInfo.values
     await writeFile(
       SdfClient.getFeaturesXmlPath(projectName),
-      convertToXmlContent({
-        typeName: FEATURES_TAG,
-        values: { feature },
-      })
+      convertToFeaturesXmlContent(customizationInfo)
     )
   }
 
   private static async addFileInfoToProject(fileCustomizationInfo: FileCustomizationInfo,
     srcDirPath: string): Promise<void> {
     const attrsFilename = fileCustomizationInfo.path.slice(-1)[0] + ATTRIBUTES_FILE_SUFFIX
-    const fileFolderPath = getFileCabinetTypesPath(srcDirPath, fileCustomizationInfo)
+    const fileFolderPath = getFileCabinetCustomInfoPath(srcDirPath, fileCustomizationInfo)
     const attrsFolderPath = osPath.resolve(
       fileFolderPath, ATTRIBUTES_FOLDER_NAME
     )
@@ -1071,7 +927,7 @@ ${this.deployXmlContent}
   private static async addFolderInfoToProject(folderCustomizationInfo: FolderCustomizationInfo,
     srcDirPath: string): Promise<void> {
     const attrsFolderPath = osPath.resolve(
-      getFileCabinetTypesPath(srcDirPath, folderCustomizationInfo), ATTRIBUTES_FOLDER_NAME
+      getFileCabinetCustomInfoPath(srcDirPath, folderCustomizationInfo), ATTRIBUTES_FOLDER_NAME
     )
     await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
       convertToXmlContent(folderCustomizationInfo))

@@ -65,17 +65,17 @@ const findFolderPath = (instance: InstanceElement): string =>
   `${SALESFORCE}/${RECORDS_PATH}/${EMAIL_TEMPLATE_METADATA_TYPE}/${instance.value.fullName}`
 
 const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => {
-  try {
-    const folderPath = findFolderPath(instance)
-    if (_.isUndefined(folderPath)) {
-      const instApiName = await apiName(instance)
-      log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
-    } else {
-      const emailName = `${folderPath.split('/').pop()}.email`
-      instance.value.content = new StaticFile({
-        filepath: path.join(folderPath, emailName),
-        content: await instance.value.content.getContent(),
-      })
+  const folderPath = findFolderPath(instance)
+  if (_.isUndefined(folderPath)) {
+    const instApiName = await apiName(instance)
+    log.warn(`could not extract the attachments of instance ${instApiName}, instance path is undefined`)
+  } else {
+    const emailName = `${folderPath.split('/').pop()}.email`
+    instance.value.content = new StaticFile({
+      filepath: path.join(folderPath, emailName),
+      content: await instance.value.content.getContent(),
+    })
+    try {
       instance.value.attachments = makeArray(instance.value.attachments)
       if (isEmailAttachmentsArray(instance.value)) {
         instance.value.attachments.forEach(attachment => {
@@ -93,9 +93,9 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
           safeJsonStringify(instance.value.attachments,
             (_key, value) => (_.isString(value) ? _.truncate(value) : value)))
       }
+    } catch (err) {
+      log.warn('Error when handling email template attachments of %s: %s', instance.elemID.getFullName(), err.message)
     }
-  } catch (err) {
-    log.warn('Error when handling email template attachments: %o', err.message)
   }
 }
 

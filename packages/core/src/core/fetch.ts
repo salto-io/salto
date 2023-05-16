@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -472,7 +472,7 @@ const fetchAndProcessMergeErrors = async (
           config,
           message: _.isEmpty(message)
             ? ''
-            : `Issues which triggered changes in salto.config/adapters/${accountName}:\n${message}`,
+            : `Issues which triggered changes in ${[...acs.CONFIG_PATH, accountName].join('/')}:\n${message}`,
         })) as UpdatedConfig[]
 
     const partiallyFetchedAccounts = new Set(

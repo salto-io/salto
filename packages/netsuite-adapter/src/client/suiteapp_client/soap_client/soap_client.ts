@@ -106,7 +106,7 @@ const retryOnBadResponseWithDelay = (
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
 const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
-searchResponse.searchResult.recordList?.record || []
+  searchResponse.searchResult.recordList?.record || []
 
 export default class SoapClient {
   private credentials: SuiteAppSoapCredentials
@@ -597,7 +597,8 @@ export default class SoapClient {
     const { totalPages, searchId } = initialSearchResponse.searchResult
     if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
       log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
-      return { records: [], excludedFromSearch: true }
+      // SALTO-3042 Only log until full deployment
+      // return { records: [], excludedFromSearch: true }
     }
     if (totalPages <= 1) {
       return { records: recordFromSearchResponse(initialSearchResponse), excludedFromSearch: false }

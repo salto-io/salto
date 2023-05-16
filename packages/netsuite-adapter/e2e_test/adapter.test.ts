@@ -773,7 +773,9 @@ describe('Netsuite adapter E2E with real account', () => {
       })
     })
 
-    describe('Fetch with limits', () => {
+    // SALTO-3042 Enable after full deployment
+    // eslint-disable-next-line jest/no-disabled-tests
+    describe.skip('Fetch with limits', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },

@@ -596,7 +596,9 @@ describe('soap_client', () => {
         largeTypesError: [],
       })
     })
-    it('should exclude types with too many instances from search', async () => {
+    // SALTO-3042 Enable on full deployment
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
           totalPages: 51,
@@ -921,7 +923,9 @@ describe('soap_client', () => {
       })
     })
 
-    it('should exclude types with too many instances from search', async () => {
+    // SALTO-3042 Enable on full deployment
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
           totalPages: 51,

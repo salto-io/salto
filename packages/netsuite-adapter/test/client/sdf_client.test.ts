@@ -493,7 +493,9 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
-    it('should exclude types with too many instances', async () => {
+    // SALTO-3042 Enable test after full deployment
+    // eslint-disable-next-line jest/no-disabled-tests
+    it.skip('should exclude types with too many instances', async () => {
       mockExecuteAction.mockImplementation(context => {
         const ids = [
           { type: 'addressForm', scriptId: 'a' },

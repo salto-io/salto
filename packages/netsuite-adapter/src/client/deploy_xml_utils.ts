@@ -16,11 +16,10 @@
 
 import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
-import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
-import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
+import { isCustomTypeInfo, isFileCustomizationInfo } from './utils'
 
 type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
 const log = logger(module)
@@ -33,9 +32,6 @@ export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
 export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
-
-const isFileCabinetCustomType = (customizationInfo: CustomizationInfo): customizationInfo is FileCabinetCustomType =>
-  isFileCustomizationInfo(customizationInfo) || isFolderCustomizationInfo(customizationInfo)
 
 export const getCustomTypeInfoPath = (
   dirPath: string,
@@ -51,14 +47,6 @@ export const getFileCabinetTypesPath = (dirPath: string, fileCabinetCustTypeInfo
   return osPath.resolve(dirPath, FILE_CABINET_DIR, ...fileCabinetCustTypeInfo.path)
 }
 
-const getFileOrFolderString = (fileCabinetCusTypeInfo: FileCabinetCustomType): string => {
-  const filename = fileCabinetCusTypeInfo.path.slice(-1)[0]
-  if (isFolderCustomizationInfo(fileCabinetCusTypeInfo)) {
-    return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}${osPath.sep}*`
-  }
-  return `${getFileCabinetTypesPath(PROJECT_ROOT_TILDE_PREFIX, fileCabinetCusTypeInfo)}${osPath.sep}${filename}`
-}
-
 export const reorderDeployXml = (
   deployContent: string,
   dependencyGraph: Graph<SDFObjectNode>,
@@ -69,33 +57,21 @@ export const reorderDeployXml = (
     .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
 
-  const [fileCabinetCustInfos, customTypeInfos] = _.partition(
-    custInfosInTopologicalOrder, isFileCabinetCustomType
-  )
+  const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
-  const { objects, files } = deployXml.deploy
+  const { objects } = deployXml.deploy
 
   if (customTypeInfos.length > 0) {
     log.debug(
       'Deploying %d objects in the following order: %o',
       customTypeInfos.length,
-      customTypeInfos.filter(isCustomTypeInfo).map(custTypeInfo => custTypeInfo.scriptId)
+      customTypeInfos.map(custTypeInfo => custTypeInfo.scriptId)
     )
     objects.path = customTypeInfos
       .filter(isCustomTypeInfo)
       .map(custTypeInfo => getCustomTypeInfoPath(PROJECT_ROOT_TILDE_PREFIX, custTypeInfo))
       .map(path => path.slice(1)) // remove the '/' prefix
     objects.path.push(['~', OBJECTS_DIR, '*'].join(osPath.sep))
-  }
-  if (fileCabinetCustInfos.length > 0) {
-    log.debug(
-      'Deploying %d file cabinet objects in the following order: %o',
-      fileCabinetCustInfos.length,
-      fileCabinetCustInfos.map(custTypeInfo => custTypeInfo.path.join(osPath.sep))
-    )
-    files.path = fileCabinetCustInfos
-      .map(custInfo => getFileOrFolderString(custInfo))
-      .map(path => path.slice(1))
   }
 
   // eslint-disable-next-line new-cap

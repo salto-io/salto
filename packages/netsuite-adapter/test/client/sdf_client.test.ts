@@ -220,7 +220,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(
+        typeNames, typeNamesQuery, typeNamesQuery
+      )).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -233,7 +235,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(
+        mockClient().getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
+      ).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -262,7 +266,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      await mockClient().getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -292,12 +296,12 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
@@ -329,7 +333,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)).rejects.toThrow()
     })
 
     it('should split to smaller chunks and retry when IMPORT_OBJECTS has failed for a certain chunk', async () => {
@@ -359,7 +363,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -417,7 +421,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -471,7 +475,7 @@ describe('sdf client', () => {
       })
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -526,7 +530,7 @@ describe('sdf client', () => {
       })
 
       const client = mockClient({}, (_type: string, count: number) => count > 3)
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -565,7 +569,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(1)
@@ -635,7 +639,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(2)
@@ -790,7 +794,7 @@ describe('sdf client', () => {
       })
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, query)
+      } = await mockClient().getCustomObjects(typeNames, query, query)
       expect(failedTypes).toEqual({
         lockedError: {
           savedcsvimport: ['d'],
@@ -848,7 +852,7 @@ describe('sdf client', () => {
 
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery, typeNamesQuery)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
@@ -885,7 +889,7 @@ describe('sdf client', () => {
           { name: 'addressForm', ids: ['a'] },
         ],
       })
-      await mockClient().getCustomObjects(typeNames, query)
+      await mockClient().getCustomObjects(typeNames, query, query)
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
         commandName: COMMANDS.LIST_OBJECTS,
         arguments: {
@@ -911,10 +915,9 @@ describe('sdf client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
+      const netsuiteQuery = buildNetsuiteQuery({ types: [] })
       const { elements, failedToFetchAllAtOnce } = await mockClient()
-        .getCustomObjects(typeNames, buildNetsuiteQuery({
-          types: [],
-        }))
+        .getCustomObjects(typeNames, netsuiteQuery, netsuiteQuery)
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
       expect(mockExecuteAction).not.toHaveBeenCalledWith()

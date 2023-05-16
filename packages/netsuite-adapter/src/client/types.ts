@@ -15,7 +15,7 @@
 */
 import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
 
 export interface CustomizationInfo {
   typeName: string
@@ -50,6 +50,7 @@ export type FailedTypes = {
 
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
+  instancesIds: ObjectID[]
   failedToFetchAllAtOnce: boolean
   failedTypes: FailedTypes
 }

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { getChangedCustomRecords } from '../../src/changes_detector/changes_detectors/custom_records'
+import { getChangedCustomRecords, getCustomRecordCounters, getCustomRecordTypeInstances } from '../../src/changes_detector/changes_detectors/custom_records'
 import { ChangedCustomRecord } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
@@ -82,5 +82,113 @@ describe('custom records', () => {
       createDateRange(new Date(), new Date(), TIME_DATE_FORMAT),
       { isCustomRecordTypeMatch: () => true },
     )).resolves.toHaveLength(0)
+  })
+
+  describe('get custom record counters', () => {
+    it('should return nothing when custom record types query fails', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce(undefined)
+
+      const results = await getCustomRecordCounters(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return nothing when all custom record types are marked as ignore', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+
+      const results = await getCustomRecordCounters(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(['customrecord1', 'customrecord2']),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return nothing when relevant custom record type is marked to ignore', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+
+      const results = await getCustomRecordCounters(
+        client,
+        { isCustomRecordTypeMatch: name => name === 'customrecord2' },
+        new Set(['customrecord2']),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return relevant counters', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { count: '2' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { count: '1' },
+      ])
+
+      const results = await getCustomRecordCounters(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
+      expect(results.size).toEqual(2)
+      expect(results.get('customrecord1')).toEqual(2)
+      expect(results.get('customrecord2')).toEqual(1)
+    })
+  })
+
+  describe('get custom record type instances', () => {
+    it('should return nothing if no result', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce(undefined)
+
+      const results = await getCustomRecordTypeInstances(
+        client,
+        'customrecord1',
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results).toHaveLength(0)
+    })
+
+    it('should return relevant instances', async () => {
+      runSuiteQLMock.mockReset()
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'VAL_123' },
+        { scriptid: 'VAL_456' },
+      ])
+
+      const results = await getCustomRecordTypeInstances(
+        client,
+        'customrecord1',
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results).toHaveLength(2)
+      expect(results).toContain('val_123')
+      expect(results).toContain('val_456')
+    })
   })
 })

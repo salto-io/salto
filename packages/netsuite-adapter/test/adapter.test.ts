@@ -32,6 +32,7 @@ import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
+import * as deletionCalculator from '../src/deletion_calculator'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/client/suiteapp_client/suiteapp_file_cabinet'
@@ -141,6 +142,7 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
+        instancesIds: [],
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedToFetchAllAtOnce: false,
       })
@@ -197,6 +199,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo, featuresCustomTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
@@ -518,6 +521,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
         })
@@ -560,6 +564,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
@@ -623,6 +628,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
         })
@@ -646,6 +652,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: true,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
@@ -1173,6 +1180,7 @@ describe('Adapter', () => {
     const elementsSource = buildElementsSourceFromElements([dummyElement])
     const getElementMock = jest.spyOn(elementsSource, 'get')
     const getChangedObjectsMock = jest.spyOn(changesDetector, 'getChangedObjects')
+    const getDeletedElementsMock = jest.spyOn(deletionCalculator, 'getDeletedElements')
 
     beforeEach(() => {
       getElementMock.mockReset()
@@ -1189,6 +1197,9 @@ describe('Adapter', () => {
         areAllCustomRecordsMatch: () => true,
         isCustomRecordMatch: () => true,
       })
+
+      getDeletedElementsMock.mockReset()
+      getDeletedElementsMock.mockResolvedValue([])
 
       getSystemInformationMock.mockReset()
       getSystemInformationMock.mockResolvedValue({

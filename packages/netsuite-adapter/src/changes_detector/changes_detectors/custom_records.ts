@@ -15,10 +15,13 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import NetsuiteClient from '../../client/client'
 import { NetsuiteQuery } from '../../query'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { ChangedCustomRecord, DateRange } from '../types'
+
+const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
@@ -30,22 +33,33 @@ const hasScriptId = (res: Record<string, unknown>): res is { scriptid: string } 
   return true
 }
 
+const hasCount = (res: Record<string, unknown>): res is { count: string } => {
+  if (typeof res.count !== 'string' || Number.isNaN(Number(res.count))) {
+    log.warn('result has no count property: %o', res)
+    return false
+  }
+  return true
+}
+
 const getScriptIdsQuery = ({ from, where }: {from: string; where?: string}): string =>
   `SELECT scriptid FROM ${from} ${where ? `WHERE ${where}` : ''} ORDER BY scriptid ASC`
+
+const getMatchingCustomRecords = async (
+  client: NetsuiteClient,
+  isCustomRecordTypeMatch : (typeName: string) => boolean,
+): Promise<string[]> => (await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE })))
+  ?.filter(hasScriptId)
+  .map(({ scriptid }) => scriptid.toLowerCase())
+  .filter(isCustomRecordTypeMatch) ?? []
 
 export const getChangedCustomRecords = async (
   client: NetsuiteClient,
   dateRange: DateRange,
-  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>
+  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>,
 ): Promise<ChangedCustomRecord[]> => {
+  const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
+
   const [startDate, endDate] = dateRange.toSuiteQLRange()
-
-  const customRecordTypesScriptIds = (
-    await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE }))
-  )?.filter(hasScriptId)
-    .map(({ scriptid }) => scriptid.toLowerCase())
-    .filter(isCustomRecordTypeMatch) ?? []
-
   const changedObjects = await Promise.all(
     customRecordTypesScriptIds.map(async customRecordTypeScriptId => (
       await client.runSuiteQL(getScriptIdsQuery({
@@ -57,5 +71,35 @@ export const getChangedCustomRecords = async (
       objectId: scriptid.toLowerCase(),
     })) ?? [])
   )
+
   return changedObjects.flat()
 }
+
+export const getCustomRecordCounters = async (
+  client: NetsuiteClient,
+  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>,
+  customRecordTypesToIgnore: Set<string>,
+): Promise<Map<string, number>> => {
+  const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
+
+  const counters = (await Promise.all(
+    customRecordTypesScriptIds
+      .filter(customRecordTypesScriptId => !customRecordTypesToIgnore.has(customRecordTypesScriptId))
+      .map(async customRecordTypeScriptId => (
+      await client.runSuiteQL(`SELECT COUNT(*) as count FROM ${customRecordTypeScriptId}`)
+    )?.filter(hasCount)
+        .map(item => ({
+          typeId: customRecordTypeScriptId,
+          count: Number(item.count),
+        })))
+  )).filter(isDefined).flat()
+
+  return new Map(counters.map(counter => [counter.typeId, counter.count]))
+}
+
+export const getCustomRecordTypeInstances = async (
+  client: NetsuiteClient,
+  customRecordType: string,
+): Promise<string[]> => (
+    await client.runSuiteQL(`SELECT scriptid FROM ${customRecordType}`)
+  )?.filter(hasScriptId).map(({ scriptid }) => scriptid.toLowerCase()) ?? []

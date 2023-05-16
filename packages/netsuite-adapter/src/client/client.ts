@@ -132,9 +132,15 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
+  async getCustomObjects(
+    typeNames: string[],
+    query: NetsuiteQuery,
+    originFetchQuery: NetsuiteQuery,
+  ):
     Promise<GetCustomObjectsResult> {
-    return this.sdfClient.getCustomObjects(typeNames, query)
+    return this.sdfClient.getCustomObjects(
+      typeNames, query, originFetchQuery
+    )
   }
 
   @NetsuiteClient.logDecorator

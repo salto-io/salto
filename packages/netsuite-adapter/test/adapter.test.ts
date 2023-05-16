@@ -1346,9 +1346,7 @@ describe('Adapter', () => {
         })
       })
 
-      // SALTO-3042 enable this test
-      // eslint-disable-next-line jest/no-disabled-tests
-      it.skip('should filter from data elements and custom records', async () => {
+      it('should filter from data elements and custom records', async () => {
         await adapter.fetch(mockFetchOpts)
         expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
           {

@@ -14,20 +14,23 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { types as lowerdashTypes, values } from '@salto-io/lowerdash'
+import { types as lowerdashTypes, regex, values } from '@salto-io/lowerdash'
 import {
   InstanceElement, ElemID, ListType, BuiltinTypes, CORE_ANNOTATIONS,
   createRestriction, MapType,
 } from '@salto-io/adapter-api'
-import { createMatchingObjectType, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
+import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles, FailedTypes } from './client/types'
+
+const log = logger(module)
 
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
@@ -44,6 +47,9 @@ export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
+
+// Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
+const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 
 const REQUIRED_FEATURE_SUFFIX = ':required'
 export const isRequiredFeature = (featureName: string): boolean =>
@@ -79,7 +85,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   additionalDependencies: 'additionalDependencies',
 }
 
-export type MaxInstancesPerType = {
+type MaxInstancesPerType = {
   name: string
   limit: number
 }
@@ -212,6 +218,61 @@ const clientConfigType = createMatchingObjectType<SdfClientConfig>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
+const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
+  validateArrayOfStrings(installedSuiteApps, [CONFIG.client, CLIENT_CONFIG.installedSuiteApps])
+  const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
+  if (invalidValues.length !== 0) {
+    throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
+  }
+}
+
+const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
+
+function validateMaxInstancesPerType(maxInstancesPerType: unknown):
+  asserts maxInstancesPerType is MaxInstancesPerType[] {
+  if (Array.isArray(maxInstancesPerType) && maxInstancesPerType.every(
+    val => 'name' in val && 'limit' in val && typeof val.name === 'string' && typeof val.limit === 'number'
+  )) {
+    const invalidTypes = maxInstancesPerType.filter(maxType =>
+      !regex.isValidRegex(maxType.name)
+      || (regex.isValidRegex(maxType.name)
+        && noSupportedTypeMatch(maxType.name)
+        && !isCustomRecordTypeName(maxType.name)))
+    if (invalidTypes.length > 0) {
+      throw new Error(
+        `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}`
+        + ` do not match any supported type: ${safeJsonStringify(invalidTypes)}`
+      )
+    }
+  } else {
+    throw new Error(`Expected ${CLIENT_CONFIG.maxInstancesPerType} to be a list of { name: string, limit: number },`
+    + ` but found:\n${safeJsonStringify(maxInstancesPerType, undefined, 4)}.`)
+  }
+}
+
+export function validateClientConfig(
+  client: unknown,
+  fetchTargetDefined: boolean
+): asserts client is SdfClientConfig {
+  validatePlainObject(client, CONFIG.client)
+  const {
+    fetchAllTypesAtOnce,
+    installedSuiteApps,
+    maxInstancesPerType,
+  } = _.pick(client, Object.values(CLIENT_CONFIG))
+
+  if (fetchAllTypesAtOnce && fetchTargetDefined) {
+    log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
+    client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
+  }
+  if (installedSuiteApps !== undefined) {
+    validateInstalledSuiteApps(installedSuiteApps)
+  }
+  if (maxInstancesPerType !== undefined) {
+    validateMaxInstancesPerType(maxInstancesPerType)
+  }
+}
 
 export const instanceLimiterCreator = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
   (type, instanceCount): boolean => {

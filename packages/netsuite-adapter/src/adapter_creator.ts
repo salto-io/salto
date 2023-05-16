@@ -18,11 +18,10 @@ import { regex } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { SdkDownloadService } from '@salto-io/suitecloud-cli'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
 import Bottleneck from 'bottleneck'
-import { CLIENT_CONFIG, CONFIG, configType, DEFAULT_CONCURRENCY, instanceLimiterCreator, MaxInstancesPerType, NetsuiteConfig, SdfClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
-import { CUSTOM_RECORD_TYPE_NAME_PREFIX, NETSUITE } from './constants'
-import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS, noSupportedTypeMatch } from './query'
+import { CONFIG, configType, DEFAULT_CONCURRENCY, instanceLimiterCreator, NetsuiteConfig, validateClientConfig, validateDeployParams, validateFetchConfig, validateSuiteAppClientParams } from './config'
+import { NETSUITE } from './constants'
+import { validateFetchParameters, convertToQueryParams, validateNetsuiteQueryParameters, validateArrayOfStrings, validatePlainObject, FETCH_PARAMS } from './query'
 import { Credentials, isSdfCredentialsOnly, isSuiteAppCredentials, toCredentialsAccountId } from './client/credentials'
 import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
@@ -30,9 +29,6 @@ import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
 
 const log = logger(module)
-
-// Taken from https://github.com/salto-io/netsuite-suitecloud-sdk/blob/e009e0eefcd918635353d093be6a6c2222d223b8/packages/node-cli/src/validation/InteractiveAnswersValidator.js#L27
-const SUITEAPP_ID_FORMAT_REGEX = /^[a-z0-9]+(\.[a-z0-9]+){2}$/
 
 const configID = new ElemID(NETSUITE)
 
@@ -84,61 +80,6 @@ const validateRegularExpressions = (regularExpressions: string[]): void => {
   }
 }
 
-const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
-  validateArrayOfStrings(installedSuiteApps, [CONFIG.client, CLIENT_CONFIG.installedSuiteApps])
-  const invalidValues = installedSuiteApps.filter(id => !SUITEAPP_ID_FORMAT_REGEX.test(id))
-  if (invalidValues.length !== 0) {
-    throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
-  }
-}
-
-const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
-
-function validateMaxInstancesPerType(maxInstancesPerType: unknown):
-  asserts maxInstancesPerType is MaxInstancesPerType[] {
-  if (Array.isArray(maxInstancesPerType) && maxInstancesPerType.every(
-    val => 'name' in val && 'limit' in val && typeof val.name === 'string' && typeof val.limit === 'number'
-  )) {
-    const invalidTypes = maxInstancesPerType.filter(maxType =>
-      !regex.isValidRegex(maxType.name)
-      || (regex.isValidRegex(maxType.name)
-        && noSupportedTypeMatch(maxType.name)
-        && !isCustomRecordTypeName(maxType.name)))
-    if (invalidTypes.length > 0) {
-      throw new Error(
-        `The following types or regular expressions in ${CLIENT_CONFIG.maxInstancesPerType}`
-        + ` do not match any supported type: ${safeJsonStringify(invalidTypes)}`
-      )
-    }
-  } else {
-    throw new Error(`Expected ${CLIENT_CONFIG.maxInstancesPerType} to be a list of { name: string, limit: number },`
-    + ` but found:\n${safeJsonStringify(maxInstancesPerType, undefined, 4)}.`)
-  }
-}
-
-function validateClientConfig(
-  client: unknown,
-  fetchTargetDefined: boolean
-): asserts client is SdfClientConfig {
-  validatePlainObject(client, CONFIG.client)
-  const {
-    fetchAllTypesAtOnce,
-    installedSuiteApps,
-    maxInstancesPerType,
-  } = _.pick(client, Object.values(CLIENT_CONFIG))
-
-  if (fetchAllTypesAtOnce && fetchTargetDefined) {
-    log.warn(`${CLIENT_CONFIG.fetchAllTypesAtOnce} is not supported with ${CONFIG.fetchTarget}. Ignoring ${CLIENT_CONFIG.fetchAllTypesAtOnce}`)
-    client[CLIENT_CONFIG.fetchAllTypesAtOnce] = false
-  }
-  if (installedSuiteApps !== undefined) {
-    validateInstalledSuiteApps(installedSuiteApps)
-  }
-  if (maxInstancesPerType !== undefined) {
-    validateMaxInstancesPerType(maxInstancesPerType)
-  }
-}
-
 function validateConfig(config: Record<string, unknown>): asserts config is NetsuiteConfig {
   const {
     fetch,
@@ -160,6 +101,7 @@ function validateConfig(config: Record<string, unknown>): asserts config is Nets
   }
 
   if (client !== undefined) {
+    validatePlainObject(client, CONFIG.client)
     validateClientConfig(client, fetchTarget !== undefined)
   }
 

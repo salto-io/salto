@@ -17,7 +17,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -238,6 +238,38 @@ describe('config', () => {
 
       expect(limiter('test', 299)).toBeFalsy()
       expect(limiter('test', 301)).toBeTruthy()
+    })
+  })
+
+  describe('validateClientConfig', () => {
+    describe('validateMaxInstancesPerType', () => {
+      it('should validate maxInstancesPerType is the correct object with valid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should validate also customrecordtype instances', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customrecord_ForTesting', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the wrong object', () => {
+        const config = {
+          maxInstancesPerType: [{ wrong_name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the correct object with invalid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'not_supported_type', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
     })
   })
 })

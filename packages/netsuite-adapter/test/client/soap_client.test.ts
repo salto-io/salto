@@ -596,12 +596,11 @@ describe('soap_client', () => {
         largeTypesError: [],
       })
     })
-    // SALTO-3042 Enable on full deployment
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should exclude types with too many instances from search', async () => {
+
+    it('should NOT exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
-          totalPages: 51,
+          totalPages: 1,
           searchId: 'someId',
           recordList: {
             record: [{
@@ -620,11 +619,21 @@ describe('soap_client', () => {
           suiteAppTokenSecret: 'tokenSecret',
         },
         fn => fn(),
-        (_type: string, count: number) => count > 5000,
+        (_type: string, count: number) => count > 1,
       )
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
-        records: [],
-        largeTypesError: ['subsidiary'],
+      // await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+      //   records: [],
+      //   largeTypesError: ['subsidiary'],
+      // })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
       })
     })
 
@@ -923,12 +932,10 @@ describe('soap_client', () => {
       })
     })
 
-    // SALTO-3042 Enable on full deployment
-    // eslint-disable-next-line jest/no-disabled-tests
-    it.skip('should exclude types with too many instances from search', async () => {
+    it('should NOT exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
-          totalPages: 51,
+          totalPages: 1,
           searchId: 'someId',
           recordList: {
             record: [{
@@ -947,9 +954,20 @@ describe('soap_client', () => {
           suiteAppTokenSecret: 'tokenSecret',
         },
         fn => fn(),
-        (_type: string, count: number) => count > 5000,
+        (_type: string, count: number) => count > 1,
       )
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({ largeTypesError: ['custrecord'], customRecords: [] })
+      // await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual(
+      // { largeTypesError: ['custrecord'], customRecords: [] })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
   })
 

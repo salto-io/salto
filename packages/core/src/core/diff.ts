@@ -189,24 +189,28 @@ export const getEnvsDeletionsDiff = async (
   sourceElemIds: ElemID[],
   envs: ReadonlyArray<string>,
   selectors: ElementSelector[]
-): Promise<Record<string, ElemID[]>> => {
-  const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(await (awu(envs)).map(
-    async env =>
-      [
-        env,
-        await awu(await workspace.getElementIdsBySelectors(
-          selectors,
-          { source: 'env', envName: env },
-          true
-        )).toArray(),
-      ]
-  ).toArray())
+): Promise<Record<string, ElemID[]>> => (
+  log.time(
+    async () => {
+      const envsElemIds: Record<string, ElemID[]> = Object.fromEntries(await (awu(envs)).map(
+        async env =>
+          [
+            env,
+            await awu(await workspace.getElementIdsBySelectors(
+              selectors,
+              { source: 'env', envName: env },
+              true
+            )).toArray(),
+          ]
+      ).toArray())
 
-  const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
-  return _(envsElemIds)
-    .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
-    .entries()
-    .filter(([_env, ids]) => ids.length !== 0)
-    .fromPairs()
-    .value()
-}
+      const sourceElemIdsSet = new Set(sourceElemIds.map(id => id.getFullName()))
+      return _(envsElemIds)
+        .mapValues(ids => ids.filter(id => !sourceElemIdsSet.has(id.getFullName())))
+        .entries()
+        .filter(([_env, ids]) => ids.length !== 0)
+        .fromPairs()
+        .value()
+    },
+    'getEnvsDeletionsDiff',
+  ))

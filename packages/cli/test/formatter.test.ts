@@ -21,9 +21,10 @@ import { EOL } from 'os'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
+import { DeployError } from '@salto-io/core/src/core/deploy'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign } from '../src/formatter'
+  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign, deployErrorsOutput } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -77,6 +78,18 @@ describe('formatter', () => {
     detailedMessage: '',
     severity: 'Info',
   }
+  const workspaceDeployErrors: DeployError[] = [{
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my error message 1',
+    severity: 'Error',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my error message 2',
+    severity: 'Error',
+    groupId: 'test group',
+  }]
 
   describe('createPlanOutput', () => {
     const plan = preview()
@@ -538,6 +551,17 @@ describe('formatter', () => {
     })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')
+    })
+  })
+
+  describe('deployErrorsOutput', () => {
+    let formattedErrors: string
+    beforeEach(() => {
+      formattedErrors = deployErrorsOutput(workspaceDeployErrors)
+    })
+    it('should have both error messages', () => {
+      expect(formattedErrors).toContain('my error message 1')
+      expect(formattedErrors).toContain('my error message 2')
     })
   })
 })

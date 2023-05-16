@@ -27,6 +27,7 @@ import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServ
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
+import { DeployError } from '@salto-io/core/src/core/deploy'
 import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
@@ -348,7 +349,21 @@ export const cancelDeployOutput = (checkOnly: boolean): string => [
   emptyLine(),
 ].join('\n')
 
-export const deployPhaseEpilogue = (numChanges: number, numErrors: number, checkOnly: boolean): string => {
+export const deployErrorsOutput = (deployErrors: DeployError[]): string => {
+  const errorOutputLines = [
+    emptyLine(),
+  ]
+  if (deployErrors.length > 0) {
+    errorOutputLines.push(error('Errors:'))
+    errorOutputLines.push(...deployErrors.map(deployError => error(`${deployError.message}`)))
+    errorOutputLines.push(emptyLine())
+    return errorOutputLines.join('\n')
+  }
+  return ''
+}
+
+export const deployPhaseEpilogue = (numChanges: number,
+  numErrors: number, checkOnly: boolean,): string => {
   const hadChanges = numChanges > 0
   const hadErrors = numErrors > 0
   if (hadChanges || hadErrors) {

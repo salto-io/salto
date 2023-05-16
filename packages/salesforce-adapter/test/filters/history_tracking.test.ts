@@ -17,10 +17,10 @@ import _ from 'lodash'
 import {
   AdditionChange,
   Change, ElemID,
-  Field, getAllChangeData,
+  Field,
   getChangeData, isAdditionChange,
   isFieldChange,
-  isModificationChange, isObjectTypeChange, isRemovalChange,
+  isModificationChange, isRemovalChange,
   ModificationChange,
   ObjectType, ReferenceExpression, RemovalChange,
   toChange,
@@ -50,14 +50,30 @@ describe('historyTracking', () => {
   })
 
   describe('onFetch', () => {
-    describe('When fetching an object with history tracking disabled', () => {
+    describe('When fetching an object that does not support history tracking', () => {
       it('Should not modify the object', async () => {
         const inputType = mockTypes.Account.clone()
-        inputType.annotations.enableHistory = false
         const expectedOutput = inputType.clone()
         const elements = [inputType]
         await filter.onFetch(elements)
         expect(elements).toEqual([expectedOutput])
+      })
+    })
+    describe('When fetching an object with history tracking disabled', () => {
+      let inputType: ObjectType
+      beforeEach(async () => {
+        inputType = mockTypes.Account.clone()
+        inputType.annotations.enableHistory = false
+        Object.values(inputType.fields)
+          .forEach(fieldDef => { fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false })
+        await filter.onFetch([inputType])
+      })
+      it('Should not add object-level trackedFields annotation', () => {
+        expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('Should remove field-level annotation', () => {
+        Object.values(inputType.fields)
+          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
       })
     })
     describe('When fetching an object with history tracking enabled', () => {
@@ -379,49 +395,6 @@ describe('historyTracking', () => {
           },
         },
       },
-    })
-    describe('state preservation', () => {
-      it('should disregard changes from preDeploy if there are no matching field changes', async () => {
-        const elements = [typeWithHistoryTrackedFields.clone()]
-        await filter.onFetch(elements)
-
-        const after = elements[0].clone()
-        after.annotations[HISTORY_TRACKED_FIELDS] = {}
-        const changes = [toChange({ before: elements[0], after })]
-        await filter.preDeploy(changes)
-        const onDeployChanges:Change[] = []
-        await filter.onDeploy(onDeployChanges)
-        expect(onDeployChanges).toHaveLength(0)
-      })
-      it('should disregard changes from preDeploy if they`re irrelevant', async () => {
-        const elements = [typeWithHistoryTrackedFields.clone()]
-        await filter.onFetch(elements)
-
-        const after = elements[0].clone()
-        after.annotations.unrelatedAnnotation = 'SomeAnnotationValue'
-        const changes = [toChange({ before: elements[0], after })]
-        await filter.preDeploy(changes)
-        const onDeployChanges:Change[] = []
-        await filter.onDeploy(onDeployChanges)
-        expect(onDeployChanges).toHaveLength(0)
-      })
-      it('should create changes based on field changes', async () => {
-        const before = typeWithHistoryTrackedFields.clone()
-        const elements = [before]
-        await filter.onFetch(elements)
-
-        const after = elements[0].clone()
-        after.annotations[HISTORY_TRACKED_FIELDS] = {}
-        const preDeployChanges = [toChange({ before: elements[0], after })]
-        await filter.preDeploy(preDeployChanges)
-
-        const onDeployChanges = [toChange({ before: getAllChangeData(preDeployChanges[1])[0].clone(),
-          after: getAllChangeData(preDeployChanges[1])[1].clone() })]
-        await filter.onDeploy(onDeployChanges)
-        expect(onDeployChanges).toHaveLength(1)
-        expect(isModificationChange(onDeployChanges[0])).toBeTrue()
-        expect(isObjectTypeChange(onDeployChanges[0])).toBeTrue()
-      })
     })
     describe('onFetch vs. preDeploy=>onDeploy', () => {
       it('should have the same output between onFetch and preDeploy=>onDeploy when adding an object', async () => {

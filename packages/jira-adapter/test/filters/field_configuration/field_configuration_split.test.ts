@@ -15,22 +15,29 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../../src/constants'
 import fieldConfigurationSplitFilter from '../../../src/filters/field_configuration/field_configuration_split'
 import { getFilterParams, mockClient } from '../../utils'
 import { FIELD_TYPE_NAME } from '../../../src/filters/fields/constants'
+import { JiraConfig, getDefaultConfig } from '../../../src/config/config'
 
 describe('fieldConfigurationItemsFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch'>
   let fieldConfigurationType: ObjectType
   let fieldConfigurationItemType: ObjectType
+  let config: JiraConfig
 
   beforeEach(async () => {
     const { client, paginator } = mockClient()
 
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.splitFieldConfiguration = true
+
     filter = fieldConfigurationSplitFilter(getFilterParams({
       client,
       paginator,
+      config,
     })) as typeof filter
 
     fieldConfigurationItemType = new ObjectType({
@@ -97,6 +104,35 @@ describe('fieldConfigurationItemsFilter', () => {
           elemID: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field2'),
         },
       })
+    })
+
+    it('should not split to different instances if disabled in the config', async () => {
+      config.fetch.splitFieldConfiguration = false
+      const instance = new InstanceElement(
+        'instance',
+        fieldConfigurationType,
+        {
+          fields: [
+            {
+              id: {
+                elemID: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field1'),
+              },
+            },
+            {
+              id: {
+                elemID: new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'field2'),
+              },
+            },
+          ],
+        },
+        ['Jira', 'Records', 'field_configuration', 'instance'],
+      )
+
+      const elements = [fieldConfigurationType, fieldConfigurationItemType, instance]
+      await filter.onFetch(elements)
+      expect(elements).toHaveLength(3)
+
+      expect(instance.value.fields).toBeDefined()
     })
   })
 })

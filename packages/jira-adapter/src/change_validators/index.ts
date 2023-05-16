@@ -54,6 +54,7 @@ import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
 import { circularTransitionsValidator } from './workflows/circular_transitions'
+import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 
 const {
   deployTypesNotSupportedValidator,
@@ -103,6 +104,7 @@ export default (
     permissionSchemeDeploymentValidator(client),
     projectCategoryValidator(client),
     circularTransitionsValidator,
+    unresolvedFieldConfigurationItemsValidator,
   ]
 
   return createChangeValidator(validators)

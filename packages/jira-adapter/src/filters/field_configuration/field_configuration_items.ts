@@ -56,6 +56,16 @@ const deployFieldConfigurationItems = async (
 const filter: FilterCreator = ({ client, config }) => ({
   name: 'fieldConfigurationItemsFilter',
   deploy: async changes => {
+    if (!config.fetch.splitFieldConfiguration) {
+      return {
+        leftoverChanges: changes,
+        deployResult: {
+          errors: [],
+          appliedChanges: [],
+        },
+      }
+    }
+
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,
       change => isInstanceChange(change)

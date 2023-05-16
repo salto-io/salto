@@ -143,7 +143,7 @@ const removeFlowError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Cannot delete flow',
-  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}.\nfor more details on 'flowsValidator': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const newVersionInfo = (instance: InstanceElement, active: boolean): ChangeError => ({
@@ -169,7 +169,7 @@ const deactivatingError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Deactivating a flow is not supported',
-  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}.\nfor more details on 'flowsValidator': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
@@ -204,7 +204,7 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Your salesforce org is configured to disallow flow activations via the API',
-    detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+    detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}.\nfor more details on 'flowsValidator': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   }
 }
 

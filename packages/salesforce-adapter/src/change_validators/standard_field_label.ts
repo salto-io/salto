@@ -39,7 +39,7 @@ const createChangeError = (field: Field): ChangeError => ({
   elemID: field.elemID,
   severity: 'Error',
   message: 'Modification of standard field labels is not supported',
-  detailedMessage: `Standard field ‘${field.name}’ label cannot be modified.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `Standard field ‘${field.name}’ label cannot be modified.\nfor more details on 'standardFieldLabel': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 /**

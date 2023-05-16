@@ -33,7 +33,7 @@ const fullNameChangeError = (change: ModificationChange<InstanceElement>): Chang
     message: 'You cannot change the fullName property of an element.',
     detailedMessage: 'You cannot change the fullName property of an element. '
     + `The fullName property of '${after.elemID.getFullName()}' was changed from `
-    + `'${before.value[INSTANCE_FULL_NAME_FIELD]}' to '${after.value[INSTANCE_FULL_NAME_FIELD]}\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors'`,
+    + `'${before.value[INSTANCE_FULL_NAME_FIELD]}' to '${after.value[INSTANCE_FULL_NAME_FIELD]}\nfor more details on 'fullNameChangedValidator': https://help.salto.io/en/articles/7793653-deployment-preview-errors'`,
   }
 }
 

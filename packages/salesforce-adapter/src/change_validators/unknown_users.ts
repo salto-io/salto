@@ -200,7 +200,7 @@ const unknownUserError = ({ instance, field, userName }: MissingUser): ChangeErr
     elemID: instance.elemID,
     severity: 'Error',
     message: `User ${userName} doesn't exist`,
-    detailedMessage: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+    detailedMessage: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment.\nfor more details on 'unknownUser': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
   }
 )
 

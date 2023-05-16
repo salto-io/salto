@@ -40,7 +40,7 @@ const createLastLayoutDeletionError = (
   elemID,
   severity: 'Error',
   message: 'Custom objects must have at least one layout',
-  detailedMessage: `Current deployment plan attempts to delete all custom object ${objectName} layouts. Please make sure to have at least one layout in order to deploy.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+  detailedMessage: `Current deployment plan attempts to delete all custom object ${objectName} layouts. Please make sure to have at least one layout in order to deploy.\nfor more details on 'lastLayoutRemoval': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
 })
 
 const changeValidator: ChangeValidator = async (changes, elementsSource) => {

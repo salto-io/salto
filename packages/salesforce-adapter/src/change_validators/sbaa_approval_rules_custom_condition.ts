@@ -67,7 +67,7 @@ const changeValidator: ChangeValidator = async changes => {
       elemID: idToRuleWithCustomAdditionInst[referencedInstanceElemID].elemID,
       severity: 'Error' as SeverityLevel,
       message: 'Cannot deploy ApprovalRule with ConditionMet set to ‘Custom’',
-      detailedMessage: 'Cannot deploy an ApprovalRule with ConditionMet set to ‘Custom‘ that has a referencing ApprovalCondition.\nYou can edit ConditionMet in Salto and set it to ‘All’ and deploy. Then, change it back to ‘Custom’ and deploy again.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors',
+      detailedMessage: "Cannot deploy an ApprovalRule with ConditionMet set to ‘Custom‘ that has a referencing ApprovalCondition.\nYou can edit ConditionMet in Salto and set it to ‘All’ and deploy. Then, change it back to ‘Custom’ and deploy again.\nfor more details on 'sbaaApprovalRulesCustomCondition': https://help.salto.io/en/articles/7793653-deployment-preview-errors",
     })).filter(values.isDefined)
 }
 

@@ -63,7 +63,7 @@ const getMapKeyErrors = async (
             elemID: path,
             severity: 'Error',
             message: `Nested value '${mapDef.key}' not found in field '${fieldName}`,
-            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Nested value '${mapDef.key}' not found.\nfor more details on 'mapKeys': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
           })
           return undefined
         }
@@ -83,7 +83,7 @@ const getMapKeyErrors = async (
             elemID: after.elemID.createNestedID(fieldName, ...previewPrefix),
             severity: 'Error',
             message: `Incorrect map key in ${typeName} ${after.value.fullName} field ${fieldName}: ${previewPrefix?.join(API_NAME_SEPARATOR)} should be ${expectedPath.slice(0, previewPrefix.length).join(API_NAME_SEPARATOR)}`,
-            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}.\nfor more details: https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
+            detailedMessage: `${typeName} ${after.value.fullName} field ${fieldName}: Incorrect map key ${actualPath?.join(API_NAME_SEPARATOR)}, should be ${expectedPath.join(API_NAME_SEPARATOR)}.\nfor more details on 'mapKeys': https://help.salto.io/en/articles/7793653-deployment-preview-errors`,
           })
         }
         return undefined

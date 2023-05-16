@@ -13,18 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import os from 'os'
 import { collections } from '@salto-io/lowerdash'
 import { InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { configType, FETCH_CONFIG } from './config'
 
 const { makeArray } = collections.array
 
-const MESSAGE_INTRO = 'Salto failed to fetch some items from zendesk.'
-const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
-+ 'Salto needs to stop managing these items by applying the following configuration change:'
+const STOP_MANAGING_ITEMS_MSG = 'Salto failed to fetch some items from Zendesk.'
+  + ' Failed items must be excluded from the fetch.'
 
 export const getConfigFromConfigChanges = (
   configChanges: elementsUtils.ConfigChangeSuggestion[],
@@ -51,6 +50,6 @@ export const getConfigFromConfigChanges = (
         },
       },
     )],
-    message: [MESSAGE_INTRO, '', MESSAGE_SUMMARY].join(os.EOL),
+    message: formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG]),
   }
 }

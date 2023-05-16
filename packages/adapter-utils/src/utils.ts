@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import os from 'os'
 import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
@@ -1147,4 +1148,15 @@ export const getSubtypes = async (
   await awu(types).forEach(findSubtypes)
 
   return Object.values(subtypes)
+}
+
+export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
+  if (_.isEmpty(reasons)) {
+    return ''
+  }
+
+  const formatReason = (reason: string): string =>
+    `    * ${reason}`
+
+  return [...reasons.map(formatReason)].join(os.EOL)
 }

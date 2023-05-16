@@ -37,6 +37,7 @@ import {
   getParent,
   getPath,
   getSubtypes,
+  formatConfigSuggestionsReasons,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2514,6 +2515,18 @@ describe('Test utils.ts', () => {
       })
       const subtypes = await getSubtypes([typeD, typeF])
       expect(_.sortBy(subtypes, type => type.elemID.name)).toEqual([typeA, typeB, typeC, typeE])
+    })
+  })
+
+  describe('formatConfigSuggestionsReasons', () => {
+    it('should return an empty message', () => {
+      const message = formatConfigSuggestionsReasons([])
+      expect(message).toEqual('')
+    })
+
+    it('should return a formatted reasons list', () => {
+      const message = formatConfigSuggestionsReasons(['reason A', 'reason B'])
+      expect(message).toEqual('    * reason A\n    * reason B')
     })
   })
 })

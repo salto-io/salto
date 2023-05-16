@@ -15,6 +15,7 @@
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
 import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE } from '../src/config'
 
@@ -144,7 +145,8 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
+    expect(configChange?.message)
+      .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
 
   it('should combine configuration messages when needed', () => {
@@ -167,7 +169,8 @@ describe('config', () => {
       config
     )
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${LARGE_FOLDERS_EXCLUDED_MESSAGE}`)
+    expect(configChange?.message)
+      .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
 
   describe('should have a correct default fetch config', () => {

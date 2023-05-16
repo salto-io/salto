@@ -26,7 +26,7 @@ import {
 } from '@salto-io/adapter-api'
 import { applyInstancesDefaults, resolvePath, flattenElementStr, buildElementsSourceFromElements, safeJsonStringify, walkOnElement, WalkOnFunc, WALK_NEXT_STEP, setPath, walkOnValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap } from '@salto-io/workspace'
+import { merger, elementSource, expressions, Workspace, pathIndex, updateElementsWithAlternativeAccount, createAdapterReplacedID, remoteMap, adaptersConfigSource as acs } from '@salto-io/workspace'
 import { collections, promises, types, values } from '@salto-io/lowerdash'
 import { StepEvents } from './deploy'
 import { getPlan, Plan } from './plan'
@@ -454,6 +454,7 @@ const fetchAndProcessMergeErrors = async (
               ? {
                 config: updatedConfig.config.map(flattenElementStr),
                 message: updatedConfig.message,
+                accountName,
               }
               : undefined,
             isPartial: fetchResult.isPartial ?? false,
@@ -465,7 +466,14 @@ const fetchAndProcessMergeErrors = async (
     const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
-      .filter(values.isDefined) as UpdatedConfig[]
+      .filter(values.isDefined)
+      .map(({ config, message, accountName }) =>
+        ({
+          config,
+          message: _.isEmpty(message)
+            ? ''
+            : `Issues which triggered changes in ${[...acs.CONFIG_PATH, accountName].join('/')}:\n${message}`,
+        })) as UpdatedConfig[]
 
     const partiallyFetchedAccounts = new Set(
       fetchResults

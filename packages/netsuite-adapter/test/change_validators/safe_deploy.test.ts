@@ -29,6 +29,7 @@ const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
   failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
   failedTypes: { lockedError: {}, unexpectedError: {} },
   elements: [],
+  deletedElements: [],
 }
 
 describe('safe deploy change validator', () => {
@@ -140,6 +141,7 @@ describe('safe deploy change validator', () => {
             failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
             failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: customRecordType, after: afterCustomRecordType })],
@@ -174,6 +176,7 @@ describe('safe deploy change validator', () => {
             failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
             failedTypes: { lockedError: {}, unexpectedError: {} },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator([toChange({
             before: customRecordType.fields.custom_field,

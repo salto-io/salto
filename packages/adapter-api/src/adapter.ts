@@ -25,6 +25,7 @@ import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
 export interface FetchResult {
   elements: Element[]
+  deletedElements?: ElemID[]
   errors?: SaltoError[]
   updatedConfig?: { config: InstanceElement[]; message: string }
   isPartial?: boolean

@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { ElemID } from '@salto-io/adapter-api'
 import { readFile, readDir, writeFile, mkdirp, rm, rename } from '@salto-io/file'
 import osPath from 'path'
 import { buildNetsuiteQuery, notQuery } from '../../src/query'
@@ -212,7 +213,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(
+        typeNames, typeNamesQuery, false, typeNamesQuery, []
+      )).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -225,7 +228,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(
+        mockClient().getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
+      ).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -254,7 +259,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      await mockClient().getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -284,16 +289,17 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
-      expect(mockExecuteAction).toHaveBeenCalledTimes(8)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
+      expect(mockExecuteAction).toHaveBeenCalledTimes(9)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
       expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
     })
@@ -321,7 +327,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])).rejects.toThrow()
     })
 
     it('should split to smaller chunks and retry when IMPORT_OBJECTS has failed for a certain chunk', async () => {
@@ -351,32 +357,33 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 9
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'a',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction.mock.calls[6][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'b',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -409,15 +416,16 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 9
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'a',
       }))
@@ -434,7 +442,7 @@ describe('sdf client', () => {
         scriptid: 'a',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -463,32 +471,33 @@ describe('sdf client', () => {
       })
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
-      const numberOfExecuteActions = 8
+      const numberOfExecuteActions = 9
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'a b',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[4][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
         type: 'addressForm',
         scriptid: 'c',
       }))
 
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
-      expect(mockExecuteAction.mock.calls[5][0].arguments).toEqual(expect.objectContaining({
+      expect(mockExecuteAction.mock.calls[6][0].arguments).toEqual(expect.objectContaining({
         type: 'advancedpdftemplate',
         scriptid: 'd',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
@@ -514,7 +523,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(1)
@@ -551,7 +560,8 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
     })
 
     it('should pass fetch configured suite apps', async () => {
@@ -584,7 +594,7 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
       expect(readDirMock).toHaveBeenCalledTimes(2)
@@ -641,11 +651,13 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, listObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, deleteAuthIdCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(10, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(7, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(8, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(9, importObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(10, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(11, deleteAuthIdCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(12, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(13, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed and return failedTypeToInstances that failed also after retry', async () => {
@@ -739,7 +751,7 @@ describe('sdf client', () => {
       })
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, query)
+      } = await mockClient().getCustomObjects(typeNames, query, false, query, [])
       expect(failedTypes).toEqual({
         lockedError: {
           savedcsvimport: ['d'],
@@ -796,7 +808,7 @@ describe('sdf client', () => {
 
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery, false, typeNamesQuery, [])
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
@@ -832,7 +844,7 @@ describe('sdf client', () => {
           { name: 'addressForm', ids: ['a'] },
         ],
       })
-      await mockClient().getCustomObjects(typeNames, query)
+      await mockClient().getCustomObjects(typeNames, query, false, query, [])
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
         commandName: COMMANDS.LIST_OBJECTS,
         arguments: {
@@ -858,13 +870,49 @@ describe('sdf client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
+      const netsuiteQuery = buildNetsuiteQuery({ types: [] })
       const { elements, failedToFetchAllAtOnce } = await mockClient()
-        .getCustomObjects(typeNames, buildNetsuiteQuery({
-          types: [],
-        }))
+        .getCustomObjects(
+          typeNames,
+          netsuiteQuery,
+          false,
+          netsuiteQuery,
+          []
+        )
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
       expect(mockExecuteAction).not.toHaveBeenCalledWith()
+    })
+
+    describe('check deletion on partial-fetch', () => {
+      it('should do nothing of no files are matched', async () => {
+        mockExecuteAction.mockImplementation(context => {
+          if (context.commandName === COMMANDS.LIST_OBJECTS) {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: [{ type: 'addressForm', scriptId: 'a' }, { type: 'addressForm', scriptId: 'b' }],
+            })
+          }
+          if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+            return Promise.resolve({
+              isSuccess: () => true,
+              data: { failedImports: [] },
+            })
+          }
+          return Promise.resolve({ isSuccess: () => true })
+        })
+        const currentElementsForDeletionCalculation = [
+          { elemID: new ElemID('salto', 'addressForm', 'type'), serviceID: 'a' },
+          { elemID: new ElemID('salto', 'addressForm', 'instance', 'b'), serviceID: 'b' },
+          { elemID: new ElemID('salto', 'addressForm', 'instance', 'c'), serviceID: 'c' },
+        ]
+        const { deletedElements } = await mockClient()
+          .getCustomObjects(typeNames, typeNamesQuery, true, typeNamesQuery, currentElementsForDeletionCalculation)
+        expect(deletedElements.length).toEqual(1)
+        expect(deletedElements.map(elemId => elemId.getFullName())).toContain(
+          'salto.addressForm.instance.c'
+        )
+      })
     })
   })
 

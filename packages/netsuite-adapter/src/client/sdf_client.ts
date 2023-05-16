@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, AccountId, ElemID } from '@salto-io/adapter-api'
 import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -365,11 +365,19 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
+  async getCustomObjects(
+    typeNames: string[],
+    query: NetsuiteQuery,
+    isPartial: boolean,
+    originFetchQuery: NetsuiteQuery,
+    currentElementsForDeletionCalculation: {elemID: ElemID; serviceID: string}[],
+  ):
     Promise<GetCustomObjectsResult> {
-    if (typeNames.concat(CONFIG_FEATURES).every(type => !query.isTypeMatch(type))) {
+    // in case of partial fetch we'd need to proceed in order to calculate deleted elements
+    if (!isPartial && typeNames.concat(CONFIG_FEATURES).every(type => !query.isTypeMatch(type))) {
       return {
         elements: [],
+        deletedElements: [],
         failedToFetchAllAtOnce: false,
         failedTypes: { unexpectedError: {}, lockedError: {} },
       }
@@ -380,6 +388,9 @@ export default class SdfClient {
       [undefined, ...this.installedSuiteApps]
         .map(async suiteAppId => {
           const { executor, projectName, authId } = await this.initProject()
+          const deletedElements = await this.calculateDeletedElements(
+            executor, typeNames, suiteAppId, originFetchQuery, currentElementsForDeletionCalculation
+          )
           const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
             typeNames,
@@ -402,7 +413,7 @@ export default class SdfClient {
           }
           await this.projectCleanup(projectName, authId)
 
-          return { elements, failedToFetchAllAtOnce, failedTypes }
+          return { elements, deletedElements, failedToFetchAllAtOnce, failedTypes }
         })
     )
 
@@ -417,8 +428,9 @@ export default class SdfClient {
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
+    const deletedElements = importResult.flatMap(res => res.deletedElements)
 
-    return { elements, failedToFetchAllAtOnce, failedTypes }
+    return { elements, deletedElements, failedToFetchAllAtOnce, failedTypes }
   }
 
   private async getFeaturesObject(
@@ -472,6 +484,28 @@ export default class SdfClient {
       suiteAppId,
     )
     return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypes }
+  }
+
+  private async calculateDeletedElements(
+    executor: CommandActionExecutor,
+    typeNames: string[],
+    suiteAppId: string | undefined,
+    originFetchQuery: NetsuiteQuery,
+    currentElements: {elemID: ElemID; serviceID: string}[],
+  ) : Promise<ElemID[]> {
+    const serviceInstancesIds = (await this.listInstances(
+      executor,
+      typeNames.filter(originFetchQuery.isTypeMatch),
+      suiteAppId,
+    )).filter(originFetchQuery.isObjectMatch)
+    const serviceIdsGroupByTypes = _(serviceInstancesIds)
+      .groupBy(objectId => objectId.type)
+      .mapValues(objectIds => objectIds.map(({ instanceId }) => instanceId))
+      .value()
+
+    return currentElements
+      .filter(item => !serviceIdsGroupByTypes[item.elemID.typeName].includes(item.serviceID))
+      .map(item => item.elemID)
   }
 
   private async importObjectsInChunks(

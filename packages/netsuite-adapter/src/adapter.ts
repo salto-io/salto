@@ -16,10 +16,10 @@
 import {
   FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, Field, BuiltinTypes, DeployModifiers, getChangeData,
+  FetchOptions, Field, BuiltinTypes, DeployModifiers, getChangeData, ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import {
@@ -81,6 +81,7 @@ import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
+const { isDefined } = lowerdashValues
 
 const log = logger(module)
 
@@ -257,9 +258,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
     const configRecordsPromise = this.client.getConfigRecords()
 
+    // we calculate deleted elements only in partial-fetch mode
+    const currentElementsForDeletionCalculation = !isPartial ? []
+      : (await this.getCurrentElements(true)).filter(item => fetchQuery.isTypeMatch(item.elemID.typeName))
+
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
-      updatedFetchQuery
+      updatedFetchQuery,
+      isPartial,
+      fetchQuery,
+      currentElementsForDeletionCalculation,
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(
       updatedFetchQuery,
@@ -276,6 +284,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const {
       elements: customObjects,
+      deletedElements,
       failedToFetchAllAtOnce,
       failedTypes,
     } = await getCustomObjectsResult
@@ -342,7 +351,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedFilePaths,
       failedTypes,
       elements,
+      deletedElements,
     }
+  }
+
+  private async getCurrentElements(isPartial: boolean) : Promise<{elemID: ElemID; serviceID: string}[]> {
+    const serviceIdRecords = (await createElementsSourceIndex(this.elementsSource, isPartial)
+      .getIndexes()).serviceIdRecordsIndex
+    return Object.entries(serviceIdRecords)
+      .map(([_k, v]) => (v.elemID.createParentID().isTopLevel()
+        ? { elemID: v.elemID, serviceID: v.serviceID }
+        : undefined
+      ))
+      .filter(isDefined)
   }
 
   private shouldFetchWithChangesDetection(shouldFetchWithChangesDetectionParams : {
@@ -380,7 +401,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.lockedElements && notQuery(buildNetsuiteQuery(this.lockedElements)),
       this.skipList && notQuery(buildNetsuiteQuery(convertToQueryParams(this.skipList))),
       notQuery(deprecatedSkipList),
-    ].filter(values.isDefined).reduce(andQuery)
+    ].filter(isDefined).reduce(andQuery)
 
     const fetchWithChangesDetection = this.shouldFetchWithChangesDetection({
       withChangesDetection, hasFetchTarget, isFirstFetch,
@@ -392,6 +413,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedFilePaths,
       failedTypes,
       elements,
+      deletedElements,
     } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
@@ -404,9 +426,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, isPartial }
+      return { elements, deletedElements, isPartial }
     }
-    return { elements, updatedConfig, isPartial }
+    return { elements, deletedElements, updatedConfig, isPartial }
   }
 
   private async runSuiteAppOperations(

@@ -49,6 +49,7 @@ export type FailedTypes = {
 
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
+  deletedElements: ElemID[]
   failedToFetchAllAtOnce: boolean
   failedTypes: FailedTypes
 }

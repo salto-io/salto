@@ -57,6 +57,7 @@ describe('change validator', () => {
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [],
+        deletedElements: [],
       }))
     })
     describe('without SuiteApp', () => {
@@ -130,6 +131,7 @@ describe('change validator', () => {
         failedTypes: { lockedError: {}, unexpectedError: {} },
         errors: [],
         elements: [serviceInstance],
+        deletedElements: [],
       }))
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {

@@ -135,6 +135,7 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
+        deletedElements: [],
         failedTypes: { lockedError: {}, unexpectedError: {} },
         failedToFetchAllAtOnce: false,
       })
@@ -191,6 +192,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo, featuresCustomTypeInfo],
+          deletedElements: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {} },
         })
@@ -514,6 +516,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],
+          deletedElements: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {} },
         })
@@ -571,6 +574,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          deletedElements: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances },
         })
@@ -591,6 +595,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          deletedElements: [],
           failedToFetchAllAtOnce: true,
           failedTypes: { lockedError: {}, unexpectedError: {} },
         })

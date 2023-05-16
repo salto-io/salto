@@ -18,8 +18,8 @@ import xmlParser from 'fast-xml-parser'
 import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { Graph } from './graph_utils'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
-import { isCustomTypeInfo, isFileCustomizationInfo, isFolderCustomizationInfo } from './utils'
+import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from './types'
+import { isCustomTypeInfo, isFileCustomizationInfo } from './utils'
 
 type FileCabinetCustomType = FileCustomizationInfo | FolderCustomizationInfo
 const log = logger(module)
@@ -32,9 +32,6 @@ export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
 export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
 // The '/' prefix is needed to make osPath.resolve treat '~' as the root
 const PROJECT_ROOT_TILDE_PREFIX = `${osPath.sep}~`
-
-const isFileCabinetCustomType = (customizationInfo: CustomizationInfo): customizationInfo is FileCabinetCustomType =>
-  isFileCustomizationInfo(customizationInfo) || isFolderCustomizationInfo(customizationInfo)
 
 export const getCustomTypeInfoPath = (
   dirPath: string,
@@ -60,7 +57,7 @@ export const reorderDeployXml = (
     .filter(node => !nodesInCycle.has(node.id))
     .map(node => node.value.customizationInfo)
 
-  const customTypeInfos = custInfosInTopologicalOrder.filter(custInfo => !isFileCabinetCustomType(custInfo))
+  const customTypeInfos = custInfosInTopologicalOrder.filter(isCustomTypeInfo)
   const deployXml = xmlParser.parse(deployContent, { ignoreAttributes: false })
   const { objects } = deployXml.deploy
 
@@ -68,7 +65,7 @@ export const reorderDeployXml = (
     log.debug(
       'Deploying %d objects in the following order: %o',
       customTypeInfos.length,
-      customTypeInfos.filter(isCustomTypeInfo).map(custTypeInfo => custTypeInfo.scriptId)
+      customTypeInfos.map(custTypeInfo => custTypeInfo.scriptId)
     )
     objects.path = customTypeInfos
       .filter(isCustomTypeInfo)

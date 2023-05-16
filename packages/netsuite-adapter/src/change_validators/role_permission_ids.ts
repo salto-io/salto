@@ -64,7 +64,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
           elemID: elem.elemID,
           severity: 'Error',
           message: 'Role contains invalid permissions',
-          detailedMessage: `The following permission IDs have invalid permissions, which prevent this role from being deployed: ${invalidPermissionIds.join(', ')}. Read more about valid permission at https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N3236764.html.`,
+          detailedMessage: `The following permission IDs have invalid permissions, which prevent this role from being deployed: ${invalidPermissionIds.join(', ')}. Read more about valid permissions at https://help.salto.io/en/articles/7897170-deploying-elements-with-invalid-permissions.`,
         } as ChangeError
       }
       return undefined

@@ -16,12 +16,14 @@
 import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType, isObjectType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { ReadOnlyRemoteMap } from './remote_map'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
+const log = logger(module)
 
 type FlatElementSelector = {
   adapterSelector: RegExp
@@ -268,96 +270,100 @@ export const selectElementIdsByTraversal = async ({
   source: ElementsSource
   referenceSourcesIndex: ReadOnlyRemoteMap<ElemID[]>
   compact?: boolean
-}): Promise<AsyncIterable<ElemID>> => {
-  if (selectors.length === 0) {
-    return awu([])
-  }
-  selectors.forEach(selector => validateSelector(selector))
+}): Promise<AsyncIterable<ElemID>> =>
+  (log.time(
+    async () => {
+      if (selectors.length === 0) {
+        return awu([])
+      }
+      selectors.forEach(selector => validateSelector(selector))
 
-  const [topLevelSelectors, subElementSelectors] = _.partition(
-    selectors,
-    isTopLevelSelector,
-  )
+      const [topLevelSelectors, subElementSelectors] = _.partition(
+        selectors,
+        isTopLevelSelector,
+      )
 
-  const getTopLevelIDs = async (): Promise<ElemID[]> => {
-    if (topLevelSelectors.length === 0) {
-      return []
-    }
-    return awu(selectElementsBySelectors({
-      elementIds: awu(await source.list()),
-      selectors: topLevelSelectors,
-      referenceSourcesIndex,
-    })).toArray()
-  }
+      const getTopLevelIDs = async (): Promise<ElemID[]> => {
+        if (topLevelSelectors.length === 0) {
+          return []
+        }
+        return awu(selectElementsBySelectors({
+          elementIds: awu(await source.list()),
+          selectors: topLevelSelectors,
+          referenceSourcesIndex,
+        })).toArray()
+      }
 
-  const topLevelIDs = await getTopLevelIDs()
-  if (subElementSelectors.length === 0) {
-    return awu(topLevelIDs)
-  }
-  const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
+      const topLevelIDs = await getTopLevelIDs()
+      if (subElementSelectors.length === 0) {
+        return awu(topLevelIDs)
+      }
+      const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
 
-  const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-  const possibleParentIDs = selectElementsBySelectors({
-    elementIds: awu(await source.list()),
-    selectors: possibleParentSelectors,
-    referenceSourcesIndex,
-  })
-  const stillRelevantIDs = compact
-    ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
-    : possibleParentIDs
+      const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
+      const possibleParentIDs = selectElementsBySelectors({
+        elementIds: awu(await source.list()),
+        selectors: possibleParentSelectors,
+        referenceSourcesIndex,
+      })
+      const stillRelevantIDs = compact
+        ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
+        : possibleParentIDs
 
-  const [subSelectorsWithReferencedBy, subSelectorsWithoutReferencedBy] = _.partition(
-    subElementSelectors,
-    selector => selector.referencedBy !== undefined
-  )
+      const [subSelectorsWithReferencedBy, subSelectorsWithoutReferencedBy] = _.partition(
+        subElementSelectors,
+        selector => selector.referencedBy !== undefined
+      )
 
-  const subElementIDs = new Set<string>()
-  const selectFromSubElements: WalkOnFunc = ({ path }) => {
-    if (getElemIDFullNameParts(path).length <= 1) {
-      return WALK_NEXT_STEP.RECURSE
-    }
+      const subElementIDs = new Set<string>()
+      const selectFromSubElements: WalkOnFunc = ({ path }) => {
+        if (getElemIDFullNameParts(path).length <= 1) {
+          return WALK_NEXT_STEP.RECURSE
+        }
 
-    if (subSelectorsWithoutReferencedBy.some(selector => match(path, selector))) {
-      subElementIDs.add(path.getFullName())
-      if (compact) {
+        if (subSelectorsWithoutReferencedBy.some(selector => match(path, selector))) {
+          subElementIDs.add(path.getFullName())
+          if (compact) {
+            return WALK_NEXT_STEP.SKIP
+          }
+        }
+        const stillRelevantSelectors = selectors.filter(selector =>
+          selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length
+            > getElemIDFullNameParts(path).length)
+        if (stillRelevantSelectors.length === 0) {
+          return WALK_NEXT_STEP.SKIP
+        }
+        if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, path)) {
+          return WALK_NEXT_STEP.RECURSE
+        }
         return WALK_NEXT_STEP.SKIP
       }
-    }
-    const stillRelevantSelectors = selectors.filter(selector =>
-      selector.origin.split(ElemID.NAMESPACE_SEPARATOR).length
-        > getElemIDFullNameParts(path).length)
-    if (stillRelevantSelectors.length === 0) {
-      return WALK_NEXT_STEP.SKIP
-    }
-    if (isElementPossiblyParentOfSearchedElement(stillRelevantSelectors, path)) {
-      return WALK_NEXT_STEP.RECURSE
-    }
-    return WALK_NEXT_STEP.SKIP
-  }
 
-  await awu(stillRelevantIDs)
-    .forEach(async elemId => {
-      const element = await source.get(elemId)
+      await awu(stillRelevantIDs)
+        .forEach(async elemId => {
+          const element = await source.get(elemId)
 
-      walkOnElement({
-        element, func: selectFromSubElements,
-      })
+          walkOnElement({
+            element, func: selectFromSubElements,
+          })
 
-      if (isObjectType(element)) {
-        await awu(Object.values(element.fields)).forEach(async field => {
-          // Since we only support referenceBy on a base elemID, a selector
-          // that is not top level and that has referenceBy is necessarily a field selector
-          if (await awu(subSelectorsWithReferencedBy).some(
-            selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
-          )) {
-            subElementIDs.add(field.elemID.getFullName())
+          if (isObjectType(element)) {
+            await awu(Object.values(element.fields)).forEach(async field => {
+              // Since we only support referenceBy on a base elemID, a selector
+              // that is not top level and that has referenceBy is necessarily a field selector
+              if (await awu(subSelectorsWithReferencedBy).some(
+                selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
+              )) {
+                subElementIDs.add(field.elemID.getFullName())
+              }
+            })
           }
         })
-      }
-    })
-  return awu(
-    topLevelIDs.concat(
-      Array.from(subElementIDs).map(ElemID.fromFullName)
-    )
-  ).uniquify(id => id.getFullName())
-}
+      return awu(
+        topLevelIDs.concat(
+          Array.from(subElementIDs).map(ElemID.fromFullName)
+        )
+      ).uniquify(id => id.getFullName())
+    },
+    'selectElementIdsByTraversal',
+  ))

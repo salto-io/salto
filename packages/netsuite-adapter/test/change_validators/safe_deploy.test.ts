@@ -29,6 +29,7 @@ const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
     failedToFetchAllAtOnce: false,
     failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
     failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+    failedCustomRecords: [],
   },
   elements: [],
 }
@@ -142,6 +143,7 @@ describe('safe deploy change validator', () => {
               failedToFetchAllAtOnce: false,
               failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
               failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+              failedCustomRecords: [],
             },
             elements: [serviceCustomRecordType.clone()],
           }))
@@ -178,6 +180,7 @@ describe('safe deploy change validator', () => {
               failedToFetchAllAtOnce: false,
               failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
               failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+              failedCustomRecords: [],
             },
             elements: [serviceCustomRecordType.clone()],
           }))

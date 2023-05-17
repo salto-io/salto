@@ -324,10 +324,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
-    const { elements: customRecords, largeTypesError: customRecordTypeError } = await customRecordsPromise
-    if (!_.isEmpty(customRecordTypeError)) {
-      failedTypes.excludedCustomRecordTypes = customRecordTypeError.concat(failedTypes.excludedCustomRecordTypes ?? [])
-    }
+    const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     const elements = [
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
@@ -346,6 +343,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         failedToFetchAllAtOnce,
         failedFilePaths,
         failedTypes,
+        failedCustomRecords,
       },
       elements,
     }

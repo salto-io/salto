@@ -426,9 +426,9 @@ export default class SoapClient {
     const responses = await Promise.all(
       customRecordTypes.map(async type => ({ type, ...await this.searchCustomRecords(type) }))
     )
-    const [errorResults, searchResults] = _.partition(responses, res => res.excludedFromSearch)
+    const [errorResults, customRecords] = _.partition(responses, res => res.excludedFromSearch)
     return {
-      customRecords: searchResults.map(res => ({ type: res.type, records: res.records })),
+      customRecords,
       largeTypesError: errorResults.map(res => res.type),
     }
   }

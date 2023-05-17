@@ -56,6 +56,7 @@ describe('change validator', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         elements: [],
       }))
@@ -130,6 +131,7 @@ describe('change validator', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         elements: [serviceInstance],
       }))

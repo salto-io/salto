@@ -27,6 +27,7 @@ export type FetchByQueryFailures = {
   failedToFetchAllAtOnce: boolean
   failedFilePaths: FailedFiles
   failedTypes: FailedTypes
+  failedCustomRecords: string[]
 }
 
 export type FetchByQueryReturnType = {

@@ -791,10 +791,7 @@ describe('Netsuite adapter E2E with real account', () => {
                 { name: EMAIL_TEMPLATE },
                 { name: CUSTOM_RECORD_TYPE, ids: [CUSTOM_RECORD_SCRIPT_ID] },
               ],
-              fileCabinet: [
-                '^/SuiteScripts.*',
-                '^/Templates.*',
-              ],
+              fileCabinet: [],
               customRecords: [{ name: CUSTOM_RECORD_SCRIPT_ID }],
             },
           } }

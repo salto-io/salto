@@ -65,6 +65,7 @@ describe('config', () => {
         failedToFetchAllAtOnce: false,
         failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
       },
       currentConfigWithFetch
     )).toBeUndefined()
@@ -78,6 +79,7 @@ describe('config', () => {
         failedToFetchAllAtOnce: true,
         failedFilePaths: { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
         failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
+        failedCustomRecords: [],
       },
       {}
     )?.config as InstanceElement[]
@@ -131,6 +133,7 @@ describe('config', () => {
         failedToFetchAllAtOnce: true,
         failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
         failedTypes: { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
+        failedCustomRecords: [],
       },
       currentConfigWithFetch,
     )
@@ -175,6 +178,7 @@ describe('config', () => {
         failedToFetchAllAtOnce: false,
         failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
       },
       config
     )

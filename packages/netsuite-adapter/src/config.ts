@@ -28,7 +28,7 @@ import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
-import { FailedFiles, FailedTypes } from './client/types'
+import { FailedFiles } from './client/types'
 
 const log = logger(module)
 
@@ -236,8 +236,7 @@ function validateMaxInstancesPerType(maxInstancesPerType: unknown):
   )) {
     const invalidTypes = maxInstancesPerType.filter(maxType =>
       !regex.isValidRegex(maxType.name)
-      || (regex.isValidRegex(maxType.name)
-        && noSupportedTypeMatch(maxType.name)
+      || (noSupportedTypeMatch(maxType.name)
         && !isCustomRecordTypeName(maxType.name)))
     if (invalidTypes.length > 0) {
       throw new Error(
@@ -252,7 +251,7 @@ function validateMaxInstancesPerType(maxInstancesPerType: unknown):
 }
 
 export function validateClientConfig(
-  client: unknown,
+  client: Record<string, unknown>,
   fetchTargetDefined: boolean
 ): asserts client is SdfClientConfig {
   validatePlainObject(client, CONFIG.client)
@@ -844,10 +843,11 @@ const updateConfigFromLargeFolders = (config: NetsuiteConfig, { largeFolderError
 
 const updateConfigFromLargeTypes = (
   config: NetsuiteConfig,
-  { excludedTypes, excludedCustomRecordTypes }: FailedTypes
+  { failedTypes, failedCustomRecords }: FetchByQueryFailures
 ): boolean => {
-  if (!_.isEmpty(excludedTypes) || !_.isEmpty(excludedCustomRecordTypes)) {
-    const customRecords = excludedCustomRecordTypes?.map(type => ({ name: type }))
+  const { excludedTypes } = failedTypes
+  if (!_.isEmpty(excludedTypes) || !_.isEmpty(failedCustomRecords)) {
+    const customRecords = failedCustomRecords.map(type => ({ name: type }))
     const typesExcludeQuery = {
       fileCabinet: [],
       types: excludedTypes.map(type => ({ name: type })),
@@ -895,7 +895,7 @@ export const getConfigFromConfigChanges = (
   const config = _.cloneDeep(currentConfig)
   const didUpdateFromFailures = updateConfigFromFailedFetch(config, failures)
   const didUpdateLargeFolders = updateConfigFromLargeFolders(config, failures.failedFilePaths)
-  const didUpdateLargeTypes = updateConfigFromLargeTypes(config, failures.failedTypes)
+  const didUpdateLargeTypes = updateConfigFromLargeTypes(config, failures)
 
   const messages = [
     didUpdateFromFailures

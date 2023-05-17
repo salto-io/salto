@@ -510,6 +510,7 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
+          failedCustomRecords: [],
         },
         config,
       )
@@ -569,6 +570,7 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         config,
       )
@@ -590,6 +592,7 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         config,
       )
@@ -613,6 +616,7 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         config,
       )
@@ -635,6 +639,7 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: true,
           failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
         },
         config,
       )
@@ -1356,8 +1361,8 @@ describe('Adapter', () => {
               lockedError: {},
               unexpectedError: {},
               excludedTypes: ['excludedTypeDataElements'],
-              excludedCustomRecordTypes: ['excludedTypeCustomRecord'],
             },
+            failedCustomRecords: ['excludedTypeCustomRecord'],
           },
           config,
         )

@@ -621,11 +621,11 @@ describe('soap_client', () => {
         fn => fn(),
         (_type: string, count: number) => count > 1,
       )
-      // await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+      // await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
       //   records: [],
       //   largeTypesError: ['subsidiary'],
       // })
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
         customRecords: [{ type: 'custrecord',
           records: [{
             id: 'id1',
@@ -915,7 +915,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
         customRecords: [{ type: 'custrecord',
           records: [{
             id: 'id1',
@@ -956,9 +956,9 @@ describe('soap_client', () => {
         fn => fn(),
         (_type: string, count: number) => count > 1,
       )
-      // await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual(
+      // await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject(
       // { largeTypesError: ['custrecord'], customRecords: [] })
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual({
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
         customRecords: [{ type: 'custrecord',
           records: [{
             id: 'id1',

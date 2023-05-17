@@ -34,7 +34,7 @@ export const globalFieldContextsDependencyChanger: DependencyChanger = async cha
 
   const filteredGlobalContextChanges = globalContextChanges.filter(({ change }) => {
     try {
-      return getParent(getChangeData(change)).elemID.getFullName() !== undefined
+      return getParent(getChangeData(change)) !== undefined
     } catch {
       return false
     }

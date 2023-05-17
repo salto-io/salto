@@ -65,38 +65,35 @@ const filterCreator: LocalFilterCreator = () => ({
 
       const originalInternalId = value[INTERNAL_ID]
       const fieldType = await field?.getType()
-      if (shouldUseIdField(fieldType, path) || !hasInternalIdHiddenField(fieldType)) {
+      const isInsideList = path.getFullNameParts().some(part => isNumberStr(part))
+
+      if (!(isObjectType(fieldType)
+        && (isInsideList
+          || isStandardType(fieldType)
+          || isFileCabinetType(fieldType)))) {
         value[
           shouldUseIdField(fieldType, path) ? ID_FIELD : INTERNAL_ID
         ] = ACCOUNT_SPECIFIC_VALUE
         delete value.typeId
+        return value
+      }
+      const instanceName = getSubInstanceName(path, originalInternalId)
+      if (!(instanceName in newInstancesMap)) {
+        const newInstance = new InstanceElement(
+          instanceName,
+          // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
+          // errors because SDF types has fields with a "required" annotation which might not
+          // be fulfilled
+          (isStandardType(fieldType) || isFileCabinetType(fieldType))
+            && recordRefType !== undefined
+            ? recordRefType : fieldType,
+          { ...value, [IS_SUB_INSTANCE]: true },
+          [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
+        )
+        newInstancesMap[instanceName] = newInstance
       }
 
-      const isInsideList = path.getFullNameParts().some(part => isNumberStr(part))
-      if (isObjectType(fieldType)
-        && (isInsideList
-          || isStandardType(fieldType)
-          || isFileCabinetType(fieldType))) {
-        const instanceName = getSubInstanceName(path, originalInternalId)
-
-        if (!(instanceName in newInstancesMap)) {
-          const newInstance = new InstanceElement(
-            instanceName,
-            // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
-            // errors because SDF types has fields with a "required" annotation which might not
-            // be fulfilled
-            (isStandardType(fieldType) || isFileCabinetType(fieldType))
-              && recordRefType !== undefined
-              ? recordRefType : fieldType,
-            { ...value, [IS_SUB_INSTANCE]: true },
-            [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
-          )
-          newInstancesMap[instanceName] = newInstance
-        }
-
-        return new ReferenceExpression(newInstancesMap[instanceName].elemID)
-      }
-      return value
+      return new ReferenceExpression(newInstancesMap[instanceName].elemID)
     }
 
     await awu(elements)

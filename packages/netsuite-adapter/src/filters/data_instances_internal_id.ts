@@ -18,7 +18,7 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { isStandardType, isDataObjectType, isFileCabinetType, isCustomFieldName } from '../types'
+import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, IS_SUB_INSTANCE, NAME_FIELD, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
 import { LocalFilterCreator } from '../filter'
 
@@ -39,10 +39,8 @@ const hasInternalIdHiddenField = (type: unknown): boolean =>
   && type.fields[INTERNAL_ID]
   && type.fields[INTERNAL_ID].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
 
-const shouldUseIdField = (fieldType: TypeElement | undefined, path: ElemID): boolean =>
-  fieldType?.elemID.name === RECORD_REF || (
-    isCustomFieldName(path.name) && hasInternalIdHiddenField(fieldType)
-  )
+const shouldUseIdField = (fieldType: TypeElement | undefined): boolean =>
+  fieldType?.elemID.name === RECORD_REF || hasInternalIdHiddenField(fieldType)
 
 const isNestedPath = (path: ElemID | undefined): path is ElemID =>
   path !== undefined && !path.isTopLevel()
@@ -72,7 +70,7 @@ const filterCreator: LocalFilterCreator = () => ({
           || isStandardType(fieldType)
           || isFileCabinetType(fieldType)))) {
         value[
-          shouldUseIdField(fieldType, path) ? ID_FIELD : INTERNAL_ID
+          shouldUseIdField(fieldType) ? ID_FIELD : INTERNAL_ID
         ] = ACCOUNT_SPECIFIC_VALUE
         delete value.typeId
         return value
@@ -127,7 +125,7 @@ const filterCreator: LocalFilterCreator = () => ({
             transformFunc: async ({ value, field, path }) => {
               if (
                 isNestedPath(path)
-                && shouldUseIdField(await field?.getType(), path)
+                && shouldUseIdField(await field?.getType())
                 && value[ID_FIELD] !== undefined
               ) {
                 if (value[ID_FIELD] !== ACCOUNT_SPECIFIC_VALUE) {

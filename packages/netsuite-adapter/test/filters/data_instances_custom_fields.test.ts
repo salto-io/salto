@@ -15,8 +15,9 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/data_instances_custom_fields'
-import { NETSUITE } from '../../src/constants'
+import { CUSTOM_FIELD_LIST, NETSUITE } from '../../src/constants'
 import { SOAP_FIELDS_TYPES } from '../../src/client/suiteapp_client/soap_client/types'
+import { PLATFORM_CORE_CUSTOM_FIELD } from '../../src/client/suiteapp_client/constants'
 import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_custom_fields', () => {
@@ -32,7 +33,7 @@ describe('data_instances_custom_fields', () => {
           annotations: { source: 'soap' },
         }),
         {
-          customFieldList: {
+          [CUSTOM_FIELD_LIST]: {
             customField: [{
               value: '123',
               scriptId: 'someId',
@@ -43,12 +44,12 @@ describe('data_instances_custom_fields', () => {
     })
     it('should add an integer field', async () => {
       await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
-      expect(instance.value.customFieldList).toBeUndefined()
+      expect(instance.value[CUSTOM_FIELD_LIST]).toBeUndefined()
       expect(instance.value.custom_someId).toBe(123)
     })
 
     it('should do nothing if there are no custom fields values', async () => {
-      delete instance.value.customFieldList
+      delete instance.value[CUSTOM_FIELD_LIST]
       await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.value).toEqual({})
     })
@@ -78,8 +79,8 @@ describe('data_instances_custom_fields', () => {
     it('should convert all custom fields to customFieldList on instance addition', async () => {
       await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
-        customFieldList: {
-          'platformCore:customField': [
+        [CUSTOM_FIELD_LIST]: {
+          [PLATFORM_CORE_CUSTOM_FIELD]: [
             {
               attributes: {
                 scriptId: 'a',
@@ -138,8 +139,8 @@ describe('data_instances_custom_fields', () => {
       instance.value.custom_a = false
       await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ before, after: instance })])
       expect(instance.value).toEqual({
-        customFieldList: {
-          'platformCore:customField': [
+        [CUSTOM_FIELD_LIST]: {
+          [PLATFORM_CORE_CUSTOM_FIELD]: [
             {
               attributes: {
                 scriptId: 'a',

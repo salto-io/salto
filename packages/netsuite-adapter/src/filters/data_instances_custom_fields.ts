@@ -16,12 +16,13 @@
 import { isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { PLATFORM_CORE_CUSTOM_FIELD } from '../client/suiteapp_client/constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomFieldName, isDataObjectType, removeCustomFieldPrefix, toCustomFieldName } from '../types'
 import { castFieldValue, getSoapType } from '../data_elements/custom_fields'
 import { XSI_TYPE } from '../client/constants'
 import { getDifferentKeys } from './data_instances_diff'
-import { SOAP_SCRIPT_ID } from '../constants'
+import { CUSTOM_FIELD, CUSTOM_FIELD_LIST, SOAP_SCRIPT_ID } from '../constants'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -35,7 +36,7 @@ const filterCreator: LocalFilterCreator = () => ({
       .forEach(async instance => {
         const type = await instance.getType()
         const customFields = Object.fromEntries(
-          await awu(makeArray(instance.value.customFieldList?.customField))
+          await awu(makeArray(instance.value[CUSTOM_FIELD_LIST]?.[CUSTOM_FIELD]))
             .map(async value => {
               const fieldName = toCustomFieldName(value[SOAP_SCRIPT_ID])
               const field = type.fields[fieldName]
@@ -44,7 +45,7 @@ const filterCreator: LocalFilterCreator = () => ({
             .toArray()
         )
         _.assign(instance.value, customFields)
-        delete instance.value.customFieldList
+        delete instance.value[CUSTOM_FIELD_LIST]
       })
   },
 
@@ -75,7 +76,7 @@ const filterCreator: LocalFilterCreator = () => ({
             instance.value = {
               ..._.omitBy(instance.value, (_value, key) => isCustomFieldName(key)),
               ...(!_.isEmpty(customFields)
-                ? { customFieldList: { 'platformCore:customField': customFields } }
+                ? { [CUSTOM_FIELD_LIST]: { [PLATFORM_CORE_CUSTOM_FIELD]: customFields } }
                 : {}),
             }
           })

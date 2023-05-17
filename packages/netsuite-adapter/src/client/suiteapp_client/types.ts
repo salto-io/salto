@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
 import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
@@ -319,6 +319,8 @@ export type FailSetConfig = {
 }
 
 export type SetConfigResult = (SuccessSetConfig | FailSetConfig)[]
+
+export type HasElemIDFunc = (elemID: ElemID) => Promise<boolean>
 
 export const isSuccessSetConfig = (
   result: SuccessSetConfig | FailSetConfig

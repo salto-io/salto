@@ -22,6 +22,7 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import SuiteAppClient, { PAGE_SIZE } from '../../../src/client/suiteapp_client/suiteapp_client'
 import { InvalidSuiteAppCredentialsError } from '../../../src/client/types'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../../src/types'
+import { INSUFFICIENT_PERMISSION_ERROR } from '../../../src/client/suiteapp_client/constants'
 
 
 describe('SuiteAppClient', () => {
@@ -340,7 +341,7 @@ describe('SuiteAppClient', () => {
             {
               status: 'error',
               error: {
-                name: 'INSUFFICIENT_PERMISSION',
+                name: INSUFFICIENT_PERMISSION_ERROR,
               },
             },
             {

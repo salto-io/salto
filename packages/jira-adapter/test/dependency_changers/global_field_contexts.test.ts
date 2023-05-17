@@ -89,4 +89,19 @@ describe('globalFieldContextsDependencyChanger', () => {
     ]
     expect(dependencyChanges).toHaveLength(0)
   })
+  it('should not add dependency if the parent field is deleted', async () => {
+    const deletedParentInstance = instance.clone()
+    deletedParentInstance.annotations[CORE_ANNOTATIONS.PARENT] = [
+    ]
+    const inputChanges = new Map([
+      [0, toChange({ after: deletedParentInstance })],
+      [1, toChange({ before: deletedParentInstance })],
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+
+    const dependencyChanges = [
+      ...await globalFieldContextsDependencyChanger(inputChanges, inputDeps),
+    ]
+    expect(dependencyChanges).toHaveLength(0)
+  })
 })

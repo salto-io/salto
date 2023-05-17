@@ -13,13 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, getChangeData, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
+
+const contextChangeHasValidParent = (change: Change<InstanceElement>): boolean => {
+  try {
+    return getParent(getChangeData(change)) !== undefined
+  } catch {
+    return false
+  }
+}
 
 const filter: FilterCreator = ({ client, config, elementsSource }) => ({
   name: 'contextDeploymentFilter',
@@ -44,7 +53,11 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => ({
 
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
-      change => deployContextChange(change, client, config.apiDefinitions, elementsSource)
+      async change => {
+        if (contextChangeHasValidParent(change)) {
+          await deployContextChange(change, client, config.apiDefinitions, elementsSource)
+        }
+      }
     )
 
     return {

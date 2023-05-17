@@ -66,6 +66,11 @@ const removeCustomField = (
 ): boolean => {
   const customFields = instance.value[CUSTOM_FIELD_LIST]
   if (customFields === undefined) {
+    log.warn(
+      'The field "%s" was suspected as a locked field of the instance "%s", but it has no custom fields.',
+      fieldName,
+      instance.elemID.getFullName(),
+    )
     return false
   }
   const validCustomFields = customFields[PLATFORM_CORE_CUSTOM_FIELD]

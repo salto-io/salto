@@ -24,7 +24,7 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const contextChangeHasValidParent = (change: Change<InstanceElement>): boolean => {
   try {
-    return getParent(getChangeData(change)) !== undefined && isRemovalChange(change)
+    return getParent(getChangeData(change)) !== undefined
   } catch {
     return false
   }
@@ -54,7 +54,9 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => ({
     const deployResult = await deployChanges(
       relevantChanges.filter(isInstanceChange),
       async change => {
-        if (contextChangeHasValidParent(change)) {
+        // field contexts without fields cant be removed because they don't exist,
+        // modification changes are also not allowed but will not crash.
+        if (contextChangeHasValidParent(change) || !isRemovalChange(change)) {
           await deployContextChange(change, client, config.apiDefinitions, elementsSource)
         }
       }

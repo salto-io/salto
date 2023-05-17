@@ -126,14 +126,16 @@ describe('config', () => {
         { name: 'excludedTypeTest' },
       ],
       fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
-      customRecords: [],
+      customRecords: [
+        { name: 'excludedCustomRecord' },
+      ],
     }
     const configChange = getConfigFromConfigChanges(
       {
         failedToFetchAllAtOnce: true,
         failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
         failedTypes: { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
-        failedCustomRecords: [],
+        failedCustomRecords: ['excludedCustomRecord'],
       },
       currentConfigWithFetch,
     )
@@ -226,6 +228,12 @@ describe('config', () => {
         expect(limiter('test', 2001)).toBeTruthy()
         expect(limiter('test', 1999)).toBeFalsy()
       })
+    })
+
+    it('should limit according to default if no parameter is given', () => {
+      const limiter = instanceLimiterCreator()
+      expect(limiter('test', 2001)).toBeTruthy()
+      expect(limiter('test', 1999)).toBeFalsy()
     })
 
     it('should limit according to the largest matching limit', () => {

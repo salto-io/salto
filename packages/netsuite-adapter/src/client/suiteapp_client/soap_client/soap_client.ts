@@ -63,11 +63,6 @@ const RETRYABLE_MESSAGES = [ECONN_ERROR, UNEXPECTED_ERROR, INSUFFICIENT_PERMISSI
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
-type SoapSearchType = {
-  type: string
-  subtypes?: string[]
-}
-
 type DeleteDeployBody = {
   baseRef: object[]
 }

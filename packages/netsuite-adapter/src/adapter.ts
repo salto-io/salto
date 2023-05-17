@@ -319,11 +319,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc
     )
 
-    const dataElements = await dataElementsPromise
+    const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
+    failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
-    const customRecords = await customRecordsPromise
+    const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     const elements = [
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
@@ -338,9 +339,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await this.createFiltersRunner({ isPartial }).onFetch(elements)
 
     return {
-      failedToFetchAllAtOnce,
-      failedFilePaths,
-      failedTypes,
+      failures: {
+        failedToFetchAllAtOnce,
+        failedFilePaths,
+        failedTypes,
+        failedCustomRecords,
+      },
       elements,
     }
   }
@@ -387,21 +391,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     })
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const {
-      failedToFetchAllAtOnce,
-      failedFilePaths,
-      failedTypes,
-      elements,
-    } = await this.fetchByQuery(
+    const { failures, elements } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
       isPartial,
     )
 
-    const updatedConfig = getConfigFromConfigChanges(
-      failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
-    )
+    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
     if (_.isUndefined(updatedConfig)) {
       return { elements, isPartial }

@@ -68,6 +68,7 @@ describe('soap_client', () => {
         suiteAppTokenSecret: 'tokenSecret',
       },
       fn => fn(),
+      (_t: string, _c: number) => false,
     )
   })
 
@@ -580,17 +581,60 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
+    })
+
+    it('should NOT exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
+          },
         },
       }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 1,
+      )
+      // await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
+      //   records: [],
+      //   largeTypesError: ['subsidiary'],
+      // })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
 
     it('should return empty record list when subsidiaries is disabled', async () => {
@@ -612,7 +656,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [], largeTypesError: [] })
     })
 
     it('Should work for item type', async () => {
@@ -635,17 +679,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
       expect(searchAsyncMock).toHaveBeenCalledWith({
         searchRecord: {
           attributes: {
@@ -704,17 +751,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -782,17 +832,20 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
       expect(searchMoreWithIdAsyncMock).toHaveBeenCalledTimes(2)
     })
 
@@ -816,17 +869,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
     })
 
     it('Should throw an error if got invalid getAll results', async () => {
@@ -859,20 +915,59 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{
-        type: 'custrecord',
-        records: [{
-          id: 'id1',
-          attributes: {
-            internalId: '1',
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }, {
+            id: 'id2',
+            attributes: {
+              internalId: '2',
+            },
+          }] }],
+        largeTypesError: [],
+      })
+    })
+
+    it('should NOT exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
           },
-        }, {
-          id: 'id2',
-          attributes: {
-            internalId: '2',
-          },
-        }],
+        },
       }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 1,
+      )
+      // await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject(
+      // { largeTypesError: ['custrecord'], customRecords: [] })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
   })
 

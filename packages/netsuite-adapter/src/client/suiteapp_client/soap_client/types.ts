@@ -104,6 +104,16 @@ export type SearchResponse = {
   }
 }
 
+export type SoapSearchType = {
+  type: string
+  subtypes?: string[]
+}
+
+export type SearchPageResponse = {
+  records: RecordValue[]
+  excludedFromSearch: boolean
+}
+
 export type SearchErrorResponse = {
   searchResult: {
     status: {
@@ -128,10 +138,17 @@ export type GetAllResponse = {
   }
 }
 
-export type CustomRecordTypeRecords = {
+type CustomRecordTypeRecords = {
   type: string
   records: RecordValue[]
 }
+
+export type CustomRecordResponse = {
+  customRecords: CustomRecordTypeRecords[]
+  largeTypesError: string[]
+}
+
+export type RecordResponse = { records: RecordValue[]; largeTypesError: string[] }
 
 export const SOAP_FIELDS_TYPES = {
   BOOLEAN: 'platformCore:BooleanCustomFieldRef',

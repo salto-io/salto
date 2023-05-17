@@ -37,7 +37,7 @@ import {
   CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
-import { mockDefaultValues } from './mock_elements'
+import { CUSTOM_RECORD_SCRIPT_ID, mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 
@@ -770,6 +770,77 @@ describe('Netsuite adapter E2E with real account', () => {
         ) as InstanceElement
         // using 'withSuiteApp' to validate both boolean values
         expect(fetchFeatures.value.DEPARTMENTS).toBe(withSuiteApp)
+      })
+    })
+
+    // SALTO-3042 Enable after full deployment
+    // eslint-disable-next-line jest/no-disabled-tests
+    describe.skip('Fetch with limits', () => {
+      beforeAll(async () => {
+        const adapterAttr = realAdapter(
+          { credentials: credentialsLease.value, withSuiteApp },
+          { client: { maxInstancesPerType: [
+            { name: 'account', limit: 0 },
+            { name: EMAIL_TEMPLATE, limit: 0 },
+            { name: CUSTOM_RECORD_SCRIPT_ID, limit: 0 },
+          ] },
+          fetch: {
+            include: {
+              types: [
+                { name: 'account' },
+                { name: EMAIL_TEMPLATE },
+                { name: CUSTOM_RECORD_TYPE, ids: [CUSTOM_RECORD_SCRIPT_ID] },
+              ],
+              fileCabinet: [],
+              customRecords: [{ name: CUSTOM_RECORD_SCRIPT_ID }],
+            },
+          } }
+        )
+        adapter = adapterAttr.adapter
+
+        const mockFetchOpts: MockInterface<FetchOptions> = {
+          progressReporter: { reportProgress: jest.fn() },
+        }
+        logMessage('running fetch with limits')
+        fetchResult = await adapter.fetch(mockFetchOpts)
+        fetchedElements = fetchResult.elements
+      })
+
+      it('should not fetch account instances and should add to the config suggestions', async () => {
+        if (withSuiteApp) {
+          const fetchAccount = findElement(
+            fetchedElements,
+            accountInstance.elemID
+          )
+          expect(fetchAccount).not.toBeDefined()
+          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
+            (t: { name: string }) => t.name === 'account'
+          )).toBeTruthy()
+        }
+      })
+
+      it('should not fetch email template instances and should add to the config suggestions', async () => {
+        const fetchEmailTemplate = findElement(
+          fetchedElements,
+          emailTemplateToCreate.elemID
+        )
+        expect(fetchEmailTemplate).not.toBeDefined()
+        expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.types.some(
+          (t: { name: string }) => t.name === EMAIL_TEMPLATE
+        )).toBeTruthy()
+      })
+
+      it('should not fetch custom record instances and should add to the config suggestions', async () => {
+        if (withSuiteApp) {
+          const fetchCustomRecord = findElement(
+            fetchedElements,
+            customRecordInstance.elemID
+          )
+          expect(fetchCustomRecord).not.toBeDefined()
+          expect(fetchResult.updatedConfig?.config[0].value.fetch.exclude.customRecords.some(
+            (t: { name: string }) => t.name === CUSTOM_RECORD_SCRIPT_ID
+          )).toBeTruthy()
+        }
       })
     })
 

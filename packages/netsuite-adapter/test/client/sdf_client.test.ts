@@ -295,7 +295,7 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -493,6 +493,52 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
+    it('should NOT exclude types with too many instances', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const ids = [
+          { type: 'addressForm', scriptId: 'a' },
+          { type: 'addressForm', scriptId: 'b' },
+          { type: 'addressForm', scriptId: 'c' },
+          { type: 'addressForm', scriptId: 'd' },
+          { type: 'advancedpdftemplate', scriptId: 'd' },
+        ]
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const client = mockClient({}, (_type: string, count: number) => count > 3)
+      await client.getCustomObjects(typeNames, typeNamesQuery)
+      // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
+      const numberOfExecuteActions = 6
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions + 1)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+      }))
+      expect(mockExecuteAction.mock.calls[3 + 1][0].arguments).toEqual(expect.objectContaining({
+        type: 'advancedpdftemplate',
+        scriptid: 'd',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5 + 1, importConfigurationCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions + 1, deleteAuthIdCommandMatcher)
+    })
+
     it('should succeed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -516,7 +562,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -586,7 +632,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
@@ -748,6 +794,7 @@ describe('sdf client', () => {
           savedcsvimport: ['c'],
           advancedpdftemplate: ['a'],
         },
+        excludedTypes: [],
       })
     })
 
@@ -802,6 +849,7 @@ describe('sdf client', () => {
         unexpectedError: {
           addressForm: ['a', 'b'],
         },
+        excludedTypes: [],
       })
     })
 

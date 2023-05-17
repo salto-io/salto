@@ -39,7 +39,7 @@ import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
 import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
+import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
@@ -119,7 +119,7 @@ export default class SuiteAppClient {
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
-    this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
+    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter)
 
     this.axiosClient = axios.create({ timeout:
       (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000 })
@@ -351,7 +351,11 @@ export default class SuiteAppClient {
   }
 
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
-    const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
+    const client = new SuiteAppClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: () => false,
+    })
     await client.sendRestletRequest('sysInfo')
   }
 
@@ -559,11 +563,11 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     return this.soapClient.getAllRecords(types)
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 

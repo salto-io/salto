@@ -23,6 +23,7 @@ import { CUSTOM_RECORDS_PATH, NETSUITE, SCRIPT_ID, SOAP_SCRIPT_ID } from '../con
 import { NetsuiteQuery } from '../query'
 import NetsuiteClient from '../client/client'
 import { RecordValue } from '../client/suiteapp_client/soap_client/types'
+import { CustomRecordResult } from '../client/types'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -100,15 +101,15 @@ export const getCustomRecords = async (
   customRecordTypes: ObjectType[],
   query: NetsuiteQuery,
   elemIdGetter?: ElemIdGetter,
-): Promise<InstanceElement[]> => {
+): Promise<CustomRecordResult> => {
   if (!client.isSuiteAppConfigured()) {
-    return []
+    return { elements: [], largeTypesError: [] }
   }
   const customRecordTypesMap = _.keyBy(
     customRecordTypes,
     type => type.annotations[SCRIPT_ID] as string
   )
-  const customRecords = await client.getCustomRecords(
+  const { customRecords, largeTypesError } = await client.getCustomRecords(
     Object.keys(customRecordTypesMap).filter(query.isCustomRecordTypeMatch)
   )
 
@@ -122,7 +123,10 @@ export const getCustomRecords = async (
     }
   )).toArray()
 
-  return results.flatMap(({ type, instances }) => instances.filter(
-    instance => query.isCustomRecordMatch({ type, instanceId: instance.value[SCRIPT_ID] })
-  ))
+  return {
+    elements: results.flatMap(({ type, instances }) => instances.filter(
+      instance => query.isCustomRecordMatch({ type, instanceId: instance.value[SCRIPT_ID] })
+    )),
+    largeTypesError,
+  }
 }

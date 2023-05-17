@@ -45,6 +45,7 @@ export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomi
 export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
+  excludedTypes: string[]
 }
 
 export type GetCustomObjectsResult = {
@@ -80,6 +81,16 @@ export type ImportObjectsResult = {
   errorImports: unknown
   successfulImports: unknown
   failedImports: FailedImport[]
+}
+
+export type DataElementsResult = {
+  elements: (ObjectType | InstanceElement)[]
+  largeTypesError: string[]
+}
+
+export type CustomRecordResult = {
+  elements: InstanceElement[]
+  largeTypesError: string[]
 }
 
 type OptionalFeature = { status: 'optional'; canBeRequired: boolean }

@@ -36,7 +36,7 @@ import {
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig, InstanceLimiterFunc,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
@@ -73,6 +73,7 @@ export type SdfClientOpts = {
   credentials: SdfCredentials
   config?: SdfClientConfig
   globalLimiter: Bottleneck
+  instanceLimiter: InstanceLimiterFunc
 }
 
 export const COMMANDS = {
@@ -140,11 +141,13 @@ export default class SdfClient {
   private readonly installedSuiteApps: string[]
   private manifestXmlContent: string
   private deployXmlContent: string
+  private readonly instanceLimiter: InstanceLimiterFunc
 
   constructor({
     credentials,
     config,
     globalLimiter,
+    instanceLimiter,
   }: SdfClientOpts) {
     this.globalLimiter = globalLimiter
     this.credentials = credentials
@@ -161,11 +164,16 @@ export default class SdfClient {
     this.installedSuiteApps = config?.installedSuiteApps ?? []
     this.manifestXmlContent = ''
     this.deployXmlContent = ''
+    this.instanceLimiter = instanceLimiter
   }
 
   @SdfClient.logDecorator
   static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
-    const netsuiteClient = new SdfClient({ credentials, globalLimiter: new Bottleneck() })
+    const netsuiteClient = new SdfClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: () => false,
+    })
     const { projectName, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectName, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
@@ -371,7 +379,7 @@ export default class SdfClient {
       return {
         elements: [],
         failedToFetchAllAtOnce: false,
-        failedTypes: { unexpectedError: {}, lockedError: {} },
+        failedTypes: { unexpectedError: {}, lockedError: {}, excludedTypes: [] },
       }
     }
 
@@ -413,6 +421,7 @@ export default class SdfClient {
       lockedError: concatObjects(
         importResult.map(res => res.failedTypes.lockedError)
       ),
+      excludedTypes: importResult.flatMap(res => res.failedTypes.excludedTypes),
     }
 
     const elements = importResult.flatMap(res => res.elements)
@@ -507,6 +516,7 @@ export default class SdfClient {
               failedTypeToInstances.unexpectedError[type]
             )).unexpectedError,
             lockedError: failedTypeToInstances.lockedError,
+            excludedTypes: failedTypeToInstances.excludedTypes,
           }
         }
         log.debug('Fetched chunk %d/%d with %d objects of type: %s with suiteApp: %s. failedTypes: %o',
@@ -532,6 +542,7 @@ export default class SdfClient {
         return {
           lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
           unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+          excludedTypes: results.flatMap(res => res.excludedTypes),
         }
       }
     }
@@ -543,20 +554,33 @@ export default class SdfClient {
     )).filter(query.isObjectMatch)
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
-    const idsChunks = wu.entries(instancesIdsByType).map(
-      ([type, ids]: [string, ObjectID[]]) =>
-        wu(ids)
-          .map(id => id.instanceId)
-          .chunk(this.maxItemsInImportObjectsRequest)
-          .enumerate()
-          .map(([chunk, index]) => ({
-            type,
-            ids: chunk,
-            index: index + 1,
-            total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
-          }))
-          .toArray()
-    ).flatten(true).toArray()
+
+    // SALTO-3042 on full deployment, use this instancesToFetch
+    // const [excludedGroups, instancesToFetch] = _.partition(
+    const [excludedGroups] = _.partition(
+      Object.entries(instancesIdsByType),
+      ([type, instances]) => this.instanceLimiter(type, instances.length)
+    )
+
+    // const excludedTypes = excludedGroups.map(([type, instances]) => {
+    excludedGroups.map(([type, instances]) => {
+      log.info(`Excluding type ${type} as it has about ${instances.length} elements.`)
+      return type
+    })
+    const instancesToFetch = Object.entries(instancesIdsByType)
+
+    const idsChunks = instancesToFetch.flatMap(([type, ids]) =>
+      wu(ids)
+        .map(id => id.instanceId)
+        .chunk(this.maxItemsInImportObjectsRequest)
+        .enumerate()
+        .map(([chunk, index]) => ({
+          type,
+          ids: chunk,
+          index: index + 1,
+          total: Math.ceil(ids.length / this.maxItemsInImportObjectsRequest),
+        }))
+        .toArray())
 
     log.debug('Fetching custom objects by types in chunks')
     const results = await withLimitedConcurrency( // limit the number of open promises
@@ -566,6 +590,8 @@ export default class SdfClient {
     return {
       lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
       unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
+      // SALTO-3042 Change to use variable on full deployment
+      excludedTypes: [],
     }
   }
 
@@ -618,7 +644,7 @@ export default class SdfClient {
         return false
       }))
 
-    return { unexpectedError, lockedError }
+    return { unexpectedError, lockedError, excludedTypes: [] }
   }
 
   private static fixTypeName(typeName: string): string {

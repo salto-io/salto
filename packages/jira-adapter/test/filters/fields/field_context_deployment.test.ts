@@ -177,7 +177,7 @@ describe('fieldContextDeployment', () => {
         expect.anything(),
       )
     })
-    it.only('should call deployContextChange on removal', async () => {
+    it('should call deployContextChange on removal', async () => {
       fieldType = new ObjectType({
         elemID: new ElemID(JIRA, 'Field'),
         fields: {

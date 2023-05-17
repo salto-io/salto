@@ -155,12 +155,6 @@ describe('state', () => {
       await state.setAll(awu([newElem]))
       expect(await state.get(newElemID)).toEqual(newElem)
     })
-    it('override', async () => {
-      await state.override(awu([newElem]), ['dummy'])
-      expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
-      expect(Object.keys(await state.getAccountsUpdateDates())).toEqual(['dummy', adapter])
-      expect(stateStaticFilesSource.clear).toHaveBeenCalled()
-    })
     it('getAccountsUpdateDates', async () => {
       expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
     })
@@ -243,29 +237,32 @@ describe('state', () => {
         const newAccountsUpdateDates = await state.getAccountsUpdateDates()
         expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
       })
-      it('should call updatePathIndex functions with all elements and top level removals', async () => {
+      it('should call updatePathIndex functions with all elements and removals', async () => {
         const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
         const unmergedElements = [newElem, elem, nonTopLevelElem]
         await state.updateStateFromChanges({
           serviceToStateChanges: [
             { ...toChange({ before: elem }), id: elem.elemID }, // Removal
-            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Non top-level removal
+            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Non field removal
             { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
             { ...toChange({ before: elem, after: newElem }), id: newElem.elemID }, // Modification
           ],
           unmergedElements,
         })
 
-        const topLevelRemovalFullNames = new Set<string>([elem.elemID.getFullName()])
+        const removedElementsFullNames = new Set<string>([
+          elem.elemID.getFullName(),
+          nonTopLevelElem.elemID.getFullName(),
+        ])
         expect(updatePathMock).toHaveBeenCalledWith({
           pathIndex,
           unmergedElements,
-          topLevelRemovalFullNames,
+          removedElementsFullNames,
         })
         expect(updateTopLevelPathMock).toHaveBeenCalledWith({
           pathIndex: topLevelPathIndex,
           unmergedElements,
-          topLevelRemovalFullNames,
+          removedElementsFullNames,
         })
       })
     })

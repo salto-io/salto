@@ -58,7 +58,6 @@ export type StateData = OldStateData | NewStateData
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
   getAccountsUpdateDates(): Promise<Record<string, Date>>
   // getServicesUpdateDates is deprecated, kept for backwards compatibility.
   // use getAccountsUpdateDates.

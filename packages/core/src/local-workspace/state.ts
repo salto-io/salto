@@ -310,10 +310,6 @@ export const localState = (
       await inMemState.remove(id)
       setDirty()
     },
-    override: async (element: AsyncIterable<Element>, accounts?: string[]): Promise<void> => {
-      await inMemState.override(element, accounts)
-      setDirty()
-    },
     rename: async (newPrefix: string): Promise<void> => {
       await staticFilesSource.rename(newPrefix)
 

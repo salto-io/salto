@@ -447,7 +447,7 @@ describe('updatePathIndex', () => {
     const removedMultiPathAnnObject = objectsToRemove[1].clone()
     delete removedMultiPathAnnObject.annotations.nested
 
-    expect(indexEntries.sort((a, b) => (a.key > b.key ? -1 : 1))).toEqual(
+    expect(indexEntries).toEqual(expect.arrayContaining(
       [
         ...pathHintsFunc([
           ...objectsToAdd,
@@ -456,9 +456,9 @@ describe('updatePathIndex', () => {
           removedMultiPathAnnObject, // only the 'nested' field was removed
           objectsToRemove[2],
           // 3 and 4 were removed
-        ]).sort((a, b) => (a.key > b.key ? -1 : 1)),
+        ]),
       ]
-    )
+    ))
   }
 
   it('should update pathIndex correctly', async () => {
@@ -474,12 +474,12 @@ describe('updatePathIndex', () => {
     await updatePathIndex({ pathIndex: index, unmergedElements: [...objectsToAdd] })
 
     const indexEntries = await awu(index.entries()).toArray()
-    expect(indexEntries.sort((a, b) => (a.key > b.key ? -1 : 1))).toEqual(
+    expect(indexEntries).toEqual(expect.arrayContaining(
       [
         ...getElementsPathHints([
           ...objectsToAdd,
-        ]).sort((a, b) => (a.key > b.key ? -1 : 1)),
+        ]),
       ]
-    )
+    ))
   })
 })

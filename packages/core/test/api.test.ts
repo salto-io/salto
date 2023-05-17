@@ -182,14 +182,14 @@ describe('api.ts', () => {
 
     describe('Full fetch', () => {
       let ws: workspace.Workspace
-      let stateOverride: jest.SpyInstance
+      let stateUpdateElements: jest.SpyInstance
       let mockGetAdaptersCreatorConfigs: jest.SpyInstance
 
       beforeAll(async () => {
         const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override')
+        stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, ACCOUNTS)
@@ -199,9 +199,9 @@ describe('api.ts', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
       // eslint-disable-next-line jest/no-disabled-tests
-      it.skip('should override state', async () => {
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual(fetchedElements)
+      it.skip('should update the state', async () => {
+        const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
+        expect(await awu(updateParams).toArray()).toEqual(fetchedElements)
       })
 
       it('should not call flush', () => {
@@ -239,14 +239,24 @@ describe('api.ts', () => {
     describe('Fetch one service out of two.', () => {
       let ws: workspace.Workspace
       let stateElements: InstanceElement[]
-      let stateOverride: jest.SpyInstance
       beforeAll(async () => {
         stateElements = [
           new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override').mockResolvedValue(undefined)
+        mockFetchChanges.mockImplementation(async () => ({
+          changes: [],
+          serviceToStateChanges: fetchedElements.map(e => ({ action: 'add', data: { after: e }, id: e.elemID })),
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
@@ -254,10 +264,9 @@ describe('api.ts', () => {
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      it('should override state but also include existing elements', async () => {
-        const existingElements = [stateElements[1]]
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
+      it('should update state with the new elements and keep the old ones', async () => {
+        const elements = await awu(await ws.state().getAll()).toArray()
+        expect(elements).toEqual(expect.arrayContaining([...fetchedElements, ...stateElements]))
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()

@@ -141,21 +141,6 @@ export const buildInMemState = (
       (await stateData()).elements.setAll(elements),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    override: (elements: AsyncIterable<Element>, accounts?: string[])
-      : Promise<void> => log.time(
-      async () => {
-        const data = await stateData()
-        const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
-
-        await data.staticFilesSource.clear()
-
-        await data.elements.overide(elements)
-        return getUpdateDate(data).setAll(
-          awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
-        )
-      },
-      'state override'
-    ),
     getAccountsUpdateDates,
     getServicesUpdateDates: getAccountsUpdateDates,
     existingAccounts: async (): Promise<string[]> =>

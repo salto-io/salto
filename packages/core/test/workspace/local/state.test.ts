@@ -216,14 +216,18 @@ describe('local state', () => {
       expect(result.length).toBe(0)
     })
 
-    it('should override state successfully, retrieve it and get the same result', async () => {
+    it('should update state successfully, retrieve it and get the updated result', async () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
       await state.set(newElem)
-      await state.override(awu([mockElement]))
+      await state.updateStateFromChanges({
+        serviceToStateChanges: [{ action: 'add', data: { after: mockElement }, id: mockElement.elemID }],
+      })
       const retrievedState = await awu(await state.getAll()).toArray()
-      expect(retrievedState.length).toBe(1)
-      const retrievedStateObjectType = retrievedState[0] as ObjectType
-      expect(retrievedStateObjectType.isEqual(mockElement)).toBe(true)
+      expect(retrievedState.length).toBe(2)
+      const retrievedState1ObjectType = retrievedState[0] as ObjectType
+      const retrievedState2ObjectType = retrievedState[1] as ObjectType
+      expect(retrievedState1ObjectType.isEqual(newElem)).toBe(true)
+      expect(retrievedState2ObjectType.isEqual(mockElement)).toBe(true)
     })
 
     it('should set state successfully, retrieve it and get the same result', async () => {
@@ -380,7 +384,11 @@ describe('local state', () => {
       const beforeOverrideDate = await state.getAccountsUpdateDates()
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
       expect(beforeOverrideDate.netsuite).toEqual(netsuiteModificationDate)
-      await state.override(awu([mockElement]))
+      await state.updateStateFromChanges({
+        serviceToStateChanges: [],
+        unmergedElements: [mockElement],
+        fetchAccounts: await state.existingAccounts(),
+      })
       const overrideDate = await state.getAccountsUpdateDates()
       expect(overrideDate.salto.getTime()).toBe(now)
       expect(beforeOverrideDate.netsuite).toEqual(netsuiteModificationDate)

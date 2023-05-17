@@ -76,9 +76,8 @@ const fieldHistoryTrackingChanged = (
   const [typeBefore, typeAfter] = getAllChangeData(objectTypeChange)
   const trackedBefore = Object.keys(typeBefore.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
   const trackedAfter = Object.keys(typeAfter.annotations[HISTORY_TRACKED_FIELDS] ?? {}).includes(field.name)
-  const existedBefore = field.name in typeBefore.fields
-  const existedAfter = field.name in typeAfter.fields
-  return existedBefore && existedAfter && (trackedBefore !== trackedAfter)
+  const existsAfter = field.name in typeAfter.fields
+  return existsAfter && (trackedBefore !== trackedAfter)
 }
 
 const createHistoryTrackingFieldChange = (
@@ -180,7 +179,6 @@ const filter: LocalFilterCreator = () => {
       )
 
       additionalChanges.forEach(change => changes.push(change))
-
 
       // Finally, remove the 'historyTrackedFields' annotation from all object types (either added or changed)
       changes

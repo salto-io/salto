@@ -32,8 +32,16 @@ export const globalFieldContextsDependencyChanger: DependencyChanger = async cha
     .filter(({ change }) => _.isEmpty(getChangeData(change).value.projectIds)
       || _.isEmpty(getChangeData(change).value.issueTypeIds))
 
+  const filteredGlobalContextChanges = globalContextChanges.filter(({ change }) => {
+    try {
+      return getParent(getChangeData(change)).elemID.getFullName() !== undefined
+    } catch {
+      return false
+    }
+  })
+
   const fieldToContexts = _.groupBy(
-    globalContextChanges,
+    filteredGlobalContextChanges,
     ({ change }) => getParent(getChangeData(change)).elemID.getFullName()
   )
 

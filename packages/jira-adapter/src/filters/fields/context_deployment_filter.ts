@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
@@ -24,7 +24,7 @@ import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 
 const contextChangeHasValidParent = (change: Change<InstanceElement>): boolean => {
   try {
-    return getParent(getChangeData(change)) !== undefined
+    return getParent(getChangeData(change)) !== undefined && isRemovalChange(change)
   } catch {
     return false
   }

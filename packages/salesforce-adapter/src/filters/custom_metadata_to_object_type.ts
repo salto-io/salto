@@ -41,9 +41,14 @@ const { awu, groupByAsync } = collections.asynciterable
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
+  skipAliases: boolean
 )
   : Promise<ObjectType> => {
-  const objectType = await createCustomTypeFromCustomObjectInstance({ instance, metadataType: CUSTOM_METADATA })
+  const objectType = await createCustomTypeFromCustomObjectInstance({
+    instance,
+    metadataType: CUSTOM_METADATA,
+    skipAliases,
+  })
   objectType.fields = {
     ...objectType.fields,
     // We omit the "values" field, since it will be destructed in the instances later.
@@ -84,7 +89,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
         .filter(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
 
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType))
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config.fetchProfile.isFeatureEnabled('skipAliases')))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

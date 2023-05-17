@@ -639,14 +639,11 @@ export const calcFetchChanges = async (
   return { changes, serviceToStateChanges }
 }
 
-const createFirstFetchChanges = async (unmergedElements: Element[], mergedElementsSource: elementSource.ElementsSource):
-  Promise<CalcFetchChangesResult> => {
-  const mergedElements = await awu(await mergedElementsSource.getAll()).toArray()
-  return {
-    changes: unmergedElements.map(toAddFetchChange),
-    serviceToStateChanges: mergedElements.map(toAddFetchChange).map(change => change.change),
-  }
-}
+const createFirstFetchChanges = async (unmergedElements: Element[], mergedElements: Element[]):
+  Promise<CalcFetchChangesResult> => ({
+  changes: unmergedElements.map(toAddFetchChange),
+  serviceToStateChanges: mergedElements.map(toAddFetchChange).map(change => change.change),
+})
 
 type CreateFetchChangesParams = {
   adapterNames: string[]
@@ -677,13 +674,11 @@ const createFetchChanges = async ({
     .filter(e => !e.isConfigType())
     .isEmpty()
 
-  const mergedElementsSource = elementSource.createInMemoryElementSource(processErrorsResult.keptElements)
-
   const { changes, serviceToStateChanges } = isFirstFetch
-    ? await createFirstFetchChanges(unmergedElements, mergedElementsSource)
+    ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
     : await calcFetchChanges(
       unmergedElements,
-      mergedElementsSource,
+      elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
       // When we init a new env, state will be empty. We fallback to the workspace
       // elements since they should be considered a part of the env and the diff
       // should be calculated with them in mind.

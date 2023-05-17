@@ -225,14 +225,15 @@ describe('api.ts', () => {
         ]
         ws = mockWorkspace({ stateElements })
         mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
-        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
+        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updateStateFromChanges').mockResolvedValue(undefined)
         await api.fetch(ws, undefined, [mockService])
       })
       it('should maintain path index entries', async () => {
-        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
-          fetchedElements,
-          [mockService, 'salto2'],
-        )
+        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith({
+          serviceToStateChanges: [],
+          unmergedElements: fetchedElements,
+          fetchAccounts: [mockService],
+        })
       })
     })
     describe('Fetch one service out of two.', () => {

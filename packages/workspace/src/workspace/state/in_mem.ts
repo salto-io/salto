@@ -84,18 +84,18 @@ export const buildInMemState = (
 
   const updateStatePathIndex = async (
     unmergedElements: Element[],
-    topLevelRemovalFullNames?: Set<string>,
+    removedElementsFullNames?: Set<string>,
   ): Promise<void> => {
     const currentStateData = await stateData()
     await updateTopLevelPathIndex({
       pathIndex: currentStateData.topLevelPathIndex,
       unmergedElements,
-      topLevelRemovalFullNames,
+      removedElementsFullNames,
     })
     await updatePathIndex({
       pathIndex: currentStateData.pathIndex,
       unmergedElements,
-      topLevelRemovalFullNames,
+      removedElementsFullNames,
     })
   }
 
@@ -203,12 +203,11 @@ export const buildInMemState = (
         return
       }
 
-      const topLevelRemovalFullNames = new Set(serviceToStateChanges
+      const removedElementsFullNames = new Set(serviceToStateChanges
         .filter(isRemovalChange)
-        .filter(change => getChangeData(change).elemID.isTopLevel())
-        .map(change => getChangeData(change).elemID.getFullName()))
+        .map(change => change.id.getFullName()))
 
-      await updateStatePathIndex(unmergedElements, topLevelRemovalFullNames)
+      await updateStatePathIndex(unmergedElements, removedElementsFullNames)
     },
   }
 }

@@ -183,10 +183,10 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
     }))
 }
 
-type pathIndexArgs = {
+export type pathIndexArgs = {
     pathIndex: PathIndex
     unmergedElements: Element[]
-    topLevelRemovalFullNames?: Set<string>
+    removedElementsFullNames?: Set<string>
 }
 
 /** Currently because a change in an element's path is not a change, we are unable to detect it
@@ -194,21 +194,23 @@ type pathIndexArgs = {
  *  were removed
 * */
 const updateIndex = async (
-  { pathIndex, unmergedElements, topLevelRemovalFullNames, getHintsFunction }:
+  { pathIndex, unmergedElements, removedElementsFullNames, getHintsFunction }:
     pathIndexArgs &
     { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
   const entriesToSet = getHintsFunction(unmergedElements)
 
   // If no removals were passed, override the index with the new elements
-  if (topLevelRemovalFullNames === undefined) {
+  if (removedElementsFullNames === undefined) {
     await pathIndex.clear()
   } else {
     // Entries that are related to an element that was removed should be deleted
     const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
       // Entries in the index are not top level (e.g. adapter.instanceType.field.fieldName)
       const tempElemID = ElemID.fromFullName(key)
-      return topLevelRemovalFullNames.has(tempElemID.createTopLevelParentID().parent.getFullName())
+      // If the element was removed, or its top level was removed, delete the entry
+      return removedElementsFullNames.has(key)
+          || removedElementsFullNames.has(tempElemID.createTopLevelParentID().parent.getFullName())
     }).toArray()
     await pathIndex.deleteAll(entriesToDelete)
   }

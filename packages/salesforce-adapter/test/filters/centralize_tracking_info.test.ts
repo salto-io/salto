@@ -24,7 +24,7 @@ import {
   ObjectType, ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import filterCreator from '../../src/filters/history_tracking'
+import filterCreator from '../../src/filters/centralize_tracking_info'
 import { createCustomObjectType, defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
 import { Types } from '../../src/transformers/transformer'

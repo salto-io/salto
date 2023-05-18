@@ -83,7 +83,7 @@ import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
 import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
-import historyTrackingFilter from './filters/history_tracking'
+import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
@@ -155,8 +155,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   { creator: formulaDepsFilter },
-  // historyTrackingFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
-  { creator: historyTrackingFilter },
+  // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
+  { creator: centralizeTrackingInfoFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },

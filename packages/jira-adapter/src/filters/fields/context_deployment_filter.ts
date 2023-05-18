@@ -13,22 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
+import { Element, getChangeData, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getParent } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { deployContextChange, setContextDeploymentAnnotations } from './contexts'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from './constants'
-import { findObject, setFieldDeploymentAnnotations } from '../../utils'
-
-const contextChangeHasValidParent = (change: Change<InstanceElement>): boolean => {
-  try {
-    return getParent(getChangeData(change)) !== undefined
-  } catch {
-    return false
-  }
-}
+import { findObject, isThereValidParent, setFieldDeploymentAnnotations } from '../../utils'
 
 const filter: FilterCreator = ({ client, config, elementsSource }) => ({
   name: 'contextDeploymentFilter',
@@ -56,7 +47,7 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => ({
       async change => {
         // field contexts without fields cant be removed because they don't exist,
         // modification changes are also not allowed but will not crash.
-        if (contextChangeHasValidParent(change) || !isRemovalChange(change)) {
+        if (isThereValidParent(getChangeData(change)) || !isRemovalChange(change)) {
           await deployContextChange(change, client, config.apiDefinitions, elementsSource)
         }
       }

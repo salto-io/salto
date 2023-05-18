@@ -19,6 +19,7 @@ import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { JiraConfig, JspUrls } from './config/config'
 import { ACCOUNT_INFO_ELEM_ID, JIRA_FREE_PLAN } from './constants'
+import { getParent } from '@salto-io/adapter-utils'
 
 const log = logger(module)
 
@@ -108,5 +109,13 @@ export const renameKey = (object: Value, { from, to }: { from: string; to: strin
   if (object[from] !== undefined) {
     object[to] = object[from]
     delete object[from]
+  }
+}
+
+export const isThereValidParent = (element: Element): boolean => {
+  try {
+    return getParent(element) !== undefined
+  } catch {
+    return false
   }
 }

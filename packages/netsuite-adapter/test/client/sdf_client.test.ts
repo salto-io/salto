@@ -56,6 +56,7 @@ jest.mock('@salto-io/file', () => ({
   mkdirp: jest.fn(),
   rm: jest.fn(),
   stat: jest.fn().mockImplementation(path => statMockFunction(path)),
+  exists: jest.fn().mockResolvedValue(true),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock

@@ -13,14 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir } from '../../src/client/sdf_parser'
+import { convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, parseSdfProjectDir } from '../../src/client/sdf_parser'
 import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECT_XML_WITH_HTML_CHARS, readDirMockFunction, readFileMockFunction } from './mocks'
 
 const readDirMock = jest.fn()
 const readFileMock = jest.fn()
+const existsMock = jest.fn()
 jest.mock('@salto-io/file', () => ({
   readDir: jest.fn().mockImplementation((...args) => readDirMock(...args)),
   readFile: jest.fn().mockImplementation((...args) => readFileMock(...args)),
+  exists: jest.fn().mockImplementation((...args) => existsMock(...args)),
+}))
+
+const readdirpMock = jest.fn()
+jest.mock('readdirp', () => ({
+  promise: jest.fn().mockImplementation((...args) => readdirpMock(...args)),
 }))
 
 describe('sdf parser', () => {
@@ -28,10 +35,16 @@ describe('sdf parser', () => {
     jest.clearAllMocks()
     readDirMock.mockImplementation(() => readDirMockFunction())
     readFileMock.mockImplementation(path => readFileMockFunction(path))
+    existsMock.mockResolvedValue(true)
+    readdirpMock.mockImplementation(() => [
+      MOCK_FILE_PATH,
+      MOCK_FILE_ATTRS_PATH,
+      MOCK_FOLDER_ATTRS_PATH,
+    ].map(path => ({ path: path.slice(1) })))
   })
   describe('parseObjectsDir', () => {
     it('should parse', async () => {
-      await expect(parseObjectsDir('objectsDir')).resolves.toEqual([
+      await expect(parseObjectsDir('/projectPath')).resolves.toEqual([
         {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
@@ -50,6 +63,10 @@ describe('sdf parser', () => {
         },
       ])
       expect(readFileMock).toHaveBeenCalledTimes(3)
+      const files = readDirMockFunction()
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[0]}`)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[1]}`)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/Objects/${files[2]}`)
     })
     it('should decode html chars', async () => {
       readDirMock.mockResolvedValue(['custentity_my_script_id.xml'])
@@ -67,7 +84,7 @@ describe('sdf parser', () => {
   })
   describe('parseFileCabinetDir', () => {
     it('should parse', async () => {
-      await expect(parseFileCabinetDir('fileCabinetDir', [
+      await expect(parseFileCabinetDir('/projectPath', [
         MOCK_FILE_PATH,
         MOCK_FILE_ATTRS_PATH,
         MOCK_FOLDER_ATTRS_PATH,
@@ -98,11 +115,14 @@ describe('sdf parser', () => {
         },
       ])
       expect(readFileMock).toHaveBeenCalledTimes(3)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_PATH}`)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_ATTRS_PATH}`)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FOLDER_ATTRS_PATH}`)
     })
   })
   describe('parseFeaturesXml', () => {
     it('should parse', async () => {
-      await expect(parseFeaturesXml('src/features.xml')).resolves.toEqual({
+      await expect(parseFeaturesXml('/projectPath')).resolves.toEqual({
         typeName: 'companyFeatures',
         values: {
           feature: [
@@ -113,6 +133,68 @@ describe('sdf parser', () => {
           ],
         },
       })
+      expect(readFileMock).toHaveBeenCalledWith('/projectPath/src/AccountConfiguration/features.xml')
+    })
+    it('should return undefined when file does not exists', async () => {
+      existsMock.mockResolvedValue(false)
+      await expect(parseFeaturesXml('/projectPath')).resolves.toBeUndefined()
+    })
+  })
+  describe('parseSdfProjectDir', () => {
+    it('should parse', async () => {
+      await expect(parseSdfProjectDir('/projectPath')).resolves.toEqual([
+        {
+          fileContent: MOCK_TEMPLATE_CONTENT,
+          fileExtension: 'html',
+          scriptId: 'a',
+          typeName: 'addressForm',
+          values: {
+            '@_filename': 'a.xml',
+          },
+        },
+        {
+          scriptId: 'b',
+          typeName: 'addressForm',
+          values: {
+            '@_filename': 'b.xml',
+          },
+        },
+        {
+          fileContent: 'dummy file content',
+          path: [
+            'Templates',
+            'E-mail Templates',
+            'InnerFolder',
+            'content.html',
+          ],
+          typeName: 'file',
+          values: {
+            description: 'file description',
+          },
+        },
+        {
+          path: [
+            'Templates',
+            'E-mail Templates',
+            'InnerFolder',
+          ],
+          typeName: 'folder',
+          values: {
+            description: 'folder description',
+          },
+        },
+        {
+          typeName: 'companyFeatures',
+          values: {
+            feature: [
+              {
+                id: 'SUITEAPPCONTROLCENTER',
+                status: 'ENABLED',
+              },
+            ],
+          },
+        },
+      ])
     })
   })
   describe('convertToXmlContent', () => {

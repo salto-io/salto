@@ -157,6 +157,7 @@ export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
 export const HISTORY_TRACKED_FIELDS = 'historyTrackedFields'
+export const FEED_HISTORY_TRACKED_FIELDS = 'feedHistoryTrackedFields'
 
 // Salesforce annotations
 export const LABEL = 'label'
@@ -172,6 +173,7 @@ export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
 export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
+export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',

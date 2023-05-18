@@ -80,6 +80,7 @@ jest.mock('../src/core/diff', () => ({
 
 jest.mock('@salto-io/salesforce-adapter', () => {
   const actual = jest.requireActual('@salto-io/salesforce-adapter')
+
   return {
     ...actual,
     adapter: {

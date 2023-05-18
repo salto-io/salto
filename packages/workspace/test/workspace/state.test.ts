@@ -213,8 +213,8 @@ describe('state', () => {
             { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
             { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
 
-            { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be removed
-            { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be added
+            { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be added
+            { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be removed
             { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
           ],
         })
@@ -243,7 +243,7 @@ describe('state', () => {
         await state.updateStateFromChanges({
           serviceToStateChanges: [
             { ...toChange({ before: elem }), id: elem.elemID }, // Removal
-            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Non field removal
+            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
             { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
             { ...toChange({ before: elem, after: newElem }), id: newElem.elemID }, // Modification
           ],

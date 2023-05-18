@@ -455,7 +455,7 @@ describe('updatePathIndex', () => {
           objectsToRemove[0],
           removedMultiPathAnnObject, // only the 'nested' field was removed
           objectsToRemove[2],
-          // 3 and 4 were removed
+          // [3] and [4] were removed
         ]),
       ]
     ))

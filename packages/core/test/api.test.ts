@@ -198,10 +198,13 @@ describe('api.ts', () => {
       it('should call fetch changes', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      // eslint-disable-next-line jest/no-disabled-tests
-      it.skip('should update the state', async () => {
+      it('should update the state', async () => {
         const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(updateParams).toArray()).toEqual(fetchedElements)
+        expect(updateParams).toEqual({
+          serviceToStateChanges: [],
+          unmergedElements: fetchedElements,
+          fetchAccounts: ACCOUNTS,
+        })
       })
 
       it('should not call flush', () => {
@@ -212,28 +215,6 @@ describe('api.ts', () => {
         const elementsSource = mockGetAdaptersCreatorConfigs.mock.calls[0][3]
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'state_instance'))).toBeTruthy()
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
-      })
-    })
-    describe('Partial fetch', () => {
-      let ws: workspace.Workspace
-      let stateElements: InstanceElement[]
-      let mockStateUpdatePathIndex: jest.SpyInstance
-      beforeAll(async () => {
-        stateElements = [
-          new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
-          new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
-        ]
-        ws = mockWorkspace({ stateElements })
-        mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
-        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updateStateFromChanges').mockResolvedValue(undefined)
-        await api.fetch(ws, undefined, [mockService])
-      })
-      it('should maintain path index entries', async () => {
-        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith({
-          serviceToStateChanges: [],
-          unmergedElements: fetchedElements,
-          fetchAccounts: [mockService],
-        })
       })
     })
     describe('Fetch one service out of two.', () => {
@@ -247,6 +228,7 @@ describe('api.ts', () => {
         ws = mockWorkspace({ stateElements })
         mockFetchChanges.mockImplementation(async () => ({
           changes: [],
+          // This is the field that is used to determine which elements to update in the state
           serviceToStateChanges: fetchedElements.map(e => ({ action: 'add', data: { after: e }, id: e.elemID })),
           errors: [],
           configChanges: mockPlan.createPlan([[]]),

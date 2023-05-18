@@ -206,7 +206,7 @@ const updateIndex = async (
   } else {
     // Entries that are related to an element that was removed should be deleted
     const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
-      // Entries in the index are not top level (e.g. adapter.instanceType.field.fieldName)
+      // Needed for createTopLevelParentID() function
       const tempElemID = ElemID.fromFullName(key)
       // If the element was removed, or its top level was removed, delete the entry
       return removedElementsFullNames.has(key)

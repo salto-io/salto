@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ListType, MapType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { getFilterParams, mockClient } from '../../utils'
 import { getDefaultConfig } from '../../../src/config/config'
@@ -146,20 +146,76 @@ describe('fieldContextDeployment', () => {
       })
     })
   })
-  it('should call deployContextChange', async () => {
-    const instance = new InstanceElement(
-      'instance',
-      contextType,
-      {},
-    )
-
-    const change = toChange({ after: instance })
-    await filter.deploy([change])
-    expect(deployContextChangeMock).toHaveBeenCalledWith(
-      change,
-      client,
-      getDefaultConfig({ isDataCenter: false }).apiDefinitions,
-      expect.anything(),
-    )
+  describe('onDeploy', () => {
+    it('should call deployContextChange on addition', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        contextType,
+        {},
+      )
+      const change = toChange({ after: instance })
+      await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        expect.anything(),
+      )
+    })
+    it('should call deployContextChange on modification', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        contextType,
+        {}
+      )
+      const change = toChange({ after: instance, before: instance })
+      await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        expect.anything(),
+      )
+    })
+    it('should call deployContextChange on removal', async () => {
+      fieldType = new ObjectType({
+        elemID: new ElemID(JIRA, 'Field'),
+        fields: {
+          contexts: { refType: new ListType(contextType) },
+        },
+      })
+      const fieldInstance = new InstanceElement(
+        'field',
+        fieldType,
+        {},
+      )
+      const instance = new InstanceElement(
+        'instance',
+        contextType,
+        {},
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: new ReferenceExpression(fieldInstance.elemID, fieldInstance),
+        }
+      )
+      const change = toChange({ before: instance })
+      await filter.deploy([change])
+      expect(deployContextChangeMock).toHaveBeenCalledWith(
+        change,
+        client,
+        getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        expect.anything(),
+      )
+    })
+    it('should not call deployContextChange on removal without parent', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        contextType,
+        {},
+      )
+      const change = toChange({ before: instance })
+      await filter.deploy([change])
+      expect(deployContextChangeMock).not.toHaveBeenCalled()
+    })
   })
 })

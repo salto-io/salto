@@ -16,6 +16,7 @@
 import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isAdditionOrRemovalChange, isInstanceChange, isRemovalChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { isThereValidParent } from '../utils'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
 import { ChangeWithKey } from './types'
 
@@ -32,8 +33,11 @@ export const globalFieldContextsDependencyChanger: DependencyChanger = async cha
     .filter(({ change }) => _.isEmpty(getChangeData(change).value.projectIds)
       || _.isEmpty(getChangeData(change).value.issueTypeIds))
 
+  const filteredGlobalContextChanges = globalContextChanges
+    .filter(({ change }) => isThereValidParent(getChangeData(change)))
+
   const fieldToContexts = _.groupBy(
-    globalContextChanges,
+    filteredGlobalContextChanges,
     ({ change }) => getParent(getChangeData(change)).elemID.getFullName()
   )
 

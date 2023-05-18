@@ -51,7 +51,7 @@ const areCustomStatusesEnabled = async (
     return true
   }
 
-  const customStatusesEnabled = accountFeatures.value?.custom_statuses_enabled
+  const customStatusesEnabled = accountFeatures.value.custom_statuses_enabled
   if (customStatusesEnabled === undefined) {
     log.error(errorMsg('no "custom_statuses_enabled" field'))
     return true

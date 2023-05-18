@@ -29,6 +29,7 @@ export type LocalFilterOpts = {
   isPartial: boolean
   config: NetsuiteConfig
   changesGroupId?: string
+  fetchTime?: Date
 }
 
 export type RemoteFilterOpts = LocalFilterOpts & {

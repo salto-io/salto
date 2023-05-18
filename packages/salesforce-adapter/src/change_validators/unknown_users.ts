@@ -34,7 +34,7 @@ type GetUserField = (instance: InstanceElement, fieldName: string) => string[]
 
 type UserFieldGetter = {
   field: string
-  getter: GetUserField
+  getter: (instance: InstanceElement) => string[]
 }
 
 // https://stackoverflow.com/a/44154193
@@ -54,27 +54,18 @@ type MissingUser = {
   userName: string
 }
 
-const userFieldValue = (expectedFieldName: string): GetUserField => (
-  (instance, fieldName) => {
-    if (fieldName !== expectedFieldName) {
-      log.error(`Unexpected field name: ${fieldName} !== ${expectedFieldName}`)
-      return []
-    }
-    if (instance.value[fieldName] === undefined) {
-      return []
-    }
-    return [instance.value[fieldName]]
+const userFieldValue = (instance: InstanceElement, fieldName: string): string[] => {
+  if (instance.value[fieldName] === undefined) {
+    return []
   }
-)
+  return [instance.value[fieldName]]
+}
 
-const getUserDependingOnType = (typeField: string, expectedType: string, userField: string): GetUserField => (
-  (instance: InstanceElement, fieldName: string) => {
-    if (fieldName !== userField) {
-      log.warn('Expected field name %s. Got %s', userField, fieldName)
-      return []
-    }
-    if (instance.value[typeField] !== expectedType) {
-      log.trace('%s is not %s. Skipping.', typeField, expectedType)
+const getUserDependingOnType = (typeField: string): GetUserField => (
+  (instance: InstanceElement, userField: string) => {
+    const type = instance.value[typeField]
+    if (!type || type.toLocaleLowerCase() !== 'user') {
+      log.trace('%s is `%s`, not `user`. Skipping.', typeField, type)
       return []
     }
     return [instance.value[userField]]
@@ -91,11 +82,7 @@ const isEmailRecipientsValue = (recipients: Values): recipients is EmailRecipien
   && recipients.every(recipient => _.isString(recipient.type) && _.isString(recipient.recipient))
 )
 
-const getEmailRecipients: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'recipients') {
-    log.error(`Unexpected field name: ${fieldName}.`)
-    return []
-  }
+const getEmailRecipients: GetUserField = instance => {
   const { recipients } = instance.value
   if (!isEmailRecipientsValue(recipients)) {
     return []
@@ -105,34 +92,29 @@ const getEmailRecipients: GetUserField = (instance, fieldName) => {
     .map((recipient: Values) => recipient.recipient)
 }
 
+const userField = (
+  fieldName: string,
+  userFieldGetter: GetUserField,
+): UserFieldGetter => (
+  {
+    field: fieldName,
+    getter: (instance: InstanceElement) => userFieldGetter(instance, fieldName),
+  }
+)
+
 const USER_GETTERS: TypesWithUserFields = {
   CaseSettings: [
-    {
-      field: 'defaultCaseUser',
-      getter: userFieldValue('defaultCaseUser'),
-    },
-    {
-      field: 'defaultCaseOwner',
-      getter: getUserDependingOnType('defaultCaseOwnerType', 'User', 'defaultCaseOwner'),
-    },
+    userField('defaultCaseUser', userFieldValue),
+    userField('defaultCaseOwner', getUserDependingOnType('defaultCaseOwnerType')),
   ],
   FolderShare: [
-    {
-      field: 'sharedTo',
-      getter: getUserDependingOnType('sharedToType', 'User', 'sharedTo'),
-    },
+    userField('sharedTo', getUserDependingOnType('sharedToType')),
   ],
   WorkflowAlert: [
-    {
-      field: 'recipients',
-      getter: getEmailRecipients,
-    },
+    userField('recipients', getEmailRecipients),
   ],
   WorkflowTask: [
-    {
-      field: 'assignedTo',
-      getter: getUserDependingOnType('assignedToType', 'user', 'assignedTo'),
-    },
+    userField('assignedTo', getUserDependingOnType('assignedToType')),
   ],
 }
 
@@ -148,7 +130,7 @@ const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, inst
 }
 
 const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
-  getterDefs.flatMap(getterDef => getterDef.getter(instance, getterDef.field))
+  getterDefs.flatMap(getterDef => getterDef.getter(instance))
 )
 
 const getUsersFromInstances = async (
@@ -176,7 +158,7 @@ const getUnknownUsers = async (
   knownUsers: string[],
 ): Promise<MissingUser[]> => {
   const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser[] => {
-    const userNames = userFieldGetter.getter(instance, userFieldGetter.field)
+    const userNames = userFieldGetter.getter(instance)
 
     return userNames.map(userName => ({
       instance,

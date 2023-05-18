@@ -56,7 +56,7 @@ import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpec
 import { Graph } from './graph_utils'
 import { FileSize, filterFilesInFolders, largeFoldersToExclude } from './file_cabinet_utils'
 import { reorderDeployXml } from './deploy_xml_utils'
-import { OBJECTS_DIR, FILE_CABINET_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML, SRC_DIR, getCustomTypeInfoPath, getFileCabinetCustomInfoPath } from './sdf_parser'
+import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, FEATURES_XML, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFeaturesXmlPath, getDeployFilePath, getManifestFilePath, getSrcDirPath, getFileCabinetDirPath } from './sdf_parser'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -115,7 +115,6 @@ const writeFileInFolder = async (folderPath: string, filename: string, content: 
 }
 
 type Project = {
-  projectName: string
   projectPath: string
   executor: CommandActionExecutor
   authId: string
@@ -174,8 +173,8 @@ export default class SdfClient {
       globalLimiter: new Bottleneck(),
       instanceLimiter: () => false,
     })
-    const { projectName, authId } = await netsuiteClient.initProject()
-    await netsuiteClient.projectCleanup(projectName, authId)
+    const { projectPath, authId } = await netsuiteClient.initProject()
+    await netsuiteClient.projectCleanup(projectPath, authId)
     return Promise.resolve(netsuiteClient.credentials.accountId)
   }
 
@@ -340,16 +339,16 @@ export default class SdfClient {
     const authId = uuidv4()
     const projectName = `sdf-${authId}`
     await this.createProject(projectName, suiteAppId)
-    const projectPath = SdfClient.getProjectPath(projectName)
+    const projectPath = osPath.resolve(baseExecutionPath, projectName)
     const executor = SdfClient
       .initCommandActionExecutor(projectPath)
     await this.setupAccount(executor, authId)
-    return { projectName, projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
+    return { projectPath, executor, authId, type: suiteAppId !== undefined ? 'SuiteApp' : 'AccountCustomization' }
   }
 
-  private static async deleteProject(projectName: string): Promise<void> {
-    log.debug(`Deleting SDF project: ${projectName}`)
-    await rm(SdfClient.getProjectPath(projectName))
+  private static async deleteProject(projectPath: string): Promise<void> {
+    log.debug(`Deleting SDF project: ${osPath.basename(projectPath)}`)
+    await rm(projectPath)
   }
 
   private async deleteAuthId(authId: string): Promise<void> {
@@ -365,9 +364,9 @@ export default class SdfClient {
     })
   }
 
-  private async projectCleanup(projectName: string, authId: string): Promise<void> {
+  private async projectCleanup(projectPath: string, authId: string): Promise<void> {
     await Promise.all([
-      SdfClient.deleteProject(projectName),
+      SdfClient.deleteProject(projectPath),
       this.deleteAuthId(authId),
     ])
   }
@@ -387,28 +386,28 @@ export default class SdfClient {
     const importResult = await Promise.all(
       [undefined, ...this.installedSuiteApps]
         .map(async suiteAppId => {
-          const { executor, projectName, authId } = await this.initProject()
+          const { executor, projectPath, authId } = await this.initProject()
           const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
             typeNames,
             query,
             suiteAppId,
           )
-          const elements = await parseObjectsDir(SdfClient.getObjectsDirPath(projectName))
+          const elements = await parseObjectsDir(projectPath)
 
           if (suiteAppId !== undefined) {
             elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
           }
           if (suiteAppId === undefined && query.isTypeMatch(CONFIG_FEATURES)) {
             // use existing project to import features object
-            const { typeName, values } = await this.getFeaturesObject(executor, projectName)
+            const { typeName, values } = await this.getFeaturesObject(executor, projectPath)
             elements.push({
               scriptId: typeName,
               typeName,
               values,
             })
           }
-          await this.projectCleanup(projectName, authId)
+          await this.projectCleanup(projectPath, authId)
 
           return { elements, failedToFetchAllAtOnce, failedTypes }
         })
@@ -432,18 +431,22 @@ export default class SdfClient {
 
   private async getFeaturesObject(
     executor: CommandActionExecutor,
-    projectName: string,
+    projectPath: string,
   ): Promise<CustomizationInfo> {
     try {
       await this.executeProjectAction(
         COMMANDS.IMPORT_CONFIGURATION, { configurationid: ALL_FEATURES }, executor
       )
-      const featuresObject = await parseFeaturesXml(SdfClient.getFeaturesXmlPath(projectName))
-      return featuresObject
     } catch (e) {
       log.error('Attempt to import features object has failed with error: %o', e)
-      return { typeName: CONFIG_FEATURES, values: { feature: [] } }
+      throw e
     }
+    const featuresObject = await parseFeaturesXml(projectPath)
+    if (featuresObject === undefined) {
+      log.error('Could not find features object in project path %s', projectPath)
+      throw new Error('Could not find features object in project')
+    }
+    return featuresObject
   }
 
   private async importObjects(
@@ -753,13 +756,13 @@ export default class SdfClient {
     // folder attributes file is returned multiple times
     const importedPaths = _.uniq(importFilesResult)
 
-    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const fileCabinetDirPath = getFileCabinetDirPath(project.projectPath)
     const largeFolders = largeFoldersToExclude(
       await filesToSize(importedPaths, fileCabinetDirPath), maxFileCabinetSizeInGB
     )
     const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
-    const elements = await parseFileCabinetDir(fileCabinetDirPath, listedPaths)
-    await this.projectCleanup(project.projectName, project.authId)
+    const elements = await parseFileCabinetDir(project.projectPath, listedPaths)
+    await this.projectCleanup(project.projectPath, project.authId)
     return {
       elements,
       failedPaths: {
@@ -777,14 +780,14 @@ export default class SdfClient {
     dependencyGraph: Graph<SDFObjectNode>
   ): Promise<void> {
     const project = await this.initProject(suiteAppId)
-    const srcDirPath = SdfClient.getSrcDirPath(project.projectName)
-    const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
+    const srcDirPath = getSrcDirPath(project.projectPath)
+    const fileCabinetDirPath = getFileCabinetDirPath(project.projectPath)
     const customizationInfos = Array.from(dependencyGraph.nodes.values()).map(node => node.value.customizationInfo)
     // Delete the default FileCabinet folder to prevent permissions error
     await rm(fileCabinetDirPath)
     await Promise.all(customizationInfos.map(async customizationInfo => {
       if (customizationInfo.typeName === CONFIG_FEATURES) {
-        return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectName)
+        return SdfClient.addFeaturesObjectToProject(customizationInfo, project.projectPath)
       }
       if (isCustomTypeInfo(customizationInfo)) {
         return SdfClient.addCustomTypeInfoToProject(customizationInfo, srcDirPath)
@@ -798,15 +801,15 @@ export default class SdfClient {
       throw new Error(`Failed to deploy invalid customizationInfo: ${customizationInfo}`)
     }))
     await this.runDeployCommands(project, customizationInfos, manifestDependencies, validateOnly, dependencyGraph)
-    await this.projectCleanup(project.projectName, project.authId)
+    await this.projectCleanup(project.projectPath, project.authId)
   }
 
   private async fixManifest(
-    projectName: string,
+    projectPath: string,
     customizationInfos: CustomizationInfo[],
     manifestDependencies: ManifestDependencies
   ): Promise<void> {
-    const manifestPath = SdfClient.getManifestFilePath(projectName)
+    const manifestPath = getManifestFilePath(projectPath)
     const manifestContent = (await readFile(manifestPath)).toString()
     this.manifestXmlContent = fixManifest(manifestContent, customizationInfos, manifestDependencies)
     await writeFile(
@@ -817,9 +820,9 @@ export default class SdfClient {
 
   private async fixDeployXml(
     dependencyGraph: Graph<SDFObjectNode>,
-    projectName: string,
+    projectPath: string,
   ): Promise<void> {
-    const deployFilePath = SdfClient.getDeployFilePath(projectName)
+    const deployFilePath = getDeployFilePath(projectPath)
     const deployXmlContent = (await readFile(deployFilePath)).toString()
     this.deployXmlContent = reorderDeployXml(deployXmlContent, dependencyGraph)
     await writeFile(
@@ -885,15 +888,15 @@ ${this.deployXmlContent}
   }
 
   private async runDeployCommands(
-    { executor, projectName, type }: Project,
+    { executor, projectPath, type }: Project,
     customizationInfos: CustomizationInfo[],
     manifestDependencies: ManifestDependencies,
     validateOnly: boolean,
     dependencyGraph: Graph<SDFObjectNode>,
   ): Promise<void> {
     await this.executeProjectAction(COMMANDS.ADD_PROJECT_DEPENDENCIES, {}, executor)
-    await this.fixManifest(projectName, customizationInfos, manifestDependencies)
-    await this.fixDeployXml(dependencyGraph, projectName)
+    await this.fixManifest(projectPath, customizationInfos, manifestDependencies)
+    await this.fixDeployXml(dependencyGraph, projectPath)
     try {
       const custCommandArguments = {
         ...(type === 'AccountCustomization' ? { accountspecificvalues: 'WARNING' } : {}),
@@ -926,10 +929,10 @@ ${this.deployXmlContent}
 
   private static async addFeaturesObjectToProject(
     customizationInfo: CustomizationInfo,
-    projectName: string
+    projectPath: string
   ): Promise<void> {
     await writeFile(
-      SdfClient.getFeaturesXmlPath(projectName),
+      getFeaturesXmlPath(projectPath),
       convertToFeaturesXmlContent(customizationInfo)
     )
   }
@@ -955,38 +958,5 @@ ${this.deployXmlContent}
     )
     await writeFileInFolder(attrsFolderPath, FOLDER_ATTRIBUTES_FILE_SUFFIX,
       convertToXmlContent(folderCustomizationInfo))
-  }
-
-  private static getProjectPath(projectName: string): string {
-    return osPath.resolve(baseExecutionPath, projectName)
-  }
-
-  private static getSrcDirPath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR)
-  }
-
-  private static getObjectsDirPath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, OBJECTS_DIR)
-  }
-
-  private static getFileCabinetDirPath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, FILE_CABINET_DIR)
-  }
-
-  private static getManifestFilePath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'manifest.xml')
-  }
-
-  private static getDeployFilePath(projectName: string): string {
-    return osPath.resolve(SdfClient.getProjectPath(projectName), SRC_DIR, 'deploy.xml')
-  }
-
-  private static getFeaturesXmlPath(projectName: string): string {
-    return osPath.resolve(
-      SdfClient.getProjectPath(projectName),
-      SRC_DIR,
-      ACCOUNT_CONFIGURATION_DIR,
-      FEATURES_XML
-    )
   }
 }

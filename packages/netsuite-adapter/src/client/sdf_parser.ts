@@ -17,13 +17,16 @@ import _ from 'lodash'
 import osPath from 'path'
 import he from 'he'
 import xmlParser from 'fast-xml-parser'
+import readdirp from 'readdirp'
+import { logger } from '@salto-io/logging'
 import { promises, collections } from '@salto-io/lowerdash'
-import { readDir, readFile } from '@salto-io/file'
+import { exists, readDir, readFile } from '@salto-io/file'
 import { CustomTypeInfo, CustomizationInfo, FileCabinetCustomizationInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { CONFIG_FEATURES, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './constants'
 import { isFileCustomizationInfo } from './utils'
 
+const log = logger(module)
 const { withLimitedConcurrency } = promises.array
 const { makeArray } = collections.array
 
@@ -32,13 +35,15 @@ export const FILE_CABINET_DIR = 'FileCabinet'
 export const OBJECTS_DIR = 'Objects'
 export const ACCOUNT_CONFIGURATION_DIR = 'AccountConfiguration'
 
+export const MANIFEST_XML = 'manifest.xml'
+export const DEPLOY_XML = 'deploy.xml'
 export const FEATURES_XML = 'features.xml'
-const FEATURES_TAG = 'features'
+export const FEATURES_TAG = 'features'
 export const FEATURES_LIST_TAG = 'feature'
 
 export const READ_CONCURRENCY = 100
 export const ADDITIONAL_FILE_PATTERN = '.template.'
-const XML_FILE_SUFFIX = '.xml'
+export const XML_FILE_SUFFIX = '.xml'
 export const ATTRIBUTES_FOLDER_NAME = '.attributes'
 export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
 export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
@@ -49,6 +54,24 @@ const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
   ignoreAttributes: false,
   tagValueProcessor: val => he.decode(val),
 }
+
+export const getSrcDirPath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR)
+
+export const getObjectsDirPath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR, OBJECTS_DIR)
+
+export const getFileCabinetDirPath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR, FILE_CABINET_DIR)
+
+export const getManifestFilePath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR, MANIFEST_XML)
+
+export const getDeployFilePath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR, DEPLOY_XML)
+
+export const getFeaturesXmlPath = (projectPath: string): string =>
+  osPath.resolve(projectPath, SRC_DIR, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML)
 
 const convertToCustomizationInfo = (
   xmlContent: string
@@ -136,8 +159,9 @@ const transformCustomObject = async (
 }
 
 export const parseObjectsDir = async (
-  objectsDirPath: string
+  projectPath: string
 ): Promise<CustomTypeInfo[]> => {
+  const objectsDirPath = getObjectsDirPath(projectPath)
   const filenames = await readDir(objectsDirPath)
   const scriptIdToFiles = _.groupBy(
     filenames,
@@ -207,12 +231,18 @@ const transformFolders = (
   )
 }
 
+const listFilesRecursive = async (dirPath: string): Promise<string[]> =>
+  // TODO: SALTO-4200 support also windows path style
+  (await readdirp.promise(dirPath, { type: 'files' }))
+    .map(file => `${FILE_CABINET_PATH_SEPARATOR}${file.path}`)
+
 export const parseFileCabinetDir = async (
-  fileCabinetDirPath: string,
-  pathsToImport: string[]
+  projectPath: string,
+  pathsToImport?: string[]
 ): Promise<FileCabinetCustomizationInfo[]> => {
+  const fileCabinetDirPath = getFileCabinetDirPath(projectPath)
   const [attributesPaths, filePaths] = _.partition(
-    pathsToImport,
+    pathsToImport ?? await listFilesRecursive(fileCabinetDirPath),
     p => p.endsWith(ATTRIBUTES_FILE_SUFFIX)
   )
   const [folderAttrsPaths, fileAttrsPaths] = _.partition(
@@ -228,8 +258,13 @@ export const parseFileCabinetDir = async (
 }
 
 export const parseFeaturesXml = async (
-  filePath: string
-): Promise<CustomizationInfo> => {
+  projectPath: string
+): Promise<CustomizationInfo | undefined> => {
+  const filePath = getFeaturesXmlPath(projectPath)
+  if (!await exists(filePath)) {
+    log.debug('features xml does not exists')
+    return undefined
+  }
   const xmlContent = await readFile(filePath)
   const featuresXml = xmlParser.parse(xmlContent.toString(), XML_PARSE_OPTIONS)
 
@@ -240,6 +275,17 @@ export const parseFeaturesXml = async (
       [FEATURES_LIST_TAG]: featuresList,
     },
   }
+}
+
+export const parseSdfProjectDir = async (projectPath: string): Promise<CustomizationInfo[]> => {
+  const customObjects = await parseObjectsDir(projectPath)
+  const fileCabinetObjects = await parseFileCabinetDir(projectPath)
+  const featuresObject = await parseFeaturesXml(projectPath)
+  return [
+    ...customObjects,
+    ...fileCabinetObjects,
+    ...(featuresObject !== undefined ? [featuresObject] : []),
+  ]
 }
 
 export const convertToFeaturesXmlContent = (

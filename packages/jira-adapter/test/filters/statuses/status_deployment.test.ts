@@ -193,6 +193,23 @@ describe('statusDeploymentFilter', () => {
       mockConnection.post.mockClear()
       mockConnection.put.mockClear()
     })
+    it('should retry on failed to acquire lock error - modification', async () => {
+      mockConnection.put.mockRejectedValueOnce({
+        status: 409,
+        data: {
+          errorMessages: ['Failed to acquire lock'],
+        },
+      })
+      const changes = [
+        toChange({ before: statusInstance, after: modifiedInstance }),
+      ]
+      const { deployResult } = await filter.deploy(changes)
+      expect(deployResult.appliedChanges).toHaveLength(1)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(mockConnection.put).toHaveBeenCalledTimes(2)
+      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
+        .toEqual('jira.Status.instance.statusInstance')
+    })
 
     it('should return applied changes with no errors', async () => {
       mockConnection.put.mockResolvedValue({

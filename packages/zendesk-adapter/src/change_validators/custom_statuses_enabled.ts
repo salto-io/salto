@@ -18,11 +18,19 @@ import { logger } from '@salto-io/logging'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
+const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
 
+/**
+  * If this function fails to identify whether custom statuses are enabled
+* it will log an error and return true to skip the validator.
+  */
 const areCustomStatusesEnabled = async (
   elementSource?: ReadOnlyElementsSource
-): Promise<{ enabled?: boolean; error?: string }> => {
-  if (elementSource == null) return { error: 'no element source was provided' }
+): Promise<boolean> => {
+  if (elementSource == null) {
+    log.error(errorMsg('no element source was provided'))
+    return true
+  }
 
   const accountFeatures = await elementSource.get(
     new ElemID(
@@ -33,13 +41,23 @@ const areCustomStatusesEnabled = async (
     )
   )
 
-  if (accountFeatures == null) return { error: 'no account features' }
-  if (!isInstanceElement(accountFeatures)) return { error: 'account features is not an instance element' }
+  if (accountFeatures === undefined) {
+    log.error(errorMsg('no account features'))
+    return true
+  }
+
+  if (!isInstanceElement(accountFeatures)) {
+    log.error(errorMsg('account features is not an instance element'))
+    return true
+  }
 
   const customStatusesEnabled = accountFeatures.value?.custom_statuses_enabled
-  if (customStatusesEnabled == null) return { error: 'no "custom_statuses_enabled" field' }
+  if (customStatusesEnabled === undefined) {
+    log.error(errorMsg('no "custom_statuses_enabled" field'))
+    return true
+  }
 
-  return { enabled: customStatusesEnabled.enabled }
+  return customStatusesEnabled.enabled
 }
 
 /**
@@ -50,16 +68,9 @@ export const customStatusesEnabledValidator: ChangeValidator = async (
   changes,
   elementSource
 ) => {
-  // If custom statuses are enabled there's no need to check anything else.
-  const { enabled, error } = await areCustomStatusesEnabled(elementSource)
-  if (error !== undefined) {
-    log.error(
-      `Failed to run customStatusesEnabledValidator because ${error}`
-    )
-    return []
-  }
-
-  if (enabled) return []
+  // If custom statuses are enabled (or if we failed to check if custom statuses
+  // are enabled) there's no need to check anything else.
+  if (await areCustomStatusesEnabled(elementSource)) return []
 
   return changes
     .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)

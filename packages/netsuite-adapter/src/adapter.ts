@@ -14,19 +14,17 @@
 * limitations under the License.
 */
 import {
-  FetchResult, isInstanceElement, AdapterOperations, DeployResult, DeployOptions,
+  FetchResult, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, Field, BuiltinTypes, DeployModifiers, getChangeData,
+  FetchOptions, DeployModifiers, getChangeData, isObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
-import {
-  createInstanceElement,
-} from './transformer'
-import { getMetadataTypes, getTopLevelStandardTypes, metadataTypesToList } from './types'
-import { INTEGRATION, APPLICATION_ID, CUSTOM_RECORD_TYPE } from './constants'
+import { createElements } from './transformer'
+import { isCustomRecordType } from './types'
+import { INTEGRATION } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -76,9 +74,8 @@ import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/sa
 import { getChangeGroupIdsFunc } from './group_changes'
 import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
-import { getStandardTypesNames, isStandardTypeName } from './autogen/types'
+import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
-import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -171,6 +168,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private createFiltersRunner: (params: {
     isPartial?: boolean
     changesGroupId?: string
+    fetchTime?: Date
   }) => Required<Filter>
 
   public constructor({
@@ -216,7 +214,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = ({ isPartial = false, changesGroupId }) => filter.filtersRunner(
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime }) => filter.filtersRunner(
       {
         client: this.client,
         elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
@@ -224,6 +222,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         isPartial,
         config,
         changesGroupId,
+        fetchTime,
       },
       filtersCreators,
     )
@@ -235,7 +234,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
-    const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
     const {
       changedObjectsQuery,
       serverTime,
@@ -253,7 +251,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         this.elementsSource,
         isPartial,
       )
-      : undefined
+      : []
 
     const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
     const configRecordsPromise = this.client.getConfigRecords()
@@ -281,41 +279,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
       failedTypes,
     } = await getCustomObjectsResult
 
-    const topLevelStandardTypes = getTopLevelStandardTypes(standardTypes)
-    progressReporter.reportProgress({ message: 'Running filters for additional information' });
+    progressReporter.reportProgress({ message: 'Running filters for additional information' })
 
-    [...topLevelStandardTypes, ...Object.values(additionalTypes)].forEach(type => {
-      type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
-    })
-
-    const customizationInfos = [...customObjects, ...fileCabinetContent]
-
-    const [customRecordTypeInstances, instances] = _.partition(
-      await awu(customizationInfos).map(customizationInfo => {
-        const type = isStandardTypeName(customizationInfo.typeName)
-          ? standardTypes[customizationInfo.typeName].type
-          : additionalTypes[customizationInfo.typeName]
-        return type
-          ? createInstanceElement(
-            customizationInfo,
-            type,
-            this.getElemIdFunc,
-            serverTime,
-            serverTimeElements?.instance,
-          )
-          : undefined
-      }).filter(isInstanceElement).toArray(),
-      instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE
-    )
-
-    const customRecordTypes = createCustomRecordTypes(
-      customRecordTypeInstances,
-      standardTypes.customrecordtype.type
+    const baseElements = await createElements(
+      [...customObjects, ...fileCabinetContent],
+      this.getElemIdFunc,
     )
 
     const customRecordsPromise = getCustomRecords(
       this.client,
-      customRecordTypes,
+      baseElements.filter(isObjectType).filter(isCustomRecordType),
       fetchQuery,
       this.getElemIdFunc
     )
@@ -328,16 +301,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     const elements = [
-      ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
+      ...baseElements,
       ...dataElements,
       ...suiteAppConfigElements,
-      ...instances,
-      ...(serverTimeElements ? [serverTimeElements.type, serverTimeElements.instance] : []),
-      ...customRecordTypes,
+      ...serverTimeElements,
       ...customRecords,
     ]
 
-    await this.createFiltersRunner({ isPartial }).onFetch(elements)
+    await this.createFiltersRunner({ isPartial, fetchTime: serverTime }).onFetch(elements)
 
     return {
       failures: {

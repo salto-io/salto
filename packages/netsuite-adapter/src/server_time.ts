@@ -22,11 +22,6 @@ const log = logger(module)
 
 export const SERVER_TIME_TYPE_NAME = 'server_time'
 
-type ServerTimeElements = {
-  type: ObjectType
-  instance: InstanceElement
-}
-
 const SERVER_TIME_TYPE_ID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME)
 const SERVER_TIME_INSTANCE_ID = new ElemID(NETSUITE, SERVER_TIME_TYPE_NAME, 'instance', ElemID.CONFIG_NAME)
 
@@ -42,26 +37,23 @@ const serverTimeType = new ObjectType({
   },
 })
 
-export const createServerTimeElements = (time: Date): ServerTimeElements => {
+export const createServerTimeElements = (time: Date): [ObjectType, InstanceElement] => {
   log.debug(`Creating server time elements with time: ${time.toJSON()}`)
   const instance = new InstanceElement(
     ElemID.CONFIG_NAME,
     serverTimeType,
-    {
-      serverTime: time.toJSON(),
-      instancesFetchTime: {},
-    },
+    { serverTime: time.toJSON() },
     undefined,
     { [CORE_ANNOTATIONS.HIDDEN]: true },
   )
 
-  return { type: serverTimeType, instance }
+  return [serverTimeType, instance]
 }
 
 const getExistingServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
-): Promise<ServerTimeElements> => {
+): Promise<[ObjectType, InstanceElement]> => {
   const instance = await elementsSource.get(SERVER_TIME_INSTANCE_ID)
   if (!isInstanceElement(instance)) {
     log.warn('Server time instance not found in elements source')
@@ -69,17 +61,15 @@ const getExistingServerTimeElements = async (
   }
   // Resolve the type of the instance cause it's used inside the adapter that assumes resolved types
   instance.refType = createRefToElmWithValue(serverTimeType)
-  if (instance.value.instancesFetchTime === undefined) {
-    instance.value.instancesFetchTime = {}
-  }
-  return { type: serverTimeType, instance }
+
+  return [serverTimeType, instance]
 }
 
 export const getOrCreateServerTimeElements = async (
   time: Date,
   elementsSource: ReadOnlyElementsSource,
   isPartial: boolean,
-): Promise<ServerTimeElements> => (isPartial
+): Promise<[ObjectType, InstanceElement]> => (isPartial
   ? getExistingServerTimeElements(time, elementsSource)
   : createServerTimeElements(time)
 )

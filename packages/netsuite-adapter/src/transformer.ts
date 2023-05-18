@@ -19,25 +19,28 @@ import {
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
   ElemIDType,
+  TypeElement,
+  BuiltinTypes,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
   APPLICATION_ID,
   SETTINGS_PATH,
+  CUSTOM_RECORD_TYPE,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
+import { isStandardTypeName } from './autogen/types'
+import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -47,15 +50,10 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isStandardType(instance.refType) ? SCRIPT_ID : PATH]
-
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
   getElemIdFunc?: ElemIdGetter,
-  fetchTime?: Date,
-  serverTimeInstance?: InstanceElement,
 ): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (isSDFConfigType(type)) {
@@ -155,21 +153,57 @@ export const createInstanceElement = async (
     transformFunc: transformPrimitive,
     strict: false,
   })
-  const instance = new InstanceElement(
+  return new InstanceElement(
     instanceName,
     type,
     values,
     getInstancePath(instanceFileName),
   )
-  if (fetchTime !== undefined && serverTimeInstance !== undefined) {
-    const serviceId = getServiceId(instance)
-    if (serviceId !== undefined) {
-      serverTimeInstance.value.instancesFetchTime[serviceId] = fetchTime.toJSON()
-    } else {
-      log.warn('Instance %s has no serviceId so cannot save it\'s fetchTime', instance.elemID.getFullName())
-    }
-  }
-  return instance
+}
+
+export const createElements = async (
+  customizationInfos: CustomizationInfo[],
+  getElemIdFunc?: ElemIdGetter,
+): Promise<Array<InstanceElement | TypeElement>> => {
+  const { standardTypes, additionalTypes } = getMetadataTypes()
+
+  getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
+    .forEach(type => {
+      type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+    })
+
+  const customizationInfosWithTypes = customizationInfos
+    .map(customizationInfo => ({
+      customizationInfo,
+      type: isStandardTypeName(customizationInfo.typeName)
+        ? standardTypes[customizationInfo.typeName].type
+        : additionalTypes[customizationInfo.typeName],
+    }))
+    .filter(({ type }) => type !== undefined)
+
+  const allInstances = await awu(customizationInfosWithTypes)
+    .map(({ customizationInfo, type }) => createInstanceElement(
+      customizationInfo,
+      type,
+      getElemIdFunc,
+    ))
+    .toArray()
+
+  const [customRecordTypeInstances, instances] = _.partition(
+    allInstances,
+    instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE
+  )
+
+  const customRecordTypes = createCustomRecordTypes(
+    customRecordTypeInstances,
+    standardTypes.customrecordtype.type
+  )
+
+  return [
+    ...metadataTypesToList({ standardTypes, additionalTypes }),
+    ...instances,
+    ...customRecordTypes,
+  ]
 }
 
 export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):

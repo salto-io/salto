@@ -20,11 +20,12 @@ import _ from 'lodash'
 import { values, collections } from '@salto-io/lowerdash'
 import { ADDITIONAL_FILE_SUFFIX, SCRIPT_ID, PATH } from '../src/constants'
 import { getMetadataTypes, getTopLevelStandardTypes } from '../src/types'
+import { fieldTypes } from '../src/types/field_types'
 
 const { awu } = collections.asynciterable
 
 describe('Types', () => {
-  const { standardTypes, fieldTypes, additionalTypes } = getMetadataTypes()
+  const { standardTypes, additionalTypes } = getMetadataTypes()
   describe('StandardTypes', () => {
     it('should have a required SCRIPT_ID field with regex restriction for all custom types', () => {
       getTopLevelStandardTypes(standardTypes)

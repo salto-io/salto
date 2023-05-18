@@ -90,7 +90,7 @@ describe(customStatusesEnabledValidator.name, () => {
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Custom statuses are not enabled.',
-          detailedMessage: 'Cannot deploy custom statuses when they are not enabled in Zendesk.',
+          detailedMessage: 'Cannot deploy custom statuses when they are not enabled in the Zendesk account.',
         })
       })
     })

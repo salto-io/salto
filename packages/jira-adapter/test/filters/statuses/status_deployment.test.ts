@@ -195,52 +195,87 @@ describe('statusDeploymentFilter', () => {
       mockConnection.put.mockClear()
     })
     describe('should retry on failed to acquire lock error', () => {
-      it('modification', async () => {
-        mockConnection.put.mockResolvedValue({
-          status: 201,
-          data: [],
+      describe('failure', () => {
+        it('modification', async () => {
+          mockConnection.put.mockRejectedValue(new clientUtils.HTTPError('message', {
+            status: 409,
+            data: {
+              errorMessages: ['Failed to acquire lock'],
+            },
+          }))
+          const changes = [
+            toChange({ before: statusInstance, after: modifiedInstance }),
+          ]
+          const { deployResult } = await filter.deploy(changes)
+          expect(deployResult.appliedChanges).toHaveLength(0)
+          expect(deployResult.errors).toHaveLength(1)
+          expect(mockConnection.put).toHaveBeenCalledTimes(3)
         })
-        mockConnection.put.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-          status: 409,
-          data: {
-            errorMessages: ['Failed to acquire lock'],
-          },
-        }))
-        const changes = [
-          toChange({ before: statusInstance, after: modifiedInstance }),
-        ]
-        const { deployResult } = await filter.deploy(changes)
-        expect(deployResult.appliedChanges).toHaveLength(1)
-        expect(deployResult.errors).toHaveLength(0)
-        expect(mockConnection.put).toHaveBeenCalledTimes(2)
-        expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
-          .toEqual('jira.Status.instance.statusInstance')
+        it('addition', async () => {
+          mockConnection.post.mockRejectedValue(new clientUtils.HTTPError('message', {
+            status: 409,
+            data: {
+              errorMessages: ['Failed to acquire lock'],
+            },
+          }))
+          const changes = [
+            toChange({ after: additionInstance }),
+          ]
+          const { deployResult } = await filter.deploy(changes)
+          expect(mockConnection.post).toHaveBeenCalledTimes(3)
+          expect(additionInstance.value.id).not.toEqual('12345')
+          expect(deployResult.appliedChanges).toHaveLength(0)
+          expect(deployResult.errors).toHaveLength(1)
+        })
       })
-      it('addition', async () => {
-        mockConnection.post.mockResolvedValue({
-          status: 200,
-          data: [{
-            id: '12345',
-            name: 'addedStatus',
-            description: 'a new status',
-            statusCategory: 'DONE',
-          },
-          ],
+      describe('success', () => {
+        it('modification', async () => {
+          mockConnection.put.mockResolvedValue({
+            status: 201,
+            data: [],
+          })
+          mockConnection.put.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+            status: 409,
+            data: {
+              errorMessages: ['Failed to acquire lock'],
+            },
+          }))
+          const changes = [
+            toChange({ before: statusInstance, after: modifiedInstance }),
+          ]
+          const { deployResult } = await filter.deploy(changes)
+          expect(deployResult.appliedChanges).toHaveLength(1)
+          expect(deployResult.errors).toHaveLength(0)
+          expect(mockConnection.put).toHaveBeenCalledTimes(2)
+          expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
+            .toEqual('jira.Status.instance.statusInstance')
         })
-        mockConnection.post.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
-          status: 409,
-          data: {
-            errorMessages: ['Failed to acquire lock'],
-          },
-        }))
-        const changes = [
-          toChange({ after: additionInstance }),
-        ]
-        const { deployResult } = await filter.deploy(changes)
-        expect(mockConnection.post).toHaveBeenCalledTimes(2)
-        expect(additionInstance.value.id).toEqual('12345')
-        expect(deployResult.appliedChanges).toHaveLength(1)
-        expect(deployResult.errors).toHaveLength(0)
+        it('addition', async () => {
+          mockConnection.post.mockResolvedValue({
+            status: 200,
+            data: [{
+              id: '12345',
+              name: 'addedStatus',
+              description: 'a new status',
+              statusCategory: 'DONE',
+            },
+            ],
+          })
+          mockConnection.post.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+            status: 409,
+            data: {
+              errorMessages: ['Failed to acquire lock'],
+            },
+          }))
+          const changes = [
+            toChange({ after: additionInstance }),
+          ]
+          const { deployResult } = await filter.deploy(changes)
+          expect(mockConnection.post).toHaveBeenCalledTimes(2)
+          expect(additionInstance.value.id).toEqual('12345')
+          expect(deployResult.appliedChanges).toHaveLength(1)
+          expect(deployResult.errors).toHaveLength(0)
+        })
       })
     })
     it('should return applied changes with no errors', async () => {

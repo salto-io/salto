@@ -16,54 +16,58 @@
 
 import { DependencyChange, DependencyChanger, InstanceElement, ModificationChange, dependencyChange, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
 import { getParent } from '@salto-io/adapter-utils'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { ChangeWithKey } from './types'
 import { isActivationChange } from '../deployment'
 
-const isRelevantChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const { typeName } = getChangeData(change).elemID
-  return isModificationChange(change) && (typeName === APP_USER_SCHEMA_TYPE_NAME || typeName === APPLICATION_TYPE_NAME)
-}
-
 const createDependencyChange = (
-  appUserSchemaChange: {key: collections.set.SetId; change: ModificationChange<InstanceElement>},
-  appChanges: {key: collections.set.SetId; change: ModificationChange<InstanceElement>}[]
+  appUserSchemaChange: ChangeWithKey<ModificationChange<InstanceElement>>,
+  appChange: ChangeWithKey<ModificationChange<InstanceElement>> | undefined
 ): DependencyChange[] => {
-  const app = getParent(getChangeData(appUserSchemaChange.change))
-  const appChange = appChanges.filter(change =>
-    _.isEqual(getChangeData(change.change).elemID, app.elemID))
-    .filter(change => isActivationChange({ before: change.change.data.before.value.status,
-      after: change.change.data.after.value.status }))
-
-  return appChange.flatMap(change => [dependencyChange(
-    'add',
-    appUserSchemaChange.key,
-    change.key
-  ),
-  dependencyChange(
-    'remove',
-    change.key,
-    appUserSchemaChange.key
-  )])
+  if (appChange === undefined || !isActivationChange(
+    { before: appChange.change.data.before.value.status,
+      after: appChange.change.data.after.value.status }
+  )) {
+    return []
+  }
+  return [
+    dependencyChange('add', appUserSchemaChange.key, appChange.key),
+    dependencyChange('remove', appChange.key, appUserSchemaChange.key)]
 }
 
+/*
+* This dependency changer is used to replace the dependency from appUserSchema to app
+* because appUserSchema cannot be deployed with inactive app.
+* If the app status is been modified to active we want the app to be deployed before the appUserSchema
+*/
 export const changeDependenciesFromAppUserSchemaToApp: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
+    .filter(({ change }) => isModificationChange(change))
     .filter(
       (change): change is ChangeWithKey<ModificationChange<InstanceElement>> =>
         isInstanceChange(change.change)
     )
-    .filter(({ change }) => isModificationChange(change))
 
-  const [appUserSchemasChanges, appsChanges] = _.partition(instanceChanges
-    .filter(change => isRelevantChange(change.change)), change =>
-    getChangeData(change.change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME)
+  const [appUserSchemasChanges, appsChanges] = _.partition(
+    instanceChanges
+      .filter(change => [APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME]
+        .includes(getChangeData(change.change).elemID.typeName)),
+    change =>
+      getChangeData(change.change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
+  )
 
   if (_.isEmpty(appUserSchemasChanges) || _.isEmpty(appsChanges)) {
     return []
   }
-  return appUserSchemasChanges.flatMap(change => createDependencyChange(change, appsChanges))
+
+  const appChangeByApp = Object.fromEntries(appsChanges.map(appChange =>
+    [getChangeData(appChange.change).elemID.getFullName(), appChange]))
+
+  return appUserSchemasChanges.flatMap(change => {
+    const app = getParent(getChangeData(change.change))
+    const appChange = appChangeByApp[app.elemID.getFullName()]
+    return createDependencyChange(change, appChange)
+  })
 }

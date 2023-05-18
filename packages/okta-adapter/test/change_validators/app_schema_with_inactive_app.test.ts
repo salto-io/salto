@@ -17,7 +17,7 @@
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { OKTA, APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME } from '../../src/constants'
-import { appSchemaWithInActiveAppValidator } from '../../src/change_validators/app_schema_with_inactive_app'
+import { appUserSchemaWithInactiveAppValidator } from '../../src/change_validators/app_schema_with_inactive_app'
 
 describe('appSchemaWithInActiveAppValidator', () => {
   const appSchemaType = new ObjectType({ elemID: new ElemID(OKTA, APP_USER_SCHEMA_TYPE_NAME) })
@@ -51,7 +51,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
     const appUserSchema1After = appUserSchema1.clone()
     appUserSchema1After.value.definitions.custom.properties.property2 = {}
     const changes = [toChange({ before: appUserSchema1, after: appUserSchema1After })]
-    const changeErrors = await appSchemaWithInActiveAppValidator(changes)
+    const changeErrors = await appUserSchemaWithInactiveAppValidator(changes)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{
       elemID: appUserSchema1.elemID,
@@ -67,7 +67,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
     app1After.value.accessPolicy = 'changedAccessPolicyId'
     const changes = [toChange({ before: appUserSchema1, after: appUserSchema1After }),
       toChange({ before: app1, after: app1After })]
-    const changeErrors = await appSchemaWithInActiveAppValidator(changes)
+    const changeErrors = await appUserSchemaWithInactiveAppValidator(changes)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{
       elemID: appUserSchema1.elemID,
@@ -83,7 +83,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
     app1After.value.status = 'ACTIVE'
     const changes = [toChange({ before: appUserSchema1, after: appUserSchema1After }),
       toChange({ before: app1, after: app1After })]
-    const changeErrors = await appSchemaWithInActiveAppValidator(changes)
+    const changeErrors = await appUserSchemaWithInactiveAppValidator(changes)
     expect(changeErrors).toHaveLength(0)
   })
   it('should not return error when app becomes inactive after modification', async () => {
@@ -95,7 +95,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
     appUserSchema1After.value.definitions.custom.properties.property2 = {}
     const changes = [toChange({ before: appUserSchema1, after: appUserSchema1After }),
       toChange({ before: app2, after: app2After })]
-    const changeErrors = await appSchemaWithInActiveAppValidator(changes)
+    const changeErrors = await appUserSchemaWithInactiveAppValidator(changes)
     expect(changeErrors).toHaveLength(0)
   })
 })

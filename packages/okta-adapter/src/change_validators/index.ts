@@ -34,7 +34,7 @@ import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaConfig, PRIVATE_API_DEFINITIONS_CONFIG } from '../config'
-import { appSchemaWithInActiveAppValidator } from './app_schema_with_inactive_app'
+import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
@@ -68,7 +68,7 @@ export default ({
     roleAssignmentValidator,
     usersValidator(client, config),
     brandThemeFilesValidator,
-    appSchemaWithInActiveAppValidator,
+    appUserSchemaWithInactiveAppValidator,
   ]
 
   return createChangeValidator(validators)

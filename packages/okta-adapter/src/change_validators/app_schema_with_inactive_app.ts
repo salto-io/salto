@@ -14,22 +14,16 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
-const isRelevantChange = (change: ModificationChange<InstanceElement>): boolean => {
-  const { typeName } = getChangeData(change).elemID
-  return isModificationChange(change) && (typeName === APP_USER_SCHEMA_TYPE_NAME || typeName === APPLICATION_TYPE_NAME)
-}
-
 const isWithInactiveApp = (
   appUserSchemaChange: ModificationChange<InstanceElement>,
-  appChanges: ModificationChange<InstanceElement>[]
+  appChange: ModificationChange<InstanceElement> | undefined
 ): boolean => {
-  const app = getParent(getChangeData(appUserSchemaChange))
-  const appChange = appChanges.find(change =>
-    _.isEqual(getChangeData(change).elemID, app.elemID))
+  const app = getParents(getChangeData(appUserSchemaChange))
+    .filter(ref => ref.elemID.typeName === APPLICATION_TYPE_NAME)[0].value
   if (appChange === undefined) {
     return app.value.status === INACTIVE_STATUS
   }
@@ -39,17 +33,29 @@ const isWithInactiveApp = (
 /**
  * Verifies that appUserSchema is not modified when the app is inactive.
  */
-export const appSchemaWithInActiveAppValidator: ChangeValidator = async changes => {
-  const [appUserSchemaChanges, appChanges] = _.partition(changes
-    .filter(isInstanceChange)
-    .filter(isModificationChange)
-    .filter(isRelevantChange), change => getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME)
+export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async changes => {
+  const [appUserSchemaChanges, appChanges] = _.partition(
+    changes
+      .filter(isInstanceChange)
+      .filter(isModificationChange)
+      .filter(change => [APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME]
+        .includes(getChangeData(change).elemID.typeName)),
+    change => getChangeData(change).elemID.typeName === APP_USER_SCHEMA_TYPE_NAME
+  )
 
   if (_.isEmpty(appUserSchemaChanges)) {
     return []
   }
 
-  return appUserSchemaChanges.filter(change => isWithInactiveApp(change, appChanges))
+  const appChangesByApp = Object.fromEntries(appChanges.map(appChange =>
+    [getChangeData(appChange).elemID.getFullName(), appChange]))
+
+
+  return appUserSchemaChanges.filter(change => {
+    const app = getParents(getChangeData(change)).filter(ref => ref.elemID.typeName === APPLICATION_TYPE_NAME)[0].value
+    const appChange = appChangesByApp[app.elemID.getFullName()]
+    return isWithInactiveApp(change, appChange)
+  })
     .map(change => getChangeData(change))
     .map(appUserSchema => ({
       elemID: appUserSchema.elemID,

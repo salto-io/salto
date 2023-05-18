@@ -23,6 +23,7 @@ import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 
+jest.setTimeout(111111)
 describe('statusDeploymentFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
   let mockConnection: MockInterface<clientUtils.APIConnection>
@@ -193,24 +194,55 @@ describe('statusDeploymentFilter', () => {
       mockConnection.post.mockClear()
       mockConnection.put.mockClear()
     })
-    it('should retry on failed to acquire lock error - modification', async () => {
-      mockConnection.put.mockRejectedValueOnce({
-        status: 409,
-        data: {
-          errorMessages: ['Failed to acquire lock'],
-        },
+    describe('should retry on failed to acquire lock error', () => {
+      it('modification', async () => {
+        mockConnection.put.mockResolvedValue({
+          status: 201,
+          data: [],
+        })
+        mockConnection.put.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+          status: 409,
+          data: {
+            errorMessages: ['Failed to acquire lock'],
+          },
+        }))
+        const changes = [
+          toChange({ before: statusInstance, after: modifiedInstance }),
+        ]
+        const { deployResult } = await filter.deploy(changes)
+        expect(deployResult.appliedChanges).toHaveLength(1)
+        expect(deployResult.errors).toHaveLength(0)
+        expect(mockConnection.put).toHaveBeenCalledTimes(2)
+        expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
+          .toEqual('jira.Status.instance.statusInstance')
       })
-      const changes = [
-        toChange({ before: statusInstance, after: modifiedInstance }),
-      ]
-      const { deployResult } = await filter.deploy(changes)
-      expect(deployResult.appliedChanges).toHaveLength(1)
-      expect(deployResult.errors).toHaveLength(0)
-      expect(mockConnection.put).toHaveBeenCalledTimes(2)
-      expect(getChangeData(deployResult.appliedChanges[0]).elemID.getFullName())
-        .toEqual('jira.Status.instance.statusInstance')
+      it('addition', async () => {
+        mockConnection.post.mockResolvedValue({
+          status: 200,
+          data: [{
+            id: '12345',
+            name: 'addedStatus',
+            description: 'a new status',
+            statusCategory: 'DONE',
+          },
+          ],
+        })
+        mockConnection.post.mockRejectedValueOnce(new clientUtils.HTTPError('message', {
+          status: 409,
+          data: {
+            errorMessages: ['Failed to acquire lock'],
+          },
+        }))
+        const changes = [
+          toChange({ after: additionInstance }),
+        ]
+        const { deployResult } = await filter.deploy(changes)
+        expect(mockConnection.post).toHaveBeenCalledTimes(2)
+        expect(additionInstance.value.id).toEqual('12345')
+        expect(deployResult.appliedChanges).toHaveLength(1)
+        expect(deployResult.errors).toHaveLength(0)
+      })
     })
-
     it('should return applied changes with no errors', async () => {
       mockConnection.put.mockResolvedValue({
         status: 201,

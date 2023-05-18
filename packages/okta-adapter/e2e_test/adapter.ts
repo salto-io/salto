@@ -15,7 +15,7 @@
 */
 import { creds, CredsLease } from '@salto-io/e2e-credentials-store'
 import { logger } from '@salto-io/logging'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import OktaClient from '../src/client/client'
 import OktaAdapter, { OktaAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
@@ -32,15 +32,17 @@ export type Reals = {
 export type Opts = {
   adapterParams?: Partial<OktaAdapterParams>
   credentials: Credentials
+  elementsSource: ReadOnlyElementsSource
 }
 
-export const realAdapter = ({ adapterParams, credentials }: Opts, config?: OktaConfig): Reals => {
+export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts, config?: OktaConfig): Reals => {
   const client = (adapterParams && adapterParams.client)
     || new OktaClient({ credentials })
   const adapter = new OktaAdapter({
     client,
     config: config ?? DEFAULT_CONFIG,
-    elementsSource: buildElementsSourceFromElements([]),
+    elementsSource,
+    // TODO add admin client
   })
   return { client, adapter }
 }

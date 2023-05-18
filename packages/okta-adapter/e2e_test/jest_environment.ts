@@ -22,7 +22,6 @@ import {
 import { logger } from '@salto-io/logging'
 import { Credentials } from '../src/auth'
 
-
 const log = logger(module)
 
 export const credsSpec = (envName?: string): CredsSpec<Required<Credentials>> => {

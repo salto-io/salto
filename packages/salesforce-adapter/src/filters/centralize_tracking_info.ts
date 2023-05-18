@@ -110,7 +110,7 @@ const createHistoryTrackingFieldChange = (
 const filter: LocalFilterCreator = () => {
   let fieldsWithSyntheticChanges: Set<string> = new Set()
   return {
-    name: 'history_tracking',
+    name: 'centralizeTrackingInfo',
     onFetch: async elements => {
       await awu(elements)
         .filter(isObjectType)

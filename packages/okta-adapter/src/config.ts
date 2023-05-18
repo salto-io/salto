@@ -106,7 +106,7 @@ const POLICY_TYPE_NAME_TO_PARAMS: Record<PolicyTypeNames, PolicyParams> = {
 }
 
 const getPolicyItemsName = (policyName: string): string => (`${(policyName).slice(0, -1)}ies`)
-const getPolicyRuleItemsName = (policyRuleName: string):string => (`${policyRuleName}s`)
+const getPolicyRuleItemsName = (policyRuleName: string): string => (`${policyRuleName}s`)
 const getPolicyConfig = (): OktaSwaggerApiConfig['types'] => {
   const policiesConfig = Object.entries(POLICY_TYPE_NAME_TO_PARAMS).map(([typeName, details]) => {
     const policyRuleConfig = {
@@ -779,6 +779,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       dataField: '.',
       fieldTypeOverrides: [{ fieldName: 'contactTypes', fieldType: 'list<OrgContactTypeObj>' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -805,6 +806,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       standaloneFields: [{ fieldName: 'theme' }],
       nestStandaloneInstances: false,
       fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
+      serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {
       modify: {
@@ -822,6 +824,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      serviceUrl: '/admin/customizations/branding',
     },
     deployRequests: {
       modify: {
@@ -1200,6 +1203,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       dataField: '.',
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1214,6 +1218,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1400,6 +1405,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
       isSingleton: true,
       fieldsToHide: [{ fieldName: 'id' }],
       dataField: '.',
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1414,6 +1420,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1428,6 +1435,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1442,6 +1450,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/settings/account',
     },
     deployRequests: {
       modify: {
@@ -1456,6 +1465,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/customizations/other',
     },
     deployRequests: {
       modify: {
@@ -1470,6 +1480,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/customizations/other',
     },
     deployRequests: {
       modify: {
@@ -1485,6 +1496,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     transformation: {
       dataField: '.',
       isSingleton: true,
+      serviceUrl: '/admin/customizations/other',
     },
     deployRequests: {
       modify: {
@@ -1499,6 +1511,7 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
     },
     transformation: {
       isSingleton: true,
+      serviceUrl: '/admin/customizations/other',
     },
     deployRequests: {
       modify: {

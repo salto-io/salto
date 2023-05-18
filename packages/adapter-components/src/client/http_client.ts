@@ -201,6 +201,21 @@ export abstract class AdapterHTTPClient<
     }
 
     const { url, queryParams, headers, responseType } = params
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logResponse = (res: Response<any>): void => {
+      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
+        url,
+        method: method.toUpperCase(),
+        status: res.status,
+        queryParams,
+        response: Buffer.isBuffer(res.data)
+          ? `<omitted buffer of length ${res.data.length}>`
+          : this.clearValuesFromResponseData(res.data, url),
+        headers: this.extractHeaders(res.headers),
+      }))
+    }
+
     try {
       const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
         ? {
@@ -221,26 +236,20 @@ export abstract class AdapterHTTPClient<
           requestConfig,
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
-      const responseHeaders = this.extractHeaders(res.headers)
-      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
-        url,
-        queryParams,
-        response: Buffer.isBuffer(res.data) ? `<omitted buffer of length ${res.data.length}>` : this.clearValuesFromResponseData(res.data, url),
-        headers: responseHeaders,
-        method: method.toUpperCase(),
-      }))
+      logResponse(res)
       const { data, status } = res
       return {
         data,
         status,
-        headers: responseHeaders,
+        headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
-      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {
+        logResponse(e.response)
         throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, _.pick(e.response, ['status', 'data']))
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)

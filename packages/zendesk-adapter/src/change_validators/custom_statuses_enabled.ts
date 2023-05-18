@@ -27,7 +27,7 @@ const errorMsg = (reason: string): string => `Failed to run customStatusesEnable
 const areCustomStatusesEnabled = async (
   elementSource?: ReadOnlyElementsSource
 ): Promise<boolean> => {
-  if (elementSource == null) {
+  if (elementSource === undefined) {
     log.error(errorMsg('no element source was provided'))
     return true
   }

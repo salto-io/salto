@@ -18,6 +18,7 @@ import { getConfigTypes } from '../../src/suiteapp_config_elements'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../src/types'
 import filterCreator from '../../src/filters/suiteapp_config_elements'
 import { NETSUITE, SELECT_OPTION } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('configElements filter', () => {
   const [selectOptionType] = getConfigTypes()
@@ -86,7 +87,7 @@ describe('configElements filter', () => {
 
   describe('onFetch', () => {
     it('should transform type', async () => {
-      await filterCreator().onFetch([selectOptionType, type])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([selectOptionType, type])
       expect(isField(type.fields.configType)).toBeTruthy()
 
       expect(isField(type.fields.checkboxField)).toBeTruthy()
@@ -117,7 +118,7 @@ describe('configElements filter', () => {
       expect(type.annotations).toEqual({})
     })
     it('should transform instance values', async () => {
-      await filterCreator().onFetch([selectOptionType, instance, type])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([selectOptionType, instance, type])
       expect(instance.value).toEqual({
         configType,
         checkboxField: true,
@@ -132,7 +133,7 @@ describe('configElements filter', () => {
     })
     it('should not transform when missing fieldsDef', async () => {
       type.annotations = {}
-      await filterCreator().onFetch([selectOptionType, instance, type])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([selectOptionType, instance, type])
       expect(type.fields).toEqual({})
       expect(instance.value).toEqual({})
     })
@@ -168,7 +169,7 @@ describe('configElements filter', () => {
           },
         },
       }
-      await filterCreator().onFetch([selectOptionType, instance, type])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([selectOptionType, instance, type])
       expect(instance.value).toEqual({
         checkboxField: 'TRUE',
         emailField: false,
@@ -179,11 +180,11 @@ describe('configElements filter', () => {
 
   describe('preDeploy', () => {
     beforeEach(async () => {
-      await filterCreator().onFetch([selectOptionType, instance, type])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([selectOptionType, instance, type])
     })
     it('should transform instance values', async () => {
       instance.value.textField = 'do_not_ignore'
-      await filterCreator().preDeploy([toChange({ after: instance })])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([toChange({ after: instance })])
       expect(instance.value).toEqual({
         configType,
         checkboxField: true,

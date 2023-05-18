@@ -387,11 +387,13 @@ export const createCustomTypeFromCustomObjectInstance = async ({
   typesFromInstance = DEFAULT_TYPES_FROM_INSTANCE,
   fieldsToSkip = [],
   metadataType: objectMetadataType,
+  skipAliases,
 }: {
   instance: InstanceElement
   typesFromInstance?: TypesFromInstance
   fieldsToSkip?: string[]
   metadataType?: string
+  skipAliases: boolean
 }): Promise<ObjectType> => {
   const name = instance.value[INSTANCE_FULL_NAME_FIELD]
   const label = instance.value[LABEL]
@@ -424,18 +426,23 @@ export const createCustomTypeFromCustomObjectInstance = async ({
         object.fields[field.name] = field
       }
     })
+  if (!skipAliases && _.isString(label)) {
+    object.annotations[CORE_ANNOTATIONS.ALIAS] = label
+  }
   return object
 }
 
 const createFromInstance = async (
   instance: InstanceElement,
   typesFromInstance: TypesFromInstance,
+  skipAliases: boolean,
   fieldsToSkip?: string[],
 ): Promise<Element[]> => {
   const object = await createCustomTypeFromCustomObjectInstance({
     instance,
     typesFromInstance,
     fieldsToSkip,
+    skipAliases,
   })
   const nestedMetadataInstances = await createNestedMetadataInstances(instance, object,
     typesFromInstance.nestedMetadataTypes)
@@ -836,7 +843,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => {
       )
 
       await awu(customObjectInstances)
-        .flatMap(instance => createFromInstance(instance, typesFromInstance, fieldsToSkip))
+        .flatMap(instance => createFromInstance(instance, typesFromInstance, config.fetchProfile.isFeatureEnabled('skipAliases'), fieldsToSkip))
         // Make sure we do not override existing metadata types with custom objects
         // this can happen with standard objects having the same name as a metadata type
         .filter(elem => !existingElementIDs.has(elem.elemID.getFullName()))

@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, Element, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import { InstanceElement, Element } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE, PRIORITY_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import { findType } from '../../utils'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
-import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
+import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createFilterValues } from './filter'
 import { createPrioritySchemeValues } from './priorityScheme'
 import { createWorkflowValues } from './workflow'
@@ -28,18 +28,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     randomString,
     findType('FieldConfiguration', fetchedElements),
     createFieldConfigurationValues(randomString),
-  )
-
-  const fieldConfigurationItem = new InstanceElement(
-    `${randomString}_Component_s__array_duu@uuuum`,
-    findType('FieldConfigurationItem', fetchedElements),
-    createFieldConfigurationItemValues(fetchedElements),
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(fieldConfiguration.elemID, fieldConfiguration),
-      ],
-    }
   )
 
   const automation = new InstanceElement(
@@ -80,7 +68,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
 
   return [
     [fieldConfiguration],
-    [fieldConfigurationItem],
     [automation],
     [workflow],
     [kanbanBoard],

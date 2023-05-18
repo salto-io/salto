@@ -28,7 +28,8 @@ import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
-import { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/deploy_xml_utils'
+import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
@@ -46,126 +47,14 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
   new Graph(),
 ]
 
-
-const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
-const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
-const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
-const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
-
-const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-<frameworkversion>1.0</frameworkversion>
-<dependencies>
-  <features>
-    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
-    <feature required="true">SFA</feature>
-    <feature required="true">MULTICURRENCYVENDOR</feature>
-    <feature required="true">ACCOUNTING</feature>
-    <feature required="true">SUBSCRIPTIONBILLING</feature>
-    <feature required="true">ADDRESSCUSTOMIZATION</feature>
-    <feature required="true">WMSSYSTEM</feature>
-    <feature required="true">SUBSIDIARIES</feature>
-    <feature required="true">RECEIVABLES</feature>
-    <feature required="true">BILLINGACCOUNTS</feature>
-  </features>
-  <objects>
-    <object>custentity2edited</object>
-    <object>custentity13</object>
-    <object>custentity_14</object>
-    <object>custentity10</object>
-    <object>custentitycust_active</object>
-    <object>custentity11</object>
-    <object>custentity_slt_tax_reg</object>
-  </objects>
-  <files>
-    <file>/SuiteScripts/clientScript_2_0.js</file>
-  </files>
-</dependencies>
-</manifest>`
-
-const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-  <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-  <frameworkversion>1.0</frameworkversion>
-  <dependencies>
-    <features>
-      <feature required="true">SFA</feature>
-      <feature required="true">MULTICURRENCYVENDOR</feature>
-      <feature required="true">ACCOUNTING</feature>
-      <feature required="true">ADDRESSCUSTOMIZATION</feature>
-      <feature required="true">SUBSIDIARIES</feature>
-      <feature required="true">RECEIVABLES</feature>
-    </features>
-    <objects>
-      <object>custentity2edited</object>
-      <object>custentity13</object>
-      <object>custentity_14</object>
-      <object>custentity10</object>
-      <object>custentitycust_active</object>
-      <object>custentity11</object>
-      <object>custentity_slt_tax_reg</object>
-    </objects>
-    <files>
-      <file>/SuiteScripts/clientScript_2_0.js</file>
-    </files>
-  </dependencies>
-</manifest>
-`
-
-const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
-
-const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
-    <configuration>
-        <path>~/AccountConfiguration/*</path>
-    </configuration>
-    <files>
-        <path>~/FileCabinet/*</path>
-    </files>
-    <objects>
-        <path>~/Objects/*</path>
-    </objects>
-    <translationimports>
-        <path>~/Translations/*</path>
-    </translationimports>
-</deploy>
-`
-
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
-  readFile: jest.fn().mockImplementation(filePath => {
-    if (filePath.includes('.template.')) {
-      return MOCK_TEMPLATE_CONTENT
-    }
-    if (filePath.endsWith(MOCK_FILE_PATH)) {
-      return 'dummy file content'
-    }
-    if (filePath.endsWith(MOCK_FILE_ATTRS_PATH)) {
-      return '<file><description>file description</description></file>'
-    }
-    if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
-      return '<folder><description>folder description</description></folder>'
-    }
-
-    if (filePath.endsWith('manifest.xml')) {
-      return MOCK_MANIFEST_INVALID_DEPENDENCIES
-    }
-    if (filePath.endsWith('/features.xml')) {
-      return MOCK_FEATURES_XML
-    }
-    if (filePath.endsWith('/deploy.xml')) {
-      return MOCK_ORIGINAL_DEPLOY_XML
-    }
-    return `<addressForm filename="${filePath.split('/').pop()}">`
-  }),
+  readDir: jest.fn().mockImplementation(() => readDirMockFunction()),
+  readFile: jest.fn().mockImplementation(path => readFileMockFunction(path)),
   writeFile: jest.fn(),
   rename: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
-  stat: jest.fn().mockImplementation(filePath => {
-    if (filePath.endsWith(MOCK_FILE_PATH)) {
-      return { size: 33 }
-    }
-    return { size: 0 }
-  }),
+  stat: jest.fn().mockImplementation(path => statMockFunction(path)),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
@@ -406,7 +295,7 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -604,6 +493,52 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
+    it('should NOT exclude types with too many instances', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const ids = [
+          { type: 'addressForm', scriptId: 'a' },
+          { type: 'addressForm', scriptId: 'b' },
+          { type: 'addressForm', scriptId: 'c' },
+          { type: 'addressForm', scriptId: 'd' },
+          { type: 'advancedpdftemplate', scriptId: 'd' },
+        ]
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const client = mockClient({}, (_type: string, count: number) => count > 3)
+      await client.getCustomObjects(typeNames, typeNamesQuery)
+      // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
+      const numberOfExecuteActions = 6
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions + 1)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'addressForm',
+      }))
+      expect(mockExecuteAction.mock.calls[3 + 1][0].arguments).toEqual(expect.objectContaining({
+        type: 'advancedpdftemplate',
+        scriptid: 'd',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5 + 1, importConfigurationCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions + 1, deleteAuthIdCommandMatcher)
+    })
+
     it('should succeed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -627,7 +562,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -697,7 +632,7 @@ describe('sdf client', () => {
         failedTypes,
       } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
@@ -859,6 +794,7 @@ describe('sdf client', () => {
           savedcsvimport: ['c'],
           advancedpdftemplate: ['a'],
         },
+        excludedTypes: [],
       })
     })
 
@@ -913,6 +849,7 @@ describe('sdf client', () => {
         unexpectedError: {
           addressForm: ['a', 'b'],
         },
+        excludedTypes: [],
       })
     })
 

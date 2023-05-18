@@ -19,20 +19,26 @@ import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../../src/constants'
 import fieldConfigurationItemsFilter from '../../../src/filters/field_configuration/field_configuration_items'
+import { getDefaultConfig, JiraConfig } from '../../../src/config/config'
 import { getFilterParams, mockClient } from '../../utils'
 
 describe('fieldConfigurationItemsFilter', () => {
   let filter: filterUtils.FilterWith<'deploy'>
   let type: ObjectType
   let mockConnection: MockInterface<clientUtils.APIConnection>
+  let config: JiraConfig
 
   beforeEach(async () => {
     const { client, paginator, connection } = mockClient()
     mockConnection = connection
 
+    config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
+    config.fetch.splitFieldConfiguration = true
+
     filter = fieldConfigurationItemsFilter(getFilterParams({
       client,
       paginator,
+      config,
     })) as typeof filter
 
     type = new ObjectType({
@@ -110,6 +116,15 @@ describe('fieldConfigurationItemsFilter', () => {
     it('should not deploy if there are no items', async () => {
       await filter.deploy([])
       expect(mockConnection.put).not.toHaveBeenCalledWith()
+    })
+
+    it('should do nothing when splitFieldConfiguration is disabled', async () => {
+      config.fetch.splitFieldConfiguration = false
+      const { deployResult, leftoverChanges } = await filter.deploy(changes)
+
+      expect(deployResult.appliedChanges).toHaveLength(0)
+      expect(deployResult.errors).toHaveLength(0)
+      expect(leftoverChanges).toHaveLength(changes.length)
     })
   })
 })

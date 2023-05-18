@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { isInstanceElement, isObjectType, Values } from '@salto-io/adapter-api'
 import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { FieldToOmitParams } from '../query'
 import { CUSTOM_RECORD_TYPE } from '../constants'
 import { isCustomRecordType } from '../types'
@@ -28,7 +28,7 @@ const { isFullRegexMatch } = regex
 
 const FIELDS_TO_OMIT: FieldToOmitParams[] = []
 
-const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'omitFieldsFilter',
   onFetch: async elements => {
     const fieldsToOmit = FIELDS_TO_OMIT.concat(config.fetch?.fieldsToOmit ?? [])

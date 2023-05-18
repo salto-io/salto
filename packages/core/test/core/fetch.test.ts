@@ -436,6 +436,22 @@ describe('fetch', () => {
         )
       })
 
+      it('should return a config message which includes the account name', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          [],
+        )
+        expect(fetchChangesResult.accountNameToConfigMessage).toBeDefined()
+        const configSuggestionsMessages = Object.values(
+          fetchChangesResult.accountNameToConfigMessage as Record<string, string>
+        )
+        expect(configSuggestionsMessages).toHaveLength(1)
+        expect(configSuggestionsMessages[0]).toMatch(newTypeDifferentAdapterID.adapter)
+      })
+
       it('should return empty plan when there is no change', async () => {
         const fetchChangesResult = await fetchChanges(
           mockAdapters,

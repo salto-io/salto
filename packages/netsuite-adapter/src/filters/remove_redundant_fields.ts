@@ -17,7 +17,7 @@ import { getDeepInnerType, isInstanceElement, isObjectType } from '@salto-io/ada
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { transformValues } from '@salto-io/adapter-utils'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isDataObjectType } from '../types'
 
 const { awu } = collections.asynciterable
@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 const REDUNDANT_TYPES = ['NullField', 'CustomFieldList', 'CustomFieldRef']
 const REDUNDANT_FIELDS = ['lastModifiedDate', 'dateCreated', 'createdDate', 'daysOverdue']
 
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'redundantFields',
   onFetch: async elements => {
     await awu(elements)

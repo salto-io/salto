@@ -283,6 +283,7 @@ type GetEntriesParams = {
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
+  reversedSupportedTypes: Record<string, string[]>
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
@@ -303,7 +304,7 @@ const getEntriesForType = async (
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs,
+    requestContext, nestedFieldFinder, computeGetArgs, reversedSupportedTypes,
   } = params
   const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -361,7 +362,7 @@ const getEntriesForType = async (
   const { objType, extractValues } = await getType()
 
   const getEntries = async (): Promise<Values[]> => {
-    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
+    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext, reversedSupportedTypes)
 
     const results = (await Promise.all(args.map(
       async getArgs => ((await toArrayAsync(paginator(
@@ -497,6 +498,14 @@ export const getAllInstances = async ({
 }): Promise<FetchElements<InstanceElement[]>> => {
   const { types, typeDefaults } = apiConfig
 
+  const reversedSupportedTypes = _(
+    Object.entries(supportedTypes)
+      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
+  )
+    .groupBy(entry => entry.wrapperType)
+    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
+    .value()
+
   const elementGenerationParams = {
     paginator,
     typesConfig: types,
@@ -505,6 +514,7 @@ export const getAllInstances = async ({
     nestedFieldFinder,
     computeGetArgs,
     getElemIdFunc,
+    reversedSupportedTypes,
   }
 
   return getElementsWithContext<InstanceElement>({

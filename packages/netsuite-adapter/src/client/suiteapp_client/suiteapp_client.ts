@@ -33,13 +33,13 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
-import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
+import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
 
@@ -119,7 +119,7 @@ export default class SuiteAppClient {
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
-    this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
+    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter)
 
     this.axiosClient = axios.create({ timeout:
       (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000 })
@@ -247,7 +247,7 @@ export default class SuiteAppClient {
             return new ReadFileEncodingError(`Received file encoding error: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           log.warn(`Received file read error: ${JSON.stringify(file.error, undefined, 2)}`)
-          if (file.error.name === 'INSUFFICIENT_PERMISSION') {
+          if (file.error.name === INSUFFICIENT_PERMISSION_ERROR) {
             return new ReadFileInsufficientPermissionError(`No permission for reading file: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           return new ReadFileError(`Received an error while tried to read file: ${JSON.stringify(file.error, undefined, 2)}`)
@@ -351,7 +351,11 @@ export default class SuiteAppClient {
   }
 
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
-    const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
+    const client = new SuiteAppClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: () => false,
+    })
     await client.sendRestletRequest('sysInfo')
   }
 
@@ -559,20 +563,20 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     return this.soapClient.getAllRecords(types)
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.updateInstances(instances)
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.addInstances(instances)
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.addInstances(instances, hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {

@@ -23,30 +23,34 @@ describe('custom records', () => {
   describe('getCustomRecords', () => {
     const client: Pick<NetsuiteClient, 'isSuiteAppConfigured' | 'getCustomRecords' | 'runSuiteQL'> = {
       isSuiteAppConfigured: () => true,
-      getCustomRecords: async () => ([{
-        type: 'custrecord1',
-        records: [{
-          scriptId: 'val_111',
-          attributes: {
-            internalId: '1',
+      getCustomRecords: async () => ({
+        customRecords: [
+          { type: 'custrecord1',
+            records: [{
+              scriptId: 'val_111',
+              attributes: {
+                internalId: '1',
+              },
+            }, {
+              attributes: {
+                internalId: '2',
+              },
+            }, {
+              attributes: {
+                internalId: '3',
+              },
+            }, {
+              attributes: {
+                internalId: '4',
+              },
+            }] },
+          {
+            type: 'custrecord2',
+            records: [],
           },
-        }, {
-          attributes: {
-            internalId: '2',
-          },
-        }, {
-          attributes: {
-            internalId: '3',
-          },
-        }, {
-          attributes: {
-            internalId: '4',
-          },
-        }],
-      }, {
-        type: 'custrecord2',
-        records: [],
-      }]),
+        ],
+        largeTypesError: [],
+      }),
       runSuiteQL: async _query => ([
         { id: '1', scriptid: 'val_1' },
         { id: '2', scriptid: 'val_2' },
@@ -83,7 +87,7 @@ describe('custom records', () => {
       }),
     ]
     it('should return elements', async () => {
-      const instances = await getCustomRecords(
+      const { elements: instances } = await getCustomRecords(
         client as unknown as NetsuiteClient,
         customRecordTypes,
         query as unknown as NetsuiteQuery,

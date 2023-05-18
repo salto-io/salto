@@ -277,10 +277,8 @@ SuiteAppFileCabinetOperations => {
     folderIdsToQuery: string[]
   ): Promise<FileResult[]> => retryOnRetryableError(async () => {
     const fileCriteria = 'hideinbundle = \'F\''
-    const whereQueries = folderIdsToQuery.length > 0
-      ? _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-        `${fileCriteria} AND folder IN (${foldersToQueryChunk.join(', ')})`)
-      : [fileCriteria]
+    const whereQueries = _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
+      `${fileCriteria} AND folder IN (${foldersToQueryChunk.join(', ')})`)
     const results = await Promise.all(whereQueries.map(async whereQuery => {
       const filesResults = await suiteAppClient.runSuiteQL(
         'SELECT name, id, filesize, bundleable, isinactive, isonline,'
@@ -375,13 +373,16 @@ SuiteAppFileCabinetOperations => {
       const subFoldersResults = await querySubFolders(topLevelFoldersResults)
       const foldersResults = topLevelFoldersResults.concat(subFoldersResults)
       const idToFolder = _.keyBy(foldersResults, folder => folder.id)
-      const filteredFolderResults = removeResultsWithoutParentFolder(foldersResults)
-        .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder }))
+      const [filteredFolderResults, removedFolders] = _.partition(
+        removeResultsWithoutParentFolder(foldersResults)
+          .map(folder => ({ path: fullPathParts(folder, idToFolder), ...folder })),
         // remove excluded folders before creating the query
-        .filter(folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`))
-      const filesResults = await queryFiles(
-        filteredFolderResults.map(folder => folder.id)
+        folder => query.isFileMatch(`${fullPath(folder.path)}${FILE_CABINET_PATH_SEPARATOR}`)
       )
+      log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
+      const filesResults = filteredFolderResults.length > 0 ? await queryFiles(
+        filteredFolderResults.map(folder => folder.id)
+      ) : []
       const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
         .map(file => ({ path: [...fullPathParts(idToFolder[file.folder], idToFolder), file.name], ...file }))
         .filter(file => query.isFileMatch(fullPath(file.path)))

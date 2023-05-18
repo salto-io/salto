@@ -69,6 +69,9 @@ export type WriteResponse = WriteResponseSuccess | WriteResponseError
 export const isWriteResponseSuccess = (result: WriteResponse): result is WriteResponseSuccess =>
   result.status.attributes.isSuccess === 'true'
 
+export const isWriteResponseError = (result: WriteResponse): result is WriteResponseError =>
+  result.status.attributes.isSuccess === 'false'
+
 
 export type DeployListSuccess = {
   writeResponseList: {
@@ -104,6 +107,16 @@ export type SearchResponse = {
   }
 }
 
+export type SoapSearchType = {
+  type: string
+  subtypes?: string[]
+}
+
+export type SearchPageResponse = {
+  records: RecordValue[]
+  excludedFromSearch: boolean
+}
+
 export type SearchErrorResponse = {
   searchResult: {
     status: {
@@ -128,10 +141,17 @@ export type GetAllResponse = {
   }
 }
 
-export type CustomRecordTypeRecords = {
+type CustomRecordTypeRecords = {
   type: string
   records: RecordValue[]
 }
+
+export type CustomRecordResponse = {
+  customRecords: CustomRecordTypeRecords[]
+  largeTypesError: string[]
+}
+
+export type RecordResponse = { records: RecordValue[]; largeTypesError: string[] }
 
 export const SOAP_FIELDS_TYPES = {
   BOOLEAN: 'platformCore:BooleanCustomFieldRef',

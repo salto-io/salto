@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
@@ -88,11 +88,11 @@ export const isError = (results: RestletResults): results is RestletErrorResults
 
 export type HttpMethod = 'POST' | 'GET'
 
-
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig
   globalLimiter: Bottleneck
+  instanceLimiter: InstanceLimiterFunc
 }
 
 export type SavedSearchQuery = {
@@ -319,6 +319,8 @@ export type FailSetConfig = {
 }
 
 export type SetConfigResult = (SuccessSetConfig | FailSetConfig)[]
+
+export type HasElemIDFunc = (elemID: ElemID) => Promise<boolean>
 
 export const isSuccessSetConfig = (
   result: SuccessSetConfig | FailSetConfig

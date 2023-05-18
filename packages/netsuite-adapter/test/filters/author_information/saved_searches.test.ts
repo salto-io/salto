@@ -19,14 +19,14 @@ import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../../src/types'
 import filterCreator from '../../../src/filters/author_information/saved_searches'
 import { NETSUITE, SAVED_SEARCH } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
-import { FilterOpts } from '../../../src/filter'
+import { RemoteFilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import 'moment-timezone'
 
 describe('netsuite saved searches author information tests', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: RemoteFilterOpts
   let elements: InstanceElement[]
   let savedSearch: InstanceElement
   let missingSavedSearch: InstanceElement

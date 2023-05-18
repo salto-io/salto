@@ -30,10 +30,10 @@ const fullNameChangeError = (change: ModificationChange<InstanceElement>): Chang
   return {
     elemID: after.elemID,
     severity: 'Error',
-    message: 'You cannot change the fullName property of an element. '
-      + `The fullName property of '${after.elemID.getFullName()}' was changed from `
-      + `'${before.value[INSTANCE_FULL_NAME_FIELD]}' to '${after.value[INSTANCE_FULL_NAME_FIELD]}'`,
-    detailedMessage: 'You cannot change the fullName property of an element.',
+    message: 'You cannot change the fullName property of an element.',
+    detailedMessage: 'You cannot change the fullName property of an element. '
+    + `The fullName property of '${after.elemID.getFullName()}' was changed from `
+    + `'${before.value[INSTANCE_FULL_NAME_FIELD]}' to '${after.value[INSTANCE_FULL_NAME_FIELD]}'`,
   }
 }
 

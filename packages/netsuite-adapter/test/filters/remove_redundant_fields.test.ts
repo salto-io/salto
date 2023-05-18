@@ -16,6 +16,7 @@
 import { ElemID, ObjectType, BuiltinTypes, ListType, InstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/remove_redundant_fields'
 import { NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('removeRedundantFields', () => {
   const typeToRemove = new ObjectType({ elemID: new ElemID(NETSUITE, 'NullField') })
@@ -34,7 +35,7 @@ describe('removeRedundantFields', () => {
     elements = [typeToRemove, typeWithFieldToRemove]
   })
   it('should remove the types and the fields', async () => {
-    await filterCreator().onFetch?.(elements)
+    await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
     expect(elements.length).toEqual(1)
     expect(typeWithFieldToRemove.fields.fieldToRemove).toBeUndefined()
     expect(typeWithFieldToRemove.fields.listToRemove).toBeUndefined()
@@ -50,7 +51,7 @@ describe('removeRedundantFields', () => {
         shouldNotRemove: 'bbb',
       }
     )
-    await filterCreator().onFetch([instance])
+    await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
     expect(instance.value).toEqual({ shouldNotRemove: 'bbb' })
   })
 })

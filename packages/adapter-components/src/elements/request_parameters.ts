@@ -19,7 +19,7 @@ import { resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { ClientGetWithPaginationParams } from '../client'
-import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER, UrlParams } from '../config/request'
+import { FetchRequestConfig, ARG_PLACEHOLDER_MATCHER, UrlParams, DependsOnConfig } from '../config/request'
 
 const { isDefined } = lowerdashValues
 const log = logger(module)
@@ -30,6 +30,7 @@ export type ComputeGetArgsFunc = (
   request: FetchRequestConfig,
   contextElements?: Record<string, Element[]>,
   requestContext?: Record<string, unknown>,
+  reversedSupportedTypes?: Record<string, string[]>,
 ) => ClientGetWithPaginationParams[]
 
 /**
@@ -66,12 +67,27 @@ export const replaceUrlParams = (url: string, paramValues: Record<string, unknow
   )
 )
 
+const getContextInstances = (
+  referenceDetails: DependsOnConfig,
+  contextElements: Record<string, Element[]>,
+  reversedSupportedTypes?: Record<string, string[]>,
+): InstanceElement[] => {
+  const fromType = referenceDetails.from.type
+  const itemTypes = reversedSupportedTypes?.[fromType]
+  return (contextElements[fromType] ?? [])
+    .filter(isInstanceElement)
+    // The relevant context instances are of the types correspond to the page type in SupportedTypes,
+    // fallback to all instances if the mapping is missing from SupportedTypess
+    .filter(instance => (itemTypes !== undefined ? itemTypes.includes(instance.elemID.typeName) : true))
+}
+
 const computeDependsOnURLs = (
   {
     url,
     dependsOn,
   }: FetchRequestConfig,
   contextElements?: Record<string, Element[]>,
+  reversedSupportedTypes?: Record<string, string[]>,
 ): string[] => {
   if (!url.includes('{')) {
     return [url]
@@ -92,9 +108,7 @@ const computeDependsOnURLs = (
       log.error('could not resolve path param %s in url %s with dependsOn config %s', argName, url, safeJsonStringify(dependsOn))
       throw new Error(`could not resolve path param ${argName} in url ${url}`)
     }
-    const contextInstances = (contextElements[referenceDetails.from.type] ?? []).filter(
-      isInstanceElement
-    )
+    const contextInstances = getContextInstances(referenceDetails, contextElements, reversedSupportedTypes)
     if (contextInstances.length === 0) {
       log.warn(`no instances found for ${referenceDetails.from.type}, cannot call endpoint ${url}`)
     }
@@ -137,7 +151,8 @@ export const createUrl = ({
 export const computeGetArgs: ComputeGetArgsFunc = (
   args,
   contextElements,
-  requestContext
+  requestContext,
+  reversedSupportedTypes,
 ) => {
   // Replace known url params
   const baseUrl = requestContext !== undefined
@@ -147,6 +162,7 @@ export const computeGetArgs: ComputeGetArgsFunc = (
   const urls = computeDependsOnURLs(
     { url: baseUrl, dependsOn: args.dependsOn },
     contextElements,
+    reversedSupportedTypes,
   )
   return urls.flatMap(url => simpleGetArgs({ ...args, url }, contextElements))
 }

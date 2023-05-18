@@ -124,6 +124,9 @@ describe('Custom Objects to Object Type filter', () => {
       filter = filterCreator({
         config: {
           ...defaultFilterContext,
+          fetchProfile: buildFetchProfile({
+            optionalFeatures: { skipAliases: false },
+          }),
           unsupportedSystemFields: ['UnsupportedField'],
           systemFields: ['SystemField', 'NameSystemField'],
         },
@@ -135,6 +138,7 @@ describe('Custom Objects to Object Type filter', () => {
         customObjectType,
         {
           [INSTANCE_FULL_NAME_FIELD]: 'Case',
+          [LABEL]: 'Case',
           fields: [
             {
               [INSTANCE_FULL_NAME_FIELD]: 'ExtraSalt',
@@ -355,7 +359,7 @@ describe('Custom Objects to Object Type filter', () => {
         expect(field.refType.type).toBe(Types.primitiveDataTypes.Unknown)
       })
 
-      it('should fetch sobject with apiName and metadataType service ids', async () => {
+      it('should fetch sobject with correct annotations', async () => {
         await filter.onFetch(result)
         const caseObj = findElements(result, 'Case').pop() as ObjectType
         expect(isServiceId((await caseObj.getAnnotationTypes())[API_NAME]))
@@ -364,6 +368,12 @@ describe('Custom Objects to Object Type filter', () => {
           .toEqual(true)
         expect(caseObj.annotations[API_NAME]).toEqual('Case')
         expect(caseObj.annotations[METADATA_TYPE]).toEqual(CUSTOM_OBJECT)
+        expect(caseObj.annotations).toEqual(expect.objectContaining({
+          [API_NAME]: 'Case',
+          [METADATA_TYPE]: CUSTOM_OBJECT,
+          [LABEL]: 'Case',
+          [CORE_ANNOTATIONS.ALIAS]: 'Case',
+        }))
       })
 
       it('should keep internal annotations if they appear in a field', async () => {

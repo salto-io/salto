@@ -40,9 +40,12 @@ export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
 }
 
+export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomizationInfo
+
 export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
+  excludedTypes: string[]
 }
 
 export type GetCustomObjectsResult = {
@@ -58,7 +61,7 @@ export type FailedFiles = {
 }
 
 export type ImportFileCabinetResult = {
-  elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
+  elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
 }
 
@@ -78,6 +81,16 @@ export type ImportObjectsResult = {
   errorImports: unknown
   successfulImports: unknown
   failedImports: FailedImport[]
+}
+
+export type DataElementsResult = {
+  elements: (ObjectType | InstanceElement)[]
+  largeTypesError: string[]
+}
+
+export type CustomRecordResult = {
+  elements: InstanceElement[]
+  largeTypesError: string[]
 }
 
 type OptionalFeature = { status: 'optional'; canBeRequired: boolean }

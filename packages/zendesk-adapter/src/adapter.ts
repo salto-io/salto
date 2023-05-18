@@ -136,6 +136,7 @@ import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
+import localeFilter from './filters/locale'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -183,6 +184,7 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  localeFilter,
   // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,

@@ -61,7 +61,7 @@ import customRecordTypesType from './filters/custom_record_types'
 import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
-import { Filter, FilterCreator } from './filter'
+import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
@@ -70,6 +70,7 @@ import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import getChangeValidator from './change_validator'
+import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
@@ -84,11 +85,59 @@ const { awu } = collections.asynciterable
 
 const log = logger(module)
 
+export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition)[] = [
+  { creator: customRecordTypesType },
+  { creator: omitSdfUntypedValues },
+  { creator: dataInstancesIdentifiers },
+  { creator: dataInstancesDiff },
+  // addParentFolder must run before replaceInstanceReferencesFilter
+  { creator: addParentFolder },
+  { creator: parseReportTypes },
+  { creator: convertLists },
+  { creator: consistentValues },
+  // convertListsToMaps must run after convertLists and consistentValues
+  // and must run before replaceInstanceReferencesFilter
+  { creator: convertListsToMaps },
+  { creator: replaceElementReferences },
+  { creator: currencyUndeployableFieldsFilter },
+  { creator: SDFInternalIds, addsNewInformation: true },
+  { creator: dataInstancesAttributes },
+  { creator: redundantFields },
+  { creator: hiddenFields },
+  { creator: replaceRecordRef },
+  { creator: dataTypesCustomFields },
+  { creator: dataInstancesCustomFields },
+  { creator: dataInstancesNullFields },
+  { creator: removeUnsupportedTypes },
+  { creator: dataInstancesReferences },
+  { creator: dataInstancesInternalId },
+  { creator: suiteAppInternalIds },
+  { creator: currencyExchangeRate },
+  // AuthorInformation filters must run after SDFInternalIds filter
+  { creator: systemNoteAuthorInformation, addsNewInformation: true },
+  // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
+  { creator: savedSearchesAuthorInformation, addsNewInformation: true },
+  { creator: translationConverter },
+  { creator: accountSpecificValues },
+  { creator: suiteAppConfigElementsFilter },
+  { creator: configFeaturesFilter },
+  { creator: customRecordsFilter },
+  // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
+  { creator: serviceUrls, addsNewInformation: true },
+  // omitFieldsFilter should be the last onFetch filter to run
+  { creator: omitFieldsFilter },
+  // additionalChanges should be the first preDeploy filter to run
+  { creator: additionalChanges },
+]
+
+// By default we run all filters and provide a client
+const defaultFilters = allFilters.map(({ creator }) => creator)
+
 export interface NetsuiteAdapterParams {
   client: NetsuiteClient
   elementsSource: ReadOnlyElementsSource
   // Filters to support special cases upon fetch
-  filtersCreators?: FilterCreator[]
+  filtersCreators?: Array<LocalFilterCreator | RemoteFilterCreator>
   // Types that we skip their deployment and fetch
   typesToSkip?: string[]
   // File paths regular expression that we skip their fetch
@@ -127,50 +176,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   public constructor({
     client,
     elementsSource,
-    filtersCreators = [
-      customRecordTypesType,
-      omitSdfUntypedValues,
-      dataInstancesIdentifiers,
-      dataInstancesDiff,
-      // addParentFolder must run before replaceInstanceReferencesFilter
-      addParentFolder,
-      parseReportTypes,
-      convertLists,
-      consistentValues,
-      // convertListsToMaps must run after convertLists and consistentValues
-      // and must run before replaceInstanceReferencesFilter
-      convertListsToMaps,
-      replaceElementReferences,
-      currencyUndeployableFieldsFilter,
-      SDFInternalIds,
-      dataInstancesAttributes,
-      redundantFields,
-      hiddenFields,
-      replaceRecordRef,
-      dataTypesCustomFields,
-      dataInstancesCustomFields,
-      dataInstancesNullFields,
-      removeUnsupportedTypes,
-      dataInstancesReferences,
-      dataInstancesInternalId,
-      suiteAppInternalIds,
-      currencyExchangeRate,
-      // AuthorInformation filters must run after SDFInternalIds filter
-      systemNoteAuthorInformation,
-      // savedSearchesAuthorInformation must run before suiteAppConfigElementsFilter
-      savedSearchesAuthorInformation,
-      translationConverter,
-      accountSpecificValues,
-      suiteAppConfigElementsFilter,
-      configFeaturesFilter,
-      customRecordsFilter,
-      // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
-      serviceUrls,
-      // omitFieldsFilter should be the last onFetch filter to run
-      omitFieldsFilter,
-      // additionalChanges should be the first preDeploy filter to run
-      additionalChanges,
-    ],
+    filtersCreators = defaultFilters,
     typesToSkip = [
       INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
       // integrations and contains only SCRIPT_ID attribute for custom ones.
@@ -314,11 +320,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc
     )
 
-    const dataElements = await dataElementsPromise
+    const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
+    failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
       : []
-    const customRecords = await customRecordsPromise
+    const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     const elements = [
       ...metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes }),
@@ -333,9 +340,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
     await this.createFiltersRunner({ isPartial }).onFetch(elements)
 
     return {
-      failedToFetchAllAtOnce,
-      failedFilePaths,
-      failedTypes,
+      failures: {
+        failedToFetchAllAtOnce,
+        failedFilePaths,
+        failedTypes,
+        failedCustomRecords,
+      },
       elements,
     }
   }
@@ -382,21 +392,14 @@ export default class NetsuiteAdapter implements AdapterOperations {
     })
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const {
-      failedToFetchAllAtOnce,
-      failedFilePaths,
-      failedTypes,
-      elements,
-    } = await this.fetchByQuery(
+    const { failures, elements } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
       isPartial,
     )
 
-    const updatedConfig = getConfigFromConfigChanges(
-      failedToFetchAllAtOnce, failedFilePaths, failedTypes, this.userConfig
-    )
+    const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
     if (_.isUndefined(updatedConfig)) {
       return { elements, isPartial }
@@ -451,6 +454,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       changesToDeploy,
       groupID,
       this.additionalDependencies,
+      elemID => this.elementsSource.has(elemID),
     )
 
     const ids = new Set(deployResult.appliedChanges.map(
@@ -484,6 +488,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         elementsSource: this.elementsSource,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
+      dependencyChanger,
     }
   }
 }

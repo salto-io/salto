@@ -17,7 +17,7 @@ import { CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, toChange } from
 import filterCreator from '../../src/filters/add_parent_folder'
 import { INTERNAL_ID, PATH } from '../../src/constants'
 import { fileType, folderType } from '../../src/types/file_cabinet_types'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../../src/group_changes'
 
 describe('add_parent_folder filter', () => {
@@ -39,12 +39,12 @@ describe('add_parent_folder filter', () => {
   describe('onFetch', () => {
     it('should add parent field to file', async () => {
       instance.value[PATH] = '/aa/bb/cc.txt'
-      await filterCreator({} as FilterOpts).onFetch?.([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toEqual(['[/aa/bb]'])
     })
     it('should not add parent if file is top level', async () => {
       instance.value[PATH] = '/aa'
-      await filterCreator({} as FilterOpts).onFetch?.([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       expect(instance.annotations[CORE_ANNOTATIONS.PARENT]).toBeUndefined()
     })
   })
@@ -58,7 +58,7 @@ describe('add_parent_folder filter', () => {
         undefined,
         parentFolder
       )]
-      await filterCreator({ changesGroupId: SUITEAPP_CREATING_FILES_GROUP_ID } as FilterOpts)
+      await filterCreator({ changesGroupId: SUITEAPP_CREATING_FILES_GROUP_ID } as LocalFilterOpts)
         .preDeploy?.([toChange({ after: instance })])
       expect(instance.value.parent).toEqual(101)
     })
@@ -71,7 +71,7 @@ describe('add_parent_folder filter', () => {
         undefined,
         parentFolder
       )]
-      await filterCreator({ changesGroupId: SUITEAPP_UPDATING_FILES_GROUP_ID } as FilterOpts)
+      await filterCreator({ changesGroupId: SUITEAPP_UPDATING_FILES_GROUP_ID } as LocalFilterOpts)
         .preDeploy?.([toChange({ after: instance })])
       expect(instance.value.parent).toBeUndefined()
     })

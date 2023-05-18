@@ -25,8 +25,8 @@ import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credential
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
+import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
@@ -378,6 +378,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
+    hasElemID: HasElemIDFunc,
   ): Promise<DeployResult> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return this.sdfDeploy({
@@ -400,14 +401,14 @@ export default class NetsuiteClient {
       return this.deployConfigChanges(instancesChanges)
     }
 
-    return this.deployRecords(changes, groupID)
+    return this.deployRecords(changes, groupID, hasElemID)
   }
 
-  private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
+  private async deployRecords(changes: Change[], groupID: string, hasElemID: HasElemIDFunc): Promise<DeployResult> {
     const relevantChanges = getDeployableChanges(changes)
     const relevantInstances = relevantChanges.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance)
 
-    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID)
+    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID, hasElemID)
     const results = deployResults
       .map((result, index) => (typeof result === 'number' ? relevantChanges[index] : result))
       .filter(values.isDefined)
@@ -423,18 +424,18 @@ export default class NetsuiteClient {
     return { errors, appliedChanges, elemIdToInternalId }
   }
 
-  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string):
+  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string, hasElemID: HasElemIDFunc):
   Promise<(number | Error)[]> {
     if (this.suiteAppClient === undefined) {
       return [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)]
     }
 
     if (isSuiteAppUpdateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.updateInstances(elements)
+      return this.suiteAppClient.updateInstances(elements, hasElemID)
     }
 
     if (isSuiteAppCreateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.addInstances(elements)
+      return this.suiteAppClient.addInstances(elements, hasElemID)
     }
 
     if (isSuiteAppDeleteRecordsGroupId(groupID)) {
@@ -486,7 +487,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
@@ -494,7 +495,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
     }

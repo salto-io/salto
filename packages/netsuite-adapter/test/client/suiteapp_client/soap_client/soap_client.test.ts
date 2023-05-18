@@ -16,11 +16,19 @@
 import _ from 'lodash'
 import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { ExistingFileCabinetInstanceDetails } from '../../src/client/suiteapp_client/types'
-import { ReadFileError } from '../../src/client/suiteapp_client/errors'
-import SoapClient, * as soapClientUtils from '../../src/client/suiteapp_client/soap_client/soap_client'
-import { InvalidSuiteAppCredentialsError } from '../../src/client/types'
-import { CUSTOM_RECORD_TYPE, NETSUITE } from '../../src/constants'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suiteapp_client/types'
+import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
+import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
+import { InvalidSuiteAppCredentialsError } from '../../../../src/client/types'
+import { CUSTOM_FIELD_LIST, CUSTOM_RECORD_TYPE, NETSUITE, OTHER_CUSTOM_FIELD_PREFIX, SOAP_SCRIPT_ID } from '../../../../src/constants'
+import * as filterUneditableLockedFieldModule from '../../../../src/client/suiteapp_client/soap_client/filter_uneditable_locked_field'
+import { INSUFFICIENT_PERMISSION_ERROR, PLATFORM_CORE_CUSTOM_FIELD } from '../../../../src/client/suiteapp_client/constants'
+
+jest.mock('uuid', () => ({
+  ...jest.requireActual('uuid'),
+  v4: jest.fn().mockReturnValue(''),
+}))
 
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
@@ -35,7 +43,7 @@ describe('soap_client', () => {
   let client: SoapClient
 
   beforeEach(() => {
-    jest.resetAllMocks()
+    jest.clearAllMocks()
     wsdl = {
       definitions: {
         schemas: {
@@ -68,6 +76,7 @@ describe('soap_client', () => {
         suiteAppTokenSecret: 'tokenSecret',
       },
       fn => fn(),
+      (_t: string, _c: number) => false,
     )
   })
 
@@ -580,17 +589,60 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
+    })
+
+    it('should NOT exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
+          },
         },
       }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 1,
+      )
+      // await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
+      //   records: [],
+      //   largeTypesError: ['subsidiary'],
+      // })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
 
     it('should return empty record list when subsidiaries is disabled', async () => {
@@ -612,7 +664,7 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({ records: [], largeTypesError: [] })
     })
 
     it('Should work for item type', async () => {
@@ -635,17 +687,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['inventoryItem'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
       expect(searchAsyncMock).toHaveBeenCalledWith({
         searchRecord: {
           attributes: {
@@ -704,17 +759,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
     })
 
     it('Should throw an error if got invalid searchMoreWithId results', async () => {
@@ -782,17 +840,20 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
       expect(searchMoreWithIdAsyncMock).toHaveBeenCalledTimes(2)
     })
 
@@ -816,17 +877,20 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual([{
-        id: 'id1',
-        attributes: {
-          internalId: '1',
-        },
-      }, {
-        id: 'id2',
-        attributes: {
-          internalId: '2',
-        },
-      }])
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toEqual({
+        records: [{
+          id: 'id1',
+          attributes: {
+            internalId: '1',
+          },
+        }, {
+          id: 'id2',
+          attributes: {
+            internalId: '2',
+          },
+        }],
+        largeTypesError: [],
+      })
     })
 
     it('Should throw an error if got invalid getAll results', async () => {
@@ -859,20 +923,59 @@ describe('soap_client', () => {
           },
         },
       }])
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toEqual([{
-        type: 'custrecord',
-        records: [{
-          id: 'id1',
-          attributes: {
-            internalId: '1',
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }, {
+            id: 'id2',
+            attributes: {
+              internalId: '2',
+            },
+          }] }],
+        largeTypesError: [],
+      })
+    })
+
+    it('should NOT exclude types with too many instances from search', async () => {
+      searchAsyncMock.mockResolvedValue([{
+        searchResult: {
+          totalPages: 1,
+          searchId: 'someId',
+          recordList: {
+            record: [{
+              id: 'id1',
+              attributes: {
+                internalId: '1',
+              },
+            }],
           },
-        }, {
-          id: 'id2',
-          attributes: {
-            internalId: '2',
-          },
-        }],
+        },
       }])
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 1,
+      )
+      // await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject(
+      // { largeTypesError: ['custrecord'], customRecords: [] })
+      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
+        customRecords: [{ type: 'custrecord',
+          records: [{
+            id: 'id1',
+            attributes: {
+              internalId: '1',
+            },
+          }] }],
+        largeTypesError: [],
+      })
     })
   })
 
@@ -929,10 +1032,13 @@ describe('soap_client', () => {
         subsidiaryType,
         { name: 'name' }
       )
-      expect(await client.updateInstances([
-        instance1,
-        instance2,
-      ])).toEqual([
+      expect(await client.updateInstances(
+        [
+          instance1,
+          instance2,
+        ],
+        async () => true,
+      )).toEqual([
         1,
         new Error(`SOAP api call updateList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
       ])
@@ -948,24 +1054,30 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.updateInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' }
-        ),
-      ])).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
+      await expect(client.updateInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' }
+          ),
+        ],
+        async () => true,
+      )).rejects.toThrow('Failed to updateList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
     it('should throw an error if received invalid response', async () => {
       updateListAsyncMock.mockResolvedValue([{}])
-      await expect(client.updateInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' },
-        ),
-      ])).rejects.toThrow('Got invalid response from updateList request. Errors:')
+      await expect(client.updateInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' },
+          ),
+        ],
+        async () => true,
+      )).rejects.toThrow('Got invalid response from updateList request. Errors:')
     })
   })
 
@@ -1043,11 +1155,14 @@ describe('soap_client', () => {
         { name: 'record1' },
       )
 
-      expect(await client.addInstances([
-        instance1,
-        instance2,
-        customRecord,
-      ])).toEqual([
+      expect(await client.addInstances(
+        [
+          instance1,
+          instance2,
+          customRecord,
+        ],
+        async () => true,
+      )).toEqual([
         1,
         new Error(`SOAP api call addList for instance ${instance2.elemID.getFullName()} failed. error code: SOME_ERROR, error message: Some Error Message`),
         3,
@@ -1064,24 +1179,30 @@ describe('soap_client', () => {
         },
       }])
 
-      await expect(client.addInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' }
-        ),
-      ])).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
+      await expect(client.addInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' }
+          ),
+        ],
+        async () => true,
+      )).rejects.toThrow('Failed to addList: error code: SOME_ERROR, error message: SOME_ERROR')
     })
 
     it('should throw an error if received invalid response', async () => {
       addListAsyncMock.mockResolvedValue([{}])
-      await expect(client.addInstances([
-        new InstanceElement(
-          'instance',
-          subsidiaryType,
-          { name: 'name' },
-        ),
-      ])).rejects.toThrow('Got invalid response from addList request. Errors:')
+      await expect(client.addInstances(
+        [
+          new InstanceElement(
+            'instance',
+            subsidiaryType,
+            { name: 'name' },
+          ),
+        ],
+        async () => true,
+      )).rejects.toThrow('Got invalid response from addList request. Errors:')
     })
   })
 
@@ -1226,6 +1347,173 @@ describe('soap_client', () => {
           }
         ),
       ])).rejects.toThrow('Got invalid response from deleteList request. Errors:')
+    })
+  })
+
+  describe('Redeploy when update/addition fails on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields', () => {
+    const testType = new ObjectType({ elemID: new ElemID(NETSUITE, 'TestType') })
+
+    const customField1 = {
+      attributes: {
+        [SOAP_SCRIPT_ID]: `${OTHER_CUSTOM_FIELD_PREFIX}test1`,
+        'xsi:type': 'platformCore:BooleanCustomFieldRef',
+        'platformCore:value': true,
+      },
+    }
+    const customField2 = {
+      attributes: {
+        [SOAP_SCRIPT_ID]: `${OTHER_CUSTOM_FIELD_PREFIX}test2`,
+        'xsi:type': 'platformCore:BooleanCustomFieldRef',
+        'platformCore:value': true,
+      },
+    }
+
+    const errorMessage1 = `You do not have permissions to set a value for element ${customField1.attributes[SOAP_SCRIPT_ID]} due to one of the following reasons:`
+    + ' 1) The field is read-only;'
+    + ' 2) An associated feature is disabled;'
+    + ' 3) The field is available either when a record is created or updated, but not in both cases.'
+
+    const errorMessage2 = `You do not have permissions to set a value for element ${customField2.attributes[SOAP_SCRIPT_ID]} due to one of the following reasons:`
+    + ' 1) The field is read-only;'
+    + ' 2) An associated feature is disabled;'
+    + ' 3) The field is available either when a record is created or updated, but not in both cases.'
+
+    const writeResponseListError1 = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: {
+              attributes: { isSuccess: 'false' },
+              statusDetail: [
+                {
+                  code: INSUFFICIENT_PERMISSION_ERROR,
+                  message: errorMessage1,
+                },
+              ],
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const writeResponseListError2 = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: {
+              attributes: { isSuccess: 'false' },
+              statusDetail: [
+                {
+                  code: INSUFFICIENT_PERMISSION_ERROR,
+                  message: errorMessage2,
+                },
+              ],
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const writeResponseListSuccess = {
+      writeResponseList: {
+        writeResponse: [
+          {
+            status: { attributes: { isSuccess: 'true' } },
+            baseRef: {
+              attributes: {
+                internalId: '1',
+              },
+            },
+          },
+        ],
+        status: { attributes: { isSuccess: 'true' } },
+      },
+    }
+
+    const elementsSource = buildElementsSourceFromElements([])
+
+    const originalInstance = new InstanceElement('testOther', testType, {
+      attributes: {
+        internalId: '1',
+      },
+      [CUSTOM_FIELD_LIST]: {
+        [PLATFORM_CORE_CUSTOM_FIELD]: [customField1, customField2],
+      },
+    })
+
+    const instanceWithoutOneField = expect.objectContaining(
+      {
+        record: [
+          expect.objectContaining({
+            [`pre:${CUSTOM_FIELD_LIST}`]: {
+              [PLATFORM_CORE_CUSTOM_FIELD]: [{
+                attributes: expect.objectContaining({
+                  scriptId: customField2.attributes[SOAP_SCRIPT_ID],
+                }),
+              }],
+            },
+          }),
+        ],
+      }
+    )
+    const instanceWithoutBothFields = expect.objectContaining(
+      {
+        record: [
+          expect.not.objectContaining({
+            [`pre:${CUSTOM_FIELD_LIST}`]: expect.objectContaining({}),
+          }),
+        ],
+      }
+    )
+
+    let instance: InstanceElement
+    beforeEach(() => {
+      instance = originalInstance.clone()
+    })
+
+    it('Should redeploy with success when updating instances that failed to deploy an uneditable locked element', async () => {
+      updateListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(2)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
+    })
+
+    it('Should redeploy with success when adding instances that failed to deploy an uneditable locked element', async () => {
+      addListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.addInstances([instance], elementsSource.has)).toEqual([1])
+      expect(addListAsyncMock).toHaveBeenCalledTimes(2)
+      expect(addListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
+    })
+
+    it('Should redeploy with success when updating instances that failed to deploy several uneditable locked elements', async () => {
+      updateListAsyncMock
+        .mockResolvedValueOnce([writeResponseListError1])
+        .mockResolvedValueOnce([writeResponseListError2])
+        .mockResolvedValueOnce([writeResponseListSuccess])
+
+      expect(await client.updateInstances([instance], elementsSource.has)).toEqual([1])
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(3)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(2, instanceWithoutOneField)
+      expect(updateListAsyncMock).toHaveBeenNthCalledWith(3, instanceWithoutBothFields)
+    })
+
+    it('Should deploy at most 6 times - 1 original + 5 redeploys', async () => {
+      updateListAsyncMock.mockResolvedValue([writeResponseListError1])
+      jest.spyOn(filterUneditableLockedFieldModule, 'removeUneditableLockedField')
+        .mockResolvedValue(true)
+
+      expect(await client.updateInstances([instance], elementsSource.has))
+        .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
+        + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
+      expect(updateListAsyncMock).toHaveBeenCalledTimes(6)
     })
   })
 })

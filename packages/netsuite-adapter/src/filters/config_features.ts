@@ -16,17 +16,18 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
 import { FeaturesDeployError } from '../client/errors'
 import { featuresType } from '../types/configuration_types'
+import { FEATURES_LIST_TAG } from '../client/sdf_parser'
 
 const log = logger(module)
 
 const ENABLED = 'ENABLED'
 const DISABLED = 'DISABLED'
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'configFeaturesFilter',
   onFetch: async elements => {
     const featuresInstance = elements.filter(isInstanceElement)
@@ -40,7 +41,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
     }
 
     const type = await featuresInstance.getType()
-    const features = _.keyBy(featuresInstance.value.feature, feature => feature.id)
+    const features = _.keyBy(featuresInstance.value[FEATURES_LIST_TAG], feature => feature.id)
 
     type.fields = _.mapValues(features, feature => new Field(
       type,
@@ -68,7 +69,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => ({
 
     Object.values(featuresChange.data).forEach(instance => {
       instance.value = {
-        feature: Object.entries(instance.value)
+        [FEATURES_LIST_TAG]: Object.entries(instance.value)
           .map(([id, value]) => {
             if (!_.isBoolean(value)) {
               log.warn('value of feature %s is not boolean: %o', id, value)

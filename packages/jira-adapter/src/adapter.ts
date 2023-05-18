@@ -51,6 +51,8 @@ import fieldConfigurationSplitFilter from './filters/field_configuration/field_c
 import fieldConfigurationItemsFilter from './filters/field_configuration/field_configuration_items'
 import missingFieldDescriptionsFilter from './filters/field_configuration/missing_field_descriptions'
 import fieldConfigurationDependenciesFilter from './filters/field_configuration/field_configuration_dependencies'
+import replaceFieldConfigurationReferences from './filters/field_configuration/replace_field_configuration_references'
+import fieldConfigurationDeployment from './filters/field_configuration/field_configuration_deployment'
 import missingDescriptionsFilter from './filters/missing_descriptions'
 import fieldConfigurationSchemeFilter from './filters/field_configurations_scheme'
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
@@ -127,6 +129,7 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import circularTransitionFilter from './filters/workflow/circular_transitions_filter'
+import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 
 const {
   generateTypes,
@@ -155,6 +158,8 @@ export const DEFAULT_FILTERS = [
   workflowStructureFilter,
   // This should happen after workflowStructureFilter and before fieldStructureFilter
   queryFilter,
+  // This should run before duplicateIdsFilter
+  projectRoleRemoveTeamManagedDuplicatesFilter,
   // This should happen before any filter that creates references
   duplicateIdsFilter,
   fieldStructureFilter,
@@ -231,6 +236,9 @@ export const DEFAULT_FILTERS = [
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,
+  // Must run after fieldReferencesFilter
+  replaceFieldConfigurationReferences,
+  fieldConfigurationDeployment,
   // Must run after fieldConfigurationSplitFilter
   fieldConfigurationDependenciesFilter,
   missingFieldDescriptionsFilter,

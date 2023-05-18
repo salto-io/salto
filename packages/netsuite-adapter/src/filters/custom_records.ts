@@ -16,7 +16,7 @@
 import { Change, Field, FieldDefinition, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { PARENT, SCRIPT_ID, SOAP_SCRIPT_ID } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType } from '../types'
 
 const { awu } = collections.asynciterable
@@ -42,7 +42,7 @@ const addFieldsToType = (type: ObjectType): void => {
     })
 }
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'customRecordsFilter',
   onFetch: async elements => {
     await awu(elements)

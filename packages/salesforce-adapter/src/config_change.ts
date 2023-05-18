@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import {
   ConfigChangeSuggestion,
   configType,
@@ -48,22 +49,12 @@ const {
   INVALID_QUERY_FILTER_OPERATOR,
 } = SALESFORCE_ERRORS
 
-const MESSAGE_INTRO = 'Salto failed to fetch some items from salesforce. '
-const MESSAGE_REASONS_INTRO = 'Due to the following issues: '
-const MESSAGE_SUMMARY = 'In order to complete the fetch operation, '
-+ 'Salto needs to stop managing these items by applying the following configuration change:'
+const CONFIG_SUGGESTIONS_GENERAL_MESSAGE = 'Salto failed to fetch some items from Salesforce.'
+  + ' Failed items must be excluded from the fetch.'
 
-
-const formatReason = (reason: string): string =>
-  `    * ${reason}`
-
-export const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]): string => {
+const getConfigChangeMessage = (configChanges: ConfigChangeSuggestion[]): string => {
   const reasons = configChanges.map(configChange => configChange.reason).filter(isDefined)
-  if (_.isEmpty(reasons)) {
-    return [MESSAGE_INTRO, '', MESSAGE_SUMMARY].join('\n')
-  }
-
-  return [MESSAGE_INTRO, '', MESSAGE_REASONS_INTRO, ...reasons.map(formatReason), '', MESSAGE_SUMMARY].join('\n')
+  return formatConfigSuggestionsReasons([CONFIG_SUGGESTIONS_GENERAL_MESSAGE, ...reasons])
 }
 
 export const createManyInstancesExcludeConfigChange = (

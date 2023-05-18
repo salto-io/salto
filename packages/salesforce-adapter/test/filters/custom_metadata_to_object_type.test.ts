@@ -24,7 +24,7 @@ import {
   Change,
   toChange,
   isInstanceChange,
-  Field, getChangeData,
+  Field, getChangeData, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator from '../../src/filters/custom_metadata_to_object_type'
@@ -42,6 +42,7 @@ import { mockTypes } from '../mock_elements'
 import { apiName, Types } from '../../src/transformers/transformer'
 import { isInstanceOfTypeChange } from '../../src/filters/utils'
 import { FilterWith } from './mocks'
+import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
 
 const { awu } = collections.asynciterable
 
@@ -52,7 +53,12 @@ describe('customMetadataToObjectTypeFilter', () => {
   const CHECKBOX_FIELD_NAME = 'checkBox__c'
   const PICKLIST_FIELD_NAME = 'picklist__c'
   const filter = filterCreator({
-    config: defaultFilterContext,
+    config: {
+      ...defaultFilterContext,
+      fetchProfile: buildFetchProfile({
+        optionalFeatures: { skipAliases: false },
+      }),
+    },
   }) as FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
 
 
@@ -125,6 +131,7 @@ describe('customMetadataToObjectTypeFilter', () => {
         [API_NAME]: CUSTOM_METADATA_RECORD_TYPE_NAME,
         [LABEL]: CUSTOM_METADATA_RECORD_LABEL,
         [PLURAL_LABEL]: `${CUSTOM_METADATA_RECORD_LABEL}s`,
+        [CORE_ANNOTATIONS.ALIAS]: CUSTOM_METADATA_RECORD_LABEL,
       })
     })
     it('should create type with both the RecordType fields and CustomMetadata metadata type fields', () => {

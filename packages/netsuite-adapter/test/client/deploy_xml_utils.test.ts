@@ -151,8 +151,7 @@ describe('deploy xml utils tests', () => {
     <path>~/AccountConfiguration/*</path>
   </configuration>
   <files>
-    <path>~/FileCabinet/SuiteScripts/shalomTest.js</path>
-    <path>~/FileCabinet/SuiteScripts/InnerFolder/*</path>
+    <path>~/FileCabinet/*</path>
   </files>
   <objects>
     <path>~/Objects/scriptid3.xml</path>

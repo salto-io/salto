@@ -24,16 +24,18 @@ import { collections, decorators, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
-import { CONSUMER_KEY, CONSUMER_SECRET } from '../constants'
+import { CONSUMER_KEY, CONSUMER_SECRET, ECONN_ERROR, INSUFFICIENT_PERMISSION_ERROR, UNEXPECTED_ERROR, VALIDATION_ERROR } from '../constants'
 import { ReadFileError } from '../errors'
-import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails } from '../types'
-import { CustomRecordTypeRecords, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordValue, SearchErrorResponse, SearchResponse } from './types'
+import { CallsLimiter, ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails, FileDetails, FolderDetails, HasElemIDFunc } from '../types'
+import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isDeployListSuccess, isGetSuccess, isWriteResponseSuccess, RecordResponse, RecordValue, SearchErrorResponse, SearchPageResponse, SearchResponse, SoapSearchType, WriteResponse } from './types'
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
 import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
+import { InstanceLimiterFunc } from '../../../config'
 import { toError } from '../../utils'
+import { removeUneditableLockedField } from './filter_uneditable_locked_field'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -46,6 +48,7 @@ export const ITEMS_TYPES = INTERNAL_ID_TO_TYPES[ITEM_TYPE_ID]
 export const WSDL_PATH = `${__dirname}/client/suiteapp_client/soap_client/wsdl/netsuite_1.wsdl`
 const REQUEST_MAX_RETRIES = 5
 const REQUEST_RETRY_DELAY = 5000
+const LOCKED_FIELDS_MAX_DEPLOYS = 6
 
 // When updating the version, we should also update the types in src/data_elements/types.ts
 const NETSUITE_VERSION = '2020_2'
@@ -56,13 +59,17 @@ const SOAP_FILE_CABINET_URN = `urn:filecabinet_${NETSUITE_VERSION}.documents.web
 
 const SOAP_CUSTOM_RECORD_TYPE_NAME = 'CustomRecord'
 
-const RETRYABLE_MESSAGES = ['ECONN', 'UNEXPECTED_ERROR', 'INSUFFICIENT_PERMISSION', 'VALIDATION_ERROR']
+const RETRYABLE_MESSAGES = [ECONN_ERROR, UNEXPECTED_ERROR, INSUFFICIENT_PERMISSION_ERROR, VALIDATION_ERROR]
 const SOAP_RETRYABLE_MESSAGES = ['CONCURRENT']
 const SOAP_RETRYABLE_STATUS_INITIALS = ['5']
 
-type SoapSearchType = {
-  type: string
-  subtypes?: string[]
+type DeleteDeployBody = {
+  baseRef: object[]
+}
+
+type AddAndUpdateDeployBody = {
+  attributes: Record<string, string>
+  record: RecordValue[]
 }
 
 const retryOnBadResponseWithDelay = (
@@ -109,15 +116,24 @@ const retryOnBadResponseWithDelay = (
 
 const retryOnBadResponse = retryOnBadResponseWithDelay(RETRYABLE_MESSAGES)
 
+const recordFromSearchResponse = (searchResponse: SearchResponse): RecordValue[] =>
+  searchResponse.searchResult.recordList?.record || []
+
 export default class SoapClient {
   private credentials: SuiteAppSoapCredentials
   private callsLimiter: CallsLimiter
   private ajv: Ajv
   private client: elementUtils.soap.Client | undefined
+  private instanceLimiter: InstanceLimiterFunc
 
-  constructor(credentials: SuiteAppSoapCredentials, callsLimiter: CallsLimiter) {
+  constructor(
+    credentials: SuiteAppSoapCredentials,
+    callsLimiter: CallsLimiter,
+    instanceLimiter: InstanceLimiterFunc
+  ) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
+    this.instanceLimiter = instanceLimiter
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 
@@ -230,7 +246,7 @@ export default class SoapClient {
 
   private static convertToDeletionRecord({
     id, type, isCustomRecord,
-  } : { id: number; type: string; isCustomRecord?: boolean }): object {
+  }: { id: number; type: string; isCustomRecord?: boolean }): object {
     return {
       attributes: isCustomRecord ? {
         typeId: type,
@@ -281,7 +297,7 @@ export default class SoapClient {
 
   @retryOnBadResponse
   public async deleteFileCabinetInstances(instances: ExistingFileCabinetInstanceDetails[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: instances.map(SoapClient.convertToDeletionRecord),
     }
@@ -385,7 +401,7 @@ export default class SoapClient {
     return `${strings.capitalizeFirstLetter(type)}Search`
   }
 
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
     const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
@@ -396,27 +412,36 @@ export default class SoapClient {
       typesToSearch.push({ type: 'Item', subtypes: _.uniq(itemTypes.map(type => ITEM_TYPE_TO_SEARCH_STRING[type])) })
     }
 
-    return (await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
+    const responses = await Promise.all(typesToSearch.map(async ({ type, subtypes }) => {
       const namespace = await this.getTypeNamespace(SoapClient.getSearchType(type))
 
       if (namespace !== undefined) {
-        return this.search(type, namespace, subtypes)
+        const response = await this.search(type, namespace, subtypes)
+        return response.excludedFromSearch ? { largeTypesError: subtypes ?? [type] } : { records: response.records }
       }
       log.debug(`type ${type} does not support 'search' operation. Fallback to 'getAll' request`)
-      const records = await this.sendGetAllRequest(type)
+      // This type of query cannot be limited, so there are no cases of largeTypesError
+      const response = await this.sendGetAllRequest(type)
 
       log.debug(`Finished getting all records of ${type}`)
-      return records
-    }))).flat()
+      return { records: response }
+    }))
+
+    return {
+      records: responses.flatMap(res => res.records ?? []),
+      largeTypesError: responses.flatMap(res => res.largeTypesError ?? []),
+    }
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
-    return Promise.all(
-      customRecordTypes.map(async type => ({
-        type,
-        records: await this.searchCustomRecords(type),
-      }))
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
+    const responses = await Promise.all(
+      customRecordTypes.map(async type => ({ type, ...await this.searchCustomRecords(type) }))
     )
+    const [errorResults, customRecords] = _.partition(responses, res => res.excludedFromSearch)
+    return {
+      customRecords,
+      largeTypesError: errorResults.map(res => res.type),
+    }
   }
 
   private static convertToSoapTypeName(type: ObjectType, isRecordRef: boolean): string {
@@ -484,15 +509,9 @@ export default class SoapClient {
 
   @retryOnBadResponse
   private async runDeployAction(
-    instances: InstanceElement[],
-    body: {
-      attributes: Record<string, string>
-      record: RecordValue[]
-    } | {
-      baseRef: object[]
-    },
-    action: 'updateList' | 'addList' | 'deleteList'
-  ): Promise<(number | Error)[]> {
+    body: AddAndUpdateDeployBody | DeleteDeployBody,
+    action: 'updateList' | 'addList' | 'deleteList',
+  ): Promise<WriteResponse[]> {
     const response = await this.sendSoapRequest(action, body)
     if (!this.ajv.validate<DeployListResults>(
       DEPLOY_LIST_SCHEMA,
@@ -508,7 +527,28 @@ export default class SoapClient {
       throw new Error(`Failed to ${action}: error code: ${code}, error message: ${message}`)
     }
 
-    return response.writeResponseList.writeResponse.map((writeResponse, index) => {
+    return response.writeResponseList.writeResponse
+  }
+
+  private async getAddAndUpdateDeployBody(
+    instances: InstanceElement[],
+  ): Promise<AddAndUpdateDeployBody> {
+    return {
+      attributes: {
+        'xmlns:platformCore': SOAP_CORE_URN,
+      },
+      record: await awu(instances).map(
+        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
+      ).toArray(),
+    }
+  }
+
+  private static parseWriteResponseList(
+    writeResponseList: WriteResponse[],
+    instances: InstanceElement[],
+    action: 'updateList' | 'addList' | 'deleteList',
+  ): (number | Error)[] {
+    return writeResponseList.map((writeResponse, index) => {
       if (!isWriteResponseSuccess(writeResponse)) {
         const { code, message } = writeResponse.status.statusDetail[0]
 
@@ -519,32 +559,82 @@ export default class SoapClient {
     })
   }
 
-  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    const body = {
-      attributes: {
-        'xmlns:platformCore': SOAP_CORE_URN,
-      },
-      record: await awu(instances).map(
-        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
-      ).toArray(),
+  private async redeployLockedFieldsWithRetry(
+    retriesLeft: number,
+    instancesToDeploy: InstanceElement[],
+    fullNameToWriteResponse: Map<string, WriteResponse>,
+    action: 'updateList' | 'addList',
+    hasElemID: HasElemIDFunc,
+  ): Promise<void> {
+    if (retriesLeft === 0) {
+      log.warn('Redeployment on locked fields exceed max retries.')
+      return
     }
-    return this.runDeployAction(instances, body, 'updateList')
+
+    const writeResponseList = await this.runDeployAction(
+      await this.getAddAndUpdateDeployBody(instancesToDeploy),
+      action,
+    )
+    instancesToDeploy.forEach(
+      ({ elemID }, index) =>
+        fullNameToWriteResponse.set(elemID.getFullName(), writeResponseList[index])
+    )
+
+    const modifiedInstances = await awu(instancesToDeploy)
+      .filter((instance, index) => removeUneditableLockedField(instance, writeResponseList[index], hasElemID)).toArray()
+
+    if (modifiedInstances.length > 0) {
+      log.debug('Deployment failed on \'INSUFFICIENT PERMISSION\' error for uneditable locked fields.'
+      + ' Redeploying changes without the locked fields.', 'Retries left: %d', retriesLeft - 1)
+
+      await this.redeployLockedFieldsWithRetry(
+        retriesLeft - 1,
+        modifiedInstances,
+        fullNameToWriteResponse,
+        action,
+        hasElemID
+      )
+    }
   }
 
-  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    const body = {
-      attributes: {
-        'xmlns:platformCore': SOAP_CORE_URN,
-      },
-      record: await awu(instances).map(
-        async instance => this.convertToSoapRecord(instance.value, await instance.getType())
-      ).toArray(),
-    }
-    return this.runDeployAction(instances, body, 'addList')
+  private async runFullDeploy(
+    instances: InstanceElement[],
+    action: 'updateList' | 'addList',
+    hasElemID: HasElemIDFunc,
+  ): Promise<(number | Error)[]> {
+    const fullNameToWriteResponse = new Map<string, WriteResponse>()
+
+    await this.redeployLockedFieldsWithRetry(
+      LOCKED_FIELDS_MAX_DEPLOYS,
+      instances,
+      fullNameToWriteResponse,
+      action,
+      hasElemID
+    )
+
+    return SoapClient.parseWriteResponseList(
+      instances.map(({ elemID }) => fullNameToWriteResponse.get(elemID.getFullName())) as WriteResponse[],
+      instances,
+      action,
+    )
+  }
+
+  public async updateInstances(
+    instances: InstanceElement[],
+    hasElemID: HasElemIDFunc,
+  ): Promise<(number | Error)[]> {
+    return this.runFullDeploy(instances, 'updateList', hasElemID)
+  }
+
+  public async addInstances(
+    instances: InstanceElement[],
+    hasElemID: HasElemIDFunc,
+  ): Promise<(number | Error)[]> {
+    return this.runFullDeploy(instances, 'addList', hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: await awu(instances).map(async instance => {
         const isCustomRecord = isCustomRecordType(await instance.getType())
@@ -557,11 +647,15 @@ export default class SoapClient {
         })
       }).toArray(),
     }
-    return this.runDeployAction(instances, body, 'deleteList')
+    return SoapClient.parseWriteResponseList(
+      await this.runDeployAction(body, 'deleteList'),
+      instances,
+      'deleteList',
+    )
   }
 
   public async deleteSdfInstances(instances: InstanceElement[]):
-  Promise<(number | Error)[]> {
+    Promise<(number | Error)[]> {
     const body = {
       baseRef: await awu(instances).map(async instance => {
         const instanceTypeFromMap = Object.keys(TYPES_TO_INTERNAL_ID)
@@ -573,16 +667,25 @@ export default class SoapClient {
         })
       }).toArray(),
     }
-    return this.runDeployAction(instances, body, 'deleteList')
+    return SoapClient.parseWriteResponseList(
+      await this.runDeployAction(body, 'deleteList'),
+      instances,
+      'deleteList',
+    )
   }
 
   private async getAllSearchPages(
     initialSearchResponse: SearchResponse,
     type: string
-  ): Promise<SearchResponse[]> {
+  ): Promise<SearchPageResponse> {
     const { totalPages, searchId } = initialSearchResponse.searchResult
+    if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
+      log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
+      // SALTO-3042 Only log until full deployment
+      // return { records: [], excludedFromSearch: true }
+    }
     if (totalPages <= 1) {
-      return [initialSearchResponse]
+      return { records: recordFromSearchResponse(initialSearchResponse), excludedFromSearch: false }
     }
     const responses = await Promise.all(
       _.range(2, totalPages + 1).map(async i => {
@@ -591,29 +694,30 @@ export default class SoapClient {
         return res
       })
     )
-    return [initialSearchResponse].concat(responses)
+    return {
+      records: [initialSearchResponse].concat(responses).flatMap(recordFromSearchResponse),
+      excludedFromSearch: false,
+    }
   }
 
   private async search(
     type: string,
     namespace: string,
     subtypes?: string[]
-  ): Promise<RecordValue[]> {
-    const responses = await this.getAllSearchPages(
+  ): Promise<SearchPageResponse> {
+    return this.getAllSearchPages(
       await this.sendSearchRequest(type, namespace, subtypes),
       type
     )
-    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
   }
 
   private async searchCustomRecords(
     customRecordType: string
-  ): Promise<RecordValue[]> {
-    const responses = await this.getAllSearchPages(
+  ): Promise<SearchPageResponse> {
+    return this.getAllSearchPages(
       await this.sendCustomRecordsSearchRequest(customRecordType),
       customRecordType
     )
-    return responses.flatMap(({ searchResult }) => searchResult.recordList?.record ?? [])
   }
 
   @retryOnBadResponse

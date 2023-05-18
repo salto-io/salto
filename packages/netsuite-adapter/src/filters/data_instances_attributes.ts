@@ -18,12 +18,12 @@ import { collections } from '@salto-io/lowerdash'
 import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDataObjectType } from '../types'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { XSI_TYPE } from '../client/constants'
 
 const { awu } = collections.asynciterable
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesAttributes',
   onFetch: async elements => {
     await awu(elements)

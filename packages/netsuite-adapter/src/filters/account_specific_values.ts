@@ -18,7 +18,7 @@ import { applyFunctionToChangeData, transformElement, TransformFunc, transformVa
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isCustomRecordType, isStandardType } from '../types'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { ACCOUNT_SPECIFIC_VALUE, APPLICATION_ID } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -29,7 +29,7 @@ const transformFunc: TransformFunc = ({ value }) => (
     : value
 )
 
-const filterCreator = (): FilterWith<'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'accountSpecificValues',
   preDeploy: async changes => {
     await awu(changes)

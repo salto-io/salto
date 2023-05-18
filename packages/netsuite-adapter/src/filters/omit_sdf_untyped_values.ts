@@ -17,11 +17,11 @@ import { isInstanceElement } from '@salto-io/adapter-api'
 import { transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { isStandardType } from '../types'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const { awu } = collections.asynciterable
 
-const filterCreator: FilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'omitSdfUntypedValues',
   onFetch: async elements => {
     // the default behavior is strictInstanceStructure=false

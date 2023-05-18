@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import os from 'os'
 import wu from 'wu'
 import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
@@ -1114,3 +1115,48 @@ export const createSchemeGuardForInstance = <T extends InstanceElement>(
     }
     return true
   }
+
+export const getSubtypes = async (
+  types: ObjectType[],
+  validateUniqueness = false,
+): Promise<ObjectType[]> => {
+  const subtypes: Record<string, ObjectType> = {}
+
+  const findSubtypes = async (type: ObjectType): Promise<void> => {
+    await awu(Object.values(type.fields)).forEach(async field => {
+      const fieldContainerOrType = await field.getType()
+      const fieldType = isContainerType(fieldContainerOrType)
+        ? await fieldContainerOrType.getInnerType()
+        : fieldContainerOrType
+
+      if (!isObjectType(fieldType)
+          || types.includes(fieldType)) {
+        return
+      }
+      if (fieldType.elemID.getFullName() in subtypes) {
+        if (validateUniqueness && !subtypes[fieldType.elemID.getFullName()].isEqual(fieldType)) {
+          log.warn(`duplicate ElemIDs of subtypes found. The duplicate is ${fieldType.elemID.getFullName()}`)
+        }
+        return
+      }
+
+      subtypes[fieldType.elemID.getFullName()] = fieldType
+      await findSubtypes(fieldType)
+    })
+  }
+
+  await awu(types).forEach(findSubtypes)
+
+  return Object.values(subtypes)
+}
+
+export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
+  if (_.isEmpty(reasons)) {
+    return ''
+  }
+
+  const formatReason = (reason: string): string =>
+    `    * ${reason}`
+
+  return [...reasons.map(formatReason)].join(os.EOL)
+}

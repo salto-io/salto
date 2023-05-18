@@ -16,7 +16,7 @@
 import { InstanceElement, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections, promises } from '@salto-io/lowerdash'
 import { convertAnnotationListsToMaps, convertFieldsTypesFromListToMap, convertInstanceListsToMaps, convertDataInstanceMapsToLists, createConvertStandardElementMapsToLists } from '../mapped_lists/utils'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isStandardType, getInnerStandardTypes, isCustomRecordType } from '../types'
 import { getStandardTypes } from '../autogen/types'
 import { dataTypesToConvert } from '../mapped_lists/mapping'
@@ -30,7 +30,7 @@ const shouldTransformDataInstance = async (instance: InstanceElement): Promise<b
   Object.values((await instance.getType()).fields)
     .some(field => dataTypesToConvert.has(field.refType.elemID.name))
 
-const filterCreator: FilterCreator = ({ changesGroupId }): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = ({ changesGroupId }) => ({
   name: 'convertListsToMaps',
   /**
    * Upon fetch, do the following:

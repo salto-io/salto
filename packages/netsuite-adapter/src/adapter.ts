@@ -70,6 +70,7 @@ import NetsuiteClient from './client/client'
 import { createDateRange } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import getChangeValidator from './change_validator'
+import dependencyChanger from './dependency_changer'
 import { cloneChange } from './change_validators/utils'
 import { FetchByQueryFunc, FetchByQueryReturnType } from './change_validators/safe_deploy'
 import { getChangeGroupIdsFunc } from './group_changes'
@@ -487,6 +488,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         elementsSource: this.elementsSource,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
+      dependencyChanger,
     }
   }
 }

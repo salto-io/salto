@@ -39,6 +39,9 @@ type missingUsersDetails = {
   displayName?: string
 }
 
+const formatMissingUsers = (missingUsers: Set<missingUsersDetails>): string =>
+  `${Array.from(missingUsers).map(missing => (missing.displayName ? `${missing.accountId}: "${missing.displayName}"` : missing.accountId)).join(',')}`
+
 const noDisplayNameChangeError = (
   elemId: ElemID,
 ): ChangeError => ({
@@ -58,7 +61,7 @@ const noAccountIdChangeError = ({
   elemID: elemId,
   severity: 'Error',
   message: 'Element references users which don’t exist in target environment',
-  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${Array.from(missingUsers).map(missing => (missing.displayName ? `${missing.accountId}: "${missing.displayName}"` : missing.accountId)).join(',')}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
 })
 
 const replacingAccountIdChangeError = ({
@@ -75,7 +78,7 @@ const replacingAccountIdChangeError = ({
     elemID: elemId,
     severity: 'Warning',
     message: `${missingUsers.size} usernames will be overridden to ${user}`,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${Array.from(missingUsers).map(missing => (missing.displayName ? `${missing.accountId}: "${missing.displayName}"` : missing.accountId)).join(',')}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
   }
 }
 
@@ -91,7 +94,7 @@ const noFallbackUserAccountIdChangeError = ({
   elemID: elemId,
   severity: 'Error',
   message: 'Element references users which don’t exist in target environment',
-  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${Array.from(missingUsers).map(missing => (missing.displayName ? `${missing.accountId}: "${missing.displayName}"` : missing.accountId)).join(',')}. In addition, the defined fallback user ${defaultUser} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. In addition, the defined fallback user ${defaultUser} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
 })
 
 const displayNameMismatchChangeError = ({

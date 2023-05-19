@@ -30,6 +30,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
+  WORKFLOW_TASK_METADATA_TYPE,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -149,6 +150,13 @@ export const mockTypes = {
         )),
       }),
     ),
+  }),
+  WorkflowTask: createMetadataObjectType({
+    annotations: {
+      metadataType: WORKFLOW_TASK_METADATA_TYPE,
+      dirName: 'workflows',
+      suffix: 'workflow',
+    },
   }),
   TestSettings: createMetadataObjectType({
     annotations: {

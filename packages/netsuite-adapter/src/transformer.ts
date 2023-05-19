@@ -50,6 +50,10 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
+export const addApplicationIdToType = (type: ObjectType): void => {
+  type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+}
+
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
@@ -168,9 +172,7 @@ export const createElements = async (
   const { standardTypes, additionalTypes } = getMetadataTypes()
 
   getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
-    .forEach(type => {
-      type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
-    })
+    .forEach(addApplicationIdToType)
 
   const customizationInfosWithTypes = customizationInfos
     .map(customizationInfo => ({

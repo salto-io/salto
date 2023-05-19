@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
   InstanceElement, getChangeData, Values,
@@ -25,7 +24,6 @@ import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/ut
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
@@ -65,7 +63,6 @@ const getUserDependingOnType = (typeField: string): GetUserField => (
   (instance: InstanceElement, userField: string) => {
     const type = instance.value[typeField]
     if (!type || type.toLocaleLowerCase() !== 'user') {
-      log.trace('%s is `%s`, not `user`. Skipping.', typeField, type)
       return []
     }
     return [instance.value[userField]]

@@ -15,11 +15,13 @@
 */
 import {
   BuiltinTypes,
-  Change, ChangeError,
+  Change,
+  ChangeError,
   ChangeValidator,
   ElemID,
   getChangeData,
-  InstanceElement, ObjectType,
+  InstanceElement,
+  ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'

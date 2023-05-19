@@ -23,7 +23,7 @@ import {
   ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
   isInstanceElement, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
-import { findElement, naclCase } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
@@ -40,6 +40,11 @@ import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { CUSTOM_RECORD_SCRIPT_ID, mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
+import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
+import { savedsearchType } from '../src/type_parsers/saved_search_parsing/parsed_saved_search'
+import { reportdefinitionType } from '../src/type_parsers/report_definition_parsing/parsed_report_definition'
+import { financiallayoutType } from '../src/type_parsers/financial_layout_parsing/parsed_financial_layout'
+import { ProjectInfo, createSdfExecutor } from './sdf_executor'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -770,6 +775,215 @@ describe('Netsuite adapter E2E with real account', () => {
         ) as InstanceElement
         // using 'withSuiteApp' to validate both boolean values
         expect(fetchFeatures.value.DEPARTMENTS).toBe(withSuiteApp)
+      })
+    })
+
+    describe('load elements from folder', () => {
+      if (withSuiteApp) {
+        return
+      }
+
+      const sdfExecutor = createSdfExecutor()
+      let projectInfo: ProjectInfo
+      let loadedElements: Element[]
+
+      const objectsToImport = [
+        {
+          type: ENTITY_CUSTOM_FIELD,
+          scriptid: entityCustomFieldToCreate.value[SCRIPT_ID],
+          elemID: entityCustomFieldToCreate.elemID,
+        },
+        {
+          type: CUSTOM_RECORD_TYPE,
+          scriptid: customRecordTypeToCreate.annotations[SCRIPT_ID],
+          elemID: customRecordTypeToCreate.elemID,
+        },
+        {
+          type: WORKFLOW,
+          scriptid: workflowToCreate.value[SCRIPT_ID],
+          elemID: workflowToCreate.elemID,
+        },
+        {
+          type: EMAIL_TEMPLATE,
+          scriptid: emailTemplateToCreate.value[SCRIPT_ID],
+          elemID: emailTemplateToCreate.elemID,
+        },
+        {
+          type: ROLE,
+          scriptid: roleToCreateThatDependsOnCustomRecord.value[SCRIPT_ID],
+          elemID: roleToCreateThatDependsOnCustomRecord.elemID,
+        },
+        {
+          type: TRANSACTION_COLUMN_CUSTOM_FIELD,
+          scriptid: transactionColumnToCreateThatDependsOnField.value[SCRIPT_ID],
+          elemID: transactionColumnToCreateThatDependsOnField.elemID,
+        },
+      ]
+
+      const filesToImport = [
+        {
+          path: folderToModify.value[PATH],
+          elemID: folderToModify.elemID,
+        }, {
+          path: fileToCreate.value[PATH],
+          elemID: fileToCreate.elemID,
+        },
+      ]
+
+      beforeAll(async () => {
+        logMessage('creating an SDF project to load')
+        projectInfo = await sdfExecutor.createProject(credentialsLease.value)
+        const { projectPath } = projectInfo
+        await Promise.all([
+          sdfExecutor.importObjects(projectPath, objectsToImport),
+          sdfExecutor.importFiles(projectPath, filesToImport.map(f => f.path)),
+          sdfExecutor.importFeatures(projectPath),
+        ])
+        logMessage('loading elements from SDF project')
+        const res = await adapterCreator.loadElementsFromFolder?.({
+          baseDir: projectPath,
+          elementSource: buildElementsSourceFromElements([]),
+        })
+        loadedElements = res?.elements as Element[]
+      })
+      afterAll(async () => {
+        await sdfExecutor.deleteProject(projectInfo)
+      })
+
+      it('should load all elements successfully', () => {
+        const expectedElements = _.uniq(
+          (metadataTypes as { elemID: ElemID }[])
+            .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
+            .concat(Object.values(savedsearchType().innerTypes))
+            .concat(Object.values(reportdefinitionType().innerTypes))
+            .concat(Object.values(financiallayoutType().innerTypes))
+            .concat([featuresInstance])
+            .concat(objectsToImport)
+            .concat(filesToImport)
+            .map(type => type.elemID.getFullName())
+        )
+          // TODO - remove on SALTO-4199
+          .concat('netsuite.reportdefinition_fields')
+          .sort()
+
+        expect(loadedElements.map(e => e.elemID.getFullName()).sort()).toEqual(expectedElements)
+      })
+
+      it('should load the created entityCustomField correctly', async () => {
+        const fetchedEntityCustomField = findElement(
+          fetchedElements,
+          entityCustomFieldToCreate.elemID
+        )
+        const loadedEntityCustomField = findElement(
+          loadedElements,
+          entityCustomFieldToCreate.elemID
+        )
+        expect(loadedEntityCustomField).toBeDefined()
+        expect(loadedEntityCustomField).toEqual(fetchedEntityCustomField)
+      })
+
+      it('should load the created customRecordType correctly', async () => {
+        const fetchedCustomRecordType = findElement(
+          fetchedElements,
+          customRecordTypeToCreate.elemID
+        )
+        const loadedCustomRecordType = findElement(
+          loadedElements,
+          customRecordTypeToCreate.elemID
+        )
+        expect(loadedCustomRecordType).toBeDefined()
+        expect(loadedCustomRecordType).toEqual(fetchedCustomRecordType)
+      })
+
+      it('should load the created role correctly', async () => {
+        const fetchedRole = findElement(
+          fetchedElements,
+          roleToCreateThatDependsOnCustomRecord.elemID
+        )
+        const loadedRole = findElement(
+          loadedElements,
+          roleToCreateThatDependsOnCustomRecord.elemID
+        )
+        expect(loadedRole).toBeDefined()
+        expect(loadedRole).toEqual(fetchedRole)
+      })
+
+      it('should load the created workflow correctly', async () => {
+        const fetchedWorkflow = findElement(
+          fetchedElements,
+          workflowToCreate.elemID
+        )
+        const loadedWorkflow = findElement(
+          loadedElements,
+          workflowToCreate.elemID
+        )
+        expect(loadedWorkflow).toBeDefined()
+        expect(loadedWorkflow).toEqual(fetchedWorkflow)
+      })
+
+      it('should load the created email template correctly', async () => {
+        const fetchedEmailTemplate = findElement(
+          fetchedElements,
+          emailTemplateToCreate.elemID
+        )
+        const loadedEmailTemplate = findElement(
+          loadedElements,
+          emailTemplateToCreate.elemID
+        )
+        expect(loadedEmailTemplate).toBeDefined()
+        expect(loadedEmailTemplate).toEqual(fetchedEmailTemplate)
+      })
+
+      it('should load the created file correctly', async () => {
+        const fetchedFile = findElement(
+          fetchedElements,
+          fileToCreate.elemID
+        )
+        const loadedFile = findElement(
+          loadedElements,
+          fileToCreate.elemID
+        )
+        expect(loadedFile).toBeDefined()
+        expect(loadedFile).toEqual(fetchedFile)
+      })
+
+      it('should load the modified folder correctly', async () => {
+        const fetchedFolder = findElement(
+          fetchedElements,
+          folderToModify.elemID
+        )
+        const loadedFolder = findElement(
+          loadedElements,
+          folderToModify.elemID
+        )
+        expect(loadedFolder).toBeDefined()
+        expect(loadedFolder).toEqual(fetchedFolder)
+      })
+
+      it('should load the created transactionColumn correctly', async () => {
+        const fetchedTransactionColumn = findElement(
+          fetchedElements,
+          transactionColumnToCreateThatDependsOnField.elemID
+        )
+        const loadedTransactionColumn = findElement(
+          loadedElements,
+          transactionColumnToCreateThatDependsOnField.elemID
+        )
+        expect(loadedTransactionColumn).toBeDefined()
+        expect(loadedTransactionColumn).toEqual(fetchedTransactionColumn)
+      })
+
+      it('should load the features instance correctly', async () => {
+        const fetchedFeaturesInstance = findElement(
+          fetchedElements,
+          featuresInstance.elemID
+        )
+        const loadedFeaturesInstance = findElement(
+          loadedElements,
+          featuresInstance.elemID
+        )
+        expect(loadedFeaturesInstance).toBeDefined()
+        expect(loadedFeaturesInstance).toEqual(fetchedFeaturesInstance)
       })
     })
 

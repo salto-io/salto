@@ -91,7 +91,7 @@ export const COMMANDS = {
 }
 
 const ALL = 'ALL'
-const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
+export const ALL_FEATURES = 'FEATURES:ALL_FEATURES'
 
 // e.g. *** ERREUR ***
 const fatalErrorMessageRegex = RegExp('^\\*\\*\\*.+\\*\\*\\*$')
@@ -101,7 +101,7 @@ const SINGLE_OBJECT_RETRIES = 3
 
 const baseExecutionPath = os.tmpdir()
 
-const safeQuoteArgument = (argument: unknown): unknown => {
+export const safeQuoteArgument = (argument: unknown): unknown => {
   if (typeof argument === 'string') {
     return shellQuote.quote([argument])
   }
@@ -182,7 +182,7 @@ export default class SdfClient {
     return this.credentials
   }
 
-  private static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
+  public static initCommandActionExecutor(executionPath: string): CommandActionExecutor {
     return new CommandActionExecutor({
       executionPath,
       cliConfigurationService: new CLIConfigurationService(),

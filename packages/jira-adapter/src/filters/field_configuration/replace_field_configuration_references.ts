@@ -17,10 +17,13 @@
 import { CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, MapType, ReadOnlyElementsSource, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
 import { FIELD_TYPE_NAME } from '../fields/constants'
+
+const log = logger(module)
 
 const { awu } = collections.asynciterable
 
@@ -42,6 +45,7 @@ const replaceFromMap = async (
       const elemId = new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', id)
       const fieldInstance = await elementSource.get(elemId)
       if (fieldInstance === undefined) {
+        log.debug(`Omitting element id ${elemId.getFullName()} from ${instance.elemID.getFullName()} since it does not exist in the account`)
         return undefined
       }
       return {

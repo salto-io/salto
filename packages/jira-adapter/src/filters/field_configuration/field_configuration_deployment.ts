@@ -26,11 +26,10 @@ const FIELD_CONFIGURATION_TYPE_NAME = 'FieldConfiguration'
 const log = logger(module)
 
 const deployFieldConfigurationItems = async (
-  change: Change<InstanceElement>,
+  instance: InstanceElement,
   client: clientUtils.HTTPWriteClientInterface,
   config: JiraConfig
 ): Promise<void> => {
-  const instance = getChangeData(change)
   const fields = (instance.value.fields ?? [])
     .filter((fieldConf: Values) => isReferenceExpression(fieldConf.id))
     .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))
@@ -74,7 +73,8 @@ const filter: FilterCreator = ({ config, client }) => ({
     const deployResult = await deployChanges(
       relevantChanges as Change<InstanceElement>[],
       async change => {
-        if (getChangeData(change).value.isDefault && isModificationChange(change)) {
+        const instance = getChangeData(change)
+        if (instance.value.isDefault && isModificationChange(change)) {
           log.info(`Skipping default deploy for default ${FIELD_CONFIGURATION_TYPE_NAME} because it is not supported`)
         } else {
           await defaultDeployChange({
@@ -84,7 +84,7 @@ const filter: FilterCreator = ({ config, client }) => ({
             fieldsToIgnore: ['fields'],
           })
         }
-        await deployFieldConfigurationItems(change, client, config)
+        await deployFieldConfigurationItems(instance, client, config)
       }
     )
 

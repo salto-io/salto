@@ -32,7 +32,8 @@ export const fieldConfigurationDependencyChanger: DependencyChanger = async chan
   const fieldAdditionChanges = _(Array.from(changes.entries()))
     .map(([key, change]) => ({ key, change }))
     .filter(change =>
-      isAdditionChange(change.change)
+      isInstanceChange(change.change)
+      && isAdditionChange(change.change)
       && getChangeData(change.change).elemID.typeName === FIELD_TYPE_NAME)
     .keyBy(change => getChangeData(change.change).elemID.name)
     .value()

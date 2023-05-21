@@ -54,7 +54,7 @@ import {
 import { fixManifest } from './manifest_utils'
 import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpectedErrorRegex, multiLanguageErrorDetectors, OBJECT_ID } from './language_utils'
 import { Graph } from './graph_utils'
-import { FileSize, largeFoldersToExclude } from './file_cabinet_utils'
+import { FileSize, filterFilesInFolders, largeFoldersToExclude } from './file_cabinet_utils'
 import { reorderDeployXml } from './deploy_xml_utils'
 import { OBJECTS_DIR, FILE_CABINET_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, ACCOUNT_CONFIGURATION_DIR, FEATURES_XML, SRC_DIR, getCustomTypeInfoPath, getFileCabinetCustomInfoPath } from './sdf_parser'
 
@@ -754,12 +754,10 @@ export default class SdfClient {
     const importedPaths = _.uniq(importFilesResult)
 
     const fileCabinetDirPath = SdfClient.getFileCabinetDirPath(project.projectName)
-    const largeFolders: string[] = [] // largeFoldersToExclude(
-    largeFoldersToExclude(
+    const largeFolders = largeFoldersToExclude(
       await filesToSize(importedPaths, fileCabinetDirPath), maxFileCabinetSizeInGB
     )
-    const listedPaths = importedPaths // Salto 3853: Will change to filtered files on full deployment
-    // const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
+    const listedPaths = filterFilesInFolders(importedPaths, largeFolders)
     const elements = await parseFileCabinetDir(fileCabinetDirPath, listedPaths)
     await this.projectCleanup(project.projectName, project.authId)
     return {

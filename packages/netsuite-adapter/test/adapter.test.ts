@@ -495,6 +495,25 @@ describe('Adapter', () => {
       })
     })
 
+    it('should filter large file cabinet folders', async () => {
+      client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
+        .mockResolvedValue({
+          elements: [],
+          failedPaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+        })
+
+      await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+          failedTypes: expect.anything(),
+          failedCustomRecords: expect.anything(),
+        },
+        config,
+      )
+    })
+
     it('should filter types with too many instances from SDF', async () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({

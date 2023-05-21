@@ -37,20 +37,9 @@ export const mockDefaultValues: Record<string, Values> = {
       appSignOn: {
         access: 'ALLOW',
         verificationMethod: {
-          factorMode: '2FA',
+          factorMode: '1FA',
           type: 'ASSURANCE',
-          reauthenticateIn: 'PT2H',
-          constraints: [
-            {
-              knowledge: {
-                types: ['password'],
-                reauthenticateIn: 'PT2H',
-              },
-              possession: {
-                deviceBound: 'REQUIRED',
-              },
-            },
-          ],
+          reauthenticateIn: 'PT43800H',
         },
       },
     },

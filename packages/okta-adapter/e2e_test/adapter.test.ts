@@ -20,16 +20,17 @@ import { CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
   ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { config as configUtils } from '@salto-io/adapter-components'
+import { config as configUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
 
 const { awu } = collections.asynciterable
+const { getInstanceName } = elementsUtils
 const log = logger(module)
 
 // Set long timeout as we communicate with Okta APIs
@@ -57,13 +58,14 @@ const createInstance = ({
     log.warn(`Could not find type ${typeName}, error while creating instance`)
     throw new Error(`Failed to find type ${typeName}`)
   }
-  const transformationConfig = configUtils.getConfigWithDefault(
+  const { idFields } = configUtils.getConfigWithDefault(
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[typeName].transformation ?? {},
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
   )
-  const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
+  const instName = getInstanceName(instValues, idFields, typeName)
+  const naclName = naclCase(parent ? `${parent.elemID.name}__${instName}` : String(instName))
   return new InstanceElement(
-    name ?? naclCase(nameParts.map(String).join('_')),
+    name ?? naclName,
     type,
     instValues,
     undefined,
@@ -110,7 +112,32 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
       },
     },
   })
-  return [groupInstance, anotherGroupInstance, ruleInstance]
+  const zoneInstance = createInstance({
+    typeName: NETWORK_ZONE_TYPE_NAME,
+    types,
+    valuesOverride: { name: createName('zone') },
+  })
+  const accessPolicy = createInstance({
+    typeName: ACCESS_POLICY_TYPE_NAME,
+    types,
+    valuesOverride: { name: createName('policy') },
+  })
+  const accessPolicyRule = createInstance({
+    typeName: ACCESS_POLICY_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('policyRule'),
+      conditions: {
+        network: {
+          connection: 'ZONE',
+          include: [new ReferenceExpression(zoneInstance.elemID, zoneInstance)],
+        },
+        riskScore: { level: 'ANY' },
+      },
+    },
+    parent: accessPolicy,
+  })
+  return [groupInstance, anotherGroupInstance, ruleInstance, zoneInstance, accessPolicy, accessPolicyRule]
 }
 
 const deployChanges = async (

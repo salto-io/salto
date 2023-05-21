@@ -21,6 +21,7 @@ import {
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
 import { logger } from '@salto-io/logging'
+import wu from 'wu'
 import { Plan, PlanItem, PlanItemId } from '../plan'
 
 const log = logger(module)
@@ -107,11 +108,9 @@ export const deployActions = async (
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
       log.info('Deploy item %s', item.groupKey)
-      for (const change of item.changes()) {
-        change.detailedChanges().forEach(detailedChange => {
-          log.info('Deploy change %s (action=%s)', detailedChange.id.getFullName(), detailedChange.action)
-        })
-      }
+      wu(item.detailedChanges()).forEach(detailedChange => {
+        log.info('Deploy change %s (action=%s)', detailedChange.id.getFullName(), detailedChange.action)
+      })
       reportProgress(item, 'started')
       try {
         const result = await deployAction(item, adapters, checkOnly)

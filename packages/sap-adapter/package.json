@@ -11,9 +11,8 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src",
-    "index.ts"
+    "dist/src",
+    "dist/index.*"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

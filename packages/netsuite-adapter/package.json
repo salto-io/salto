@@ -8,11 +8,10 @@
     "url": "https://github.com/salto-io/salto_monorepo"
   },
   "files": [
-    "dist",
-    "src",
     "types",
-    "e2e_test",
-    "index.ts"
+    "dist/src",
+    "dist/index.*",
+    "dist/e2e_test"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

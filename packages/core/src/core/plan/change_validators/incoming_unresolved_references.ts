@@ -15,9 +15,9 @@
 */
 
 import { ChangeValidator, ModificationChange, RemovalChange, SaltoError, getChangeData, isModificationChange, isRemovalOrModificationChange } from '@salto-io/adapter-api'
-import { errors as wsErrors } from '@salto-io/workspace'
+import { validator } from '@salto-io/workspace'
 
-const { groupUnresolvedRefsByTarget } = wsErrors
+const { isUnresolvedRefError } = validator
 
 const getChangeType = <T>(change: ModificationChange<T> | RemovalChange<T>): string => (
   isModificationChange(change) ? 'modified' : 'deleted'
@@ -25,23 +25,22 @@ const getChangeType = <T>(change: ModificationChange<T> | RemovalChange<T>): str
 
 export const incomingUnresolvedReferencesValidator = (validationErrors: ReadonlyArray<SaltoError>)
   : ChangeValidator => async changes => {
-  const unresolvedGroupErrors = groupUnresolvedRefsByTarget(validationErrors)
+  const unresolvedErrors = validationErrors.filter(isUnresolvedRefError)
   return changes
     .filter(isRemovalOrModificationChange)
     .flatMap(change => {
-      const group = unresolvedGroupErrors.find(
-        unresolvedGroupError => getChangeData(change).elemID.isEqual(unresolvedGroupError.elemID)
-      )
-      return group === undefined ? [] : { change, group }
+      const { elemID } = getChangeData(change)
+      const group = unresolvedErrors.filter(({ target }) => elemID.isEqual(target) || elemID.isParentOf(target))
+      return group.length === 0 ? [] : { change, group }
     })
-    .map(({ change, group }) => {
+    .flatMap(({ change, group }) => {
       const changeType = getChangeType(change)
-      const { sourceAmount, elemID } = group
+      const { elemID } = getChangeData(change)
       return {
         elemID,
         severity: 'Warning',
         message: `Unresolved references to a ${changeType} element.`,
-        detailedMessage: `${sourceAmount ?? 1} other elements contain references to this ${changeType} element, which are no longer valid.`
+        detailedMessage: `${group.length} other elements contain references to this ${changeType} element, which are no longer valid.`
             + ' You may continue with deploying this change, but the deployment might fail.',
       }
     })

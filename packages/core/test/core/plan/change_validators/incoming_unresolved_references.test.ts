@@ -54,4 +54,17 @@ describe('checkUnresolvedReferencesValidator', () => {
     ])
     expect(errors).toEqual([])
   })
+
+  it('should return an error on the nested element with a reference if a parent was removed', async () => {
+    const nestedElemID = firstInstance.elemID.createNestedID('nested', 'innerInstance1')
+    const nestedInstanceError = new wsErrors.UnresolvedReferenceValidationError({
+      elemID: firstInstance.elemID, target: nestedElemID,
+    })
+    const errors = await incomingUnresolvedReferencesValidator([nestedInstanceError])([
+      toChange({ before: firstInstance }),
+    ])
+    expect(errors.length).toEqual(1)
+    expect(errors[0].elemID).toEqual(nestedElemID)
+    expect(errors[0].severity).toEqual('Warning')
+  })
 })

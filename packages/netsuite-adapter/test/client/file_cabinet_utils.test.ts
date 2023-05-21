@@ -60,7 +60,7 @@ describe('excludeLargeFolders', () => {
     ]
     const largeFolders = largeFoldersToExclude(filesToSize, 2)
     expect(largeFolders).toEqual([])
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('1500000000'))
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('1.40 GB'))
   })
 })
 

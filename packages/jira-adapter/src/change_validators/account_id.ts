@@ -39,8 +39,11 @@ type missingUsersDetails = {
   displayName?: string
 }
 
+const formatMissingUser = (missingUser: missingUsersDetails): string =>
+  (missingUser.displayName ? `${missingUser.accountId}: "${missingUser.displayName}"` : missingUser.accountId)
+
 const formatMissingUsers = (missingUsers: Set<missingUsersDetails>): string =>
-  `${Array.from(missingUsers).map(missing => (missing.displayName ? `${missing.accountId}: "${missing.displayName}"` : missing.accountId)).join(',')}`
+  `${Array.from(missingUsers).map(formatMissingUser).join(',')}`
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -145,7 +148,7 @@ const doesDefaultUserExist = (
 const checkAndAddChangeErrors = (
   userMap: UserMap,
   isDataCenter: boolean,
-  missingUsers: Set<missingUsersDetails>,
+  missingUsers: missingUsersDetails[],
   displayNameMismatches: DisplayNameMismatchDetails[],
   missingDisplayNamePaths: ElemID[]
 ): WalkOnUsersCallback => (
@@ -162,7 +165,7 @@ const checkAndAddChangeErrors = (
   }
 
   if (!Object.prototype.hasOwnProperty.call(userMap, accountId)) {
-    missingUsers.add({ accountId, displayName: currentDisplayName })
+    missingUsers.push({ accountId, displayName: currentDisplayName })
     return
   }
   // in DC we don't save User's displayName
@@ -192,7 +195,7 @@ const createChangeErrorsForAccountIdIssues = (
   config: JiraConfig,
   defaultUserExists: boolean,
 ): ChangeError[] => {
-  const missingUsers = new Set<missingUsersDetails>()
+  const missingUsers: missingUsersDetails[] = []
   const displayNameMismatches: DisplayNameMismatchDetails[] = []
   const missingDisplayNamePaths: ElemID[] = []
   walkOnElement({ element,
@@ -204,24 +207,25 @@ const createChangeErrorsForAccountIdIssues = (
       missingDisplayNamePaths
     ), config) })
 
+  const missingUsersSet = new Set(_.uniqBy(missingUsers, formatMissingUser))
   const changeErrors: ChangeError[] = []
 
-  if (missingUsers.size > 0) {
+  if (missingUsersSet.size > 0) {
     if (config.deploy.defaultMissingUserFallback === undefined) {
       changeErrors.push(noAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers,
+        missingUsers: missingUsersSet,
       }))
     } else if (defaultUserExists) {
       changeErrors.push(replacingAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers,
+        missingUsers: missingUsersSet,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     } else {
       changeErrors.push(noFallbackUserAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers,
+        missingUsers: missingUsersSet,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     }

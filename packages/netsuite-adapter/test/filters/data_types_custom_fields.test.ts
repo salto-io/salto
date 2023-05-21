@@ -29,7 +29,7 @@ describe('data_types_custom_fields', () => {
   const Account = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
 
   beforeEach(async () => {
-    type = new ObjectType({ elemID: new ElemID(NETSUITE, 'Customer'), fields: {}, annotations: { source: 'soap' } })
+    type = new ObjectType({ elemID: new ElemID(NETSUITE, 'customer'), fields: {}, annotations: { source: 'soap' } })
     instance = new InstanceElement('name', entitycustomfieldType().type, { appliestocustomer: true, scriptid: 'someid' })
 
     filterOpts = {
@@ -86,7 +86,7 @@ describe('data_types_custom_fields', () => {
         elementsSourceIndex: {
           getIndexes: () => Promise.resolve({
             ...createEmptyElementsSourceIndexes(),
-            customFieldsIndex: { Customer: [instance] },
+            customFieldsIndex: { customer: [instance] },
           }),
         },
         elementsSource: buildElementsSourceFromElements([]),

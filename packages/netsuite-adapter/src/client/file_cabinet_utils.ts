@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { posix } from 'path'
 import { logger } from '@salto-io/logging'
 import { FILE_CABINET_PATH_SEPARATOR as sep } from '../constants'
+import { WARNING_MAX_FILE_CABINET_SIZE_IN_GB } from '../config'
 
 const log = logger(module)
 
@@ -73,7 +74,8 @@ export const largeFoldersToExclude = (
 
   const folderSizes = createFolderHierarchy(createFlatFolderSizes(files))
   const maxSizeInBytes = BYTES_IN_GB * maxFileCabinetSizeInGB
-  const overflowSize = folderSizes.reduce((acc, folder) => acc + folder.size, 0) - maxSizeInBytes
+  const totalFolderSize = folderSizes.reduce((acc, folder) => acc + folder.size, 0)
+  const overflowSize = totalFolderSize - maxSizeInBytes
 
   const filterSingleFolder = (largestFolder: FolderSize): FolderSize[] => {
     const nextLargeFolder = largestFolder.folders.find(folderSize => folderSize.size > overflowSize)
@@ -97,6 +99,9 @@ export const largeFoldersToExclude = (
   }
 
   if (overflowSize <= 0) {
+    if (totalFolderSize > BYTES_IN_GB * WARNING_MAX_FILE_CABINET_SIZE_IN_GB) {
+      log.info(`FileCabinet has exceeded the suggested size limit, its size is ${totalFolderSize}.`)
+    }
     return []
   }
 
@@ -104,13 +109,22 @@ export const largeFoldersToExclude = (
   const foldersToExclude = largeTopLevelFolder
     ? filterSingleFolder(largeTopLevelFolder)
     : filterMultipleFolders()
-  log.info(`Excluding large folder(s) with total size of ${foldersToExclude.reduce((sum, folder) => sum + folder.size, 0)}`
-    + ` and name(s): ${foldersToExclude.map(folder => folder.path)}`)
+  log.info(`FileCabinet has exceeded the defined size limit, its size is ${totalFolderSize}.`
+    + ` Excluding large folder(s) with total size of ${foldersToExclude.reduce((sum, folder) => sum + folder.size, 0)}`
+    + ` and name(s): ${foldersToExclude.map(folder => folder.path).join(', ')}`)
   return foldersToExclude.map(folder => `${sep}${folder.path}${sep}`)
 }
 
+const filterPathsInFoldersByFunc = <T>(
+  pathObjects: T[], folders: string[], transformer: (pathObject: T) => string
+): T[] =>
+    pathObjects.filter(file => !folders.some(folder => transformer(file).startsWith(folder)))
+
 export const filterFilesInFolders = (files: string[], folders: string[]): string[] =>
-  files.filter(file => !folders.some(folder => file.startsWith(folder)))
+  filterPathsInFoldersByFunc(files, folders, file => file)
 
 export const filterFilePathsInFolders = <T extends { path: string[] }>(files: T[], folders: string[]): T[] =>
-  files.filter(file => !folders.some(folder => file.path.join(sep).startsWith(folder.slice(1))))
+  filterPathsInFoldersByFunc(files, folders, file => `${sep}${file.path.join(sep)}`)
+
+export const filterFolderPathsInFolders = <T extends { path: string[] }>(files: T[], folders: string[]): T[] =>
+  filterPathsInFoldersByFunc(files, folders, file => `${sep}${file.path.join(sep)}${sep}`)

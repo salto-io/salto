@@ -29,7 +29,8 @@ import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
@@ -89,6 +90,12 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
     setCommandTimeout: jest.fn((...args) => mockSetCommandTimeout(...args)),
   },
 }))
+
+jest.mock('../../src/client/file_cabinet_utils', () => ({
+  ...jest.requireActual<{}>('../../src/client/file_cabinet_utils'),
+  largeFoldersToExclude: jest.fn().mockReturnValue([]),
+}))
+const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
 
 describe('sdf client', () => {
   const createProjectCommandMatcher = expect
@@ -1211,6 +1218,53 @@ describe('sdf client', () => {
       }])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('should filter out paths under excluded large folders', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      mockLargeFoldersToExclude.mockReturnValue([MOCK_FOLDER_PATH])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
+      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith([
+        { path: MOCK_FILE_PATH, size: 33 },
+        { path: MOCK_FILE_ATTRS_PATH, size: 0 },
+        { path: MOCK_FOLDER_ATTRS_PATH, size: 0 },
+      ], maxFileCabinetSizeInGB)
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [MOCK_FOLDER_PATH], otherError: [] })
     })
   })
 

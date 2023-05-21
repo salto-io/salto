@@ -39,7 +39,7 @@ import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../co
 import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
 import { NetsuiteQuery } from '../../query'
 import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
-import { largeFoldersToExclude } from '../file_cabinet_utils'
+import { filterFilePathsInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../file_cabinet_utils'
 
 const log = logger(module)
 
@@ -436,19 +436,15 @@ SuiteAppFileCabinetOperations => {
     const filesSize = unfilteredFilesCustomizationWithoutContent.map(
       file => ({ path: fullPath(file.path), size: file.size })
     )
-    const largeFolders: string[] = []
-    largeFoldersToExclude(filesSize, maxFileCabinetSizeInGB)
-    // Salto 3853: Will change to filtered files on full deployment
-    const filesCustomizationWithoutContent = unfilteredFilesCustomizationWithoutContent
-    const foldersCustomizationInfo = unfilteredFoldersCustomizationInfo
-    // const filesCustomizationWithoutContent = filterFilePathsInFolders(
-    //   unfilteredFilesCustomizationWithoutContent,
-    //   largeFolders
-    // )
-    // const foldersCustomizationInfo = filterFilePathsInFolders(
-    //   unfilteredFoldersCustomizationInfo,
-    //   largeFolders
-    // )
+    const largeFolders = largeFoldersToExclude(filesSize, maxFileCabinetSizeInGB)
+    const filesCustomizationWithoutContent = filterFilePathsInFolders(
+      unfilteredFilesCustomizationWithoutContent,
+      largeFolders
+    )
+    const foldersCustomizationInfo = filterFolderPathsInFolders(
+      unfilteredFoldersCustomizationInfo,
+      largeFolders
+    )
 
     const fileChunks = chunks.weightedChunks(
       filesCustomizationWithoutContent,

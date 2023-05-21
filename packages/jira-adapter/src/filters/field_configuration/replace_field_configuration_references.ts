@@ -58,68 +58,60 @@ const replaceFromMap = async (
 }
 
 
-const filter: FilterCreator = ({ config, elementsSource }) => {
-  const instanceToFields: Record<string, Values> = {}
-  return {
-    name: 'replaceFieldConfigurationReferences',
-    onFetch: async elements => {
-      if (config.fetch.splitFieldConfiguration) {
-        return
+const filter: FilterCreator = ({ config, elementsSource }) => ({
+  name: 'replaceFieldConfigurationReferences',
+  onFetch: async elements => {
+    if (config.fetch.splitFieldConfiguration) {
+      return
+    }
+
+    const fieldConfigType = findObject(elements, FIELD_CONFIGURATION_TYPE_NAME)
+    if (fieldConfigType === undefined) {
+      return
+    }
+
+    fieldConfigType.fields.fields = new Field(
+      fieldConfigType,
+      'fields',
+      new MapType(fieldConfigType.fields.fields.refType),
+      {
+        [CORE_ANNOTATIONS.CREATABLE]: true,
+        [CORE_ANNOTATIONS.UPDATABLE]: true,
       }
+    )
 
-      const fieldConfigType = findObject(elements, FIELD_CONFIGURATION_TYPE_NAME)
-      if (fieldConfigType === undefined) {
-        return
-      }
+    elements
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+      .filter(instance => Array.isArray(instance.value.fields))
+      .forEach(replaceToMap)
+  },
 
-      fieldConfigType.fields.fields = new Field(
-        fieldConfigType,
-        'fields',
-        new MapType(fieldConfigType.fields.fields.refType),
-        {
-          [CORE_ANNOTATIONS.CREATABLE]: true,
-          [CORE_ANNOTATIONS.UPDATABLE]: true,
-        }
-      )
+  preDeploy: async changes => {
+    if (config.fetch.splitFieldConfiguration) {
+      return
+    }
 
-      elements
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .filter(instance => Array.isArray(instance.value.fields))
-        .forEach(replaceToMap)
-    },
+    await awu(changes)
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+      .filter(instance => instance.value.fields !== undefined)
+      .forEach(async instance => replaceFromMap(instance, elementsSource))
+  },
 
-    preDeploy: async changes => {
-      if (config.fetch.splitFieldConfiguration) {
-        return
-      }
+  onDeploy: async changes => {
+    if (config.fetch.splitFieldConfiguration) {
+      return
+    }
 
-      await awu(changes)
-        .map(getChangeData)
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .filter(instance => instance.value.fields !== undefined)
-        .forEach(async instance => {
-          instanceToFields[instance.elemID.getFullName()] = instance.value.fields
-          await replaceFromMap(instance, elementsSource)
-        })
-    },
-
-    onDeploy: async changes => {
-      if (config.fetch.splitFieldConfiguration) {
-        return
-      }
-
-      changes
-        .map(getChangeData)
-        .filter(isInstanceElement)
-        .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
-        .filter(instance => instance.value.fields !== undefined)
-        .forEach(instance => {
-          instance.value.fields = instanceToFields[instance.elemID.getFullName()]
-        })
-    },
-  }
-}
+    changes
+      .map(getChangeData)
+      .filter(isInstanceElement)
+      .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_TYPE_NAME)
+      .filter(instance => instance.value.fields !== undefined)
+      .forEach(replaceToMap)
+  },
+})
 
 export default filter

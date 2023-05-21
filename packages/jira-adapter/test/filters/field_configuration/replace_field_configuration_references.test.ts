@@ -139,11 +139,7 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       expect(instance.value.fields).toBeArrayOfSize(0)
 
       await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({
-        fieldInstance: {
-          isRequired: true,
-        },
-      })
+      expect(instance.value.fields).toEqual({})
     })
 
     it('should do nothing if splitFieldConfiguration is true', async () => {

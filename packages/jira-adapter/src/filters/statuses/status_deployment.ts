@@ -75,7 +75,7 @@ const retry = async <T>(
       if (retries === 1) {
         throw error
       }
-      log.warn(`Request to update statuses failed, retrying ${retries} more times.`)
+      log.debug(`Request to update statuses failed, retrying ${retries} more times.`)
       return retry(fn, retries - 1)
     }
     throw error

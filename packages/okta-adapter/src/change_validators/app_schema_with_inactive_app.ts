@@ -27,7 +27,10 @@ const isWithInactiveApp = (
   if (appChange === undefined) {
     return app.value.status === INACTIVE_STATUS
   }
-  return appChange.data.before.value.status === INACTIVE_STATUS && appChange.data.after.value.status === INACTIVE_STATUS
+  const beforeAppStatus = appChange.data.before.value?.status ?? undefined
+  const afterAppStatus = appChange.data.after.value?.status ?? undefined
+  return (beforeAppStatus === undefined || beforeAppStatus === INACTIVE_STATUS)
+  && (afterAppStatus === undefined || afterAppStatus === INACTIVE_STATUS)
 }
 
 /**

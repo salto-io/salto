@@ -42,8 +42,8 @@ type missingUsersDetails = {
 const formatMissingUser = (missingUser: missingUsersDetails): string =>
   (missingUser.displayName ? `${missingUser.accountId}: "${missingUser.displayName}"` : missingUser.accountId)
 
-const formatMissingUsers = (missingUsers: Set<missingUsersDetails>): string =>
-  `${Array.from(missingUsers).map(formatMissingUser).join(',')}`
+const formatMissingUsers = (missingUsers: missingUsersDetails[]): string =>
+  `${missingUsers.map(formatMissingUser).join(',')}`
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -59,7 +59,7 @@ const noAccountIdChangeError = ({
   missingUsers,
 } : {
   elemId: ElemID
-  missingUsers: Set<missingUsersDetails>
+  missingUsers: missingUsersDetails[]
 }): ChangeError => ({
   elemID: elemId,
   severity: 'Error',
@@ -73,14 +73,14 @@ const replacingAccountIdChangeError = ({
   defaultUser,
 } : {
   elemId: ElemID
-  missingUsers: Set<missingUsersDetails>
+  missingUsers: missingUsersDetails[]
   defaultUser: string
 }): ChangeError => {
   const user = defaultUser === configUtils.DEPLOYER_FALLBACK_VALUE ? 'the deployer\'s user' : defaultUser
   return {
     elemID: elemId,
     severity: 'Warning',
-    message: `${missingUsers.size} usernames will be overridden to ${user}`,
+    message: `${missingUsers.length} usernames will be overridden to ${user}`,
     detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
   }
 }
@@ -91,7 +91,7 @@ const noFallbackUserAccountIdChangeError = ({
   defaultUser,
 } : {
   elemId: ElemID
-  missingUsers: Set<missingUsersDetails>
+  missingUsers: missingUsersDetails[]
   defaultUser: string
 }): ChangeError => ({
   elemID: elemId,
@@ -195,37 +195,37 @@ const createChangeErrorsForAccountIdIssues = (
   config: JiraConfig,
   defaultUserExists: boolean,
 ): ChangeError[] => {
-  const missingUsers: missingUsersDetails[] = []
+  const allMissingUsers: missingUsersDetails[] = []
   const displayNameMismatches: DisplayNameMismatchDetails[] = []
   const missingDisplayNamePaths: ElemID[] = []
   walkOnElement({ element,
     func: walkOnUsers(checkAndAddChangeErrors(
       userMap,
       isDataCenter,
-      missingUsers,
+      allMissingUsers,
       displayNameMismatches,
       missingDisplayNamePaths
     ), config) })
 
-  const missingUsersSet = new Set(_.uniqBy(missingUsers, formatMissingUser))
+  const missingUsers = _.uniqBy(allMissingUsers, formatMissingUser)
   const changeErrors: ChangeError[] = []
 
-  if (missingUsersSet.size > 0) {
+  if (missingUsers.length > 0) {
     if (config.deploy.defaultMissingUserFallback === undefined) {
       changeErrors.push(noAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers: missingUsersSet,
+        missingUsers,
       }))
     } else if (defaultUserExists) {
       changeErrors.push(replacingAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers: missingUsersSet,
+        missingUsers,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     } else {
       changeErrors.push(noFallbackUserAccountIdChangeError({
         elemId: element.elemID,
-        missingUsers: missingUsersSet,
+        missingUsers,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     }

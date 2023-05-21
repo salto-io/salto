@@ -107,9 +107,9 @@ export const deployActions = async (
   try {
     await deployPlan.walkAsync(async (itemId: PlanItemId): Promise<void> => {
       const item = deployPlan.getItem(itemId) as PlanItem
-      log.info('Deploy item %s', item.groupKey)
+      log.debug('Deploy item %s', item.groupKey)
       wu(item.detailedChanges()).forEach(detailedChange => {
-        log.info('Deploy change %s (action=%s)', detailedChange.id.getFullName(), detailedChange.action)
+        log.debug('Deploy change %s (action=%s)', detailedChange.id.getFullName(), detailedChange.action)
       })
       reportProgress(item, 'started')
       try {

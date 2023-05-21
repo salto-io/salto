@@ -45,7 +45,7 @@ netsuite {
     fetchTypeTimeoutInMinutes = 4
     maxItemsInImportObjectsRequest = 40
     sdfConcurrencyLimit = 4
-    maxFileCabinetSizeInGB = 1
+    maxFileCabinetSizeInGB = 3
   }
   suiteAppClient = {
    suiteAppConcurrencyLimit = 4 
@@ -123,7 +123,7 @@ netsuite {
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
 | installedSuiteApps             | []                      | The SuiteApps ids to deploy and fetch elements from
-| maxFileCabinetSizeInGB             | 1                       | Limits the max size in GB of the fileCabinet size
+| maxFileCabinetSizeInGB         | 3                       | Limits the max size in GB of the fileCabinet size
 
 
 ### Salto SuiteApp client configuration options

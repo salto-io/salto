@@ -35,6 +35,13 @@ type FolderSize = {
 type FolderSizeMap = Record<string, FolderSize>
 const BYTES_IN_GB = 1024 ** 3
 
+const humanFileSize = (size: number): string => {
+  const i = size === 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024))
+  return `${Number(size / 1024 ** i).toFixed(2)} ${['B', 'kB', 'MB', 'GB', 'TB'][i]}`
+}
+
+const folderSizeSum = (numbers: FolderSize[]): number => numbers.reduce((acc, folder) => acc + folder.size, 0)
+
 export const largeFoldersToExclude = (
   files: FileSize[],
   maxFileCabinetSizeInGB: number
@@ -74,7 +81,7 @@ export const largeFoldersToExclude = (
 
   const folderSizes = createFolderHierarchy(createFlatFolderSizes(files))
   const maxSizeInBytes = BYTES_IN_GB * maxFileCabinetSizeInGB
-  const totalFolderSize = folderSizes.reduce((acc, folder) => acc + folder.size, 0)
+  const totalFolderSize = folderSizeSum(folderSizes)
   const overflowSize = totalFolderSize - maxSizeInBytes
 
   const filterSingleFolder = (largestFolder: FolderSize): FolderSize[] => {
@@ -100,7 +107,8 @@ export const largeFoldersToExclude = (
 
   if (overflowSize <= 0) {
     if (totalFolderSize > BYTES_IN_GB * WARNING_MAX_FILE_CABINET_SIZE_IN_GB) {
-      log.info(`FileCabinet has exceeded the suggested size limit, its size is ${totalFolderSize}.`)
+      log.info(`FileCabinet has exceeded the suggested size limit of ${WARNING_MAX_FILE_CABINET_SIZE_IN_GB} GB,`
+        + ` its size is ${humanFileSize(totalFolderSize)}.`)
     }
     return []
   }
@@ -109,8 +117,9 @@ export const largeFoldersToExclude = (
   const foldersToExclude = largeTopLevelFolder
     ? filterSingleFolder(largeTopLevelFolder)
     : filterMultipleFolders()
-  log.info(`FileCabinet has exceeded the defined size limit, its size is ${totalFolderSize}.`
-    + ` Excluding large folder(s) with total size of ${foldersToExclude.reduce((sum, folder) => sum + folder.size, 0)}`
+  log.warn(`FileCabinet has exceeded the defined size limit of ${maxFileCabinetSizeInGB} GB,`
+    + ` its size is ${humanFileSize(totalFolderSize)}.`
+    + ` Excluding large folder(s) with total size of ${folderSizeSum(foldersToExclude)}`
     + ` and name(s): ${foldersToExclude.map(folder => folder.path).join(', ')}`)
   return foldersToExclude.map(folder => `${sep}${folder.path}${sep}`)
 }

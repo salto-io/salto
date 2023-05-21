@@ -42,7 +42,6 @@ export const realAdapter = ({ adapterParams, credentials, elementsSource }: Opts
     client,
     config: config ?? DEFAULT_CONFIG,
     elementsSource,
-    // TODO add admin client
   })
   return { client, adapter }
 }

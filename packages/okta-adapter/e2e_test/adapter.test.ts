@@ -15,25 +15,16 @@
 */
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { Change, ChangeId, CORE_ANNOTATIONS, DeployResult, Element, ElemID, FieldDefinition, getChangeData,
-  InstanceElement, isAdditionOrModificationChange, isInstanceElement, isObjectType, ObjectType, ReferenceExpression,
-  toChange, Values } from '@salto-io/adapter-api'
-import {
-  applyDetailedChanges,
-  buildElementsSourceFromElements,
-  detailedCompare,
-  naclCase,
-} from '@salto-io/adapter-utils'
+import { CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
+  InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceElement, isObjectType,
+  ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
+import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
-import { expressions } from '@salto-io/workspace'
-import {
-  API_DEFINITIONS_CONFIG,
-  DEFAULT_CONFIG,
-} from '../src/config'
-import { GROUP_TYPE_NAME, OKTA } from '../src/constants'
+import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
@@ -42,36 +33,38 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 // Set long timeout as we communicate with Okta APIs
-// TODO check this timeout
-jest.setTimeout(1000 * 60 * 15)
+jest.setTimeout(1000 * 60 * 7)
 
-// TODO share code with Zendesk ?
-const createInstanceElement = ({
-  type,
+const createInstance = ({
+  typeName,
   valuesOverride,
-  fields,
+  types,
   parent,
   name,
 } :{
-  type: string
+  typeName: string
   valuesOverride: Values
-  fields?: Record <string, FieldDefinition>
+  types: ObjectType[]
   parent?: InstanceElement
   name?: string
 }): InstanceElement => {
   const instValues = {
-    ...mockDefaultValues[type],
+    ...mockDefaultValues[typeName],
     ...valuesOverride,
   }
+  const type = types.find(t => t.elemID.typeName === typeName)
+  if (type === undefined) {
+    log.warn(`Could not find type ${typeName}, error while creating instance`)
+    throw new Error(`Failed to find type ${typeName}`)
+  }
   const transformationConfig = configUtils.getConfigWithDefault(
-    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[type].transformation ?? {},
+    DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].types[typeName].transformation ?? {},
     DEFAULT_CONFIG[API_DEFINITIONS_CONFIG].typeDefaults.transformation,
   )
-
   const nameParts = transformationConfig.idFields.map(field => _.get(instValues, field))
   return new InstanceElement(
     name ?? naclCase(nameParts.map(String).join('_')),
-    new ObjectType({ elemID: new ElemID(OKTA, type), fields }),
+    type,
     instValues,
     undefined,
     parent
@@ -80,24 +73,60 @@ const createInstanceElement = ({
   )
 }
 
+const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): InstanceElement[] => {
+  const createName = (type: string): string => `Test${type}${testSuffix}`
+
+  const groupInstance = createInstance({
+    typeName: GROUP_TYPE_NAME,
+    types,
+    valuesOverride: {
+      profile: { name: createName('test1'), description: 'e2e' },
+    },
+  })
+  const anotherGroupInstance = createInstance({
+    typeName: GROUP_TYPE_NAME,
+    types,
+    valuesOverride: {
+      profile: { name: createName('test2'), description: 'e2e' },
+    },
+  })
+  const ruleInstance = createInstance({
+    typeName: GROUP_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      name: createName('testRule'),
+      conditions: {
+        expression: {
+          value: new TemplateExpression({ parts: [
+            'isMemberOfAnyGroup(',
+            new ReferenceExpression(anotherGroupInstance.elemID, anotherGroupInstance),
+            ')',
+          ] }),
+          type: 'urn:okta:expression:1.0',
+        },
+      },
+      actions: {
+        assignUserToGroups: { groupIds: [new ReferenceExpression(groupInstance.elemID, groupInstance)] },
+      },
+    },
+  })
+  return [groupInstance, anotherGroupInstance, ruleInstance]
+}
+
 const deployChanges = async (
-  adapterAttr: Reals, changes: Record<ChangeId, Change<InstanceElement>[]>
+  adapterAttr: Reals, instancesToAdd: InstanceElement[],
 ): Promise<DeployResult[]> => {
-  let planElementById: Record<string, InstanceElement>
-  const deployResults = await awu(Object.entries(changes))
-    .map(async ([id, group]) => {
-      planElementById = _.keyBy(group.map(getChangeData), data => data.elemID.getFullName())
+  const planElementById = _.keyBy(instancesToAdd, inst => inst.elemID.getFullName())
+  const deployResults = await awu(instancesToAdd)
+    .map(async instance => {
       const deployResult = await adapterAttr.adapter.deploy({
-        changeGroup: { groupID: id, changes: group },
+        changeGroup: { groupID: instance.elemID.getFullName(), changes: [toChange({ after: instance })] },
       })
       expect(deployResult.errors).toHaveLength(0)
       expect(deployResult.appliedChanges).not.toHaveLength(0)
       deployResult.appliedChanges // need to update reference expressions
         .filter(isAdditionOrModificationChange)
         .map(getChangeData)
-        .filter(e => [
-          GROUP_TYPE_NAME,
-        ].includes(e.elemID.typeName))
         .forEach(updatedElement => {
           const planElement = planElementById[updatedElement.elemID.getFullName()]
           if (planElement !== undefined) {
@@ -110,61 +139,26 @@ const deployChanges = async (
   return deployResults
 }
 
-const cleanup = async (adapterAttr: Reals): Promise<void> => {
-  const fetchResult = await adapterAttr.adapter.fetch({
-    progressReporter:
-      { reportProgress: () => null },
-  })
-  expect(fetchResult.errors).toHaveLength(0)
-  // const { elements } = fetchResult
-  // expect(elements).toHaveLength(1)
-  // // TODO add more checks here?
-}
-
-const usedConfig = DEFAULT_CONFIG
-
 describe('Okta adapter E2E', () => {
   describe('fetch and deploy', () => {
     let credLease: CredsLease<Credentials>
     let adapterAttr: Reals
     const testSuffix = uuidv4().slice(0, 8)
     let elements: Element[] = []
-    // TODO e2e for privateAPIInstances
-    // let privateAPIInstances : InstanceElement[]
-    const createName = (type: string): string => `Test${type}${testSuffix}`
+    let deployResults: DeployResult[]
 
-    let groupIdToInstances: Record<string, InstanceElement[]>
-    /**
-     * deploy instances to add and fetch afterwards.
-     * if beforall is true groupIdToInstances will update to the new elements deployed.
-     * this function allows the deploy and fetch multiple times in the e2e, if needed.
-     */
-    const deployAndFetch = async (instancesToAdd: InstanceElement[], beforeAll: boolean): Promise<void> => {
-      // Okta uses default change group for now (by elem ID)
-      const changeGroups = new Map<string, Change>(
-        instancesToAdd.map(inst => [inst.elemID.getFullName(), toChange({ after: inst })])
-      )
-      const groupIdToInstancesTemp = _.groupBy(
-        instancesToAdd,
-        inst => changeGroups.get(inst.elemID.getFullName())
-      )
-      groupIdToInstances = beforeAll ? groupIdToInstancesTemp : groupIdToInstances
-      const firstGroupChanges = _.mapValues(
-        groupIdToInstancesTemp,
-        instances => instances.map(inst => toChange({ after: inst }))
-      )
-      await deployChanges(adapterAttr, firstGroupChanges)
+    const deployAndFetch = async (instancesToAdd: InstanceElement[]): Promise<void> => {
+      deployResults = await deployChanges(adapterAttr, instancesToAdd)
       const fetchResult = await adapterAttr.adapter.fetch({
         progressReporter:
           { reportProgress: () => null },
       })
       elements = fetchResult.elements
-      log.debug(`In deploy and fetch, fetch ${elements.length} elements, instance: ${elements.filter(isInstanceElement).map(i => i.elemID.getFullName())}`)
       expect(fetchResult.errors).toHaveLength(0)
       adapterAttr = realAdapter(
         { credentials: credLease.value,
           elementsSource: buildElementsSourceFromElements(elements) },
-        usedConfig
+        DEFAULT_CONFIG
       )
     }
 
@@ -172,62 +166,68 @@ describe('Okta adapter E2E', () => {
       credLease = await credsLease()
       adapterAttr = realAdapter(
         { credentials: credLease.value, elementsSource: buildElementsSourceFromElements([]) },
-        usedConfig
+        DEFAULT_CONFIG
       )
       const firstFetchResult = await adapterAttr.adapter.fetch({
         progressReporter: { reportProgress: () => null },
       })
 
-      // ******************* create elements for deploy *******************
-      // TODO create instance with references and everything, adjust createInstanceElement and use it
-      const groupInstance = createInstanceElement({
-        type: GROUP_TYPE_NAME,
-        valuesOverride: {
-          objectClass: ['okta:user_group'],
-          type: 'OKTA_GROUP',
-          profile: { name: createName('testGroup'), description: 'e2e' },
-        },
-      })
-
       adapterAttr = realAdapter(
         { credentials: credLease.value,
-          elementsSource: buildElementsSourceFromElements(
-            // TODO maybe change this?
-            firstFetchResult.elements
-          ) },
+          elementsSource: buildElementsSourceFromElements(firstFetchResult.elements) },
         DEFAULT_CONFIG,
       )
-      await cleanup(adapterAttr)
-      const instancesToAdd = [
-        groupInstance,
-      ]
-      await deployAndFetch(instancesToAdd, true)
+
+      const types = firstFetchResult.elements.filter(isObjectType)
+      const instancesToAdd = createInstancesForDeploy(types, testSuffix)
+      await deployAndFetch(instancesToAdd)
     })
 
     afterAll(async () => {
-      elements = await expressions.resolve(elements, buildElementsSourceFromElements(elements))
-      const firstGroupChanges = _.mapValues(
-        groupIdToInstances,
-        instancesToRemove => instancesToRemove.map(inst => {
-          const instanceToRemove = elements.find(e => e.elemID.isEqual(inst.elemID))
-          return instanceToRemove
-            ? toChange({ before: instanceToRemove as InstanceElement })
-            : undefined
-        }).filter(values.isDefined)
-      )
+      const removalChanges = deployResults
+        .flatMap(res => res.appliedChanges)
+        .filter(isAdditionChange)
+        .map(change => toChange({ before: getChangeData(change) }))
 
-      await deployChanges(adapterAttr, firstGroupChanges)
+      removalChanges.forEach(change => {
+        const instance = getChangeData(change)
+        removalChanges
+          .map(getChangeData)
+          .flatMap(getParents)
+          .filter(parent => parent.elemID.isEqual(instance.elemID))
+          .forEach(parent => {
+            parent.resValue = instance
+          })
+      })
+
+      deployResults = await Promise.all(removalChanges.map(change =>
+        adapterAttr.adapter.deploy({
+          changeGroup: {
+            groupID: getChangeData(change).elemID.getFullName(),
+            changes: [change],
+          },
+        })))
+
+      const errors = deployResults.flatMap(res => res.errors)
+      if (errors.length) {
+        throw new Error(`Failed to clean e2e changes: ${errors.join(', ')}`)
+      }
+
       if (credLease.return) {
         await credLease.return()
       }
     })
     it('should fetch the regular instances and types', async () => {
-      const typesToFetch = [
+      const expectedTypes = [
         'AccessPolicy',
         'AccessPolicyRule',
         'Application',
         'Authenticator',
-        // TODO add AuthorizationServer?
+        'AuthorizationServer',
+        'AuthorizationServerPolicy',
+        'AuthorizationServerPolicyRule',
+        'OAuth2Scope',
+        'OAuth2Claim',
         'BehaviorRule',
         'DeviceAssurance',
         'EventHook',
@@ -250,27 +250,44 @@ describe('Okta adapter E2E', () => {
         'ProfileEnrollmentPolicyRule',
         'Role',
         'RoleAssignment',
-        // TODO add settings types
+        'OrgSetting',
+        'Brand',
+        'BrandTheme',
+        'RateLimitAdminNotifications',
+        'PerClientRateLimitSettings',
         'SmsTemplate',
         'TrustedOrigin',
         'UserSchema',
         'UserType',
       ]
-      const typeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
-      const instances = elements.filter(isInstanceElement)
-      typesToFetch.forEach(typeName => {
-        expect(typeNames).toContain(typeName)
-        const instance = instances.find(e => e.elemID.typeName === typeName)
-        expect(instance).toBeDefined()
+      const typesWithInstances = new Set([GROUP_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
+        ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+        AUTHENTICATOR_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME])
+
+      const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
+      const createdInstances = elements.filter(isInstanceElement)
+      expectedTypes.forEach(typeName => {
+        expect(createdTypeNames).toContain(typeName)
+        if (typesWithInstances.has(typeName)) {
+          expect(createdInstances.filter(instance => instance.elemID.typeName === typeName).length).toBeGreaterThan(0)
+        }
       })
+      const orgSettingInst = createdInstances.filter(instance => instance.elemID.typeName === ORG_SETTING_TYPE_NAME)
+      expect(orgSettingInst).toHaveLength(1) // OrgSetting is setting type
+      // Validate subdomain field exist as we use it in many flows
+      expect(orgSettingInst[0]?.value.subdomain).toBeDefined()
     })
     it('should fetch the newly deployed instances', async () => {
-      const instances = Object.values(groupIdToInstances).flat()
-      instances
-        .forEach(instanceToAdd => {
-          const instance = elements.find(e => e.elemID.isEqual(instanceToAdd.elemID))
+      const deployInstances = deployResults
+        .map(res => res.appliedChanges)
+        .flat()
+        .map(change => getChangeData(change)) as InstanceElement[]
+
+      deployInstances
+        .forEach(deployedInstance => {
+          const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
           expect(instance).toBeDefined()
-          expect((instance as InstanceElement).value).toMatchObject(instanceToAdd.value)
+          expect(isEqualValues(instance?.value, deployedInstance.value)).toBeTruthy()
         })
     })
   })

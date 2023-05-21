@@ -14,16 +14,17 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
-  AccessPolicy: {
+  [ACCESS_POLICY_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication policy',
     priority: 1,
     system: false,
     type: 'ACCESS_POLICY',
   },
-  AccessPolicyRule: {
+  [ACCESS_POLICY_RULE_TYPE_NAME]: {
     status: 'ACTIVE',
     name: 'authentication rule',
     priority: 0,
@@ -55,7 +56,7 @@ export const mockDefaultValues: Record<string, Values> = {
     },
     type: 'ACCESS_POLICY',
   },
-  Application: {
+  [APPLICATION_TYPE_NAME]: {
     label: 'SAML Test',
     status: 'INACTIVE',
     accessibility: {
@@ -114,18 +115,18 @@ export const mockDefaultValues: Record<string, Values> = {
       },
     },
   },
-  Group: {
+  [GROUP_TYPE_NAME]: {
     objectClass: ['okta:user_group'],
     type: 'OKTA_GROUP',
     profile: { name: 'Employees', description: 'all employees' },
   },
-  GroupRule: {
+  [GROUP_RULE_TYPE_NAME]: {
     type: 'group_rule',
     status: 'INACTIVE',
     name: 'test',
     allGroupsValid: true,
   },
-  NetworkZone: {
+  [NETWORK_ZONE_TYPE_NAME]: {
     type: 'IP',
     name: 'myNewZone',
     status: 'ACTIVE',

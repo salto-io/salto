@@ -42,8 +42,8 @@ export const unresolvedFieldConfigurationItemsValidator: ChangeValidator = async
       return unresolvedFields.length > 0 ? {
         elemID: instance.elemID,
         severity: 'Warning' as SeverityLevel,
-        message: 'Field configuration has configuration about fields that do not exist in the account',
-        detailedMessage: `The following fields configuration items will not be deployed since their fields do not exist in the account: ${unresolvedFields.join(', ')}`,
+        message: 'Field configuration has configuration of fields that do not exist in the account',
+        detailedMessage: `The following fields configuration items will not be deployed since their fields do not exist in the account: ${unresolvedFields.join(', ').slice(0, 100)}`,
       } : undefined
     })
     .filter(values.isDefined)

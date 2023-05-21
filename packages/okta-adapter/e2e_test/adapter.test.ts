@@ -33,7 +33,7 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 // Set long timeout as we communicate with Okta APIs
-jest.setTimeout(1000 * 60 * 7)
+jest.setTimeout(1000 * 60 * 5)
 
 const createInstance = ({
   typeName,

@@ -524,6 +524,16 @@ describe('suiteapp_file_cabinet', () => {
       ])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [excludedFolder], otherError: [] })
     })
+
+    it('should return file that was matched by query (works only if query matches also direct parent folder of the file)', async () => {
+      query.isFileMatch.mockImplementation(path => (path === '/folder5/folder3/file1' || path === '/folder5/folder3/'))
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(elements).toEqual([
+        expectedResults[1],
+        expectedResults[3],
+      ])
+    })
   })
 
   describe('isChangeDeployable', () => {

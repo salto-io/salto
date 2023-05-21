@@ -84,6 +84,20 @@ describe('changes_detector', () => {
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
   })
 
+  it('should match the file direct parent directory if the file was changed', async () => {
+    getChangedFilesMock.mockResolvedValue([{ type: 'object', objectId: '/Templates/path/to/file', time: new Date('03/15/2020 03:04 pm') }])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      query,
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z')),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/')).toBeTruthy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/')).toBeFalsy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/irrelevantFile')).toBeFalsy()
+  })
+
   it('should match types that are not supported by the changes detector', async () => {
     getCustomRecordTypeChangesMock.mockResolvedValue([])
     getChangedFilesMock.mockResolvedValue([])
@@ -123,6 +137,7 @@ describe('changes_detector', () => {
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
   })
+
   it('should match custom records of custom segments', async () => {
     runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'customrecord_cseg1' }, { scriptid: 'customrecord2' }])
     runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'VAL_123' }])

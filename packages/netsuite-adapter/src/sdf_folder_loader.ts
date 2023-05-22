@@ -26,7 +26,7 @@ const localFilters = allFilters
   .map(({ creator }) => creator)
 
 const loadElementsFromFolder = async (
-  { baseDir, elementsSource, config }: LoadElementsFromFolderArgs,
+  { baseDir, elementsSource, config, getElemIdFunc }: LoadElementsFromFolderArgs,
   filters = localFilters,
 ): Promise<FetchResult> => {
   const isPartial = true
@@ -40,7 +40,7 @@ const loadElementsFromFolder = async (
     filters,
   )
   const customizationInfos = await parseSdfProjectDir(baseDir)
-  const elements = await createElements(customizationInfos)
+  const elements = await createElements(customizationInfos, getElemIdFunc)
   await filtersRunner.onFetch(elements)
 
   return { elements }

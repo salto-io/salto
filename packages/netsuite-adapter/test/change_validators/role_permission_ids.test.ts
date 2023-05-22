@@ -51,7 +51,7 @@ describe('role permission ids change validator tests', () => {
     expect(changeErrors).toHaveLength(0)
   })
 
-  it('sohuld not have change error when the permission is a reference expression', async () => {
+  it('should not have change error when the permission is a reference expression', async () => {
     roleInstance.value.permissions.permission.NEW_PERMISSION = {
       permkey: new ReferenceExpression(new ElemID(NETSUITE, ROLE)),
       permlevel: 'FULL',

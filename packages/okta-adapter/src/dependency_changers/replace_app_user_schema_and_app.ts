@@ -21,11 +21,9 @@ import { deployment } from '@salto-io/adapter-components'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { isActivationChange } from '../deployment'
 
-type ChangeWithKey = deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>>
-
 const createDependencyChange = (
-  appUserSchemaChange: ChangeWithKey,
-  appChange: ChangeWithKey | undefined
+  appUserSchemaChange: deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>>,
+  appChange: deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>> | undefined
 ): DependencyChange[] => {
   if (appChange === undefined || !isActivationChange(
     { before: appChange.change.data.before.value.status,
@@ -48,7 +46,7 @@ export const changeDependenciesFromAppUserSchemaToApp: DependencyChanger = async
     .map(([key, change]) => ({ key, change }))
     .filter(({ change }) => isModificationChange(change))
     .filter(
-      (change): change is ChangeWithKey =>
+      (change): change is deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

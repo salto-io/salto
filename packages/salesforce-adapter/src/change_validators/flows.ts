@@ -92,6 +92,7 @@ export const isActivatingChangeOnly = (change: ModificationChange<InstanceElemen
 const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
   postAction: {
     title: 'Flows test coverage',
+    showOnFailure: true,
     subActions: [
       `Please make sure that activation of the new flow version was not blocked due to insufficient test coverage and manually activate it if needed. Flow name: ${instance.elemID.getFullName()}`,
     ],
@@ -105,6 +106,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
       postAction: {
         title: 'Deploying flows as inactive',
         description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+        showOnFailure: true,
         subActions: [
           `Go to: ${url}`,
           'Activate it by clicking “Activate”',
@@ -117,6 +119,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
       postAction: {
         title: 'Deploying flows as inactive',
         description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+        showOnFailure: true,
         subActions: [
           `Go to: ${baseUrl}${FLOW_URL_SUFFIX}`,
           `Search for the ${instance.elemID.getFullName()} flow and click on it`,
@@ -129,6 +132,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
     postAction: {
       title: 'Deploying flows as inactive',
       description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+      showOnFailure: true,
       subActions: [
         'Go to the flow set up page in your org',
         `Search for the ${instance.elemID.getFullName()} flow and click on it`,

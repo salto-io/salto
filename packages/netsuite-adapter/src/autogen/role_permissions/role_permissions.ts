@@ -15,7 +15,8 @@
 */
 
 
-export const ID_TO_PERMISSION_INFO: Record<string, Set<string>> = {
+export type PermissionLevel = 'NONE' | 'VIEW' | 'FULL' | 'CREATE' | 'EDIT'
+export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<PermissionLevel>>> = {
   ADMI_ACCOUNTING: new Set(['NONE', 'FULL']),
   ADMI_ACCOUNTINGBOOK: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),
   ADMI_ACCOUNTINGLIST: new Set(['NONE', 'VIEW', 'CREATE', 'EDIT', 'FULL']),

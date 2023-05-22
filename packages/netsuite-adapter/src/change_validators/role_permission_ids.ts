@@ -14,42 +14,43 @@
 * limitations under the License.
 */
 
-import { ChangeError, getChangeData, InstanceElement, isInstanceChange } from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, InstanceElement, isInstanceChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { values } from '@salto-io/lowerdash'
 import { ROLE } from '../constants'
 import { NetsuiteChangeValidator } from './types'
-import { ID_TO_PERMISSION_INFO } from '../autogen/role_permissions/role_permissions'
+import { ID_TO_PERMISSION_INFO, PermissionLevel } from '../autogen/role_permissions/role_permissions'
 
 const { isDefined } = values
 const log = logger(module)
 
 type RolePermissionType = {
-  permkey: string
-  permlevel: string
+  permkey: string | ReferenceExpression
+  permlevel: PermissionLevel
 }
 
-const permissionsToAdd: Record<string, Set<string>> = {
+const permissionsToAdd: Readonly<Record<string, ReadonlySet<PermissionLevel>>> = {
   // mapping of permissions which aren't included in the documentation table
   LIST_BULK_PROCESSING: new Set(['VIEW']),
   LIST_ENTITYSUBSIDIARYRELATION: new Set(['VIEW']),
   LIST_DEPARTMENT: new Set(['VIEW']),
 }
 
-const isValidPermissions = (permkey: string, permlevel: string): boolean => {
-  const validPermissionLevels = permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey]
+const isValidPermissions = ({ permkey, permlevel }: RolePermissionType): boolean => {
+  const validPermissionLevels = typeof permkey === 'string'
+    ? permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey] : undefined
   if (!isDefined(validPermissionLevels)) {
     // in case of undocumented premission we log the id and ignore
-    log.debug(`The following permissions does not appear in the documentation: ${permkey}`)
+    log.debug(`The following permissions does not appear in the documentation: ${isReferenceExpression(permkey) ? permkey.elemID.getFullName() : permkey}`)
     return true
   }
   return validPermissionLevels.has(permlevel)
 }
 
 const findInvalidPermissions = (roleInstance: InstanceElement): RolePermissionType[] => {
-  const permissions: RolePermissionType[] = Object.values(roleInstance.value?.permissions?.permission ?? [])
+  const permissions: RolePermissionType[] = Object.values(roleInstance.value?.permissions?.permission ?? {})
   return permissions
-    .filter(({ permkey, permlevel }) => !isValidPermissions(permkey, permlevel))
+    .filter(({ permkey, permlevel }) => !isValidPermissions({ permkey, permlevel }))
 }
 
 const changeValidator: NetsuiteChangeValidator = async changes => (

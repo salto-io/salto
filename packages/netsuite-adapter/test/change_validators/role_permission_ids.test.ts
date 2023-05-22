@@ -14,8 +14,8 @@
 * limitations under the License.
 */
 
-import { InstanceElement, toChange } from '@salto-io/adapter-api'
-import { SCRIPT_ID } from '../../src/constants'
+import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { NETSUITE, ROLE, SCRIPT_ID } from '../../src/constants'
 import { roleType as role } from '../../src/autogen/types/standard_types/role'
 import permissionIdsValidator from '../../src/change_validators/role_permission_ids'
 
@@ -46,6 +46,16 @@ describe('role permission ids change validator tests', () => {
 
   it('should not have change error when deploying an undocumented permissions', async () => {
     roleInstance.value.permissions.permission.NEW_PERMISSION = { permkey: 'NEW_PERMISSION', permlevel: 'EDIT' }
+    const changeErrors = await permissionIdsValidator([
+      toChange({ after: roleInstance })])
+    expect(changeErrors).toHaveLength(0)
+  })
+
+  it('sohuld not have change error when the permission is a reference expression', async () => {
+    roleInstance.value.permissions.permission.NEW_PERMISSION = {
+      permkey: new ReferenceExpression(new ElemID(NETSUITE, ROLE)),
+      permlevel: 'FULL',
+    }
     const changeErrors = await permissionIdsValidator([
       toChange({ after: roleInstance })])
     expect(changeErrors).toHaveLength(0)

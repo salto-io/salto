@@ -33,7 +33,8 @@ LICENSE_HEADER = '''/*
 
 role_permissions_file_template = LICENSE_HEADER +'''
 
-export const ID_TO_PERMISSION_INFO: Record<string, Set<string>> = {{
+export type PermissionLevel = 'NONE' | 'VIEW' | 'FULL' | 'CREATE' | 'EDIT'
+export const ID_TO_PERMISSION_INFO: Readonly<Record<string, ReadonlySet<PermissionLevel>>> = {{
   {permission_id_to_valid_levels}
 }}
 '''
@@ -45,6 +46,7 @@ def is_valid_row(row_cells, permissions, permission_id):
 
 def parse_table_row(row, permissions):
 	cells = row.find_all("td")
+	if len(cells) == 0: return
 	permission_id = cells[0].text.strip()
 	if is_valid_row(cells, permissions, permission_id):
 		permissions[permission_id] = cells[3].text.strip().split(', ')
@@ -73,3 +75,5 @@ driver = webdriver.Chrome()
 def main():
 	permissions = parse_permissions_table()
 	create_permissions_file(permissions)
+
+main()

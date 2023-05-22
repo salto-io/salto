@@ -840,9 +840,11 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
-      fieldsToHide: [{ fieldName: 'id' }],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
-      serviceUrl: '/admin/customizations/branding',
+      fieldsToHide: [{ fieldName: 'id' }, { fieldName: '_links' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
     },
     deployRequests: {
       modify: {
@@ -853,6 +855,34 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           themeId: 'id',
         },
         fieldsToIgnore: ['id', 'logo', 'favicon'],
+      },
+    },
+  },
+  BrandLogo: {
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
       },
     },
   },

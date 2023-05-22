@@ -47,8 +47,10 @@ import templateUrlsFilter from './filters/template_urls'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
-import { APP_LOGO_TYPE_NAME, OKTA } from './constants'
+import brandLogoFilter from './filters/brand_logo'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
+
 
 const { awu } = collections.asynciterable
 
@@ -79,6 +81,7 @@ export const DEFAULT_FILTERS = [
   policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
+  brandLogoFilter,
   fieldReferencesFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
@@ -92,6 +95,7 @@ export const DEFAULT_FILTERS = [
 
 const SKIP_RESOLVE_TYPE_NAMES = [
   APP_LOGO_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
 ]
 
 export interface OktaAdapterParams {

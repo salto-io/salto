@@ -13,12 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { AccountId } from '@salto-io/adapter-api'
 import { client as clientUtils, client } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import axios, { AxiosResponse, ResponseType } from 'axios'
+import axiosRetry from 'axios-retry'
 import { Credentials, AccessTokenCredentials } from '../auth'
 
 const log = logger(module)
+const { DEFAULT_RETRY_OPTS } = clientUtils
 
 export const validateCredentials = async (_creds: {
   credentials: Credentials
@@ -56,3 +60,18 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     credValidateFunc: validateCredentials,
   })
 )
+
+export const getResource = async (
+  url: string,
+  responseType: ResponseType,
+): Promise<AxiosResponse> => {
+  const httpClient = axios.create({
+    url,
+  })
+  const retryOptions = clientUtils.createRetryOptions(
+    _.defaults({}, 1000, DEFAULT_RETRY_OPTS)
+  )
+  axiosRetry(httpClient, retryOptions)
+  const response = await httpClient.get(url, { responseType })
+  return response
+}

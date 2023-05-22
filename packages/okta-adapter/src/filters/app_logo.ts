@@ -17,7 +17,6 @@
 import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, SaltoError, StaticFile, getChangeData, isAdditionOrModificationChange, isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import axios from 'axios'
 import { getParent, naclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import FormData from 'form-data'
@@ -28,7 +27,7 @@ import { extractIdFromUrl } from '../utils'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, OKTA, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import OktaClient from '../client/client'
-
+import { getLogoContent } from './logo'
 
 const log = logger(module)
 const { getInstanceName, TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsUtils
@@ -82,20 +81,6 @@ const createAppLogoType = (): ObjectType =>
     path: [OKTA, TYPES_PATH, SUBTYPES_PATH, APP_LOGO_TYPE_NAME, APP_LOGO_TYPE_NAME],
   })
 
-const getLogoContent = async (link: string,
-): Promise<Buffer | undefined> => {
-  const httpClient = axios.create({
-    url: link,
-  })
-  const res = await httpClient.get(link, { responseType: 'arraybuffer' })
-  const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
-  if (!Buffer.isBuffer(content)) {
-    log.error('Received invalid response from Okta API for attachment content')
-    return undefined
-  }
-  return content
-}
-
 const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')
   const fileType = contentTypeParts[contentTypeParts.length - 1]
@@ -106,7 +91,7 @@ const getLogoFileType = (contentType: string): string | undefined => {
   return fileType
 }
 
-const getAppLogo = async (app: InstanceElement, appLogoType: ObjectType, config: OktaConfig
+const getAppLogo = async (app: InstanceElement, appLogoType: ObjectType, config: OktaConfig,
 ): Promise<InstanceElement | undefined> => {
   if (!isApp(app.value)) {
     log.debug(`App ${app.value.label} is not a valid app`)

@@ -24,7 +24,7 @@ import { config as configUtils, elements as elementsUtils } from '@salto-io/adap
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
@@ -137,7 +137,72 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     },
     parent: accessPolicy,
   })
-  return [groupInstance, anotherGroupInstance, ruleInstance, zoneInstance, accessPolicy, accessPolicyRule]
+  const profileEnrollment = createInstance({
+    typeName: PROFILE_ENROLLMENT_POLICY_TYPE_NAME,
+    types,
+    valuesOverride: { name: createName('profilePolicy') },
+  })
+  const userSchema = createInstance({
+    typeName: USER_SCHEMA_TYPE_NAME,
+    types,
+    name: 'user',
+    valuesOverride: {},
+  })
+  const profileEnrollmentRule = createInstance({
+    typeName: PROFILE_ENROLLMENT_RULE_TYPE_NAME,
+    types,
+    valuesOverride: {
+      actions: {
+        profileEnrollment: {
+          access: 'ALLOW',
+          profileAttributes: [
+            {
+              name: new ReferenceExpression(
+                userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'email'),
+                userSchema.value.definitions?.base?.properties?.email
+              ),
+              label: 'Email',
+              required: true,
+            },
+            {
+              name: new ReferenceExpression(
+                userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'lastName'),
+                userSchema.value.definitions?.base?.properties?.lastName
+              ),
+              label: 'Last name',
+              required: true,
+            },
+            {
+              name: new ReferenceExpression(
+                userSchema.elemID.createNestedID('definitions', 'base', 'properties', 'firstName'),
+                userSchema.value.definitions?.base?.properties?.firstName
+              ),
+              label: 'First name',
+              required: true,
+            },
+          ],
+          targetGroupIds: [new ReferenceExpression(anotherGroupInstance.elemID, anotherGroupInstance)],
+          unknownUserAction: 'DENY',
+          activationRequirements: {
+            emailVerification: true,
+          },
+        },
+      },
+    },
+    parent: profileEnrollment,
+  })
+  const app = createInstance({
+    typeName: APPLICATION_TYPE_NAME,
+    types,
+    valuesOverride: {
+      label: createName('SAMLApp'),
+      accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
+      assignedGroups: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
+      profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
+    },
+  })
+  return [groupInstance, anotherGroupInstance, ruleInstance, zoneInstance, accessPolicy,
+    accessPolicyRule, profileEnrollment, profileEnrollmentRule, app]
 }
 
 const deployChanges = async (

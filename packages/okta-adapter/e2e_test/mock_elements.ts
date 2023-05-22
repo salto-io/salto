@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { Values } from '@salto-io/adapter-api'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME } from '../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, USER_SCHEMA_TYPE_NAME } from '../src/constants'
 
 export const mockDefaultValues: Record<string, Values> = {
   [ACCESS_POLICY_TYPE_NAME]: {
@@ -128,6 +128,62 @@ export const mockDefaultValues: Record<string, Values> = {
       },
     ],
   },
-  ProfileEnrollmentPolicy: {},
-  ProfileEnrollmentPolicyRule: {},
+  [PROFILE_ENROLLMENT_POLICY_TYPE_NAME]: {
+    status: 'ACTIVE',
+    name: 'profile',
+    priority: 1,
+    system: false,
+    type: 'PROFILE_ENROLLMENT',
+  },
+  [PROFILE_ENROLLMENT_RULE_TYPE_NAME]: {
+    status: 'ACTIVE',
+    name: 'Catch-all Rule',
+    priority: 99,
+    system: true,
+    type: 'PROFILE_ENROLLMENT',
+  },
+  [USER_SCHEMA_TYPE_NAME]: {
+    definitions: {
+      base: {
+        id: '#base',
+        type: 'object',
+        properties: {
+          firstName: {
+            title: 'First name',
+            type: 'string',
+            required: true,
+            mutability: 'READ_WRITE',
+            scope: 'NONE',
+            minLength: 1,
+            maxLength: 50,
+            permissions: [
+              { principal: 'SELF', action: 'READ_WRITE' },
+            ],
+            master: { type: 'PROFILE_MASTER' },
+          },
+          lastName: {
+            title: 'Last name',
+            type: 'string',
+            required: true,
+            mutability: 'READ_WRITE',
+            scope: 'NONE',
+            minLength: 1,
+            maxLength: 50,
+            permissions: [{ principal: 'SELF', action: 'READ_WRITE' }],
+            master: { type: 'PROFILE_MASTER' },
+          },
+          email: {
+            title: 'Primary email',
+            type: 'string',
+            required: true,
+            format: 'email',
+            mutability: 'READ_WRITE',
+            scope: 'NONE',
+            permissions: [{ principal: 'SELF', action: 'READ_WRITE' }],
+            master: { type: 'PROFILE_MASTER' },
+          },
+        },
+      },
+    },
+  },
 }

@@ -37,7 +37,8 @@ describe('client', () => {
     let result: clientUtils.ResponseValue
     beforeEach(async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 }).onGet('/myPath').replyOnce(200, { response: 'asd' })
+      mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
+        .onGet('/myPath').replyOnce(200, { response: 'asd' })
       result = await client.getSinglePage({ url: '/myPath' })
     })
     it('should return the response', () => {
@@ -48,6 +49,13 @@ describe('client', () => {
       expect(request.headers.Authorization).toEqual('SSWS token')
       expect(request.baseURL).toEqual('http://my.okta.net')
       expect(request.url).toEqual('/myPath')
+    })
+    it('should return empty array for 404 on AppUserSchema api call', async () => {
+      mockAxios
+        .onGet('/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default')
+        .replyOnce(404)
+      result = await client.getSinglePage({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
+      expect(result.data).toEqual([])
     })
   })
 

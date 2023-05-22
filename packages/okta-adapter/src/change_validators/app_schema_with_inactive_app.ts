@@ -59,7 +59,10 @@ export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async chan
     if (_.isEmpty(parents) || parents[0].elemID.typeName !== APPLICATION_TYPE_NAME) {
       return false
     }
-    const app = parents[0].value
+    const app = parents[0]?.value
+    if (app === undefined) {
+      return false
+    }
     const appChange = appChangesByApp[app.elemID.getFullName()]
     return isWithInactiveApp(app, appChange)
   })

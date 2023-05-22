@@ -14,27 +14,27 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, InstanceElement, ModificationChange } from '@salto-io/adapter-api'
-import { getParent, getParents } from '@salto-io/adapter-utils'
+import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
 const isWithInactiveApp = (
-  appUserSchemaChange: ModificationChange<InstanceElement>,
+  app: InstanceElement,
   appChange: ModificationChange<InstanceElement> | undefined
 ): boolean => {
-  const app = getParents(getChangeData(appUserSchemaChange))
-    .filter(ref => ref.elemID.typeName === APPLICATION_TYPE_NAME)[0].value
   if (appChange === undefined) {
-    return app.value.status === INACTIVE_STATUS
+    return app.value?.status === INACTIVE_STATUS ?? false
   }
-  const beforeAppStatus = appChange.data.before.value?.status ?? undefined
-  const afterAppStatus = appChange.data.after.value?.status ?? undefined
-  return (beforeAppStatus === undefined || beforeAppStatus === INACTIVE_STATUS)
-  && (afterAppStatus === undefined || afterAppStatus === INACTIVE_STATUS)
+  const beforeAppStatus = appChange.data.before.value?.status
+  const afterAppStatus = appChange.data.after.value?.status
+  if (beforeAppStatus === undefined || afterAppStatus === undefined) {
+    return false
+  }
+  return beforeAppStatus === INACTIVE_STATUS && afterAppStatus === INACTIVE_STATUS
 }
 
 /**
- * Verifies that appUserSchema is not modified when the app is inactive.
+ * Verifies that AppUserSchema is not modified when the app is inactive.
  */
 export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async changes => {
   const [appUserSchemaChanges, appChanges] = _.partition(
@@ -55,15 +55,22 @@ export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async chan
 
 
   return appUserSchemaChanges.filter(change => {
-    const app = getParents(getChangeData(change)).filter(ref => ref.elemID.typeName === APPLICATION_TYPE_NAME)[0].value
+    const parents = getParents(getChangeData(change))
+    if (_.isEmpty(parents) || parents[0].elemID.typeName !== APPLICATION_TYPE_NAME) {
+      return false
+    }
+    const app = parents[0].value
     const appChange = appChangesByApp[app.elemID.getFullName()]
-    return isWithInactiveApp(change, appChange)
+    return isWithInactiveApp(app, appChange)
   })
     .map(change => getChangeData(change))
-    .map(appUserSchema => ({
-      elemID: appUserSchema.elemID,
-      severity: 'Error',
-      message: 'Cannot modify appUserSchema when its associated app is inactive',
-      detailedMessage: `Cannot modify ${appUserSchema.elemID.name} because its associated app '${getParent(appUserSchema).elemID.name}' is inactive`,
-    }))
+    .map(appUserSchema => {
+      const appName = getParents(appUserSchema)[0]?.elemID.name
+      return ({
+        elemID: appUserSchema.elemID,
+        severity: 'Error',
+        message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
+        detailedMessage: `Cannot modify App User schema '${appUserSchema.elemID.name}' because its associated app '${appName}' is inactive. Please activate the app first.`,
+      })
+    })
 }

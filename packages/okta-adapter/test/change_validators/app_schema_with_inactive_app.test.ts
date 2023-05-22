@@ -16,7 +16,7 @@
 
 import { ObjectType, ElemID, InstanceElement, CORE_ANNOTATIONS, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { OKTA, APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME } from '../../src/constants'
+import { OKTA, APP_USER_SCHEMA_TYPE_NAME, APPLICATION_TYPE_NAME, INACTIVE_STATUS } from '../../src/constants'
 import { appUserSchemaWithInactiveAppValidator } from '../../src/change_validators/app_schema_with_inactive_app'
 
 describe('appSchemaWithInActiveAppValidator', () => {
@@ -56,8 +56,8 @@ describe('appSchemaWithInActiveAppValidator', () => {
     expect(changeErrors).toEqual([{
       elemID: appUserSchema1.elemID,
       severity: 'Error',
-      message: 'Cannot modify appUserSchema when its associated app is inactive',
-      detailedMessage: `Cannot modify ${appUserSchema1.elemID.name} because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive`,
+      message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
+      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app first.`,
     }])
   })
   it('should return error when app stayed inactive but changed somewhere else', async () => {
@@ -72,8 +72,8 @@ describe('appSchemaWithInActiveAppValidator', () => {
     expect(changeErrors).toEqual([{
       elemID: appUserSchema1.elemID,
       severity: 'Error',
-      message: 'Cannot modify appUserSchema when its associated app is inactive',
-      detailedMessage: `Cannot modify ${appUserSchema1.elemID.name} because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive`,
+      message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
+      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app first.`,
     }])
   })
   it('should not return error when app becomes active after modification', async () => {

@@ -31,4 +31,4 @@ export const automationProjectReferenceDetector = (elemId: ElemID): boolean => {
 }
 
 export const unresolvedReferenceValidator: ChangeValidator = deployment.changeValidators
-  .createUnresolvedReferencesValidator(automationProjectReferenceDetector)
+  .createOutgoingUnresolvedReferencesValidator(automationProjectReferenceDetector)

@@ -126,7 +126,7 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getChangeValidators(adapters, checkOnly),
+    changeValidators: getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],

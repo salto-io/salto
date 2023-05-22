@@ -109,7 +109,7 @@ describe('remove sdf object change validator', () => {
         toChange({ before: customRecordType }),
       ], undefined, elementsSourceInstance)
       expect(changeErrors).toHaveLength(1)
-      expect(changeErrors[0].severity).toEqual('Error')
+      expect(changeErrors[0].severity).toEqual('Warning')
       expect(changeErrors[0].elemID).toEqual(customRecordType.elemID)
     })
   })

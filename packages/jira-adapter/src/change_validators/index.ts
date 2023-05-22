@@ -65,7 +65,7 @@ export default (
   client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
   const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
+    ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
     unresolvedReferenceValidator,
     automationProjectUnresolvedReferenceValidator,
     deployTypesNotSupportedValidator,

@@ -31,9 +31,9 @@ export const incomingUnresolvedReferencesValidator = (validationErrors: Readonly
     .flatMap(change => {
       const { elemID } = getChangeData(change)
       const group = unresolvedErrors.filter(({ target }) => elemID.isEqual(target) || elemID.isParentOf(target))
-      return group.length === 0 ? [] : { change, group }
+      return group.length === 0 ? [] : [{ change, group }]
     })
-    .flatMap(({ change, group }) => {
+    .map(({ change, group }) => {
       const changeType = getChangeType(change)
       const { elemID } = getChangeData(change)
       return {

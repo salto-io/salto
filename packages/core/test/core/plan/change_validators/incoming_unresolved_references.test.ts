@@ -17,54 +17,87 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from 
 import { errors as wsErrors } from '@salto-io/workspace'
 import { incomingUnresolvedReferencesValidator } from '../../../../src/core/plan/change_validators/incoming_unresolved_references'
 
-describe('checkUnresolvedReferencesValidator', () => {
-  const type = new ObjectType({
-    elemID: new ElemID('adapter', 'type'),
-    annotations: {
-      [CORE_ANNOTATIONS.CREATABLE]: false,
-    },
-  })
-  const firstInstance = new InstanceElement('instance1', type)
+describe('incomingUnresolvedReferencesValidator', () => {
+  let type: ObjectType
+  let firstInstance: InstanceElement
+  let firstInstanceError: wsErrors.UnresolvedReferenceValidationError
 
-  const firstInstanceError = new wsErrors.UnresolvedReferenceValidationError({
-    elemID: firstInstance.elemID, target: firstInstance.elemID,
-  })
-
-  const secondInstance = new InstanceElement('instance2', type)
-
-  it('should not return an error when the unresolved elemID is not in the plan', async () => {
-    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
-      toChange({ before: secondInstance }),
-    ])
-    expect(errors).toEqual([])
-  })
-
-  it('should return an error when the unresolved elemID is in the plan', async () => {
-    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
-      toChange({ before: firstInstance }),
-    ])
-    expect(errors.length).toEqual(1)
-    expect(errors[0].elemID).toEqual(firstInstance.elemID)
-    expect(errors[0].severity).toEqual('Warning')
-  })
-
-  it('should filter addition errors', async () => {
-    const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
-      toChange({ after: firstInstance }),
-    ])
-    expect(errors).toEqual([])
-  })
-
-  it('should return an error on the nested element with a reference if a parent was removed', async () => {
-    const nestedElemID = firstInstance.elemID.createNestedID('nested', 'innerInstance1')
-    const nestedInstanceError = new wsErrors.UnresolvedReferenceValidationError({
-      elemID: firstInstance.elemID, target: nestedElemID,
+  beforeEach(() => {
+    type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+      annotations: {
+        [CORE_ANNOTATIONS.CREATABLE]: false,
+      },
     })
-    const errors = await incomingUnresolvedReferencesValidator([nestedInstanceError])([
-      toChange({ before: firstInstance }),
-    ])
-    expect(errors.length).toEqual(1)
-    expect(errors[0].elemID).toEqual(nestedElemID)
-    expect(errors[0].severity).toEqual('Warning')
+    firstInstance = new InstanceElement('instance1', type)
+
+    firstInstanceError = new wsErrors.UnresolvedReferenceValidationError({
+      elemID: firstInstance.elemID, target: firstInstance.elemID,
+    })
+  })
+
+  describe('when unresolved reference is not in the plan', () => {
+    let secondInstance: InstanceElement
+
+    beforeEach(() => {
+      secondInstance = new InstanceElement('instance2', type)
+    })
+    it('should not return an error', async () => {
+      const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+        toChange({ before: secondInstance }),
+      ])
+      expect(errors).toEqual([])
+    })
+  })
+
+  describe('when unresolved reference is in the plan', () => {
+    it('should return an error for deleted elements', async () => {
+      const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+        toChange({ before: firstInstance }),
+      ])
+      expect(errors.length).toEqual(1)
+      expect(errors[0].elemID).toEqual(firstInstance.elemID)
+      expect(errors[0].severity).toEqual('Warning')
+    })
+
+    it('should return an error for modified elements', async () => {
+      const after = firstInstance.clone()
+      after.value.label = 'modified'
+      const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+        toChange({ before: firstInstance, after }),
+      ])
+      expect(errors.length).toEqual(1)
+      expect(errors[0].elemID).toEqual(firstInstance.elemID)
+      expect(errors[0].severity).toEqual('Warning')
+    })
+
+    it('should filter addition errors', async () => {
+      const errors = await incomingUnresolvedReferencesValidator([firstInstanceError])([
+        toChange({ after: firstInstance }),
+      ])
+      expect(errors).toEqual([])
+    })
+  })
+
+
+  describe('when referencing nested elements', () => {
+    let nestedElemID: ElemID
+    let nestedInstanceError: wsErrors.UnresolvedReferenceValidationError
+
+    beforeEach(() => {
+      nestedElemID = firstInstance.elemID.createNestedID('nested', 'innerInstance1')
+      nestedInstanceError = new wsErrors.UnresolvedReferenceValidationError({
+        elemID: firstInstance.elemID, target: nestedElemID,
+      })
+    })
+
+    it('should return an error on the nested element with a reference if a parent was removed', async () => {
+      const errors = await incomingUnresolvedReferencesValidator([nestedInstanceError])([
+        toChange({ before: firstInstance }),
+      ])
+      expect(errors.length).toEqual(1)
+      expect(errors[0].elemID).toEqual(firstInstance.elemID)
+      expect(errors[0].severity).toEqual('Warning')
+    })
   })
 })

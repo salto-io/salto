@@ -11,11 +11,9 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src",
-    "index.ts"
+    "dist/src"
   ],
-  "main": "dist/src",
+  "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
     "clean-ts": "../../build_utils/clean-old-ts.sh",

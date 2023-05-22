@@ -15,8 +15,8 @@
   },
   "files": [
     "bin",
-    "dist",
-    "src"
+    "dist/src",
+    "dist/index.*"
   ],
   "main": "./dist/index.js",
   "types": "dist/index.d.ts",

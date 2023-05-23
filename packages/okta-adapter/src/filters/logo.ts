@@ -33,7 +33,7 @@ type brandLogoOrIconValues = {
   fileType: string
   urlSuffix: string
 }
-
+// standatrd logo types for Okta
 const LOGO_TYPES_TO_VALUES: Record<string, brandLogoOrIconValues> = {
   [BRAND_LOGO_TYPE_NAME]: {
     fileName: 'brandLogo',

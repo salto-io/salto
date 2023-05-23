@@ -65,10 +65,7 @@ const createErrorsForCustomStatusTypes = (
   changes: readonly Change<ChangeDataType>[]
 ): ChangeError[] =>
   changes
-    .filter(
-      change =>
-        getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME
-    )
+    .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
     .map(getChangeData)
     .map(instance => ({
       elemID: instance.elemID,
@@ -93,8 +90,8 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
   const ticketInstance = data as InstanceElement
   const ticketValue = ticketInstance.value as TicketForm
 
-  return hasConditionWithCustomStatuses(ticketValue.agent_conditions || [])
-    || hasConditionWithCustomStatuses(ticketValue.end_user_conditions || [])
+  return hasConditionWithCustomStatuses(ticketValue.agent_conditions ?? [])
+    || hasConditionWithCustomStatuses(ticketValue.end_user_conditions ?? [])
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (
@@ -106,9 +103,11 @@ const createErrorsForTicketFormsWithCustomStatuses = (
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'Custom statuses are not enabled.',
+      message: 'Deploying ticket form with custom statuses while custom statuses are disabled',
       detailedMessage:
-        'Custom statuses are not enabled which which may cause some statuses to change their context',
+        'It seems this ticket form originates from another account that has custom statuses enabled. '
+        + 'Since custom statuses are disabled in the target account, '
+        + 'this ticket form will be deployed without the custom_statuses fields',
     }))
 
 /**

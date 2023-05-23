@@ -47,7 +47,7 @@ export const mockDefaultValues: Record<string, Values> = {
   },
   [APPLICATION_TYPE_NAME]: {
     label: 'SAML Test',
-    status: 'INACTIVE',
+    status: 'ACTIVE',
     accessibility: {
       selfService: false,
     },

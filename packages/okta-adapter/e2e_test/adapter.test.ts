@@ -15,16 +15,16 @@
 */
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
-  InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceElement, isObjectType,
-  ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, DeployResult, Element, getChangeData,
+  InstanceElement, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange, isInstanceElement,
+  isObjectType, ObjectType, ReferenceExpression, TemplateExpression, toChange, Values } from '@salto-io/adapter-api'
 import { applyDetailedChanges, buildElementsSourceFromElements, detailedCompare, getParents, naclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { config as configUtils, elements as elementsUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { CredsLease } from '@salto-io/e2e-credentials-store'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
-import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
+import { ACCESS_POLICY_RULE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, AUTHENTICATOR_TYPE_NAME, GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, INACTIVE_STATUS, NETWORK_ZONE_TYPE_NAME, ORG_SETTING_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME, ROLE_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME } from '../src/constants'
 import { Credentials } from '../src/auth'
 import { credsLease, realAdapter, Reals } from './adapter'
 import { mockDefaultValues } from './mock_elements'
@@ -197,7 +197,6 @@ const createInstancesForDeploy = (types: ObjectType[], testSuffix: string): Inst
     valuesOverride: {
       label: createName('SAMLApp'),
       accessPolicy: new ReferenceExpression(accessPolicy.elemID, accessPolicy),
-      assignedGroups: [new ReferenceExpression(groupInstance.elemID, groupInstance)],
       profileEnrollment: new ReferenceExpression(profileEnrollment.elemID, profileEnrollment),
     },
   })
@@ -229,6 +228,35 @@ const deployChanges = async (
     })
     .toArray()
   return deployResults
+}
+
+const removeApp = async (adapterAttr: Reals, changes: Change<InstanceElement>[]): Promise<void> => {
+  const activeApp = changes
+    .map(change => getChangeData(change))
+    .find(inst => inst.elemID.typeName === APPLICATION_TYPE_NAME)
+  if (activeApp === undefined) {
+    throw new Error('Could not find deployed application, failed to clean e2e changes')
+  }
+  const inactiveApp = activeApp.clone()
+  inactiveApp.value.status = INACTIVE_STATUS
+  // Application must be deactivated before removal
+  const appDeactivationChange = toChange({ before: activeApp, after: inactiveApp })
+  const appDeployResult = await adapterAttr.adapter.deploy({ changeGroup: {
+    groupID: getChangeData(appDeactivationChange).elemID.getFullName(),
+    changes: [appDeactivationChange],
+  } })
+
+  const appRemovalChange = appDeployResult.appliedChanges
+    .find(change => getChangeData(change).elemID.typeName === APPLICATION_TYPE_NAME)
+  if (appRemovalChange === undefined) {
+    throw new Error('Could not find deployed application, failed to clean e2e changes')
+  }
+  await adapterAttr.adapter.deploy({
+    changeGroup: {
+      groupID: getChangeData(appRemovalChange).elemID.getFullName(),
+      changes: [toChange({ before: getChangeData(appRemovalChange) })],
+    },
+  })
 }
 
 describe('Okta adapter E2E', () => {
@@ -276,9 +304,17 @@ describe('Okta adapter E2E', () => {
     })
 
     afterAll(async () => {
-      const removalChanges = deployResults
+      const appliedChanges = deployResults
         .flatMap(res => res.appliedChanges)
         .filter(isAdditionChange)
+        .filter(isInstanceChange)
+
+      // Application must be removed separately
+      await removeApp(adapterAttr, appliedChanges)
+
+      const removalChanges = appliedChanges
+        // Application was removed in the prev step
+        .filter(change => getChangeData(change).elemID.typeName !== APPLICATION_TYPE_NAME)
         .map(change => toChange({ before: getChangeData(change) }))
 
       removalChanges.forEach(change => {
@@ -292,13 +328,13 @@ describe('Okta adapter E2E', () => {
           })
       })
 
-      deployResults = await Promise.all(removalChanges.map(change =>
+      deployResults = await awu(removalChanges).map(change =>
         adapterAttr.adapter.deploy({
           changeGroup: {
             groupID: getChangeData(change).elemID.getFullName(),
             changes: [change],
           },
-        })))
+        })).toArray()
 
       const errors = deployResults.flatMap(res => res.errors)
       if (errors.length) {
@@ -354,7 +390,7 @@ describe('Okta adapter E2E', () => {
       ]
       const typesWithInstances = new Set([GROUP_TYPE_NAME, ROLE_TYPE_NAME, ACCESS_POLICY_TYPE_NAME,
         ACCESS_POLICY_RULE_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_RULE_TYPE_NAME,
-        AUTHENTICATOR_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME])
+        AUTHENTICATOR_TYPE_NAME, USER_SCHEMA_TYPE_NAME, USERTYPE_TYPE_NAME, APPLICATION_TYPE_NAME])
 
       const createdTypeNames = elements.filter(isObjectType).map(e => e.elemID.typeName)
       const createdInstances = elements.filter(isInstanceElement)
@@ -379,7 +415,8 @@ describe('Okta adapter E2E', () => {
         .forEach(deployedInstance => {
           const instance = elements.filter(isInstanceElement).find(e => e.elemID.isEqual(deployedInstance.elemID))
           expect(instance).toBeDefined()
-          expect(isEqualValues(instance?.value, deployedInstance.value)).toBeTruthy()
+          // Omit '_links' as this field is hidden
+          expect(isEqualValues(_.omit(instance?.value, '_links'), deployedInstance.value)).toBeTruthy()
         })
     })
   })

@@ -23,15 +23,21 @@ const isWithInactiveApp = (
   appChange: ModificationChange<InstanceElement> | undefined
 ): boolean => {
   if (appChange === undefined) {
-    return app.value?.status === INACTIVE_STATUS ?? false
+    return app.value?.status === INACTIVE_STATUS
   }
   const beforeAppStatus = appChange.data.before.value?.status
   const afterAppStatus = appChange.data.after.value?.status
-  if (beforeAppStatus === undefined || afterAppStatus === undefined) {
-    return false
-  }
   return beforeAppStatus === INACTIVE_STATUS && afterAppStatus === INACTIVE_STATUS
 }
+
+export const getParentApp = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
+  const parents = getParents(getChangeData(change))
+  if (_.isEmpty(parents) || parents[0]?.elemID.typeName !== APPLICATION_TYPE_NAME) {
+    return undefined
+  }
+  return parents[0].value
+}
+
 
 /**
  * Verifies that AppUserSchema is not modified when the app is inactive.
@@ -55,11 +61,7 @@ export const appUserSchemaWithInactiveAppValidator: ChangeValidator = async chan
 
 
   return appUserSchemaChanges.filter(change => {
-    const parents = getParents(getChangeData(change))
-    if (_.isEmpty(parents) || parents[0].elemID.typeName !== APPLICATION_TYPE_NAME) {
-      return false
-    }
-    const app = parents[0]?.value
+    const app = getParentApp(change)
     if (app === undefined) {
       return false
     }

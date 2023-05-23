@@ -16,18 +16,19 @@
 
 import { DependencyChange, DependencyChanger, InstanceElement, ModificationChange, dependencyChange, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { getParents } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
+import { logger } from '@salto-io/logging'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { isActivationChange } from '../deployment'
+import { getParentApp } from '../change_validators/app_schema_with_inactive_app'
+
+const log = logger(module)
 
 const createDependencyChange = (
   appUserSchemaChange: deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>>,
   appChange: deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>>
 ): DependencyChange[] => {
-  /* We check for isActivationChange because we want to replace the dependency only if the app status is
-  * been modified to active. Because it is possible to add\modify appUserSchema only when the app is active.
-  */
+  // We check for isActivationChange because the default behavior of deploy is app user schema before app.
   if (!isActivationChange({
     before: appChange.change.data.before.value.status,
     after: appChange.change.data.after.value.status,
@@ -70,11 +71,11 @@ export const changeDependenciesFromAppUserSchemaToApp: DependencyChanger = async
     [getChangeData(appChange.change).elemID.getFullName(), appChange]))
 
   return appUserSchemasChanges.flatMap(change => {
-    const parents = getParents(getChangeData(change.change))
-    if (parents === undefined || parents[0].elemID.typeName !== APPLICATION_TYPE_NAME) {
+    const app = getParentApp(change.change)
+    if (app === undefined) {
+      log.warn(`Failed to find parent app for appUserSchema ${change.key}`)
       return []
     }
-    const app = parents[0].value
     const appChange = appChangeByAppName[app.elemID.getFullName()]
     if (appChange === undefined) {
       return []

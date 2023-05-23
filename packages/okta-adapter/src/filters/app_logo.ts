@@ -14,23 +14,19 @@
 * limitations under the License.
 */
 
-import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, SaltoError, StaticFile, getChangeData, isAdditionOrModificationChange, isInstanceElement, isStaticFile } from '@salto-io/adapter-api'
+import { Change, InstanceElement, ObjectType, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { getParent, naclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
+import { naclCase } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import FormData from 'form-data'
 import Joi from 'joi'
 import { OktaConfig } from '../config'
-import { getOktaError } from '../deployment'
-import { extractIdFromUrl } from '../utils'
-import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, OKTA, LINKS_FIELD } from '../constants'
+import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
-import OktaClient from '../client/client'
-import { getLogoContent } from './logo'
+import { createLogoType, deployLogo, getLogo } from './logo'
 
 const log = logger(module)
-const { getInstanceName, TYPES_PATH, SUBTYPES_PATH, RECORDS_PATH } = elementsUtils
+const { getInstanceName } = elementsUtils
 /* Allowed types by okta docs https://help.okta.com/en-us/Content/Topics/Apps/apps-customize-logo.htm */
 const ALLOWED_LOGO_FILE_TYPES = new Set(['png', 'jpg', 'gif'])
 
@@ -66,20 +62,6 @@ const isApp = (value: unknown): value is App => {
   }
   return true
 }
-const createAppLogoType = (): ObjectType =>
-  new ObjectType({
-    elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME),
-    fields: {
-      id: {
-        refType: BuiltinTypes.STRING,
-        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
-      },
-      fileName: { refType: BuiltinTypes.STRING },
-      contentType: { refType: BuiltinTypes.STRING },
-      content: { refType: BuiltinTypes.STRING },
-    },
-    path: [OKTA, TYPES_PATH, SUBTYPES_PATH, APP_LOGO_TYPE_NAME, APP_LOGO_TYPE_NAME],
-  })
 
 const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')
@@ -91,7 +73,10 @@ const getLogoFileType = (contentType: string): string | undefined => {
   return fileType
 }
 
-const getAppLogo = async (app: InstanceElement, appLogoType: ObjectType, config: OktaConfig,
+const getAppLogo = async (
+  app: InstanceElement,
+  appLogoType: ObjectType,
+  config: OktaConfig,
 ): Promise<InstanceElement | undefined> => {
   if (!isApp(app.value)) {
     log.debug(`App ${app.value.label} is not a valid app`)
@@ -106,59 +91,18 @@ const getAppLogo = async (app: InstanceElement, appLogoType: ObjectType, config:
     log.debug(`App ${app.value.label} does not have a logo link`)
     return undefined
   }
-
-  const logoContent = await getLogoContent(logoLink)
   const idField = config.apiDefinitions.types[APPLICATION_TYPE_NAME]?.transformation?.idFields
-  if (idField === undefined || logoContent === undefined) {
+  if (idField === undefined) {
     return undefined
   }
-  const appName = naclCase(getInstanceName(app.value, idField, APP_LOGO_TYPE_NAME))
-  const pathName = pathNaclCase(appName)
-  const resourcePathName = `${normalizeFilePathPart(appName)}.${getLogoFileType(appLogo.type)}`
-  const logoId = extractIdFromUrl(logoLink)
-  if (logoId === undefined) {
-    log.debug(`App ${app.value.label} does not have a logo id`)
+  const name = naclCase(getInstanceName(app.value, idField, APP_LOGO_TYPE_NAME))
+  const contentType = getLogoFileType(appLogo.type)
+  if (contentType === undefined) {
+    return undefined
   }
-  const logo = new InstanceElement(
-    appName,
-    appLogoType,
-    {
-      id: logoId ?? app.value.id,
-      fileName: `${appLogo.name}.${getLogoFileType(appLogo.type)}`,
-      contentType: appLogo.type,
-      content: new StaticFile({
-        filepath: `${OKTA}/${appLogoType.elemID.name}/${resourcePathName}`,
-        content: logoContent,
-      }),
-    },
-    [OKTA, RECORDS_PATH, APP_LOGO_TYPE_NAME, pathName],
-    {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(app.elemID, app)],
-    }
-  )
-  return logo
+  return getLogo([app], appLogoType, contentType, name, logoLink)
 }
 
-const deployAppLogo = async (
-  client: OktaClient,
-  logoInstance: InstanceElement,
-  fileContent: Buffer | undefined,
-): Promise<Error | void> => {
-  try {
-    const appId = getParent(logoInstance).value.id
-    const logoUrl = `/api/v1/apps/${appId}/logo`
-    const form = new FormData()
-    form.append('file', fileContent || Buffer.from(''), logoInstance.value.fileName)
-    await client.post({
-      url: logoUrl,
-      data: form,
-      headers: { ...form.getHeaders() },
-    })
-    return undefined
-  } catch (err) {
-    return getOktaError(logoInstance.elemID, err)
-  }
-}
 
 /**
  * Fetches and deploys application's logos as static files.
@@ -170,18 +114,13 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APPLICATION_TYPE_NAME)
       .filter(app => app.value[LINKS_FIELD]?.logo !== undefined)
-    const appLogoType = createAppLogoType()
+    const appLogoType = createLogoType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
-    const [warnings, appLogoInstances] = _.partition((await Promise.all(appsWithLogo
-      .map(async app => getAppLogo(app, appLogoType, config))))
-      .filter(isInstanceElement), app => app === undefined)
-    appLogoInstances.forEach(logo => elements.push(logo))
 
-    const saltoWarnings = warnings.map((app: InstanceElement): SaltoError => ({
-      message: `App ${app.value.label} does not have a propper logo`,
-      severity: 'Warning',
-    }))
-    return { errors: saltoWarnings }
+    const appLogoInstances = (await Promise.all(appsWithLogo
+      .map(async app => getAppLogo(app, appLogoType, config))))
+      .filter(isInstanceElement)
+    appLogoInstances.forEach(logo => elements.push(logo))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [appLogoChanges, leftoverChanges] = _.partition(
@@ -190,12 +129,7 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
     )
 
     const deployLogoResults = await Promise.all(appLogoChanges.map(async change => {
-      const logoInstance = getChangeData(change)
-      const fileContent = isAdditionOrModificationChange(change)
-        && isStaticFile(logoInstance.value.content)
-        ? await logoInstance.value.content.getContent()
-        : undefined
-      const deployResult = await deployAppLogo(client, logoInstance, fileContent)
+      const deployResult = await deployLogo(change, client)
       return deployResult === undefined ? change : deployResult
     }))
     const [deployLogoErrors, successfulChanges] = _.partition(

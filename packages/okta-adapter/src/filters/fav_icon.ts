@@ -17,17 +17,14 @@
 import _ from 'lodash'
 import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME } from '../constants'
+import { BRAND_THEME_TYPE_NAME, FAVORITE_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { createLogoType, deployLogo, getBrandLogoOrIcon } from './logo'
 
 const log = logger(module)
 
-/**
- * Fetches and deploys brand logo as static file.
- */
-const brandLogoFilter: FilterCreator = ({ client }) => ({
-  name: 'brandLogoFilter',
+const favIconFilter: FilterCreator = ({ client }) => ({
+  name: 'favIconFilter',
   onFetch: async elements => {
     const brandTheme = elements
       .filter(isInstanceElement)
@@ -36,20 +33,18 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
     if (brandTheme.length === 0) {
       log.debug('No brandTheme was found')
     }
-    const brandLogoType = createLogoType(BRAND_LOGO_TYPE_NAME)
-    elements.push(brandLogoType)
-
-    const brandLogoInstances = (await Promise.all(brandTheme.map(async theme =>
-      getBrandLogoOrIcon(theme, brandLogoType))))
+    const favIconType = createLogoType(FAVORITE_ICON_TYPE_NAME)
+    elements.push(favIconType)
+    const favIconInstances = (await Promise.all(brandTheme.map(async theme => getBrandLogoOrIcon(theme, favIconType))))
       .filter(isInstanceElement)
-    brandLogoInstances.forEach(logo => elements.push(logo))
+    favIconInstances.forEach(logo => elements.push(logo))
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [brandLogoChanges, leftoverChanges] = _.partition(
+    const [favIconChanges, leftoverChanges] = _.partition(
       changes,
-      change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
+      change => getChangeData(change).elemID.typeName === FAVORITE_ICON_TYPE_NAME,
     )
-    const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
+    const deployLogoResults = await Promise.all(favIconChanges.map(async change => {
       const deployResult = await deployLogo(change, client)
       return deployResult === undefined ? change : deployResult
     }))
@@ -68,4 +63,4 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
   },
 })
 
-export default brandLogoFilter
+export default favIconFilter

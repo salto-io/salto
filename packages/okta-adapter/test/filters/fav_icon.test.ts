@@ -16,10 +16,10 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
-import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
+import { FAVORITE_ICON_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
-import appLogoFilter from '../../src/filters/app_logo'
+import favIconFilter from '../../src/filters/fav_icon'
 import * as connectionModule from '../../src/client/connection'
 
 jest.mock('../../src/client/connection', () => ({
@@ -28,42 +28,45 @@ jest.mock('../../src/client/connection', () => ({
 }))
 
 const mockedConnection = jest.mocked(connectionModule, true)
-
-describe('app logo filter', () => {
+describe('favorite icon filter', () => {
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
-  const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  const appLogoType = new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) })
-  const fileName = 'app1_logo.png'
+  const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
+  const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
+  const brandLogoType = new ObjectType({ elemID: new ElemID(OKTA, FAVORITE_ICON_TYPE_NAME) })
+  const fileName = 'favicon.ico'
   const content = Buffer.from('test')
-  const appInstance = new InstanceElement(
-    'app1',
-    appType,
+  const brandInstance = new InstanceElement(
+    'brand1',
+    brandType,
+    {
+      id: '9',
+      name: 'brand1',
+    },
+  )
+  const brandThemeInstance = new InstanceElement(
+    'brandTheme1',
+    brandThemeType,
     {
       id: '11',
-      label: 'app1',
-      [LINKS_FIELD]: {
-        logo: [
-          {
-            name: 'fileName',
-            href: 'https://ok12static.oktacdn.com/fs/bco/4/111',
-            type: 'image/png',
-          },
-        ],
-      },
+      logo: 'https://ok12static.oktacdn.com/bc/image/111',
+    },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
     }
   )
   beforeEach(async () => {
     jest.clearAllMocks()
     const mockCli = mockClient()
     client = mockCli.client
-    filter = appLogoFilter(getFilterParams({ client })) as typeof filter
+    filter = favIconFilter(getFilterParams({ client })) as typeof filter
   })
   describe('onFetch', () => {
     beforeEach(async () => {
       mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/fs/bco/4/111') {
+        if (url === 'https://ok12static.oktacdn.com/bc/image/111') {
           return {
             status: 200,
             data: content,
@@ -73,51 +76,54 @@ describe('app logo filter', () => {
       })
     })
     it('should create AppLogo type and AppLogo instance', async () => {
-      const elements = [appType, appInstance].map(e => e.clone())
+      const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
-          'okta.AppLogo',
-          'okta.AppLogo.instance.app1',
-          'okta.Application',
-          'okta.Application.instance.app1',
+          'okta.BrandTheme',
+          'okta.BrandTheme.instance.brandTheme1',
+          'okta.FavoriteIcon',
+          'okta.FavoriteIcon.instance.favicon',
         ])
     })
-    it('check that AppLogo instance is created properly', async () => {
-      const elements = [appType, appInstance].map(e => e.clone())
+    it('check that barndLogo instance has the correct values', async () => {
+      const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
-      const logo = instances.find(e => e.elemID.typeName === APP_LOGO_TYPE_NAME)
+      const logo = instances.find(e => e.elemID.typeName === FAVORITE_ICON_TYPE_NAME)
       expect(logo?.value).toEqual({
         id: '111',
-        fileName: 'app1.png',
-        contentType: 'png',
+        fileName: 'favicon.ico',
+        contentType: 'ico',
         content: new StaticFile({
-          filepath: 'okta/AppLogo/app1.png', encoding: 'binary', content,
+          filepath: 'okta/FavoriteIcon/favicon.ico', encoding: 'binary', content,
         }),
       })
     })
   })
   describe('deploy', () => {
-    let logoInstance: InstanceElement
+    let brandLogoInstance: InstanceElement
     beforeEach(async () => {
-      logoInstance = new InstanceElement(
-        'app1',
-        appLogoType,
+      brandLogoInstance = new InstanceElement(
+        'brandLogo',
+        brandLogoType,
         {
-          id: '11',
+          id: '111',
           fileName,
-          contentType: 'image/png',
+          contentType: 'png',
           content: new StaticFile({
-            filepath: 'okta/AppLogo/app1.png', encoding: 'binary', content,
+            filepath: 'okta/BrandLogo/brandLogo.png', encoding: 'binary', content,
           }),
-        }
+        },
       )
-      logoInstance.annotate({
-        [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appInstance.elemID, appInstance)],
+      brandLogoInstance.annotate({
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(brandThemeInstance.elemID, brandThemeInstance),
+          new ReferenceExpression(brandInstance.elemID, brandInstance),
+        ],
       })
       mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/fs/bco/4/11') {
+        if (url === 'https://ok12static.oktacdn.com/bc/image/111') {
           return {
             status: 200,
             data: content,
@@ -126,17 +132,17 @@ describe('app logo filter', () => {
         throw new Error('Err')
       })
     })
-    it('should add logo instance to the elements', async () => {
-      const clonedApp = appInstance.clone()
-      const clonedLogo = logoInstance.clone()
+    it('should add logo instance to elements', async () => {
+      const clonedBrandTheme = brandThemeInstance.clone()
+      const clonedLogo = brandLogoInstance.clone()
       const res = await filter.deploy([
-        { action: 'add', data: { after: clonedApp } },
+        { action: 'add', data: { after: clonedBrandTheme } },
         { action: 'add', data: { after: clonedLogo } },
       ])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
       expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
-        .toEqual(clonedApp.value)
+        .toEqual(clonedBrandTheme.value)
 
       expect(res.deployResult.appliedChanges).toHaveLength(1)
       expect(res.deployResult.appliedChanges[0]).toEqual(
@@ -144,8 +150,8 @@ describe('app logo filter', () => {
       )
     })
     it('should modify logo instances', async () => {
-      const beforeLogo = logoInstance.clone()
-      const afterLogo = logoInstance.clone()
+      const beforeLogo = brandLogoInstance.clone()
+      const afterLogo = brandLogoInstance.clone()
       afterLogo.value.content = new StaticFile({
         filepath: 'okta/AppLogo/changed.png',
         encoding: 'binary',
@@ -162,14 +168,37 @@ describe('app logo filter', () => {
         { action: 'modify', data: { before: beforeLogo, after: afterLogo } }
       )
     })
+    it('should remove logo instances', async () => {
+      const clonedLogo = brandLogoInstance.clone()
+      const clonedBrandTheme = brandThemeInstance.clone()
+      const res = await filter.deploy([
+        { action: 'remove', data: { before: clonedBrandTheme } },
+        { action: 'remove', data: { before: clonedLogo } },
+      ])
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrandTheme.value)
+
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges[0]).toEqual(
+        { action: 'remove', data: { before: clonedLogo } }
+      )
+    })
     it('should return errors', async () => {
-      const clonedLogo = logoInstance.clone()
+      const clonedBrand = brandInstance.clone()
+      const clonedLogo = brandLogoInstance.clone()
       clonedLogo.annotations[CORE_ANNOTATIONS.PARENT] = []
       const res = await filter.deploy([
+        { action: 'add', data: { after: clonedBrand } },
         { action: 'add', data: { after: clonedLogo } },
       ])
+
       expect(res.deployResult.errors).toHaveLength(1)
       expect(res.deployResult.appliedChanges).toHaveLength(0)
+      expect(res.leftoverChanges).toHaveLength(1)
+      expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
+        .toEqual(clonedBrand.value)
     })
   })
 })

@@ -43,12 +43,12 @@ import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
-import templateUrlsFilter from './filters/template_urls'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
 import brandLogoFilter from './filters/brand_logo'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, OKTA } from './constants'
+import favIconFilter from './filters/fav_icon'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
 
@@ -76,12 +76,12 @@ export const DEFAULT_FILTERS = [
   userFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
-  templateUrlsFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
   brandLogoFilter,
+  favIconFilter,
   fieldReferencesFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
@@ -96,6 +96,7 @@ export const DEFAULT_FILTERS = [
 const SKIP_RESOLVE_TYPE_NAMES = [
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
+  FAVORITE_ICON_TYPE_NAME,
 ]
 
 export interface OktaAdapterParams {

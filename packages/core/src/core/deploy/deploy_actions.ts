@@ -181,11 +181,11 @@ export const deployActions = async (
         const item = deployPlan.getItem(key) as PlanItem
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
-          deployErrors.push({
-            groupId: item.groupKey,
-            message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
-            severity: 'Error' as SeverityLevel,
-          })
+          deployErrors.push(...[...item.changes()].map(change =>
+            ({ elemID: getChangeData(change).elemID,
+              groupId: item.groupKey,
+              message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
+              severity: 'Error' as SeverityLevel })))
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))
         } else {

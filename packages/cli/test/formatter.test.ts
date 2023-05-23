@@ -78,7 +78,7 @@ describe('formatter', () => {
     detailedMessage: '',
     severity: 'Info',
   }
-  const workspaceDeployErrors: DeployError[] = [{
+  const workspaceDeployProblems: DeployError[] = [{
     elemID: new ElemID('salesforce', 'TestType'),
     message: 'my error message 1',
     severity: 'Error',
@@ -88,6 +88,18 @@ describe('formatter', () => {
     elemID: new ElemID('salesforce', 'TestType'),
     message: 'my error message 2',
     severity: 'Error',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my warning message',
+    severity: 'Warning',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my info message',
+    severity: 'Info',
     groupId: 'test group',
   }]
 
@@ -557,11 +569,13 @@ describe('formatter', () => {
   describe('deployErrorsOutput', () => {
     let formattedErrors: string
     beforeEach(() => {
-      formattedErrors = deployErrorsOutput(workspaceDeployErrors)
+      formattedErrors = deployErrorsOutput(workspaceDeployProblems)
     })
     it('should have both error messages', () => {
       expect(formattedErrors).toContain('my error message 1')
       expect(formattedErrors).toContain('my error message 2')
+      expect(formattedErrors).toContain('my warning message')
+      expect(formattedErrors).toContain('my info message')
     })
   })
 })

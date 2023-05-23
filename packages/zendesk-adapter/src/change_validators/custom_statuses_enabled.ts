@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, ZENDESK } from '../constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
 const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
@@ -60,6 +60,75 @@ const areCustomStatusesEnabled = async (
   return customStatusesEnabled.enabled
 }
 
+const createErrorsForCustomStatusTypes = (
+  changes: readonly Change<ChangeDataType>[]
+): ChangeError[] =>
+  changes
+    .filter(
+      change =>
+        getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME
+    )
+    .map(getChangeData)
+    .map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Error',
+      message: 'Custom statuses are not enabled.',
+      detailedMessage:
+        'Cannot deploy custom statuses when they are not enabled in the Zendesk account.',
+    }))
+
+type ChildField = {
+  // eslint-disable-next-line camelcase
+  required_on_statuses: {
+    // eslint-disable-next-line camelcase
+    custom_statuses?: ReferenceExpression[]
+  }
+}
+
+type Condition = {
+  // eslint-disable-next-line camelcase
+  child_fields: ChildField[]
+}
+
+type TicketValue = {
+  // eslint-disable-next-line camelcase
+  agent_conditions?: Condition[]
+  // eslint-disable-next-line camelcase
+  end_user_conditions?: Condition[]
+}
+
+const hasConditionWithCustomStatuses = (conditions: Condition[]): boolean =>
+  conditions.some((condition: Condition) =>
+    condition.child_fields.some(
+      field => (field.required_on_statuses.custom_statuses?.length ?? 0) > 0
+    ))
+
+const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean => {
+  const data = getChangeData(change)
+  if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME) return false
+  if (!isInstanceElement(data)) return false
+
+  const ticketInstance = data as InstanceElement
+  const ticketValue = ticketInstance.value as TicketValue
+
+  return hasConditionWithCustomStatuses(ticketValue.agent_conditions || [])
+    || hasConditionWithCustomStatuses(ticketValue.end_user_conditions || [])
+}
+
+const createErrorsForTicketFormsWithCustomStatuses = (
+  changes: readonly Change<ChangeDataType>[]
+): ChangeError[] =>
+  changes
+    .filter(isTicketFormWithCustomStatus)
+    .map(getChangeData)
+    .map(instance => ({
+      elemID: instance.elemID,
+      severity: 'Warning',
+      message: 'Custom statuses are not enabled.',
+      detailedMessage:
+        'Custom statuses are not enabled which which may cause some statuses to change their context',
+    }))
+
 /**
  * Checks that the custom statuses Zendesk feature is enabled before changing
  * instances of type zendesk.custom_status.
@@ -72,13 +141,8 @@ export const customStatusesEnabledValidator: ChangeValidator = async (
   // are enabled) there's no need to check anything else.
   if (await areCustomStatusesEnabled(elementSource)) return []
 
-  return changes
-    .filter(change => getChangeData(change).elemID.typeName === CUSTOM_STATUS_TYPE_NAME)
-    .map(getChangeData)
-    .map(instance => ({
-      elemID: instance.elemID,
-      severity: 'Error',
-      message: 'Custom statuses are not enabled.',
-      detailedMessage: 'Cannot deploy custom statuses when they are not enabled in the Zendesk account.',
-    }))
+  return [
+    ...createErrorsForCustomStatusTypes(changes),
+    ...createErrorsForTicketFormsWithCustomStatuses(changes),
+  ]
 }

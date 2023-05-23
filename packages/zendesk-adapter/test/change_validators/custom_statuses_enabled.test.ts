@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { customStatusesEnabledValidator } from '../../src/change_validators'
 
 const mockLogError = jest.fn()
@@ -46,14 +46,14 @@ const createElementSource = ({ customStatusesEnabled }: { customStatusesEnabled:
 }
 
 describe(customStatusesEnabledValidator.name, () => {
-  let changeObjectType: ObjectType
-  let instance: InstanceElement
+  const changeObjectType = new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_STATUS_TYPE_NAME) })
+  const ticketFormObjectType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
+  let customStatusInstance: InstanceElement
   let customStatusChange: Change<InstanceElement>
 
   beforeEach(() => {
-    changeObjectType = new ObjectType({ elemID: new ElemID(ZENDESK, CUSTOM_STATUS_TYPE_NAME) })
-    instance = new InstanceElement('test', changeObjectType)
-    customStatusChange = toChange({ after: instance })
+    customStatusInstance = new InstanceElement('test', changeObjectType)
+    customStatusChange = toChange({ after: customStatusInstance })
   })
 
   it('should not return an error when elementSource is undefined', async () => {
@@ -87,10 +87,66 @@ describe(customStatusesEnabledValidator.name, () => {
         const errors = await customStatusesEnabledValidator([customStatusChange], elementSource)
         expect(errors).toHaveLength(1)
         expect(errors[0]).toEqual({
-          elemID: instance.elemID,
+          elemID: customStatusInstance.elemID,
           severity: 'Error',
           message: 'Custom statuses are not enabled.',
           detailedMessage: 'Cannot deploy custom statuses when they are not enabled in the Zendesk account.',
+        })
+      })
+    })
+
+    describe('when ticket form has agent condition with custom statuses', () => {
+      it('returns a warning', async () => {
+        const ticketFormInstance = new InstanceElement('test', ticketFormObjectType, {
+          agent_conditions: [
+            {
+              child_fields: [
+                {
+                  required_on_statuses: {
+                    custom_statuses: [new ReferenceExpression(new ElemID('test'))],
+                  },
+                },
+              ],
+            },
+          ],
+        })
+        const ticketFormChange = toChange({ after: ticketFormInstance })
+
+        const errors = await customStatusesEnabledValidator([ticketFormChange], elementSource)
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toEqual({
+          elemID: ticketFormInstance.elemID,
+          severity: 'Warning',
+          message: 'Custom statuses are not enabled.',
+          detailedMessage: 'Custom statuses are not enabled which which may cause some statuses to change their context',
+        })
+      })
+    })
+
+    describe('when ticket form has end user condition with custom statuses', () => {
+      it('returns a warning', async () => {
+        const ticketFormInstance = new InstanceElement('test', ticketFormObjectType, {
+          end_user_conditions: [
+            {
+              child_fields: [
+                {
+                  required_on_statuses: {
+                    custom_statuses: [new ReferenceExpression(new ElemID('test'))],
+                  },
+                },
+              ],
+            },
+          ],
+        })
+        const ticketFormChange = toChange({ after: ticketFormInstance })
+
+        const errors = await customStatusesEnabledValidator([ticketFormChange], elementSource)
+        expect(errors).toHaveLength(1)
+        expect(errors[0]).toEqual({
+          elemID: ticketFormInstance.elemID,
+          severity: 'Warning',
+          message: 'Custom statuses are not enabled.',
+          detailedMessage: 'Custom statuses are not enabled which which may cause some statuses to change their context',
         })
       })
     })

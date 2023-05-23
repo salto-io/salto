@@ -117,8 +117,11 @@ describe(customStatusesEnabledValidator.name, () => {
         expect(errors[0]).toEqual({
           elemID: ticketFormInstance.elemID,
           severity: 'Warning',
-          message: 'Custom statuses are not enabled.',
-          detailedMessage: 'Custom statuses are not enabled which which may cause some statuses to change their context',
+          message: 'Deploying ticket form with custom statuses while custom statuses are disabled',
+          detailedMessage:
+            'It seems this ticket form originates from another account that has custom statuses enabled. '
+            + 'Since custom statuses are disabled in the target account, '
+            + 'this ticket form will be deployed without the custom_statuses fields',
         })
       })
     })
@@ -145,8 +148,11 @@ describe(customStatusesEnabledValidator.name, () => {
         expect(errors[0]).toEqual({
           elemID: ticketFormInstance.elemID,
           severity: 'Warning',
-          message: 'Custom statuses are not enabled.',
-          detailedMessage: 'Custom statuses are not enabled which which may cause some statuses to change their context',
+          message: 'Deploying ticket form with custom statuses while custom statuses are disabled',
+          detailedMessage:
+            'It seems this ticket form originates from another account that has custom statuses enabled. '
+            + 'Since custom statuses are disabled in the target account, '
+            + 'this ticket form will be deployed without the custom_statuses fields',
         })
       })
     })

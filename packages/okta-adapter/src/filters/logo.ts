@@ -102,7 +102,7 @@ export const deployLogo = async (
       const brandTheme = getParents(logoInstance)[0].value
       const brand = getParents(logoInstance)[1].value
       const suffix = LOGO_TYPES_TO_VALUES[logoInstance.elemID.typeName].urlSuffix
-      logoUrl = `/api/v1/brands/${brand.value.id}/themes/${brandTheme.value.id}/${suffix}}`
+      logoUrl = `/api/v1/brands/${brand.value.id}/themes/${brandTheme.value.id}/${suffix}`
     }
     if (isRemovalChange(change)) {
       return await sendLogoRequest(client, change, logoInstance, logoUrl, true)

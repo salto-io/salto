@@ -28,8 +28,7 @@ import { TICKET_FORM_TYPE_NAME } from '../constants'
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 
-
-type Child = {
+export type Child = {
   // eslint-disable-next-line camelcase
   required_on_statuses: {
     type: string
@@ -39,12 +38,17 @@ type Child = {
   }
 }
 
-type TicketForm = {
+export type Condition = {
   // eslint-disable-next-line camelcase
-  agent_conditions: {
-    // eslint-disable-next-line camelcase
-    child_fields: Child[]
-  }[]
+  child_fields: Child[]
+}
+
+export type TicketForm = {
+  // eslint-disable-next-line camelcase
+  agent_conditions?: Condition[]
+
+  // eslint-disable-next-line camelcase
+  end_user_conditions?: Condition[]
 }
 
 /**
@@ -54,10 +58,10 @@ const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceVa
   _.isArray(instanceValue.agent_conditions)
   && instanceValue.agent_conditions.some(condition =>
     _.isArray(condition.child_fields)
-      && condition.child_fields.some((child: Child) =>
-        _.isObject(child.required_on_statuses)
-        && child.required_on_statuses.type === SOME_STATUSES
-        && (child.required_on_statuses.custom_statuses !== undefined
+    && condition.child_fields.some((child: Child) =>
+      _.isObject(child.required_on_statuses)
+      && child.required_on_statuses.type === SOME_STATUSES
+      && (child.required_on_statuses.custom_statuses !== undefined
         && !_.isEmpty(child.required_on_statuses.custom_statuses))))
 
 const invalidTicketFormChange = (change: Change<InstanceElement>): boolean =>
@@ -68,15 +72,14 @@ const invalidTicketFormChange = (change: Change<InstanceElement>): boolean =>
 const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   const clonedInst = inst.clone()
   if (isInvalidTicketForm(clonedInst.value)) {
-    clonedInst.value.agent_conditions
-      .forEach(condition => condition.child_fields
-        .forEach(child => {
-          if (child.required_on_statuses.type === SOME_STATUSES
-            && (child.required_on_statuses.custom_statuses !== undefined
-              && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
-            delete child.required_on_statuses.statuses
-          }
-        }))
+    clonedInst.value.agent_conditions?.forEach(condition => condition.child_fields
+      .forEach(child => {
+        if (child.required_on_statuses.type === SOME_STATUSES
+          && (child.required_on_statuses.custom_statuses !== undefined
+            && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
+          delete child.required_on_statuses.statuses
+        }
+      }))
   }
   return clonedInst
 }

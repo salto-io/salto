@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { Condition, TicketForm } from '../filters/ticket_form'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
@@ -77,26 +78,6 @@ const createErrorsForCustomStatusTypes = (
         'Cannot deploy custom statuses when they are not enabled in the Zendesk account.',
     }))
 
-type ChildField = {
-  // eslint-disable-next-line camelcase
-  required_on_statuses: {
-    // eslint-disable-next-line camelcase
-    custom_statuses?: ReferenceExpression[]
-  }
-}
-
-type Condition = {
-  // eslint-disable-next-line camelcase
-  child_fields: ChildField[]
-}
-
-type TicketValue = {
-  // eslint-disable-next-line camelcase
-  agent_conditions?: Condition[]
-  // eslint-disable-next-line camelcase
-  end_user_conditions?: Condition[]
-}
-
 const hasConditionWithCustomStatuses = (conditions: Condition[]): boolean =>
   conditions.some((condition: Condition) =>
     condition.child_fields.some(
@@ -105,11 +86,12 @@ const hasConditionWithCustomStatuses = (conditions: Condition[]): boolean =>
 
 const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean => {
   const data = getChangeData(change)
-  if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME) return false
-  if (!isInstanceElement(data)) return false
+  if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME || !isInstanceElement(data)) {
+    return false
+  }
 
   const ticketInstance = data as InstanceElement
-  const ticketValue = ticketInstance.value as TicketValue
+  const ticketValue = ticketInstance.value as TicketForm
 
   return hasConditionWithCustomStatuses(ticketValue.agent_conditions || [])
     || hasConditionWithCustomStatuses(ticketValue.end_user_conditions || [])

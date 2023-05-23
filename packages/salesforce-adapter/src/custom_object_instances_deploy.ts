@@ -49,7 +49,7 @@ const log = logger(module)
 
 type ActionResult = {
   successInstances: InstanceElement[]
-  errorMessages: (SaltoElementError | SaltoError)[]
+  errorInstances: (SaltoElementError | SaltoError)[]
 }
 
 type InstanceAndResult = {
@@ -69,22 +69,23 @@ ${safeJsonStringify(instance.value, undefined, 2,)}
   })
 )
 
-const getErrorMessagesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] =>
-  instancesAndResults
-    .flatMap(({ instance, result }) => {
-      let instanceErrors: SaltoElementError[] = []
-      if (values.isDefined(result.errors)) {
-        instanceErrors = instanceErrors.concat(result.errors.map(error =>
-          ({ elemID: instance.elemID, message: error, severity: 'Error' } as SaltoElementError)))
-      }
-      return instanceErrors
-    })
+const getErrorInstancesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] =>
+  instancesAndResults.flatMap(({ instance, result }) =>
+    (values.isDefined(result.errors)
+      ? result.errors
+        .filter(Boolean)
+        .map((error: string) => ({
+          elemID: instance.elemID,
+          message: error,
+          severity: 'Error',
+        } as SaltoElementError))
+      : []))
 
 const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] => {
   const errored = instancesAndResults
     .filter(({ result }) => !result.success && result.errors !== undefined)
   logErroredInstances(errored)
-  return getErrorMessagesFromInstAndResults(errored)
+  return getErrorInstancesFromInstAndResults(errored)
 }
 
 const groupInstancesAndResultsByIndex = (
@@ -202,7 +203,7 @@ export const retryFlow = async (
   const { retryDelay, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
-  let errMsgs: (SaltoElementError | SaltoError)[] = []
+  let errors: (SaltoElementError | SaltoError)[] = []
 
   const instanceResults = await crudFn({ typeName, instances, client })
 
@@ -211,15 +212,15 @@ export const retryFlow = async (
   const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
   successes = successes.concat(succeeded.map(instAndRes => instAndRes.instance))
-  errMsgs = errMsgs.concat(getAndLogErrors(notRecoverable))
+  errors = errors.concat(getAndLogErrors(notRecoverable))
 
   if (_.isEmpty(recoverable)) {
-    return { successInstances: successes, errorMessages: errMsgs }
+    return { successInstances: successes, errorInstances: errors }
   }
   if (retriesLeft === 0) {
     return {
       successInstances: successes,
-      errorMessages: errMsgs.concat(getAndLogErrors(recoverable)),
+      errorInstances: errors.concat(getAndLogErrors(recoverable)),
     }
   }
 
@@ -228,14 +229,14 @@ export const retryFlow = async (
   log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
                   remaining retryable failures are: ${recoverable}`)
 
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
     retriesLeft - 1
   )
   return {
     successInstances: successes.concat(successInstances),
-    errorMessages: errMsgs.concat(errorMessages),
+    errorInstances: errors.concat(errorInstances),
   }
 }
 
@@ -345,7 +346,7 @@ const deployAddInstances = async (
   )
   const {
     successInstances: successInsertInstances,
-    errorMessages: insertErrorMessages,
+    errorInstances: insertErrorInstances,
   } = await retryFlow(
     insertInstances,
     { typeName, instances: newInstances, client },
@@ -358,7 +359,7 @@ const deployAddInstances = async (
   })
   const {
     successInstances: successUpdateInstances,
-    errorMessages: updateErrorMessages,
+    errorInstances: errorUpdateInstances,
   } = await retryFlow(
     updateInstances,
     { typeName: await apiName(type), instances: existingInstances, client },
@@ -367,7 +368,7 @@ const deployAddInstances = async (
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorMessages, ...updateErrorMessages],
+    errors: [...insertErrorInstances, ...errorUpdateInstances],
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -379,14 +380,14 @@ const deployRemoveInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     deleteInstances,
     { typeName: await apiName(await instances[0].getType()), instances, client },
     client.dataRetry.maxAttempts
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
-    errors: errorMessages,
+    errors: errorInstances,
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -406,7 +407,7 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
     { typeName: instancesType, instances: afters, client },
     client.dataRetry.maxAttempts
@@ -419,7 +420,7 @@ const deployModifyChanges = async (
     message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
     severity: 'Error' as SeverityLevel,
   })).toArray()
-  const errors: (SaltoElementError | SaltoError)[] = [...errorMessages, ...diffApiNameErrors]
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,

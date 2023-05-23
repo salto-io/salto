@@ -18,7 +18,7 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group,
-  isSaltoElementError, SaltoElementError, SaltoError, SeverityLevel, AdapterDeployResult, DeployResult, ChangeDataType,
+  SaltoElementError, SaltoError, SeverityLevel, AdapterDeployResult, DeployResult, ChangeDataType,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -35,14 +35,6 @@ type DeployOrValidateParams = {
   checkOnly: boolean
 }
 
-const extractErrors = (result: DeployResult): ReadonlyArray<SaltoElementError | SaltoError> =>
-  (result.errors.map(error => (
-    error instanceof Error
-      ? { message: error.message,
-        severity: 'Error' as SeverityLevel }
-      : error))
-  )
-
 const addElemIDsToError = (
   changes: readonly Change<ChangeDataType>[], error: Error
 ): ReadonlyArray<SaltoElementError> =>
@@ -53,33 +45,29 @@ const addElemIDsToError = (
   ))
   )
 
+const extractErrors = (
+  result: DeployResult,
+  changes: readonly Change<ChangeDataType>[]
+): ReadonlyArray<SaltoElementError | SaltoError> =>
+  result.errors.map(error =>
+    (error instanceof Error
+      ? addElemIDsToError(changes, error)
+      : error)).flat()
+
+
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
 ): Promise<AdapterDeployResult> => {
-  if (!checkOnly) {
-    try {
-      const deployRes = await adapter.deploy(opts)
-      return {
-        appliedChanges: deployRes.appliedChanges,
-        extraProperties: deployRes.extraProperties,
-        errors: extractErrors(deployRes),
-      }
-    } catch (error) {
-      return {
-        appliedChanges: [],
-        errors: addElemIDsToError(opts.changeGroup.changes, error as Error),
-      }
-    }
-  }
-  if (_.isUndefined(adapter.validate)) {
-    throw new Error(`Check-Only deployment is not supported in adapter ${adapterName}`)
-  }
   try {
-    const validateRes = await adapter.validate(opts)
+    const deployOrValidateFn = checkOnly ? adapter.validate : adapter.deploy
+    if (_.isUndefined(deployOrValidateFn)) {
+      throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
+    }
+    const result = await deployOrValidateFn(opts)
     return {
-      appliedChanges: validateRes.appliedChanges,
-      extraProperties: validateRes.extraProperties,
-      errors: extractErrors(validateRes),
+      appliedChanges: result.appliedChanges,
+      extraProperties: result.extraProperties,
+      errors: extractErrors(result, opts.changeGroup.changes),
     }
   } catch (error) {
     return {
@@ -199,20 +187,7 @@ export const deployActions = async (
             severity: 'Error' as SeverityLevel,
           })
         } else if (nodeError instanceof WalkDeployError) {
-          deployErrors.push(...nodeError.errors.map(
-            deployError => (isSaltoElementError(deployError)
-              ? {
-                groupId: item.groupKey,
-                message: deployError.message,
-                elemID: deployError.elemID,
-                severity: 'Error' as SeverityLevel,
-              }
-              : {
-                groupId: item.groupKey,
-                message: deployError.message,
-                severity: 'Error' as SeverityLevel,
-              })
-          ))
+          deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))
         } else {
           deployErrors.push({ groupId: item.groupKey, message: nodeError.message, severity: 'Error' as SeverityLevel })
         }

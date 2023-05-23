@@ -56,7 +56,7 @@ describe('Custom Object Deploy', () => {
         ]
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -77,7 +77,7 @@ describe('Custom Object Deploy', () => {
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual(
         expect.objectContaining({
-          errorMessages: [expect.objectContaining({
+          errorInstances: [expect.objectContaining({
             elemID: inst2.elemID,
             message: expect.stringContaining('err555'),
             severity: 'Error',
@@ -108,7 +108,7 @@ describe('Custom Object Deploy', () => {
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual(
         expect.objectContaining({
-          errorMessages: [
+          errorInstances: [
             expect.objectContaining({
               elemID: inst2.elemID,
               message: expect.stringContaining('err1'),
@@ -158,7 +158,7 @@ describe('Custom Object Deploy', () => {
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual(
         expect.objectContaining({
-          errorMessages: [
+          errorInstances: [
             expect.objectContaining({
               elemID: inst2.elemID,
               message: expect.stringContaining('err1 bla bla bla'),
@@ -200,7 +200,7 @@ describe('Custom Object Deploy', () => {
 
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
     })
 
@@ -232,7 +232,7 @@ describe('Custom Object Deploy', () => {
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
       expect(res).toEqual(
         expect.objectContaining({
-          errorMessages: [expect.objectContaining({
+          errorInstances: [expect.objectContaining({
             elemID: inst2.elemID,
             message: expect.stringContaining('err1'),
             severity: 'Error',

@@ -349,15 +349,30 @@ export const cancelDeployOutput = (checkOnly: boolean): string => [
   emptyLine(),
 ].join('\n')
 
-export const deployErrorsOutput = (deployErrors: DeployError[]): string => {
+export const deployErrorsOutput = (allErrors: DeployError[]): string => {
   const errorOutputLines = [
     emptyLine(),
   ]
-  if (deployErrors.length > 0) {
-    errorOutputLines.push(error('Errors:'))
-    errorOutputLines.push(...deployErrors.map(deployError => error(`${deployError.message}`)))
-    errorOutputLines.push(emptyLine())
-    return errorOutputLines.join('\n')
+  if (allErrors.length > 0) {
+    const warnings = allErrors.filter(warning => warning.severity === 'Warning')
+    const infos = allErrors.filter(info => info.severity === 'Info')
+    const deployErrors = allErrors.filter(err => err.severity === 'Error')
+    if (!_.isEmpty(deployErrors)) {
+      errorOutputLines.push(error('Errors:'))
+      errorOutputLines.push(...deployErrors.map(deployError => error(`${deployError.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    if (!_.isEmpty(warnings)) {
+      errorOutputLines.push(warn('Warnings:'))
+      errorOutputLines.push(...warnings.map(warning => warn(`${warning.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    if (!_.isEmpty(infos)) {
+      errorOutputLines.push(header('Info:'))
+      errorOutputLines.push(...infos.map(info => header(`${info.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    return errorOutputLines.join(EOL)
   }
   return ''
 }

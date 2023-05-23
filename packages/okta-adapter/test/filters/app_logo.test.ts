@@ -97,6 +97,14 @@ describe('app logo filter', () => {
         }),
       })
     })
+    it('should not create AppLogo instance if file type is forbiden', async () => {
+      appInstance.value[LINKS_FIELD].logo[0].type = 'image/svg+xml'
+      const elements = [appType, appInstance].map(e => e.clone())
+      await filter.onFetch(elements)
+      const instances = elements.filter(isInstanceElement)
+      const logo = instances.find(e => e.elemID.typeName === APP_LOGO_TYPE_NAME)
+      expect(logo).toBeUndefined()
+    })
   })
   describe('deploy', () => {
     let logoInstance: InstanceElement

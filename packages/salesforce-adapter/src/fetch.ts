@@ -30,8 +30,8 @@ import {
   CUSTOM_OBJECT,
   UNLIMITED_INSTANCES_VALUE,
   FOLDER_CONTENT_TYPE,
-  API_NAME_SEPARATOR,
   INSTALLED_PACKAGE_METADATA,
+  API_NAME_SEPARATOR,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -173,7 +173,7 @@ const listMetadataObjectsWithinFolders = async (
   return { elements, configChanges }
 }
 
-const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): string => {
+const getFullName = (obj: FileProperties): string => {
   if (!obj.namespacePrefix) {
     return obj.fullName
   }
@@ -195,27 +195,19 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
   if (obj.fullName.startsWith(namePrefix)) {
     return obj.fullName
   }
-  if (addNamespacePrefixToFullName) {
-    // Instances of type InstalledPackage fullNames should never include the namespace prefix
-    if (obj.type === INSTALLED_PACKAGE_METADATA) {
-      return obj.fullName
-    }
-
-    // In some cases, obj.fullName does not contain the namespace prefix even though
-    // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-    if (obj.fullName.includes(API_NAME_SEPARATOR)) {
-    // Case for API name with an object <Object>.X where it should be <Object>.<namespace>__X
-      const [parentName, instanceName] = obj.fullName.split(API_NAME_SEPARATOR)
-      return `${parentName}${API_NAME_SEPARATOR}${namePrefix}${instanceName}`
-    }
-    return `${namePrefix}${obj.fullName}`
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
+  // Also subfields are dealt with somewhere else
+  if (obj.type === INSTALLED_PACKAGE_METADATA || obj.fullName.includes(API_NAME_SEPARATOR)) {
+    return obj.fullName
   }
-  log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
-  return obj.fullName
+
+  // In some cases, obj.fullName does not contain the namespace prefix even though
+  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+  return `${namePrefix}${obj.fullName}`
 }
 
-const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): FileProperties => {
-  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
+const getPropsWithFullName = (obj: FileProperties): FileProperties => {
+  const correctFullName = getFullName(obj)
   return {
     ...obj,
     fullName: correctFullName,
@@ -236,14 +228,13 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
-  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE, addNamespacePrefixToFullName,
+  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
-  addNamespacePrefixToFullName?: boolean
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -270,7 +261,7 @@ export const fetchMetadataInstances = async ({
   const filePropsToRead = fileProps
     .map(prop => ({
       ...prop,
-      fullName: getFullName(prop, addNamespacePrefixToFullName),
+      fullName: getFullName(prop),
     }))
     .filter(prop => metadataQuery.isInstanceMatch({
       namespace: getNamespace(prop),
@@ -329,7 +320,6 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
-  addNamespacePrefixToFullName?: boolean
 }
 
 export const retrieveMetadataInstances = async ({
@@ -337,7 +327,6 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
-  addNamespacePrefixToFullName,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -350,7 +339,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
+      .map(file => getPropsWithFullName(file))
       .value()
   }
 

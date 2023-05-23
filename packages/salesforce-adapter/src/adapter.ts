@@ -82,7 +82,7 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
+import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
@@ -552,7 +552,6 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -579,7 +578,6 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
       maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
-      addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

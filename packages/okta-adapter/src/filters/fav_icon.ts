@@ -23,6 +23,9 @@ import { createLogoType, deployLogo, getBrandLogoOrIcon } from './logo'
 
 const log = logger(module)
 
+/**
+ * Fetches and deploys favorite icon as static file.
+ */
 const favIconFilter: FilterCreator = ({ client }) => ({
   name: 'favIconFilter',
   onFetch: async elements => {

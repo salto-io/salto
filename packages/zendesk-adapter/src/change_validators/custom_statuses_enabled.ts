@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { Condition, TicketForm } from '../filters/ticket_form'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
@@ -87,11 +87,8 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
     return false
   }
 
-  const ticketInstance = data as InstanceElement
-  const ticketValue = ticketInstance.value as TicketForm
-
+  const ticketValue = data.value as TicketForm
   return hasConditionWithCustomStatuses(ticketValue.agent_conditions ?? [])
-    || hasConditionWithCustomStatuses(ticketValue.end_user_conditions ?? [])
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (

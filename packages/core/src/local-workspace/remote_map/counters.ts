@@ -46,6 +46,7 @@ export type LocationCounters = Record<CounterType, Counter> & {
 type StatCounters = {
   get: (location: string) => LocationCounters
   return: (location: string) => void
+  destroyAll: (location: string) => void
 }
 
 const createCounter = (): Counter => {
@@ -86,6 +87,13 @@ const createStatCounters = (): StatCounters => {
       if (locationInfo.refCnt === 0) {
         locations.delete(location)
       }
+    },
+    destroyAll: location => {
+      if (!locations.has(location)) {
+        log.warn('Destroying counters that were never acquired. Location=%s', location)
+        return
+      }
+      locations.delete(location)
     },
   }
 }

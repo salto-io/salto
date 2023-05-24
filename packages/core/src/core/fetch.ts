@@ -731,7 +731,8 @@ const createFetchChanges = async ({
     : processErrorsResult.keptElements
   return {
     changes,
-    serviceToStateChanges,
+    serviceToStateChanges: await stateElements.isEmpty()
+      ? processErrorsResult.keptElements.map(toAddFetchChange).map(change => change.change) : serviceToStateChanges,
     elements,
     errors,
     unmergedElements,

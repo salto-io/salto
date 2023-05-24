@@ -17,10 +17,11 @@ import _ from 'lodash'
 import { ElemID, ElemIDTypes, Value, ElemIDType, isObjectType } from '@salto-io/adapter-api'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, promises } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { ReadOnlyRemoteMap } from './remote_map'
 
+const { withLimitedConcurrency } = promises.array
 const { asynciterable } = collections
 const { awu } = asynciterable
 const log = logger(module)
@@ -260,6 +261,8 @@ const validateSelector = (
   }
 }
 
+const MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY = 100
+
 export const selectElementIdsByTraversal = async ({
   selectors,
   source,
@@ -338,27 +341,27 @@ export const selectElementIdsByTraversal = async ({
         }
         return WALK_NEXT_STEP.SKIP
       }
-
-      await awu(stillRelevantIDs)
-        .forEach(async elemId => {
-          const element = await source.get(elemId)
-
-          walkOnElement({
-            element, func: selectFromSubElements,
-          })
-
-          if (isObjectType(element)) {
-            await awu(Object.values(element.fields)).forEach(async field => {
-              // Since we only support referenceBy on a base elemID, a selector
-              // that is not top level and that has referenceBy is necessarily a field selector
-              if (await awu(subSelectorsWithReferencedBy).some(
-                selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
-              )) {
-                subElementIDs.add(field.elemID.getFullName())
-              }
-            })
-          }
+      const getSubElementIDs = async (elemID: ElemID): Promise<void> => {
+        const element = await source.get(elemID)
+        walkOnElement({
+          element, func: selectFromSubElements,
         })
+        if (isObjectType(element)) {
+          await awu(Object.values(element.fields)).forEach(async field => {
+            // Since we only support referenceBy on a base elemID, a selector
+            // that is not top level and that has referenceBy is necessarily a field selector
+            if (await awu(subSelectorsWithReferencedBy).some(
+              selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
+            )) {
+              subElementIDs.add(field.elemID.getFullName())
+            }
+          })
+        }
+      }
+      await withLimitedConcurrency(
+        (await awu(stillRelevantIDs).toArray()).map(elemID => () => getSubElementIDs(elemID)),
+        MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
+      )
       return awu(
         topLevelIDs.concat(
           Array.from(subElementIDs).map(ElemID.fromFullName)

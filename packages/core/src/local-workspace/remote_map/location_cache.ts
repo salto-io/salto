@@ -59,7 +59,7 @@ export const createLocationCachePool = (
       pool.set(location, { cache: newCache, refcnt: 1 })
       if (pool.size > poolSizeWatermark) {
         poolSizeWatermark = pool.size
-        log.debug('Max location cache pool size: %o', poolSizeWatermark)
+        log.debug('Max location cache pool size: %d', poolSizeWatermark)
       }
       return newCache
     },
@@ -74,7 +74,7 @@ export const createLocationCachePool = (
       if (poolEntry.refcnt === 0) {
         pool.delete(location)
         if (pool.size === 0) {
-          log.debug('Last location closed. Max location cache pool size: %o', poolSizeWatermark)
+          log.debug('Last location closed. Max location cache pool size: %d', poolSizeWatermark)
           poolSizeWatermark = 0
         }
       }

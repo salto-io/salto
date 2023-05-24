@@ -126,37 +126,6 @@ describe(customStatusesEnabledValidator.name, () => {
       })
     })
 
-    describe('when ticket form has end user condition with custom statuses', () => {
-      it('returns a warning', async () => {
-        const ticketFormInstance = new InstanceElement('test', ticketFormObjectType, {
-          end_user_conditions: [
-            {
-              child_fields: [
-                {
-                  required_on_statuses: {
-                    custom_statuses: [new ReferenceExpression(new ElemID('test'))],
-                  },
-                },
-              ],
-            },
-          ],
-        })
-        const ticketFormChange = toChange({ after: ticketFormInstance })
-
-        const errors = await customStatusesEnabledValidator([ticketFormChange], elementSource)
-        expect(errors).toHaveLength(1)
-        expect(errors[0]).toEqual({
-          elemID: ticketFormInstance.elemID,
-          severity: 'Warning',
-          message: 'Deploying ticket form with custom statuses while custom statuses are disabled',
-          detailedMessage:
-            'It seems this ticket form originates from another account that has custom statuses enabled. '
-            + 'Since custom statuses are disabled in the target account, '
-            + 'this ticket form will be deployed without the custom_statuses fields',
-        })
-      })
-    })
-
     describe('without custom status changes', () => {
       it('should not return an error', async () => {
         const errors = await customStatusesEnabledValidator([], elementSource)

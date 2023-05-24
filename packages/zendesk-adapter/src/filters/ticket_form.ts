@@ -39,13 +39,13 @@ type Child = {
   // eslint-disable-next-line camelcase
   required_on_statuses: {
     type: string
-    statuses?: string[]
+    statuses?: string[] // question mark to ba able to delete it later on
     // eslint-disable-next-line camelcase
     custom_statuses: number[]
   }
 }
 
-type TicketForm = {
+type InvalidTicketForm = {
   // eslint-disable-next-line camelcase
   agent_conditions: {
     // eslint-disable-next-line camelcase
@@ -86,7 +86,7 @@ const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): 
 const isInvalidTicketForm = (
   instanceValue: Record<string, unknown>,
   hasCustomStatusesEnabled: boolean
-): instanceValue is TicketForm =>
+): instanceValue is InvalidTicketForm =>
   hasCustomStatusesEnabled
   && _.isArray(instanceValue.agent_conditions)
     && instanceValue.agent_conditions.some(condition =>

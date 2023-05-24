@@ -16,6 +16,7 @@
 import { logger } from '@salto-io/logging'
 import { counters, LocationCounters } from './counters'
 import { LocationCache, locationCaches } from './location_cache'
+import { DbAttributes, DbConnection, dbConnectionPool } from './db_connection_pool'
 
 const log = logger(module)
 
@@ -23,36 +24,48 @@ type RemoteMapLocation = {
   name: string
   counters: LocationCounters
   cache: LocationCache
+  mainDb: DbConnection
 }
 
 type RemoteMapLocationPool = {
-  get: (location: string) => RemoteMapLocation
-  return: (location: RemoteMapLocation) => void
-  returnAll: (location: string) => void
+  get: (location: string, persistent: boolean) => Promise<RemoteMapLocation>
+  return: (location: RemoteMapLocation) => Promise<void>
+  returnAll: (location: string) => Promise<void>
 }
+
+const dbAttributes = (location: string, persistent: boolean): DbAttributes => (
+  {
+    location,
+    type: persistent ? 'main-persistent' : 'main-ephemeral',
+  }
+)
 
 const createRemoteMapLocationPool = (): RemoteMapLocationPool => {
   const pool: Map<string, RemoteMapLocation> = new Map()
   return {
-    get: location => {
+    get: async (location, persistent) => {
       const locationResources = {
         name: location,
         counters: counters.get(location),
         cache: locationCaches.get(location),
+        mainDb: await dbConnectionPool.get(dbAttributes(location, persistent)),
       }
       pool.set(location, locationResources)
       return locationResources
     },
-    return: location => {
+    return: async location => {
       locationCaches.return(location.cache)
+      await dbConnectionPool.put(location.mainDb)
       counters.return(location.name)
     },
-    returnAll: location => {
+    returnAll: async location => {
       const locationResources = pool.get(location)
       if (locationResources === undefined) {
         log.warn('Returning resources for unknown location %s', location)
         return
       }
+      await dbConnectionPool.putAll(location, 'main-persistent')
+      await dbConnectionPool.putAll(location, 'main-ephemeral')
       locationCaches.return(locationResources.cache)
       counters.destroyAll(location)
     },

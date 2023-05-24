@@ -148,9 +148,7 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  const locationResources = remoteMapLocations.get(location)
-  locationResources.counters.dump()
-  remoteMapLocations.return(locationResources)
+  remoteMapLocations.returnAll(location)
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { Change, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { customStatusesEnabledValidator } from '../../src/change_validators'
@@ -103,7 +103,8 @@ describe(customStatusesEnabledValidator.name, () => {
               child_fields: [
                 {
                   required_on_statuses: {
-                    custom_statuses: [new ReferenceExpression(new ElemID('test'))],
+                    type: 'testType',
+                    custom_statuses: ['custom status 1'],
                   },
                 },
               ],

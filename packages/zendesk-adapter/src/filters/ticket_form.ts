@@ -19,8 +19,9 @@ import {
   InstanceElement, isAdditionOrModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import Joi from 'joi'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { TICKET_FORM_TYPE_NAME } from '../constants'
@@ -34,27 +35,51 @@ export type Child = {
     type: string
     statuses?: string[]
     // eslint-disable-next-line camelcase
-    custom_statuses: number[]
+    custom_statuses?: unknown[]
   }
 }
+
+const CHILD_SCHEMA = Joi.object({
+  required_on_statuses: Joi.object({
+    type: Joi.string().required(),
+    statuses: Joi.array().items(Joi.string()),
+    custom_statuses: Joi.array(),
+  }).required(),
+})
 
 export type Condition = {
   // eslint-disable-next-line camelcase
   child_fields: Child[]
 }
 
-export type TicketForm = {
+const CONDITION_SCHEMA = Joi.object({
+  child_fields: Joi.array().items(CHILD_SCHEMA).required(),
+})
+
+export type TicketFormValue = {
   // eslint-disable-next-line camelcase
   agent_conditions?: Condition[]
-
-  // eslint-disable-next-line camelcase
-  end_user_conditions?: Condition[]
 }
+
+export type TicketFormInstance = InstanceElement & {
+  value: TicketFormValue
+}
+
+const TICKET_FORM_SCHEMA = Joi.object({
+  agent_conditions: Joi.array().items(CONDITION_SCHEMA),
+})
+
+}
+
+export const isTicketFormInstance = createSchemeGuardForInstance<TicketFormInstance>(
+  TICKET_FORM_SCHEMA,
+  'Received an invalid value for TicketForm instance'
+)
 
 /**
  * checks if both statuses and custom_statuses are defined
  */
-const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is TicketForm =>
+const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is TicketFormValue =>
   _.isArray(instanceValue.agent_conditions)
   && instanceValue.agent_conditions.some(condition =>
     _.isArray(condition.child_fields)

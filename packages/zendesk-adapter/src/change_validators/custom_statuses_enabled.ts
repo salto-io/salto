@@ -15,7 +15,7 @@
 */
 import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Condition, TicketForm } from '../filters/ticket_form'
+import { Condition, isTicketFormInstance } from '../filters/ticket_form'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
@@ -83,12 +83,13 @@ const hasConditionWithCustomStatuses = (conditions: Condition[]): boolean =>
 
 const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean => {
   const data = getChangeData(change)
-  if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME || !isInstanceElement(data)) {
+  if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME
+    || !isInstanceElement(data)
+    || !isTicketFormInstance(data)) {
     return false
   }
 
-  const ticketValue = data.value as TicketForm
-  return hasConditionWithCustomStatuses(ticketValue.agent_conditions ?? [])
+  return hasConditionWithCustomStatuses(data.value.agent_conditions ?? [])
 }
 
 const createErrorsForTicketFormsWithCustomStatuses = (

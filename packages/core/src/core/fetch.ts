@@ -120,16 +120,12 @@ type DetailedChangeTreeResult = {
 }
 
 const getDetailedChangeTree = async (
-  before: ReadOnlyElementsSourceWithIsEmpty,
-  after: ReadOnlyElementsSourceWithIsEmpty,
+  before: ReadOnlyElementsSource,
+  after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
 ): Promise<DetailedChangeTreeResult> => {
-  const changes = await before.isEmpty()
-  // If the before is empty, there is no reason to calculate the detailed changes as everything is an addition
-    ? await awu(await after.getAll()).map(toAddFetchChange).map(change => change.change).toArray()
-    : wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
-
+  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
   const changesTree = new collections.treeMap.TreeMap(
     changes.map(change => [change.id.getFullName(), [{ change, origin }]])
   )
@@ -598,7 +594,7 @@ export const calcFetchChanges = async (
   const accountFetchFilter: IDFilter = id =>
     allFetchedAccounts.has(id.adapter)
 
-  const partialFetchElementSource: ReadOnlyElementsSourceWithIsEmpty = {
+  const partialFetchElementSource: ReadOnlyElementsSource = {
     get: async (id: ElemID): Promise<Element | undefined> => {
       const mergedElem = await mergedAccountElementsSource.get(id)
       if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
@@ -609,7 +605,6 @@ export const calcFetchChanges = async (
     getAll: () => mergedAccountElementsSource.getAll(),
     has: id => mergedAccountElementsSource.has(id),
     list: () => mergedAccountElementsSource.list(),
-    isEmpty: () => mergedAccountElementsSource.isEmpty(),
   }
 
   // Changes from the service that are not in the state
@@ -665,7 +660,12 @@ export const calcFetchChanges = async (
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
-  return { changes, serviceToStateChanges }
+  return {
+    changes,
+    serviceToStateChanges: await stateElements.isEmpty()
+      ? mergedAccountElements.map(toAddFetchChange).map(change => change.change)
+      : serviceToStateChanges,
+  }
 }
 
 type CreateFetchChangesParams = {

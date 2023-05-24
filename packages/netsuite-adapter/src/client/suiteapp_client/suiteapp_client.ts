@@ -61,6 +61,7 @@ const NON_BINARY_FILETYPES = new Set([
   'SMS',
   'STYLESHEET',
   'XMLDOC',
+  'JSON',
 ])
 
 const REQUEST_HEADERS = {

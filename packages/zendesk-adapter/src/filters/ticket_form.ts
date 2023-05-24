@@ -69,8 +69,6 @@ const TICKET_FORM_SCHEMA = Joi.object({
   agent_conditions: Joi.array().items(CONDITION_SCHEMA),
 })
 
-}
-
 export const isTicketFormInstance = createSchemeGuardForInstance<TicketFormInstance>(
   TICKET_FORM_SCHEMA,
   'Received an invalid value for TicketForm instance'

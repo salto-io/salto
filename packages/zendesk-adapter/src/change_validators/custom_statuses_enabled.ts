@@ -13,13 +13,59 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Condition, isTicketFormInstance } from '../filters/ticket_form'
+import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
 const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
+
+type ChildField = {
+  // eslint-disable-next-line camelcase
+  required_on_statuses: {
+    type: string
+    statuses?: string[]
+    // eslint-disable-next-line camelcase
+    custom_statuses?: unknown[]
+  }
+}
+
+const CHILD_FIELD_SCHEMA = Joi.object({
+  required_on_statuses: Joi.object({
+    type: Joi.string().required(),
+    statuses: Joi.array().items(Joi.string()),
+    custom_statuses: Joi.array(),
+  }).required(),
+})
+
+type Condition = {
+  // eslint-disable-next-line camelcase
+  child_fields: ChildField[]
+}
+
+const CONDITION_SCHEMA = Joi.object({
+  child_fields: Joi.array().items(CHILD_FIELD_SCHEMA).required(),
+})
+
+type TicketFormValue = {
+  // eslint-disable-next-line camelcase
+  agent_conditions?: Condition[]
+}
+
+type TicketForm = InstanceElement & {
+  value: TicketFormValue
+}
+
+const TICKET_FORM_SCHEMA = Joi.object({
+  agent_conditions: Joi.array().items(CONDITION_SCHEMA),
+})
+
+const isTicketForm = createSchemeGuardForInstance<TicketForm>(
+  TICKET_FORM_SCHEMA,
+  'Received an invalid value for TicketForm instance'
+)
 
 /**
   * If this function fails to identify whether custom statuses are enabled
@@ -85,7 +131,7 @@ const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean =
   const data = getChangeData(change)
   if (data.elemID.typeName !== TICKET_FORM_TYPE_NAME
     || !isInstanceElement(data)
-    || !isTicketFormInstance(data)) {
+    || !isTicketForm(data)) {
     return false
   }
 

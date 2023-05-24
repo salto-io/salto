@@ -19,9 +19,8 @@ import {
   InstanceElement, isAdditionOrModificationChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { applyFunctionToChangeData, createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import Joi from 'joi'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import { TICKET_FORM_TYPE_NAME } from '../constants'
@@ -29,62 +28,36 @@ import { TICKET_FORM_TYPE_NAME } from '../constants'
 const { awu } = collections.asynciterable
 const SOME_STATUSES = 'SOME_STATUSES'
 
-export type Child = {
+
+type Child = {
   // eslint-disable-next-line camelcase
   required_on_statuses: {
     type: string
     statuses?: string[]
     // eslint-disable-next-line camelcase
-    custom_statuses?: unknown[]
+    custom_statuses: number[]
   }
 }
 
-const CHILD_SCHEMA = Joi.object({
-  required_on_statuses: Joi.object({
-    type: Joi.string().required(),
-    statuses: Joi.array().items(Joi.string()),
-    custom_statuses: Joi.array(),
-  }).required(),
-})
-
-export type Condition = {
+type TicketForm = {
   // eslint-disable-next-line camelcase
-  child_fields: Child[]
+  agent_conditions: {
+    // eslint-disable-next-line camelcase
+    child_fields: Child[]
+  }[]
 }
-
-const CONDITION_SCHEMA = Joi.object({
-  child_fields: Joi.array().items(CHILD_SCHEMA).required(),
-})
-
-export type TicketFormValue = {
-  // eslint-disable-next-line camelcase
-  agent_conditions?: Condition[]
-}
-
-export type TicketFormInstance = InstanceElement & {
-  value: TicketFormValue
-}
-
-const TICKET_FORM_SCHEMA = Joi.object({
-  agent_conditions: Joi.array().items(CONDITION_SCHEMA),
-})
-
-export const isTicketFormInstance = createSchemeGuardForInstance<TicketFormInstance>(
-  TICKET_FORM_SCHEMA,
-  'Received an invalid value for TicketForm instance'
-)
 
 /**
  * checks if both statuses and custom_statuses are defined
  */
-const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is TicketFormValue =>
+const isInvalidTicketForm = (instanceValue: Record<string, unknown>): instanceValue is TicketForm =>
   _.isArray(instanceValue.agent_conditions)
   && instanceValue.agent_conditions.some(condition =>
     _.isArray(condition.child_fields)
-    && condition.child_fields.some((child: Child) =>
-      _.isObject(child.required_on_statuses)
-      && child.required_on_statuses.type === SOME_STATUSES
-      && (child.required_on_statuses.custom_statuses !== undefined
+      && condition.child_fields.some((child: Child) =>
+        _.isObject(child.required_on_statuses)
+        && child.required_on_statuses.type === SOME_STATUSES
+        && (child.required_on_statuses.custom_statuses !== undefined
         && !_.isEmpty(child.required_on_statuses.custom_statuses))))
 
 const invalidTicketFormChange = (change: Change<InstanceElement>): boolean =>
@@ -95,14 +68,15 @@ const invalidTicketFormChange = (change: Change<InstanceElement>): boolean =>
 const returnValidInstance = (inst: InstanceElement): InstanceElement => {
   const clonedInst = inst.clone()
   if (isInvalidTicketForm(clonedInst.value)) {
-    clonedInst.value.agent_conditions?.forEach(condition => condition.child_fields
-      .forEach(child => {
-        if (child.required_on_statuses.type === SOME_STATUSES
-          && (child.required_on_statuses.custom_statuses !== undefined
-            && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
-          delete child.required_on_statuses.statuses
-        }
-      }))
+    clonedInst.value.agent_conditions
+      .forEach(condition => condition.child_fields
+        .forEach(child => {
+          if (child.required_on_statuses.type === SOME_STATUSES
+            && (child.required_on_statuses.custom_statuses !== undefined
+              && !_.isEmpty(child.required_on_statuses.custom_statuses))) {
+            delete child.required_on_statuses.statuses
+          }
+        }))
   }
   return clonedInst
 }

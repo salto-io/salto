@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import { Change, ChangeDataType, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { ACCOUNT_FEATURES_TYPE_NAME, CUSTOM_STATUS_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../constants'
+
+const { makeArray } = collections.array
 
 const log = logger(module)
 const errorMsg = (reason: string): string => `Failed to run customStatusesEnabledValidator because ${reason}`
 
 type ChildField = {
   // eslint-disable-next-line camelcase
-  required_on_statuses: {
+  required_on_statuses?: {
     type: string
     statuses?: string[]
     // eslint-disable-next-line camelcase
@@ -37,7 +40,7 @@ const CHILD_FIELD_SCHEMA = Joi.object({
     type: Joi.string().required(),
     statuses: Joi.array().items(Joi.string()),
     custom_statuses: Joi.array(),
-  }).required(),
+  }),
 })
 
 type Condition = {
@@ -124,7 +127,7 @@ const createErrorsForCustomStatusTypes = (
 const hasConditionWithCustomStatuses = (conditions: Condition[]): boolean =>
   conditions.some((condition: Condition) =>
     condition.child_fields.some(
-      field => (field.required_on_statuses.custom_statuses?.length ?? 0) > 0
+      field => makeArray(field.required_on_statuses?.custom_statuses).length > 0
     ))
 
 const isTicketFormWithCustomStatus = (change: Change<ChangeDataType>): boolean => {

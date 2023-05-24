@@ -432,7 +432,7 @@ export const calculatePatch = async (
   }
   const { changes } = await calcFetchChanges(
     afterElements,
-    mergedAfterElements,
+    elementSource.createInMemoryElementSource(mergedAfterElements),
     elementSource.createInMemoryElementSource(mergedBeforeElements),
     resolvedWSElementSource,
     new Set([accountName]),

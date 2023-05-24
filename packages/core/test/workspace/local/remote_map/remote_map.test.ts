@@ -25,11 +25,14 @@ import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
-  TMP_DB_DIR,
   closeRemoteMapsOfLocation,
   cleanDatabases,
-} from '../../../../src/local-workspace/remote_map/remote_map'
+} from '../../../../src/local-workspace/remote_map'
 import { RocksDBValue } from '../../../../src/local-workspace/remote_map/db_iterator'
+import {
+  dbConnectionPool,
+  TMP_DB_DIR,
+} from '../../../../src/local-workspace/remote_map/db_connection_pool'
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const rocksdbImpl = require('../../../../src/local-workspace/remote_map/rocksdb').default
@@ -105,6 +108,7 @@ describe('test operations on remote db', () => {
   afterEach(async () => {
     await remoteMap.revert()
     await closeRemoteMapsOfLocation(DB_LOCATION)
+    expect(dbConnectionPool.primaryDbLocations()).toHaveLength(0)
   })
 
   it('finds an item after it is set', async () => {

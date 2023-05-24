@@ -77,14 +77,16 @@ const isCustomStatusesEnabled = async (elementSource?: ReadOnlyElementsSource): 
     log.warn('Returning that customStatuses is disabled since custom_statuses_enabled does not exist')
     return false
   }
-  return accountFeatures.value.custom_statuses_enabled.enabled
+  return customStatusesEnabled.enabled
 }
 
 /**
  * checks if both statuses and custom_statuses are defined and if custom_statuses is enabled
  */
-const isInvalidTicketForm = (instanceValue: Record<string, unknown>, hasCustomStatusesEnabled: boolean)
-  : instanceValue is TicketForm =>
+const isInvalidTicketForm = (
+  instanceValue: Record<string, unknown>,
+  hasCustomStatusesEnabled: boolean
+): instanceValue is TicketForm =>
   hasCustomStatusesEnabled
   && _.isArray(instanceValue.agent_conditions)
     && instanceValue.agent_conditions.some(condition =>

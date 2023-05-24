@@ -11,7 +11,8 @@
     "types",
     "dist/src",
     "dist/index.*",
-    "dist/e2e_test"
+    "dist/e2e_test",
+    "dist/test/utils.*"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

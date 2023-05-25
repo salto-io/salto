@@ -272,7 +272,7 @@ const createDBConnectionPool = (): DBConnectionPool => {
       poolEntry.refcnt += 1
       return poolEntry.conn
     },
-    put: putImpl,
+    put: async dbConn => withPoolLock(async () => putImpl(dbConn)),
     destroyAll: async () => {
       if (pool.size) {
         log.error('Destroying DBs without closing all connections')
@@ -295,12 +295,12 @@ const createDBConnectionPool = (): DBConnectionPool => {
           return
         }
         poolEntry.refcnt = 1
-        await putImpl(conn)
+        await withPoolLock(async () => putImpl(conn))
       }
 
       await Promise.all(
         Object.values(pool)
-          .filter(({ conn }) => (conn.attributes.location.startsWith(locationToClose)))
+          .filter(({ conn }) => (conn.attributes.location === locationToClose || conn.attributes.location.startsWith(`${locationToClose}/`)))
           .filter(({ conn }) => (!dbType || conn.attributes.type === dbType))
           .map(({ conn }) => removeFromPool(conn)),
       )

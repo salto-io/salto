@@ -77,15 +77,16 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
     delete readonlyDBConnectionsPerRemoteMap[location]
     log.debug('closed read-only connections per remote map of location %s', location)
   }
-  await remoteMapLocations.returnAll(location)
-  await dbConnectionPool.putAll(location) // temp DBs are not managed by remoteMapLocations
+  const remoteMaps = Object.values(remoteMapsByLocation.get(location))
+  await awu(remoteMaps).forEach(async map => map.close())
+  await dbConnectionPool.putAll(location, 'temporary') // temp DBs are not managed by remoteMapLocations
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
   const allLocations = uniq([
     ...Object.keys(readonlyDBConnections),
     ...Object.keys(readonlyDBConnectionsPerRemoteMap),
-    ...dbConnectionPool.primaryDbLocations(),
+    ...remoteMapsByLocation.keys(),
   ])
   await awu(allLocations).forEach(async loc => {
     await closeRemoteMapsOfLocation(loc)

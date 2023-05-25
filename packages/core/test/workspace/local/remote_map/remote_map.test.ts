@@ -107,7 +107,7 @@ describe('test operations on remote db', () => {
   })
   afterEach(async () => {
     await remoteMap.revert()
-    await closeRemoteMapsOfLocation(DB_LOCATION)
+    await remoteMap.close()
     expect(dbConnectionPool.primaryDbLocations()).toHaveLength(0)
   })
 
@@ -285,6 +285,7 @@ describe('test operations on remote db', () => {
       const emptyRemoteMap = await createMap('test')
       const res = await emptyRemoteMap.isEmpty()
       expect(res).toEqual(true)
+      await emptyRemoteMap.close()
     })
 
     it('should return false if the remote map is not empty', async () => {

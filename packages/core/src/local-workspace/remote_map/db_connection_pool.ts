@@ -231,9 +231,10 @@ const createDBConnectionPool = (): DBConnectionPool => {
     const poolEntry = getPoolEntry(attributes)
     if (poolEntry !== undefined) {
       if (attributes.type === 'temporary') {
-        log.warn('Two temporary DBs are sharing the same location')
+        statCounters.TmpDbConnectionReuse.inc()
+      } else {
+        statCounters.PersistentDbConnectionReuse.inc()
       }
-      statCounters.PersistentDbConnectionReuse.inc()
       return
     }
 

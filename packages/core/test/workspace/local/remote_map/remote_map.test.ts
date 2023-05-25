@@ -25,7 +25,6 @@ import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
-  closeRemoteMapsOfLocation,
   cleanDatabases,
 } from '../../../../src/local-workspace/remote_map'
 import { RocksDBValue } from '../../../../src/local-workspace/remote_map/db_iterator'
@@ -798,11 +797,11 @@ describe('tmp db deletion', () => {
     expect(readdirSync(TMP_DIR)).toHaveLength(1)
 
     // Creating a new map should delete the old tmp db, and create a new one
-    await createMap('new_map', true, DB_LOCATION_TMP)
+    const newMap = await createMap('new_map', true, DB_LOCATION_TMP)
     expect(readdirSync(TMP_DIR)).toHaveLength(1)
 
     // Closing the map should remove the newly created tmp db
-    await closeRemoteMapsOfLocation(DB_LOCATION_TMP)
+    await newMap.close()
     expect(readdirSync(TMP_DIR)).toHaveLength(0)
   })
 })
@@ -815,9 +814,9 @@ describe('non persistent mode', () => {
 
   it('should destroy the tmp storage dirs after the connection is closed', async () => {
     const tmpDir = path.join(DB_LOCATION_TMP, TMP_DB_DIR)
-    await createMap(DB_LOCATION_TMP, false, DB_LOCATION_TMP)
+    const newMap = await createMap(DB_LOCATION_TMP, false, DB_LOCATION_TMP)
     expect(readdirSync(tmpDir)).not.toEqual([])
-    await closeRemoteMapsOfLocation(DB_LOCATION_TMP)
+    await newMap.close()
     expect(readdirSync(tmpDir)).toEqual([])
   })
 })
@@ -836,7 +835,7 @@ describe('full integration', () => {
     }
     expect(_.uniq(res.map(elem => elem.elemID.getFullName()))).toEqual(elements
       .map(elem => elem.elemID.getFullName()).sort())
-    await closeRemoteMapsOfLocation(DB_LOCATION)
+    await remoteMap.close()
     const db = rocksdb(DB_LOCATION)
     await promisify(db.open.bind(db))()
     const ids: string[] = []

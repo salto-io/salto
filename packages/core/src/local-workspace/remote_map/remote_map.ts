@@ -79,7 +79,6 @@ export const closeRemoteMapsOfLocation = async (location: string): Promise<void>
   }
   const remoteMaps = Object.values(remoteMapsByLocation.get(location))
   await awu(remoteMaps).forEach(async map => map.close())
-  await dbConnectionPool.putAll(location, 'temporary') // temp DBs are not managed by remoteMapLocations
 }
 
 export const closeAllRemoteMaps = async (): Promise<void> => {
@@ -127,7 +126,7 @@ const getPrefixEndCondition = (prefix: string): string => prefix
 export const createRemoteMapCreator = (location: string,
   persistentDefaultValue = false):
 remoteMap.RemoteMapCreator => {
-  let tmpDB: DbConnection
+  let tmpDBLocation: string | undefined
   return async <T, K extends string = string>(
     { namespace,
       batchInterval = 1000,
@@ -136,6 +135,7 @@ remoteMap.RemoteMapCreator => {
       deserialize }:
     remoteMap.CreateRemoteMapParams<T>
   ): Promise<remoteMap.RemoteMap<T, K> > => {
+    let tmpDB: DbConnection
     let wasClearCalled = false
     const delKeys = new Set<string>()
     const locationTmpDir = getDBTmpDir(location)
@@ -155,7 +155,6 @@ remoteMap.RemoteMapCreator => {
     const { counters: statCounters, cache: locationCache, mainDb } = locationResources
 
     const uniqueId = uuidv4()
-    const tmpLocation = path.join(locationTmpDir, uniqueId)
     const keyPrefix = getKeyPrefix(namespace)
     const tempKeyPrefix = TEMP_PREFIX.concat(UNIQUE_ID_SEPARATOR, uniqueId, UNIQUE_ID_SEPARATOR,
       keyPrefix)
@@ -343,16 +342,15 @@ remoteMap.RemoteMapCreator => {
       delKeys.add(key)
       locationCache.del(key)
     }
-    const createDBConnections = async (): Promise<void> => {
-      if (tmpDB === undefined) {
-        tmpDB = await dbConnectionPool.get({ location: tmpLocation, type: 'temporary' })
-      } else {
-        statCounters.TmpDbConnectionReuse.inc()
+    const createTmpDBConnection = async (): Promise<void> => {
+      if (tmpDBLocation === undefined) {
+        tmpDBLocation = path.join(locationTmpDir, uniqueId)
       }
+      tmpDB = await dbConnectionPool.get({ location: tmpDBLocation, type: 'temporary' })
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
     try {
-      await createDBConnections()
+      await createTmpDBConnection()
     } catch (e) {
       await remoteMapLocations.return(locationResources)
       throw e
@@ -448,6 +446,7 @@ remoteMap.RemoteMapCreator => {
         // we acquire the location resources every time we create a new map, so we need to return them every time a
         // map is closed.
         await remoteMapLocations.return(locationResources)
+        await dbConnectionPool.put(tmpDB)
       },
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
     }

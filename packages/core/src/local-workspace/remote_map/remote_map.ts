@@ -46,12 +46,14 @@ import {
 } from './db_connection_pool'
 
 const { asynciterable } = collections
+const { DefaultMap } = collections.map
 const { awu } = asynciterable
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
 
 const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const readonlyDBConnectionsPerRemoteMap: Record<string, Record<string, Promise<rocksdb>>> = {}
+const remoteMapsByLocation = new DefaultMap<string, Record<string, remoteMap.RemoteMap<unknown>>>(_location => ({}))
 
 
 const closeConnection = async (
@@ -88,6 +90,12 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
   await awu(allLocations).forEach(async loc => {
     await closeRemoteMapsOfLocation(loc)
   })
+
+  for (const [loc, mapRecord] of remoteMapsByLocation) {
+    if (Object.keys(mapRecord).length > 0) {
+      log.warn('%d Remote maps for %s still remain', Object.keys(mapRecord).length, loc)
+    }
+  }
 }
 
 export const cleanDatabases = async (): Promise<void> => {
@@ -142,7 +150,8 @@ remoteMap.RemoteMapCreator => {
       )
     }
 
-    const { counters: statCounters, cache: locationCache, mainDb } = await remoteMapLocations.get(location, persistent)
+    const locationResources = await remoteMapLocations.get(location, persistent)
+    const { counters: statCounters, cache: locationCache, mainDb } = locationResources
 
     const uniqueId = uuidv4()
     const tmpLocation = path.join(locationTmpDir, uniqueId)
@@ -341,9 +350,14 @@ remoteMap.RemoteMapCreator => {
       }
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
-    await createDBConnections()
+    try {
+      await createDBConnections()
+    } catch (e) {
+      await remoteMapLocations.return(locationResources)
+      throw e
+    }
     statCounters.RemoteMapCreated.inc()
-    return {
+    const createdMap = {
       get: getImpl,
       getMany: async (keys: string[]): Promise<(T | undefined)[]> =>
         withLimitedConcurrency(keys.map(k => () => getImpl(k)), GET_CONCURRENCY),
@@ -429,14 +443,15 @@ remoteMap.RemoteMapCreator => {
           || (!wasClearCalled && hasKeyImpl(keyToDBKey(key), mainDb))
       },
       close: async (): Promise<void> => {
-        // Do nothing - we can not close the connection here
-        //  because we share the connection across multiple namespaces
-        log.warn(
-          'cannot close connection of remote map with close method - use closeRemoteMapsOfLocation'
-        )
+        delete remoteMapsByLocation.get(location)[uniqueId]
+        // we acquire the location resources every time we create a new map, so we need to return them every time a
+        // map is closed.
+        await remoteMapLocations.return(locationResources)
       },
       isEmpty: async (): Promise<boolean> => awu(keysImpl({ first: 1 })).isEmpty(),
     }
+    remoteMapsByLocation.get(location)[uniqueId] = createdMap
+    return createdMap
   }
 }
 

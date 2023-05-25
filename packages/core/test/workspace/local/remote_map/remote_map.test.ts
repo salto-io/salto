@@ -25,7 +25,6 @@ import { readdirSync, mkdirpSync } from 'fs-extra'
 import {
   createRemoteMapCreator,
   createReadOnlyRemoteMapCreator,
-  cleanDatabases,
 } from '../../../../src/local-workspace/remote_map'
 import { RocksDBValue } from '../../../../src/local-workspace/remote_map/db_iterator'
 import {
@@ -871,8 +870,4 @@ describe('full integration', () => {
 
     await promisify(db.close.bind(db))()
   })
-})
-
-afterAll(async () => {
-  await cleanDatabases()
 })

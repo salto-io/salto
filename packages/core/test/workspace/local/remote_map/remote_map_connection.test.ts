@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { remoteMap as rm } from '@salto-io/workspace'
-import { createRemoteMapCreator, createReadOnlyRemoteMapCreator, closeAllRemoteMaps } from '../../../../src/local-workspace/remote_map'
+import { createRemoteMapCreator, createReadOnlyRemoteMapCreator } from '../../../../src/local-workspace/remote_map'
 import { MAX_CONNECTIONS } from '../../../../src/local-workspace/remote_map/db_connection_pool'
 
 describe('connection creation', () => {
@@ -33,8 +33,6 @@ describe('connection creation', () => {
     jest.mock('../../../../src/local-workspace/remote_map/rocksdb', () => ({
       default: mockedRocksdb,
     }))
-
-    await closeAllRemoteMaps()
   })
   afterEach(() => {
     jest.clearAllMocks()
@@ -52,7 +50,7 @@ describe('connection creation', () => {
         persistent,
       })
     it('should create a single persistent db connection for a location', async () => {
-      await Promise.all([
+      const maps = await Promise.all([
         createMap('integration'),
         createMap('integration'),
       ])
@@ -63,9 +61,10 @@ describe('connection creation', () => {
       // 0 load time destroys attempts
       expect(writeCalls).toHaveLength(3)
       expect(readOnlyCalls).toHaveLength(0)
+      await Promise.all(maps.map(map => map.close()))
     })
     it('should try to open with read only mode if remote map is not persistent', async () => {
-      await Promise.all([
+      const maps = await Promise.all([
         createMap('integration', false),
         createMap('integration', false),
       ])
@@ -76,13 +75,14 @@ describe('connection creation', () => {
       expect(readOnlyCalls).toHaveLength(2)
       // 2 tmp connections
       expect(writeCalls).toHaveLength(2)
+      await Promise.all(maps.map(map => map.close()))
     })
   })
   describe('createReadOnlyRemoteMapCreator', () => {
     const createMap = async (location: string, namespace: string): Promise<rm.RemoteMap<string>> =>
       createReadOnlyRemoteMapCreator(location)({ namespace, deserialize: async str => str })
     it('should open db successfully if the db does exist', async () => {
-      await Promise.all([
+      const maps = await Promise.all([
         createMap(DB_LOCATION, 'integration'),
         createMap(DB_LOCATION, 'integration'),
       ])
@@ -92,6 +92,8 @@ describe('connection creation', () => {
       // 1 for each connections - no connection caching in ReadOnlyRemoteMap
       expect(readOnlyCalls).toHaveLength(2)
       expect(writeCalls).toHaveLength(0)
+
+      await Promise.all(maps.map(map => map.close()))
     })
     it('should throw exception if db does not exist', async () => {
       mockOpen.mockImplementationOnce((_opts, _cb) => { throw new Error('err') })
@@ -116,29 +118,32 @@ describe('connection creation', () => {
         createReadOnlyRemoteMapCreator(location)({
           namespace: 'namespace', deserialize: async str => str,
         })
-      it('should correctly count when openning different db', async () => {
+      it('should correctly count when opening different db', async () => {
         // We open two connections each time
-        await Promise.all(_.times(MAX_CONNECTIONS / 2, async idx => {
-          await createMap(`${DB_LOCATION}/${idx}`)
-        }))
+        const maps = await Promise.all(_.times(MAX_CONNECTIONS / 2, async idx => (
+          createMap(`${DB_LOCATION}/${idx}`)
+        )))
 
         await expect(createMap(`${DB_LOCATION}/tooMany`)).rejects.toThrow('too many open connections')
+
+        await Promise.all(maps.map(map => map.close()))
       })
-      it('should correctly count when openning the same DB', async () => {
+      it('should correctly count when opening the same DB', async () => {
         // We open the main connections once, and tmp connection each time
-        await Promise.all(_.times(MAX_CONNECTIONS - 1, async () => {
-          await createMap(DB_LOCATION)
-        }))
+        const maps = await Promise.all(_.times(MAX_CONNECTIONS - 1, async () => (
+          createMap(DB_LOCATION)
+        )))
 
         await expect(createMap(DB_LOCATION)).rejects.toThrow('too many open connections')
+        await Promise.all(maps.map(map => map.close()))
       })
-      it('should correcly count read only db connections', async () => {
+      it('should correctly count read only db connections', async () => {
         // One connection per db
-        await Promise.all(_.times(MAX_CONNECTIONS, async () => {
-          await createReadOnlyMap(DB_LOCATION)
-        }))
+        const maps = await Promise.all(_.times(MAX_CONNECTIONS, async () => createReadOnlyMap(DB_LOCATION)))
 
         await expect(createReadOnlyMap(DB_LOCATION)).rejects.toThrow('too many open connections')
+
+        await Promise.all(maps.map(map => map.close()))
       })
       it('should decrease the count when closing RO connections', async () => {
         const maps: rm.RemoteMap<string>[] = []
@@ -151,14 +156,14 @@ describe('connection creation', () => {
         await createReadOnlyMap(DB_LOCATION)
 
         await expect(createReadOnlyMap(DB_LOCATION)).rejects.toThrow('too many open connections')
+        await Promise.all(maps.map(map => map.close()))
       })
       it('should count together RO & RW connections', async () => {
         // One connection per db
-        await Promise.all(_.times(MAX_CONNECTIONS, async () => {
-          await createReadOnlyMap(DB_LOCATION)
-        }))
+        const maps = await Promise.all(_.times(MAX_CONNECTIONS, async () => createReadOnlyMap(DB_LOCATION)))
 
         await expect(createMap(DB_LOCATION)).rejects.toThrow('too many open connections')
+        await Promise.all(maps.map(map => map.close()))
       })
     })
   })

@@ -15,7 +15,6 @@
 */
 import path from 'path'
 import { promisify } from 'util'
-import AsyncLock from 'async-lock'
 import { v4 as uuidv4 } from 'uuid'
 import uniq from 'lodash/uniq'
 import * as fileUtils from '@salto-io/file'
@@ -103,11 +102,6 @@ export const replicateDB = async (
   await promisify(
     remoteDbImpl.replicate.bind(remoteDbImpl, srcDbLocation, dstDbLocation, backupDir)
   )()
-}
-
-const creatorLock = new AsyncLock()
-const withCreatorLock = async (fn: (() => Promise<void>)): Promise<void> => {
-  await creatorLock.acquire('createInProgress', fn)
 }
 
 const getKeyPrefix = (namespace: string): string =>
@@ -347,7 +341,7 @@ remoteMap.RemoteMapCreator => {
       }
     }
     log.debug('creating remote map for loc: %s, namespace: %s', location, namespace)
-    await withCreatorLock(createDBConnections)
+    await createDBConnections()
     statCounters.RemoteMapCreated.inc()
     return {
       get: getImpl,

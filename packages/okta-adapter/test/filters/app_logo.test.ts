@@ -20,16 +20,9 @@ import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '..
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
 import appLogoFilter from '../../src/filters/app_logo'
-import * as connectionModule from '../../src/client/connection'
-
-jest.mock('../../src/client/connection', () => ({
-  ...jest.requireActual('../../src/client/connection'),
-  getResource: jest.fn(),
-}))
-
-const mockedConnection = jest.mocked(connectionModule, true)
 
 describe('app logo filter', () => {
+  let mockGet: jest.SpyInstance
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
@@ -55,19 +48,19 @@ describe('app logo filter', () => {
     }
   )
   beforeEach(async () => {
-    jest.clearAllMocks()
     const mockCli = mockClient()
     client = mockCli.client
     filter = appLogoFilter(getFilterParams({ client })) as typeof filter
   })
   describe('onFetch', () => {
     beforeEach(async () => {
-      mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/fs/bco/4/111') {
+      mockGet = jest.spyOn(client, 'getResource')
+      mockGet.mockImplementation(params => {
+        if (params.url === 'https://ok12static.oktacdn.com/fs/bco/4/111') {
           return {
             status: 200,
             data: content,
-          } as unknown as ReturnType<typeof connectionModule.getResource>
+          }
         }
         throw new Error('Err')
       })
@@ -123,15 +116,6 @@ describe('app logo filter', () => {
       )
       logoInstance.annotate({
         [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(appInstance.elemID, appInstance)],
-      })
-      mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/fs/bco/4/11') {
-          return {
-            status: 200,
-            data: content,
-          } as unknown as ReturnType<typeof connectionModule.getResource>
-        }
-        throw new Error('Err')
       })
     })
     it('should add logo instance to the elements', async () => {

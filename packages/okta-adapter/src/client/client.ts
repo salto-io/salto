@@ -17,6 +17,7 @@ import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import axios from 'axios'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
@@ -24,6 +25,7 @@ import { LINK_HEADER_NAME } from './pagination'
 
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
+  throttle, logDecorator,
 } = clientUtils
 const log = logger(module)
 
@@ -118,5 +120,30 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         ..._.pickBy(headers, (_val, key) => key.toLowerCase() === LINK_HEADER_NAME),
       }
       : undefined
+  }
+
+  @throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
+  @logDecorator(['url'])
+  // We use this function without client instance because we don't need it
+  // but we want to take advantage of the client's capabilities.
+  // eslint-disable-next-line class-methods-use-this
+  public async getResource(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      const { url, responseType } = args
+      const httpClient = axios.create({ url })
+      const response = await httpClient.get(url, { responseType })
+      const { data, status } = response
+      log.debug('Received response for resource request %s with status %d', url, status)
+      return {
+        data,
+        status,
+      }
+    } catch (e) {
+      const status = e.response?.status
+      log.warn('Suppressing %d error %o', status, e)
+      return { data: [], status }
+    }
   }
 }

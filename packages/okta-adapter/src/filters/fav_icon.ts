@@ -39,7 +39,7 @@ const favIconFilter: FilterCreator = ({ client }) => ({
     }
     const favIconType = createLogoType(FAVORITE_ICON_TYPE_NAME)
     elements.push(favIconType)
-    const favIconInstances = await getBrandLogoOrIcon(brandTheme, favIconType)
+    const favIconInstances = await getBrandLogoOrIcon(client, brandTheme, favIconType)
     if (favIconInstances !== undefined) {
       elements.push(favIconInstances)
     }

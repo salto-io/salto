@@ -40,7 +40,7 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
     const brandLogoType = createLogoType(BRAND_LOGO_TYPE_NAME)
     elements.push(brandLogoType)
 
-    const brandLogoInstances = await getBrandLogoOrIcon(brandTheme, brandLogoType)
+    const brandLogoInstances = await getBrandLogoOrIcon(client, brandTheme, brandLogoType)
     if (brandLogoInstances !== undefined) {
       elements.push(brandLogoInstances)
     }

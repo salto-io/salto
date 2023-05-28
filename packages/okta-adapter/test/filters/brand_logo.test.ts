@@ -20,15 +20,9 @@ import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, OKTA } fr
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
 import brandLogoFilter from '../../src/filters/brand_logo'
-import * as connectionModule from '../../src/client/connection'
 
-jest.mock('../../src/client/connection', () => ({
-  ...jest.requireActual('../../src/client/connection'),
-  getResource: jest.fn(),
-}))
-
-const mockedConnection = jest.mocked(connectionModule, true)
 describe('barnd logo filter', () => {
+  let mockGet: jest.SpyInstance
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
   let filter: FilterType
@@ -65,12 +59,13 @@ describe('barnd logo filter', () => {
   })
   describe('onFetch', () => {
     beforeEach(async () => {
-      mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/bc/image/111') {
+      mockGet = jest.spyOn(client, 'getResource')
+      mockGet.mockImplementation(params => {
+        if (params.url === 'https://ok12static.oktacdn.com/bc/image/111') {
           return {
             status: 200,
             data: content,
-          } as unknown as ReturnType<typeof connectionModule.getResource>
+          }
         }
         throw new Error('Err')
       })
@@ -121,15 +116,6 @@ describe('barnd logo filter', () => {
           new ReferenceExpression(brandThemeInstance.elemID, brandThemeInstance),
           new ReferenceExpression(brandInstance.elemID, brandInstance),
         ],
-      })
-      mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/bc/image/111') {
-          return {
-            status: 200,
-            data: content,
-          } as unknown as ReturnType<typeof connectionModule.getResource>
-        }
-        throw new Error('Err')
       })
     })
     it('should add logo instance to elements', async () => {

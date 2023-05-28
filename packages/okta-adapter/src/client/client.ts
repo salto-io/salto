@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { values } from '@salto-io/lowerdash'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
@@ -25,7 +24,6 @@ import { LINK_HEADER_NAME } from './pagination'
 
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
-  throttle, logDecorator, requiresLogin,
 } = clientUtils
 const log = logger(module)
 
@@ -47,10 +45,6 @@ const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/defa
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
 > {
-  protected isResourceApiLoggedIn = false
-  // These properties create another connection and client for Zendesk resources API
-  protected resourceConn?: clientUtils.Connection<Credentials>
-  protected resourceClient?: clientUtils.APIConnection<clientUtils.ResponseValue | clientUtils.ResponseValue[]>
   constructor(
     clientOpts: clientUtils.ClientOpts<Credentials, clientUtils.ClientRateLimitConfig>
   ) {
@@ -124,51 +118,5 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         ..._.pickBy(headers, (_val, key) => key.toLowerCase() === LINK_HEADER_NAME),
       }
       : undefined
-  }
-
-  // public getResourceConn(url: string): void {
-  //   if (url === undefined) {
-  //     log.warn('url is undefined')
-  //   }
-  //   this.resourceConn = clientUtils.createClientConnection({
-  //     retryOptions: clientUtils.createRetryOptions(
-  //       _.defaults({}, this.config?.retry, DEFAULT_RETRY_OPTS)
-  //     ),
-  //     createConnection: createResourceConnection,
-  //   })
-  // }
-
-@throttle<clientUtils.ClientRateLimitConfig>({ bucketName: 'get', keys: ['url'] })
-@logDecorator(['url'])
-@requiresLogin()
-  public async getResource(
-    args: clientUtils.ClientBaseParams,
-  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    if (this.resourceClient === undefined) {
-    // initialized by requiresLogin (through ensureLoggedIn in this case)
-      throw new Error(`uninitialized ${this.clientName} resource client`)
-    }
-    try {
-      const { url, headers, responseType } = args
-      const requestConfig = [headers, responseType].some(values.isDefined)
-        ? {
-          headers,
-          responseType,
-        }
-        : undefined
-      const { data, status } = await this.resourceClient.get(url, requestConfig)
-      log.debug('Received response for resource request %s with status %d', url, status)
-      return {
-        data,
-        status,
-      }
-    } catch (e) {
-      const status = e.response?.status
-      if (status === 404) {
-        log.warn('Suppressing %d error %o', status, e)
-        return { data: [], status }
-      }
-      throw e
-    }
   }
 }

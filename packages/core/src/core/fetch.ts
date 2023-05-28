@@ -566,41 +566,50 @@ type CalcFetchChangesResult = {
 // o/w all account elements should be consider as "add" changes.
 export const calcFetchChanges = async (
   accountElements: ReadonlyArray<Element>,
-  mergedAccountElements: elementSource.ElementsSource,
+  mergedAccountElements: ReadonlyArray<Element>,
   stateElements: elementSource.ElementsSource,
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
 ): Promise<CalcFetchChangesResult> => {
+  const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
-    || mergedAccountElements.has(id)
+    || mergedAccountElementsSource.has(id)
   )
   const accountFetchFilter: IDFilter = id =>
     allFetchedAccounts.has(id.adapter)
   const partialFetchElementSource: ReadOnlyElementsSource = {
     get: async (id: ElemID): Promise<Element | undefined> => {
-      const mergedElem = await mergedAccountElements.get(id)
+      const mergedElem = await mergedAccountElementsSource.get(id)
       if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
         return stateElements.get(id)
       }
       return mergedElem
     },
-    getAll: () => mergedAccountElements.getAll(),
-    has: id => mergedAccountElements.has(id),
-    list: () => mergedAccountElements.list(),
+    getAll: () => mergedAccountElementsSource.getAll(),
+    has: id => mergedAccountElementsSource.has(id),
+    list: () => mergedAccountElementsSource.list(),
   }
 
   // Changes from the service that are not in the state
-  const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time(
-    () => getDetailedChangeTree(
-      stateElements,
-      partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter],
-      'service',
-    ),
-    'calculate service-state changes',
-  )
+  const { changesTree: serviceChanges, changes: serviceToStateChanges } = await stateElements.isEmpty()
+    ? {
+      // if the state is empty and the workspace isn't, the diff should be calculated with the workspace and the service
+      // which happens in a later step
+      changesTree: new collections.treeMap.TreeMap<WorkspaceDetailedChange>(),
+      // If the state is empty, everything is an addition to the state
+      changes: mergedAccountElements.map(toAddFetchChange).map(change => change.change),
+    }
+    : await log.time(
+      () => getDetailedChangeTree(
+        stateElements,
+        partialFetchElementSource,
+        [accountFetchFilter, partialFetchFilter],
+        'service',
+      ),
+      'calculate service-state changes',
+    )
 
   // We only care about conflicts with changes from the service, so for the next two comparisons
   // we only need to check elements for which we have service changes
@@ -611,15 +620,18 @@ export const calcFetchChanges = async (
   const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
 
   // Changes from the nacls that are not in the state
-  const { changesTree: pendingChanges } = await log.time(
-    () => getDetailedChangeTree(
-      stateElements,
-      workspaceElements,
-      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
-      'workspace',
-    ),
-    'calculate pending changes',
-  )
+  const { changesTree: pendingChanges } = await stateElements.isEmpty()
+  // If the state is empty, there is no reason to calculate this step, because the state will be overwritten anyway
+    ? { changesTree: new collections.treeMap.TreeMap<WorkspaceDetailedChange>() }
+    : await log.time(
+      () => getDetailedChangeTree(
+        stateElements,
+        workspaceElements,
+        [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+        'workspace',
+      ),
+      'calculate pending changes',
+    )
 
   // Changes from the service that are not in the nacls
   const { changesTree: workspaceToServiceChanges } = await log.time(
@@ -686,11 +698,8 @@ const createFetchChanges = async ({
     ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
     : await calcFetchChanges(
       unmergedElements,
-      elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
-      // When we init a new env, state will be empty. We fallback to the workspace
-      // elements since they should be considered a part of the env and the diff
-      // should be calculated with them in mind.
-      await awu(await stateElements.list()).isEmpty() ? workspaceElements : stateElements,
+      processErrorsResult.keptElements,
+      stateElements,
       workspaceElements,
       partiallyFetchedAccounts,
       new Set(adapterNames)
@@ -731,8 +740,7 @@ const createFetchChanges = async ({
     : processErrorsResult.keptElements
   return {
     changes,
-    serviceToStateChanges: await stateElements.isEmpty()
-      ? processErrorsResult.keptElements.map(toAddFetchChange).map(change => change.change) : serviceToStateChanges,
+    serviceToStateChanges,
     elements,
     errors,
     unmergedElements,

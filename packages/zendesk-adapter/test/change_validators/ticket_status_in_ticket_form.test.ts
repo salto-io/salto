@@ -20,7 +20,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, TICKET_STATUS_TICKET_FIELD_NAME, ZENDESK } from '../../src/constants'
+import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 import {
   additionOfTicketStatusForTicketFormValidator,
 } from '../../src/change_validators'
@@ -37,7 +37,7 @@ describe('additionOfTicketStatusForTicketFormValidator',
     const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
 
     const ticketStatusInstance = new InstanceElement(
-      TICKET_STATUS_TICKET_FIELD_NAME,
+      'status',
       ticketFieldType,
       {
         type: 'custom_status',

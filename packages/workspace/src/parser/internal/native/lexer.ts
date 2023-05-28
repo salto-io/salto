@@ -72,7 +72,8 @@ export const rules: Record<string, moo.Rules> = {
   string: {
     [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
-    [TOKEN_TYPES.ESCAPE]: /\\[^$]|\\\$\{?/, // This handles regular escapes and escaped template markers ('\${')
+    // This handles regular escapes, unicode escapes and escaped template markers ('\${')
+    [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
     // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
     [TOKEN_TYPES.CONTENT]: { match: /[^\r\n\\]+?(?=\$\{|["\n\r\\])/, lineBreaks: false },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },

@@ -49,10 +49,10 @@ const extractErrors = (
   result: DeployResult,
   changes: readonly Change<ChangeDataType>[]
 ): ReadonlyArray<SaltoElementError | SaltoError> =>
-  result.errors.map(error =>
+  result.errors.flatMap(error =>
     (error instanceof Error
       ? addElemIDsToError(changes, error)
-      : error)).flat()
+      : error))
 
 
 const deployOrValidate = async (
@@ -60,7 +60,7 @@ const deployOrValidate = async (
 ): Promise<AdapterDeployResult> => {
   try {
     const deployOrValidateFn = checkOnly ? adapter.validate : adapter.deploy
-    if (_.isUndefined(deployOrValidateFn)) {
+    if (deployOrValidateFn === undefined) {
       throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
     }
     const result = await deployOrValidateFn(opts)
@@ -182,10 +182,12 @@ export const deployActions = async (
         if (nodeError instanceof NodeSkippedError) {
           reportProgress(item, 'cancelled', deployPlan.getItem(nodeError.causingNode).groupKey)
           deployErrors.push(...[...item.changes()].map(change =>
-            ({ elemID: getChangeData(change).elemID,
+            ({
+              elemID: getChangeData(change).elemID,
               groupId: item.groupKey,
               message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
-              severity: 'Error' as SeverityLevel })))
+              severity: 'Error' as SeverityLevel,
+            })))
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))
         } else {

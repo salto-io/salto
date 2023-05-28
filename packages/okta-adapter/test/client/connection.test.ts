@@ -16,7 +16,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { createConnection, validateCredentials } from '../../src/client/connection'
+import { createConnection, getResource, validateCredentials } from '../../src/client/connection'
 
 describe('validateCredentials', () => {
   let mockAxios: MockAdapter
@@ -64,6 +64,20 @@ describe('validateCredentials', () => {
       await expect(
         validateCredentials({ credentials: { baseUrl: 'http://my.okta.net', token: 'token' }, connection })
       ).rejects.toThrow(new Error('Invalid Credentials'))
+    })
+  })
+  describe('getResource', () => {
+    const content = 'test'
+    it('should get resource', async () => {
+      mockAxios.onGet('https://ok12static.oktacdn.com/fs/bco/4/11').reply(200, { content })
+      const response = await getResource('https://ok12static.oktacdn.com/fs/bco/4/11', 'arraybuffer')
+      expect(response.data).toEqual({ content })
+    })
+    it('should throw error when resource not found', async () => {
+      mockAxios.onGet('https://ok12static.oktacdn.com/fs/bco/4/11').reply(404)
+      await expect(
+        getResource('https://ok12static.oktacdn.com/fs/bco/4/11', 'arraybuffer')
+      ).rejects.toThrow(new Error('Request failed with status code 404'))
     })
   })
 })

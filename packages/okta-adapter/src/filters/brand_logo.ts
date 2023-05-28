@@ -31,18 +31,19 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const brandTheme = elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_THEME_TYPE_NAME)
+      .find(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
 
-    if (brandTheme.length === 0) {
+    if (brandTheme === undefined) {
       log.debug('No brandTheme was found')
+      return
     }
     const brandLogoType = createLogoType(BRAND_LOGO_TYPE_NAME)
     elements.push(brandLogoType)
 
-    const brandLogoInstances = (await Promise.all(brandTheme.map(async theme =>
-      getBrandLogoOrIcon(theme, brandLogoType))))
-      .filter(isInstanceElement)
-    brandLogoInstances.forEach(logo => elements.push(logo))
+    const brandLogoInstances = await getBrandLogoOrIcon(brandTheme, brandLogoType)
+    if (brandLogoInstances !== undefined) {
+      elements.push(brandLogoInstances)
+    }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [brandLogoChanges, leftoverChanges] = _.partition(

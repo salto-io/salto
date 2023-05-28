@@ -31,16 +31,18 @@ const favIconFilter: FilterCreator = ({ client }) => ({
   onFetch: async elements => {
     const brandTheme = elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === BRAND_THEME_TYPE_NAME)
+      .find(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
 
-    if (brandTheme.length === 0) {
+    if (brandTheme === undefined) {
       log.debug('No brandTheme was found')
+      return
     }
     const favIconType = createLogoType(FAVORITE_ICON_TYPE_NAME)
     elements.push(favIconType)
-    const favIconInstances = (await Promise.all(brandTheme.map(async theme => getBrandLogoOrIcon(theme, favIconType))))
-      .filter(isInstanceElement)
-    favIconInstances.forEach(logo => elements.push(logo))
+    const favIconInstances = await getBrandLogoOrIcon(brandTheme, favIconType)
+    if (favIconInstances !== undefined) {
+      elements.push(favIconInstances)
+    }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [favIconChanges, leftoverChanges] = _.partition(

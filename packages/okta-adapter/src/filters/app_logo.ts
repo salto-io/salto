@@ -30,7 +30,6 @@ const { getInstanceName } = elementsUtils
 /* Allowed types by okta docs https://help.okta.com/en-us/Content/Topics/Apps/apps-customize-logo.htm */
 const ALLOWED_LOGO_FILE_TYPES = new Set(['png', 'jpg', 'gif'])
 
-
 type App = {
   id: string
   label: string
@@ -79,18 +78,10 @@ const getAppLogo = async (
   config: OktaConfig,
 ): Promise<InstanceElement | undefined> => {
   if (!isApp(app.value)) {
-    log.debug(`App ${app.value.label} is not a valid app`)
     return undefined
   }
-  const appLogo = app.value[LINKS_FIELD]?.logo[0]
-  if (appLogo === undefined) {
-    return undefined
-  }
+  const appLogo = app.value[LINKS_FIELD].logo[0]
   const logoLink = appLogo.href
-  if (logoLink === undefined) {
-    log.debug(`App ${app.value.label} does not have a logo link`)
-    return undefined
-  }
   const idField = config.apiDefinitions.types[APPLICATION_TYPE_NAME]?.transformation?.idFields
   if (idField === undefined) {
     return undefined

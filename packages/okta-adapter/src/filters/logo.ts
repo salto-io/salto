@@ -28,13 +28,14 @@ import { extractIdFromUrl } from '../utils'
 
 const log = logger(module)
 const { SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } = elementsUtils
-type brandLogoOrIconValues = {
+type BrandFileValues = {
   fileName: string
   fileType: string
   urlSuffix: string
 }
-// standatrd logo types for Okta
-const LOGO_TYPES_TO_VALUES: Record<string, brandLogoOrIconValues> = {
+// standard logo types for Okta
+// https://developer.okta.com/docs/reference/api/brands/#response-10
+const LOGO_TYPES_TO_VALUES: Record<string, BrandFileValues> = {
   [BRAND_LOGO_TYPE_NAME]: {
     fileName: 'brandLogo',
     fileType: 'png',
@@ -47,7 +48,7 @@ const LOGO_TYPES_TO_VALUES: Record<string, brandLogoOrIconValues> = {
   },
 }
 
-export const getLogoContent = async (link: string
+const getLogoContent = async (link: string
 ): Promise<Buffer | undefined> => {
   const res = await getResource(link, 'arraybuffer')
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
@@ -58,7 +59,7 @@ export const getLogoContent = async (link: string
   return content
 }
 
-export const sendLogoRequest = async (
+const sendLogoRequest = async (
   client: OktaClient,
   change: Change<InstanceElement>,
   logoInstance: InstanceElement,

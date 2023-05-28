@@ -17,12 +17,10 @@
 import { DependencyChange, DependencyChanger, InstanceElement, ModificationChange, dependencyChange, getChangeData, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { deployment } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import { APPLICATION_TYPE_NAME, APP_USER_SCHEMA_TYPE_NAME } from '../constants'
 import { isActivationChange } from '../deployment'
 import { getParentApp } from '../change_validators/app_schema_with_inactive_app'
 
-const log = logger(module)
 
 const createDependencyChange = (
   appUserSchemaChange: deployment.dependency.ChangeWithKey<ModificationChange<InstanceElement>>,
@@ -73,7 +71,6 @@ export const changeDependenciesFromAppUserSchemaToApp: DependencyChanger = async
   return appUserSchemasChanges.flatMap(change => {
     const app = getParentApp(change.change)
     if (app === undefined) {
-      log.warn(`Failed to find parent app for appUserSchema ${change.key}`)
       return []
     }
     const appChange = appChangeByAppName[app.elemID.getFullName()]

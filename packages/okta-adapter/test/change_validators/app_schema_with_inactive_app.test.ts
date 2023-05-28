@@ -57,7 +57,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
       elemID: appUserSchema1.elemID,
       severity: 'Error',
       message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
-      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app first.`,
+      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
     }])
   })
   it('should return error when app stayed inactive but changed somewhere else', async () => {
@@ -73,7 +73,7 @@ describe('appSchemaWithInActiveAppValidator', () => {
       elemID: appUserSchema1.elemID,
       severity: 'Error',
       message: `Cannot modify App User schema when its associated app is ${INACTIVE_STATUS}`,
-      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app first.`,
+      detailedMessage: `Cannot modify App User schema '${appUserSchema1.elemID.name}' because its associated app '${getParent(appUserSchema1).elemID.name}' is inactive. Please activate the app in order to modify this element.`,
     }])
   })
   it('should not return error when app becomes active after modification', async () => {

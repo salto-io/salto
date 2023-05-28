@@ -23,17 +23,9 @@ import { NETSUITE, SAVED_SEARCH, SCRIPT_ID } from '../../constants'
 import { RemoteFilterCreator } from '../../filter'
 import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation } from './constants'
+import { DATEFORMAT, TIMEFORMAT, TIMEZONE, TimeZoneAndFormat } from '../../changes_detector/date_formats'
 
 const log = logger(module)
-
-export type TimeZoneAndFormat = {
-  timeZone?: string
-  format?: string | moment.MomentBuiltinFormat
-}
-
-export const TIMEZONE = 'TIMEZONE'
-export const TIMEFORMAT = 'TIMEFORMAT'
-export const DATEFORMAT = 'DATEFORMAT'
 
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
@@ -149,7 +141,7 @@ export const getZoneAndFormat = async (
   return { timeZone, format }
 }
 
-const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, isPartial, elementsSourceIndex }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config, elementsSourceIndex, timeZoneAndFormat }) => ({
   name: 'savedSearchesAuthorInformation',
   remote: true,
   onFetch: async elements => {
@@ -167,9 +159,8 @@ const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, is
     if (_.isEmpty(savedSearchesInstances)) {
       return
     }
-    const timeZoneAndFormat = await getZoneAndFormat(elements, elementsSource, isPartial)
     const { elemIdToChangeByIndex, elemIdToChangeAtIndex } = await elementsSourceIndex.getIndexes()
-    if (timeZoneAndFormat.format === undefined) {
+    if (timeZoneAndFormat?.format === undefined) {
       savedSearchesInstances.forEach(instance => {
         instance.annotate({ [CORE_ANNOTATIONS.CHANGED_BY]: elemIdToChangeByIndex[instance.elemID.getFullName()] })
         instance.annotate({ [CORE_ANNOTATIONS.CHANGED_AT]: elemIdToChangeAtIndex[instance.elemID.getFullName()] })

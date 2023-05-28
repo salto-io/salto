@@ -49,7 +49,7 @@ import SDFInternalIds from './filters/internal_ids/sdf_internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import systemNoteAuthorInformation from './filters/author_information/system_note'
-import savedSearchesAuthorInformation, { TimeZoneAndFormat } from './filters/author_information/saved_searches'
+import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
 import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
 import omitSdfUntypedValues from './filters/omit_sdf_untyped_values'
@@ -66,7 +66,7 @@ import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, n
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
-import { createDateRange, getTimeDateFormat } from './changes_detector/date_formats'
+import { createDateRange, getTimeDateFormat, TimeZoneAndFormat } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
@@ -219,18 +219,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime }) => filter.filtersRunner(
-      {
-        client: this.client,
-        elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
-        elementsSource: this.elementsSource,
-        isPartial,
-        config,
-        changesGroupId,
-        fetchTime,
-      },
-      filtersCreators,
-    )
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat }) =>
+      filter.filtersRunner(
+        {
+          client: this.client,
+          elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
+          elementsSource: this.elementsSource,
+          isPartial,
+          config,
+          timeZoneAndFormat,
+          changesGroupId,
+          fetchTime,
+        },
+        filtersCreators,
+      )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -403,9 +405,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
-      return {
-        serverTime: sysInfo.time,
-      }
+      return { serverTime: sysInfo.time }
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
@@ -413,12 +413,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
-    const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     if (timeZoneAndFormat?.format === undefined) {
       log.debug('Failed to get date format, skipping SuiteApp operations')
-      return { serverTime: sysInfo.time }
+      return { timeZoneAndFormat }
     }
+    const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,

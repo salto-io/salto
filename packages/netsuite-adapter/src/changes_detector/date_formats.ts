@@ -18,12 +18,18 @@ import moment from 'moment-timezone'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../types'
 import { ConfigRecord } from '../client/suiteapp_client/types'
 import { DateRange } from './types'
-import { TIMEFORMAT, DATEFORMAT, TIMEZONE, TimeZoneAndFormat } from '../filters/author_information/saved_searches'
 
 const log = logger(module)
 
 export const SUITEQL_DATE_FORMAT = 'YYYY-MM-DD'
 export const SUITEQL_TIME_FORMAT = 'HH:MI:SS'
+export const TIMEZONE = 'TIMEZONE'
+export const TIMEFORMAT = 'TIMEFORMAT'
+export const DATEFORMAT = 'DATEFORMAT'
+export type TimeZoneAndFormat = {
+  timeZone?: string
+  format?: string | moment.MomentBuiltinFormat
+}
 const suiteQLDateFormatRegex = /(?<year>\d+)-(?<month>\d+)-(?<day>\d+) (?<hour>\d+):(?<minute>\d+):(?<second>\d+)/
 const savedSearchDateFormatRegex = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+) (?<hour>\d+):(?<minute>\d+) (?<ampm>\w+)/
 
@@ -75,7 +81,7 @@ const getConfigRecordsFieldValue = (
   field: string,
 ): string | undefined => configRecord?.data?.fields?.[field] as string | undefined
 
-export const getTimeDateFormat = (configRecords: ConfigRecord[]): TimeZoneAndFormat | undefined => {
+export const getTimeDateFormat = (configRecords: ConfigRecord[]): TimeZoneAndFormat => {
   const userPreferences = configRecords
     .find(configRecord => configRecord.configType === SUITEAPP_CONFIG_RECORD_TYPES[0])
   const dateFormat = getConfigRecordsFieldValue(userPreferences, DATEFORMAT)

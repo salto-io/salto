@@ -20,7 +20,11 @@ import {
   InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ticketStatusCustomStatusName } from '../constants'
+import {
+  TICKET_FIELD_TYPE_NAME,
+  TICKET_FORM_TYPE_NAME,
+  TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
+} from '../constants'
 
 
 const includesTicketStatus = (instance: InstanceElement): boolean => {
@@ -30,8 +34,8 @@ const includesTicketStatus = (instance: InstanceElement): boolean => {
   }
   const ticketStatus = ticketFieldIds
     .filter(isReferenceExpression)
-    .map(ref => ref.elemID.name)
-    .find(name => name === ticketStatusCustomStatusName)
+    .map(ref => ref.value.value?.type)
+    .find(type => type === TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME)
 
   return ticketStatus !== undefined
 }
@@ -62,19 +66,16 @@ export const additionOfTicketStatusForTicketFormValidator: ChangeValidator = asy
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: `${instance.elemID.name} will be deployed without Ticket status ticket field`,
-      detailedMessage: `${instance.elemID.name} will be deployed without Ticket status ticket field since it does not exist in your zendesk account and cannot be created`,
+      message: 'Ticket form will be deployed without \'Ticket status\' ticket field',
+      detailedMessage: `Ticket form ${instance.elemID.name} will be deployed without the parts referencing the 'Ticket status' ticket field, since that field does not exist in your zendesk account and cannot be created`,
     }))
 
   const ticketFieldWarning: ChangeError = {
     elemID: ticketStatusInstance.elemID,
     severity: 'Warning',
-    message: `${ticketStatusInstance.elemID.name} will not be deployed`,
-    detailedMessage: `The deployment of the addition of ${ticketStatusInstance.elemID.name} is not supported by zendesk`,
+    message: 'Ticket field of type custom_status will not be deployed',
+    detailedMessage: `The addition of the ticket field '${ticketStatusInstance.elemID.name}' of type 'custom_status' is not supported by zendesk`,
   }
 
-  return [
-    ...ticketFormWarnings,
-    ticketFieldWarning,
-  ]
+  return ticketFormWarnings.concat(ticketFieldWarning)
 }

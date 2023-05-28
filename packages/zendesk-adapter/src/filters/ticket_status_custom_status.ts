@@ -17,36 +17,40 @@ import {
   Change,
   DeployResult,
   getChangeData,
-  InstanceElement, isAdditionChange,
+  InstanceElement, isAdditionChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
-import { TICKET_FIELD_TYPE_NAME,
-  ticketStatusCustomStatusName } from '../constants'
+import {
+  TICKET_FIELD_TYPE_NAME, TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME,
+} from '../constants'
 
 const log = logger(module)
 
 /**
- * This filter deploys the ticket_filed ticket status. This ticket field cannot be deployed as it is a
+ * This filter deploys the ticket_field ticket status. This ticket field cannot be deployed as it is a
  * zendesk default, therefore to not fail the deployment of dependent elements (such as ticket form) we return
  * a successful deployment even though the ticket was not really deployed
  */
 const filterCreator: FilterCreator = () => ({
   name: 'ticketStatusCustomStatusDeploy',
   deploy: async (changes: Change<InstanceElement>[]) => {
-    const [TicketStatusCustomStatusChanges, leftoverChanges] = _.partition(
+    const [ticketStatusCustomStatusChanges, leftoverChanges] = _.partition(
       changes,
-      change => ticketStatusCustomStatusName === getChangeData(change).elemID.name
-      && TICKET_FIELD_TYPE_NAME === getChangeData(change).elemID.typeName
-      && isAdditionChange(change),
+      change => (
+        TICKET_FIELD_TYPE_NAME === getChangeData(change).elemID.typeName
+        && isInstanceChange(change)
+        && getChangeData(change).value.type === TICKET_STATUS_CUSTOM_STATUS_TYPE_NAME
+        && isAdditionChange(change)
+      ),
     )
 
     const deployResult: DeployResult = {
-      appliedChanges: TicketStatusCustomStatusChanges,
+      appliedChanges: ticketStatusCustomStatusChanges,
       errors: [],
     }
-    log.warn(`Elements: ${TicketStatusCustomStatusChanges.map(change => getChangeData(change).elemID.getFullName()).toString()} will not be deployed`)
+    log.warn(`Elements: ${ticketStatusCustomStatusChanges.map(change => getChangeData(change).elemID.getFullName())} will not be deployed`)
     return { deployResult, leftoverChanges }
   },
 })

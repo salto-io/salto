@@ -23,7 +23,7 @@ import {
 import filterCreator from '../../src/filters/ticket_status_custom_status'
 import { createFilterCreatorParams } from '../utils'
 import {
-  TICKET_FIELD_TYPE_NAME, ticketStatusCustomStatusName,
+  TICKET_FIELD_TYPE_NAME, TICKET_STATUS_TICKET_FIELD_NAME,
   ZENDESK,
 } from '../../src/constants'
 
@@ -33,7 +33,7 @@ describe('ticket status custom status filter', () => {
 
   const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
   const ticketStatusInstance = new InstanceElement(
-    ticketStatusCustomStatusName,
+    TICKET_STATUS_TICKET_FIELD_NAME,
     ticketFieldType,
     {
       type: 'custom_status',

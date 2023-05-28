@@ -137,6 +137,7 @@ import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
 import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
 import localeFilter from './filters/locale'
+import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -157,6 +158,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   queryFilter,
+  ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,

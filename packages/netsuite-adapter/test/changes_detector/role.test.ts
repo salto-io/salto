@@ -19,6 +19,7 @@ import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
+import { timeDateFormat } from './savedsearch.test'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
@@ -46,7 +47,7 @@ describe('role', () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(await detector.getChanges(
       client,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
     )).toEqual([
       { type: 'object', objectId: 'a', time: new Date('2021-01-11T20:55:17.000Z') },
       { type: 'object', objectId: 'b', time: new Date('2021-01-11T21:55:17.000Z') },
@@ -77,7 +78,7 @@ describe('role', () => {
 
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
       )
     })
     it('should return the changes', () => {
@@ -107,7 +108,7 @@ describe('role', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'role',
         columns: ['internalid', 'permchangedate'],
-        filters: [['permchangedate', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
+        filters: [['permchangedate', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 pm']],
       })
     })
   })
@@ -115,7 +116,7 @@ describe('role', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date()))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
     ).toHaveLength(0)
   })
 })

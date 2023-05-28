@@ -21,7 +21,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import { getMetadataTypes, metadataTypesToList } from '../src/types'
+import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
@@ -1263,7 +1263,11 @@ describe('Adapter', () => {
         suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
-          getConfigRecords: () => [],
+          getConfigRecords: () => [{
+            configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
+            fieldsDef: [],
+            data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } },
+          }],
           getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 

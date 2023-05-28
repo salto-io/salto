@@ -26,14 +26,14 @@ import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformatio
 
 const log = logger(module)
 
-type TimeZoneAndFormat = {
+export type TimeZoneAndFormat = {
   timeZone?: string
   format?: string | moment.MomentBuiltinFormat
 }
 
-const TIMEZONE = 'TIMEZONE'
-const TIMEFORMAT = 'TIMEFORMAT'
-const DATEFORMAT = 'DATEFORMAT'
+export const TIMEZONE = 'TIMEZONE'
+export const TIMEFORMAT = 'TIMEFORMAT'
+export const DATEFORMAT = 'DATEFORMAT'
 
 const isSavedSearchInstance = (instance: InstanceElement): boolean =>
   instance.elemID.typeName === SAVED_SEARCH
@@ -111,7 +111,7 @@ const mapFieldToValue: Record<string, string> = {
   [DATEFORMAT]: 'text',
 }
 
-const getFieldFromElemSource = async (
+export const getFieldFromElemSource = async (
   elementsSource: ReadOnlyElementsSource,
   field: string,
 ): Promise<string | undefined> => {

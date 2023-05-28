@@ -49,7 +49,7 @@ import SDFInternalIds from './filters/internal_ids/sdf_internal_ids'
 import accountSpecificValues from './filters/account_specific_values'
 import translationConverter from './filters/translation_converter'
 import systemNoteAuthorInformation from './filters/author_information/system_note'
-import savedSearchesAuthorInformation from './filters/author_information/saved_searches'
+import savedSearchesAuthorInformation, { TimeZoneAndFormat } from './filters/author_information/saved_searches'
 import suiteAppConfigElementsFilter from './filters/suiteapp_config_elements'
 import configFeaturesFilter from './filters/config_features'
 import omitSdfUntypedValues from './filters/omit_sdf_untyped_values'
@@ -66,7 +66,7 @@ import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, n
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
-import { createDateRange } from './changes_detector/date_formats'
+import { createDateRange, getTimeDateFormat } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
@@ -77,6 +77,8 @@ import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
+import { ConfigRecord } from './client/suiteapp_client/types'
+
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -171,6 +173,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial?: boolean
     changesGroupId?: string
     fetchTime?: Date
+    timeZoneAndFormat?: TimeZoneAndFormat
   }) => Required<Filter>
 
   public constructor({
@@ -236,12 +239,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
+    const configRecords = await this.client.getConfigRecords()
     const {
       changedObjectsQuery,
       serverTime,
+      timeZoneAndFormat,
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
+      configRecords,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -256,7 +262,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
-    const configRecordsPromise = this.client.getConfigRecords()
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
@@ -298,7 +303,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
     failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
-      ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
+      ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
       : []
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
@@ -310,7 +315,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...customRecords,
     ]
 
-    await this.createFiltersRunner({ isPartial, fetchTime: serverTime }).onFetch(elements)
+    await this.createFiltersRunner({ isPartial, fetchTime: serverTime, timeZoneAndFormat }).onFetch(elements)
 
     return {
       failures: {
@@ -383,10 +388,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
+    configRecords: ConfigRecord[],
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
+      timeZoneAndFormat?: TimeZoneAndFormat
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
@@ -407,14 +414,19 @@ export default class NetsuiteAdapter implements AdapterOperations {
       return { serverTime: sysInfo.time }
     }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
+    const timeZoneAndFormat = getTimeDateFormat(configRecords)
+    if (timeZoneAndFormat?.format === undefined) {
+      log.debug('Failed to get date format, skipping SuiteApp operations')
+      return { serverTime: sysInfo.time }
+    }
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,
-      createDateRange(lastFetchTime, sysInfo.time),
+      createDateRange(lastFetchTime, sysInfo.time, timeZoneAndFormat.format),
       serviceIdToLastFetchDate,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time }
+    return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
   }
 
 

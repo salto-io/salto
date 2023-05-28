@@ -20,6 +20,8 @@ import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
 
+export const timeDateFormat = 'YYYY-MM-DD h:mm a'
+
 describe('savedsearch', () => {
   const runSavedSearchQueryMock = jest.fn()
   const suiteAppClient = {
@@ -39,7 +41,7 @@ describe('savedsearch', () => {
         { invalid: 0 }])
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
       )
     })
     it('should return the changes', () => {
@@ -53,7 +55,7 @@ describe('savedsearch', () => {
       expect(runSavedSearchQueryMock).toHaveBeenCalledWith({
         type: 'savedsearch',
         columns: ['id', 'datemodified'],
-        filters: [['datemodified', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 pm']],
+        filters: [['datemodified', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 pm']],
       })
     })
   })
@@ -61,7 +63,7 @@ describe('savedsearch', () => {
   it('return nothing when query fails', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date()))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
     ).toHaveLength(0)
   })
 })

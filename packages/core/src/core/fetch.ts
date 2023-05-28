@@ -573,6 +573,11 @@ export const calcFetchChanges = async (
   allFetchedAccounts: Set<string>
 ): Promise<CalcFetchChangesResult> => {
   const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
+  // When we init a new env, state will be empty. We fallback to the workspace
+  // elements since they should be considered a part of the env and the diff
+  // should be calculated with them in mind.
+  const isStateEmpty = await stateElements.isEmpty()
+
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
     || mergedAccountElementsSource.has(id)
@@ -583,7 +588,7 @@ export const calcFetchChanges = async (
     get: async (id: ElemID): Promise<Element | undefined> => {
       const mergedElem = await mergedAccountElementsSource.get(id)
       if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
-        return stateElements.get(id)
+        return isStateEmpty ? workspaceElements.get(id) : stateElements.get(id)
       }
       return mergedElem
     },
@@ -593,7 +598,7 @@ export const calcFetchChanges = async (
   }
 
   // Changes from the service that are not in the state
-  const { changesTree: serviceChanges, changes: serviceToStateChanges } = await stateElements.isEmpty()
+  const { changesTree: serviceChanges, changes: serviceToStateChanges } = isStateEmpty
     ? {
       // if the state is empty and the workspace isn't, the diff should be calculated with the workspace and the service
       // which happens in a later step
@@ -617,10 +622,11 @@ export const calcFetchChanges = async (
     wu(serviceChanges.values())
       .map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName())
   )
-  const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
+  // If the state is empty, everything is relevant because we only calculate changes once
+  const serviceChangeIdsFilter: IDFilter = id => isStateEmpty || serviceChangesTopLevelIDs.has(id.getFullName())
 
   // Changes from the nacls that are not in the state
-  const { changesTree: pendingChanges } = await stateElements.isEmpty()
+  const { changesTree: pendingChanges } = isStateEmpty
   // If the state is empty, there is no reason to calculate this step, because the state will be overwritten anyway
     ? { changesTree: new collections.treeMap.TreeMap<WorkspaceDetailedChange>() }
     : await log.time(
@@ -646,7 +652,10 @@ export const calcFetchChanges = async (
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
-  const fetchChanges = toFetchChanges(serviceChanges, workspaceToServiceChanges)
+  const fetchChanges = toFetchChanges(
+    // If the state is empty, we skipped the service change calculation because it is the same as workspaceToService
+    isStateEmpty ? workspaceToServiceChanges : serviceChanges, workspaceToServiceChanges
+  )
   const serviceElementsMap = _.groupBy(
     accountElements,
     e => e.elemID.getFullName()

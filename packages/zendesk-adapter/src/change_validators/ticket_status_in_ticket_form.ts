@@ -15,13 +15,13 @@
 */
 import _ from 'lodash'
 import {
+  ChangeError,
   ChangeValidator, getChangeData,
   InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
+import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ticketStatusCustomStatusName } from '../constants'
 
-const ticketStatusCustomStatusName = 'Ticket_status_custom_status@suu'
 
 const includesTicketStatus = (instance: InstanceElement): boolean => {
   const ticketFieldIds = instance.value.ticket_field_ids
@@ -36,6 +36,10 @@ const includesTicketStatus = (instance: InstanceElement): boolean => {
   return ticketStatus !== undefined
 }
 
+/**
+ * In this change validator we warn the user that the addition of ticket_field Ticket status is not supported
+ * and therefore we warn that ticket_forms with reference to this ticket_field will be deployed without it.
+ */
 export const additionOfTicketStatusForTicketFormValidator: ChangeValidator = async changes => {
   const ticketStatusAdditionChange = changes
     .filter(isAdditionChange)
@@ -46,6 +50,7 @@ export const additionOfTicketStatusForTicketFormValidator: ChangeValidator = asy
   if (ticketStatusAdditionChange === undefined) {
     return []
   }
+  const ticketStatusInstance = getChangeData(ticketStatusAdditionChange)
   const ticketFormWithTicketStatusInstances = changes
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
@@ -53,15 +58,23 @@ export const additionOfTicketStatusForTicketFormValidator: ChangeValidator = asy
     .map(getChangeData)
     .filter(includesTicketStatus)
 
-  if (_.isEmpty(ticketFormWithTicketStatusInstances)) {
-    return []
-  }
-
-  return ticketFormWithTicketStatusInstances
+  const ticketFormWarnings: ChangeError[] = ticketFormWithTicketStatusInstances
     .map(instance => ({
       elemID: instance.elemID,
       severity: 'Warning',
       message: `${instance.elemID.name} will be deployed without Ticket status ticket field`,
       detailedMessage: `${instance.elemID.name} will be deployed without Ticket status ticket field since it does not exist in your zendesk account and cannot be created`,
     }))
+
+  const ticketFieldWarning: ChangeError = {
+    elemID: ticketStatusInstance.elemID,
+    severity: 'Warning',
+    message: `${ticketStatusInstance.elemID.name} will not be deployed`,
+    detailedMessage: `The deployment of the addition of ${ticketStatusInstance.elemID.name} is not supported by zendesk`,
+  }
+
+  return [
+    ...ticketFormWarnings,
+    ticketFieldWarning,
+  ]
 }

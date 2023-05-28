@@ -20,7 +20,7 @@ import {
   ReferenceExpression,
   toChange,
 } from '@salto-io/adapter-api'
-import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ticketStatusCustomStatusName, ZENDESK } from '../../src/constants'
 import {
   additionOfTicketStatusForTicketFormValidator,
 } from '../../src/change_validators'
@@ -37,7 +37,7 @@ describe('additionOfTicketStatusForTicketFormValidator',
     const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
 
     const ticketStatusInstance = new InstanceElement(
-      'Ticket_status_custom_status@suu',
+      ticketStatusCustomStatusName,
       ticketFieldType,
       {
         type: 'custom_status',
@@ -71,18 +71,28 @@ describe('additionOfTicketStatusForTicketFormValidator',
       }
     )
 
+    const ticketStatusChangeError = {
+      elemID: ticketStatusInstance.elemID,
+      severity: 'Warning',
+      message: `${ticketStatusInstance.elemID.name} will not be deployed`,
+      detailedMessage: `The deployment of the addition of ${ticketStatusInstance.elemID.name} is not supported by zendesk`,
+    }
+
     it('should return a warning when there is an addition of ticket status and this ticket field appears in ticket form addition',
       async () => {
         const errors = await additionOfTicketStatusForTicketFormValidator([
           toChange({ after: ticketFormWithTicketStatusInstance }),
           toChange({ after: ticketStatusInstance }),
         ])
-        expect(errors).toEqual([{
-          elemID: ticketFormWithTicketStatusInstance.elemID,
-          severity: 'Warning',
-          message: getMsg(ticketFormWithTicketStatusInstance),
-          detailedMessage: getDetailedMsg(ticketFormWithTicketStatusInstance),
-        }])
+        expect(errors).toEqual([
+          {
+            elemID: ticketFormWithTicketStatusInstance.elemID,
+            severity: 'Warning',
+            message: getMsg(ticketFormWithTicketStatusInstance),
+            detailedMessage: getDetailedMsg(ticketFormWithTicketStatusInstance),
+          },
+          ticketStatusChangeError,
+        ])
       })
     it('should not return a warning when there is an addition of a ticket form with ticket status without addition of ticket status',
       async () => {
@@ -91,13 +101,13 @@ describe('additionOfTicketStatusForTicketFormValidator',
         ])
         expect(errors).toEqual([])
       })
-    it('should not return a warning when the ticket form does not include a ticket status',
+    it('should not return a warning for ticket form when the ticket form does not include a ticket status',
       async () => {
         const errors = await additionOfTicketStatusForTicketFormValidator([
           toChange({ after: ticketFormWithoutTicketStatusInstance }),
           toChange({ after: ticketStatusInstance }),
           toChange({ after: ticketFieldInstance }),
         ])
-        expect(errors).toEqual([])
+        expect(errors).toEqual([ticketStatusChangeError])
       })
   })

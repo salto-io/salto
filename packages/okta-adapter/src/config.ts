@@ -440,7 +440,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'scheme', fieldType: 'string' },
         { fieldName: 'userName', fieldType: 'string' },
       ],
-      fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
+      fieldsToOmit: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
     },
   },
   ApplicationVisibility: {

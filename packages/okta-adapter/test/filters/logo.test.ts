@@ -14,21 +14,17 @@
 * limitations under the License.
 */
 
-import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, StaticFile, ReferenceExpression } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
 import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
+import OktaClient from '../../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
 import { createLogoType, getLogo } from '../../src/filters/logo'
-import * as connectionModule from '../../src/client/connection'
-
-jest.mock('../../src/client/connection', () => ({
-  ...jest.requireActual('../../src/client/connection'),
-  getResource: jest.fn(),
-}))
-
-const mockedConnection = jest.mocked(connectionModule, true)
+import { mockClient } from '../utils'
 
 describe('logo filter', () => {
   const content = Buffer.from('test')
+  let mockGet: jest.SpyInstance
+  let client: OktaClient
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
@@ -95,19 +91,26 @@ describe('logo filter', () => {
   })
   describe('getLogo', () => {
     beforeEach(async () => {
-      jest.clearAllMocks()
-      mockedConnection.getResource.mockImplementation(async url => {
-        if (url === 'https://ok12static.oktacdn.com/fs/bco/4/111') {
+      const mockCli = mockClient()
+      client = mockCli.client
+      mockGet = jest.spyOn(client, 'getResource')
+      mockGet.mockImplementation(params => {
+        if (params.url === 'https://ok12static.oktacdn.com/fs/bco/4/111') {
           return {
             status: 200,
             data: content,
-          } as unknown as ReturnType<typeof connectionModule.getResource>
+          }
         }
         throw new Error('Err')
       })
     })
     it('should return logo', async () => {
-      const logo = await getLogo([appInstance], appLogoType, contentType, fileName, link)
+      const logo = await getLogo({ client,
+        parents: [appInstance],
+        logoType: appLogoType,
+        contentType,
+        logoName: fileName,
+        link })
       expect(logo?.value).toEqual({
         id: '111',
         fileName: `${fileName}.${contentType}`,
@@ -123,7 +126,10 @@ describe('logo filter', () => {
     it('should return undefined when no logo', async () => {
       const clonedBradTheme = brandThemeInstance.clone()
       clonedBradTheme.value.logo = undefined
-      const logo = await getLogo([clonedBradTheme, brandInstance], brandLogoType, contentType)
+      const logo = await getLogo({ client,
+        parents: [clonedBradTheme, brandInstance],
+        logoType: brandLogoType,
+        contentType })
       expect(logo).toBeUndefined()
     })
   })

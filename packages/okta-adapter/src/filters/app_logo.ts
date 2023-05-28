@@ -17,13 +17,14 @@
 import { Change, InstanceElement, ObjectType, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { naclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuard, naclCase } from '@salto-io/adapter-utils'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { OktaConfig } from '../config'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
 import { createLogoType, deployLogo, getLogo } from './logo'
+import OktaClient from '../client/client'
 
 const log = logger(module)
 const { getInstanceName } = elementsUtils
@@ -42,25 +43,18 @@ type App = {
   }
 }
 const EXPECTED_APP_SCHEMA = Joi.object({
-  id: Joi.string().required(),
+  id: Joi.string(),
   label: Joi.string().required(),
   _links: Joi.object({
     logo: Joi.array().items(Joi.object({
       href: Joi.string().required(),
       type: Joi.string().required(),
       name: Joi.string().required(),
-    }).required()),
-  }).required(),
-}).required()
+    }).unknown(true).required()),
+  }).unknown(true).required(),
+}).unknown(true).required()
 
-const isApp = (value: unknown): value is App => {
-  const { error } = EXPECTED_APP_SCHEMA.validate(value, { allowUnknown: true })
-  if (error !== undefined) {
-    log.error('Recieved invalid response for the app values')
-    return false
-  }
-  return true
-}
+const isApp = createSchemeGuard<App>(EXPECTED_APP_SCHEMA, 'Recieved invalid response for the app values')
 
 const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')
@@ -72,11 +66,12 @@ const getLogoFileType = (contentType: string): string | undefined => {
   return fileType
 }
 
-const getAppLogo = async (
-  app: InstanceElement,
-  appLogoType: ObjectType,
-  config: OktaConfig,
-): Promise<InstanceElement | undefined> => {
+const getAppLogo = async ({ client, app, appLogoType, config }:{
+  client: OktaClient
+  app: InstanceElement
+  appLogoType: ObjectType
+  config: OktaConfig
+}): Promise<InstanceElement | undefined> => {
   if (!isApp(app.value)) {
     return undefined
   }
@@ -91,7 +86,7 @@ const getAppLogo = async (
   if (contentType === undefined) {
     return undefined
   }
-  return getLogo([app], appLogoType, contentType, name, logoLink)
+  return getLogo({ client, parents: [app], logoType: appLogoType, contentType, logoName: name, link: logoLink })
 }
 
 
@@ -109,7 +104,7 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
     elements.push(appLogoType)
 
     const appLogoInstances = (await Promise.all(appsWithLogo
-      .map(async app => getAppLogo(app, appLogoType, config))))
+      .map(async app => getAppLogo({ client, app, appLogoType, config }))))
       .filter(isInstanceElement)
     appLogoInstances.forEach(logo => elements.push(logo))
   },

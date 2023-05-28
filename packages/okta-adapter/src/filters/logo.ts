@@ -20,7 +20,6 @@ import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, Object
 import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, getParents, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
-import { getResource } from '../client/connection'
 import OktaClient from '../client/client'
 import { getOktaError } from '../deployment'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from '../constants'
@@ -48,9 +47,9 @@ const LOGO_TYPES_TO_VALUES: Record<string, BrandFileValues> = {
   },
 }
 
-const getLogoContent = async (link: string
+const getLogoContent = async (link: string, client: OktaClient
 ): Promise<Buffer | undefined> => {
-  const res = await getResource(link, 'arraybuffer')
+  const res = await client.getResource({ url: link, responseType: 'arraybuffer' })
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
   if (!Buffer.isBuffer(content)) {
     log.error('Received invalid response from Okta API for attachment content')
@@ -59,13 +58,19 @@ const getLogoContent = async (link: string
   return content
 }
 
-const sendLogoRequest = async (
-  client: OktaClient,
-  change: Change<InstanceElement>,
-  logoInstance: InstanceElement,
-  url: string,
-  isRemoval: boolean,
-): Promise<Error | void> => {
+const sendLogoRequest = async ({
+  client,
+  change,
+  logoInstance,
+  url,
+  isRemoval,
+}:{
+  client: OktaClient
+  change: Change<InstanceElement>
+  logoInstance: InstanceElement
+  url: string
+  isRemoval: boolean
+}): Promise<Error | void> => {
   const fileContent = isAdditionOrModificationChange(change)
   && isStaticFile(logoInstance.value.content)
     ? await logoInstance.value.content.getContent()
@@ -106,9 +111,9 @@ export const deployLogo = async (
       logoUrl = `/api/v1/brands/${brand.value.id}/themes/${brandTheme.value.id}/${suffix}`
     }
     if (isRemovalChange(change)) {
-      return await sendLogoRequest(client, change, logoInstance, logoUrl, true)
+      return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: true })
     }
-    return await sendLogoRequest(client, change, logoInstance, logoUrl, false)
+    return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: false })
   } catch (e) {
     return getOktaError(logoInstance.elemID, e)
   }
@@ -129,19 +134,27 @@ export const createLogoType = (objectTypeName: string): ObjectType =>
     path: [OKTA, TYPES_PATH, SUBTYPES_PATH, objectTypeName, objectTypeName],
   })
 
-export const getLogo = async (
-  parents: InstanceElement[],
-  logoType: ObjectType,
-  contentType: string,
-  logoName?: string,
-  link?: string,
-):
+export const getLogo = async ({
+  client,
+  parents,
+  logoType,
+  contentType,
+  logoName,
+  link,
+}:{
+  client: OktaClient
+  parents: InstanceElement[]
+  logoType: ObjectType
+  contentType: string
+  logoName?: string
+  link?: string
+}):
 Promise<InstanceElement | undefined> => {
   const logoLink = link ?? parents[0].value?.logo
   if (logoLink === undefined) {
     return undefined
   }
-  const logoContent = await getLogoContent(logoLink)
+  const logoContent = await getLogoContent(logoLink, client)
   if (logoContent === undefined) {
     return undefined
   }
@@ -171,6 +184,7 @@ Promise<InstanceElement | undefined> => {
 }
 
 export const getBrandLogoOrIcon = async (
+  client: OktaClient,
   brandTheme: InstanceElement,
   logoType: ObjectType,
 ): Promise<InstanceElement | undefined> => {
@@ -180,5 +194,5 @@ export const getBrandLogoOrIcon = async (
   }
   const instances = [brandTheme, parents[0].value]
   const type = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileType
-  return getLogo(instances, logoType, type)
+  return getLogo({ client, parents: instances, logoType, contentType: type })
 }

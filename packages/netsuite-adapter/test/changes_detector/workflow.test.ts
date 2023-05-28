@@ -19,6 +19,7 @@ import { Change } from '../../src/changes_detector/types'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
+import { timeDateFormat } from './savedsearch.test'
 
 describe('workflow', () => {
   const runSavedSearchQueryMock = jest.fn()
@@ -28,7 +29,6 @@ describe('workflow', () => {
 
   const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
 
-
   describe('query success', () => {
     describe('There are changes', () => {
       let results: Change[]
@@ -37,7 +37,7 @@ describe('workflow', () => {
         runSavedSearchQueryMock.mockResolvedValue([{ recordid: 'a' }])
         results = await detector.getChanges(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T06:55:17.949Z'))
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T06:55:17.949Z'), timeDateFormat)
         )
       })
       it('should return the type', () => {
@@ -52,7 +52,7 @@ describe('workflow', () => {
           filters: [
             ['recordtype', 'is', '-129'],
             'and',
-            ['date', 'within', '1/11/2021 6:55 pm', '2/22/2021 6:56 am'],
+            ['date', 'within', '2021-01-11 6:55 pm', '2021-02-22 6:56 am'],
           ],
           columns: ['recordid'],
         })
@@ -66,7 +66,7 @@ describe('workflow', () => {
         runSavedSearchQueryMock.mockResolvedValue([])
         results = await detector.getChanges(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
         )
       })
       it('should return nothing', () => {
@@ -78,7 +78,7 @@ describe('workflow', () => {
   it('return nothing when query fails', async () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date()))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
     ).toHaveLength(0)
   })
 })

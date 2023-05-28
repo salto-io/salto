@@ -27,7 +27,7 @@ import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
-import { getZoneAndFormat, toMomentDate } from './saved_searches'
+import { toMomentDate } from './saved_searches'
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
 
 const { awu } = collections.asynciterable
@@ -239,7 +239,15 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .filter(async instance => isCustomRecordType(await instance.getType()))
     .toArray()
 
-const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }) => ({
+const filterCreator: RemoteFilterCreator = (
+  {
+    client,
+    config,
+    elementsSource,
+    elementsSourceIndex,
+    timeZoneAndFormat,
+  }
+) => ({
   name: 'systemNoteAuthorInformation',
   remote: true,
   onFetch: async elements => {
@@ -280,7 +288,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, el
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
-    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
+    const timeZone = timeZoneAndFormat?.timeZone
     const systemNotes = !_.isEmpty(employeeNames)
       ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)
       : {}

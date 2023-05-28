@@ -13,17 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement, ReadOnlyElementsSource, ElemID, Element } from '@salto-io/adapter-api'
+import { isInstanceElement, CORE_ANNOTATIONS, InstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Ajv from 'ajv'
 import _ from 'lodash'
 import moment from 'moment-timezone'
-import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../types'
-import { NETSUITE, SAVED_SEARCH, SCRIPT_ID } from '../../constants'
+import { SAVED_SEARCH, SCRIPT_ID } from '../../constants'
 import { RemoteFilterCreator } from '../../filter'
 import NetsuiteClient from '../../client/client'
 import { SavedSearchesResult, SAVED_SEARCH_RESULT_SCHEMA, ModificationInformation } from './constants'
-import { DATEFORMAT, TIMEFORMAT, TIMEZONE, TimeZoneAndFormat } from '../../changes_detector/date_formats'
+import { TimeZoneAndFormat } from '../../changes_detector/date_formats'
 
 const log = logger(module)
 
@@ -92,53 +91,6 @@ const getSavedSearchesMap = async (
         },
       ])
   )
-}
-
-const isUserPreference = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES
-
-const mapFieldToValue: Record<string, string> = {
-  [TIMEFORMAT]: 'value',
-  [TIMEZONE]: 'value',
-  [DATEFORMAT]: 'text',
-}
-
-export const getFieldFromElemSource = async (
-  elementsSource: ReadOnlyElementsSource,
-  field: string,
-): Promise<string | undefined> => {
-  const elemIdToGet = new ElemID(NETSUITE, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES, 'instance')
-  const sourcedElement = await elementsSource.get(elemIdToGet)
-  return sourcedElement?.value?.[field]?.[mapFieldToValue[field]]
-}
-
-const getTimeAndDateValue = async (
-  field: string,
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean,
-  userPreferencesInstance: InstanceElement | undefined
-): Promise<string | undefined> => {
-  const returnField = userPreferencesInstance?.value.configRecord.data.fields?.[field] ?? (
-    isPartial ? await getFieldFromElemSource(elementsSource, field) : undefined
-  )
-  return returnField
-}
-
-export const getZoneAndFormat = async (
-  elements: Element[],
-  elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
-): Promise<TimeZoneAndFormat> => {
-  const userPreferencesInstance = elements.filter(isInstanceElement).find(isUserPreference)
-  const timeZone = await getTimeAndDateValue(TIMEZONE, elementsSource, isPartial, userPreferencesInstance)
-  const timeFormat = await getTimeAndDateValue(TIMEFORMAT, elementsSource, isPartial, userPreferencesInstance)
-  const dateFormat = await getTimeAndDateValue(DATEFORMAT, elementsSource, isPartial, userPreferencesInstance)
-  const format = dateFormat && timeFormat
-    // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
-    ? [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' ')
-    : undefined
-
-  return { timeZone, format }
 }
 
 const filterCreator: RemoteFilterCreator = ({ client, config, elementsSourceIndex, timeZoneAndFormat }) => ({

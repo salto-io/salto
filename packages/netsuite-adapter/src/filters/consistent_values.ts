@@ -76,6 +76,12 @@ const transactionFormRecordType = {
   consistentValue: 'JOURNALENTRY',
 }
 
+const transactionFormRecordTypeTransferOrder = {
+  fieldElemID: new ElemID(NETSUITE, TRANSACTION_FORM, 'field', RECORD_TYPE),
+  inconsistentValues: ['TRANSFERORDER', 'INTERCOMPANYTRANSFERORDER'],
+  consistentValue: 'TRANSFERORDER',
+}
+
 const customRecordTypeFieldMappings: InconsistentFieldMapping[] = [
   customRecordTypeApClerkPermittedRole,
   customRecordTypeCeoHandsOffPermittedRole,
@@ -89,7 +95,7 @@ const typeToFieldMappings: Record<string, InconsistentFieldMapping[]> = {
     entryFormJobRecordType,
     entryFormServiceItemRecordType,
   ],
-  [TRANSACTION_FORM]: [transactionFormRecordType],
+  [TRANSACTION_FORM]: [transactionFormRecordType, transactionFormRecordTypeTransferOrder],
 }
 
 const setConsistentValues = async (element: Element): Promise<void> => {

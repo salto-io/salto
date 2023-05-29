@@ -16,14 +16,13 @@
 import _ from 'lodash'
 import wu from 'wu'
 import semver from 'semver'
-import { EOL } from 'os'
 import { FetchChange, Tags, StepEmitter } from '@salto-io/core'
 import { SaltoError, DetailedChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { Workspace, nacl, StateRecency, validator as wsValidator } from '@salto-io/workspace'
+import { Workspace, nacl, StateRecency, validator as wsValidator, errors } from '@salto-io/workspace'
 import { EventEmitter } from 'pietile-eventemitter'
-import { formatWorkspaceError, formatWorkspaceLoadFailed, formatDetailedChanges,
-  formatFinishedLoading, formatWorkspaceAbort, formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState } from '../formatter'
+import { formatWorkspaceLoadFailed, formatDetailedChanges,
+  formatFinishedLoading, formatWorkspaceAbort, formatShouldCancelWithOldState, formatShouldCancelWithNonexistentState, workspaceErrorStringFormatters } from '../formatter'
 import { CliOutput, SpinnerCreator, CliTelemetry } from '../types'
 import {
   shouldContinueInCaseOfWarnings,
@@ -89,17 +88,17 @@ export const validateWorkspace = async (
   ws: Workspace,
   ignoreUnresolvedRefs = false,
 ): Promise<WorkspaceStatusErrors> => {
-  const errors = await ws.errors()
-  if (!errors.hasErrors()) {
+  const wsErrors = await ws.errors()
+  if (!wsErrors.hasErrors()) {
     return { status: 'Valid', errors: [] }
   }
-  if (errors.hasErrors('Error')) {
-    return { status: 'Error', errors: groupRelatedErrors([...errors.all('Error')]) }
+  if (wsErrors.hasErrors('Error')) {
+    return { status: 'Error', errors: groupRelatedErrors([...wsErrors.all('Error')]) }
   }
 
   const relevantErrors = [...ignoreUnresolvedRefs
-    ? wu.filter(e => !isUnresolvedRefError(e), errors.all('Warning'))
-    : errors.all('Warning')]
+    ? wu.filter(e => !isUnresolvedRefError(e), wsErrors.all('Warning'))
+    : wsErrors.all('Warning')]
 
   if (relevantErrors.length === 0) {
     return { status: 'Valid', errors: [] }
@@ -107,15 +106,15 @@ export const validateWorkspace = async (
   return { status: 'Warning', errors: groupRelatedErrors(relevantErrors) }
 }
 
-export const formatWorkspaceErrors = async (
+export const formatWorkspaceErrors = (
   workspace: Workspace,
-  errors: Iterable<SaltoError>,
-): Promise<string> => (await Promise.all(
-  wu(errors)
-    .slice(0, MAX_WORKSPACE_ERRORS_TO_LOG)
-    .map(err => workspace.transformError(err))
-    .map(async err => formatWorkspaceError(await err))
-)).join(EOL)
+  wsErrors: Iterable<SaltoError>,
+): Promise<string> => errors.formatWorkspaceErrors(
+  workspace,
+  wsErrors,
+  workspaceErrorStringFormatters,
+  MAX_WORKSPACE_ERRORS_TO_LOG,
+)
 
 const printWorkspaceErrors = async (
   status: WorkspaceStatusErrors['status'],
@@ -183,18 +182,18 @@ export const isValidWorkspaceForCommand = async ({
   ignoreUnresolvedRefs?: boolean
 }): Promise<boolean> => {
   const spinner = spinnerCreator(Prompts.LOADING_WORKSPACE, {})
-  const { status, errors } = await validateWorkspace(workspace, ignoreUnresolvedRefs)
-  await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, errors), cliOutput)
+  const { status, errors: wsErrors } = await validateWorkspace(workspace, ignoreUnresolvedRefs)
+  await printWorkspaceErrors(status, await formatWorkspaceErrors(workspace, wsErrors), cliOutput)
 
   if (status === 'Error') {
-    spinner.fail(formatWorkspaceLoadFailed(errors.length))
-    cliOutput.stdout.write(formatWorkspaceAbort(errors.length))
+    spinner.fail(formatWorkspaceLoadFailed(wsErrors.length))
+    cliOutput.stdout.write(formatWorkspaceAbort(wsErrors.length))
     return false
   }
 
   spinner.succeed(formatFinishedLoading(workspace.currentEnv()))
   if (status === 'Warning' && !force) {
-    return shouldContinueInCaseOfWarnings(errors.length, cliOutput)
+    return shouldContinueInCaseOfWarnings(wsErrors.length, cliOutput)
   }
 
   return true
@@ -240,12 +239,12 @@ export const updateWorkspace = async ({
   )
   numberOfAppliedChanges = updateNaclFilesResult.naclFilesChangesCount
     + updateNaclFilesResult.stateOnlyChangesCount
-  const { status, errors } = await validateWorkspace(workspace)
-  const formattedErrors = await formatWorkspaceErrors(workspace, errors)
+  const { status, errors: wsErrors } = await validateWorkspace(workspace)
+  const formattedErrors = await formatWorkspaceErrors(workspace, wsErrors)
   await printWorkspaceErrors(status, formattedErrors, output)
   if (status === 'Error') {
     log.warn(formattedErrors)
-    const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(errors.length)
+    const shouldAbort = force || await shouldAbortWorkspaceInCaseOfValidationError(wsErrors.length)
     if (!shouldAbort) {
       await workspace.flush()
     }

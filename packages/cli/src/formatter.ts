@@ -20,11 +20,11 @@ import wu, { WuIterable } from 'wu'
 import {
   Element, isInstanceElement, Values, Change, Value, getChangeData, ElemID,
   isObjectType, isField, isPrimitiveType, Field, PrimitiveTypes, ReferenceExpression,
-  ActionName, ChangeError, SaltoError, isElement, TypeMap, DetailedChange, ChangeDataType,
-  isStaticFile, Group,
+  ActionName, ChangeError, isElement, TypeMap, DetailedChange, ChangeDataType,
+  isStaticFile, Group, SaltoError,
 } from '@salto-io/adapter-api'
 import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServiceAdapterNames } from '@salto-io/core'
-import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
+import { errors, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import Prompts from './prompts'
@@ -56,20 +56,15 @@ export const formatWordsSeries = (words: string[]): string => (words.length > 1
   ? `${words.slice(0, -1).join(', ')} and ${_.last(words)}`
   : words[0])
 
-/**
-  * Format workspace errors
-  */
-
-const formatSourceLocation = (sl: Readonly<SourceLocation>): string =>
-  `${chalk.underline(sl.sourceRange.filename)}(${chalk.cyan(`line: ${sl.sourceRange.start.line}`)})`
-
-const formatSourceLocations = (sourceLocations: ReadonlyArray<SourceLocation>): string =>
-  `${sourceLocations.map(formatSourceLocation).join(EOL)}`
-
-export const formatWorkspaceError = (we: Readonly<errors.WorkspaceError<SaltoError>>): string => {
-  const possibleEOL = we.sourceLocations.length > 0 ? EOL : ''
-  return `${formatError(we)}${possibleEOL}${formatSourceLocations(we.sourceLocations)}`
+export const workspaceErrorStringFormatters = {
+  header,
+  filename: chalk.underline,
+  lineNum: chalk.cyan,
 }
+
+export const formatWorkspaceError = (
+  we: Readonly<errors.WorkspaceError<SaltoError>>
+): string => errors.formatWorkspaceError(we, workspaceErrorStringFormatters)
 
 const indent = (text: string, level: number): string => {
   const indentText = _.repeat('  ', level)

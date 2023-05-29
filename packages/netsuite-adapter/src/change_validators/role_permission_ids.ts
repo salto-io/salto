@@ -41,7 +41,9 @@ const isValidPermissions = ({ permkey, permlevel }: RolePermissionType): boolean
     ? permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey] : undefined
   if (!isDefined(validPermissionLevels)) {
     // in case of undocumented premission we log the id and ignore
-    log.debug(`The following permissions does not appear in the documentation: ${isReferenceExpression(permkey) ? permkey.elemID.getFullName() : permkey}`)
+    if (!isReferenceExpression(permkey)) {
+      log.debug(`The following permissions does not appear in the documentation: ${permkey}`)
+    }
     return true
   }
   return validPermissionLevels.has(permlevel)

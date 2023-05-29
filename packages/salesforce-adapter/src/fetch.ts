@@ -192,18 +192,26 @@ const getFullName = (obj: FileProperties): string => {
     return obj.fullName
   }
 
-  if (obj.fullName.startsWith(namePrefix)) {
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
+  if (obj.type === INSTALLED_PACKAGE_METADATA) {
     return obj.fullName
   }
-  // Instances of type InstalledPackage fullNames should never include the namespace prefix
-  // Also subfields are dealt with somewhere else
-  if (obj.type === INSTALLED_PACKAGE_METADATA || obj.fullName.includes(API_NAME_SEPARATOR)) {
+
+  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
+  const name = fullNameParts.slice(-1)[0]
+  const parentNames = fullNameParts.slice(0, -1)
+
+  // Objects whose parents are custom objects need to check only the element's name and not the entire name
+  if (name.startsWith(namePrefix)) {
     return obj.fullName
   }
 
   // In some cases, obj.fullName does not contain the namespace prefix even though
   // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-  return `${namePrefix}${obj.fullName}`
+  if (parentNames.length === 0) {
+    return `${namePrefix}${obj.fullName}`
+  }
+  return `${parentNames.join(API_NAME_SEPARATOR)}${API_NAME_SEPARATOR}${namePrefix}${name}`
 }
 
 const getPropsWithFullName = (obj: FileProperties): FileProperties => {

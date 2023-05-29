@@ -52,7 +52,7 @@ describe('Test fetching installed package metadata', () => {
   }
 
   describe('when fetching PermissionSets of installed packages', () => {
-    describe('if the API name already includes namespacePrefix', () => {
+    describe('API name includes namespacePrefix', () => {
       it('should not add prefix to PermissionSet', async () => {
         const fullNameFromList = 'Test__TestPermissionSet'
         const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
@@ -65,9 +65,9 @@ describe('Test fetching installed package metadata', () => {
     })
     describe('API name does not include namespacePrefix', () => {
       describe('name has API_NAME_SEPARATOR in its fullName', () => {
-        it('should add prefix to the object\'s name correctly', async () => {
+        it("should add prefix to the object's name correctly", async () => {
           const fullNameFromList = 'Account.TestObject'
-          const expectedFullName = 'Account.TestObject'
+          const expectedFullName = 'Account.Test__TestObject'
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Account', namespacePrefix: 'Test' })
           const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
 
@@ -88,69 +88,69 @@ describe('Test fetching installed package metadata', () => {
           }))
         })
       })
-      describe('when fetching instances of installed packages', () => {
-        it('should return the name of the managed package without any changes', async () => {
-          const fullNameFromList = 'TestNamespace'
-          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: INSTALLED_PACKAGE_METADATA })
-          const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
+    })
+  })
+  describe('when fetching instances of installed packages', () => {
+    it('should return the name of the managed package without any changes', async () => {
+      const fullNameFromList = 'TestNamespace'
+      const fileProp = mockFileProperties({ fullName: fullNameFromList, type: INSTALLED_PACKAGE_METADATA })
+      const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
 
-          expect(instance).toEqual(expect.objectContaining({
-            value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
-          }))
+      expect(instance).toEqual(expect.objectContaining({
+        value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
+      }))
+    })
+  })
+  describe('Test fetching layouts of installed packages', () => {
+    describe('if the API name already includes namespacePrefix', () => {
+      describe('if layout name does not include prefix', () => {
+        it('should add prefix to layout name', async () => {
+          const objectName = 'SBQQ__TestApiName__c'
+          const fullNameFromList = `${objectName}-Test Layout`
+          const expectedFullName = `${objectName}-SBQQ__Test Layout`
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
+        })
+      })
+      describe('if layout name already includes prefix', () => {
+        it('should not add prefix to layout name', async () => {
+          const objectName = 'SBQQ__TestApiName__c'
+          const fullNameFromList = `${objectName}-SBQQ__Test Layout`
+          const expectedFullName = `${objectName}-SBQQ__Test Layout`
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
+
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
     })
-    describe('Test fetching layouts of installed packages', () => {
-      describe('if the API name already includes namespacePrefix', () => {
-        describe('if layout name does not include prefix', () => {
-          it('should add prefix to layout name', async () => {
-            const objectName = 'SBQQ__TestApiName__c'
-            const fullNameFromList = `${objectName}-Test Layout`
-            const expectedFullName = `${objectName}-SBQQ__Test Layout`
-            const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-            const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
+    describe('if the API name does not include namespacePrefix', () => {
+      describe('if layout  name does not include prefix', () => {
+        it('should add prefix to the layout\'s name', async () => {
+          const objectName = 'TestApiName__c'
+          const fullNameFromList = `${objectName}-Test Layout`
+          const expectedFullName = `${objectName}-SBQQ__Test Layout`
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
-            expect(instance).toBeDefined()
-            expect(instance?.value).toHaveProperty('fullName', expectedFullName)
-          })
-        })
-        describe('if layout name already includes prefix', () => {
-          it('should not add prefix to layout name', async () => {
-            const objectName = 'SBQQ__TestApiName__c'
-            const fullNameFromList = `${objectName}-SBQQ__Test Layout`
-            const expectedFullName = `${objectName}-SBQQ__Test Layout`
-            const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-            const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
-
-            expect(instance).toBeDefined()
-            expect(instance?.value).toHaveProperty('fullName', expectedFullName)
-          })
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
-      describe('if the API name does not include namespacePrefix', () => {
-        describe('if layout  name does not include prefix', () => {
-          it('should add prefix to the layout\'s name', async () => {
-            const objectName = 'TestApiName__c'
-            const fullNameFromList = `${objectName}-Test Layout`
-            const expectedFullName = `${objectName}-SBQQ__Test Layout`
-            const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-            const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
+      describe('if layout name already includes namespacePrefix', () => {
+        it('should not add prefix to the layout\'s name', async () => {
+          const objectName = 'TestApiName__c'
+          const fullNameFromList = `${objectName}-SBQQ__Test Layout`
+          const expectedFullName = `${objectName}-SBQQ__Test Layout`
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
-            expect(instance).toBeDefined()
-            expect(instance?.value).toHaveProperty('fullName', expectedFullName)
-          })
-        })
-        describe('if layout name already includes namespacePrefix', () => {
-          it('should not add prefix to the layout\'s name', async () => {
-            const objectName = 'TestApiName__c'
-            const fullNameFromList = `${objectName}-SBQQ__Test Layout`
-            const expectedFullName = `${objectName}-SBQQ__Test Layout`
-            const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-            const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
-
-            expect(instance).toBeDefined()
-            expect(instance?.value).toHaveProperty('fullName', expectedFullName)
-          })
+          expect(instance).toBeDefined()
+          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
         })
       })
     })

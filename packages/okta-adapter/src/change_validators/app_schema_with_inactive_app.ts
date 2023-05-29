@@ -35,7 +35,8 @@ const isWithInactiveApp = (
 
 export const getParentApp = (change: ModificationChange<InstanceElement>): InstanceElement | undefined => {
   const parents = getParents(getChangeData(change))
-  if (_.isEmpty(parents) || parents[0]?.elemID.typeName !== APPLICATION_TYPE_NAME
+  if (_.isEmpty(parents)
+  || parents[0]?.elemID.typeName !== APPLICATION_TYPE_NAME
   || !isInstanceElement(parents[0]?.value)) {
     log.debug(`AppUserSchema '${getChangeData(change).elemID.getFullName()}' change does not have an app parent`)
     return undefined

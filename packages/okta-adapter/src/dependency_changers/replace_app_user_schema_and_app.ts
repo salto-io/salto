@@ -73,6 +73,7 @@ export const changeDependenciesFromAppUserSchemaToApp: DependencyChanger = async
     if (app === undefined) {
       return []
     }
+    // We check for undefined because we don't need to change dependencies if the app is not been modified
     const appChange = appChangeByAppName[app.elemID.getFullName()]
     if (appChange === undefined) {
       return []

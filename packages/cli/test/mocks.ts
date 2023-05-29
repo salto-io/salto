@@ -23,6 +23,7 @@ import {
   createRefToElmWithValue,
   StaticFile,
   ChangeError,
+  ChangeDataType,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -601,6 +602,18 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
 export const preview = (): Plan => {
   const result = new DataNodeMap<Group<Change>>()
 
+  const showOnFailureChanges: Array<Change<ChangeDataType>> = [
+    showOnFailureDummyChanges.failure.withShowOnFailure,
+    showOnFailureDummyChanges.failure.withoutShowOnFailure,
+    showOnFailureDummyChanges.successful.withShowOnFailure,
+    showOnFailureDummyChanges.successful.withoutShowOnFailure,
+  ]
+
+  const showOnFailurePlanItems = showOnFailureChanges.map(change => toPlanItem(change, [], []))
+  showOnFailurePlanItems.forEach(planItem => {
+    result.addNode(_.uniqueId('showOnFailure'), [], planItem)
+  })
+
   const leadPlanItem = toPlanItem(
     createChange('modify', 'lead'),
     [
@@ -725,7 +738,7 @@ export const preview = (): Plan => {
   ]
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
-      return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem]
+      return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem, ...showOnFailurePlanItems]
     },
     getItem(id: string): PlanItem {
       if (id.startsWith('lead')) return leadPlanItem

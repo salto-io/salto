@@ -16,10 +16,9 @@
 import _ from 'lodash'
 import { EOL } from 'os'
 import { promises } from '@salto-io/lowerdash'
-import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy } from '@salto-io/core'
+import { PlanItem, Plan, preview, DeployResult, ItemStatus, deploy, summarizeDeployChanges } from '@salto-io/core'
 import { logger } from '@salto-io/logging'
 import { Workspace } from '@salto-io/workspace'
-import { Change, ChangeDataType, ChangeError, getChangeData } from '@salto-io/adapter-api'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
 import { AccountsArg, ACCOUNTS_OPTION, getAndValidateActiveAccounts, getTagsForAccounts } from './common/accounts'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -85,17 +84,6 @@ export const shouldDeploy = async (
     return false
   }
   return getUserBooleanInput(Prompts.SHOULD_EXECUTE_DEPLOY_PLAN(checkOnly))
-}
-
-const shouldShowPostDeployActionMessage = (
-  changeError: ChangeError,
-  appliedChanges: Change<ChangeDataType>[]
-): boolean => {
-  const isSuccessful = appliedChanges.find(
-    change => getChangeData(change).elemID.getFullName() === changeError.elemID.getFullName()
-  ) !== undefined
-
-  return isSuccessful || (changeError.deployActions?.postAction?.showOnFailure ?? false)
 }
 
 type DeployArgs = {
@@ -255,9 +243,13 @@ export const action: WorkspaceCommandAction<DeployArgs> = async ({
     }
   }
 
+  const requested = Array.from(actionPlan.itemsByEvalOrder()).flatMap(item => Array.from(item.changes()))
+  const summary = summarizeDeployChanges(requested, result.appliedChanges ?? [])
+  const changeErrorsForPostDeployOutput = actionPlan.changeErrors.filter(changeError =>
+    summary[changeError.elemID.getFullName()] !== 'failure' || changeError.deployActions?.postAction?.showOnFailure)
+
   const postDeployActionsOutput = formatDeployActions({
-    wsChangeErrors: actionPlan.changeErrors.filter(change =>
-      shouldShowPostDeployActionMessage(change, result.appliedChanges || [])),
+    wsChangeErrors: changeErrorsForPostDeployOutput,
     isPreDeploy: false,
   })
   outputLine(postDeployActionsOutput.join('\n'), output)

@@ -31,7 +31,7 @@ describe('consistent_values filter', () => {
       transactionFormType().type,
       {
         name: instanceName,
-        [RECORD_TYPE]: 'INTERCOMPANYTRANSFERORDER',
+        [RECORD_TYPE]: 'INTERCOMPANYJOURNALENTRY',
       })
     customRecordType = new ObjectType({
       elemID: new ElemID(NETSUITE, 'customrecord1'),
@@ -52,7 +52,7 @@ describe('consistent_values filter', () => {
   it('should modify field with inconsistent value', async () => {
     await filterCreator({} as LocalFilterOpts).onFetch?.([instance, customRecordType])
     expect(instance.value.name).toEqual(instanceName)
-    expect(instance.value[RECORD_TYPE]).toEqual('TRANSFERORDER')
+    expect(instance.value[RECORD_TYPE]).toEqual('JOURNALENTRY')
   })
 
   it('should modify custom record type annotations with inconsistent value', async () => {

@@ -37,6 +37,7 @@ import {
   formatStateRecencies,
   formatDeployActions,
   formatGroups,
+  deployErrorsOutput,
 } from '../formatter'
 import Prompts from '../prompts'
 import { getUserBooleanInput } from '../callbacks'
@@ -170,7 +171,10 @@ const deployPlan = async (
     ) : { success: true, errors: [] }
   const nonErroredActions = Object.keys(actions)
     .filter(action =>
-      !result.errors.map(error => error !== undefined && error.elementId).includes(action))
+      !result.errors.map(error => error !== undefined && error.groupId).includes(action))
+  outputLine(deployErrorsOutput(
+    result.errors,
+  ), output)
   outputLine(deployPhaseEpilogue(
     nonErroredActions.length,
     result.errors.length,

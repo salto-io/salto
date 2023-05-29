@@ -128,6 +128,7 @@ const errorMessagesToRetry = [
   'An unexpected connection error occurred',
   'ECONNREFUSED',
   'Internal_Error',
+  'UNABLE_TO_LOCK_ROW', // we saw this in both fetch and deploy
 ]
 
 type RateLimitBucketName = keyof ClientRateLimitConfig

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { mapValues } from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
@@ -183,6 +183,7 @@ export type Workspace = {
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getReferenceTargetsIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
+  getElementOutgoingReferencesByTree: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
@@ -276,6 +277,7 @@ type SingleState = {
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
   referenceTargets: RemoteMap<ElemID[]>
+  referenceTargetsTree: RemoteMap<collections.treeMap.TreeMap<ElemID>>
   mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
@@ -424,6 +426,21 @@ export const loadWorkspace = async (
             namespace: getRemoteMapNamespace('referenceTargets', envName),
             serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            persistent,
+          }),
+          referenceTargetsTree: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
+            namespace: getRemoteMapNamespace('referenceTargetsTree', envName),
+            serialize: async val => {
+              const objectToSerialize: Record<string, string[]> = {}
+              await awu(val.entries()).forEach(([key, value]) => {
+                objectToSerialize[key] = [...value].map(id => id.getFullName())
+              })
+              return safeJsonStringify(objectToSerialize)
+            },
+            deserialize: async data => {
+              const parsedEntries = mapValues(JSON.parse(data), ids => ids.map((id: string) => ElemID.fromFullName(id)))
+              return new collections.treeMap.TreeMap<ElemID>(Object.entries(parsedEntries))
+            },
             persistent,
           }),
           mapVersions: await remoteMapCreator<number>({
@@ -686,6 +703,7 @@ export const loadWorkspace = async (
 
       await updateReferenceIndexes(
         changes,
+        stateToBuild.states[envName].referenceTargetsTree,
         stateToBuild.states[envName].referenceTargets,
         stateToBuild.states[envName].referenceSources,
         stateToBuild.states[envName].mapVersions,
@@ -1149,6 +1167,16 @@ export const loadWorkspace = async (
       .states[envName].referenceSources,
     getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceTargets,
+    getElementOutgoingReferencesByTree: async (id, envName = currentEnv()) => {
+      // TODO: Seroussi - this seems like there is also instance.field option
+      if (!id.isTopLevel()) {
+        throw new Error(`getElementOutgoingReferencesByTree only support top level ids, received ${id.getFullName()}`)
+      }
+      const referencesTree = await (await getWorkspaceState())
+        .states[envName].referenceTargetsTree.get(id.getFullName())
+          ?? new collections.treeMap.TreeMap<ElemID>()
+      return awu(referencesTree.valuesWithPrefix(id.getFullName())).flat().toArray()
+    },
     getElementOutgoingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {
         throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)

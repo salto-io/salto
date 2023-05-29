@@ -15,12 +15,14 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
+import { collections } from '@salto-io/lowerdash'
 import { REFERENCE_INDEXES_VERSION, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
 
 describe('updateReferenceIndexes', () => {
+  let referenceTargetsTreeIndex: MockInterface<RemoteMap<collections.treeMap.TreeMap<ElemID>>>
   let referenceTargetsIndex: MockInterface<RemoteMap<ElemID[]>>
   let referenceSourcesIndex: MockInterface<RemoteMap<ElemID[]>>
   let mapVersions: MockInterface<RemoteMap<number>>
@@ -29,6 +31,7 @@ describe('updateReferenceIndexes', () => {
   let instance: InstanceElement
 
   beforeEach(() => {
+    referenceTargetsTreeIndex = createMockRemoteMap<collections.treeMap.TreeMap<ElemID>>()
     referenceTargetsIndex = createMockRemoteMap<ElemID[]>()
 
     referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
@@ -86,6 +89,7 @@ describe('updateReferenceIndexes', () => {
       const changes = [toChange({ after: instance }), toChange({ after: object })]
       await updateReferenceIndexes(
         changes,
+        referenceTargetsTreeIndex,
         referenceTargetsIndex,
         referenceSourcesIndex,
         mapVersions,
@@ -237,6 +241,7 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
+        referenceTargetsTreeIndex,
         referenceTargetsIndex,
         referenceSourcesIndex,
         mapVersions,
@@ -297,6 +302,7 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
+        referenceTargetsTreeIndex,
         referenceTargetsIndex,
         referenceSourcesIndex,
         mapVersions,
@@ -349,6 +355,7 @@ describe('updateReferenceIndexes', () => {
 
       await updateReferenceIndexes(
         changes,
+        referenceTargetsTreeIndex,
         referenceTargetsIndex,
         referenceSourcesIndex,
         mapVersions,
@@ -379,6 +386,7 @@ describe('updateReferenceIndexes', () => {
       beforeEach(async () => {
         await updateReferenceIndexes(
           [toChange({ after: instance })],
+          referenceTargetsTreeIndex,
           referenceTargetsIndex,
           referenceSourcesIndex,
           mapVersions,
@@ -438,6 +446,7 @@ describe('updateReferenceIndexes', () => {
         mapVersions.get.mockResolvedValue(0)
         await updateReferenceIndexes(
           [],
+          referenceTargetsTreeIndex,
           referenceTargetsIndex,
           referenceSourcesIndex,
           mapVersions,

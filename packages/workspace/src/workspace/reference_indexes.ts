@@ -13,13 +13,28 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, isReferenceExpression, Element, isModificationChange, isObjectTypeChange, isRemovalOrModificationChange, isAdditionOrModificationChange, isTemplateExpression } from '@salto-io/adapter-api'
+import {
+  Change,
+  ElemID,
+  getChangeData,
+  isReferenceExpression,
+  Element,
+  isModificationChange,
+  isObjectTypeChange,
+  isRemovalOrModificationChange,
+  isAdditionOrModificationChange,
+  isTemplateExpression,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
+
+const { awu } = collections.asynciterable
 
 const log = logger(module)
 export const REFERENCE_INDEXES_VERSION = 2
@@ -33,6 +48,27 @@ type ReferenceDetails = {
 type ChangeReferences = {
   removed: ReferenceDetails[]
   currentAndNew: ReferenceDetails[]
+}
+
+const getReferencesTree = (element: Element): collections.treeMap.TreeMap<ElemID> => {
+  const references = new collections.treeMap.TreeMap<ElemID>()
+  walkOnElement({
+    element,
+    func: ({ value, path }) => {
+      if (isReferenceExpression(value)) {
+        references.push(Array.from(path.createBaseID().path), value.elemID)
+      }
+      if (isTemplateExpression(value)) {
+        value.parts.forEach(part => {
+          if (isReferenceExpression(part)) {
+            references.push(Array.from(path.createBaseID().path), part.elemID)
+          }
+        })
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return references
 }
 
 const getReferences = (element: Element): ReferenceDetails[] => {
@@ -220,6 +256,7 @@ const updateReferenceSourcesIndex = async (
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
+  referenceTargetsTreeIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
   referenceTargetsIndex: RemoteMap<ElemID[]>,
   referenceSourcesIndex: RemoteMap<ElemID[]>,
   mapVersions: RemoteMap<number>,
@@ -239,6 +276,7 @@ export const updateReferenceIndexes = async (
       log.info('cache is invalid, re-indexing references indexes')
     }
     await Promise.all([
+      referenceTargetsTreeIndex.clear(),
       referenceTargetsIndex.clear(),
       referenceSourcesIndex.clear(),
       mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
@@ -252,11 +290,32 @@ export const updateReferenceIndexes = async (
       getReferencesFromChange(change),
     ]))
 
+  // TODO: Seroussi - do we want this parallel?
+  await awu(relevantChanges).forEach(async change => {
+    if (isRemovalChange(change)) {
+      // If the index was cleared, there is no reason to call deletion anything
+      if (!initialIndex) {
+        await referenceTargetsTreeIndex.delete(change.data.before.elemID.getFullName())
+      }
+    } else {
+      const referencesTree = getReferencesTree(change.data.after)
+      if (referencesTree.size === 0) {
+        if (await referenceTargetsTreeIndex.has(change.data.after.elemID.getFullName())) {
+          await referenceTargetsTreeIndex.delete(change.data.after.elemID.getFullName())
+        }
+      } else {
+        await referenceTargetsTreeIndex.set(change.data.after.elemID.getFullName(), referencesTree)
+      }
+    }
+  })
+
+  // outgoing references
   await updateReferenceTargetsIndex(
     relevantChanges,
     referenceTargetsIndex,
     changeToReferences,
   )
+  // incoming references
   await updateReferenceSourcesIndex(
     relevantChanges,
     referenceSourcesIndex,

@@ -96,8 +96,8 @@ export class TreeMap<T> implements Map<string, T[]> {
 
   get root(): TreeMapEntry<T> { return this.data }
 
-  push(id: string, ...values: T[]): void {
-    const key = id.split(this.separator)
+  push(id: string | string[], ...values: T[]): void {
+    const key = _.isString(id) ? id.split(this.separator) : id
     const valuesList = TreeMap.getFromPath(this.data, key)
     if (valuesList !== undefined) {
       valuesList.value.push(...values)

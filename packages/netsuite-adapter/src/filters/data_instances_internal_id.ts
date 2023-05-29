@@ -70,7 +70,7 @@ const filterCreator: LocalFilterCreator = () => ({
           || isStandardType(fieldType)
           || isFileCabinetType(fieldType)))) {
         value[
-          shouldUseIdField(fieldType) ? ID_FIELD : INTERNAL_ID
+          hasInternalIdHiddenField(fieldType) ? ID_FIELD : INTERNAL_ID
         ] = ACCOUNT_SPECIFIC_VALUE
         delete value.typeId
         return value

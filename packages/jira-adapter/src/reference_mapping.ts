@@ -30,6 +30,19 @@ import { FIELD_TYPE_NAME } from './filters/fields/constants'
 const { awu } = collections.asynciterable
 const { neighborContextGetter, basicLookUp } = referenceUtils
 
+export const JiraMissingReferenceStrategyLookup: Record<
+referenceUtils.MissingReferenceStrategyName, referenceUtils.MissingReferenceStrategy
+> = {
+  typeAndValue: {
+    create: ({ value, adapter, typeName }) => {
+      if (!_.isString(typeName) || !value) {
+        return undefined
+      }
+      return referenceUtils.createMissingInstance(adapter, typeName, value)
+    },
+  },
+}
+
 const neighborContextFunc = (args: {
   contextFieldName: string
   levelsUp?: number
@@ -111,6 +124,7 @@ type JiraFieldReferenceDefinition = referenceUtils.FieldReferenceDefinition<
 ReferenceContextStrategyName
 > & {
   JiraSerializationStrategy?: JiraReferenceSerializationStrategyName
+  JiraMissingRefStrategy?: referenceUtils.MissingReferenceStrategyName
 }
 export class JiraFieldReferenceResolver extends referenceUtils.FieldReferenceResolver<
 ReferenceContextStrategyName
@@ -123,6 +137,8 @@ ReferenceContextStrategyName
     this.target = def.target
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
+    this.missingRefStrategy = def.JiraMissingRefStrategy
+      ? JiraMissingReferenceStrategyLookup[def.JiraMissingRefStrategy] : undefined
   }
 }
 
@@ -165,6 +181,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'id', parentTypes: ['TransitionScreenDetails'] },
     serializationStrategy: 'id',
+    JiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {
@@ -315,21 +332,25 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'edit', parentTypes: ['ScreenTypes'] },
     serializationStrategy: 'id',
+    JiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {
     src: { field: 'create', parentTypes: ['ScreenTypes'] },
     serializationStrategy: 'id',
+    JiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {
     src: { field: 'view', parentTypes: ['ScreenTypes'] },
     serializationStrategy: 'id',
+    JiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {
     src: { field: 'default', parentTypes: ['ScreenTypes'] },
     serializationStrategy: 'id',
+    JiraMissingRefStrategy: 'typeAndValue',
     target: { type: 'Screen' },
   },
   {

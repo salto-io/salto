@@ -185,8 +185,9 @@ export const deploy = async (
       }
     }))
   }
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
   const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan, adapters, reportProgress, postDeployAction, checkOnly
+    actionPlan, adapters, reportProgress, postDeployAction, checkOnly, accountToServiceNameMap
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve

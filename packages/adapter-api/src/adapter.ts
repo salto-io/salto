@@ -62,6 +62,7 @@ export type FetchOptions = {
 
 export type DeployOptions = {
   changeGroup: ChangeGroup
+  accountToServiceNameMap?: Record<string, string>
 }
 
 export type PostFetchOptions = {

@@ -96,14 +96,21 @@ const updatePlanElement = (item: PlanItem, appliedChanges: ReadonlyArray<Change>
     })
 }
 
-export const deployActions = async (
-  deployPlan: Plan,
-  adapters: Record<string, AdapterOperations>,
-  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void,
-  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>,
-  checkOnly: boolean,
+export const deployActions = async ({
+  deployPlan,
+  adapters,
+  reportProgress,
+  postDeployAction,
+  checkOnly,
+  accountToServiceNameMap,
+} : {
+  deployPlan: Plan
+  adapters: Record<string, AdapterOperations>
+  reportProgress: (item: PlanItem, status: ItemStatus, details?: string) => void
+  postDeployAction: (appliedChanges: ReadonlyArray<Change>) => Promise<void>
+  checkOnly: boolean
   accountToServiceNameMap: Record<string, string>
-): Promise<DeployActionResult> => {
+}): Promise<DeployActionResult> => {
   const appliedChanges: Change[] = []
   const groups: Group[] = []
   try {

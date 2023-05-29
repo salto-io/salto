@@ -186,9 +186,14 @@ export const deploy = async (
     }))
   }
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan, adapters, reportProgress, postDeployAction, checkOnly, accountToServiceNameMap
-  )
+  const { errors, appliedChanges, extraProperties } = await deployActions({
+    deployPlan: actionPlan,
+    adapters,
+    reportProgress,
+    postDeployAction,
+    checkOnly,
+    accountToServiceNameMap,
+  })
 
   // Add workspace elements as an additional context for resolve so that we can resolve
   // variable expressions. Adding only variables is not enough for the case of a variable

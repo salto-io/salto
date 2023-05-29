@@ -341,25 +341,28 @@ export const selectElementIdsByTraversal = async ({
         }
         return WALK_NEXT_STEP.SKIP
       }
-      const getSubElementIDs = async (elemID: ElemID): Promise<void> => {
+      const addSubElementIDs = async (elemID: ElemID): Promise<void> => {
         const element = await source.get(elemID)
         walkOnElement({
           element, func: selectFromSubElements,
         })
         if (isObjectType(element)) {
-          await awu(Object.values(element.fields)).forEach(async field => {
-            // Since we only support referenceBy on a base elemID, a selector
-            // that is not top level and that has referenceBy is necessarily a field selector
-            if (await awu(subSelectorsWithReferencedBy).some(
-              selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
-            )) {
-              subElementIDs.add(field.elemID.getFullName())
-            }
-          })
+          await withLimitedConcurrency(
+            Object.values(element.fields).map(field => async () => {
+              // Since we only support referenceBy on a base elemID, a selector
+              // that is not top level and that has referenceBy is necessarily a field selector
+              if (await awu(subSelectorsWithReferencedBy).some(
+                selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
+              )) {
+                subElementIDs.add(field.elemID.getFullName())
+              }
+            }),
+            MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
+          )
         }
       }
       await withLimitedConcurrency(
-        (await awu(stillRelevantIDs).toArray()).map(elemID => () => getSubElementIDs(elemID)),
+        (await awu(stillRelevantIDs).toArray()).map(elemID => () => addSubElementIDs(elemID)),
         MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
       )
       return awu(

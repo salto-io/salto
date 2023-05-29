@@ -58,6 +58,7 @@ import fieldConfigurationSchemeFilter from './filters/field_configurations_schem
 import dashboardFilter from './filters/dashboard/dashboard_deployment'
 import dashboardLayoutFilter from './filters/dashboard/dashboard_layout'
 import gadgetFilter from './filters/dashboard/gadget'
+import gadgetPropertiesFilter from './filters/dashboard/gadget_properties'
 import hiddenValuesInListsFilter from './filters/hidden_value_in_lists'
 import projectFilter from './filters/project'
 import projectComponentFilter from './filters/project_component'
@@ -207,6 +208,7 @@ export const DEFAULT_FILTERS = [
   dashboardFilter,
   dashboardLayoutFilter,
   gadgetFilter,
+  gadgetPropertiesFilter,
   projectCategoryFilter,
   projectFilter,
   projectComponentFilter,

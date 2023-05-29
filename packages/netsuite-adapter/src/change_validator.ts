@@ -44,6 +44,7 @@ import exchangeRateValidator from './change_validators/currency_exchange_rate'
 import netsuiteClientValidation from './change_validators/client_validation'
 import currencyUndeployableFieldsValidator from './change_validators/currency_undeployable_fields'
 import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_internal_ids'
+import rolePermissionValidator from './change_validators/role_permission_ids'
 import NetsuiteClient from './client/client'
 import { AdditionalDependencies } from './config'
 import { Filter } from './filter'
@@ -74,6 +75,7 @@ const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
   suiteAppConfigElementsValidator,
   undeployableConfigFeaturesValidator,
   extraReferenceDependenciesValidator,
+  rolePermissionValidator,
 ]
 
 const nonSuiteAppValidators: NetsuiteChangeValidator[] = [

@@ -21,9 +21,9 @@ import {
   isAdditionChange,
   isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { TICKET_FORM_ORDER_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
-import { ChangeWithKey } from './types'
 
 const { isDefined } = lowerDashValues
 
@@ -38,7 +38,7 @@ export const ticketFormDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is ChangeWithKey<Change<InstanceElement>> =>
+      (change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

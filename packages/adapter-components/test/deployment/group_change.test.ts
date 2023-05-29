@@ -22,7 +22,7 @@ describe('getChangeGroupIdsFunc', () => {
 
   let instaceNameChangeGroupId: ChangeIdFunction
   let fullNameChangeGroupId: ChangeIdFunction
-  
+
   beforeEach(() => {
     type = new ObjectType({
       elemID: new ElemID('adapter', 'test'),
@@ -44,31 +44,30 @@ describe('getChangeGroupIdsFunc', () => {
       }
     )
 
-    instaceNameChangeGroupId = async change => !isInstanceChange(change) ? 'not Instance' : undefined
+    instaceNameChangeGroupId = async change => (!isInstanceChange(change) ? 'not Instance' : undefined)
     fullNameChangeGroupId = async change => getChangeData(change).elemID.getFullName()
-
   })
 
   it('should get full name of instance', async () => {
-      const changeGroupIds = (await getChangeGroupIdsFunc([
-        fullNameChangeGroupId
-      ])(new Map<string, Change>([
-        [instance.elemID.getFullName(), toChange({ after: instance })],
-        [type.elemID.getFullName(), toChange({ after: type })],
-      ]))).changeGroupIdMap
-      
-      expect(changeGroupIds.get(instance.elemID.getFullName())).toEqual('adapter.test.instance.instance')
-      expect(changeGroupIds.get(type.elemID.getFullName())).toEqual('adapter.test')
-  })
-  it('should get full name for instances and \'not Instance\' otherwise', async () => {
     const changeGroupIds = (await getChangeGroupIdsFunc([
-      instaceNameChangeGroupId, 
-      fullNameChangeGroupId
+      fullNameChangeGroupId,
     ])(new Map<string, Change>([
       [instance.elemID.getFullName(), toChange({ after: instance })],
       [type.elemID.getFullName(), toChange({ after: type })],
     ]))).changeGroupIdMap
-    
+
+    expect(changeGroupIds.get(instance.elemID.getFullName())).toEqual('adapter.test.instance.instance')
+    expect(changeGroupIds.get(type.elemID.getFullName())).toEqual('adapter.test')
+  })
+  it('should get full name for instances and \'not Instance\' otherwise', async () => {
+    const changeGroupIds = (await getChangeGroupIdsFunc([
+      instaceNameChangeGroupId,
+      fullNameChangeGroupId,
+    ])(new Map<string, Change>([
+      [instance.elemID.getFullName(), toChange({ after: instance })],
+      [type.elemID.getFullName(), toChange({ after: type })],
+    ]))).changeGroupIdMap
+
     expect(changeGroupIds.get(instance.elemID.getFullName())).toEqual('adapter.test.instance.instance')
     expect(changeGroupIds.get(type.elemID.getFullName())).toEqual('not Instance')
   })

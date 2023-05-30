@@ -61,8 +61,7 @@ const adapterConfigFromConfig = (
     _.omit(config?.value ?? {}, 'fetch'),
   )
   const fetch = _.defaults(
-    {}, config?.value.fetch, _.pick(defaultConfig.fetch, 'hideTypes'),
-    _.pick(defaultConfig.fetch, 'enableMissingReferences'),
+    {}, config?.value.fetch, _.pick(defaultConfig.fetch, ['hideTypes', 'enableMissingReferences']),
   )
   const fullConfig = { ...configWithoutFetch, fetch }
 

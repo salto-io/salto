@@ -138,7 +138,8 @@ ReferenceContextStrategyName
       ? { ...def.target, lookup: this.serializationStrategy.lookup }
       : undefined
     this.missingRefStrategy = def.JiraMissingRefStrategy
-      ? JiraMissingReferenceStrategyLookup[def.JiraMissingRefStrategy] : undefined
+      ? JiraMissingReferenceStrategyLookup[def.JiraMissingRefStrategy]
+      : undefined
   }
 }
 

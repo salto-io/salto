@@ -24,6 +24,7 @@ import { getDefaultConfig } from '../../../src/config/config'
 
 describe('fieldReferencesFilter', () => {
     type filterType = filterUtils.FilterWith<'onFetch'>
+    let elements: Element[]
     const screenTypesType = new ObjectType({ elemID: new ElemID(JIRA, 'ScreenTypes'),
       fields: {
         default: { refType: BuiltinTypes.NUMBER },
@@ -48,10 +49,12 @@ describe('fieldReferencesFilter', () => {
       new InstanceElement('screenScheme1', screenSchemeType, { id: 222, screens: { default: 111 } }),
       new InstanceElement('screenScheme2', screenSchemeType, { id: 333, screens: { default: 444 } }),
     ])
+    beforeEach(() => {
+      elements = generateElements().map(e => e.clone())
+    })
 
     describe('on fetch', () => {
       it('should resolve field values when referenced element exists', async () => {
-        const elements = generateElements().map(e => e.clone())
         const filter = fieldReferencesFilter(getFilterParams({})) as filterType
         await filter.onFetch(elements)
         const screenScheme1 = elements.find(e => e.elemID.name === 'screenScheme1') as InstanceElement
@@ -59,7 +62,6 @@ describe('fieldReferencesFilter', () => {
         expect(screenScheme1.value.screens.default.elemID.name).toEqual('screen1')
       })
       it('should create missing references if enableMissingReferences flag is enabled', async () => {
-        const elements = generateElements().map(e => e.clone())
         const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         configWithMissingRefs.fetch.enableMissingReferences = true
         const filter = fieldReferencesFilter(getFilterParams({ config: configWithMissingRefs })) as filterType
@@ -69,7 +71,6 @@ describe('fieldReferencesFilter', () => {
         expect(screenScheme2.value.screens.default.elemID.getFullName()).toEqual('jira.Screen.instance.missing_444')
       })
       it('should not create missing references if enableMissingReferences flag is disabled', async () => {
-        const elements = generateElements().map(e => e.clone())
         const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
         configWithMissingRefs.fetch.enableMissingReferences = false
         const filter = fieldReferencesFilter(getFilterParams({ config: configWithMissingRefs })) as filterType

@@ -19,7 +19,7 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpress
 import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
-import brandLogoFilter from '../../src/filters/brand_logo'
+import brandThemeFilesFilter from '../../src/filters/brand_theme_files'
 
 describe('barnd logo filter', () => {
   let mockGet: jest.SpyInstance
@@ -56,7 +56,7 @@ describe('barnd logo filter', () => {
     jest.clearAllMocks()
     const mockCli = mockClient()
     client = mockCli.client
-    filter = brandLogoFilter(getFilterParams({ client })) as typeof filter
+    filter = brandThemeFilesFilter(getFilterParams({ client })) as typeof filter
   })
   describe('onFetch', () => {
     beforeEach(async () => {

@@ -17,7 +17,9 @@ import _ from 'lodash'
 import util from 'util'
 import { collections, values, hash as hashUtils } from '@salto-io/lowerdash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { SaltoError,
+import { logger } from '@salto-io/logging'
+
+import {
   DeployResult,
   Change,
   getChangeData,
@@ -26,12 +28,7 @@ import { SaltoError,
   isInstanceChange,
   isContainerType,
   isAdditionChange,
-  SaltoElementError,
-  SeverityLevel,
-  ElemID } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
-
-
+} from '@salto-io/adapter-api'
 import { DeployResult as SFDeployResult, DeployMessage } from 'jsforce'
 
 import SalesforceClient from './client/client'
@@ -199,41 +196,36 @@ const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
   checkOnly: boolean,
-): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
+): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<Error> } => {
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
 
   const testFailures = makeArray(result.details)
     .flatMap(detail => makeArray((detail.runTestResult as RunTestsResult)?.failures))
-  const testErrors: SaltoError[] = testFailures
-    .map(failure => ({
-      message: util.format(
-        'Test failed for class %s method %s with error:\n%s\n%s',
-        failure.name,
-        failure.methodName,
-        failure.message,
-        failure.stackTrace
-      ),
-      severity: 'Error' as SeverityLevel,
-    }))
+  const testErrors = testFailures
+    .map(failure => new Error(util.format(
+      'Test failed for class %s method %s with error:\n%s\n%s',
+      failure.name,
+      failure.methodName,
+      failure.message,
+      failure.stackTrace
+    )))
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
-    .map(failure => (
-      { elemID: ElemID.fromFullName(failure.fullName),
-        message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`,
-        severity: 'Error' as SeverityLevel }
+    .map(failure => new Error(
+      `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`
     ))
   const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
     .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))
     .map(codeCoverageWarning => codeCoverageWarning.message)
-    .map(message => ({ message, severity: 'Error' as SeverityLevel }))
+    .map(message => new Error(message))
 
   const errors = [...testErrors, ...componentErrors, ...codeCoverageWarningErrors]
 
   if (isDefined(result.errorMessage)) {
-    errors.push({ message: result.errorMessage, severity: 'Error' as SeverityLevel })
+    errors.push(Error(result.errorMessage))
   }
 
   // In checkOnly none of the changes are actually applied
@@ -259,20 +251,20 @@ const processDeployResponse = (
   return { successfulFullNames, errors }
 }
 
-const getChangeError = async (change: Change): Promise<SaltoElementError | undefined> => {
+const getChangeError = async (change: Change): Promise<string | undefined> => {
   const changeElem = getChangeData(change)
   if (await apiName(changeElem) === undefined) {
-    return { elemID: changeElem.elemID, message: `Cannot ${change.action} element because it has no api name`, severity: 'Error' }
+    return `Cannot ${change.action} element because it has no api name`
   }
   if (isModificationChange(change)) {
     const beforeName = await apiName(change.data.before)
     const afterName = await apiName(change.data.after)
     if (beforeName !== afterName) {
-      return { elemID: changeElem.elemID, message: `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`, severity: 'Error' }
+      return `Failed to update element because api names prev=${beforeName} and new=${afterName} are different`
     }
   }
   if (!isInstanceChange(change) || !await isMetadataInstanceElement(changeElem)) {
-    return { elemID: changeElem.elemID, message: 'Cannot deploy because it is not a metadata instance', severity: 'Error' }
+    return 'Cannot deploy because it is not a metadata instance'
   }
   return undefined
 }
@@ -281,7 +273,7 @@ const validateChanges = async (
   changes: ReadonlyArray<Change>
 ): Promise<{
     validChanges: ReadonlyArray<Change<MetadataInstanceElement>>
-    errors: (SaltoError | SaltoElementError)[]
+    errors: Error[]
   }> => {
   const changesAndValidation = await awu(changes)
     .map(async change => ({ change, error: await getChangeError(change) }))
@@ -293,8 +285,9 @@ const validateChanges = async (
   )
 
   const errors = invalidChanges
-    .filter(change => isDefined(change.error))
-    .map(({ error }) => error) as SaltoElementError[]
+    .map(({ change, error }) => (
+      new Error(`${getChangeData(change).elemID.getFullName()}: ${error}}`)
+    ))
 
   return {
     // We can cast to MetadataInstanceElement here because we will have an error for changes that
@@ -362,7 +355,7 @@ export const deployMetadata = async (
     if (quickDeployParams.hash !== planHash) {
       return {
         appliedChanges: [],
-        errors: [{ message: 'Quick deploy option is not available because the current deploy plan is different than the validated one', severity: 'Error' }],
+        errors: [new Error('Quick deploy option is not available because the current deploy plan is different than the validated one')],
       }
     }
   }

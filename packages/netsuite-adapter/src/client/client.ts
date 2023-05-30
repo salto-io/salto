@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -362,7 +362,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<ReadonlyArray<Error | SaltoError | SaltoElementError>> {
+  ): Promise<ReadonlyArray<Error>> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return (await this.sdfDeploy({
         changes,

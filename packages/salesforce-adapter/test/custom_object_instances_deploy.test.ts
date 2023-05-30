@@ -56,7 +56,7 @@ describe('Custom Object Deploy', () => {
         ]
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -75,19 +75,7 @@ describe('Custom Object Deploy', () => {
         ]
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual(
-        expect.objectContaining({
-          errorInstances: [expect.objectContaining({
-            elemID: inst2.elemID,
-            message: expect.stringContaining('err555'),
-            severity: 'Error',
-          })],
-          successInstances: [expect.objectContaining({
-            elemID: inst1.elemID,
-          })],
-        }),
-      )
-
+      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr555'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -106,26 +94,7 @@ describe('Custom Object Deploy', () => {
         ]
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual(
-        expect.objectContaining({
-          errorInstances: [
-            expect.objectContaining({
-              elemID: inst2.elemID,
-              message: expect.stringContaining('err1'),
-              severity: 'Error',
-            }),
-            expect.objectContaining({
-              elemID: inst2.elemID,
-              message: expect.stringContaining('bla bla bla'),
-              severity: 'Error',
-            }),
-          ],
-          successInstances: [expect.objectContaining({
-            elemID: inst1.elemID,
-          })],
-        }),
-      )
-
+      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1\n\tbla bla bla'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -156,21 +125,7 @@ describe('Custom Object Deploy', () => {
 
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual(
-        expect.objectContaining({
-          errorInstances: [
-            expect.objectContaining({
-              elemID: inst2.elemID,
-              message: expect.stringContaining('err1 bla bla bla'),
-              severity: 'Error',
-            }),
-          ],
-          successInstances: [expect.objectContaining({
-            elemID: inst1.elemID,
-          })],
-        }),
-      )
-
+      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1 bla bla bla'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
     })
 
@@ -200,7 +155,7 @@ describe('Custom Object Deploy', () => {
 
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
     })
 
@@ -230,19 +185,7 @@ describe('Custom Object Deploy', () => {
         }
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual(
-        expect.objectContaining({
-          errorInstances: [expect.objectContaining({
-            elemID: inst2.elemID,
-            message: expect.stringContaining('err1'),
-            severity: 'Error',
-          })],
-          successInstances: [expect.objectContaining({
-            elemID: inst1.elemID,
-          })],
-        }),
-      )
-
+      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1'] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
     })
   })

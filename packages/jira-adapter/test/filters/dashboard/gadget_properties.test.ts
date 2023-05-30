@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, Values, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import { getFilterParams } from '../../utils'
 import gadgetPropertiesFilter from '../../../src/filters/dashboard/gadget_properties'
@@ -25,6 +25,8 @@ describe('gadgetPropertiesFilter', () => {
   let dashboardGadgetType: ObjectType
   let instance: InstanceElement
 
+  let originalProperties: Values
+  let convertedProperties: Values
 
   beforeEach(async () => {
     filter = gadgetPropertiesFilter(getFilterParams({})) as filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
@@ -38,16 +40,23 @@ describe('gadgetPropertiesFilter', () => {
       },
     })
 
+    originalProperties = {
+      key1: 'value1',
+      key2: {
+        innerKey: 'value2',
+      },
+    }
+
+    convertedProperties = [
+      { key: 'key1', value: 'value1' },
+      { key: 'key2', values: [{ key: 'innerKey', value: 'value2' }] },
+    ]
+
     instance = new InstanceElement(
       'instance',
       dashboardGadgetType,
       {
-        properties: {
-          key1: 'value1',
-          key2: {
-            innerKey: 'value2',
-          },
-        },
+        properties: originalProperties,
       },
     )
   })
@@ -81,42 +90,22 @@ describe('gadgetPropertiesFilter', () => {
 
     it('should convert properties from map to list', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.properties).toEqual([
-        { key: 'key1', value: 'value1' },
-        { key: 'key2', values: [{ key: 'innerKey', value: 'value2' }] },
-      ])
+      expect(instance.value.properties).toEqual(convertedProperties)
     })
   })
 
   describe('preDeploy', () => {
-    it('should convert properties from map to list', async () => {
-      instance.value.properties = [
-        { key: 'key1', value: 'value1' },
-        { key: 'key2', values: [{ key: 'innerKey', value: 'value2' }] },
-      ]
+    it('should convert properties from list to map', async () => {
+      instance.value.properties = convertedProperties
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.properties).toEqual({
-        key1: 'value1',
-        key2: {
-          innerKey: 'value2',
-        },
-      })
+      expect(instance.value.properties).toEqual(originalProperties)
     })
   })
 
   describe('onDeploy', () => {
     it('should convert properties from map to list', async () => {
-      instance.value.properties = {
-        key1: 'value1',
-        key2: {
-          innerKey: 'value2',
-        },
-      }
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.properties).toEqual([
-        { key: 'key1', value: 'value1' },
-        { key: 'key2', values: [{ key: 'innerKey', value: 'value2' }] },
-      ])
+      expect(instance.value.properties).toEqual(convertedProperties)
     })
   })
 })

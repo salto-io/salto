@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, ObjectType, Values, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, Values, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
@@ -29,21 +29,30 @@ const convertMapToList = (map: Record<string, unknown>): Values[] => Object.entr
 const convertListToMap = (list: Values[]): Record<string, unknown> => Object.fromEntries(list
   .map(({ key, value, values }) => [key, value ?? values]))
 
+const convertPropertiesToLists = (instance: InstanceElement): void => {
+  if (!_.isPlainObject(instance.value.properties)) {
+    return
+  }
+  // The depth of the properties is limited to two, otherwise the Jira API throws an error.
+  instance.value.properties = convertMapToList(instance.value.properties)
+  instance.value.properties
+    .filter((property: Values) => _.isPlainObject(property.values))
+    .forEach((property: Values) => {
+      property.values = convertMapToList(property.values)
+    })
+}
+
+/**
+ * This filter converts the properties in gadgets from maps to lists.
+ * This is because the keys of the maps might cause syntax errors in the NaCl.
+ */
 const filter: FilterCreator = () => ({
   name: 'gadgetPropertiesFilter',
   onFetch: async elements => {
     elements
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === DASHBOARD_GADGET_TYPE)
-      .filter(instance => _.isPlainObject(instance.value.properties))
-      .map(async instance => {
-        instance.value.properties = convertMapToList(instance.value.properties)
-        instance.value.properties
-          .filter((property: Values) => _.isPlainObject(property.values))
-          .forEach((property: Values) => {
-            property.values = convertMapToList(property.values)
-          })
-      })
+      .forEach(convertPropertiesToLists)
 
     const gadgetPropertyType = new ObjectType({
       elemID: new ElemID(JIRA, 'DashboardGadgetProperty'),
@@ -100,15 +109,8 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceChange)
       .filter(isAdditionOrModificationChange)
       .filter(change => change.data.after.elemID.typeName === DASHBOARD_GADGET_TYPE)
-      .filter(change => _.isPlainObject(change.data.after.value.properties))
-      .forEach(change => {
-        change.data.after.value.properties = convertMapToList(change.data.after.value.properties)
-        change.data.after.value.properties
-          .filter((property: Values) => _.isPlainObject(property.values))
-          .forEach((property: Values) => {
-            property.values = convertMapToList(property.values)
-          })
-      })
+      .map(getChangeData)
+      .forEach(convertPropertiesToLists)
   },
 })
 

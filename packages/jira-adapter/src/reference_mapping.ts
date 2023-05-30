@@ -596,6 +596,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: 'Priority' },
   },
+  // TODO: this is left for backward compatibility, we should remove it
   {
     src: { field: 'statType', parentTypes: ['GadgetConfig'] },
     serializationStrategy: 'id',

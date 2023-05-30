@@ -846,7 +846,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'logo' },
         { fieldName: 'favicon' },
       ],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
+      serviceUrl: '/admin/customizations/branding',
       fieldTypeOverrides: [
         { fieldName: '_links', fieldType: 'map<unknown>' },
       ],

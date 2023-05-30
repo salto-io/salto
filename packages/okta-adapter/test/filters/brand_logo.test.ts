@@ -16,7 +16,7 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, OKTA } from '../../src/constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
 import brandLogoFilter from '../../src/filters/brand_logo'
@@ -45,6 +45,7 @@ describe('barnd logo filter', () => {
     {
       id: '11',
       logo: 'https://ok12static.oktacdn.com/bc/image/111',
+      favicon: 'https://ok12static.oktacdn.com/bc/image/111',
     },
     undefined,
     {
@@ -70,7 +71,7 @@ describe('barnd logo filter', () => {
         throw new Error('Err')
       })
     })
-    it('should create AppLogo type and AppLogo instance', async () => {
+    it('should create brandLogo type favIcon type and brnadLogo instance and favIcon instance', async () => {
       const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())
@@ -79,19 +80,30 @@ describe('barnd logo filter', () => {
           'okta.BrandLogo.instance.brandLogo',
           'okta.BrandTheme',
           'okta.BrandTheme.instance.brandTheme1',
+          'okta.FavIcon',
+          'okta.FavIcon.instance.favicon',
         ])
     })
-    it('check that barndLogo instance has the correct values', async () => {
+    it('check that barndLogo instance and the favicon instance have the correct values', async () => {
       const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const logo = instances.find(e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME)
+      const favicon = instances.find(e => e.elemID.typeName === FAVORITE_ICON_TYPE_NAME)
       expect(logo?.value).toEqual({
         id: '111',
         fileName: 'brandLogo.png',
         contentType: 'png',
         content: new StaticFile({
           filepath: 'okta/BrandLogo/brandLogo.png', encoding: 'binary', content,
+        }),
+      })
+      expect(favicon?.value).toEqual({
+        id: '111',
+        fileName: 'favicon.ico',
+        contentType: 'ico',
+        content: new StaticFile({
+          filepath: 'okta/FavIcon/favicon.ico', encoding: 'binary', content,
         }),
       })
     })
@@ -121,16 +133,18 @@ describe('barnd logo filter', () => {
     it('should add logo instance to elements', async () => {
       const clonedBrandTheme = brandThemeInstance.clone()
       const clonedLogo = brandLogoInstance.clone()
+      const clonedfavIcon = brandLogoInstance.clone()
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedBrandTheme } },
         { action: 'add', data: { after: clonedLogo } },
+        { action: 'add', data: { after: clonedfavIcon } },
       ])
       expect(res.deployResult.errors).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
       expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
         .toEqual(clonedBrandTheme.value)
 
-      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(2)
       expect(res.deployResult.appliedChanges[0]).toEqual(
         { action: 'add', data: { after: clonedLogo } }
       )

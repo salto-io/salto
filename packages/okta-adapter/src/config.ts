@@ -840,7 +840,12 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
-      fieldsToHide: [{ fieldName: 'id' }, { fieldName: '_links' }, { fieldName: 'logo' }, { fieldName: 'favicon' }],
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+        { fieldName: 'logo' },
+        { fieldName: 'favicon' },
+      ],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT,
       fieldTypeOverrides: [
         { fieldName: '_links', fieldType: 'map<unknown>' },
@@ -886,7 +891,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       },
     },
   },
-  FavoriteIcon: {
+  FavIcon: {
     deployRequests: {
       add: {
         url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',

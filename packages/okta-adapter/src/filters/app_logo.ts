@@ -43,7 +43,7 @@ type App = {
   }
 }
 const EXPECTED_APP_SCHEMA = Joi.object({
-  id: Joi.string(),
+  id: Joi.string().required(),
   label: Joi.string().required(),
   _links: Joi.object({
     logo: Joi.array().items(Joi.object({
@@ -54,7 +54,7 @@ const EXPECTED_APP_SCHEMA = Joi.object({
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isApp = createSchemeGuard<App>(EXPECTED_APP_SCHEMA, 'Recieved invalid response for the app values')
+const isApp = createSchemeGuard<App>(EXPECTED_APP_SCHEMA, 'Received invalid response for app values')
 
 const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')

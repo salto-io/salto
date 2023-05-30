@@ -274,6 +274,7 @@ export const fetch: FetchFunc = async (
     workspace,
     fetchAccounts,
     accountToServiceNameMap,
+    await workspace.elements(),
     ignoreStateElemIdMapping,
   )
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
@@ -342,6 +343,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     workspace,
     fetchAccounts,
     getAccountToServiceNameMap(workspace, fetchAccounts),
+    await workspace.elements()
   )
 
   const {
@@ -403,8 +405,8 @@ export const calculatePatch = async (
     workspace,
     [accountName],
     accountToServiceNameMap,
-    ignoreStateElemIdMapping,
-    elementSource.createInMemoryElementSource(resolvedWSElements)
+    elementSource.createInMemoryElementSource(resolvedWSElements),
+    ignoreStateElemIdMapping
   )
   const adapterContext = adaptersCreatorConfigs[accountName]
 

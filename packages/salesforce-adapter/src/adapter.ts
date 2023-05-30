@@ -271,7 +271,6 @@ export const SYSTEM_FIELDS = [
   'LastViewedDate',
   'Name',
   'RecordTypeId',
-  'SystemModstamp',
   'OwnerId',
   'SetupOwnerId',
 ]

@@ -32,7 +32,36 @@ const log = logger(module)
 
 const ORGANIZATION_SETTINGS_INSTANCE_NAME = 'OrganizationSettings'
 
-const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType): Promise<void> => {
+/*
+* These fields are not multienv friendly
+* */
+const FIELDS_TO_IGNORE = [
+  'DailyWebToCaseCount',
+  'DailyWebToLeadCount',
+  'InstanceName',
+  'IsSandbox',
+  'LastWebToCaseDate',
+  'LastWebToLeadDate',
+  'MonthlyPageViewsEntitlement',
+  'MonthlyPageViewsUsed',
+  'OrganizationType',
+  'SelfServiceCaseSubmitRecordTypeId',
+  'SelfServiceEmailUserOnCaseCreation‍TemplateId',
+  'SelfServiceNewCommentTemplateId',
+  'SelfServiceNewPassTemplateId',
+  'SelfServiceNewUserTemplateId',
+  'SelfServiceSolutionCategoryStartNodeId',
+  'TrialExpirationDate',
+  'WebToCaseAssignedEmailTemplateId',
+  'WebToCaseCreatedEmailTemplateId',
+  'WebToCaseDefaultCreatorId',
+  'SystemModstamp',
+]
+
+const enrichTypeWithFields = async (
+  client: SalesforceClient,
+  type: ObjectType,
+  fieldsToIgnore: Set<string>): Promise<void> => {
   const typeApiName = await apiName(type)
   const describeSObjectsResult = await client.describeSObjects([typeApiName])
   if (describeSObjectsResult.errors.length !== 0 || describeSObjectsResult.result.length !== 1) {
@@ -58,7 +87,10 @@ const enrichTypeWithFields = async (client: SalesforceClient, type: ObjectType):
 
   type.fields = {
     ...type.fields,
-    ..._.keyBy(fields, field => field.name),
+    ..._(fields)
+      .filter(field => !fieldsToIgnore.has(field.name))
+      .keyBy(field => field.name)
+      .value(),
   }
 }
 
@@ -87,12 +119,13 @@ const createOrganizationInstance = (objectType: ObjectType, fieldValues: Values)
   )
 )
 
-const filterCreator: RemoteFilterCreator = ({ client }) => ({
+const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'organizationWideSharingDefaultsFilter',
   remote: true,
   onFetch: async elements => {
     const objectType = createOrganizationType()
-    await enrichTypeWithFields(client, objectType)
+    const fieldsToIgnore = new Set(FIELDS_TO_IGNORE.concat(config.systemFields ?? []))
+    await enrichTypeWithFields(client, objectType, fieldsToIgnore)
 
     const queryResult = await queryClient(client, ['SELECT FIELDS(ALL) FROM Organization LIMIT 200'])
     if (queryResult.length !== 1) {

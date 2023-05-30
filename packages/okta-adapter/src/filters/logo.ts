@@ -186,7 +186,7 @@ Promise<InstanceElement | undefined> => {
   return logo
 }
 
-export const getBrandLogoOrIcon = async (
+export const getBrandThemeFile = async (
   client: OktaClient,
   brandTheme: InstanceElement,
   logoType: ObjectType,
@@ -215,7 +215,7 @@ export const fetchBrandThemeFiles = async ({
     const brandLogoType = createLogoType(logoTypeName)
     elements.push(brandLogoType)
 
-    const brandLogoInstances = await getBrandLogoOrIcon(client, brandTheme, brandLogoType)
+    const brandLogoInstances = await getBrandThemeFile(client, brandTheme, brandLogoType)
     if (brandLogoInstances !== undefined) {
       elements.push(brandLogoInstances)
     }

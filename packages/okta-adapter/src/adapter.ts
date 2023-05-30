@@ -46,7 +46,7 @@ import userFilter from './filters/user'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
-import brandLogoFilter from './filters/brand_logo'
+import brandThemeFilesFilter from './filters/brand_theme_files'
 import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
@@ -79,7 +79,7 @@ export const DEFAULT_FILTERS = [
   policyRuleRemoval,
   schemaFieldsRemovalFilter,
   appLogoFilter,
-  brandLogoFilter,
+  brandThemeFilesFilter,
   fieldReferencesFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,

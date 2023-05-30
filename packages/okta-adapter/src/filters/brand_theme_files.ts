@@ -26,7 +26,7 @@ const log = logger(module)
  * Fetches and deploys brand logo as static file.
  */
 const brandLogoFilter: FilterCreator = ({ client }) => ({
-  name: 'brandLogoFilter',
+  name: 'brandThemeFilesFilter',
   onFetch: async elements => {
     const brandTheme = elements
       .filter(isInstanceElement)

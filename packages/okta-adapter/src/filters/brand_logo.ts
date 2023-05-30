@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 
-import _ from 'lodash'
-import { Change, InstanceElement, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME } from '../constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAVORITE_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { createLogoType, deployLogo, getBrandLogoOrIcon } from './logo'
+import { deployBrandThemeFiles, fetchBrandThemeFiles } from './logo'
 
 const log = logger(module)
 
@@ -37,36 +36,12 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
       log.debug('No brandTheme was found')
       return
     }
-    const brandLogoType = createLogoType(BRAND_LOGO_TYPE_NAME)
-    elements.push(brandLogoType)
-
-    const brandLogoInstances = await getBrandLogoOrIcon(client, brandTheme, brandLogoType)
-    if (brandLogoInstances !== undefined) {
-      elements.push(brandLogoInstances)
-    }
+    // eslint-disable-next-line max-len
+    await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeNames: [BRAND_LOGO_TYPE_NAME, FAVORITE_ICON_TYPE_NAME] })
+    // await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeName: BRAND_LOGO_TYPE_NAME })
+    // await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeName: FAVORITE_ICON_TYPE_NAME })
   },
-  deploy: async (changes: Change<InstanceElement>[]) => {
-    const [brandLogoChanges, leftoverChanges] = _.partition(
-      changes,
-      change => getChangeData(change).elemID.typeName === BRAND_LOGO_TYPE_NAME,
-    )
-    const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
-      const deployResult = await deployLogo(change, client)
-      return deployResult === undefined ? change : deployResult
-    }))
-
-    const [deployLogoErrors, successfulChanges] = _.partition(
-      deployLogoResults,
-      _.isError,
-    )
-    return {
-      deployResult: {
-        appliedChanges: successfulChanges,
-        errors: deployLogoErrors,
-      },
-      leftoverChanges,
-    }
-  },
+  deploy: async (changes: Change<InstanceElement>[]) => deployBrandThemeFiles(changes, client),
 })
 
 export default brandLogoFilter

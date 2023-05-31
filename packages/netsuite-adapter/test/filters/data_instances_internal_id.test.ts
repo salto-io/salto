@@ -29,6 +29,15 @@ describe('data_instances_internal_id', () => {
       },
     },
   })
+  const unitsType = new ObjectType({
+    elemID: new ElemID(NETSUITE, 'unitsType'),
+    fields: {
+      internalId: {
+        refType: BuiltinTypes.STRING,
+        annotations: { [CORE_ANNOTATIONS.HIDDEN_VALUE]: true },
+      },
+    },
+  })
   describe('onFetch', () => {
     it('should add account specific value to record refs', async () => {
       const instance = new InstanceElement(
@@ -100,6 +109,16 @@ describe('data_instances_internal_id', () => {
       expect((elements[2] as InstanceElement).value.isSubInstance).toBeTruthy()
       expect((instance.value.someValue as ReferenceExpression).elemID.getFullName())
         .toBe(elements[2].elemID.getFullName())
+    })
+
+    it('should add id field for fields with hidden internalIds', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), fields: { someValue: { refType: unitsType } }, annotations: { source: 'soap' } }),
+        { someValue: { internalId: '1' } }
+      )
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
+      expect(instance.value.someValue.id).toEqual(ACCOUNT_SPECIFIC_VALUE)
     })
   })
 

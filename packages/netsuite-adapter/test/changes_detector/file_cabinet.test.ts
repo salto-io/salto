@@ -19,7 +19,7 @@ import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
-import { timeDateFormat } from './savedsearch.test'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('file_cabinet', () => {
   const runSuiteQLMock = jest.fn()
@@ -39,7 +39,7 @@ describe('file_cabinet', () => {
         ])
         results = await getChangedFiles(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
         )
       })
       it('should return the changes', () => {
@@ -71,7 +71,7 @@ describe('file_cabinet', () => {
         ])
         results = await getChangedFiles(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
         )
       })
       it('should return the changes', () => {
@@ -84,7 +84,7 @@ describe('file_cabinet', () => {
     it('return nothing when query fails', async () => {
       runSuiteQLMock.mockResolvedValue(undefined)
       expect(
-        await getChangedFiles(client, createDateRange(new Date(), new Date(), timeDateFormat))
+        await getChangedFiles(client, createDateRange(new Date(), new Date(), TIME_DATE_FORMAT))
       ).toHaveLength(0)
     })
   })
@@ -100,7 +100,7 @@ describe('file_cabinet', () => {
         ])
         results = await getChangedFolders(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
         )
       })
       it('should return the changes', () => {
@@ -131,7 +131,7 @@ describe('file_cabinet', () => {
         ])
         results = await getChangedFolders(
           client,
-          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+          createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
         )
       })
       it('should return the changes', () => {
@@ -144,7 +144,7 @@ describe('file_cabinet', () => {
     it('return nothing when query fails', async () => {
       runSuiteQLMock.mockResolvedValue(undefined)
       expect(
-        await getChangedFolders(client, createDateRange(new Date(), new Date(), timeDateFormat))
+        await getChangedFolders(client, createDateRange(new Date(), new Date(), TIME_DATE_FORMAT))
       ).toHaveLength(0)
     })
   })

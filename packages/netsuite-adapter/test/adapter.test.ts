@@ -1266,7 +1266,7 @@ describe('Adapter', () => {
           getNetsuiteWsdl: () => undefined,
           getConfigRecords: getConfigRecordsMock.mockReturnValue(
             [
-              { configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
+              { configType: 'USER_PREFERENCES',
                 fieldsDef: [],
                 data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]
           ),

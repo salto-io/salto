@@ -18,6 +18,7 @@ import { strings, values } from '@salto-io/lowerdash'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
+import { ConfigRecord } from './suiteapp_client/types'
 
 const { matchAll } = strings
 const { isDefined } = values
@@ -55,3 +56,8 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
     .map(r => r.groups)
     .filter(isDefined)
     .map(groups => groups[item])
+
+export const getConfigRecordsFieldValue = (
+  configRecord: ConfigRecord | undefined,
+  field: string,
+): string | undefined => configRecord?.data?.fields?.[field] as string | undefined

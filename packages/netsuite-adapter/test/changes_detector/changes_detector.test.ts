@@ -23,8 +23,7 @@ import { getChangedObjects } from '../../src/changes_detector/changes_detector'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
-import { timeDateFormat } from './savedsearch.test'
-
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('changes_detector', () => {
   const query = {
@@ -68,7 +67,7 @@ describe('changes_detector', () => {
     await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(getCustomRecordTypeChangesMock).toHaveBeenCalled()
@@ -80,7 +79,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
@@ -91,7 +90,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
@@ -108,7 +107,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
@@ -125,7 +124,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord1',
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('customrecordtype')).toBeTruthy()
@@ -151,7 +150,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord_cseg1',
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('customsegment')).toBeTruthy()
@@ -168,7 +167,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
@@ -194,7 +193,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
 
@@ -213,7 +212,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: () => false,
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
@@ -227,7 +226,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()

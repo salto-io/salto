@@ -183,6 +183,7 @@ export type Workflow = {
   name?: string
   transitions: Transition[]
   statuses?: Status[]
+  diagramInitialEntry?: StatusLocation
 }
 
 export const workflowSchema = Joi.object({

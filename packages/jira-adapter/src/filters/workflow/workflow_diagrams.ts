@@ -289,8 +289,8 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
     }
   })
   workflow.value.diagramInitialEntry = {
-    x: statusIdToStatus?.initial.x,
-    y: statusIdToStatus?.initial.y,
+    x: statusIdToStatus.initial?.x,
+    y: statusIdToStatus.initial?.y,
   }
   workflow.value.transitions.forEach(transition => {
     const transitionName = transition.name

@@ -19,7 +19,7 @@ import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
-import { timeDateFormat } from './savedsearch.test'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('role', () => {
   const runSuiteQLMock = jest.fn()
@@ -47,7 +47,7 @@ describe('role', () => {
     runSavedSearchQueryMock.mockResolvedValue(undefined)
     expect(await detector.getChanges(
       client,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
     )).toEqual([
       { type: 'object', objectId: 'a', time: new Date('2021-01-11T20:55:17.000Z') },
       { type: 'object', objectId: 'b', time: new Date('2021-01-11T21:55:17.000Z') },
@@ -78,7 +78,7 @@ describe('role', () => {
 
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
       )
     })
     it('should return the changes', () => {
@@ -116,7 +116,7 @@ describe('role', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), TIME_DATE_FORMAT))
     ).toHaveLength(0)
   })
 })

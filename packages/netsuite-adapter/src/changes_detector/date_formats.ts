@@ -15,9 +15,9 @@
 */
 import { logger } from '@salto-io/logging'
 import moment from 'moment-timezone'
-import { SUITEAPP_CONFIG_RECORD_TYPES } from '../types'
 import { ConfigRecord } from '../client/suiteapp_client/types'
 import { DateRange } from './types'
+import { getConfigRecordsFieldValue } from '../client/utils'
 
 const log = logger(module)
 
@@ -58,11 +58,7 @@ export const convertSuiteQLStringToDate = (rawDate: string, fallback: Date): Dat
 const toSavedSearchWhereDateString = (
   date: Date,
   timeDateFormat: string | moment.MomentBuiltinFormat,
-): string => {
-  const hour = date.getUTCHours()
-  const minutes = date.getUTCMinutes()
-  return moment(date.setHours(hour, minutes)).format(`${timeDateFormat}`)
-}
+): string => moment(date).utc().format(`${timeDateFormat}`)
 
 const parseHour = (groups: Record<string, string>): number => {
   const rawHour = parseInt(groups.hour, 10)
@@ -76,14 +72,9 @@ const parseHour = (groups: Record<string, string>): number => {
   return rawHour
 }
 
-const getConfigRecordsFieldValue = (
-  configRecord: ConfigRecord | undefined,
-  field: string,
-): string | undefined => configRecord?.data?.fields?.[field] as string | undefined
-
 export const getTimeDateFormat = (configRecords: ConfigRecord[]): TimeZoneAndFormat => {
   const userPreferences = configRecords
-    .find(configRecord => configRecord.configType === SUITEAPP_CONFIG_RECORD_TYPES[0])
+    .find(configRecord => configRecord.configType === 'USER_PREFERENCES')
   const dateFormat = getConfigRecordsFieldValue(userPreferences, DATEFORMAT)
   const timeFormat = getConfigRecordsFieldValue(userPreferences, TIMEFORMAT)
   const timeZone = getConfigRecordsFieldValue(userPreferences, TIMEZONE)

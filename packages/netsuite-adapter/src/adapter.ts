@@ -415,7 +415,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     }
     const timeZoneAndFormat = getTimeDateFormat(configRecords)
     if (timeZoneAndFormat?.format === undefined) {
-      log.debug('Failed to get date format, skipping SuiteApp operations')
+      log.warn('Failed to get date format, skipping SuiteApp operations')
       return { serverTime: sysInfo.time, timeZoneAndFormat }
     }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)

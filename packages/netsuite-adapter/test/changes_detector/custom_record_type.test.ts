@@ -19,7 +19,7 @@ import { Change } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange, toSuiteQLSelectDateString } from '../../src/changes_detector/date_formats'
-import { timeDateFormat } from './savedsearch.test'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 
 describe('custom_record_type', () => {
@@ -40,7 +40,7 @@ describe('custom_record_type', () => {
       ])
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
       )
     })
     it('should return the changes', () => {
@@ -74,7 +74,7 @@ describe('custom_record_type', () => {
       ])
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT)
       )
     })
     it('should return the changes without the invalid results', () => {
@@ -89,7 +89,7 @@ describe('custom_record_type', () => {
   it('return nothing when query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), TIME_DATE_FORMAT))
     ).toHaveLength(0)
   })
 })

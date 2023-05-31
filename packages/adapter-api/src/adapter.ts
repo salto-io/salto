@@ -79,7 +79,7 @@ export type DeployAction = {
 }
 
 export type PostDeployAction = DeployAction & {
-  showOnFailure: boolean
+  showOnFailure?: boolean
 }
 
 export type DeployActions = {

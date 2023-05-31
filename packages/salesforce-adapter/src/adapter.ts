@@ -92,6 +92,7 @@ import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import omitProfilesAttributes from './filters/omitProfilesAttributes'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -127,6 +128,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profilePermissionsFilter },
   // emailTemplateFilter should run before convertMapsFilter
   { creator: emailTemplateFilter },
+  // omitProfilesAttributes should run before convertMapsFilter
+  { creator: omitProfilesAttributes },
   // convertMapsFilter should run before profile fieldReferencesFilter
   { creator: convertMapsFilter },
   { creator: standardValueSetFilter, addsNewInformation: true },
@@ -354,6 +357,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           systemFields,
           enumFieldPermissions: config.enumFieldPermissions
             ?? constants.DEFAULT_ENUM_FIELD_PERMISSIONS,
+          omitProfilesAttributes: config.omitProfilesAttributes
+          ?? constants.DEFAULT_OMIT_PROFILE_ATTRIBUTES,
           fetchProfile,
           elementsSource,
           separateFieldToFiles: config.fetch?.metadata?.objectsToSeperateFieldsToFiles,

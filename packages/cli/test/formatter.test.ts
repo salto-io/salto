@@ -128,7 +128,7 @@ describe('formatter', () => {
       expect(output).toMatch(/|[^\n]+salesforce.lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
     })
     it('should return the number of impacted types and instances', () => {
-      expect(output).toMatch(`${chalk.bold('Impacts:')} 3 types and 1 instance.`)
+      expect(output).toMatch(`${chalk.bold('Impacts:')} 7 types and 1 instance.`)
     })
     it('should return pre deploy action suggestions', () => {
       expect(output).toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)

@@ -31,6 +31,7 @@ const createAppSetupMsg = (instance: InstanceElement, baseUrl: string | undefine
       postAction: {
         title: 'New application integration setup required',
         description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+        showOnFailure: false,
         subActions: [
           `Go to application page at ${url ?? 'Okta Admin console'}`,
           `Click on ${instance.value.label ?? 'the application'}.`,

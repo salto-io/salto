@@ -182,8 +182,8 @@ const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: 
         x: status.location?.x,
         y: status.location?.y }
     })
-  if (workflow.value.diagramInitialEntry) {
-    statuses?.push({
+  if (workflow.value.diagramInitialEntry && statuses) {
+    statuses.push({
       id: statusIdToStepId.initial,
       x: workflow.value.diagramInitialEntry.x,
       y: workflow.value.diagramInitialEntry.y,

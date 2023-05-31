@@ -58,25 +58,22 @@ const extractErrors = (
 const deployOrValidate = async (
   { adapter, adapterName, opts, checkOnly }: DeployOrValidateParams
 ): Promise<AdapterDeployResult> => {
-  // NOTE: DRY-ing this code into something like
-  // const deployOrValidateFn = checkOnly ? adapter.validate : adapter.deploy
-  // can cause `this` to be undefined, causing problems within the adapters.
-  if (!checkOnly) {
-    const deployRes = await adapter.deploy(opts)
+  const deployOrValidateFn = checkOnly ? adapter.validate?.bind(adapter) : adapter.deploy.bind(adapter)
+  if (deployOrValidateFn === undefined) {
+    throw new Error(`${checkOnly ? 'Check-Only deployment' : 'Deployment'} is not supported in adapter ${adapterName}`)
+  }
+  try {
+    const result = await deployOrValidateFn(opts)
     return {
-      appliedChanges: deployRes.appliedChanges,
-      extraProperties: deployRes.extraProperties,
-      errors: extractErrors(deployRes, opts.changeGroup.changes),
+      appliedChanges: result.appliedChanges,
+      extraProperties: result.extraProperties,
+      errors: extractErrors(result, opts.changeGroup.changes),
     }
-  }
-  if (_.isUndefined(adapter.validate)) {
-    throw new Error(`Check-Only deployment is not supported in adapter ${adapterName}`)
-  }
-  const validateRes = await adapter.validate(opts)
-  return {
-    appliedChanges: validateRes.appliedChanges,
-    extraProperties: validateRes.extraProperties,
-    errors: extractErrors(validateRes, opts.changeGroup.changes),
+  } catch (error) {
+    return {
+      appliedChanges: [],
+      errors: addElemIDsToError(opts.changeGroup.changes, error as Error),
+    }
   }
 }
 

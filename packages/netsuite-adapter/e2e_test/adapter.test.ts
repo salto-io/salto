@@ -861,10 +861,7 @@ describe('Netsuite adapter E2E with real account', () => {
             .concat(objectsToImport)
             .concat(filesToImport)
             .map(type => type.elemID.getFullName())
-        )
-          // TODO - remove on SALTO-4199
-          .concat('netsuite.reportdefinition_fields')
-          .sort()
+        ).sort()
 
         expect(loadedElements.map(e => e.elemID.getFullName()).sort()).toEqual(expectedElements)
       })

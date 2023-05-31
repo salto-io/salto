@@ -38,6 +38,7 @@ export const createChangeError = (
       postAction: {
         title: 'Update deployed masked data',
         description: `Please update the masked values that were deployed to Jira in ${getChangeData(change).elemID.getFullName()}`,
+        showOnFailure: false,
         subActions: [
           serviceUrl !== undefined
             ? `Go to ${serviceUrl}`

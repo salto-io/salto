@@ -218,6 +218,7 @@ const getErrorMessageForStatusMigration = (
       postAction: serviceUrl ? {
         title: 'Finalize workflow scheme change',
         description: `Salto pushed the ${instance.elemID.name} workflow scheme changes, but did not publish it. Please follow these steps to complete this change and migrate affected issues`,
+        showOnFailure: false,
         subActions: [
           `Go to ${serviceUrl}`,
           'Click on "Publish"',

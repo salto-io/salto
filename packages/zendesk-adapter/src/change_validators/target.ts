@@ -36,6 +36,7 @@ You will have to re-enter it after deployment;  please make sure you have the ap
     postAction: {
       title: 'Change target authentication data',
       description: `Please change the authentication data for the target ${instanceElemId.name} in the service`,
+      showOnFailure: false,
       subActions: [
         `In Zendesk, open the Targets panel at ${baseUrl}${serviceUrl?.slice(1)}`,
         `Click on the edit button of the modified target, ${instanceTitle}`,

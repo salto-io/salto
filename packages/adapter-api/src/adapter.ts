@@ -89,9 +89,13 @@ export type DeployAction = {
   documentationURL?: string
 }
 
+export type PostDeployAction = DeployAction & {
+  showOnFailure?: boolean
+}
+
 export type DeployActions = {
   preAction?: DeployAction
-  postAction?: DeployAction
+  postAction?: PostDeployAction
 }
 
 export type ChangeError = SaltoElementError & {

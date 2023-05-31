@@ -304,13 +304,13 @@ export const selectElementIdsByTraversal = async ({
       const currentIds = new Set(topLevelIDs.map(id => id.getFullName()))
 
       const possibleParentSelectors = subElementSelectors.map(createTopLevelSelector)
-      const possibleParentIDs = selectElementsBySelectors({
+      const possibleParentIDs = await awu(selectElementsBySelectors({
         elementIds: awu(await source.list()),
         selectors: possibleParentSelectors,
         referenceSourcesIndex,
-      })
+      })).toArray()
       const stillRelevantIDs = compact
-        ? awu(possibleParentIDs).filter(id => !currentIds.has(id.getFullName()))
+        ? possibleParentIDs.filter(id => !currentIds.has(id.getFullName()))
         : possibleParentIDs
 
       const [subSelectorsWithReferencedBy, subSelectorsWithoutReferencedBy] = _.partition(
@@ -346,23 +346,20 @@ export const selectElementIdsByTraversal = async ({
         walkOnElement({
           element, func: selectFromSubElements,
         })
-        if (isObjectType(element)) {
-          await withLimitedConcurrency(
-            Object.values(element.fields).map(field => async () => {
-              // Since we only support referenceBy on a base elemID, a selector
-              // that is not top level and that has referenceBy is necessarily a field selector
-              if (await awu(subSelectorsWithReferencedBy).some(
-                selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
-              )) {
-                subElementIDs.add(field.elemID.getFullName())
-              }
-            }),
-            MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
-          )
+        if (isObjectType(element) && subSelectorsWithReferencedBy.length > 0) {
+          await awu(Object.values(element.fields)).forEach(async field => {
+            // Since we only support referenceBy on a base elemID, a selector
+            // that is not top level and that has referenceBy is necessarily a field selector
+            if (await awu(subSelectorsWithReferencedBy).some(
+              selector => matchWithReferenceBy(field.elemID, selector, referenceSourcesIndex)
+            )) {
+              subElementIDs.add(field.elemID.getFullName())
+            }
+          })
         }
       }
       await withLimitedConcurrency(
-        (await awu(stillRelevantIDs).toArray()).map(elemID => () => addSubElementIDs(elemID)),
+        stillRelevantIDs.map(elemID => () => addSubElementIDs(elemID)),
         MAX_SUB_ELEMENT_SELECTORS_CONCURRENCY,
       )
       return awu(

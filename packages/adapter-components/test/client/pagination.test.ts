@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination, getAllPagesWithOffsetAndTotal } from '../../src/client'
 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -384,6 +384,33 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
+    })
+    it('should throw if encountered unknown HTTP exception errors', async () => {
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a1',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockRejectedValueOnce(new Error('Something went wrong'))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }])
+      const getParams = {
+        url: '/ep',
+        paginationField: 'page',
+        queryParams: {
+          arg1: 'val1',
+        },
+      }
+      await expect(toArrayAsync(traverseRequests(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }))).rejects.toThrow('Something went wrong')
     })
   })
   describe('getWithItemIndexPagination', () => {
@@ -930,48 +957,75 @@ describe('client_pagination', () => {
     })
   })
 
-  describe('getWithOffsetAndLimit', () => {
+  describe('getAllPagesWithOffsetAndTotal', () => {
     let paginate: PaginationFunc
     beforeEach(async () => {
-      paginate = getWithOffsetAndLimit()
+      paginate = getAllPagesWithOffsetAndTotal()
     })
     describe('with paginationField', () => {
       describe('when response is a valid page', () => {
-        it('should query next page based on pagination field and number of entries in page', () => {
+        it('should query next pages based on pagination field and number of entries in page', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
             currentParams: {},
-            responseData: { isLast: false, startAt: 0, values: [1, 2] },
-            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
-          })).toEqual([{ startAt: '2' }])
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toEqual([{ startAt: '2' }, { startAt: '4' }, { startAt: '6' }, { startAt: '8' }])
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: {},
+            responseData: { total: 11, startAt: 0, values: [1, 2] },
+            page: [{ total: 11, startAt: 0, values: [1, 2] }],
+          })).toEqual([{ startAt: '2' }, { startAt: '4' }, { startAt: '6' }, { startAt: '8' }, { startAt: '10' }])
+        })
+        it('should not query next pages if not first page', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
             currentParams: { startAt: '2' },
-            responseData: { isLast: false, startAt: 2, values: [3] },
-            page: [{ isLast: false, startAt: 2, values: [3] }],
-          })).toEqual([{ startAt: '3' }])
+            responseData: { total: 10, startAt: 2, values: [3, 4] },
+            page: [{ total: 10, startAt: 2, values: [3, 4] }],
+          })).toEqual([])
         })
-        it('should stop querying when isLast is true', () => {
+        it('should not query next pages if got all answers', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
-            currentParams: { startAt: '3' },
-            responseData: { isLast: true, startAt: 3, values: [4, 5] },
-            page: [{ isLast: true, startAt: 3, values: [4, 5] }],
+            currentParams: { },
+            responseData: { total: 2, startAt: 0, values: [3, 4] },
+            page: [{ total: 2, startAt: 0, values: [3, 4] }],
           })).toEqual([])
         })
       })
       describe('when response is not a valid page', () => {
-        it('should throw error', async () => {
+        it('should throw error when wrong pagination field', async () => {
           expect(() => paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'wrong' },
             currentParams: {},
-            responseData: { isLast: false, startAt: 0, values: [1, 2] },
-            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
           })).toThrow('Response from /ep expected page with pagination field wrong')
+        })
+        it('should return empty of there is no pagination field', () => {
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep' },
+            currentParams: { },
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toEqual([])
+        })
+        it('should throw error when wrong response structure', () => {
+          expect(() => paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: { },
+            responseData: { startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toThrow('Response from /ep expected page with pagination field startAt, got {"startAt":0,"values":[1,2]}')
         })
       })
     })
@@ -983,8 +1037,8 @@ describe('client_pagination', () => {
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'pagination.startAt' },
             currentParams: {},
-            responseData: { isLast: false, pagination: { startAt: 0 }, values: [1, 2] },
-            page: [{ isLast: false, pagination: { startAt: 0 }, values: [1, 2] }],
+            responseData: { total: 4, pagination: { startAt: 0 }, values: [1, 2] },
+            page: [{ totak: 4, pagination: { startAt: 0 }, values: [1, 2] }],
           })).toEqual([{ 'pagination.startAt': '2' }])
         })
       })

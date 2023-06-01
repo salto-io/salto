@@ -19,9 +19,9 @@ import { logger } from '@salto-io/logging'
 import { ParseResult } from '../../types'
 import { Keywords } from '../../language'
 import { Functions } from '../../functions'
-import Lexer, { TOKEN_TYPES, NoSuchElementError, UnresolvedMergeConflictError } from './lexer'
+import Lexer, { TOKEN_TYPES, NoSuchElementError, UnresolvedMergeConflictError, LexerErrorTokenReachedError } from './lexer'
 import { SourceMap } from '../../source_map'
-import { contentMergeConflict, invalidStringChar, unexpectedEndOfFile } from './errors'
+import { contentMergeConflict, createError, invalidStringChar, unexpectedEndOfFile } from './errors'
 import { ParseContext } from './types'
 import { replaceValuePromises, positionAtStart, positionAtEnd } from './helpers'
 import { consumeVariableBlock, consumeElement } from './consumers/top_level'
@@ -115,8 +115,20 @@ export async function parseBuffer(
           e.message,
         ))
       }
+    } else if (e instanceof LexerErrorTokenReachedError && e.lastValidToken) {
+      // This log allows monitoring of unknown parsing errors.
+      log.error('Unexpected token reached while parsing %s: %o', filename, e)
+      const pos = positionAtStart(e.lastValidToken)
+      context.errors.push(createError({ start: pos, end: pos, filename }, e.message))
     } else {
+      // In this failure flow, we want the user to be aware there is a problem parsing the file.
+      // But, this is a generic error as we don't have a token.
+      // So, we add a context error only if there were no other errors in the file.
       log.error('Unexpected error while parsing %s: %o', filename, e)
+      if (context.errors.length === 0) {
+        const pos = { col: 1, line: 1, byte: 1 }
+        context.errors.push(createError({ start: pos, end: pos, filename }, (e as Error).message))
+      }
     }
   }
 

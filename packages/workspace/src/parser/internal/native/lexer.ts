@@ -45,6 +45,7 @@ export const TOKEN_TYPES = {
   MERGE_CONFLICT_MID: 'mergeConflictMid',
   MERGE_CONFLICT_END: 'mergeConflictEnd',
   CONFLICT_CONTENT: 'mergeConflictContent',
+  ERROR: 'error',
 }
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
@@ -67,7 +68,8 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },
-    [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/, error: true },
+    [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/ },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   string: {
     [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
@@ -77,16 +79,19 @@ export const rules: Record<string, moo.Rules> = {
     // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
     [TOKEN_TYPES.CONTENT]: { match: /[^\r\n\\]+?(?=\$\{|["\n\r\\])/, lineBreaks: false },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   multilineString: {
     [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
     [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   mergeConflict: {
     [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
     [TOKEN_TYPES.MERGE_CONFLICT_END]: { match: '>>>>>>>', pop: 1 },
     [TOKEN_TYPES.CONFLICT_CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
 }
 
@@ -94,13 +99,19 @@ export type LexerToken = Required<moo.Token>
 
 export class NoSuchElementError extends Error {
   constructor(public lastValidToken?: LexerToken) {
-    super("All of the lexer's token has already been consumed.")
+    super('All lexerֿֿֿ tokens have already been consumed.')
   }
 }
 
 class InvalidLexerTokenError extends Error {
   constructor() {
     super('All lexer tokens must have a type.')
+  }
+}
+
+export class LexerErrorTokenReachedError extends Error {
+  constructor(public lastValidToken?: LexerToken) {
+    super('Invalid syntax')
   }
 }
 
@@ -124,6 +135,8 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
     } else {
       throw new InvalidLexerTokenError()
     }
+  } else if (token.type === TOKEN_TYPES.ERROR) {
+    throw new LexerErrorTokenReachedError(token as LexerToken)
   }
   return true
 }

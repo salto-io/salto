@@ -16,11 +16,14 @@
 
 import { PrimitiveType, PrimitiveTypes, InstanceElement, ObjectType, ElemID } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { parse, ParseResult } from '../../src/parser'
 import { IllegalReference } from '../../src/parser/internal/types'
 import { MISSING_VALUE } from '../../src/parser/internal/native/consumers/values'
+import { NoSuchElementError } from '../../src/parser/internal/native/lexer'
 
 const { awu } = collections.asynciterable
+const logging = logger('workspace/src/parser/internal/native/parse')
 
 describe('parsing errors', () => {
   describe('general element block structure', () => {
@@ -64,7 +67,9 @@ describe('parsing errors', () => {
       ]
       `
       let res: ParseResult
+      let log: jest.SpyInstance<void, [message: string | Error, ...args: unknown[]]>
       beforeAll(async () => {
+        log = jest.spyOn(logging, 'error')
         res = await parse(Buffer.from(nacl), 'file.nacl', {})
       })
 
@@ -85,8 +90,17 @@ describe('parsing errors', () => {
         expect(res.errors[3].summary)
           .toBe('Invalid block item')
       })
+
+      it('should log an error not added to the errors', () => {
+        expect(log).toHaveBeenCalledWith(
+          expect.stringContaining('Unexpected error while parsing'),
+          'file.nacl',
+          expect.any(NoSuchElementError)
+        )
+      })
     })
   })
+
   describe('primitive type definition errors', () => {
     describe('invalid primitive type error', () => {
       describe('with unknown primitive type', () => {

@@ -910,8 +910,21 @@ value
     })
   })
 
+  it('should fail gracefully with unicode line separators in multiline strings', async () => {
+    const body = `
+    type salesforce.unicodeLines {
+      str = '''
+      Line that ends with unicode line break\u2028
+      '''
+    }
+    `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(1)
+    expect(result.elements).toEqual([])
+  })
+
   describe('tokenizeContent', () => {
-    it('seperate and token each part of a line correctly', () => {
+    it('separate and token each part of a line correctly', () => {
       expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([
         { value: 'aaa', type: 'word', line: 1, col: 1 },
         { value: 'bbb', type: 'word', line: 1, col: 7 },

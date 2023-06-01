@@ -18,7 +18,7 @@ import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
 
-const createError = (range: SourceRange, summary: string, message?: string): ParseError => ({
+export const createError = (range: SourceRange, summary: string, message?: string): ParseError => ({
   summary,
   subject: range,
   context: range,

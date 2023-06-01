@@ -18,7 +18,7 @@ import {
   isInstanceElement,
   InstanceElement,
   isReferenceExpression,
-  ReferenceExpression,
+  ReferenceExpression, isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -341,6 +341,25 @@ const filterCreator: FilterCreator = () => ({
           needTypeDirectory: true,
           needOwnFolder: false,
           parent: parentsById[parentId],
+        })
+      })
+
+    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME])
+      .forEach(async attachment => {
+        const staticFile: StaticFile = attachment.value.content
+        if (!isStaticFile(staticFile)) {
+          return
+        }
+        const content = await staticFile.getContent()
+        if (content === undefined) {
+          return
+        }
+        const path = attachment.path ?? []
+        // path = [zendesk, records, guide, brand, brandName ... ]
+        const staticFilePath = [ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME, ...path.slice(4)]
+        attachment.value.content = new StaticFile({
+          filepath: staticFilePath.join('/'),
+          content,
         })
       })
   },

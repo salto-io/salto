@@ -55,7 +55,6 @@ const FIELDS_TO_IGNORE = [
   'WebToCaseAssignedEmailTemplateId',
   'WebToCaseCreatedEmailTemplateId',
   'WebToCaseDefaultCreatorId',
-  'SystemModstamp',
 ]
 
 const enrichTypeWithFields = async (

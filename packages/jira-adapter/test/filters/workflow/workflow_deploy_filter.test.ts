@@ -498,6 +498,10 @@ describe('workflowDeployFilter', () => {
                 id: '500',
               },
             ],
+            diagramInitialEntry: {
+              x: 33,
+              y: 66,
+            },
             transitions: [
               {
                 name: 'Building',
@@ -718,6 +722,11 @@ describe('workflowDeployFilter', () => {
               },
               {
                 id: 'S<22>',
+              },
+              {
+                id: 'I<1>',
+                x: 33,
+                y: 66,
               },
             ],
             transitions: [

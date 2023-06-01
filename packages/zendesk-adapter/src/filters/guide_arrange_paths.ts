@@ -344,19 +344,20 @@ const filterCreator: FilterCreator = () => ({
         })
       })
 
-    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME])
+    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME] ?? [])
       .forEach(async attachment => {
-        const staticFile: StaticFile = attachment.value.content
+        const staticFile = attachment.value.content
         if (!isStaticFile(staticFile)) {
           return
         }
         const content = await staticFile.getContent()
         if (content === undefined) {
+          log.warn(`content is undefined for attachment ${attachment.elemID.getFullName()}`)
           return
         }
         const path = attachment.path ?? []
         // path = [zendesk, records, guide, brand, brandName ... ]
-        const staticFilePath = [ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME, ...path.slice(4)]
+        const staticFilePath = [ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME, ...path.slice(2)]
         attachment.value.content = new StaticFile({
           filepath: staticFilePath.join('/'),
           content,

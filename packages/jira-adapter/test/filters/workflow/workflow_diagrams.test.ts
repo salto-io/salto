@@ -229,8 +229,14 @@ describe('workflowDiagramFilter', () => {
       expect(workflowTransitionType.fields.from).toBeDefined()
       expect(elements).toHaveLength(3)
     })
+    it('should set the diagramInitialEntry field in Workflow', async () => {
+      const elements = [workflowType]
+      await filter.onFetch(elements)
+      expect(workflowType.fields.diagramInitialEntry).toBeDefined()
+      expect(elements).toHaveLength(3)
+    })
 
-    it('should add location fields to the statuses', async () => {
+    it('should add location fields to the statuses and to the initial entry', async () => {
       const elements = [instance]
       await filter.onFetch(elements)
       expect(mockConnection.get).toHaveBeenCalledWith(
@@ -244,6 +250,9 @@ describe('workflowDiagramFilter', () => {
       expect(instance.value.statuses[0].location).toBeDefined()
       expect(instance.value.statuses[0].location.x).toEqual(-3)
       expect(instance.value.statuses[0].location.y).toEqual(6)
+      expect(instance.value.diagramInitialEntry).toBeDefined()
+      expect(instance.value.diagramInitialEntry.x).toEqual(33)
+      expect(instance.value.diagramInitialEntry.y).toEqual(66)
     })
 
     it('should add angles to from values in transitions', async () => {

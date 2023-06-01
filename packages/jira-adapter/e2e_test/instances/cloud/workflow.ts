@@ -413,4 +413,8 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
       },
     },
   ],
+  diagramInitialEntry: {
+    x: 12.34,
+    y: 34.12,
+  },
 })

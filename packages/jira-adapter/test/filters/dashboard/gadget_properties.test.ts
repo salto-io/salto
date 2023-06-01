@@ -92,6 +92,15 @@ describe('gadgetPropertiesFilter', () => {
       await filter.onFetch([instance])
       expect(instance.value.properties).toEqual(convertedProperties)
     })
+
+    it('should omit null values', async () => {
+      instance.value.properties = {
+        ...instance.value.properties,
+        key3: null,
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.properties).toEqual(convertedProperties)
+    })
   })
 
   describe('preDeploy', () => {

@@ -93,6 +93,15 @@ describe('gadgetPropertiesFilter', () => {
       expect(instance.value.properties).toEqual(convertedProperties)
     })
 
+    it('should omit empty values', async () => {
+      instance.value.properties = {
+        ...instance.value.properties,
+        key3: {},
+      }
+      await filter.onFetch([instance])
+      expect(instance.value.properties).toEqual(convertedProperties)
+    })
+
     it('should omit null values', async () => {
       instance.value.properties = {
         ...instance.value.properties,

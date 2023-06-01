@@ -20,7 +20,7 @@ import { DASHBOARD_GADGET_TYPE, JIRA } from '../../constants'
 import { findObject } from '../../utils'
 
 const convertMapToList = (map: Record<string, unknown>): Values[] => Object.entries(map)
-  .filter(([_key, value]) => value != null)
+  .filter(([_key, value]) => value != null && (!_.isObject(value) || !_.isEmpty(value)))
   // The reason to separate `value` and `values` is because when the value is an object,
   // we want to create references to values inside it, so we it must have a field with a type.
   // If we put the value in the same field whether it is a plainObject or not,

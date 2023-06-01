@@ -102,6 +102,12 @@ describe('gadgetPropertiesFilter', () => {
       expect(instance.value.properties).toEqual(convertedProperties)
     })
 
+    it('should omit empty inner values', async () => {
+      instance.value.properties.key2.inner2 = {}
+      await filter.onFetch([instance])
+      expect(instance.value.properties).toEqual(convertedProperties)
+    })
+
     it('should omit null values', async () => {
       instance.value.properties = {
         ...instance.value.properties,

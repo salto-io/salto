@@ -1083,12 +1083,12 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(2)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value is not valid')
+          expect(errors[0].message).toMatch(`Value "${extInst.value.nested.str}" is not valid`)
           expect(errors[0].message).toMatch('expected one of: "str"')
           expect(errors[0].elemID).toEqual(extInst.elemID.createNestedID('nested', 'str'))
 
           expect(errors[1]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[1].message).toMatch('Value is not valid')
+          expect(errors[1].message).toMatch(`Value "${extInst.value.restrictStr}" is not valid`)
           expect(errors[1].message).toMatch('expected one of: "restriction1", "restriction2"')
           expect(errors[1].elemID).toEqual(extInst.elemID.createNestedID('restrictStr'))
         }
@@ -1111,7 +1111,7 @@ describe('Elements validation', () => {
           expect(errors).toHaveLength(1)
 
           expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
-          expect(errors[0].message).toMatch('Value is not valid')
+          expect(errors[0].message).toMatch(`Value "${extType.fields.restrictedAnnotation.annotations.temp}" is not valid`)
           expect(errors[0].message).toMatch('expected one of: "val1", "val2"')
           expect(errors[0].elemID).toEqual(
             extType.elemID.createNestedID('field', 'restrictedAnnotation', 'temp')
@@ -1709,7 +1709,7 @@ describe('Elements validation', () => {
         }))
         expect(errors).toContainEqual(expect.objectContaining({
           elemID: extInst.elemID.createNestedID('mapOfObject', 'invalid2', 'str'),
-          error: 'Value is not valid for field str expected one of: "str"',
+          error: `Value "${extInst.value.mapOfObject.invalid2.str}" is not valid for field str expected one of: "str"`,
         }))
       })
 
@@ -2124,7 +2124,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(objVarElemId)
-        expect(errors[0].message).toMatch('Value is not valid for field objVar')
+        expect(errors[0].message).toMatch('Value of type "object" is not valid for field objVar')
       })
       it('should return error when the value is a reference to an element', async () => {
         const instVarElemId = new ElemID(ElemID.VARIABLES_NAMESPACE, 'instVar')
@@ -2141,7 +2141,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
-        expect(errors[0].message).toMatch('Value is not valid for field instVar')
+        expect(errors[0].message).toMatch('Value of type "object" is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
       it('should return error when the value is a reference to an object', async () => {
@@ -2160,7 +2160,7 @@ describe('Elements validation', () => {
         expect(errors).toHaveLength(1)
         expect(errors[0]).toBeInstanceOf(InvalidValueValidationError)
         expect(errors[0].elemID).toEqual(instVarElemId)
-        expect(errors[0].message).toMatch('Value is not valid for field instVar')
+        expect(errors[0].message).toMatch('Value of type "object" is not valid for field instVar')
         expect(errors[0].message).toMatch('a primitive')
       })
       it('should return error when the value is an unresolved reference', async () => {

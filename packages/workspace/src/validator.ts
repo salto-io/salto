@@ -37,6 +37,8 @@ import { IllegalReference } from './parser/parse'
 const log = logger(module)
 const { makeArray } = collections.array
 
+const MAX_VALUE_LENGTH = 20
+
 export abstract class ValidationError extends types.Bean<{
   elemID: ElemID
   error: string
@@ -86,8 +88,17 @@ const validateAnnotations = (
   return []
 }
 
+const safeValueStringify = (value: Value): Value => {
+  if (!isPrimitiveValue(value)) {
+    return `of type "${typeof value}"`
+  }
+  if (typeof value === 'string' && value.length > MAX_VALUE_LENGTH) {
+    return `"${value.slice(0, MAX_VALUE_LENGTH)}..."`
+  }
+  return `"${value}"`
+}
+
 export class InvalidValueValidationError extends ValidationError {
-  readonly value: Value
   readonly fieldName: string
   readonly expectedValue: unknown
 
@@ -101,10 +112,9 @@ export class InvalidValueValidationError extends ValidationError {
 
     super({
       elemID,
-      error: `Value is not valid for field ${fieldName} expected ${expectedValueStr}`,
+      error: `Value ${safeValueStringify(value)} is not valid for field ${fieldName} expected ${expectedValueStr}`,
       severity: 'Warning',
     })
-    this.value = value
     this.fieldName = fieldName
     this.expectedValue = expectedValue
   }
@@ -138,7 +148,7 @@ export class InvalidValueRangeValidationError extends ValidationError {
   ) {
     super({
       elemID,
-      error: `Value "${value}" is not valid for field ${fieldName}`
+      error: `Value ${safeValueStringify(value)} is not valid for field ${fieldName}`
         + ` expected to be ${InvalidValueRangeValidationError.formatExpectedValue(minValue, maxValue)}`,
       severity: 'Warning',
     })
@@ -158,7 +168,7 @@ export class RegexMismatchValidationError extends ValidationError {
     { elemID: ElemID; value: Value; fieldName: string; regex: string }) {
     super({
       elemID,
-      error: `Value "${value}" is not valid for field ${fieldName}.`
+      error: `Value ${safeValueStringify(value)} is not valid for field ${fieldName}.`
         + ` expected value to match "${regex}" regular expression`,
       severity: 'Warning',
     })
@@ -169,7 +179,6 @@ export class RegexMismatchValidationError extends ValidationError {
 }
 
 export class InvalidValueMaxLengthValidationError extends ValidationError {
-  readonly value: string
   readonly fieldName: string
   readonly maxLength: number
 
@@ -177,11 +186,10 @@ export class InvalidValueMaxLengthValidationError extends ValidationError {
     { elemID: ElemID; value: string; fieldName: string; maxLength: number }) {
     super({
       elemID,
-      error: `Value "${value}" is too long for field.`
+      error: `Value ${safeValueStringify(value)} is too long for field.`
         + ` ${fieldName} maximum length is ${maxLength}`,
       severity: 'Warning',
     })
-    this.value = value
     this.fieldName = fieldName
     this.maxLength = maxLength
   }
@@ -439,15 +447,13 @@ const validateFieldAnnotations = (
 }
 
 export class InvalidValueTypeValidationError extends ValidationError {
-  readonly value: Value
   readonly type: ElemID
-  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: ElemID }) {
+  constructor({ elemID, type }: { elemID: ElemID; value: Value; type: ElemID }) {
     super({
       elemID,
       error: `Invalid value type for ${type.getFullName()}`,
       severity: 'Warning',
     })
-    this.value = value
     this.type = type
   }
 }

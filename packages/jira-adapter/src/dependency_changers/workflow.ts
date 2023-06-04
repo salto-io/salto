@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, dependencyChange, DependencyChanger, getAllChangeData, getChangeData, InstanceElement, isInstanceChange, isModificationChange, Values } from '@salto-io/adapter-api'
+import { Change, dependencyChange, DependencyChanger, getAllChangeData, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, Values } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -21,9 +21,10 @@ import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
 
 const getWorkflowSchemeReferences = (instance: InstanceElement): string[] => [
   ...(instance.value.items
-    ?.map((item: Values) => item.workflow?.elemID.getFullName()) ?? []),
-  instance.value.defaultWorkflow?.elemID.getFullName(),
-].filter(values.isDefined)
+    ?.map((item: Values) => item.workflow) ?? []),
+  instance.value.defaultWorkflow,
+].filter(isReferenceExpression)
+  .map(ref => ref.elemID.getFullName())
 
 /**
  * We modify workflows by deleting and re-creating them. To do so we need to modify

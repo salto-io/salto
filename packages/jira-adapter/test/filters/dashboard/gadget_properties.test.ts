@@ -45,11 +45,17 @@ describe('gadgetPropertiesFilter', () => {
       key2: {
         innerKey: 'value2',
       },
+      key3: {
+        innerKey: {
+          inner2: 'value3',
+        },
+      },
     }
 
     convertedProperties = [
       { key: 'key1', value: 'value1' },
       { key: 'key2', values: [{ key: 'innerKey', value: 'value2' }] },
+      { key: 'key3', values: [{ key: 'innerKey', values: [{ key: 'inner2', value: 'value3' }] }] },
     ]
 
     instance = new InstanceElement(
@@ -96,7 +102,7 @@ describe('gadgetPropertiesFilter', () => {
     it('should omit empty values', async () => {
       instance.value.properties = {
         ...instance.value.properties,
-        key3: {},
+        key4: {},
       }
       await filter.onFetch([instance])
       expect(instance.value.properties).toEqual(convertedProperties)
@@ -111,7 +117,7 @@ describe('gadgetPropertiesFilter', () => {
     it('should omit null values', async () => {
       instance.value.properties = {
         ...instance.value.properties,
-        key3: null,
+        key4: null,
       }
       await filter.onFetch([instance])
       expect(instance.value.properties).toEqual(convertedProperties)

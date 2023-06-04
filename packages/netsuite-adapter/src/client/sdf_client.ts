@@ -558,19 +558,15 @@ export default class SdfClient {
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
 
-    // SALTO-3042 on full deployment, use this instancesToFetch
-    // const [excludedGroups, instancesToFetch] = _.partition(
-    const [excludedGroups] = _.partition(
+    const [excludedGroups, instancesToFetch] = _.partition(
       Object.entries(instancesIdsByType),
       ([type, instances]) => this.instanceLimiter(type, instances.length)
     )
 
-    // const excludedTypes = excludedGroups.map(([type, instances]) => {
-    excludedGroups.map(([type, instances]) => {
+    const excludedTypes = excludedGroups.map(([type, instances]) => {
       log.info(`Excluding type ${type} as it has about ${instances.length} elements.`)
       return type
     })
-    const instancesToFetch = Object.entries(instancesIdsByType)
 
     const idsChunks = instancesToFetch.flatMap(([type, ids]) =>
       wu(ids)
@@ -593,8 +589,7 @@ export default class SdfClient {
     return {
       lockedError: mergeTypeToInstances(...results.map(res => res.lockedError)),
       unexpectedError: mergeTypeToInstances(...results.map(res => res.unexpectedError)),
-      // SALTO-3042 Change to use variable on full deployment
-      excludedTypes: [],
+      excludedTypes,
     }
   }
 

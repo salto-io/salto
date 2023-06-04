@@ -17,7 +17,7 @@ import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -199,10 +199,13 @@ describe('config', () => {
   })
 
   describe('instanceLimiter', () => {
+    const overDefault = DEFAULT_MAX_INSTANCES_VALUE + 1
+    const underDefault = DEFAULT_MAX_INSTANCES_VALUE - 1
     describe('with maxInstancesPerType in the config', () => {
       const limiter = instanceLimiterCreator({ maxInstancesPerType: [
         { name: 'customsegment', limit: 30 },
         { name: 'unlimited', limit: UNLIMITED_INSTANCES_VALUE },
+        { name: 'savedsearch', limit: 50_000 },
       ] })
 
       it('should limit according to type if exists', () => {
@@ -210,11 +213,15 @@ describe('config', () => {
         expect(limiter('customsegment', 29)).toBeFalsy()
       })
       it('should limit according to default if type does not exist', () => {
-        expect(limiter('test', 2001)).toBeTruthy()
-        expect(limiter('test', 1999)).toBeFalsy()
+        expect(limiter('test', overDefault)).toBeTruthy()
+        expect(limiter('test', underDefault)).toBeFalsy()
       })
       it('should not limit at all if the type is unlimited', () => {
         expect(limiter('unlimited', 100_000_000)).toBeFalsy()
+      })
+      it('should limit to the highest match if multiple exist (also from default definition)', () => {
+        expect(limiter('savedsearch', 30_000)).toBeFalsy()
+        expect(limiter('savedsearch', 60_000)).toBeTruthy()
       })
     })
     describe('without maxInstancesPerType in the config', () => {
@@ -225,15 +232,15 @@ describe('config', () => {
         expect(limiter('customrecord_type', 9999)).toBeFalsy()
       })
       it('should limit according to default if type does not exist', () => {
-        expect(limiter('test', 2001)).toBeTruthy()
-        expect(limiter('test', 1999)).toBeFalsy()
+        expect(limiter('test', overDefault)).toBeTruthy()
+        expect(limiter('test', underDefault)).toBeFalsy()
       })
     })
 
     it('should limit according to default if no parameter is given', () => {
       const limiter = instanceLimiterCreator()
-      expect(limiter('test', 2001)).toBeTruthy()
-      expect(limiter('test', 1999)).toBeFalsy()
+      expect(limiter('test', overDefault)).toBeTruthy()
+      expect(limiter('test', underDefault)).toBeFalsy()
     })
 
     it('should limit according to the largest matching limit', () => {
@@ -245,8 +252,8 @@ describe('config', () => {
       expect(limiter('customsegment', 499)).toBeFalsy()
       expect(limiter('customsegment', 501)).toBeTruthy()
 
-      expect(limiter('customrecordtype', 399)).toBeFalsy()
-      expect(limiter('customrecordtype', 401)).toBeTruthy()
+      expect(limiter('customlist', 399)).toBeFalsy()
+      expect(limiter('customlist', 401)).toBeTruthy()
 
       expect(limiter('test', 299)).toBeFalsy()
       expect(limiter('test', 301)).toBeTruthy()

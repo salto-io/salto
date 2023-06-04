@@ -22,7 +22,8 @@ import {
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
-  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
+  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
+  NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
@@ -42,9 +43,10 @@ export const WARNING_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_MAX_INSTANCES_VALUE = 2000
+export const DEFAULT_MAX_INSTANCES_VALUE = 5000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
   { name: `${CUSTOM_RECORD_TYPE_NAME_PREFIX}.*`, limit: 10_000 },
+  { name: SAVED_SEARCH, limit: 20_000 },
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
@@ -276,7 +278,7 @@ export function validateClientConfig(
 
 export const instanceLimiterCreator = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
   (type, instanceCount): boolean => {
-    const maxInstancesPerType = clientConfig?.maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE
+    const maxInstancesPerType = DEFAULT_MAX_INSTANCES_PER_TYPE.concat(clientConfig?.maxInstancesPerType ?? [])
     const maxInstancesOptions = maxInstancesPerType
       .filter(maxType => checkTypeNameRegMatch(maxType, type))
       .map(maxType => maxType.limit)

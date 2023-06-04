@@ -50,7 +50,7 @@ describe('fieldReferencesFilter', () => {
       new InstanceElement('screenScheme2', screenSchemeType, { id: 333, screens: { default: 444 } }),
     ])
     beforeEach(() => {
-      elements = generateElements().map(e => e.clone())
+      elements = generateElements()
     })
 
     describe('on fetch', () => {

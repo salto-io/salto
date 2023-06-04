@@ -123,6 +123,7 @@ netsuite {
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
 | installedSuiteApps             | []                      | The SuiteApps ids to deploy and fetch elements from
+| maxInstancesPerType            | 5000                    | Limits the amount of instances per type
 | maxFileCabinetSizeInGB         | 3                       | Limits the max size in GB of the fileCabinet size
 
 

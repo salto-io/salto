@@ -39,7 +39,7 @@ export const incomingUnresolvedReferencesValidator = (validationErrors: Readonly
       return {
         elemID,
         severity: 'Warning',
-        message: `Unresolved references to a ${changeType} element.`,
+        message: `Some elements contain references to this ${changeType} element`,
         detailedMessage: `${group.length} other elements contain references to this ${changeType} element, which are no longer valid.`
             + ' You may continue with deploying this change, but the deployment might fail.',
       }

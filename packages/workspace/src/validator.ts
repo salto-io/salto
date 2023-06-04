@@ -29,13 +29,15 @@ import {
   isTemplateExpression,
   UnresolvedReference,
 } from '@salto-io/adapter-api'
-import { toObjectType } from '@salto-io/adapter-utils'
+import { safeJsonStringify, toObjectType } from '@salto-io/adapter-utils'
 import { InvalidStaticFile } from './workspace/static_files/common'
 import { CircularReference, resolve } from './expressions'
 import { IllegalReference } from './parser/parse'
 
 const log = logger(module)
 const { makeArray } = collections.array
+
+const MAX_VALUE_LENGTH = 25
 
 export abstract class ValidationError extends types.Bean<{
   elemID: ElemID
@@ -86,8 +88,19 @@ const validateAnnotations = (
   return []
 }
 
+const lengthLimiterStringify = (value: Value, length = MAX_VALUE_LENGTH): string => {
+  if (typeof value === 'string' && value.length <= length) {
+    return value
+  }
+  const safeValue = typeof value === 'string' ? value : safeJsonStringify(value)
+  if (safeValue.length > length) {
+    return `${safeValue.slice(0, length - 3)}...`
+  }
+  return `${safeValue}`
+}
+
 export class InvalidValueValidationError extends ValidationError {
-  readonly value: Value
+  readonly value: string
   readonly fieldName: string
   readonly expectedValue: unknown
 
@@ -98,13 +111,13 @@ export class InvalidValueValidationError extends ValidationError {
     const expectedValueStr = _.isArray(expectedValue)
       ? `one of: ${(expectedValue).map(v => `"${v}"`).join(', ')}`
       : `"${expectedValue}"`
-
+    const safeValue = lengthLimiterStringify(value)
     super({
       elemID,
-      error: `Value is not valid for field ${fieldName} expected ${expectedValueStr}`,
+      error: `Value "${safeValue}" is not valid for field ${fieldName} expected ${expectedValueStr}`,
       severity: 'Warning',
     })
-    this.value = value
+    this.value = safeValue
     this.fieldName = fieldName
     this.expectedValue = expectedValue
   }
@@ -121,7 +134,7 @@ export class InvalidTypeValidationError extends ValidationError {
 }
 
 export class InvalidValueRangeValidationError extends ValidationError {
-  readonly value: Value
+  readonly value: string
   readonly fieldName: string
   readonly minValue?: number
   readonly maxValue?: number
@@ -136,13 +149,14 @@ export class InvalidValueRangeValidationError extends ValidationError {
     { elemID, value, fieldName, minValue, maxValue }:
       { elemID: ElemID; value: Value; fieldName: string; minValue?: number; maxValue?: number }
   ) {
+    const safeValue = lengthLimiterStringify(value)
     super({
       elemID,
-      error: `Value "${value}" is not valid for field ${fieldName}`
+      error: `Value "${safeValue}" is not valid for field ${fieldName}`
         + ` expected to be ${InvalidValueRangeValidationError.formatExpectedValue(minValue, maxValue)}`,
       severity: 'Warning',
     })
-    this.value = value
+    this.value = safeValue
     this.fieldName = fieldName
     this.minValue = minValue
     this.maxValue = maxValue
@@ -150,19 +164,20 @@ export class InvalidValueRangeValidationError extends ValidationError {
 }
 
 export class RegexMismatchValidationError extends ValidationError {
-  readonly value: Value
+  readonly value: string
   readonly fieldName: string
   readonly regex: string
 
   constructor({ elemID, value, fieldName, regex }:
     { elemID: ElemID; value: Value; fieldName: string; regex: string }) {
+    const safeValue = lengthLimiterStringify(value)
     super({
       elemID,
-      error: `Value "${value}" is not valid for field ${fieldName}.`
+      error: `Value "${safeValue}" is not valid for field ${fieldName}.`
         + ` expected value to match "${regex}" regular expression`,
       severity: 'Warning',
     })
-    this.value = value
+    this.value = safeValue
     this.fieldName = fieldName
     this.regex = regex
   }
@@ -175,13 +190,14 @@ export class InvalidValueMaxLengthValidationError extends ValidationError {
 
   constructor({ elemID, value, fieldName, maxLength }:
     { elemID: ElemID; value: string; fieldName: string; maxLength: number }) {
+    const safeValue = lengthLimiterStringify(value)
     super({
       elemID,
-      error: `Value "${value}" is too long for field.`
+      error: `Value "${safeValue}" is too long for field.`
         + ` ${fieldName} maximum length is ${maxLength}`,
       severity: 'Warning',
     })
-    this.value = value
+    this.value = safeValue
     this.fieldName = fieldName
     this.maxLength = maxLength
   }
@@ -439,15 +455,13 @@ const validateFieldAnnotations = (
 }
 
 export class InvalidValueTypeValidationError extends ValidationError {
-  readonly value: Value
   readonly type: ElemID
-  constructor({ elemID, value, type }: { elemID: ElemID; value: Value; type: ElemID }) {
+  constructor({ elemID, type }: { elemID: ElemID; value: Value; type: ElemID }) {
     super({
       elemID,
       error: `Invalid value type for ${type.getFullName()}`,
       severity: 'Warning',
     })
-    this.value = value
     this.type = type
   }
 }

@@ -36,7 +36,7 @@ import {
 } from '../constants'
 import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
-  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, SdfClientConfig, InstanceLimiterFunc,
+  DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
 } from '../config'
 import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
@@ -71,7 +71,7 @@ const RESPONSE_TYPE_NAME_TO_REAL_NAME: Record<string, string> = {
 
 export type SdfClientOpts = {
   credentials: SdfCredentials
-  config?: SdfClientConfig
+  config?: ClientConfig
   globalLimiter: Bottleneck
   instanceLimiter: InstanceLimiterFunc
 }

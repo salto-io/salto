@@ -114,7 +114,7 @@ netsuite {
 | fileCabinet                    | no files are excluded   | Specify which files to exclude on fetch
 | customRecords                  | no custom records are excluded | Specify which custom records to exclude on fetch
 
-### SDF Client configuration options
+### Client configuration options
 
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------

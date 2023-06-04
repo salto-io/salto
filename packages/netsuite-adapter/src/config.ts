@@ -93,17 +93,20 @@ type MaxInstancesPerType = {
   limit: number
 }
 
-export type SdfClientConfig = {
+type SdfClientConfig = {
   fetchAllTypesAtOnce?: boolean
   maxItemsInImportObjectsRequest?: number
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
+}
+
+export type ClientConfig = SdfClientConfig & {
   maxInstancesPerType?: MaxInstancesPerType[]
   maxFileCabinetSizeInGB?: number
 }
 
-export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
+export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
   fetchAllTypesAtOnce: 'fetchAllTypesAtOnce',
   maxItemsInImportObjectsRequest: 'maxItemsInImportObjectsRequest',
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
@@ -123,7 +126,7 @@ export type NetsuiteConfig = {
   filePathRegexSkipList?: string[]
   deploy?: DeployParams
   concurrencyLimit?: number
-  client?: SdfClientConfig
+  client?: ClientConfig
   suiteAppClient?: SuiteAppClientConfig
   fetch?: FetchParams
   fetchTarget?: NetsuiteQueryParameters
@@ -165,7 +168,7 @@ const maxInstancesPerConfigType = createMatchingObjectType<MaxInstancesPerType>(
   },
 })
 
-const clientConfigType = createMatchingObjectType<SdfClientConfig>({
+const clientConfigType = createMatchingObjectType<ClientConfig>({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
     fetchAllTypesAtOnce: {
@@ -256,7 +259,7 @@ function validateMaxInstancesPerType(maxInstancesPerType: unknown):
 export function validateClientConfig(
   client: Record<string, unknown>,
   fetchTargetDefined: boolean
-): asserts client is SdfClientConfig {
+): asserts client is ClientConfig {
   validatePlainObject(client, CONFIG.client)
   const {
     fetchAllTypesAtOnce,
@@ -276,7 +279,7 @@ export function validateClientConfig(
   }
 }
 
-export const instanceLimiterCreator = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
+export const instanceLimiterCreator = (clientConfig?: ClientConfig): InstanceLimiterFunc =>
   (type, instanceCount): boolean => {
     // Return true if there are more `instanceCount` of the `type` than any of the rules matched.
     // The rules matched include the default amount defined: DEFAULT_MAX_INSTANCES_VALUE.

@@ -26,22 +26,19 @@ const convertMapToList = (map: Record<string, unknown>): Values[] => Object.entr
   // we want to create references to values inside it, so we it must have a field with a type.
   // If we put the value in the same field whether it is a plainObject or not,
   // there wouldn't be an appropriate type we could use.
-  .map(([key, value]) => (_.isPlainObject(value) ? { key, values: value } : { key, value }))
+  .map(([key, value]) => (
+    _.isPlainObject(value)
+      ? { key, values: convertMapToList(value as Record<string, unknown>) }
+      : { key, value }))
 
 const convertListToMap = (list: Values[]): Record<string, unknown> => Object.fromEntries(list
-  .map(({ key, value, values }) => [key, value ?? values]))
+  .map(({ key, value, values }) => [key, value ?? (Array.isArray(values) ? convertListToMap(values) : values)]))
 
 const convertPropertiesToLists = (instance: InstanceElement): void => {
   if (!_.isPlainObject(instance.value.properties)) {
     return
   }
-  // The depth of the properties is limited to two, otherwise the Jira API throws an error.
   instance.value.properties = convertMapToList(instance.value.properties)
-  instance.value.properties
-    .filter((property: Values) => _.isPlainObject(property.values))
-    .forEach((property: Values) => {
-      property.values = convertMapToList(property.values)
-    })
 }
 
 /**
@@ -97,11 +94,6 @@ const filter: FilterCreator = () => ({
       .filter(change => change.data.after.elemID.typeName === DASHBOARD_GADGET_TYPE)
       .filter(change => Array.isArray(change.data.after.value.properties))
       .forEach(change => {
-        change.data.after.value.properties
-          .filter((property: Values) => Array.isArray(property.values))
-          .forEach((property: Values) => {
-            property.values = convertListToMap(property.values)
-          })
         change.data.after.value.properties = convertListToMap(change.data.after.value.properties)
       })
   },

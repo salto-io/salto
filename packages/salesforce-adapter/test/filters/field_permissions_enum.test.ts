@@ -112,6 +112,16 @@ describe('FieldPermissionsEnum filter', () => {
       FieldC: 'ReadWrite',
     },
   }
+  const fieldPermissionEnumValueOmitNoAccess = {
+    ObjA: {
+      FieldA: 'ReadWrite',
+      FieldB: 'ReadOnly',
+    },
+    ObjB: {
+      FieldB: 'ReadOnly',
+      FieldC: 'ReadWrite',
+    },
+  }
   const profileInstance = new InstanceElement(
     'profileInst',
     profileObj,
@@ -157,7 +167,7 @@ describe('FieldPermissionsEnum filter', () => {
     let profileObjectClone: ObjectType
     let permissionSetbjectBeforeConvertClone: ObjectType
     let permissionSetInstanceBeforeConvertClone: InstanceElement
-    describe('with enumFieldPermissions true', () => {
+    describe('with enumFieldPermissions true and omitProfilesAttributes true', () => {
       beforeAll(async () => {
         profileInstanceClone = profileInstance.clone()
         permissionSetInstanceClone = permissionSetInstance.clone()
@@ -176,7 +186,7 @@ describe('FieldPermissionsEnum filter', () => {
           objB,
         ]
         filter = fieldPermissionsEnumFilter(
-          { config: { ...defaultFilterContext, enumFieldPermissions: true } },
+          { config: { ...defaultFilterContext, enumFieldPermissions: true, omitProfilesAttributes: true } },
         ) as FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
         await filter.onFetch(elements)
       })
@@ -202,7 +212,7 @@ describe('FieldPermissionsEnum filter', () => {
       it('Should convert Profile and PermissionSet instances\' fieldPermissions values to right enums', async () => {
         [profileInstanceClone, permissionSetInstanceClone].forEach(instance => {
           expect(instance.value).toEqual({
-            fieldPermissions: fieldPermissionEnumValue,
+            fieldPermissions: fieldPermissionEnumValueOmitNoAccess,
           })
         })
       })

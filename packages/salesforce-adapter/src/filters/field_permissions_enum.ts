@@ -36,7 +36,7 @@ import {
   ChangeDataType,
   Change,
   isInstanceChange,
-  isMapType,
+  isMapType, Value,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -169,22 +169,34 @@ const isValidFieldPermissions = (instance: InstanceElement): boolean => {
   }
   return true
 }
+const mapFieldPermissions = (objectPermission: Value): Value => _.mapValues(
+  objectPermission,
+  fieldPermission => {
+    if (_.isPlainObject(fieldPermission)
+          && _.isBoolean(fieldPermission.readable) && _.isBoolean(fieldPermission.editable)) {
+      return fieldPermissionsObjectToEnum(fieldPermission)
+    }
+    return fieldPermission
+  }
+)
+const omitNoAccess = (objectPermission: Value): Value => {
+  const objectPermissionWithoutNoAccess = Object.entries(objectPermission)
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+    .filter(fieldPermission => fieldPermission[1].readable === true || fieldPermission[1].editable === true)
+  return Object.fromEntries(objectPermissionWithoutNoAccess)
+}
 
-const fieldPermissionValuesToEnum = (instance: InstanceElement): InstanceElement => {
+const fieldPermissionValuesToEnum = (instance: InstanceElement, shouldOmitNoAccess = false): InstanceElement => {
   if (!isValidFieldPermissions(instance)) {
     return instance
   }
   instance.value.fieldPermissions = _.mapValues(
     instance.value.fieldPermissions,
-    objectPermission => _.mapValues(
-      objectPermission,
-      fieldPermission => {
-        if (_.isPlainObject(fieldPermission)
-                && _.isBoolean(fieldPermission.readable) && _.isBoolean(fieldPermission.editable)) {
-          return fieldPermissionsObjectToEnum(fieldPermission)
-        }
-        return fieldPermission
-      }
+    objectPermission => mapFieldPermissions(
+      shouldOmitNoAccess
+        ? omitNoAccess(objectPermission)
+        : objectPermission
     )
   )
   return instance
@@ -273,7 +285,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
     }
     log.info('fieldPermissionsEnum onFetch - converting fieldPermissions to enum')
     relevantInstances.forEach(element => {
-      fieldPermissionValuesToEnum(element)
+      fieldPermissionValuesToEnum(element, config.omitProfilesAttributes)
     })
     const relevantObjectTypes = await awu(elements)
       .filter(isObjectType)

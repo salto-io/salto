@@ -23,7 +23,8 @@ const getWorkflowSchemeReferences = (instance: InstanceElement): string[] => [
   ...(instance.value.items
     ?.map((item: Values) => item.workflow) ?? []),
   instance.value.defaultWorkflow,
-].filter(isReferenceExpression).map(ref => ref.elemID.getFullName())
+].filter(isReferenceExpression)
+  .map(ref => ref.elemID.getFullName())
 
 /**
  * We modify workflows by deleting and re-creating them. To do so we need to modify

@@ -89,14 +89,11 @@ const validateAnnotations = (
 }
 
 const lengthLimiterStringify = (value: Value, length = MAX_VALUE_LENGTH): string => {
-  if (typeof value === 'string' && value.length <= length) {
-    return value
-  }
   const safeValue = typeof value === 'string' ? value : safeJsonStringify(value)
   if (safeValue.length > length) {
     return `${safeValue.slice(0, length - 3)}...`
   }
-  return `${safeValue}`
+  return safeValue
 }
 
 export class InvalidValueValidationError extends ValidationError {

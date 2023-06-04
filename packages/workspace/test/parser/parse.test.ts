@@ -18,10 +18,8 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
-
-// import each from 'jest-each'
 import { collections } from '@salto-io/lowerdash'
-import { registerTestFunction } from '../utils'
+import { registerTestFunction, registerThrowingFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
@@ -825,6 +823,17 @@ value
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
       expect(result.errors[0].summary).toEqual('Invalid attribute definition')
+    })
+
+    it('fails', async () => {
+      const body = `
+      adapter_id.some_asset {
+        content                                 = funcush("some.png")
+      `
+      const throwingFunctions = registerThrowingFunction(funcName, () => { throw new Error('unexpected') })
+      const result = await parse(Buffer.from(body), 'none', throwingFunctions)
+      expect(result.errors).toHaveLength(1)
+      expect(result.errors[0].message).toEqual('unexpected')
     })
 
     it('fails on invalid object item with unexpected eof', async () => {

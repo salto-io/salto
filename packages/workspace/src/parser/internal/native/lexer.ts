@@ -99,7 +99,7 @@ export type LexerToken = Required<moo.Token>
 
 export class NoSuchElementError extends Error {
   constructor(public lastValidToken?: LexerToken) {
-    super('All lexerֿֿֿ tokens have already been consumed.')
+    super('All lexer tokens have already been consumed.')
   }
 }
 

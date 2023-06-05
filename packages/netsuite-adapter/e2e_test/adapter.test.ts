@@ -37,7 +37,7 @@ import {
   CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
-import { CUSTOM_RECORD_SCRIPT_ID, mockDefaultValues } from './mock_elements'
+import { mockDefaultValues } from './mock_elements'
 import { Credentials } from '../src/client/credentials'
 import { isStandardTypeName } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'

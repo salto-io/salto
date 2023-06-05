@@ -49,7 +49,7 @@ export const TOKEN_TYPES = {
 }
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
-const NEWLINE = '[(\r\n)(\n)\u2028\u2029]'
+const NEWLINE = '[\r\n\u2028\u2029]'
 const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*${NEWLINE}|.*?(?=\\$\\{)|.*${NEWLINE}`)
 const REFERENCE = new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`)
 

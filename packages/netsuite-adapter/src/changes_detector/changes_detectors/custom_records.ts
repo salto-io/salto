@@ -46,7 +46,7 @@ const getScriptIdsQuery = ({ from, where }: {from: string; where?: string}): str
 
 const getMatchingCustomRecords = async (
   client: NetsuiteClient,
-  isCustomRecordTypeMatch : (typeName: string) => boolean,
+  isCustomRecordTypeMatch : NetsuiteQuery['isCustomRecordTypeMatch'],
 ): Promise<string[]> => (await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE })))
   ?.filter(hasScriptId)
   .map(({ scriptid }) => scriptid.toLowerCase())
@@ -101,5 +101,5 @@ export const getCustomRecordTypeInstances = async (
   client: NetsuiteClient,
   customRecordType: string,
 ): Promise<string[]> => (
-    await client.runSuiteQL(`SELECT scriptid FROM ${customRecordType}`)
+    await client.runSuiteQL(getScriptIdsQuery({ from: customRecordType }))
   )?.filter(hasScriptId).map(({ scriptid }) => scriptid.toLowerCase()) ?? []

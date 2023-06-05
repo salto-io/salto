@@ -268,8 +268,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
-      updatedFetchQuery,
-      fetchQuery,
+      { updatedFetchQuery, originFetchQuery: fetchQuery }
     )
     const importFileCabinetResult = this.client.importFileCabinetContent(
       updatedFetchQuery,

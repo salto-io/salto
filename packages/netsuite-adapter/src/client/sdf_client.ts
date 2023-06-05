@@ -38,7 +38,7 @@ import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
 } from '../config'
-import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
 import { SdfCredentials } from './credentials'
 import {
@@ -374,12 +374,11 @@ export default class SdfClient {
   @SdfClient.logDecorator
   async getCustomObjects(
     typeNames: string[],
-    query: NetsuiteQuery,
-    originFetchQuery: NetsuiteQuery,
+    queries: NetsuiteFetchQueries,
   ):
     Promise<GetCustomObjectsResult> {
     // in case of partial fetch we'd need to proceed in order to calculate deleted elements
-    if (typeNames.concat(CONFIG_FEATURES).every(type => !originFetchQuery.isTypeMatch(type))) {
+    if (typeNames.concat(CONFIG_FEATURES).every(type => !queries.originFetchQuery.isTypeMatch(type))) {
       return {
         elements: [],
         instancesIds: [],
@@ -395,20 +394,22 @@ export default class SdfClient {
           const { executor, projectPath, authId } = await this.initProject()
           const instancesIds = await this.listInstances(
             executor,
-            typeNames.filter(originFetchQuery.isTypeMatch),
+            typeNames.filter(queries.originFetchQuery.isTypeMatch),
             suiteAppId,
           )
           const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
             suiteAppId,
-            instancesIds.filter(item => query.isTypeMatch(item.type)).filter(query.isObjectMatch),
+            instancesIds
+              .filter(item => queries.updatedFetchQuery.isTypeMatch(item.type))
+              .filter(queries.updatedFetchQuery.isObjectMatch),
           )
           const elements = await parseObjectsDir(projectPath)
 
           if (suiteAppId !== undefined) {
             elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
           }
-          if (suiteAppId === undefined && query.isTypeMatch(CONFIG_FEATURES)) {
+          if (suiteAppId === undefined && queries.updatedFetchQuery.isTypeMatch(CONFIG_FEATURES)) {
             // use existing project to import features object
             const { typeName, values } = await this.getFeaturesObject(executor, projectPath)
             elements.push({

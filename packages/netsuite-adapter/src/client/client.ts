@@ -20,7 +20,7 @@ import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
@@ -134,12 +134,11 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async getCustomObjects(
     typeNames: string[],
-    query: NetsuiteQuery,
-    originFetchQuery: NetsuiteQuery,
+    queries: NetsuiteFetchQueries,
   ):
     Promise<GetCustomObjectsResult> {
     return this.sdfClient.getCustomObjects(
-      typeNames, query, originFetchQuery
+      typeNames, queries
     )
   }
 

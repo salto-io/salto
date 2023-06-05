@@ -38,15 +38,15 @@ const calculateDeletedInstances = (
 
   const serviceIdsGroupByTypes = _(serviceInstancesIds)
     .groupBy(objectId => objectId.type)
-    .mapValues(objectIds => objectIds.map(({ instanceId }) => instanceId))
+    .mapValues(objectIds => new Set(objectIds.map(({ instanceId }) => instanceId)))
     .value()
 
   return currentInstances
-    .filter(item => !serviceIdsGroupByTypes[item.elemID.typeName]?.includes(item.serviceID))
+    .filter(item => !serviceIdsGroupByTypes[item.elemID.typeName]?.has(item.serviceID))
     .map(item => item.elemID)
 }
 
-const calculateDeletedCustomRecordsFromTarget = (
+const calculateDeletedCustomRecordsFromFetchResult = (
   currentElements: ElemServiceID[],
   serviceTargetedCustomRecords: InstanceElement[],
 ): ElemID[] => {
@@ -55,7 +55,7 @@ const calculateDeletedCustomRecordsFromTarget = (
   }
 
   const customRecordElemNames = new Set(serviceTargetedCustomRecords
-    .map(instanceElement => instanceElement.elemID.getFullName()))
+    .map(instance => instance.elemID.getFullName()))
 
   return currentElements
     .filter(item => item.elemID.idType === 'instance')
@@ -69,10 +69,12 @@ const calculateDeletedCustomRecordsFromService = async (
   query: NetsuiteQuery,
   serviceTargetedCustomRecords: InstanceElement[],
 ): Promise<ElemID[]> => {
+  // We can ignore custom types that were already returned by the service, as the missing records there were
+  // calculated in calculateDeletedCustomRecordsFromFetchResult
   const customRecordTypesToIgnore = new Set(serviceTargetedCustomRecords.map(item => item.elemID.typeName))
   const serviceCustomRecordCounters = await getCustomRecordCounters(
     client,
-    { isCustomRecordTypeMatch: query.isCustomRecordTypeMatch },
+    query,
     customRecordTypesToIgnore,
   )
   const currentCustomRecords = _(currentElements)
@@ -87,15 +89,13 @@ const calculateDeletedCustomRecordsFromService = async (
   const serviceCustomRecords = await Promise.all(
     customRecordTypesWithDeletions.map(async customRecordType => {
       const instancesScriptIds = await getCustomRecordTypeInstances(client, customRecordType.elemID.typeName)
-      return {
-        customRecordType: customRecordType.elemID.typeName,
-        instancesScriptIds: new Set(instancesScriptIds),
-      }
+      return [
+        customRecordType.elemID.typeName,
+        new Set(instancesScriptIds),
+      ] as [string, Set<string>]
     })
   )
-  const serviceCustomRecordInstancesMap = new Map(
-    serviceCustomRecords.map(obj => [obj.customRecordType, obj.instancesScriptIds])
-  )
+  const serviceCustomRecordInstancesMap = new Map(serviceCustomRecords)
 
   return Object.values(currentCustomRecords).flat()
     .filter(item => !serviceCustomRecordInstancesMap.get(item.elemID.typeName)?.has(item.serviceID))
@@ -112,7 +112,12 @@ const calculateDeletedCustomRecords = async (
     return []
   }
 
-  const deletedCustomRecordsFromTarget = calculateDeletedCustomRecordsFromTarget(
+  // In order to calculate custom records deletions we can use the already returned serviceTargetedCustomRecords
+  // as currently when we identify a change in a custom type we fetch all records, so missing records are easy to sop.
+  // Then we need to query the rest of the custom types (that are matching the fetch query conditions, but excluding
+  // the ones that had changes) and check whether there is any deletion there
+
+  const deletedCustomRecordsFromTarget = calculateDeletedCustomRecordsFromFetchResult(
     currentElements,
     serviceTargetedCustomRecords,
   )

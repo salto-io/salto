@@ -1328,7 +1328,7 @@ describe('Adapter', () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
         await adapter.fetch(mockFetchOpts)
 
-        const passedQuery = getCustomObjectsMock.mock.calls[0][1]
+        const passedQuery = getCustomObjectsMock.mock.calls[0][1].originFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
         expect(passedQuery.isObjectMatch({ instanceId: 'bbbb', type: 'workflow' })).toBeFalsy()
       })

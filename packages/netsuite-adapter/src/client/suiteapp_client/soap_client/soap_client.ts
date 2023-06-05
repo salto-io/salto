@@ -681,8 +681,7 @@ export default class SoapClient {
     const { totalPages, searchId } = initialSearchResponse.searchResult
     if (this.instanceLimiter(type, totalPages * SEARCH_PAGE_SIZE)) {
       log.info(`Excluding type ${type} as it has about ${totalPages * SEARCH_PAGE_SIZE} elements.`)
-      // SALTO-3042 Only log until full deployment
-      // return { records: [], excludedFromSearch: true }
+      return { records: [], excludedFromSearch: true }
     }
     if (totalPages <= 1) {
       return { records: recordFromSearchResponse(initialSearchResponse), excludedFromSearch: false }

@@ -501,7 +501,7 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
-    it('should NOT exclude types with too many instances', async () => {
+    it('should exclude types with too many instances', async () => {
       mockExecuteAction.mockImplementation(context => {
         const ids = [
           { type: 'addressForm', scriptId: 'a' },
@@ -529,22 +529,19 @@ describe('sdf client', () => {
       await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
-      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions + 1)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-      }))
-      expect(mockExecuteAction.mock.calls[3 + 1][0].arguments).toEqual(expect.objectContaining({
         type: 'advancedpdftemplate',
         scriptid: 'd',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5 + 1, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions + 1, deleteAuthIdCommandMatcher)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed', async () => {

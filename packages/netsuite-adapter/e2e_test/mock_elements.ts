@@ -19,7 +19,7 @@ import {
   NETSUITE, PATH, ROLE, SCRIPT_ID, SOAP, SOURCE, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
 } from '../src/constants'
 
-export const CUSTOM_RECORD_SCRIPT_ID = 'customrecord_slt_e2e_test'
+const CUSTOM_RECORD_SCRIPT_ID = 'customrecord_slt_e2e_test'
 
 export const mockDefaultValues: Record<string, Values> = {
   [ENTITY_CUSTOM_FIELD]: {

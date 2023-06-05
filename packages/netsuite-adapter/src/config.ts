@@ -22,7 +22,8 @@ import {
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import {
-  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE, NETSUITE, PERMISSIONS, WORKBOOK,
+  CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
+  NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
@@ -42,9 +43,10 @@ export const WARNING_MAX_FILE_CABINET_SIZE_IN_GB = 1
 export const DEFAULT_DEPLOY_REFERENCED_ELEMENTS = false
 export const DEFAULT_WARN_STALE_DATA = false
 export const DEFAULT_VALIDATE = true
-export const DEFAULT_MAX_INSTANCES_VALUE = 2000
+export const DEFAULT_MAX_INSTANCES_VALUE = 5000
 export const DEFAULT_MAX_INSTANCES_PER_TYPE = [
   { name: `${CUSTOM_RECORD_TYPE_NAME_PREFIX}.*`, limit: 10_000 },
+  { name: SAVED_SEARCH, limit: 20_000 },
 ]
 export const UNLIMITED_INSTANCES_VALUE = -1
 export const DEFAULT_AXIOS_TIMEOUT_IN_MINUTES = 20
@@ -91,17 +93,20 @@ type MaxInstancesPerType = {
   limit: number
 }
 
-export type SdfClientConfig = {
+type SdfClientConfig = {
   fetchAllTypesAtOnce?: boolean
   maxItemsInImportObjectsRequest?: number
   fetchTypeTimeoutInMinutes?: number
   sdfConcurrencyLimit?: number
   installedSuiteApps?: string[]
+}
+
+export type ClientConfig = SdfClientConfig & {
   maxInstancesPerType?: MaxInstancesPerType[]
   maxFileCabinetSizeInGB?: number
 }
 
-export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<SdfClientConfig> = {
+export const CLIENT_CONFIG: lowerdashTypes.TypeKeysEnum<ClientConfig> = {
   fetchAllTypesAtOnce: 'fetchAllTypesAtOnce',
   maxItemsInImportObjectsRequest: 'maxItemsInImportObjectsRequest',
   fetchTypeTimeoutInMinutes: 'fetchTypeTimeoutInMinutes',
@@ -121,7 +126,7 @@ export type NetsuiteConfig = {
   filePathRegexSkipList?: string[]
   deploy?: DeployParams
   concurrencyLimit?: number
-  client?: SdfClientConfig
+  client?: ClientConfig
   suiteAppClient?: SuiteAppClientConfig
   fetch?: FetchParams
   fetchTarget?: NetsuiteQueryParameters
@@ -163,7 +168,7 @@ const maxInstancesPerConfigType = createMatchingObjectType<MaxInstancesPerType>(
   },
 })
 
-const clientConfigType = createMatchingObjectType<SdfClientConfig>({
+const clientConfigType = createMatchingObjectType<ClientConfig>({
   elemID: new ElemID(NETSUITE, 'clientConfig'),
   fields: {
     fetchAllTypesAtOnce: {
@@ -254,7 +259,7 @@ function validateMaxInstancesPerType(maxInstancesPerType: unknown):
 export function validateClientConfig(
   client: Record<string, unknown>,
   fetchTargetDefined: boolean
-): asserts client is SdfClientConfig {
+): asserts client is ClientConfig {
   validatePlainObject(client, CONFIG.client)
   const {
     fetchAllTypesAtOnce,
@@ -274,15 +279,18 @@ export function validateClientConfig(
   }
 }
 
-export const instanceLimiterCreator = (clientConfig?: SdfClientConfig): InstanceLimiterFunc =>
+export const instanceLimiterCreator = (clientConfig?: ClientConfig): InstanceLimiterFunc =>
   (type, instanceCount): boolean => {
-    const maxInstancesPerType = clientConfig?.maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE
+    // Return true if there are more `instanceCount` of the `type` than any of the rules matched.
+    // The rules matched include the default amount defined: DEFAULT_MAX_INSTANCES_VALUE.
+    // If there is a rule with UNLIMITED_INSTANCES_VALUE, this will always return false.
+    if (instanceCount < DEFAULT_MAX_INSTANCES_VALUE) {
+      return false
+    }
+    const maxInstancesPerType = DEFAULT_MAX_INSTANCES_PER_TYPE.concat(clientConfig?.maxInstancesPerType ?? [])
     const maxInstancesOptions = maxInstancesPerType
       .filter(maxType => checkTypeNameRegMatch(maxType, type))
       .map(maxType => maxType.limit)
-    if (_.isEmpty(maxInstancesOptions)) {
-      return instanceCount > DEFAULT_MAX_INSTANCES_VALUE
-    }
     if (maxInstancesOptions.some(limit => limit === UNLIMITED_INSTANCES_VALUE)) {
       return false
     }

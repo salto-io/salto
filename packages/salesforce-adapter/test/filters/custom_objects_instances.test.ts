@@ -1168,6 +1168,20 @@ describe('Custom Object Instances filter', () => {
       }
 
       beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: ['.*'],
+                saltoIDSettings: {
+                  defaultIdFields: ['Id'],
+                },
+              },
+            }),
+          },
+        }) as FilterType
         connection.query = jest.fn().mockImplementation(((query: string) => {
           if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
             return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
@@ -1181,6 +1195,7 @@ describe('Custom Object Instances filter', () => {
         await filter.onFetch(elements)
         instances = elements.filter(isInstanceElement)
       })
+
       it('should create correct aliases', () => {
         expect(instances).toEqual([
           expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),

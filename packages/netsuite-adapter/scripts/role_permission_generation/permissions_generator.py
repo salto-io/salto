@@ -1,20 +1,16 @@
-#!/usr/bin/python3
-
+ #!/usr/bin/python3
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import os
 from pathlib import Path
-import sys
-from scripts.types_generation.types_generator import LICENSE_HEADER
+from constants import LICENSE_HEADER, LINE_SEPERATOR, TABLE_DATA
 
 SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 PERMISSIONS_DIR = os.path.join(SRC_DIR, 'role_permissions/')
+PERMISSION_TABLE_ROW_LENGTH = 4
 
 permissions_table_link = 'https://docs.oracle.com/en/cloud/saas/netsuite/ns-online-help/chapter_N3236764.html'
-PERMISSION_TABLE_ROW_LENGTH = 4
-LINE_SEPERATOR = '\n  '
-
 role_permissions_file_template = LICENSE_HEADER + '''
 
 export type PermissionLevel = 'NONE' | 'VIEW' | 'FULL' | 'CREATE' | 'EDIT'
@@ -29,13 +25,13 @@ def is_valid_row(row_cells, permissions, permission_id):
   and permission_id != '')
 
 def parse_table_row(row, permissions):
-  cells = row.find_all("td")
+  cells = row.find_all(TABLE_DATA)
   if len(cells) == 0: return
   permission_id = cells[0].text.strip()
   if is_valid_row(cells, permissions, permission_id):
     permissions[permission_id] = cells[3].text.strip().split(', ')
 
-def parse_permissions_table():
+def parse_permissions_table(driver):
   try:	
     driver.get(permissions_table_link)
     html_content = driver.page_source
@@ -55,9 +51,10 @@ def create_permissions_file(permissions):
   with open(PERMISSIONS_DIR + 'role_permissions.ts', 'w') as file:
     file.write(file_content)
 
-driver = webdriver.Chrome()
-def main():
-  permissions = parse_permissions_table()
+def main(driver):
+  permissions = parse_permissions_table(driver)
   create_permissions_file(permissions)
 
-main()
+if __name__=='__main__':
+  driver = webdriver.Chrome()
+  main(driver)

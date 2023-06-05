@@ -284,10 +284,13 @@ export const instanceLimiterCreator = (clientConfig?: ClientConfig): InstanceLim
     // Return true if there are more `instanceCount` of the `type` than any of the rules matched.
     // The rules matched include the default amount defined: DEFAULT_MAX_INSTANCES_VALUE.
     // If there is a rule with UNLIMITED_INSTANCES_VALUE, this will always return false.
+    if (instanceCount < DEFAULT_MAX_INSTANCES_VALUE) {
+      return false
+    }
     const maxInstancesPerType = DEFAULT_MAX_INSTANCES_PER_TYPE.concat(clientConfig?.maxInstancesPerType ?? [])
     const maxInstancesOptions = maxInstancesPerType
       .filter(maxType => checkTypeNameRegMatch(maxType, type))
-      .map(maxType => maxType.limit).concat(DEFAULT_MAX_INSTANCES_VALUE)
+      .map(maxType => maxType.limit)
     if (maxInstancesOptions.some(limit => limit === UNLIMITED_INSTANCES_VALUE)) {
       return false
     }

@@ -300,6 +300,18 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
   return ret
 }
 
+export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
+  const objectToSerialize: Record<string, string[]> = {}
+  await awu(val.entries()).forEach(([key, value]) => {
+    objectToSerialize[key] = Array.from(new Set([...value].map(id => id.getFullName())))
+  })
+  return safeJsonStringify(objectToSerialize)
+}
+export const deserializeReferenceTree = async (data: string): Promise<collections.treeMap.TreeMap<ElemID>> => {
+  const parsedEntries = mapValues(JSON.parse(data), ids => ids.map((id: string) => ElemID.fromFullName(id)))
+  return new collections.treeMap.TreeMap<ElemID>(Object.entries(parsedEntries))
+}
+
 export const loadWorkspace = async (
   config: WorkspaceConfigSource,
   adaptersConfig: AdaptersConfigSource,
@@ -430,17 +442,8 @@ export const loadWorkspace = async (
           }),
           referenceTargetsTree: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
             namespace: getRemoteMapNamespace('referenceTargetsTree', envName),
-            serialize: async val => {
-              const objectToSerialize: Record<string, string[]> = {}
-              await awu(val.entries()).forEach(([key, value]) => {
-                objectToSerialize[key] = Array.from(new Set([...value].map(id => id.getFullName())))
-              })
-              return safeJsonStringify(objectToSerialize)
-            },
-            deserialize: async data => {
-              const parsedEntries = mapValues(JSON.parse(data), ids => ids.map((id: string) => ElemID.fromFullName(id)))
-              return new collections.treeMap.TreeMap<ElemID>(Object.entries(parsedEntries))
-            },
+            serialize: serializeReferenceTree,
+            deserialize: deserializeReferenceTree,
             persistent,
           }),
           mapVersions: await remoteMapCreator<number>({

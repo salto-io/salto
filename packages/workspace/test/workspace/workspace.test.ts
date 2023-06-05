@@ -35,8 +35,18 @@ import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
+import {
+  Workspace,
+  initWorkspace,
+  loadWorkspace,
+  EnvironmentSource,
+  COMMON_ENV_PREFIX,
+  UnresolvedElemIDs,
+  UpdateNaclFilesResult,
+  isValidEnvName,
+  serializeReferenceTree,
+  deserializeReferenceTree,
+} from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
   AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
 import { StaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
@@ -2680,6 +2690,28 @@ describe('workspace', () => {
       })
     })
   })
+  describe('referenceTargetsTree index', () => {
+    it('should return same result after serialize and deserialize', async () => {
+      const referenceTargetsTree = new collections.treeMap.TreeMap<ElemID>([
+        ['test.object.instance.instance.someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
+        ['test.object.instance.instance.someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+        ['test.object.instance.instance.inner.templateValue', [
+          ElemID.fromFullName('test.target2.field.someTemplateField.value'),
+          ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
+        ],
+        ],
+      ])
+      const serializedTree = await serializeReferenceTree(referenceTargetsTree)
+      const deserializedTree = await deserializeReferenceTree(serializedTree)
+      expect(deserializedTree).toEqual(referenceTargetsTree)
+    })
+    it('should return same result after deserialize and serialize', async () => {
+      const serializedTree = '{"test.object.instance.instance.someAnnotation":["test.target2.field.someField.value"],"test.object.instance.instance.someValue":["test.target2.instance.someInstance"],"test.object.instance.instance.inner.templateValue":["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]}'
+      const deserializedTree = await deserializeReferenceTree(serializedTree)
+      const reSerializedTree = await serializeReferenceTree(deserializedTree)
+      expect(reSerializedTree).toEqual(serializedTree)
+    })
+  })
   describe('deleteEnvironment', () => {
     describe('should delete environment', () => {
       const envName = 'inactive'
@@ -3255,6 +3287,22 @@ describe('workspace', () => {
           .getElementReferencedFiles(ElemID.fromFullName('salesforce.lead.attr.key'))
         expect(attrRefFiles).toContain('unmerged.nacl')
       })
+    })
+  })
+
+  describe('getElementOutgoingReferencesByTree', () => {
+    let workspace: Workspace
+
+    beforeAll(async () => {
+      workspace = await createWorkspace()
+    })
+
+    it('None-base type should throw', async () => {
+      await expect(workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+    })
+
+    it('None-exist type should return empty array', async () => {
+      expect(await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'notExists'))).toEqual([])
     })
   })
 

@@ -25,6 +25,9 @@ import {
   isAdditionOrModificationChange,
   isTemplateExpression,
   isRemovalChange,
+  isObjectType,
+  isField,
+  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -50,25 +53,36 @@ type ChangeReferences = {
   currentAndNew: ReferenceDetails[]
 }
 
-const getReferencesTree = (element: Element): collections.treeMap.TreeMap<ElemID> => {
-  const references = new collections.treeMap.TreeMap<ElemID>()
+const getReferencesTrees = (element: Element): Record<string, collections.treeMap.TreeMap<ElemID>> => {
+  const currentElementTree = new collections.treeMap.TreeMap<ElemID>()
+  // Because object type fields are elements themselves, each of them is as a separate index entry
+  const elemFullNameToReferencesTree = {
+    [element.elemID.getFullName()]: currentElementTree,
+  }
   walkOnElement({
     element,
     func: ({ value, path }) => {
+      if (isObjectType(element) && isField(value)) {
+        const fieldReferencesTrees = getReferencesTrees(value)
+        Object.assign(elemFullNameToReferencesTree, fieldReferencesTrees)
+        return WALK_NEXT_STEP.SKIP
+      }
       if (isReferenceExpression(value)) {
-        references.push(Array.from(path.createBaseID().path), value.elemID)
+        currentElementTree.push(path.getFullName(), value.elemID)
+        return WALK_NEXT_STEP.SKIP
       }
       if (isTemplateExpression(value)) {
         value.parts.forEach(part => {
           if (isReferenceExpression(part)) {
-            references.push(Array.from(path.createBaseID().path), part.elemID)
+            currentElementTree.push(path.getFullName(), part.elemID)
           }
         })
+        return WALK_NEXT_STEP.SKIP
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return references
+  return elemFullNameToReferencesTree
 }
 
 const getReferences = (element: Element): ReferenceDetails[] => {
@@ -173,6 +187,56 @@ const updateReferenceTargetsIndex = async (
   )
 
   await updateUniqueIndex(index, updates)
+}
+
+const updateReferenceTargetsTreeIndex = async (
+  changes: Change<Element>[],
+  index: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
+): Promise<void> => {
+  const referencesToDelete: string[] = []
+  const referencesToSet: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
+
+  await awu(changes).forEach(async change => {
+    if (isRemovalChange(change)) {
+      referencesToDelete.push(change.data.before.elemID.getFullName())
+      // Removal of object type also requires the removal of all its fields
+      if (isObjectType(change.data.before)) {
+        change.data.before.getFieldsElemIDsFullName().forEach(fieldFullName => {
+          referencesToDelete.push(fieldFullName)
+        })
+      }
+    } else if (isAdditionChange(change)) {
+      const elemFullNamesToReferenceTrees = getReferencesTrees(change.data.after)
+      Object.entries(elemFullNamesToReferenceTrees).forEach(([ref, referencesTree]) => {
+        // Add a reference index of elements that have references
+        if (referencesTree.size > 0) {
+          referencesToSet.push({ key: ref, value: referencesTree })
+        }
+      })
+    } else {
+      const beforeFullNameToReferencesTrees = getReferencesTrees(change.data.before)
+      const afterFullNameToReferencesTrees = getReferencesTrees(change.data.after)
+
+      const beforeFullNames = new Set(Object.keys(beforeFullNameToReferencesTrees))
+      const afterFullNames = new Set(Object.keys(afterFullNameToReferencesTrees))
+
+      // Delete references that no longer exists
+      beforeFullNames.forEach(fullName => {
+        if (!afterFullNames.has(fullName)) {
+          referencesToDelete.push(fullName)
+        }
+      })
+
+      Object.entries(afterFullNameToReferencesTrees).forEach(([ref, referencesTree]) => {
+        if (referencesTree.size > 0) {
+          referencesToSet.push({ key: ref, value: referencesTree })
+        }
+      })
+    }
+  })
+
+  await index.deleteAll(referencesToDelete)
+  await index.setAll(referencesToSet)
 }
 
 const updateIdOfReferenceSourcesIndex = (
@@ -290,24 +354,10 @@ export const updateReferenceIndexes = async (
       getReferencesFromChange(change),
     ]))
 
-  // TODO: Seroussi - do we want this parallel?
-  await awu(relevantChanges).forEach(async change => {
-    if (isRemovalChange(change)) {
-      // If the index was cleared, there is no reason to call deletion anything
-      if (!initialIndex) {
-        await referenceTargetsTreeIndex.delete(change.data.before.elemID.getFullName())
-      }
-    } else {
-      const referencesTree = getReferencesTree(change.data.after)
-      if (referencesTree.size === 0) {
-        if (await referenceTargetsTreeIndex.has(change.data.after.elemID.getFullName())) {
-          await referenceTargetsTreeIndex.delete(change.data.after.elemID.getFullName())
-        }
-      } else {
-        await referenceTargetsTreeIndex.set(change.data.after.elemID.getFullName(), referencesTree)
-      }
-    }
-  })
+  await updateReferenceTargetsTreeIndex(
+    relevantChanges,
+    referenceTargetsTreeIndex,
+  )
 
   // outgoing references
   await updateReferenceTargetsIndex(

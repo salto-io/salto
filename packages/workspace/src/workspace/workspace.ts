@@ -433,7 +433,7 @@ export const loadWorkspace = async (
             serialize: async val => {
               const objectToSerialize: Record<string, string[]> = {}
               await awu(val.entries()).forEach(([key, value]) => {
-                objectToSerialize[key] = [...value].map(id => id.getFullName())
+                objectToSerialize[key] = Array.from(new Set([...value].map(id => id.getFullName())))
               })
               return safeJsonStringify(objectToSerialize)
             },
@@ -1168,12 +1168,11 @@ export const loadWorkspace = async (
     getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceTargets,
     getElementOutgoingReferencesByTree: async (id, envName = currentEnv()) => {
-      // TODO: Seroussi - this seems like there is also instance.field option
-      if (!id.isTopLevel()) {
-        throw new Error(`getElementOutgoingReferencesByTree only support top level ids, received ${id.getFullName()}`)
+      if (!id.isBaseID()) {
+        throw new Error(`getElementOutgoingReferencesByTree only support base ids, received ${id.getFullName()}`)
       }
-      const referencesTree = await (await getWorkspaceState())
-        .states[envName].referenceTargetsTree.get(id.getFullName())
+      const referencesTree = await (await getWorkspaceState()).states[envName]
+        .referenceTargetsTree.get(id.createBaseID().parent.getFullName())
           ?? new collections.treeMap.TreeMap<ElemID>()
       return awu(referencesTree.valuesWithPrefix(id.getFullName())).flat().toArray()
     },

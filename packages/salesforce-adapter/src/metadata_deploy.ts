@@ -27,8 +27,7 @@ import { SaltoError,
   isContainerType,
   isAdditionChange,
   SaltoElementError,
-  SeverityLevel,
-  ElemID } from '@salto-io/adapter-api'
+  SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 
@@ -219,11 +218,10 @@ const processDeployResponse = (
   const componentErrors = allFailureMessages
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
-    .map(failure => (
-      { elemID: ElemID.fromFullName(failure.fullName),
-        message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`,
-        severity: 'Error' as SeverityLevel }
-    ))
+    .map(failure => ({
+      message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`,
+      severity: 'Error' as SeverityLevel,
+    }))
   const codeCoverageWarningErrors = makeArray(result.details)
     .map(detail => detail.runTestResult as RunTestsResult | undefined)
     .flatMap(runTestResult => makeArray(runTestResult?.codeCoverageWarnings))

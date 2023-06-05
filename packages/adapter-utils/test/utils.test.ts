@@ -20,7 +20,7 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData,
+  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -2475,6 +2475,21 @@ describe('Test utils.ts', () => {
       expect(clonedInst.refType.type).toBeUndefined()
       await resolveTypeShallow(clonedInst, elementsSource)
       expect(await clonedInst.getType()).toEqual(objWithResolvedWithAdditionalField)
+    })
+
+    it('should resolve to PlaceholderObjectType if the type is not in the source', async () => {
+      const instance = new InstanceElement(
+        'instance',
+        new TypeReference(new ElemID('adapter', 'unknownType'))
+      )
+      // I pass an inner elements source here because we try to resolve only elements that
+      // are coming from the fallback source, so passing it in the first param as elements will test nothing
+      const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
+      expect(instance.refType.type).toBeUndefined()
+      await resolveTypeShallow(instance, source)
+      expect(instance.refType.type).toMatchObject(new PlaceholderObjectType({
+        elemID: instance.refType.elemID,
+      }))
     })
   })
 

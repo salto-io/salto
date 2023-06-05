@@ -18,7 +18,7 @@ import { ParseError } from '../../types'
 import { SourceRange } from '../types'
 
 
-export const createError = (range: SourceRange, summary: string, message?: string): ParseError => ({
+const createError = (range: SourceRange, summary: string, message?: string): ParseError => ({
   summary,
   subject: range,
   context: range,
@@ -176,6 +176,12 @@ export const contentMergeConflict = (range: SourceRange): ParseError => createEr
   range,
   'Unresolved merge conflict',
 )
+
+export const invalidSyntax = (range: SourceRange): ParseError =>
+  createError(range, 'Invalid syntax',)
+
+export const unknownParsingError = (range: SourceRange, message: string): ParseError =>
+  createError(range, message)
 
 export const invalidStringChar = (stringRange: SourceRange, errMsg: string): ParseError => {
   const errMsgPosition = Number.parseInt(_.last(errMsg.split(' ')) || '', 10)

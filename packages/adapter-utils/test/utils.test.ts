@@ -2482,8 +2482,6 @@ describe('Test utils.ts', () => {
         'instance',
         new TypeReference(new ElemID('adapter', 'unknownType'))
       )
-      // I pass an inner elements source here because we try to resolve only elements that
-      // are coming from the fallback source, so passing it in the first param as elements will test nothing
       const source = buildElementsSourceFromElements([], [buildElementsSourceFromElements([instance])])
       expect(instance.refType.type).toBeUndefined()
       await resolveTypeShallow(instance, source)

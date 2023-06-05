@@ -173,7 +173,6 @@ const recordToInstance = async (
 const typesRecordsToInstances = async (
   recordByIdAndType: RecordsByTypeAndId,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
-  skipAliases: boolean,
 ): Promise<{ instances: InstanceElement[]; configChangeSuggestions: ConfigChangeSuggestion[] }> => {
   const typesToUnresolvedRefFields = {} as Record<TypeName, Set<string>>
   const addUnresolvedRefFieldByType = (typeName: string, unresolvedFieldName: string): void => {
@@ -283,7 +282,7 @@ const typesRecordsToInstances = async (
           type: customObjectFetchSetting[typeName].objectType,
           record,
           instanceSaltoName: await getRecordSaltoName(typeName, record),
-          instanceAlias: skipAliases ? undefined : await getRecordAlias(typeName, record),
+          instanceAlias: await getRecordAlias(typeName, record),
         }))
         .filter(async recToInstanceParams =>
           !Object.keys(typesToUnresolvedRefFields).includes(
@@ -374,7 +373,6 @@ const getReferencedRecords = async (
 export const getAllInstances = async (
   client: SalesforceClient,
   customObjectFetchSetting: Record<TypeName, CustomObjectFetchSetting>,
-  skipAliases: boolean,
 ): Promise<{ instances: InstanceElement[]; configChangeSuggestions: ConfigChangeSuggestion[] }> => {
   const baseTypesSettings = _.pickBy(
     customObjectFetchSetting,
@@ -394,7 +392,7 @@ export const getAllInstances = async (
     ...referencedRecordsByTypeAndId,
     ...baseRecordByTypeAndId,
   }
-  return typesRecordsToInstances(mergedRecords, customObjectFetchSetting, skipAliases)
+  return typesRecordsToInstances(mergedRecords, customObjectFetchSetting)
 }
 
 const getParentFieldNames = (fields: Field[]): string[] =>
@@ -525,7 +523,6 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     const { instances, configChangeSuggestions } = await getAllInstances(
       client,
       filteredChangesFetchSettings,
-      config.fetchProfile.isFeatureEnabled('skipAliases')
     )
     instances.forEach(instance => elements.push(instance))
     log.debug(`Fetched ${instances.length} instances of Custom Objects`)

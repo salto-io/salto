@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import moment from 'moment-timezone'
 import { ConfigRecord } from '../client/suiteapp_client/types'
@@ -28,7 +29,7 @@ export const TIMEFORMAT = 'TIMEFORMAT'
 export const DATEFORMAT = 'DATEFORMAT'
 export type TimeZoneAndFormat = {
   timeZone?: string
-  format?: string | moment.MomentBuiltinFormat
+  format?: string
 }
 const suiteQLDateFormatRegex = /(?<year>\d+)-(?<month>\d+)-(?<day>\d+) (?<hour>\d+):(?<minute>\d+):(?<second>\d+)/
 const savedSearchDateFormatRegex = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+) (?<hour>\d+):(?<minute>\d+) (?<ampm>\w+)/
@@ -78,11 +79,11 @@ export const getTimeDateFormat = (configRecords: ConfigRecord[]): TimeZoneAndFor
   const dateFormat = getConfigRecordsFieldValue(userPreferences, DATEFORMAT)
   const timeFormat = getConfigRecordsFieldValue(userPreferences, TIMEFORMAT)
   const timeZone = getConfigRecordsFieldValue(userPreferences, TIMEZONE)
-  const format = dateFormat && timeFormat
+  const format = _.isString(dateFormat) && _.isString(timeFormat)
     // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
     ? [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' ')
     : undefined
-  return { timeZone, format }
+  return { timeZone: _.isString(timeZone) ? timeZone : undefined, format }
 }
 
 export const convertSavedSearchStringToDate = (rawDate: string, fallback: Date): Date => {

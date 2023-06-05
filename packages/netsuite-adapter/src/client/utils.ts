@@ -60,4 +60,4 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
 export const getConfigRecordsFieldValue = (
   configRecord: ConfigRecord | undefined,
   field: string,
-): string | undefined => configRecord?.data?.fields?.[field] as string | undefined
+): unknown => configRecord?.data?.fields?.[field]

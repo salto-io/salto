@@ -394,12 +394,15 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
-          value: [
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-          ],
+          value: new collections.treeMap.TreeMap<ElemID>([
+            ['test.object.instance.instance.someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
+            ['test.object.instance.instance.someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+            ['test.object.instance.instance.templateValue', [
+              ElemID.fromFullName('test.target2.field.someTemplateField.value'),
+              ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
+            ],
+            ],
+          ]),
         }])
       })
 
@@ -453,12 +456,15 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
-          value: [
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-          ],
+          value: new collections.treeMap.TreeMap<ElemID>([
+            ['test.object.instance.instance.someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
+            ['test.object.instance.instance.someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+            ['test.object.instance.instance.templateValue', [
+              ElemID.fromFullName('test.target2.field.someTemplateField.value'),
+              ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
+            ],
+            ],
+          ]),
         }])
       })
 

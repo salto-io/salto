@@ -173,7 +173,9 @@ export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
 export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
+export const RECORD_TYPE_HISTORY_TRACKING_ENABLED = 'recordTypeTrackHistory'
 export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
+export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED = 'recordTypeTrackFeedHistory'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',

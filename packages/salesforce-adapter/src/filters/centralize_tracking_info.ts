@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   Change,
@@ -38,13 +39,17 @@ import {
   FEED_HISTORY_TRACKED_FIELDS,
   OBJECT_HISTORY_TRACKING_ENABLED,
   OBJECT_FEED_HISTORY_TRACKING_ENABLED,
+  RECORD_TYPE_HISTORY_TRACKING_ENABLED,
+  RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED,
 } from '../constants'
 
 const { awu } = collections.asynciterable
+const log = logger(module)
 
 
 type TrackedFieldsDefinition = {
   objectLevelEnable: string
+  recordTypeEnable: string
   fieldLevelEnable: string
   aggregate: string
 }
@@ -52,11 +57,13 @@ type TrackedFieldsDefinition = {
 const trackedFieldsDefinitions: TrackedFieldsDefinition[] = [
   {
     objectLevelEnable: OBJECT_HISTORY_TRACKING_ENABLED,
+    recordTypeEnable: RECORD_TYPE_HISTORY_TRACKING_ENABLED,
     fieldLevelEnable: FIELD_ANNOTATIONS.TRACK_HISTORY,
     aggregate: HISTORY_TRACKED_FIELDS,
   },
   {
     objectLevelEnable: OBJECT_FEED_HISTORY_TRACKING_ENABLED,
+    recordTypeEnable: RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED,
     fieldLevelEnable: FIELD_ANNOTATIONS.TRACK_FEED_HISTORY,
     aggregate: FEED_HISTORY_TRACKED_FIELDS,
   },
@@ -87,6 +94,12 @@ const centralizeHistoryTrackingAnnotations = (customObject: ObjectType, tracking
       _.pickBy(customObject.fields, field => isHistoryTrackedField(field, trackingDef)),
       field => new ReferenceExpression(field.elemID),
     )
+  } else if (customObject.annotations[trackingDef.recordTypeEnable] === true) {
+    log.debug('In object type %s, %s is %s but %s is true. Treating as tracking disabled.',
+      customObject.elemID.getFullName(),
+      trackingDef.objectLevelEnable,
+      customObject.annotations[trackingDef.objectLevelEnable],
+      trackingDef.recordTypeEnable)
   }
 
   Object.values(customObject.fields).forEach(field => deleteFieldHistoryTrackingAnnotation(field, trackingDef))

@@ -27,7 +27,7 @@ const filter: FilterCreator = () => ({
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME)
       .filter(instance => _.isEmpty(instance.value.description))
       .filter(instance => isReferenceExpression(instance.value.id)
-        && isInstanceElement(instance.value.id?.value))
+        && isInstanceElement(instance.value.id.value))
       .forEach(instance => {
         instance.value.description = instance.value.id.value.value.description ?? ''
       })

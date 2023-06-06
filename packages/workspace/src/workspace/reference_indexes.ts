@@ -23,9 +23,9 @@ import {
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isTemplateExpression,
-  isRemovalChange,
   isObjectType,
   isField,
+  isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -34,8 +34,6 @@ import { collections } from '@salto-io/lowerdash'
 import { ElementsSource } from './elements_source'
 import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
-
-const { awu } = collections.asynciterable
 
 const log = logger(module)
 export const REFERENCE_INDEXES_VERSION = 2
@@ -67,6 +65,10 @@ const getReferencesTrees = (element: Element): Record<string, collections.treeMa
       if (isObjectType(element) && isField(value)) {
         const fieldReferencesTrees = getReferencesTrees(value)
         Object.assign(elemFullNameToReferencesTree, fieldReferencesTrees)
+        // Object type also contains all the references of its fields
+        Object.values(fieldReferencesTrees).forEach(tree => {
+          currentElementTree.mount(path.getFullName(), tree)
+        })
         return WALK_NEXT_STEP.SKIP
       }
       if (isReferenceExpression(value)) {
@@ -136,51 +138,6 @@ const updateUniqueIndex = async (
     modifications.length !== 0 ? index.setAll(uniqueModification) : undefined,
     deletions.length !== 0 ? index.deleteAll(deletions.map(deletion => deletion.key)) : undefined,
   ])
-}
-
-const updateReferenceTargetsIndex = async (
-  changes: Change<Element>[],
-  index: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
-): Promise<void> => {
-  const referencesToDelete: string[] = []
-  const referencesToSet: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
-
-  await awu(changes).forEach(async change => {
-    if (isRemovalChange(change)) {
-      referencesToDelete.push(change.data.before.elemID.getFullName())
-      // Removal of object type also requires the removal of all its fields
-      if (isObjectType(change.data.before)) {
-        change.data.before.getFieldsElemIDsFullName().forEach(fieldFullName => {
-          referencesToDelete.push(fieldFullName)
-        })
-      }
-    } else {
-      const afterFullNameToReferencesTrees = getReferencesTrees(change.data.after)
-      // Addition and modification are the same in this case
-      Object.entries(afterFullNameToReferencesTrees).forEach(([ref, referencesTree]) => {
-        if (referencesTree.size > 0) {
-          referencesToSet.push({ key: ref, value: referencesTree })
-        }
-      })
-
-      // In case of a modification change, we also need to delete object's field references that no longer exists
-      if (isModificationChange(change)) {
-        const beforeFullNameToReferencesTrees = getReferencesTrees(change.data.before)
-
-        const beforeFullNames = new Set(Object.keys(beforeFullNameToReferencesTrees))
-        const afterFullNames = new Set(Object.keys(afterFullNameToReferencesTrees))
-
-        beforeFullNames.forEach(fullName => {
-          if (!afterFullNames.has(fullName)) {
-            referencesToDelete.push(fullName)
-          }
-        })
-      }
-    }
-  })
-
-  await index.deleteAll(referencesToDelete)
-  await index.setAll(referencesToSet)
 }
 
 const updateIdOfReferenceSourcesIndex = (
@@ -262,6 +219,63 @@ const updateReferenceSourcesIndex = async (
   await updateUniqueIndex(index, updates)
 }
 
+
+const getReferenceTargetIndexUpdates = (
+  change: Change<Element>,
+  changeToReferences: Record<string, ChangeReferences>,
+): RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] => {
+  const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
+
+  if (isObjectTypeChange(change)) {
+    const references = changeToReferences[getChangeData(change).elemID.getFullName()]
+      .currentAndNew
+    const baseIdToReferences = _(references)
+      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
+      .value()
+    const type = getChangeData(change)
+
+    const allFields = isModificationChange(change)
+      ? {
+        ...change.data.before.fields,
+        ...type.fields,
+      }
+      : type.fields
+
+    indexUpdates.push(
+      ...Object.values(allFields)
+        .map(field => ({
+          key: field.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap<ElemID>(
+            (baseIdToReferences[field.elemID.getFullName()] ?? []).map(ref =>
+              [ref.referenceSource.getFullName(), [ref.referenceTarget]])
+          ),
+        }))
+    )
+  }
+  const elemId = getChangeData(change).elemID.getFullName()
+  indexUpdates.push({
+    key: elemId,
+    value: new collections.treeMap.TreeMap<ElemID>(
+      changeToReferences[elemId].currentAndNew.map(ref =>
+        [ref.referenceSource.getFullName(), [ref.referenceTarget]])
+    ),
+  })
+
+  return indexUpdates
+}
+
+const updateReferenceTargetsIndex = async (
+  changes: Change<Element>[],
+  referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
+  changeToReferences: {[p: string]: ChangeReferences},
+): Promise<void> => {
+  const changesTrees = changes.flatMap(change => getReferenceTargetIndexUpdates(change, changeToReferences))
+  const [toAdd, toDelete] = _.partition(changesTrees, change => change.value.size > 0)
+
+  await referenceTargetsIndex.setAll(toAdd)
+  await referenceTargetsIndex.deleteAll(toDelete.map(change => change.key))
+}
+
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
   referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
@@ -300,6 +314,7 @@ export const updateReferenceIndexes = async (
   await updateReferenceTargetsIndex(
     relevantChanges,
     referenceTargetsIndex,
+    changeToReferences,
   )
 
   // Incoming references

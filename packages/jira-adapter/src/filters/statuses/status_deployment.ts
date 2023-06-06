@@ -53,7 +53,7 @@ const createDeployableStatusValues = (
 ): Values => {
   const { value } = getChangeData(statusChange)
   const deployableValue = _.clone(value)
-  if (isReferenceExpression(value.statusCategory)) {
+  if (isReferenceExpression(value.statusCategory) && value.statusCategory.value !== undefined) {
     // resolve statusCategory value before deploy
     const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[
       value.statusCategory.value.value.id

@@ -158,7 +158,7 @@ const filter: FilterCreator = ({ config }) => {
                   isTemplateExpression(jql.jql))
                 .forEach(jql => {
                   const resolvedJql = jql.jql.parts.map(part => {
-                    if (!isReferenceExpression(part)) {
+                    if (!isReferenceExpression(part) || part.value === undefined) {
                       return part
                     }
 

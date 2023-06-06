@@ -107,6 +107,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
           instance.value.projectIds
             ?.filter(isReferenceExpression)
             .filter((ref: ReferenceExpression) => ref.elemID.typeName === 'Project')
+            .filter((ref: ReferenceExpression) => ref.value !== undefined)
             .forEach((ref: ReferenceExpression) => {
               appendReference(
                 ref.value.value,

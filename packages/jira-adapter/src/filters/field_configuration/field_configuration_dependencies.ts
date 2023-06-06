@@ -23,12 +23,14 @@ import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, PROJECT_TYPE } from '../../constant
 const log = logger(module)
 
 const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
-  if (!isReferenceExpression(instance.value.issueTypeScreenScheme)) {
+  if (!isReferenceExpression(instance.value.issueTypeScreenScheme)
+       || instance.value.issueTypeScreenScheme.value === undefined) {
     return []
   }
   return instance.value.issueTypeScreenScheme.value.value.issueTypeMappings
     ?.map((item: Values) => item.screenSchemeId)
     .filter(isReferenceExpression)
+    .filter((screenSchemeRef: ReferenceExpression) => screenSchemeRef.value !== undefined)
     .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
       screenSchemeRef.value.value.screens ?? {}
     ))
@@ -36,12 +38,13 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
     .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
     .flatMap((tab: Values) => tab.fields)
     .filter(isReferenceExpression)
+    .filter((fieldRef: ReferenceExpression) => fieldRef.value !== undefined)
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
 }
 
 const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] => {
   const fieldConfigurationRef = instance.value.fieldConfigurationScheme
-  if (!isReferenceExpression(fieldConfigurationRef)) {
+  if (!isReferenceExpression(fieldConfigurationRef) || fieldConfigurationRef.value === undefined) {
     if (fieldConfigurationRef !== undefined) {
       log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
     }

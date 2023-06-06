@@ -329,7 +329,7 @@ const filter: FilterCreator = ({ client, config }) => ({
 
     if (
       isReferenceExpression(securitySchemeInstance.value.defaultLevel)
-      && isInstanceElement(securitySchemeInstance.value.defaultLevel.value)
+      && isInstanceElement(securitySchemeInstance.value.defaultLevel?.value)
       && securitySchemeInstance.value.defaultLevel.value.value.id === undefined
     ) {
       const defaultLevelId = securitySchemeInstance.value.defaultLevel.elemID

@@ -95,7 +95,8 @@ export const deploySteps = async (
         throw new Error(`status name is missing in ${instance.elemID.getFullName()}`)
       }
 
-      const statusId = isReferenceExpression(status.id) ? status.id.value.value.id : status.id
+      const statusId = isReferenceExpression(status.id)
+      && status.id.value !== undefined ? status.id.value.value.id : status.id
       if (statusId === undefined) {
         throw new Error(`status id is missing for ${status.name} in ${instance.elemID.getFullName()}`)
       }

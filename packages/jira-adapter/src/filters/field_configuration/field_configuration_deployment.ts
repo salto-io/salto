@@ -32,6 +32,7 @@ const deployFieldConfigurationItems = async (
 ): Promise<void> => {
   const fields = (instance.value.fields ?? [])
     .filter((fieldConf: Values) => isReferenceExpression(fieldConf.id))
+    .filter((fieldConf: Values) => fieldConf.id.value !== undefined)
     .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))
 
   if (fields.length === 0) {

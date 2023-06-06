@@ -1175,12 +1175,8 @@ export const loadWorkspace = async (
     getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceTargets,
     getElementOutgoingReferencesByTree: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementOutgoingReferencesByTree only support base ids, received ${id.getFullName()}`)
-      }
       const referencesTree = await (await getWorkspaceState()).states[envName]
-        .referenceTargetsTree.get(id.createBaseID().parent.getFullName())
-          ?? new collections.treeMap.TreeMap<ElemID>()
+        .referenceTargetsTree.get(id.createBaseID().parent.getFullName()) ?? new collections.treeMap.TreeMap<ElemID>()
       return awu(referencesTree.valuesWithPrefix(id.getFullName())).flat().toArray()
     },
     getElementOutgoingReferences: async (id, envName = currentEnv()) => {

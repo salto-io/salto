@@ -22,7 +22,7 @@ import {
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
   StaticFile,
-  isStaticFile,
+  isStaticFile, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -3292,16 +3292,68 @@ describe('workspace', () => {
 
   describe('getElementOutgoingReferencesByTree', () => {
     let workspace: Workspace
+    const ref1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref1'))
+    const ref2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref2'))
+    const templateRef1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template1'))
+    const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      const element = new InstanceElement(
+        'test',
+        new ObjectType({ elemID: new ElemID('adapter', 'test') }),
+        {
+          ref: ref1,
+          inner: {
+            ref: ref2,
+            inner2: {
+              refs: new TemplateExpression({
+                parts: [templateRef1, templateRef2],
+              }),
+            },
+          },
+          none: 'none',
+        }
+      )
+      const elementSources = {
+        default: {
+          naclFiles: createMockNaclFileSource([element]),
+          state: createState([]),
+        },
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      }
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined,
+        elementSources)
     })
 
-    it('None-base type should throw', async () => {
-      await expect(workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+    it('top level instance should return all references under it', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test'))
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
 
-    it('None-exist type should return empty array', async () => {
+    it('instance field should return all references nested under it', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.inner'))
+      expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID])
+    })
+
+    it('specific nested field path should return references under it', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.inner.inner2.refs'))
+      expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID])
+    })
+
+    it('nested field without references should return an empty array', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.none'))
+      expect(instanceRefs).toMatchObject([])
+    })
+
+    it('non-existent field should return an empty array', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.nonexistent'))
+      expect(instanceRefs).toMatchObject([])
+    })
+
+    it('None-exist entry should return empty array', async () => {
       expect(await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'notExists'))).toEqual([])
     })
   })

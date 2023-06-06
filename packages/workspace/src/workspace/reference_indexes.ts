@@ -145,7 +145,7 @@ const getReferenceTargetIndexUpdates = (
 const updateReferenceTargetsIndex = async (
   changes: Change<Element>[],
   referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
-  changeToReferences: {[p: string]: ChangeReferences},
+  changeToReferences: Record<string, ChangeReferences>,
 ): Promise<void> => {
   const changesTrees = changes.flatMap(change => getReferenceTargetIndexUpdates(change, changeToReferences))
   const [toAdd, toDelete] = _.partition(changesTrees, change => change.value.size > 0)
@@ -273,7 +273,6 @@ export const updateReferenceIndexes = async (
     referenceTargetsIndex,
     changeToReferences,
   )
-
   // Incoming references
   await updateReferenceSourcesIndex(
     relevantChanges,

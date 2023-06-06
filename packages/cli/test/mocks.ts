@@ -350,7 +350,6 @@ export const mockWorkspace = ({
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
     getReferenceSourcesIndex: mockFunction<Workspace['getReferenceSourcesIndex']>(),
     getReferenceTargetsIndex: mockFunction<Workspace['getReferenceTargetsIndex']>(),
-    getElementOutgoingReferencesByTree: mockFunction<Workspace['getElementOutgoingReferencesByTree']>().mockResolvedValue([]),
     getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
     getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
     getElementAuthorInformation: mockFunction<Workspace['getElementAuthorInformation']>().mockResolvedValue({}),

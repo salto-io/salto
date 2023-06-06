@@ -20,7 +20,6 @@ import {
   isReferenceExpression,
   Element,
   isModificationChange,
-  isObjectTypeChange,
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isTemplateExpression,
@@ -139,60 +138,7 @@ const updateUniqueIndex = async (
   ])
 }
 
-const getReferenceTargetIndexUpdates = (
-  change: Change<Element>,
-  changeToReferences: Record<string, ChangeReferences>,
-): RemoteMapEntry<ElemID[]>[] => {
-  const indexUpdates: RemoteMapEntry<ElemID[]>[] = []
-
-  const references = changeToReferences[getChangeData(change).elemID.getFullName()]
-    .currentAndNew
-  const baseIdToReferences = _(references)
-    .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
-    .mapValues(referencesGroup => referencesGroup.map(ref => ref.referenceTarget))
-    .value()
-
-  if (isObjectTypeChange(change)) {
-    const type = getChangeData(change)
-
-    const allFields = isModificationChange(change)
-      ? {
-        ...change.data.before.fields,
-        ...type.fields,
-      }
-      : type.fields
-
-    indexUpdates.push(
-      ...Object.values(allFields)
-        .map(field => ({
-          key: field.elemID.getFullName(),
-          value: baseIdToReferences[field.elemID.getFullName()] ?? [],
-        }))
-    )
-  }
-  const elemId = getChangeData(change).elemID.getFullName()
-  indexUpdates.push({
-    key: elemId,
-    value: changeToReferences[elemId].currentAndNew
-      .map(ref => ref.referenceTarget),
-  })
-
-  return indexUpdates
-}
-
 const updateReferenceTargetsIndex = async (
-  changes: Change<Element>[],
-  index: RemoteMap<ElemID[]>,
-  changeToReferences: Record<string, ChangeReferences>
-): Promise<void> => {
-  const updates = changes.flatMap(
-    change => getReferenceTargetIndexUpdates(change, changeToReferences)
-  )
-
-  await updateUniqueIndex(index, updates)
-}
-
-const updateReferenceTargetsTreeIndex = async (
   changes: Change<Element>[],
   index: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
 ): Promise<void> => {
@@ -318,8 +264,7 @@ const updateReferenceSourcesIndex = async (
 
 export const updateReferenceIndexes = async (
   changes: Change<Element>[],
-  referenceTargetsTreeIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
-  referenceTargetsIndex: RemoteMap<ElemID[]>,
+  referenceTargetsIndex: RemoteMap<collections.treeMap.TreeMap<ElemID>>,
   referenceSourcesIndex: RemoteMap<ElemID[]>,
   mapVersions: RemoteMap<number>,
   elementsSource: ElementsSource,
@@ -338,7 +283,6 @@ export const updateReferenceIndexes = async (
       log.info('cache is invalid, re-indexing references indexes')
     }
     await Promise.all([
-      referenceTargetsTreeIndex.clear(),
       referenceTargetsIndex.clear(),
       referenceSourcesIndex.clear(),
       mapVersions.set(REFERENCE_INDEXES_KEY, REFERENCE_INDEXES_VERSION),
@@ -353,17 +297,11 @@ export const updateReferenceIndexes = async (
     ]))
 
   // Outgoing references
-  await updateReferenceTargetsTreeIndex(
-    relevantChanges,
-    referenceTargetsTreeIndex,
-  )
-
-  // Outgoing references
   await updateReferenceTargetsIndex(
     relevantChanges,
     referenceTargetsIndex,
-    changeToReferences,
   )
+
   // Incoming references
   await updateReferenceSourcesIndex(
     relevantChanges,

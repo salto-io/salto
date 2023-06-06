@@ -179,6 +179,7 @@ export type FetchParameters = {
   target?: string[]
   maxInstancesPerType?: number
   preferActiveFlowVersions?: boolean
+  addNamespacePrefixToFullName?: boolean
 }
 
 export type DeprecatedMetadataParams = {
@@ -632,6 +633,7 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
     },
     maxInstancesPerType: { refType: BuiltinTypes.NUMBER },
     preferActiveFlowVersions: { refType: BuiltinTypes.BOOLEAN },
+    addNamespacePrefixToFullName: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -173,7 +173,7 @@ const listMetadataObjectsWithinFolders = async (
   return { elements, configChanges }
 }
 
-const getFullName = (obj: FileProperties): string => {
+const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): string => {
   if (!obj.namespacePrefix) {
     return obj.fullName
   }
@@ -192,6 +192,10 @@ const getFullName = (obj: FileProperties): string => {
     return obj.fullName
   }
 
+  if (!addNamespacePrefixToFullName) {
+    log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
+    return obj.fullName
+  }
   // Instances of type InstalledPackage fullNames should never include the namespace prefix
   if (obj.type === INSTALLED_PACKAGE_METADATA) {
     return obj.fullName
@@ -214,8 +218,8 @@ const getFullName = (obj: FileProperties): string => {
   return `${parentNames.join(API_NAME_SEPARATOR)}${API_NAME_SEPARATOR}${namePrefix}${name}`
 }
 
-const getPropsWithFullName = (obj: FileProperties): FileProperties => {
-  const correctFullName = getFullName(obj)
+const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
+  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
     fullName: correctFullName,
@@ -237,12 +241,14 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
   maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
+  addNamespacePrefixToFullName = true,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
   metadataType: ObjectType
   metadataQuery: MetadataQuery
   maxInstancesPerType?: number
+  addNamespacePrefixToFullName?: boolean
 }): Promise<FetchElements<InstanceElement[]>> => {
   if (fileProps.length === 0) {
     return { elements: [], configChanges: [] }
@@ -269,7 +275,7 @@ export const fetchMetadataInstances = async ({
   const filePropsToRead = fileProps
     .map(prop => ({
       ...prop,
-      fullName: getFullName(prop),
+      fullName: getFullName(prop, addNamespacePrefixToFullName),
     }))
     .filter(prop => metadataQuery.isInstanceMatch({
       namespace: getNamespace(prop),
@@ -328,6 +334,7 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
+  addNamespacePrefixToFullName: boolean
 }
 
 export const retrieveMetadataInstances = async ({
@@ -335,6 +342,7 @@ export const retrieveMetadataInstances = async ({
   types,
   maxItemsInRetrieveRequest,
   metadataQuery,
+  addNamespacePrefixToFullName,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -347,7 +355,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file))
+      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
       .value()
   }
 

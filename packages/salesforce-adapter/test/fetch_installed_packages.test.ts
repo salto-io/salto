@@ -26,10 +26,11 @@ describe('Test fetching installed package metadata', () => {
   type MockFetchArgs = {
     fileProp: MockFilePropertiesInput
     mockType: ObjectType
+    addNamespacePrefixToFullName?: boolean
   }
 
   const fetch = async (
-    { fileProp, mockType }: MockFetchArgs
+    { fileProp, mockType, addNamespacePrefixToFullName = true }: MockFetchArgs
   ): Promise<InstanceElement | undefined> => {
     const { client, connection } = mockClient()
     connection.metadata.read.mockImplementation(async (_type, fullNames) => (
@@ -47,6 +48,7 @@ describe('Test fetching installed package metadata', () => {
       fileProps: [mockFileProperties(fileProp)],
       metadataType: mockType,
       metadataQuery,
+      addNamespacePrefixToFullName,
     })
     return elements.filter(isInstanceElement)[0]
   }
@@ -64,12 +66,24 @@ describe('Test fetching installed package metadata', () => {
       })
     })
     describe('API name does not include namespacePrefix', () => {
+      describe('addNamespacePrefixToFullName is false', () => {
+        it('should not add prefix to PermissionSet', async () => {
+          const fullNameFromList = 'TestPermissionSet'
+          const addNamespacePrefixToFullName = false
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+
+          expect(instance).toEqual(expect.objectContaining({
+            value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
+          }))
+        })
+      })
       describe('name has API_NAME_SEPARATOR in its fullName', () => {
         it("should add prefix to the object's name correctly", async () => {
           const fullNameFromList = 'Account.TestObject'
           const expectedFullName = 'Account.Test__TestObject'
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Account', namespacePrefix: 'Test' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Account })
 
           expect(instance).toEqual(expect.objectContaining({
             value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: expectedFullName }),

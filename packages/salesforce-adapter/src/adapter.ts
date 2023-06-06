@@ -552,6 +552,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
+        addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -578,6 +579,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
       maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
+      addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

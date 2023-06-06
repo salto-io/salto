@@ -23,8 +23,6 @@ import {
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isTemplateExpression,
-  isObjectType,
-  isField,
   isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -47,46 +45,6 @@ type ReferenceDetails = {
 type ChangeReferences = {
   removed: ReferenceDetails[]
   currentAndNew: ReferenceDetails[]
-}
-
-/**
- * Walks over an element and map each reference to the path it is in inside the element
- * In case of an element inside the element (eg. object type field), a new tree is created for it
- */
-const getReferencesTrees = (element: Element): Record<string, collections.treeMap.TreeMap<ElemID>> => {
-  const currentElementTree = new collections.treeMap.TreeMap<ElemID>()
-  // Because object type fields are elements themselves, each of them will be a separate index entry
-  const elemFullNameToReferencesTree = {
-    [element.elemID.getFullName()]: currentElementTree,
-  }
-  walkOnElement({
-    element,
-    func: ({ value, path }) => {
-      if (isObjectType(element) && isField(value)) {
-        const fieldReferencesTrees = getReferencesTrees(value)
-        Object.assign(elemFullNameToReferencesTree, fieldReferencesTrees)
-        // Object type also contains all the references of its fields
-        Object.values(fieldReferencesTrees).forEach(tree => {
-          currentElementTree.mount(path.getFullName(), tree)
-        })
-        return WALK_NEXT_STEP.SKIP
-      }
-      if (isReferenceExpression(value)) {
-        currentElementTree.push(path.getFullName(), value.elemID)
-        return WALK_NEXT_STEP.SKIP
-      }
-      if (isTemplateExpression(value)) {
-        value.parts.forEach(part => {
-          if (isReferenceExpression(part)) {
-            currentElementTree.push(path.getFullName(), part.elemID)
-          }
-        })
-        return WALK_NEXT_STEP.SKIP
-      }
-      return WALK_NEXT_STEP.RECURSE
-    },
-  })
-  return elemFullNameToReferencesTree
 }
 
 const getReferences = (element: Element): ReferenceDetails[] => {

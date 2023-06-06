@@ -3329,27 +3329,27 @@ describe('workspace', () => {
     })
 
     it('top level instance should return all references under it', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test'))
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'test', 'instance', 'test'))
       expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
 
     it('instance field should return all references nested under it', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.inner'))
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'test', 'instance', 'test', 'inner'))
       expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
 
     it('specific nested field path should return references under it', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.inner.inner2.refs'))
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'))
       expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID])
     })
 
     it('nested field without references should return an empty array', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.none'))
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'test', 'instance', 'test', 'none'))
       expect(instanceRefs).toMatchObject([])
     })
 
     it('non-existent field should return an empty array', async () => {
-      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(ElemID.fromFullName('adapter.test.instance.test.nonexistent'))
+      const instanceRefs = await workspace.getElementOutgoingReferencesByTree(new ElemID('adapter', 'test', 'instance', 'test', 'nonexistent'))
       expect(instanceRefs).toMatchObject([])
     })
 

@@ -98,6 +98,50 @@ const updateUniqueIndex = async (
   ])
 }
 
+const getReferenceTargetIndexUpdates = (
+  change: Change<Element>,
+  changeToReferences: Record<string, ChangeReferences>,
+): RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] => {
+  const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
+
+  if (isObjectTypeChange(change)) {
+    const references = changeToReferences[getChangeData(change).elemID.getFullName()]
+      .currentAndNew
+    const baseIdToReferences = _(references)
+      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
+      .value()
+    const type = getChangeData(change)
+
+    const allFields = isModificationChange(change)
+      ? {
+        ...change.data.before.fields,
+        ...type.fields,
+      }
+      : type.fields
+
+    indexUpdates.push(
+      ...Object.values(allFields)
+        .map(field => ({
+          key: field.elemID.getFullName(),
+          value: new collections.treeMap.TreeMap<ElemID>(
+            (baseIdToReferences[field.elemID.getFullName()] ?? []).map(ref =>
+              [ref.referenceSource.getFullName(), [ref.referenceTarget]])
+          ),
+        }))
+    )
+  }
+  const elemId = getChangeData(change).elemID.getFullName()
+  indexUpdates.push({
+    key: elemId,
+    value: new collections.treeMap.TreeMap<ElemID>(
+      changeToReferences[elemId].currentAndNew.map(ref =>
+        [ref.referenceSource.getFullName(), [ref.referenceTarget]])
+    ),
+  })
+
+  return indexUpdates
+}
+
 const updateIdOfReferenceSourcesIndex = (
   id: string,
   addedSources: ElemID[],
@@ -175,51 +219,6 @@ const updateReferenceSourcesIndex = async (
       ))
 
   await updateUniqueIndex(index, updates)
-}
-
-
-const getReferenceTargetIndexUpdates = (
-  change: Change<Element>,
-  changeToReferences: Record<string, ChangeReferences>,
-): RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] => {
-  const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
-
-  if (isObjectTypeChange(change)) {
-    const references = changeToReferences[getChangeData(change).elemID.getFullName()]
-      .currentAndNew
-    const baseIdToReferences = _(references)
-      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
-      .value()
-    const type = getChangeData(change)
-
-    const allFields = isModificationChange(change)
-      ? {
-        ...change.data.before.fields,
-        ...type.fields,
-      }
-      : type.fields
-
-    indexUpdates.push(
-      ...Object.values(allFields)
-        .map(field => ({
-          key: field.elemID.getFullName(),
-          value: new collections.treeMap.TreeMap<ElemID>(
-            (baseIdToReferences[field.elemID.getFullName()] ?? []).map(ref =>
-              [ref.referenceSource.getFullName(), [ref.referenceTarget]])
-          ),
-        }))
-    )
-  }
-  const elemId = getChangeData(change).elemID.getFullName()
-  indexUpdates.push({
-    key: elemId,
-    value: new collections.treeMap.TreeMap<ElemID>(
-      changeToReferences[elemId].currentAndNew.map(ref =>
-        [ref.referenceSource.getFullName(), [ref.referenceTarget]])
-    ),
-  })
-
-  return indexUpdates
 }
 
 const updateReferenceTargetsIndex = async (

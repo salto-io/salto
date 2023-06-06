@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, isReferenceExpression, isResolvedReferenceExpression, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { extendGeneratedDependencies, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -23,14 +23,12 @@ import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, PROJECT_TYPE } from '../../constant
 const log = logger(module)
 
 const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
-  if (!isReferenceExpression(instance.value.issueTypeScreenScheme)
-       || instance.value.issueTypeScreenScheme.value === undefined) {
+  if (!isResolvedReferenceExpression(instance.value.issueTypeScreenScheme)) {
     return []
   }
   return instance.value.issueTypeScreenScheme.value.value.issueTypeMappings
     ?.map((item: Values) => item.screenSchemeId)
-    .filter(isReferenceExpression)
-    .filter((screenSchemeRef: ReferenceExpression) => screenSchemeRef.value !== undefined)
+    .filter(isResolvedReferenceExpression)
     .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
       screenSchemeRef.value.value.screens ?? {}
     ))
@@ -43,7 +41,7 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
 
 const getProjectFieldConfigurations = (instance: InstanceElement): InstanceElement[] => {
   const fieldConfigurationRef = instance.value.fieldConfigurationScheme
-  if (!isReferenceExpression(fieldConfigurationRef) || fieldConfigurationRef.value === undefined) {
+  if (!isResolvedReferenceExpression(fieldConfigurationRef)) {
     if (fieldConfigurationRef !== undefined) {
       log.warn(`${instance.elemID.getFullName()} has a field configuration scheme value that is not a reference so we can't calculate the _generated_dependencies`)
     }

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values, isResolvedReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
@@ -53,7 +53,7 @@ const createDeployableStatusValues = (
 ): Values => {
   const { value } = getChangeData(statusChange)
   const deployableValue = _.clone(value)
-  if (isReferenceExpression(value.statusCategory) && value.statusCategory.value !== undefined) {
+  if (isResolvedReferenceExpression(value.statusCategory)) {
     // resolve statusCategory value before deploy
     const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[
       value.statusCategory.value.value.id

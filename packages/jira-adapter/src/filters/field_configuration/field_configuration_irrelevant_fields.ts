@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isReferenceExpression, isResolvedReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
@@ -36,8 +36,7 @@ const filter: FilterCreator = ({ fetchQuery }) => ({
       .forEach(instance => {
         const [fields, trashedFields] = _.partition(
           instance.value.fields,
-          field => isReferenceExpression(field.id)
-           && field.id.value !== undefined
+          field => isResolvedReferenceExpression(field.id)
            && !field.id.value.value.isLocked
         )
         instance.value.fields = fields

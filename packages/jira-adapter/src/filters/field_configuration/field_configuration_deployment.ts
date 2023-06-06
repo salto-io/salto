@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, isRemovalChange, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isRemovalChange, isResolvedReferenceExpression, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -31,8 +31,7 @@ const deployFieldConfigurationItems = async (
   config: JiraConfig
 ): Promise<void> => {
   const fields = (instance.value.fields ?? [])
-    .filter((fieldConf: Values) => isReferenceExpression(fieldConf.id))
-    .filter((fieldConf: Values) => fieldConf.id.value !== undefined)
+    .filter((fieldConf: Values) => isResolvedReferenceExpression(fieldConf.id))
     .map((fieldConf: Values) => ({ ...fieldConf, id: fieldConf.id.value.value.id }))
 
   if (fields.length === 0) {

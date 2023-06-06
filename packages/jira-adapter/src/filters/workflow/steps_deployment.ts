@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isReferenceExpression } from '@salto-io/adapter-api'
+import { isReferenceExpression, isResolvedReferenceExpression } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -95,8 +95,7 @@ export const deploySteps = async (
         throw new Error(`status name is missing in ${instance.elemID.getFullName()}`)
       }
 
-      const statusId = isReferenceExpression(status.id)
-      && status.id.value !== undefined ? status.id.value.value.id : status.id
+      const statusId = isResolvedReferenceExpression(status.id) ? status.id.value.value.id : status.id
       if (statusId === undefined) {
         throw new Error(`status id is missing for ${status.name} in ${instance.elemID.getFullName()}`)
       }

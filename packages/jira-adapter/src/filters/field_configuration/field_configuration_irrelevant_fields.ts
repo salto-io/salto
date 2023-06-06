@@ -37,7 +37,8 @@ const filter: FilterCreator = ({ fetchQuery }) => ({
         const [fields, trashedFields] = _.partition(
           instance.value.fields,
           field => isReferenceExpression(field.id)
-            && !field.id.value.value.isLocked
+           && field.id.value !== undefined
+           && !field.id.value.value.isLocked
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {

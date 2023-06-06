@@ -38,7 +38,6 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
     .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
     .flatMap((tab: Values) => tab.fields)
     .filter(isReferenceExpression)
-    .filter((fieldRef: ReferenceExpression) => fieldRef.value !== undefined)
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
 }
 

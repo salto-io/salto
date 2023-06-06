@@ -27,7 +27,6 @@ import {
   isRemovalChange,
   isObjectType,
   isField,
-  isAdditionChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -53,9 +52,13 @@ type ChangeReferences = {
   currentAndNew: ReferenceDetails[]
 }
 
+/**
+ * Walks over an element and map each reference to the path it is in inside the element
+ * In case of an element inside the element (eg. object type field), a new tree is created for it
+ */
 const getReferencesTrees = (element: Element): Record<string, collections.treeMap.TreeMap<ElemID>> => {
   const currentElementTree = new collections.treeMap.TreeMap<ElemID>()
-  // Because object type fields are elements themselves, each of them is as a separate index entry
+  // Because object type fields are elements themselves, each of them will be a separate index entry
   const elemFullNameToReferencesTree = {
     [element.elemID.getFullName()]: currentElementTree,
   }
@@ -205,33 +208,28 @@ const updateReferenceTargetsTreeIndex = async (
           referencesToDelete.push(fieldFullName)
         })
       }
-    } else if (isAdditionChange(change)) {
-      const elemFullNamesToReferenceTrees = getReferencesTrees(change.data.after)
-      Object.entries(elemFullNamesToReferenceTrees).forEach(([ref, referencesTree]) => {
-        // Add a reference index of elements that have references
-        if (referencesTree.size > 0) {
-          referencesToSet.push({ key: ref, value: referencesTree })
-        }
-      })
     } else {
-      const beforeFullNameToReferencesTrees = getReferencesTrees(change.data.before)
       const afterFullNameToReferencesTrees = getReferencesTrees(change.data.after)
-
-      const beforeFullNames = new Set(Object.keys(beforeFullNameToReferencesTrees))
-      const afterFullNames = new Set(Object.keys(afterFullNameToReferencesTrees))
-
-      // Delete references that no longer exists
-      beforeFullNames.forEach(fullName => {
-        if (!afterFullNames.has(fullName)) {
-          referencesToDelete.push(fullName)
-        }
-      })
-
+      // Addition and modification are the same in this case
       Object.entries(afterFullNameToReferencesTrees).forEach(([ref, referencesTree]) => {
         if (referencesTree.size > 0) {
           referencesToSet.push({ key: ref, value: referencesTree })
         }
       })
+
+      // In case of a modification change, we also need to delete object's field references that no longer exists
+      if (isModificationChange(change)) {
+        const beforeFullNameToReferencesTrees = getReferencesTrees(change.data.before)
+
+        const beforeFullNames = new Set(Object.keys(beforeFullNameToReferencesTrees))
+        const afterFullNames = new Set(Object.keys(afterFullNameToReferencesTrees))
+
+        beforeFullNames.forEach(fullName => {
+          if (!afterFullNames.has(fullName)) {
+            referencesToDelete.push(fullName)
+          }
+        })
+      }
     }
   })
 
@@ -354,18 +352,19 @@ export const updateReferenceIndexes = async (
       getReferencesFromChange(change),
     ]))
 
+  // Outgoing references
   await updateReferenceTargetsTreeIndex(
     relevantChanges,
     referenceTargetsTreeIndex,
   )
 
-  // outgoing references
+  // Outgoing references
   await updateReferenceTargetsIndex(
     relevantChanges,
     referenceTargetsIndex,
     changeToReferences,
   )
-  // incoming references
+  // Incoming references
   await updateReferenceSourcesIndex(
     relevantChanges,
     referenceSourcesIndex,

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { mapValues } from 'lodash'
+import _ from 'lodash'
 import path from 'path'
 import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, DetailedChange, Change,
   Value, toChange, isRemovalChange, getChangeData,
@@ -300,6 +300,10 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
   return ret
 }
 
+/**
+ * Serialize a reference tree to a JSON of fullPath to ElemID
+ * example: adapter.type.instance.instanceName.field.nestedField -> ElemID
+ */
 export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
   const objectToSerialize: Record<string, string[]> = {}
   await awu(val.entries()).forEach(([key, value]) => {
@@ -308,7 +312,7 @@ export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<El
   return safeJsonStringify(objectToSerialize)
 }
 export const deserializeReferenceTree = async (data: string): Promise<collections.treeMap.TreeMap<ElemID>> => {
-  const parsedEntries = mapValues(JSON.parse(data), ids => ids.map((id: string) => ElemID.fromFullName(id)))
+  const parsedEntries = _.mapValues(JSON.parse(data), ids => ids.map((id: string) => ElemID.fromFullName(id)))
   return new collections.treeMap.TreeMap<ElemID>(Object.entries(parsedEntries))
 }
 

@@ -16,7 +16,7 @@
 import rimraf from 'rimraf'
 import fsExtra from 'fs-extra'
 import path from 'path'
-import { getSaltoHome } from '../app_config'
+import { getSaltoHome } from '../../app_config'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const requireOrExtract = (externalsLocation: string): any => {

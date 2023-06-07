@@ -205,16 +205,16 @@ describe('Group Changes with Salto suiteApp', () => {
   const newDataInstance2 = new InstanceElement(
     'newDataInstance2',
     subsidiaryType,
+    { value: new ReferenceExpression(newDataInstance1.elemID) },
   )
   const newDataInstance3 = new InstanceElement(
     'newDataInstance3',
     subsidiaryType,
-    { value: new ReferenceExpression(newDataInstance1.elemID) },
   )
   const newDataInstance4 = new InstanceElement(
-    'newDataInstance3',
+    'newDataInstance4',
     subsidiaryType,
-    { value: new ReferenceExpression(newDataInstance2.elemID) },
+    { value: new ReferenceExpression(newDataInstance3.elemID) },
   )
 
   const modifiedDataInstance = new InstanceElement(
@@ -222,9 +222,26 @@ describe('Group Changes with Salto suiteApp', () => {
     subsidiaryType,
   )
 
-  const deletedDataInstance = new InstanceElement(
-    'deletedDataInstance',
+  const deletedDataInstance1 = new InstanceElement(
+    'deletedDataInstance1',
     subsidiaryType,
+  )
+
+  const deletedDataInstance2 = new InstanceElement(
+    'deletedDataInstance2',
+    subsidiaryType,
+    { value: new ReferenceExpression(deletedDataInstance1.elemID) },
+  )
+
+  const deletedDataInstance3 = new InstanceElement(
+    'deletedDataInstance3',
+    subsidiaryType,
+  )
+
+  const deletedDataInstance4 = new InstanceElement(
+    'deletedDataInstance4',
+    subsidiaryType,
+    { value: new ReferenceExpression(deletedDataInstance3.elemID) },
   )
 
   const deletedCustomRecordType = new ObjectType({
@@ -275,7 +292,10 @@ describe('Group Changes with Salto suiteApp', () => {
         before: modifiedDataInstance,
         after: modifiedDataInstance,
       })],
-      [deletedDataInstance.elemID.getFullName(), toChange({ before: deletedDataInstance })],
+      [deletedDataInstance1.elemID.getFullName(), toChange({ before: deletedDataInstance1 })],
+      [deletedDataInstance2.elemID.getFullName(), toChange({ before: deletedDataInstance2 })],
+      [deletedDataInstance3.elemID.getFullName(), toChange({ before: deletedDataInstance3 })],
+      [deletedDataInstance4.elemID.getFullName(), toChange({ before: deletedDataInstance4 })],
       [configInstance.elemID.getFullName(), toChange({ after: configInstance })],
       [deletedCustomRecordType.elemID.getFullName(), toChange({ before: deletedCustomRecordType })],
       [deletedStandardInstance.elemID.getFullName(), toChange({ before: deletedStandardInstance })],
@@ -318,24 +338,35 @@ describe('Group Changes with Salto suiteApp', () => {
       .toEqual(SDF_CREATE_OR_UPDATE_GROUP_ID)
   })
 
-  it('should set correct group id for data instances', () => {
+  it('should set group chunks based on dependencies to data instances additions', () => {
     expect(changeGroupIds.get(newDataInstance1.elemID.getFullName()))
       .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 1/2`)
 
     expect(changeGroupIds.get(newDataInstance2.elemID.getFullName()))
-      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 1/2`)
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 2/2`)
 
     expect(changeGroupIds.get(newDataInstance3.elemID.getFullName()))
-      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 2/2`)
+      .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 1/2`)
 
     expect(changeGroupIds.get(newDataInstance4.elemID.getFullName()))
       .toEqual(`${SUITEAPP_CREATING_RECORDS_GROUP_ID} - 2/2`)
+  })
+  it('should set group chunks based on dependencies to data instances deletions', () => {
+    expect(changeGroupIds.get(deletedDataInstance1.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_DELETING_RECORDS_GROUP_ID} - 2/2`)
 
+    expect(changeGroupIds.get(deletedDataInstance2.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_DELETING_RECORDS_GROUP_ID} - 1/2`)
+
+    expect(changeGroupIds.get(deletedDataInstance3.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_DELETING_RECORDS_GROUP_ID} - 2/2`)
+
+    expect(changeGroupIds.get(deletedDataInstance4.elemID.getFullName()))
+      .toEqual(`${SUITEAPP_DELETING_RECORDS_GROUP_ID} - 1/2`)
+  })
+  it('should set correct group id for data instances modifications', () => {
     expect(changeGroupIds.get(modifiedDataInstance.elemID.getFullName()))
       .toEqual(SUITEAPP_UPDATING_RECORDS_GROUP_ID)
-
-    expect(changeGroupIds.get(deletedDataInstance.elemID.getFullName()))
-      .toEqual(SUITEAPP_DELETING_RECORDS_GROUP_ID)
   })
 
   it('should set correct group id for config instances', () => {

@@ -216,8 +216,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
-  // TODO: SALTO-4199 change 'reportdefinition_fields' to 'reportdefinition_flags'
-  const reportDefinitionFlagsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_fields')
+  const reportDefinitionFlagsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_flags')
   const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
   const reportdefinitionAccessAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_accessaudience')
 

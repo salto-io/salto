@@ -62,6 +62,7 @@ const NON_BINARY_FILETYPES = new Set([
   'STYLESHEET',
   'XMLDOC',
   'JSON',
+  'FREEMARKER',
 ])
 
 const REQUEST_HEADERS = {

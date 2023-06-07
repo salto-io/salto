@@ -32,17 +32,44 @@ export const createGadget1Values = (name: string): Values => ({
     column: 2,
   },
   title: `${name}-1`,
-  properties: {
-    bubbleType: 'participants',
-    id: 10024,
-    isConfigured: true,
-    name: 'AlonCompanyProject',
-    recentCommentsPeriod: 7,
-    refresh: 15,
-    type: 'project',
-    useLogarithmicScale: false,
-    useRelativeColoring: true,
-  },
+  properties: [
+    {
+      key: 'bubbleType',
+      value: 'participants',
+    },
+    {
+      key: 'id',
+      value: 10024,
+    },
+    {
+      key: 'isConfigured',
+      value: true,
+    },
+    {
+      key: 'name',
+      value: 'AlonCompanyProject',
+    },
+    {
+      key: 'recentCommentsPeriod',
+      value: 7,
+    },
+    {
+      key: 'refresh',
+      value: 15,
+    },
+    {
+      key: 'type',
+      value: 'project',
+    },
+    {
+      key: 'useLogarithmicScale',
+      value: false,
+    },
+    {
+      key: 'useRelativeColoring',
+      value: true,
+    },
+  ],
 })
 
 export const createGadget2Values = (name: string): Values => ({
@@ -53,15 +80,42 @@ export const createGadget2Values = (name: string): Values => ({
     column: 2,
   },
   title: `${name}-2`,
-  properties: {
-    bubbleType: 'participants',
-    id: 10024,
-    isConfigured: true,
-    name: 'AlonCompanyProject',
-    recentCommentsPeriod: 7,
-    refresh: 15,
-    type: 'project',
-    useLogarithmicScale: false,
-    useRelativeColoring: true,
-  },
+  properties: [
+    {
+      key: 'bubbleType',
+      value: 'participants',
+    },
+    {
+      key: 'id',
+      value: 10024,
+    },
+    {
+      key: 'isConfigured',
+      value: true,
+    },
+    {
+      key: 'name',
+      value: 'AlonCompanyProject',
+    },
+    {
+      key: 'recentCommentsPeriod',
+      value: 7,
+    },
+    {
+      key: 'refresh',
+      value: 15,
+    },
+    {
+      key: 'type',
+      value: 'project',
+    },
+    {
+      key: 'useLogarithmicScale',
+      value: false,
+    },
+    {
+      key: 'useRelativeColoring',
+      value: true,
+    },
+  ],
 })

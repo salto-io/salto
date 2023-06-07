@@ -14,3 +14,4 @@
 * limitations under the License.
 */
 export { removeStandaloneFieldDependency } from './remove_standalone_field_dependency'
+export { ChangeWithKey } from './types'

@@ -17,9 +17,10 @@ import {
   Change, dependencyChange, DependencyChanger, getChangeData, InstanceElement,
   isInstanceChange, DependencyChange, isRemovalChange, CORE_ANNOTATIONS,
 } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { GUIDE_ORDER_TYPES } from '../filters/guide_order/guide_order_utils'
-import { ChangeWithKey } from './types'
+
 
 const createDependencyChange = (
   orderChange: {key: collections.set.SetId; change: Change<InstanceElement>},
@@ -48,7 +49,7 @@ export const guideOrderDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is ChangeWithKey<Change<InstanceElement>> =>
+      (change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

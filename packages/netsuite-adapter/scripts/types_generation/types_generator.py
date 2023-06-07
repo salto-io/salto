@@ -9,11 +9,14 @@ import sys
 import time
 import logging
 from pathlib import Path
+sys.path.append(scripts_path)
+from scripts.role_permission_generation.permissions_generator import main as generate_permissions
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
 SCRIPT_DIR = os.path.dirname(__file__)
+scripts_path = os.path.join(SCRIPT_DIR, '../..')
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 TYPES_DIR = os.path.join(SRC_DIR, 'types/')
 CUSTOM_TYPES_DIR = os.path.join(TYPES_DIR, 'standard_types/')
@@ -781,6 +784,7 @@ def main():
 
 
 main()
+generate_permissions()
 
 
 

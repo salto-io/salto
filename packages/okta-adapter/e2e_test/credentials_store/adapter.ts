@@ -13,10 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { Adapter } from '@salto-io/e2e-credentials-store'
+import { Credentials } from '../../src/auth'
 
-export type ChangeWithKey<ChangeType extends Change> = {
-  key: collections.set.SetId
-  change: ChangeType
+type Args = {
+  baseUrl: string
+  token: string
 }
+
+const adapter: Adapter<Args, Credentials> = {
+  name: 'okta',
+  credentialsOpts: {
+    baseUrl: {
+      type: 'string',
+      demand: true,
+    },
+    token: {
+      type: 'string',
+      demand: true,
+    },
+  },
+  credentials: async args => ({
+    baseUrl: args.baseUrl,
+    token: args.token,
+  }),
+  validateCredentials: async () => {
+    // TODO
+  },
+}
+
+export default adapter

@@ -398,7 +398,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       url: '/api/v1/meta/schemas/apps/{appId}/default',
     },
     transformation: {
-      idFields: ['title'],
+      idFields: [],
       dataField: '.',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
         { fieldName: '$schema' },
@@ -440,7 +440,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
         { fieldName: 'scheme', fieldType: 'string' },
         { fieldName: 'userName', fieldType: 'string' },
       ],
-      fieldsToHide: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
+      fieldsToOmit: [{ fieldName: 'signing', fieldType: 'ApplicationCredentialsSigning' }],
     },
   },
   ApplicationVisibility: {

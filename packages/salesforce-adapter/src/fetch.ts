@@ -394,8 +394,8 @@ export const retrieveMetadataInstances = async ({
     // TODO: investigate further why this happens and find a better solution than just failing
     if (!_.isString(result.zipFile)) {
       log.warn(
-        'retrieve request for types %s failed, zipFile is %o',
-        typesToRetrieve, result.zipFile,
+        'retrieve request for types %s failed, zipFile is %o, Result is %o',
+        typesToRetrieve, result.zipFile, result,
       )
       throw new Error(`Retrieve request for ${typesToRetrieve} failed. messages: ${safeJsonStringify(result.messages)}`)
     }

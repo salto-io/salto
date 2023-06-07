@@ -205,6 +205,7 @@ describe('Salto parser', () => {
       
       type salesforce.escapedDashBeforeQuote {
         str = "you can't run away \\\\"
+        unicodeStr = "this is \\u0061 basic thing"
       }
 
       type salesforce.templates {
@@ -742,6 +743,9 @@ value
 
       it('should parsed the double escaped string', () => {
         expect(escapeObj.annotations.str).toEqual('you can\'t run away \\')
+      })
+      it('should parse the unicode escaping', () => {
+        expect(escapeObj.annotations.unicodeStr).toEqual('this is a basic thing')
       })
     })
 

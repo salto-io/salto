@@ -21,6 +21,9 @@ module.exports = deepMerge(
     name: 'okta-adapter',
     displayName: 'okta-adapter',
     rootDir: `${__dirname}`,
+    testEnvironment: process.env.RUN_E2E_TESTS
+    ? '@salto-io/okta-adapter/dist/e2e_test/jest_environment'
+    : undefined,
     collectCoverageFrom: [
       '!<rootDir>/index.ts',
     ],

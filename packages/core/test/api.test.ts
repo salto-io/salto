@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -431,7 +431,7 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockClear()
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
-          errors: [new Error('cannot add new employee')],
+          errors: [{ message: 'cannot add new employee', severity: 'Error' as SeverityLevel }],
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })

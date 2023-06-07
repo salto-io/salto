@@ -117,10 +117,10 @@ describe('createElementsSourceIndex', () => {
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource, true)
     const index = (await elementsSourceIndex.getIndexes()).customFieldsIndex
-    expect(index.Contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
+    expect(index.contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
       .map(e => e.elemID.getFullName()))
 
-    expect(index.Employee.map(e => e.elemID.getFullName()))
+    expect(index.employee.map(e => e.elemID.getFullName()))
       .toEqual([instance1.elemID.getFullName()])
   })
   it('should not create custom fields index on full fetch', async () => {

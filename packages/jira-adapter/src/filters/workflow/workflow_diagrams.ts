@@ -20,7 +20,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
-import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { isWorkflowInstance, TransitionFrom, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
@@ -168,11 +168,12 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
           : from))
       }
     })
+  delete element.value.diagramInitialEntry
 }
 
 const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>)
-  :StatusDiagramDeploy[] | undefined =>
-  workflow.value.statuses
+  :StatusDiagramDeploy[] | undefined => {
+  const statuses = workflow.value.statuses
     ?.map(status => {
       if (typeof status.id !== 'string') {
         throw new Error(`Fail to deploy Workflow ${workflow.value.name} Status ${status.name} Diagram values`)
@@ -181,7 +182,15 @@ const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: 
         x: status.location?.x,
         y: status.location?.y }
     })
-
+  if (workflow.value.diagramInitialEntry && statuses) {
+    statuses.push({
+      id: statusIdToStepId.initial,
+      x: workflow.value.diagramInitialEntry.x,
+      y: workflow.value.diagramInitialEntry.y,
+    })
+  }
+  return statuses
+}
 
 const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>,
   actionKeyToTransition: Record<string, TransitionDiagramFields>)
@@ -249,7 +258,11 @@ const buildDiagramMaps = async ({ client, workflow }:
   }
   const { layout } = response.data
   layout.statuses.forEach(status => {
-    statusIdToStatus[status.statusId] = status
+    if (status.initial) {
+      statusIdToStatus.initial = status
+    } else {
+      statusIdToStatus[status.statusId] = status
+    }
   })
   layout.transitions.forEach(transition => {
     actionKeyToTransition[getTransitionKey(transition.sourceId, transition.name)] = transition
@@ -275,6 +288,10 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
         y: statusIdToStatus[status.id as string].y }
     }
   })
+  workflow.value.diagramInitialEntry = {
+    x: statusIdToStatus.initial?.x,
+    y: statusIdToStatus.initial?.y,
+  }
   workflow.value.transitions.forEach(transition => {
     const transitionName = transition.name
     if (transition.type === INITIAL_TRANSITION_TYPE && transitionName !== undefined) {
@@ -334,6 +351,11 @@ const filter: FilterCreator = ({ client }) => ({
     if (workflowStatusType !== undefined) {
       workflowStatusType.fields.location = new Field(workflowStatusType, 'location', statusLocationType)
       setFieldDeploymentAnnotations(workflowStatusType, 'location')
+    }
+    const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
+    if (workflowType !== undefined) {
+      workflowType.fields.diagramInitialEntry = new Field(workflowType, 'diagramInitialEntry', statusLocationType)
+      setFieldDeploymentAnnotations(workflowType, 'diagramInitialEntry')
     }
     elements.push(transitionFromType)
     elements.push(statusLocationType)

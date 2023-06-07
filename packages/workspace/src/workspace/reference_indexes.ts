@@ -83,9 +83,19 @@ const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   }
 }
 
-const createReferenceTree = (references: ReferenceDetails[]): collections.treeMap.TreeMap<ElemID> =>
+const createReferenceTree = (references: ReferenceDetails[], rootFields = false): collections.treeMap.TreeMap<ElemID> =>
   new collections.treeMap.TreeMap<ElemID>(
-    (references.map(ref => [ref.referenceSource.getFullName(), [ref.referenceTarget]]))
+    references.map(
+      ref => {
+        // In case we are creating a reference tree for a type object, the fields path is not relevant
+        // This is because a request for the field's references will be to the field itself, and not through the object
+        const key = rootFields && ref.referenceSource.idType === 'field'
+          ? ''
+          : ref.referenceSource.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+        return [key, [ref.referenceTarget]]
+      }
+    ),
+    ElemID.NAMESPACE_SEPARATOR
   )
 
 const getReferenceTargetIndexUpdates = (
@@ -120,7 +130,7 @@ const getReferenceTargetIndexUpdates = (
   const elemId = getChangeData(change).elemID.getFullName()
   indexUpdates.push({
     key: elemId,
-    value: createReferenceTree(changeToReferences[elemId].currentAndNew),
+    value: createReferenceTree(changeToReferences[elemId].currentAndNew, true),
   })
 
   return indexUpdates

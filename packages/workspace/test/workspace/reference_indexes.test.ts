@@ -99,9 +99,9 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap<ElemID>([
-            ['test.object.instance.instance.someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
-            ['test.object.instance.instance.someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
-            ['test.object.instance.instance.templateValue', [
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
               new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
               new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
             ],
@@ -111,36 +111,36 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.object.field.someField',
           value: new collections.treeMap.TreeMap([
-            ['test.object.field.someField.fieldRef', [new ElemID('test', 'target2')]],
+            ['fieldRef', [new ElemID('test', 'target2')]],
           ]),
         },
         {
           key: 'test.object.field.someTemplateField',
           value: new collections.treeMap.TreeMap([
-            ['test.object.field.someTemplateField.fieldRef', [new ElemID('test', 'target2')]],
+            ['fieldRef', [new ElemID('test', 'target2')]],
           ]),
         },
         {
           key: 'test.object.field.anotherTemplateField',
           value: new collections.treeMap.TreeMap([
-            ['test.object.field.anotherTemplateField.fieldRef', [new ElemID('test', 'target2')]],
+            ['fieldRef', [new ElemID('test', 'target2')]],
           ]),
         },
         {
           key: 'test.object.field.fieldWithRefToType',
           value: new collections.treeMap.TreeMap([
-            ['test.object.field.fieldWithRefToType.fieldRef', [new ElemID('test', 'object')]],
+            ['fieldRef', [new ElemID('test', 'object')]],
           ]),
         },
         {
           key: 'test.object',
           value: new collections.treeMap.TreeMap([
-            ['test.object.attr.typeRef', [new ElemID('test', 'target1')]],
-            ['test.object.attr.inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
-            ['test.object.field.someField.fieldRef', [new ElemID('test', 'target2')]],
-            ['test.object.field.someTemplateField.fieldRef', [new ElemID('test', 'target2')]],
-            ['test.object.field.anotherTemplateField.fieldRef', [new ElemID('test', 'target2')]],
-            ['test.object.field.fieldWithRefToType.fieldRef', [new ElemID('test', 'object')]],
+            ['typeRef', [new ElemID('test', 'target1')]],
+            ['inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'object')]],
           ]),
         },
       ])
@@ -246,8 +246,8 @@ describe('updateReferenceIndexes', () => {
       expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
         key: 'test.object.instance.instance',
         value: new collections.treeMap.TreeMap([
-          ['test.object.instance.instance.someAnnotation2', [new ElemID('test', 'target2', 'instance', 'someInstance', 'value')]],
-          ['test.object.instance.instance.someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+          ['someAnnotation2', [new ElemID('test', 'target2', 'instance', 'someInstance', 'value')]],
+          ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
         ]),
       }])
     })
@@ -306,15 +306,15 @@ describe('updateReferenceIndexes', () => {
         {
           key: 'test.object.field.fieldWithRefToType',
           value: new collections.treeMap.TreeMap([
-            ['test.object.field.fieldWithRefToType.fieldRef', [new ElemID('test', 'object')]],
+            ['fieldRef', [new ElemID('test', 'object')]],
           ]),
         },
         {
           key: 'test.object',
           value: new collections.treeMap.TreeMap([
-            ['test.object.attr.typeRef', [new ElemID('test', 'target1')]],
-            ['test.object.attr.inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
-            ['test.object.field.fieldWithRefToType.fieldRef', [new ElemID('test', 'object')]],
+            ['typeRef', [new ElemID('test', 'target1')]],
+            ['inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
+            ['', [new ElemID('test', 'object')]],
           ]),
         }])
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
@@ -401,9 +401,9 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap<ElemID>([
-            ['test.object.instance.instance.someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
-            ['test.object.instance.instance.someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
-            ['test.object.instance.instance.templateValue', [
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
               new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
               new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
             ],
@@ -463,9 +463,9 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
           value: new collections.treeMap.TreeMap<ElemID>([
-            ['test.object.instance.instance.someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
-            ['test.object.instance.instance.someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
-            ['test.object.instance.instance.templateValue', [
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
               new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
               new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
             ],

@@ -1175,9 +1175,10 @@ export const loadWorkspace = async (
       const baseId = id.createBaseID().parent.getFullName()
       const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
 
+      const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
       return referencesTree === undefined ? []
         : _.uniqBy(
-          Array.from(referencesTree.valuesWithPrefix(id.getFullName())).flat(),
+          Array.from(referencesTree.valuesWithPrefix(idPath)).flat(),
           elemId => elemId.getFullName()
         )
     },

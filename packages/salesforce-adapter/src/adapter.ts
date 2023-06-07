@@ -229,8 +229,10 @@ const METADATA_TO_RETRIEVE = [
   'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
+  'CustomApplication',
   'CustomMetadata', // For the XML attributes
   'CustomObject',
+  'CustomPermission',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
@@ -238,8 +240,11 @@ const METADATA_TO_RETRIEVE = [
   'EclairGeoData', // contains encoded zip content
   'EmailFolder',
   'EmailTemplate', // contains encoded zip content, is under a folder
+  'ExternalDataSource',
+  'FlowDefinition',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
+  'Profile',
   'PermissionSet',
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',

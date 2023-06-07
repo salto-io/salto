@@ -205,17 +205,13 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean)
   const name = fullNameParts.slice(-1)[0]
   const parentNames = fullNameParts.slice(0, -1)
 
-  // Objects whose parents are custom objects need to check only the element's name and not the entire name
   if (name.startsWith(namePrefix)) {
     return obj.fullName
   }
 
   // In some cases, obj.fullName does not contain the namespace prefix even though
   // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-  if (parentNames.length === 0) {
-    return `${namePrefix}${obj.fullName}`
-  }
-  return `${parentNames.join(API_NAME_SEPARATOR)}${API_NAME_SEPARATOR}${namePrefix}${name}`
+  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
 const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {

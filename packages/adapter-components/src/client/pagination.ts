@@ -24,7 +24,6 @@ import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
 const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
@@ -89,8 +88,7 @@ const computeRecursiveArgs = (
 )
 
 const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<void> => {
-  await awu(promises)
-    .forEach(async promise => promise.catch(_e => undefined))
+  await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
 }
 
 

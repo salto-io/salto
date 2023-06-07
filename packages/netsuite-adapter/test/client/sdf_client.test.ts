@@ -2020,7 +2020,12 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         
         An error occurred during custom object validation. (customworkflow1)
         Details: When the SuiteCloud project contains a workflow, the manifest must define the WORKFLOW feature as required.
-        File: ~/Objects/customworkflow1.xml`
+        File: ~/Objects/customworkflow1.xml
+        
+        An error occurred during custom object validation. (customworkflow2)
+        Details: The following features must be specified in the manifest to use the [scriptid=custform1] value with the Transaction Form1 condition builder parameter in the customworkflow2 workflow: RECEIVABLES
+        File: ~/Objects/customworkflow2.xml`
+
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             throw new Error(errorMessage)
           }
@@ -2032,7 +2037,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
           expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW'])
+          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW', 'RECEIVABLES'])
         }
       })
       it('should throw error', async () => {

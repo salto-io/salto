@@ -2693,20 +2693,22 @@ describe('workspace', () => {
   describe('referenceTargetsTree index', () => {
     it('should return same result after serialize and deserialize', async () => {
       const referenceTargetsTree = new collections.treeMap.TreeMap<ElemID>([
-        ['test.object.instance.instance.someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
-        ['test.object.instance.instance.someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
-        ['test.object.instance.instance.inner.templateValue', [
+        ['someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
+        ['someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+        ['inner.templateValue', [
           ElemID.fromFullName('test.target2.field.someTemplateField.value'),
           ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
         ],
         ],
+        ['', [ElemID.fromFullName('test.target2.instance.someInstance2')]],
+
       ])
       const serializedTree = await serializeReferenceTree(referenceTargetsTree)
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       expect(deserializedTree).toEqual(referenceTargetsTree)
     })
     it('should return same result after deserialize and serialize', async () => {
-      const serializedTree = '[["test.object.instance.instance.someAnnotation",["test.target2.field.someField.value"]],["test.object.instance.instance.someValue",["test.target2.instance.someInstance"]],["test.object.instance.instance.inner.templateValue",["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]]]'
+      const serializedTree = '[["someAnnotation",["test.target2.field.someField.value"]],["someValue",["test.target2.instance.someInstance"]],["inner.templateValue",["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]],["",["test.target2.instance.someInstance2"]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       const reSerializedTree = await serializeReferenceTree(deserializedTree)
       expect(reSerializedTree).toEqual(serializedTree)

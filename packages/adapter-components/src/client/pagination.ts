@@ -19,7 +19,7 @@ import objectHash from 'object-hash'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ResponseValue } from './http_connection'
+import { ResponseValue, Response } from './http_connection'
 import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
 const { isDefined } = lowerdashValues
@@ -94,18 +94,15 @@ const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<vo
 
 type PaginationResult = {
   page: ResponseValue[]
+  response: Response<ResponseValue| ResponseValue[]>
   additionalArgs: Record<string, string>
   yieldResult: boolean
 }
 
 type GetPageArgs = {
   promisesQueue: Map<string, Promise<PaginationResult>>
-  // recursiveQueryParams: RecursiveQueryArgFunc | undefined
   paginationFunc: PaginationFunc
-  // queryParams: Record<string, string | string[]> | undefined
   client: HTTPReadClientInterface
-  // url: string
-  // headers: Record<string, string> | undefined
   extractPageEntries: PageEntriesExtractor
   customEntryExtractor?: PageEntriesExtractor
   getParams: ClientGetWithPaginationParams
@@ -128,8 +125,8 @@ const singlePagePagination = async (
   pageArgs: GetPageArgs,
   additionalArgs: Record<string, string>
 ):Promise<PaginationResult> => {
-  const { client, extractPageEntries, customEntryExtractor, getParams, paginationFunc, pageSize } = pageArgs
-  const { url, queryParams, recursiveQueryParams, headers } = getParams
+  const { client, extractPageEntries, customEntryExtractor, getParams } = pageArgs
+  const { url, queryParams, headers } = getParams
   const params = { ...queryParams, ...additionalArgs }
 
   const response = await client.getSinglePage({
@@ -139,7 +136,7 @@ const singlePagePagination = async (
   })
   if (response.status !== 200) {
     log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
-    return { page: [], additionalArgs, yieldResult: false }
+    return { response, page: [], additionalArgs, yieldResult: false }
   }
   const entries = (
     (!Array.isArray(response.data) && Array.isArray(response.data.items))
@@ -150,11 +147,20 @@ const singlePagePagination = async (
   // checking original entries and not the ones that passed the custom extractor, because even if all entries are
   // filtered out we should still continue querying
   if (entries.length === 0) {
-    return { page: [], additionalArgs, yieldResult: false }
+    return { response, page: [], additionalArgs, yieldResult: false }
   }
   const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
 
-  // add next calls to the queue
+  return { response, page, additionalArgs, yieldResult: true }
+}
+
+const addNextPages = ({ pageArgs, page, response, additionalArgs } :
+  { pageArgs: GetPageArgs
+    response: Response<ResponseValue | ResponseValue[]>
+    page: ResponseValue[]
+    additionalArgs: Record<string, string> }): void => {
+  const { getParams, paginationFunc, pageSize } = pageArgs
+  const { recursiveQueryParams } = getParams
   paginationFunc({
     responseData: response.data,
     page,
@@ -168,8 +174,6 @@ const singlePagePagination = async (
   if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
     computeRecursiveArgs(page, recursiveQueryParams).forEach(args => pushPage(pageArgs, args))
   }
-
-  return { page, additionalArgs, yieldResult: true }
 }
 
 // The traverseRequests function is a generator that yields pages of results from a paginated
@@ -193,7 +197,7 @@ export const traverseRequests: (
   const usedParams = new Set<string>()
   const promisesQueue: Map<string, Promise<PaginationResult>> = new Map()
   let numResults = 0
-  pushPage({
+  const pageArgs = {
     promisesQueue,
     getParams,
     paginationFunc,
@@ -202,7 +206,8 @@ export const traverseRequests: (
     customEntryExtractor,
     pageSize,
     usedParams,
-  }, {})
+  }
+  pushPage(pageArgs, {})
   while (promisesQueue.size > 0) {
     try {
       // eslint-disable-next-line no-await-in-loop
@@ -211,6 +216,12 @@ export const traverseRequests: (
       if (result.yieldResult) {
         yield result.page
         numResults += result.page.length
+        addNextPages({
+          pageArgs,
+          page: result.page,
+          response: result.response,
+          additionalArgs: result.additionalArgs,
+        })
       }
     } catch (e) {
       // avoid leaking promises
@@ -336,24 +347,22 @@ export const getWithCursorPagination = (pathChecker = defaultPathChecker): Pagin
   return nextPageCursorPages
 }
 
+type PageResponse = {
+  total: number
+  values: unknown[]
+}
+
+const PAGE_RESPONSE_SCHEME = Joi.object({
+  total: Joi.number().required(),
+  values: Joi.array().required(),
+}).unknown(true)
+
+const isPageResponse = createSchemeGuard<PageResponse>(PAGE_RESPONSE_SCHEME, 'Expected a response with a total and values')
+
 // pagination for pages that have a total, and can be brought simultaneously
 // after the first call all the rest of the pages will be returned. In the rest of the calls return nothing
-export const getAllPagesWithOffsetAndTotal = (): PaginationFunc => {
-  type PageResponse = {
-    total: number
-    values: unknown[]
-  }
-
-  const PAGE_RESPONSE_SCHEME = Joi.object({
-    total: Joi.number().required(),
-    values: Joi.array().required(),
-  }).unknown(true)
-
-  const isPageResponse = createSchemeGuard<PageResponse>(PAGE_RESPONSE_SCHEME, 'Expected a response with a total and values')
-
-  const getNextPages: PaginationFunc = (
-    { responseData, getParams, currentParams }
-  ) => {
+export const getAllPagesWithOffsetAndTotal = (): PaginationFunc =>
+  ({ responseData, getParams, currentParams }) => {
     const { paginationField } = getParams
     if (paginationField === undefined) {
       return []
@@ -369,9 +378,6 @@ export const getAllPagesWithOffsetAndTotal = (): PaginationFunc => {
     return _.range(responseData.values.length, responseData.total, responseData.values.length)
       .map(nextPageStart => ({ ...currentParams, [paginationField]: nextPageStart.toString() }))
   }
-
-  return getNextPages
-}
 
 export type Paginator = (
   params: ClientGetWithPaginationParams,

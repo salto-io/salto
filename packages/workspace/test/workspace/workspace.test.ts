@@ -2706,7 +2706,7 @@ describe('workspace', () => {
       expect(deserializedTree).toEqual(referenceTargetsTree)
     })
     it('should return same result after deserialize and serialize', async () => {
-      const serializedTree = '{"test.object.instance.instance.someAnnotation":["test.target2.field.someField.value"],"test.object.instance.instance.someValue":["test.target2.instance.someInstance"],"test.object.instance.instance.inner.templateValue":["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]}'
+      const serializedTree = '[["test.object.instance.instance.someAnnotation",["test.target2.field.someField.value"]],["test.object.instance.instance.someValue",["test.target2.instance.someInstance"]],["test.object.instance.instance.inner.templateValue",["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]]]'
       const deserializedTree = await deserializeReferenceTree(serializedTree)
       const reSerializedTree = await serializeReferenceTree(deserializedTree)
       expect(reSerializedTree).toEqual(serializedTree)
@@ -3298,11 +3298,12 @@ describe('workspace', () => {
     const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
     beforeAll(async () => {
-      const element = new InstanceElement(
+      const instanceElement = new InstanceElement(
         'test',
         new ObjectType({ elemID: new ElemID('adapter', 'test') }),
         {
           ref: ref1,
+          ref2,
           inner: {
             ref: ref2,
             inner2: {
@@ -3314,9 +3315,21 @@ describe('workspace', () => {
           none: 'none',
         }
       )
+      const objectType = new ObjectType({
+        elemID: new ElemID('adapter', 'object'),
+        annotations: {
+          typeRef: ref1,
+        },
+        fields: {
+          someField: {
+            refType: BuiltinTypes.STRING,
+            annotations: { fieldRef: ref2 },
+          },
+        },
+      })
       const elementSources = {
         default: {
-          naclFiles: createMockNaclFileSource([element]),
+          naclFiles: createMockNaclFileSource([instanceElement, objectType]),
           state: createState([]),
         },
         '': {
@@ -3328,7 +3341,7 @@ describe('workspace', () => {
         elementSources)
     })
 
-    it('top level instance should return all references under it', async () => {
+    it('top level instance should return all references under it without duplicates', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test'))
       expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
@@ -3338,12 +3351,12 @@ describe('workspace', () => {
       expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
 
-    it('specific nested field path should return references under it', async () => {
+    it('specific nested instance field path should return references under it', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'))
       expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID])
     })
 
-    it('nested field without references should return an empty array', async () => {
+    it('nested instance field without references should return an empty array', async () => {
       const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'none'))
       expect(instanceRefs).toMatchObject([])
     })
@@ -3355,6 +3368,11 @@ describe('workspace', () => {
 
     it('None-exist entry should return empty array', async () => {
       expect(await workspace.getElementOutgoingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
+    })
+
+    it('object type should also include the references of its fields', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'object'))
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID])
     })
   })
 

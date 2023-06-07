@@ -83,20 +83,10 @@ const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   }
 }
 
-const updateUniqueIndex = async (
-  index: RemoteMap<ElemID[]>,
-  updates: RemoteMapEntry<ElemID[]>[]
-): Promise<void> => {
-  const [deletions, modifications] = _.partition(updates, update => update.value.length === 0)
-  const uniqueModification = modifications.map(modification => ({
-    ...modification,
-    value: _.uniqBy(modification.value, id => id.getFullName()),
-  }))
-  await Promise.all([
-    modifications.length !== 0 ? index.setAll(uniqueModification) : undefined,
-    deletions.length !== 0 ? index.deleteAll(deletions.map(deletion => deletion.key)) : undefined,
-  ])
-}
+const createReferenceTree = (references: ReferenceDetails[]): collections.treeMap.TreeMap<ElemID> =>
+  new collections.treeMap.TreeMap<ElemID>(
+    (references.map(ref => [ref.referenceSource.getFullName(), [ref.referenceTarget]]))
+  )
 
 const getReferenceTargetIndexUpdates = (
   change: Change<Element>,
@@ -105,13 +95,13 @@ const getReferenceTargetIndexUpdates = (
   const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
 
   if (isObjectTypeChange(change)) {
-    const references = changeToReferences[getChangeData(change).elemID.getFullName()]
-      .currentAndNew
-    const baseIdToReferences = _(references)
-      .groupBy(reference => reference.referenceSource.createBaseID().parent.getFullName())
-      .value()
-    const type = getChangeData(change)
+    const elemId = getChangeData(change).elemID.getFullName()
+    const baseIdToReferences = _.groupBy(
+      changeToReferences[elemId].currentAndNew,
+      reference => reference.referenceSource.createBaseID().parent.getFullName()
+    )
 
+    const type = getChangeData(change)
     const allFields = isModificationChange(change)
       ? {
         ...change.data.before.fields,
@@ -123,20 +113,14 @@ const getReferenceTargetIndexUpdates = (
       ...Object.values(allFields)
         .map(field => ({
           key: field.elemID.getFullName(),
-          value: new collections.treeMap.TreeMap<ElemID>(
-            (baseIdToReferences[field.elemID.getFullName()] ?? []).map(ref =>
-              [ref.referenceSource.getFullName(), [ref.referenceTarget]])
-          ),
+          value: createReferenceTree(baseIdToReferences[field.elemID.getFullName()] ?? []),
         }))
     )
   }
   const elemId = getChangeData(change).elemID.getFullName()
   indexUpdates.push({
     key: elemId,
-    value: new collections.treeMap.TreeMap<ElemID>(
-      changeToReferences[elemId].currentAndNew.map(ref =>
-        [ref.referenceSource.getFullName(), [ref.referenceTarget]])
-    ),
+    value: createReferenceTree(changeToReferences[elemId].currentAndNew),
   })
 
   return indexUpdates
@@ -150,8 +134,10 @@ const updateReferenceTargetsIndex = async (
   const changesTrees = changes.flatMap(change => getReferenceTargetIndexUpdates(change, changeToReferences))
   const [toAdd, toDelete] = _.partition(changesTrees, change => change.value.size > 0)
 
-  await referenceTargetsIndex.setAll(toAdd)
-  await referenceTargetsIndex.deleteAll(toDelete.map(change => change.key))
+  await Promise.all([
+    referenceTargetsIndex.setAll(toAdd),
+    referenceTargetsIndex.deleteAll(toDelete.map(change => change.key)),
+  ])
 }
 
 const updateIdOfReferenceSourcesIndex = (
@@ -230,7 +216,15 @@ const updateReferenceSourcesIndex = async (
         changedReferenceSources,
       ))
 
-  await updateUniqueIndex(index, updates)
+  const [deletions, modifications] = _.partition(updates, update => update.value.length === 0)
+  const uniqueModification = modifications.map(modification => ({
+    ...modification,
+    value: _.uniqBy(modification.value, id => id.getFullName()),
+  }))
+  await Promise.all([
+    modifications.length !== 0 ? index.setAll(uniqueModification) : undefined,
+    deletions.length !== 0 ? index.deleteAll(deletions.map(deletion => deletion.key)) : undefined,
+  ])
 }
 
 export const updateReferenceIndexes = async (

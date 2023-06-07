@@ -144,7 +144,7 @@ export abstract class AdapterHTTPClient<
       ? _.pickBy(headers, (_val, key) =>
         key.toLowerCase().startsWith('rate-')
         || key.toLowerCase().startsWith('x-rate-')
-        || key.toLowerCase().startsWith('Retry-'))
+        || key.toLowerCase().startsWith('retry-'))
       : undefined
   }
 

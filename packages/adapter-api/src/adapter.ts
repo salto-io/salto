@@ -163,6 +163,13 @@ export type LoadElementsFromFolderArgs = {
   elementSource: ReadOnlyElementsSource
 }
 
+export type ReferenceMapping = {
+  source: ElemID
+  target: ElemID
+}
+
+export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<ReferenceMapping[]>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
   validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
@@ -171,6 +178,7 @@ export type Adapter = {
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
   loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
+  getAdditionalReferences?: GetAdditionalReferencesFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

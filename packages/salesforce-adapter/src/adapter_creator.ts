@@ -36,6 +36,7 @@ import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
+import { getAdditionalReferences } from './additional_references'
 
 const log = logger(module)
 
@@ -232,4 +233,5 @@ export const adapter: Adapter = {
   configType,
   configCreator,
   loadElementsFromFolder,
+  getAdditionalReferences,
 }

@@ -25,7 +25,10 @@ describe('getAdditionalReferences', () => {
   beforeEach(() => {
     permissionSetInstance = new InstanceElement(
       'test',
-      new ObjectType({ elemID: new ElemID(SALESFORCE, 'PermissionSet') }),
+      new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'PermissionSet'),
+        annotations: { [METADATA_TYPE]: 'PermissionSet' },
+      }),
       {
         fieldPermissions: {
           Account: {
@@ -37,7 +40,10 @@ describe('getAdditionalReferences', () => {
 
     profileInstance = new InstanceElement(
       'test',
-      new ObjectType({ elemID: new ElemID(SALESFORCE, 'Profile') }),
+      new ObjectType({
+        elemID: new ElemID(SALESFORCE, 'Profile'),
+        annotations: { [METADATA_TYPE]: 'Profile' },
+      }),
       {
         fieldPermissions: {
           Account: {

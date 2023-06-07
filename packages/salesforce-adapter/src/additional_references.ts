@@ -17,24 +17,32 @@ import { GetAdditionalReferencesFunc, getChangeData, isAdditionChange, isFieldCh
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { isFieldOfCustomObject } from './transformers/transformer'
-import { safeApiName } from './filters/utils'
-import { API_NAME_SEPARATOR } from './constants'
+import { isInstanceOfType, safeApiName } from './filters/utils'
+import { API_NAME_SEPARATOR, FIELD_PERMISSIONS, PERMISSION_SET_METADATA_TYPE, PROFILE_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 
 
 export const getAdditionalReferences: GetAdditionalReferencesFunc = async changes => {
-  const profilesAndPermissionSets = changes
-    .filter(isInstanceChange)
-    .filter(isRemovalOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => ['Profile', 'PermissionSet'].includes(instance.elemID.typeName))
-
-  return awu(changes)
+  const relevantFields = await awu(changes)
     .filter(isFieldChange)
     .filter(isAdditionChange)
     .map(getChangeData)
     .filter(isFieldOfCustomObject)
+    .toArray()
+
+  if (relevantFields.length === 0) {
+    return []
+  }
+
+  const profilesAndPermissionSets = await awu(changes)
+    .filter(isRemovalOrModificationChange)
+    .filter(isInstanceChange)
+    .map(getChangeData)
+    .filter(instance => isInstanceOfType(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE)(instance))
+    .toArray()
+
+  return awu(relevantFields)
     .flatMap(async field => {
       const fieldApiName = await safeApiName(field)
       if (fieldApiName === undefined) {
@@ -44,7 +52,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
         .filter(instance => _.get(instance.value.fieldPermissions, fieldApiName) !== undefined)
         .map(instance => ({
           source: field.elemID,
-          target: instance.elemID.createNestedID('fieldPermissions', ...fieldApiName.split(API_NAME_SEPARATOR)),
+          target: instance.elemID.createNestedID(FIELD_PERMISSIONS, ...fieldApiName.split(API_NAME_SEPARATOR)),
         }))
     })
     .toArray()

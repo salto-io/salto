@@ -19,20 +19,15 @@ import objectHash from 'object-hash'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ResponseValue, Response } from './http_connection'
+import { ResponseValue } from './http_connection'
 import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
 
 const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
+const { awu } = collections.asynciterable
 const log = logger(module)
 
 type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
-
-export class PaginationError extends Error {
-  constructor(message: string, readonly hashedArgs: string) {
-    super(message)
-  }
-}
 
 export type ClientGetWithPaginationParams = ClientBaseParams & {
   recursiveQueryParams?: RecursiveQueryArgFunc
@@ -93,24 +88,52 @@ const computeRecursiveArgs = (
     : []
 )
 
+const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<void> => {
+  await awu(promises)
+    .forEach(async promise => promise.catch(_e => undefined))
+}
+
 
 type PaginationResult = {
   page: ResponseValue[]
-  response: Response<ResponseValue | ResponseValue[]>
   additionalArgs: Record<string, string>
+  yieldResult: boolean
+}
+
+type GetPageArgs = {
+  promisesQueue: Map<string, Promise<PaginationResult>>
+  // recursiveQueryParams: RecursiveQueryArgFunc | undefined
+  paginationFunc: PaginationFunc
+  // queryParams: Record<string, string | string[]> | undefined
+  client: HTTPReadClientInterface
+  // url: string
+  // headers: Record<string, string> | undefined
+  extractPageEntries: PageEntriesExtractor
+  customEntryExtractor?: PageEntriesExtractor
+  getParams: ClientGetWithPaginationParams
+  pageSize: number
+  usedParams: Set<string>
+}
+
+const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>):void => {
+  const argsHash = objectHash(additionalArgs)
+  if (pageArgs.usedParams.has(argsHash)) {
+    return
+  }
+  pageArgs.usedParams.add(argsHash)
+  // eslint-disable-next-line no-use-before-define
+  const result = singlePagePagination(pageArgs, additionalArgs)
+  pageArgs.promisesQueue.set(argsHash, result)
 }
 
 const singlePagePagination = async (
-  { additionalArgs, queryParams, client, url, headers, extractPageEntries, customEntryExtractor }:
-  { additionalArgs: Record<string, string>
-   queryParams: Record<string, string | string[]> | undefined
-    client: HTTPReadClientInterface
-    url: string
-    headers: Record<string, string> | undefined
-    extractPageEntries: PageEntriesExtractor
-    customEntryExtractor?: PageEntriesExtractor
-  }):Promise<PaginationResult> => {
+  pageArgs: GetPageArgs,
+  additionalArgs: Record<string, string>
+):Promise<PaginationResult> => {
+  const { client, extractPageEntries, customEntryExtractor, getParams, paginationFunc, pageSize } = pageArgs
+  const { url, queryParams, recursiveQueryParams, headers } = getParams
   const params = { ...queryParams, ...additionalArgs }
+
   const response = await client.getSinglePage({
     url,
     queryParams: Object.keys(params).length > 0 ? params : undefined,
@@ -118,9 +141,8 @@ const singlePagePagination = async (
   })
   if (response.status !== 200) {
     log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
-    return Promise.reject(new PaginationError('break', objectHash(additionalArgs)))
+    return { page: [], additionalArgs, yieldResult: false }
   }
-
   const entries = (
     (!Array.isArray(response.data) && Array.isArray(response.data.items))
       ? response.data.items
@@ -130,37 +152,26 @@ const singlePagePagination = async (
   // checking original entries and not the ones that passed the custom extractor, because even if all entries are
   // filtered out we should still continue querying
   if (entries.length === 0) {
-    return Promise.reject(new PaginationError('continue', objectHash(additionalArgs)))
+    return { page: [], additionalArgs, yieldResult: false }
   }
   const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
-  return { page, response, additionalArgs }
-}
 
-const queuePaginationResult = async ({ requestsQueryArgsQueue, paginationFunc, pageResultPromise,
-  getParams, pageSize, additionalArgs, recursiveQueryParams }: {
-  requestsQueryArgsQueue: Record<string, string>[]
-  paginationFunc: PaginationFunc
-  pageResultPromise: Promise<PaginationResult>
-  getParams: ClientGetWithPaginationParams
-  pageSize: number
-  recursiveQueryParams: RecursiveQueryArgFunc | undefined
-  additionalArgs: Record<string, string>
-}): Promise<PaginationResult> => {
-  const result = await pageResultPromise
-  // add results from the pagination results to the queue
-  requestsQueryArgsQueue.unshift(...paginationFunc({
-    responseData: result.response.data,
-    page: result.page,
+  // add next calls to the queue
+  paginationFunc({
+    responseData: response.data,
+    page,
     getParams,
     pageSize,
     currentParams: additionalArgs,
-    responseHeaders: result.response.headers,
-  }))
-  // add recursive queries to the queue
+    responseHeaders: response.headers,
+  }).forEach(args => pushPage(pageArgs, args))
+
+  // add recursive calls to the queue
   if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
-    requestsQueryArgsQueue.unshift(...computeRecursiveArgs(result.page, recursiveQueryParams))
+    computeRecursiveArgs(page, recursiveQueryParams).forEach(args => pushPage(pageArgs, args))
   }
-  return result
+
+  return { page, additionalArgs, yieldResult: true }
 }
 
 // The traverseRequests function is a generator that yields pages of results from a paginated
@@ -174,7 +185,6 @@ export const traverseRequests: (
   paginationFunc: PaginationFunc,
   extractPageEntries: PageEntriesExtractor,
   customEntryExtractor?: PageEntriesExtractor,
-
 ) => GetAllItemsFunc = (
   paginationFunc, extractPageEntries, customEntryExtractor,
 ) => async function *getPages({
@@ -182,56 +192,37 @@ export const traverseRequests: (
   pageSize,
   getParams,
 }) {
-  const { url, queryParams, recursiveQueryParams, headers } = getParams
-  const requestsQueryArgsQueue: Record<string, string>[] = [{}]
   const usedParams = new Set<string>()
   const promisesQueue: Map<string, Promise<PaginationResult>> = new Map()
   let numResults = 0
-  while (requestsQueryArgsQueue.length > 0) {
-    const additionalArgs = requestsQueryArgsQueue.pop() as Record<string, string>
-    const hashedArgs = objectHash(additionalArgs)
-    if (!usedParams.has(hashedArgs)) {
-      usedParams.add(hashedArgs)
-      const pageResultPromise = singlePagePagination({ additionalArgs,
-        queryParams,
-        client,
-        url,
-        headers,
-        extractPageEntries,
-        customEntryExtractor })
-      const queuePromise = queuePaginationResult({ requestsQueryArgsQueue,
-        paginationFunc,
-        pageResultPromise,
-        getParams,
-        pageSize,
-        recursiveQueryParams,
-        additionalArgs })
-      promisesQueue.set(hashedArgs, queuePromise)
-    }
-    // yield results, but only as long as there are no pending items in the queue
-    while (requestsQueryArgsQueue.length === 0 && promisesQueue.size > 0) {
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        const result = await Promise.race(promisesQueue.values())
+  pushPage({
+    promisesQueue,
+    getParams,
+    paginationFunc,
+    client,
+    extractPageEntries,
+    customEntryExtractor,
+    pageSize,
+    usedParams,
+  }, {})
+  while (promisesQueue.size > 0) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await Promise.race(promisesQueue.values())
+      promisesQueue.delete(objectHash(result.additionalArgs))
+      if (result.yieldResult) {
         yield result.page
         numResults += result.page.length
-        promisesQueue.delete(objectHash(result.additionalArgs))
-      } catch (error) {
-        if (!(error instanceof PaginationError)) {
-          throw error
-        }
-        // no new items returned, continue to next requests
-        promisesQueue.delete(error.hashedArgs)
-        if (error.message === 'break') {
-          // we want to clear requests that were already called but avoid calling new ones
-          requestsQueryArgsQueue.splice(0, requestsQueryArgsQueue.length)
-        }
       }
+    } catch (e) {
+      // avoid leaking promises
+      // eslint-disable-next-line no-await-in-loop
+      await allSettled(promisesQueue.values())
+      throw e
     }
   }
-
   // the number of results may be lower than actual if the instances are under a nested field
-  log.info('Received %d results for endpoint %s', numResults, url)
+  log.info('Received %d results for endpoint %s', numResults, getParams.url)
 }
 
 /**

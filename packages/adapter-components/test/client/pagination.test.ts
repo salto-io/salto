@@ -394,8 +394,10 @@ describe('client_pagination', () => {
         },
         status: 200,
         statusText: 'OK',
-      })).mockRejectedValueOnce(new Error('Something went wrong'))
-      paginationFunc.mockReturnValueOnce([{ page: '2' }])
+      }))
+        .mockRejectedValueOnce(new Error('Something went wrong'))
+        .mockRejectedValueOnce(new Error('Something else went wrong'))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
       const getParams = {
         url: '/ep',
         paginationField: 'page',

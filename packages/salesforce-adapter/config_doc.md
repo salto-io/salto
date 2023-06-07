@@ -131,8 +131,7 @@ salesforce {
 | [optionalFeatures](#optional-features)         | {} (all enabled)        | Granular control over which features are enabled in the adapter, by default all features are enabled in order to get the most information. can be used to turn off features that cause problems until they are solved |
 | maxInstancesPerType                            | 5000                    | Do not fetch metadataTypes and CustomObjects with more instances than this number, and add those to the exclude lists                                                                                                 |
 | preferActiveFlowVersions                       | false                   | When set to false, flows' latest version will be fetched. Otherwise, flows' active version will be fetched if exists                                                                                                  |
-| addNamespacePrefixToFullName                   | false                   | When set to true, namespace prefix will be added to instances in a namespace whose fullName does not begin with the namespace. Otherwise, there will be no change to fullName                                               |
-
+| addNamespacePrefixToFullName                   | true                   | When set to true, namespace prefix will be added to instances in a namespace whose fullName does not begin with the namespace. Otherwise, there will be no change to fullName                                               |
 ## Metadata configuration options
 
 | Name                           | Default when undefined       | Description                                                                                                                                                     |

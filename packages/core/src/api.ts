@@ -678,14 +678,12 @@ export const getAdditionalReferences = async (
 ): Promise<ReferenceMapping[]> => {
   const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
 
-  const changeGroups = _(changes)
-    .groupBy(change => getChangeData(change).elemID.adapter)
-    .values()
-    .value()
+  const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
 
   const referenceGroups = await Promise.all(
-    changeGroups.map(changeGroup => adapterCreators[accountToService[getChangeData(changeGroup[0]).elemID.adapter]]
-      .getAdditionalReferences?.(changeGroup))
+    Object.entries(changeGroups).map(([account, changeGroup]) =>
+      adapterCreators[accountToService[account]]
+        .getAdditionalReferences?.(changeGroup))
   )
   return referenceGroups
     .flat()

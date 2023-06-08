@@ -89,17 +89,35 @@ const deleteFieldHistoryTrackingAnnotation = (field: Field, trackingDef: Tracked
 }
 
 const centralizeHistoryTrackingAnnotations = (customObject: ObjectType, trackingDef: TrackedFieldsDefinition): void => {
+  const areAnyFieldsTracked = (obj: ObjectType): boolean => (
+    Object.values(obj.fields).some(field => field.annotations[trackingDef.fieldLevelEnable] === true)
+  )
+  const isTrackingSupported = (obj: ObjectType): boolean => (
+    obj.annotations[trackingDef.objectLevelEnable] !== undefined
+  )
+
   if (isHistoryTrackingEnabled(customObject, trackingDef)) {
     customObject.annotations[trackingDef.aggregate] = _.mapValues(
       _.pickBy(customObject.fields, field => isHistoryTrackedField(field, trackingDef)),
       field => new ReferenceExpression(field.elemID),
     )
-  } else if (customObject.annotations[trackingDef.recordTypeEnable] === true) {
-    log.debug('In object type %s, %s is %s but %s is true. Treating as tracking disabled.',
-      customObject.elemID.getFullName(),
-      trackingDef.objectLevelEnable,
-      customObject.annotations[trackingDef.objectLevelEnable],
-      trackingDef.recordTypeEnable)
+  } else {
+    // There are standard types where tracking is supported but the object-level annotation is missing. We want to have
+    // a clear idea of what types those are and what they look like.
+    // cf. SALTO-4309
+    if (customObject.annotations[trackingDef.recordTypeEnable] === true) {
+      log.debug('In object type %s, %s is %s but %s is true. Treating as tracking disabled.',
+        customObject.elemID.getFullName(),
+        trackingDef.objectLevelEnable,
+        customObject.annotations[trackingDef.objectLevelEnable],
+        trackingDef.recordTypeEnable)
+    }
+    if (!isTrackingSupported(customObject) && areAnyFieldsTracked(customObject)) {
+      log.debug('In object type %s, %s is %s but some fields have tracking enabled',
+        customObject.elemID.getFullName(),
+        trackingDef.objectLevelEnable,
+        customObject.annotations[trackingDef.objectLevelEnable])
+    }
   }
 
   Object.values(customObject.fields).forEach(field => deleteFieldHistoryTrackingAnnotation(field, trackingDef))

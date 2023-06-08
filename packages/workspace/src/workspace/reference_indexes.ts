@@ -34,7 +34,7 @@ import { getAllElementsChanges } from './index_utils'
 import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const log = logger(module)
-export const REFERENCE_INDEXES_VERSION = 2
+export const REFERENCE_INDEXES_VERSION = 3
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
 type ReferenceDetails = {

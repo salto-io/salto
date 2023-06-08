@@ -303,8 +303,8 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
 }
 
 /**
- * Serialize a reference tree to a JSON of fullPath to ElemID
- * example: adapter.type.instance.instanceName.field.nestedField -> ElemID
+ * Serialize a reference tree to a JSON of path (without baseId) to ElemID
+ * example: (adapter.type.instance.instanceName.)field.nestedField -> ElemID
  */
 export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
   const entriesToSerialize = Array.from(val.entries()).map(([key, ids]) => [key, ids.map(id => id.getFullName())])
@@ -317,6 +317,9 @@ export const deserializeReferenceTree = async (data: string): Promise<collection
   // Backwards compatibility for old serialized data, should be removed in the future
   const isOldFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
   const entries = isOldFormat ? [['', parsedEntries]] : parsedEntries
+
+  // eslint-disable-next-line no-console
+  console.error(data)
 
   const elemIdsEntries = entries.map(([key, ids]: [string, string[]]) => [key, ids.map(ElemID.fromFullName)])
   return new collections.treeMap.TreeMap<ElemID>(elemIdsEntries)
@@ -1175,12 +1178,17 @@ export const loadWorkspace = async (
       const baseId = id.createBaseID().parent.getFullName()
       const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
 
+      if (referencesTree === undefined) {
+        return []
+      }
+
       const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
-      return referencesTree === undefined ? []
-        : _.uniqBy(
-          Array.from(referencesTree.valuesWithPrefix(idPath)).flat(),
-          elemId => elemId.getFullName()
-        )
+      const references = idPath === ''
+      // Empty idPath means we are requesting the base level element, which includes all references
+        ? referencesTree.values()
+        : referencesTree.valuesWithPrefix(idPath)
+
+      return _.uniqBy(Array.from(references).flat(), elemId => elemId.getFullName())
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {

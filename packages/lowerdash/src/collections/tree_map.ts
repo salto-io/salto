@@ -166,9 +166,6 @@ export class TreeMap<T> implements Map<string, T[]> {
   }
 
   valuesWithPrefix(prefix: string): IterableIterator<T[]> {
-    if (prefix === '') {
-      return this.values()
-    }
     const path = prefix.split(this.separator)
     const prefixSubtree = TreeMap.getFromPath(this.data, path)
     if (prefixSubtree === undefined) {

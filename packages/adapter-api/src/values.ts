@@ -261,7 +261,7 @@ export const compareSpecialValues = (
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
-      && (options?.compareReferencesByValue ? first.filepath === second.filepath : true)
+      && (options?.compareReferencesByValue !== true ? first.filepath === second.filepath : true)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
     if (shouldCompareByValue(first, second, options)) {

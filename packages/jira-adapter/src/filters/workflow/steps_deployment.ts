@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isReferenceExpression, isResolvedReferenceExpression } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -88,7 +88,7 @@ export const deploySteps = async (
   const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(statuses)
-    .filter(status => !isReferenceExpression(status.id)
+    .filter(status => !isResolvedReferenceExpression(status.id)
       || status.name !== status.id.value.value.name)
     .forEach(async status => {
       if (status.name === undefined) {

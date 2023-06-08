@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, CORE_ANNOTATIONS, DeployResult, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalChange, MapType, toChange, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, Change, CORE_ANNOTATIONS, DeployResult, Element, Field, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalChange, isResolvedReferenceExpression, MapType, toChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { objects } from '@salto-io/lowerdash'
@@ -328,7 +328,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     const securitySchemeInstance = getChangeData(securitySchemeChange)
 
     if (
-      isReferenceExpression(securitySchemeInstance.value.defaultLevel)
+      isResolvedReferenceExpression(securitySchemeInstance.value.defaultLevel)
       && isInstanceElement(securitySchemeInstance.value.defaultLevel.value)
       && securitySchemeInstance.value.defaultLevel.value.value.id === undefined
     ) {

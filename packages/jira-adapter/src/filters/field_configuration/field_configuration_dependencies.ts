@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isReferenceExpression, isResolvedReferenceExpression, ReferenceExpression, Values } from '@salto-io/adapter-api'
+import { InstanceElement, isInstanceElement, isResolvedReferenceExpression, ReferenceExpression, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { extendGeneratedDependencies, getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -32,10 +32,10 @@ const getProjectUsedFields = (instance: InstanceElement): InstanceElement[] => {
     .flatMap((screenSchemeRef: ReferenceExpression) => Object.values(
       screenSchemeRef.value.value.screens ?? {}
     ))
-    .filter(isReferenceExpression)
+    .filter(isResolvedReferenceExpression)
     .flatMap((screenRef: ReferenceExpression) => Object.values(screenRef.value.value.tabs ?? {}))
     .flatMap((tab: Values) => tab.fields)
-    .filter(isReferenceExpression)
+    .filter(isResolvedReferenceExpression)
     .map((fieldRef: ReferenceExpression) => fieldRef.value) ?? []
 }
 
@@ -49,7 +49,7 @@ const getProjectFieldConfigurations = (instance: InstanceElement): InstanceEleme
   }
   return fieldConfigurationRef.value.value.items
     ?.map((item: Values) => item.fieldConfigurationId)
-    .filter(isReferenceExpression)
+    .filter(isResolvedReferenceExpression)
     .map((fieldConfigRef: ReferenceExpression) => fieldConfigRef.value) ?? []
 }
 

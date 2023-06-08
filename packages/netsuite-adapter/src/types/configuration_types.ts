@@ -15,6 +15,7 @@
 */
 /* eslint-disable camelcase */
 import { BuiltinTypes, ElemID, ObjectType, ListType } from '@salto-io/adapter-api'
+import { bundleType } from './bundle_type'
 import * as constants from '../constants'
 
 export type ConfigurationTypeName = typeof constants.CONFIG_FEATURES
@@ -41,4 +42,5 @@ export const featuresType = (): ObjectType => new ObjectType({
 
 export const getConfigurationTypes = (): Readonly<Record<ConfigurationTypeName, ObjectType>> => ({
   companyFeatures: featuresType(),
+  bundle: bundleType().type,
 })

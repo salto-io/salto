@@ -25,13 +25,13 @@ type BundleInstalledBy = {
 }
 
 type BundlePublisher = {
-  id?: string
+  id?: number
   name?: string
 }
 
-type BundleType = {
+export type BundleType = {
   id: string
-  isPrivate: boolean
+  isPrivate?: boolean
   name?: string
   version?: string
   description?: string
@@ -66,7 +66,7 @@ export const bundleType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      id: { refType: BuiltinTypes.STRING },
+      id: { refType: BuiltinTypes.NUMBER },
       name: { refType: BuiltinTypes.STRING },
     },
     path: [NETSUITE, TYPES_PATH, bundleElemID.name],
@@ -86,12 +86,7 @@ export const bundleType = (): TypeAndInnerTypes => {
           _required: true,
         },
       },
-      isPrivate: {
-        refType: BuiltinTypes.BOOLEAN,
-        annotations: {
-          _required: true,
-        },
-      },
+      isPrivate: { refType: BuiltinTypes.BOOLEAN },
       name: { refType: BuiltinTypes.STRING },
       version: { refType: BuiltinTypes.STRING },
       description: { refType: BuiltinTypes.STRING },

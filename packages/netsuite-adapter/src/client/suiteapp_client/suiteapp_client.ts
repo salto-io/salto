@@ -33,7 +33,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc, GET_BUNDLES_RESULT_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
@@ -42,6 +42,7 @@ import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
+import { BundleType } from '../../types/bundle_type'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
@@ -75,10 +76,12 @@ const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
+const LIST_BUNDLES_APP_VERSION = '0.1.6'
 
 type VersionFeatures = {
   activationKey: boolean
   configTypes: boolean
+  listBundles: boolean
 }
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
@@ -352,6 +355,29 @@ export default class SuiteAppClient {
     }
   }
 
+  public async getInstalledBundles(): Promise<BundleType[]> {
+    try {
+      if (!(await this.isFeatureSupported('listBundles'))) {
+        log.warn('SuiteApp version doesn\'t support listBundles')
+        return []
+      }
+      const result = await this.sendRestletRequest('listBundles')
+      if (!this.ajv.validate<BundleType[]>(GET_BUNDLES_RESULT_SCHEMA, result)) {
+        log.error(
+          'getInstalledBundles failed. Got invalid results - %s: %o',
+          this.ajv.errorsText(),
+          result
+        )
+        return []
+      }
+
+      return result
+    } catch (e) {
+      log.error('getInstalledBundles failed. Recieved the following error: %s', e.message)
+      return []
+    }
+  }
+
   public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
     const client = new SuiteAppClient({
       credentials,
@@ -444,6 +470,7 @@ export default class SuiteAppClient {
       this.versionFeatures = {
         activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
         configTypes: compareVersions(currentVersion, CONFIG_TYPES_APP_VERSION) !== -1,
+        listBundles: compareVersions(currentVersion, LIST_BUNDLES_APP_VERSION) !== -1,
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })

@@ -23,7 +23,7 @@ search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundle
 
 bundle_components_file_template = LICENSE_HEADER + '''
 
-export const BUNDLE_ID_TO_COMPONENTS: Readonly<Record<number, ReadonlySet<string>>> = {{
+export const BUNDLE_ID_TO_COMPONENTS: Readonly<Record<string, ReadonlySet<string>>> = {{
   {bundle_id_to_components}
 }}
 '''

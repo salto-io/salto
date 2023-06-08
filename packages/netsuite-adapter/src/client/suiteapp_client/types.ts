@@ -181,7 +181,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -346,6 +346,40 @@ export const SET_CONFIG_RESULT_SCHEMA = {
       },
       required: ['configType', 'status', 'errorMessage'],
     }],
+  },
+}
+
+export const GET_BUNDLES_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+      // description: { type: 'string' },
+      // installedFrom: { type: 'string' },
+      // isManaged: { type: 'boolean' },
+      // dateInstalled: { type: 'string' },
+      // dateLastUpdated: { type: 'string' },
+      // publisher: {
+      //   type: 'object',
+      //   properties: {
+      //     id: { type: 'string' },
+      //     name: { type: 'string' },
+      //   },
+      //   required: ['id', 'name'],
+      // },
+      // installedBy: {
+      //   type: 'object',
+      //   properties: {
+      //     id: { type: 'number' },
+      //     name: { type: 'string' },
+      //   },
+      //   required: ['id', 'name'],
+      // },
+    },
+    required: ['id', 'name', 'version'],
   },
 }
 

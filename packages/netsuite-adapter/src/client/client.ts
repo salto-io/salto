@@ -41,6 +41,7 @@ import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_eleme
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
+import { BundleType } from '../types/bundle_type'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -118,6 +119,11 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async getConfigRecords(): Promise<ConfigRecord[]> {
     return this.suiteAppClient?.getConfigRecords() ?? []
+  }
+
+  @NetsuiteClient.logDecorator
+  async getInstalledBundles(): Promise<BundleType[]> {
+    return this.suiteAppClient?.getInstalledBundles() ?? []
   }
 
   @NetsuiteClient.logDecorator

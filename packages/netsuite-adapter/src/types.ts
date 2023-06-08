@@ -184,6 +184,9 @@ export const hasInternalId = (element: Element): boolean =>
 export const getServiceId = (element: Element): string =>
   getElementValueOrAnnotations(element)[isFileCabinetInstance(element) ? PATH : SCRIPT_ID]
 
+export const isBundleType = (type: ObjectType | TypeReference): boolean =>
+  type.elemID.typeName === 'bundle'
+
 export const netsuiteSupportedTypes = [
   ...getStandardTypesNames(),
   ...SUPPORTED_TYPES,

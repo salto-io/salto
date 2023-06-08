@@ -318,9 +318,6 @@ export const deserializeReferenceTree = async (data: string): Promise<collection
   const isOldFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
   const entries = isOldFormat ? [['', parsedEntries]] : parsedEntries
 
-  // eslint-disable-next-line no-console
-  console.error(data)
-
   const elemIdsEntries = entries.map(([key, ids]: [string, string[]]) => [key, ids.map(ElemID.fromFullName)])
   return new collections.treeMap.TreeMap<ElemID>(elemIdsEntries)
 }

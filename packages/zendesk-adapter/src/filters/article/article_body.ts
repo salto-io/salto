@@ -273,7 +273,7 @@ const filterCreator: FilterCreator = ({ config }) => {
                   prepRef,
                 )
               } catch (e) {
-                log.error('Error parsing article body value in deployment', e)
+                log.error(`Error serializing article translation body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
               }
               return instance
             }

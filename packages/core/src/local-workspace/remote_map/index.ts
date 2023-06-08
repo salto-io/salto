@@ -19,5 +19,8 @@ export {
   closeAllRemoteMaps,
   closeRemoteMapsOfLocation,
   cleanDatabases,
-  replicateDB,
 } from './remote_map'
+
+export {
+  replicateDB,
+} from './db_connection_pool'

@@ -34,12 +34,21 @@ let currentConnectionsCount = 0
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let rocksdbImpl: any
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const getRemoteDbImpl = (): any => {
+const getRemoteDbImpl = (): any => {
   if (rocksdbImpl === undefined) {
     // eslint-disable-next-line global-require, @typescript-eslint/no-var-requires
     rocksdbImpl = require('./rocksdb').default
   }
   return rocksdbImpl
+}
+
+export const replicateDB = async (
+  srcDbLocation: string, dstDbLocation: string, backupDir: string
+): Promise<void> => {
+  const remoteDbImpl = getRemoteDbImpl()
+  await promisify(
+    remoteDbImpl.replicate.bind(remoteDbImpl, srcDbLocation, dstDbLocation, backupDir)
+  )()
 }
 
 export const closeDanglingConnection = async (connection: Promise<rocksdb>): Promise<void> => {
@@ -125,19 +134,16 @@ export type DbConnection = {
   attributes: DbAttributes
 }
 const createDbConnection = async (attributes: DbAttributes, readonly: boolean): Promise<DbConnection> => {
-  const openRocksDBConnection = async (loc: string, isReadOnly: boolean): Promise<rocksdb> => {
-    log.debug('opening connection to %s, read-only=%s', loc, isReadOnly)
-    if (currentConnectionsCount >= MAX_CONNECTIONS) {
-      throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
-    }
-    const newDb = getRemoteDbImpl()(loc)
-    await promisify(newDb.open.bind(newDb, { readOnly: isReadOnly }))()
-    currentConnectionsCount += 1
-    return newDb
+  log.debug('opening connection to %s, read-only=%s', attributes.location, readonly)
+  if (currentConnectionsCount >= MAX_CONNECTIONS) {
+    throw new Error(`Failed to open rocksdb connection - too many open connections already (${currentConnectionsCount} connections)`)
   }
+  const dbConn = getRemoteDbImpl()(attributes.location)
+  await promisify(dbConn.open.bind(dbConn, { readOnly: readonly }))()
+  currentConnectionsCount += 1
 
   return {
-    dbConn: await openRocksDBConnection(attributes.location, readonly),
+    dbConn,
     attributes,
   }
 }
@@ -221,7 +227,7 @@ const createDBConnectionPool = (): DBConnectionPool => {
   const getPoolEntry = (attributes: DbAttributes): PoolEntry | undefined => (
     pool[connectionKey(attributes)]
   )
-  const newPoolEntry = (attributes: DbAttributes, connection: DbConnection): void => {
+  const setPoolEntry = (attributes: DbAttributes, connection: DbConnection): void => {
     pool[connectionKey(attributes)] = { conn: connection, refcnt: 0 }
   }
   const deletePoolEntry = (attributes: DbAttributes): void => {
@@ -231,14 +237,14 @@ const createDBConnectionPool = (): DBConnectionPool => {
     const poolEntry = getPoolEntry(attributes)
     if (poolEntry !== undefined) {
       if (attributes.type === 'temporary') {
-        log.warn('Two temporary DBs are sharing the same location')
+        log.warn('Two temporary DBs are sharing the location %s', poolEntry.conn.attributes.location)
       }
       statCounters.PersistentDbConnectionReuse.inc()
       return
     }
 
     const conn = await prepareAndOpenDB(attributes)
-    newPoolEntry(attributes, conn)
+    setPoolEntry(attributes, conn)
     if (attributes.type !== 'temporary') {
       primaryDbLocations.push(attributes.location)
     }
@@ -246,7 +252,7 @@ const createDBConnectionPool = (): DBConnectionPool => {
   }
   const putImpl = async ({ attributes }: DbConnection): Promise<void> => {
     const poolEntry = getPoolEntry(attributes)
-    if (!poolEntry) {
+    if (poolEntry === undefined) {
       throw new Error('Closing a DB connection that was never opened')
     }
     poolEntry.refcnt -= 1
@@ -274,7 +280,7 @@ const createDBConnectionPool = (): DBConnectionPool => {
     },
     put: async dbConn => withPoolLock(async () => putImpl(dbConn)),
     destroyAll: async () => {
-      if (pool.size) {
+      if (Object.keys(pool).length) {
         log.error('Destroying DBs without closing all connections')
       }
       await awu(primaryDbLocations)
@@ -291,7 +297,7 @@ const createDBConnectionPool = (): DBConnectionPool => {
     putAll: async (locationToClose, dbType?) => {
       const removeFromPool = async (conn: DbConnection): Promise<void> => {
         const poolEntry = getPoolEntry(conn.attributes)
-        if (!poolEntry) {
+        if (poolEntry === undefined) {
           return
         }
         poolEntry.refcnt = 1

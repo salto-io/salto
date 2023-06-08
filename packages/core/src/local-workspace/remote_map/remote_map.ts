@@ -24,12 +24,7 @@ import type rocksdb from '@salto-io/rocksdb'
 import { logger } from '@salto-io/logging'
 import { remoteMapLocations } from './location_pool'
 import {
-  DELETE_OPERATION,
-  GET_CONCURRENCY,
   NAMESPACE_SEPARATOR,
-  SET_OPERATION,
-  TEMP_PREFIX,
-  UNIQUE_ID_SEPARATOR,
 } from './constants'
 import {
   aggregatedIterable,
@@ -42,13 +37,17 @@ import {
   closeDanglingConnection,
   DbConnection,
   dbConnectionPool, getDBTmpDir,
-  getOpenReadOnlyDBConnection, getRemoteDbImpl,
+  getOpenReadOnlyDBConnection,
 } from './db_connection_pool'
 
 const { asynciterable } = collections
 const { awu } = asynciterable
 const { withLimitedConcurrency } = promises.array
 const log = logger(module)
+
+const UNIQUE_ID_SEPARATOR = '%%'
+const GET_CONCURRENCY = 100
+const TEMP_PREFIX = '~TEMP~'
 
 const readonlyDBConnections: Record<string, Promise<rocksdb>> = {}
 const readonlyDBConnectionsPerRemoteMap: Record<string, Record<string, Promise<rocksdb>>> = {}
@@ -93,15 +92,6 @@ export const closeAllRemoteMaps = async (): Promise<void> => {
 export const cleanDatabases = async (): Promise<void> => {
   await closeAllRemoteMaps()
   await dbConnectionPool.destroyAll()
-}
-
-export const replicateDB = async (
-  srcDbLocation: string, dstDbLocation: string, backupDir: string
-): Promise<void> => {
-  const remoteDbImpl = getRemoteDbImpl()
-  await promisify(
-    remoteDbImpl.replicate.bind(remoteDbImpl, srcDbLocation, dstDbLocation, backupDir)
-  )()
 }
 
 const getKeyPrefix = (namespace: string): string =>
@@ -179,14 +169,14 @@ remoteMap.RemoteMapCreator => {
     const batchUpdate = async (
       batchInsertIterator: AsyncIterable<remoteMap.RemoteMapEntry<string, string>>,
       temp = true,
-      operation = SET_OPERATION,
+      operation: 'set'|'delete' = 'set',
     ): Promise<boolean> => {
       const connection = temp ? tmpDB : mainDb
       let i = 0
       let batch = connection.dbConn.batch()
       for await (const entry of batchInsertIterator) {
         i += 1
-        if (operation === SET_OPERATION) {
+        if (operation === 'set') {
           batch.put(getAppropriateKey(entry.key, temp), entry.value)
         } else {
           batch.del(getAppropriateKey(entry.key, true))
@@ -396,7 +386,7 @@ remoteMap.RemoteMapCreator => {
         const deleteRes = await batchUpdate(
           awu(delKeys.keys()).map(async key => ({ key, value: key })),
           false,
-          DELETE_OPERATION
+          'delete',
         )
         log.debug('flushed %s. results %o', namespace, { writeRes, deleteRes, wasClearCalled })
         const flushRes = writeRes || deleteRes || wasClearCalled

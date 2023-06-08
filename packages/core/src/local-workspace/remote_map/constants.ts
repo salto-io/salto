@@ -14,8 +14,3 @@
 * limitations under the License.
 */
 export const NAMESPACE_SEPARATOR = '::'
-export const TEMP_PREFIX = '~TEMP~'
-export const UNIQUE_ID_SEPARATOR = '%%'
-export const DELETE_OPERATION = 1
-export const SET_OPERATION = 0
-export const GET_CONCURRENCY = 100

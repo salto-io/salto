@@ -388,9 +388,13 @@ export const calculatePatch = async (
   }: CalculatePatchArgs,
 ): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const { loadElementsFromFolder } = adapterCreators[accountToServiceNameMap[accountName]]
+  const adapterName = accountToServiceNameMap[accountName]
+  if (adapterName !== accountName) {
+    throw new Error('Account name that is different from the adapter name is not supported')
+  }
+  const { loadElementsFromFolder } = adapterCreators[adapterName]
   if (loadElementsFromFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support calculate patch`)
+    throw new Error(`Account ${accountName}'s adapter ${adapterName} does not support calculate patch`)
   }
   const wsElements = await workspace.elements()
   const resolvedWSElements = await expressions.resolve(

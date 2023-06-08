@@ -207,7 +207,8 @@ const ZendeskReferenceSerializationStrategyLookup: Record<
   },
   localeId: {
     serialize: ({ ref }) => (
-      isInstanceElement(ref.value) ? ref.value.value.locale_id.value.value.id : ref.value
+      // locale_id may be missing reference
+      isInstanceElement(ref.value) ? ref.value.value.locale_id?.value.value?.id : ref.value
     ),
     lookup: val => val,
     lookupIndexName: 'localeId',

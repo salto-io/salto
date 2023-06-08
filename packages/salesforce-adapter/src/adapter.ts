@@ -230,6 +230,7 @@ const METADATA_TO_RETRIEVE = [
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
   'CustomMetadata', // For the XML attributes
+  'CustomObject',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
@@ -239,6 +240,7 @@ const METADATA_TO_RETRIEVE = [
   'EmailTemplate', // contains encoded zip content, is under a folder
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
+  'PermissionSet',
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',
   'ReportType',

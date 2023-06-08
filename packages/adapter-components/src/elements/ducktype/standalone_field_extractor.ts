@@ -40,8 +40,13 @@ const convertStringToObject = (
           if (fieldValue.startsWith('{')) {
             return JSON.parse(fieldValue)
           }
+          if (fieldValue === 'null') {
+            log.info('treating null as undefined in instance %s %s, value: %s',
+              inst.elemID.getFullName(), fieldName, fieldValue)
+            return undefined
+          }
           // arrays are not supported yet
-          log.warn('not parsing json from inst %s %s, value: %s',
+          log.warn('not parsing json from instance %s %s, value: %s',
             inst.elemID.getFullName(), fieldName, fieldValue)
         }
         return fieldValue

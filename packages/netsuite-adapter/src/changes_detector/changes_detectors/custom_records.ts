@@ -33,14 +33,6 @@ const hasScriptId = (res: Record<string, unknown>): res is { scriptid: string } 
   return true
 }
 
-const hasCount = (res: Record<string, unknown>): res is { count: string } => {
-  if (typeof res.count !== 'string' || Number.isNaN(Number(res.count))) {
-    log.warn('result has no count property: %o', res)
-    return false
-  }
-  return true
-}
-
 const getScriptIdsQuery = ({ from, where }: {from: string; where?: string}): string =>
   `SELECT scriptid FROM ${from} ${where ? `WHERE ${where}` : ''} ORDER BY scriptid ASC`
 
@@ -75,31 +67,27 @@ export const getChangedCustomRecords = async (
   return changedObjects.flat()
 }
 
-export const getCustomRecordCounters = async (
+export const getCustomRecords = async (
   client: NetsuiteClient,
   { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>,
   customRecordTypesToIgnore: Set<string>,
-): Promise<Map<string, number>> => {
+): Promise<Map<string, Set<string>>> => {
   const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
 
-  const counters = (await Promise.all(
+  const customRecords = (await Promise.all(
     customRecordTypesScriptIds
       .filter(customRecordTypesScriptId => !customRecordTypesToIgnore.has(customRecordTypesScriptId))
-      .map(async customRecordTypeScriptId => (
-      await client.runSuiteQL(`SELECT COUNT(*) as count FROM ${customRecordTypeScriptId}`)
-    )?.filter(hasCount)
-        .map(item => ({
+      .map(async customRecordTypeScriptId => {
+        const scriptIds = (await client.runSuiteQL(getScriptIdsQuery({ from: customRecordTypeScriptId }))
+        )?.filter(hasScriptId).map(({ scriptid }) => (
+          scriptid.toLowerCase()
+        ))
+        return scriptIds === undefined ? undefined : {
           typeId: customRecordTypeScriptId,
-          count: Number(item.count),
-        })))
-  )).filter(isDefined).flat()
+          recordIds: new Set(scriptIds),
+        }
+      })
+  )).filter(isDefined)
 
-  return new Map(counters.map(counter => [counter.typeId, counter.count]))
+  return new Map(customRecords.map(item => [item.typeId, item.recordIds]))
 }
-
-export const getCustomRecordTypeInstances = async (
-  client: NetsuiteClient,
-  customRecordType: string,
-): Promise<string[]> => (
-    await client.runSuiteQL(getScriptIdsQuery({ from: customRecordType }))
-  )?.filter(hasScriptId).map(({ scriptid }) => scriptid.toLowerCase()) ?? []

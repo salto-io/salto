@@ -205,7 +205,7 @@ describe('Adapter', () => {
         })
       const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
-      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
@@ -284,7 +284,7 @@ describe('Adapter', () => {
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -298,7 +298,7 @@ describe('Adapter', () => {
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -317,7 +317,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithIncludeButNoExclude)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someType')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someType1')).toBeTruthy()
@@ -339,7 +339,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithExcludeButNoInclude)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip1')).toBeFalsy()
@@ -361,7 +361,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithSkipListAndTypesToSkip)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -383,7 +383,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithAllFormats)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -481,7 +481,7 @@ describe('Adapter', () => {
         it('should match the types that match fetchTarget and exclude', async () => {
           await adapter.fetch(mockFetchOpts)
 
-          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
           expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
           expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
           expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
@@ -580,7 +580,7 @@ describe('Adapter', () => {
 
     it('should call getCustomObjects with query that matches types that match the types in fetch config', async () => {
       await netsuiteAdapter.fetch(mockFetchOpts)
-      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })
@@ -1328,7 +1328,7 @@ describe('Adapter', () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
         await adapter.fetch(mockFetchOpts)
 
-        const passedQuery = getCustomObjectsMock.mock.calls[0][1].originFetchQuery
+        const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
         expect(passedQuery.isObjectMatch({ instanceId: 'bbbb', type: 'workflow' })).toBeFalsy()
       })

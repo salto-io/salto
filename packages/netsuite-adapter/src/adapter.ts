@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, DeployModifiers, getChangeData, isObjectType,
+  FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -175,6 +175,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     changesGroupId?: string
     fetchTime?: Date
     timeZoneAndFormat?: TimeZoneAndFormat
+    deletedElements?: ElemID[]
   }) => Required<Filter>
 
   public constructor({
@@ -220,20 +221,21 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat }) =>
-      filter.filtersRunner(
-        {
-          client: this.client,
-          elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
-          elementsSource: this.elementsSource,
-          isPartial,
-          config,
-          timeZoneAndFormat,
-          changesGroupId,
-          fetchTime,
-        },
-        filtersCreators,
-      )
+    this.createFiltersRunner = (
+      { isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat, deletedElements }
+    ) => filter.filtersRunner(
+      {
+        client: this.client,
+        elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial, deletedElements),
+        elementsSource: this.elementsSource,
+        isPartial,
+        config,
+        timeZoneAndFormat,
+        changesGroupId,
+        fetchTime,
+      },
+      filtersCreators,
+    )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -297,14 +299,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
       this.getElemIdFunc,
     )
 
+    const customRecordTypes = baseElements.filter(isObjectType).filter(isCustomRecordType)
+
     const customRecordsPromise = getCustomRecords(
       this.client,
-      baseElements.filter(isObjectType).filter(isCustomRecordType),
+      customRecordTypes,
       fetchQuery,
       this.getElemIdFunc
     )
 
-    const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
+    const {
+      elements: dataElements,
+      requestedTypes: requestedDataTypes,
+      largeTypesError: dataTypeError,
+    } = await dataElementsPromise
     failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
       ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
@@ -312,13 +320,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
-    const elementsSourceIndex = createElementsSourceIndex(this.elementsSource, isPartial)
     const deletedElements = !isPartial ? [] : await getDeletedElements(
       this.client,
-      elementsSourceIndex,
+      this.elementsSource,
       fetchQuery,
       instancesIds,
       customRecords,
+      customRecordTypes,
+      dataElements.filter(isInstanceElement),
+      new Set(requestedDataTypes),
     )
 
     const elements = [
@@ -329,7 +339,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...customRecords,
     ]
 
-    await this.createFiltersRunner({ isPartial, fetchTime: serverTime, timeZoneAndFormat }).onFetch(elements)
+    await this.createFiltersRunner(
+      { isPartial, fetchTime: serverTime, timeZoneAndFormat, deletedElements }
+    ).onFetch(elements)
 
     return {
       failures: {

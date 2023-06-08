@@ -86,6 +86,7 @@ export type ImportObjectsResult = {
 
 export type DataElementsResult = {
   elements: (ObjectType | InstanceElement)[]
+  requestedTypes: string[]
   largeTypesError: string[]
 }
 

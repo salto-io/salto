@@ -401,7 +401,7 @@ export default class SdfClient {
             executor,
             suiteAppId,
             instancesIds
-              .filter(item => queries.updatedFetchQuery.isTypeMatch(item.type))
+              // .filter(item => queries.updatedFetchQuery.isTypeMatch(item.type)) // TODO: verify and remove
               .filter(queries.updatedFetchQuery.isObjectMatch),
           )
           const elements = await parseObjectsDir(projectPath)

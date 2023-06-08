@@ -82,7 +82,7 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
-const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean):
+const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements?: ElemID[]):
   Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
@@ -123,8 +123,11 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     }
   }
 
+  const deletedElementSet = new Set(deletedElements?.map(elemId => elemId.getFullName()))
   const elements = await elementsSource.getAll()
   await awu(elements)
+    // avoid creating reference to a deleted element
+    .filter(element => !deletedElementSet.has(element.elemID.getFullName()))
     .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
     .forEach(async element => {
       updateElemIdToChangedByIndex(element)
@@ -149,13 +152,14 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
 
 export const createElementsSourceIndex = (
   elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
+  isPartial: boolean,
+  deletedElements?: ElemID[],
 ): LazyElementsSourceIndexes => {
   let cachedIndex: ElementsSourceIndexes | undefined
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial), 'createIndexes')
+        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial, deletedElements), 'createIndexes')
       }
       return cachedIndex
     },

@@ -299,7 +299,7 @@ describe('data_elements', () => {
       await expect(getDataElements(
         client,
         query,
-      )).resolves.toEqual({ elements: [], largeTypesError: [] })
+      )).resolves.toEqual({ elements: [], requestedTypes: [], largeTypesError: [] })
     })
 
     it('should throw an error if failed to getAllRecords', async () => {

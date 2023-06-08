@@ -26,7 +26,16 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError, ElemID } from '@salto-io/adapter-api'
+import {
+  Element,
+  Values,
+  Field,
+  InstanceElement,
+  ReferenceExpression,
+  SaltoError,
+  ElemID,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
@@ -150,8 +159,10 @@ const createWarnings = async (
   ]
 }
 
-const isReferenceField = (field?: Field): field is Field => (
-  isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
+const shouldHandleLookupRef = (field: Field): boolean => (
+  (isLookupField(field) || isMasterDetailField(field))
+  && (field.annotations?.[FIELD_ANNOTATIONS.CREATABLE] || field.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])
+  && !(field.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true)
 )
 
 const replaceLookupsWithRefsAndCreateRefMap = async (
@@ -168,10 +179,10 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     instance: InstanceElement
   ): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      if (!isReferenceField(field)) {
+      if (!isDefined(field) || !shouldHandleLookupRef(field)) {
         return value
       }
-      const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+      const refTo = makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
       const ignoredRefTo = refTo.filter(typeName => dataManagement.shouldIgnoreReference(typeName))
       if (!_.isEmpty(refTo) && ignoredRefTo.length === refTo.length) {
         log.debug(
@@ -194,8 +205,7 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
         .filter(isDefined)
         .pop()
       if (refTarget === undefined) {
-        if (!_.isEmpty(value) && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE]
-            || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
+        if (!_.isEmpty(value)) {
           missingRefs.push({
             origin: {
               type: await apiName(await instance.getType(), true),

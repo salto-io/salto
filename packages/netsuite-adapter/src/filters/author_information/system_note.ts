@@ -27,7 +27,7 @@ import { getLastServerTime } from '../../server_time'
 import { EmployeeResult, EMPLOYEE_NAME_QUERY, EMPLOYEE_SCHEMA, SystemNoteResult, SYSTEM_NOTE_SCHEMA, ModificationInformation } from './constants'
 import { getInternalId, hasInternalId, isCustomRecordType } from '../../types'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
-import { getZoneAndFormat, toMomentDate } from './saved_searches'
+import { toMomentDate } from './saved_searches'
 import { toSuiteQLSelectDateString, toSuiteQLWhereDateString } from '../../changes_detector/date_formats'
 
 const { awu } = collections.asynciterable
@@ -37,6 +37,7 @@ export const FILE_FIELD_IDENTIFIER = 'MEDIAITEM.'
 export const FOLDER_FIELD_IDENTIFIER = 'MEDIAITEMFOLDER.'
 const FILE_TYPE = 'FILE_TYPE'
 const FOLDER_TYPE = 'FOLDER_TYPE'
+const ISO_8601 = 'YYYY-MM-DDTHH:mm:ssZ'
 
 const TYPES_TO_INTERNAL_ID: Record<string, string> = _.mapKeys({
   ...ORIGINAL_TYPES_TO_INTERNAL_ID,
@@ -199,7 +200,7 @@ const fetchSystemNotes = async (
           ...item,
           name: employeeNames[name],
           dateString: date,
-          date: toMomentDate(date, { format: moment.ISO_8601, timeZone }),
+          date: toMomentDate(date, { format: ISO_8601, timeZone }),
         }))
         .filter(({ date, dateString, name }) => {
           if (!date.isValid()) {
@@ -239,7 +240,15 @@ const getCustomRecordsWithInternalIds = (elements: Element[]): Promise<InstanceE
     .filter(async instance => isCustomRecordType(await instance.getType()))
     .toArray()
 
-const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, elementsSourceIndex, isPartial }) => ({
+const filterCreator: RemoteFilterCreator = (
+  {
+    client,
+    config,
+    elementsSource,
+    elementsSourceIndex,
+    timeZoneAndFormat,
+  }
+) => ({
   name: 'systemNoteAuthorInformation',
   remote: true,
   onFetch: async elements => {
@@ -280,7 +289,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config, elementsSource, el
       return
     }
     const employeeNames = await fetchEmployeeNames(client)
-    const { timeZone } = await getZoneAndFormat(elements, elementsSource, isPartial)
+    const timeZone = timeZoneAndFormat?.timeZone
     const systemNotes = !_.isEmpty(employeeNames)
       ? await fetchSystemNotes(client, queryIds, lastFetchTime, employeeNames, timeZone)
       : {}

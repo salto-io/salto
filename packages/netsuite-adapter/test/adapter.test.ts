@@ -21,7 +21,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import { getMetadataTypes, metadataTypesToList } from '../src/types'
+import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
 import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
@@ -1165,6 +1165,7 @@ describe('Adapter', () => {
       time: new Date(1000),
       appVersion: [0, 1, 0],
     })
+    const getConfigRecordsMock = jest.fn()
     const getCustomRecordsMock = jest.fn()
     let adapter: NetsuiteAdapter
 
@@ -1263,7 +1264,12 @@ describe('Adapter', () => {
         suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
-          getConfigRecords: () => [],
+          getConfigRecords: getConfigRecordsMock.mockReturnValue(
+            [
+              { configType: 'USER_PREFERENCES',
+                fieldsDef: [],
+                data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]
+          ),
           getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 
@@ -1295,6 +1301,16 @@ describe('Adapter', () => {
           }),
           expect.any(Object),
         )
+      })
+
+      it('should not call getChangedObjects if date format is undefind', async () => {
+        getConfigRecordsMock.mockReturnValue([{
+          configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
+          fieldsDef: [],
+          data: { fields: { DATEFORMAT: undefined, TIMEFORMAT: 'hh:m a' } },
+        }])
+        await adapter.fetch(mockFetchOpts)
+        expect(getChangedObjectsMock).toHaveBeenCalledTimes(0)
       })
 
       it('should pass the received query to the client', async () => {

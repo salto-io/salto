@@ -13,13 +13,24 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import moment from 'moment-timezone'
+import { ConfigRecord } from '../client/suiteapp_client/types'
 import { DateRange } from './types'
+import { getConfigRecordsFieldValue } from '../client/utils'
 
 const log = logger(module)
 
 export const SUITEQL_DATE_FORMAT = 'YYYY-MM-DD'
 export const SUITEQL_TIME_FORMAT = 'HH:MI:SS'
+export const TIMEZONE = 'TIMEZONE'
+export const TIMEFORMAT = 'TIMEFORMAT'
+export const DATEFORMAT = 'DATEFORMAT'
+export type TimeZoneAndFormat = {
+  timeZone?: string
+  format?: string
+}
 const suiteQLDateFormatRegex = /(?<year>\d+)-(?<month>\d+)-(?<day>\d+) (?<hour>\d+):(?<minute>\d+):(?<second>\d+)/
 const savedSearchDateFormatRegex = /(?<month>\d+)\/(?<day>\d+)\/(?<year>\d+) (?<hour>\d+):(?<minute>\d+) (?<ampm>\w+)/
 
@@ -45,11 +56,10 @@ export const convertSuiteQLStringToDate = (rawDate: string, fallback: Date): Dat
   ))
 }
 
-const toSavedSearchWhereDateString = (date: Date): string => {
-  const hour = date.getUTCHours() > 12 ? date.getUTCHours() - 12 : date.getUTCHours()
-  const dayTime = date.getUTCHours() >= 12 ? 'pm' : 'am'
-  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}/${date.getUTCFullYear()} ${hour}:${date.getUTCMinutes()} ${dayTime}`
-}
+const toSavedSearchWhereDateString = (
+  date: Date,
+  timeDateFormat: string
+): string => moment(date).utc().format(timeDateFormat)
 
 const parseHour = (groups: Record<string, string>): number => {
   const rawHour = parseInt(groups.hour, 10)
@@ -61,6 +71,19 @@ const parseHour = (groups: Record<string, string>): number => {
     return 0
   }
   return rawHour
+}
+
+export const getTimeDateFormat = (configRecords: ConfigRecord[]): TimeZoneAndFormat => {
+  const userPreferences = configRecords
+    .find(configRecord => configRecord.configType === 'USER_PREFERENCES')
+  const dateFormat = getConfigRecordsFieldValue(userPreferences, DATEFORMAT)
+  const timeFormat = getConfigRecordsFieldValue(userPreferences, TIMEFORMAT)
+  const timeZone = getConfigRecordsFieldValue(userPreferences, TIMEZONE)
+  const format = _.isString(dateFormat) && _.isString(timeFormat)
+    // replace 'Month' with 'MMMM' since moment.tz doesn't support the 'D Month, YYYY' netsuite date format
+    ? [dateFormat.replace('Month', 'MMMM'), timeFormat.toLowerCase()].join(' ')
+    : undefined
+  return { timeZone: _.isString(timeZone) ? timeZone : undefined, format }
 }
 
 export const convertSavedSearchStringToDate = (rawDate: string, fallback: Date): Date => {
@@ -79,7 +102,11 @@ export const convertSavedSearchStringToDate = (rawDate: string, fallback: Date):
   ))
 }
 
-export const createDateRange = (start: Date, end: Date): DateRange => ({
+export const createDateRange = (
+  start: Date,
+  end: Date,
+  timeDateFormat: string,
+): DateRange => ({
   start,
   end,
   toSuiteQLRange: () => {
@@ -90,6 +117,9 @@ export const createDateRange = (start: Date, end: Date): DateRange => ({
   toSavedSearchRange: () => {
     const endDate = new Date(end)
     endDate.setMinutes(endDate.getMinutes() + 1)
-    return [toSavedSearchWhereDateString(start), toSavedSearchWhereDateString(endDate)]
+    return [
+      toSavedSearchWhereDateString(start, timeDateFormat),
+      toSavedSearchWhereDateString(endDate, timeDateFormat),
+    ]
   },
 })

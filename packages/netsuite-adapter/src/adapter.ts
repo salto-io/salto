@@ -66,7 +66,7 @@ import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, n
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
 import NetsuiteClient from './client/client'
-import { createDateRange } from './changes_detector/date_formats'
+import { createDateRange, getTimeDateFormat, TimeZoneAndFormat } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import getChangeValidator from './change_validator'
 import dependencyChanger from './dependency_changer'
@@ -77,6 +77,8 @@ import { getCustomRecords } from './custom_records/custom_records'
 import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
+import { ConfigRecord } from './client/suiteapp_client/types'
+
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -171,6 +173,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     isPartial?: boolean
     changesGroupId?: string
     fetchTime?: Date
+    timeZoneAndFormat?: TimeZoneAndFormat
   }) => Required<Filter>
 
   public constructor({
@@ -216,18 +219,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
         files: config.deploy?.additionalDependencies?.exclude?.files ?? [],
       },
     }
-    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime }) => filter.filtersRunner(
-      {
-        client: this.client,
-        elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
-        elementsSource: this.elementsSource,
-        isPartial,
-        config,
-        changesGroupId,
-        fetchTime,
-      },
-      filtersCreators,
-    )
+    this.createFiltersRunner = ({ isPartial = false, changesGroupId, fetchTime, timeZoneAndFormat }) =>
+      filter.filtersRunner(
+        {
+          client: this.client,
+          elementsSourceIndex: createElementsSourceIndex(this.elementsSource, isPartial),
+          elementsSource: this.elementsSource,
+          isPartial,
+          config,
+          timeZoneAndFormat,
+          changesGroupId,
+          fetchTime,
+        },
+        filtersCreators,
+      )
   }
 
   public fetchByQuery: FetchByQueryFunc = async (
@@ -236,12 +241,15 @@ export default class NetsuiteAdapter implements AdapterOperations {
     useChangesDetection: boolean,
     isPartial: boolean
   ): Promise<FetchByQueryReturnType> => {
+    const configRecords = await this.client.getConfigRecords()
     const {
       changedObjectsQuery,
       serverTime,
+      timeZoneAndFormat,
     } = await this.runSuiteAppOperations(
       fetchQuery,
       useChangesDetection,
+      configRecords,
     )
     const updatedFetchQuery = changedObjectsQuery !== undefined
       ? andQuery(changedObjectsQuery, fetchQuery)
@@ -256,7 +264,6 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
 
     const dataElementsPromise = getDataElements(this.client, fetchQuery, this.getElemIdFunc)
-    const configRecordsPromise = this.client.getConfigRecords()
 
     const getCustomObjectsResult = this.client.getCustomObjects(
       getStandardTypesNames(),
@@ -298,7 +305,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: dataElements, largeTypesError: dataTypeError } = await dataElementsPromise
     failedTypes.excludedTypes = failedTypes.excludedTypes.concat(dataTypeError)
     const suiteAppConfigElements = this.client.isSuiteAppConfigured()
-      ? toConfigElements(await configRecordsPromise, fetchQuery).concat(getConfigTypes())
+      ? toConfigElements(configRecords, fetchQuery).concat(getConfigTypes())
       : []
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
@@ -310,7 +317,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       ...customRecords,
     ]
 
-    await this.createFiltersRunner({ isPartial, fetchTime: serverTime }).onFetch(elements)
+    await this.createFiltersRunner({ isPartial, fetchTime: serverTime, timeZoneAndFormat }).onFetch(elements)
 
     return {
       failures: {
@@ -383,10 +390,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private async runSuiteAppOperations(
     fetchQuery: NetsuiteQuery,
     useChangesDetection: boolean,
+    configRecords: ConfigRecord[],
   ):
     Promise<{
       changedObjectsQuery?: NetsuiteQuery
       serverTime?: Date
+      timeZoneAndFormat?: TimeZoneAndFormat
     }> {
     const sysInfo = await this.client.getSystemInformation()
     if (sysInfo === undefined) {
@@ -396,9 +405,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     if (!useChangesDetection) {
       log.debug('Changes detection is disabled')
-      return {
-        serverTime: sysInfo.time,
-      }
+      return { serverTime: sysInfo.time }
     }
 
     const lastFetchTime = await getLastServerTime(this.elementsSource)
@@ -406,15 +413,20 @@ export default class NetsuiteAdapter implements AdapterOperations {
       log.debug('Failed to get last fetch time')
       return { serverTime: sysInfo.time }
     }
+    const timeZoneAndFormat = getTimeDateFormat(configRecords)
+    if (timeZoneAndFormat?.format === undefined) {
+      log.warn('Failed to get date format, skipping SuiteApp operations')
+      return { serverTime: sysInfo.time, timeZoneAndFormat }
+    }
     const serviceIdToLastFetchDate = await getLastServiceIdToFetchTime(this.elementsSource)
     const changedObjectsQuery = await getChangedObjects(
       this.client,
       fetchQuery,
-      createDateRange(lastFetchTime, sysInfo.time),
+      createDateRange(lastFetchTime, sysInfo.time, timeZoneAndFormat.format),
       serviceIdToLastFetchDate,
     )
 
-    return { changedObjectsQuery, serverTime: sysInfo.time }
+    return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
   }
 
 

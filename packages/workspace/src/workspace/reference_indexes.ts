@@ -105,19 +105,20 @@ const getReferenceTargetIndexUpdates = (
   const indexUpdates: RemoteMapEntry<collections.treeMap.TreeMap<ElemID>>[] = []
 
   if (isObjectTypeChange(change)) {
-    const elemId = getChangeData(change).elemID.getFullName()
+    const objectType = getChangeData(change)
+    const elemId = objectType.elemID.getFullName()
+
     const baseIdToReferences = _.groupBy(
       changeToReferences[elemId].currentAndNew,
       reference => reference.referenceSource.createBaseID().parent.getFullName()
     )
 
-    const type = getChangeData(change)
     const allFields = isModificationChange(change)
       ? {
         ...change.data.before.fields,
-        ...type.fields,
+        ...objectType.fields,
       }
-      : type.fields
+      : objectType.fields
 
     indexUpdates.push(
       ...Object.values(allFields)

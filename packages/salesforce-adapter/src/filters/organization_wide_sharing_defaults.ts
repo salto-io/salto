@@ -60,7 +60,8 @@ const FIELDS_TO_IGNORE = [
 const enrichTypeWithFields = async (
   client: SalesforceClient,
   type: ObjectType,
-  fieldsToIgnore: Set<string>): Promise<void> => {
+  fieldsToIgnore: Set<string>
+): Promise<void> => {
   const typeApiName = await apiName(type)
   const describeSObjectsResult = await client.describeSObjects([typeApiName])
   if (describeSObjectsResult.errors.length !== 0 || describeSObjectsResult.result.length !== 1) {

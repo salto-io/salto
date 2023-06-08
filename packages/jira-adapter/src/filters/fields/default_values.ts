@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isRemovalChange, isRemovalOrModificationChange, isResolvedReferenceExpression, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
+import { Change, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionOrModificationChange, isEqualValues, isObjectType, isRemovalChange, isRemovalOrModificationChange, isReferenceExpression, ObjectType, ReadOnlyElementsSource, Value } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, getParents, resolveChangeElement, resolvePath, resolveValues } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -31,7 +31,7 @@ const resolveDefaultOption = (
       const clonedInstance = instance.clone();
 
       ['optionId', 'cascadingOptionId']
-        .filter(fieldName => isResolvedReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
+        .filter(fieldName => isReferenceExpression(clonedInstance.value.defaultValue?.[fieldName]))
         .forEach(fieldName => {
           // We resolve this values like this and not with resolveChangeElement
           // is because if we just created these options, the options under instance.value will

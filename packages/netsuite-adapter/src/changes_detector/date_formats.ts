@@ -58,8 +58,8 @@ export const convertSuiteQLStringToDate = (rawDate: string, fallback: Date): Dat
 
 const toSavedSearchWhereDateString = (
   date: Date,
-  timeDateFormat: string | moment.MomentBuiltinFormat,
-): string => moment(date).utc().format(`${timeDateFormat}`)
+  timeDateFormat: string
+): string => moment(date).utc().format(timeDateFormat)
 
 const parseHour = (groups: Record<string, string>): number => {
   const rawHour = parseInt(groups.hour, 10)
@@ -105,7 +105,7 @@ export const convertSavedSearchStringToDate = (rawDate: string, fallback: Date):
 export const createDateRange = (
   start: Date,
   end: Date,
-  timeDateFormat: string | moment.MomentBuiltinFormat,
+  timeDateFormat: string,
 ): DateRange => ({
   start,
   end,

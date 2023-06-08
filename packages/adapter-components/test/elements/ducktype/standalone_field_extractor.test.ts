@@ -79,6 +79,14 @@ describe('Extract standalone fields', () => {
           code: 'ignore',
         },
       ),
+      new InstanceElement(
+        'recipe_empty',
+        recipeType,
+        {
+          name: 'recipe_empty',
+          code: jsonCode ? 'null' : undefined,
+        },
+      ),
     ]
     const typeWithNoInstances = new ObjectType({
       elemID: new ElemID(ADAPTER_NAME, 'typeWithNoInstances'),
@@ -168,14 +176,14 @@ describe('Extract standalone fields', () => {
       expect(elements[5]).toBeInstanceOf(InstanceElement)
       const recipe123 = elements[4] as InstanceElement
       const recipe456 = elements[5] as InstanceElement
-      expect(elements[9]).toBeInstanceOf(ObjectType)
       expect(elements[10]).toBeInstanceOf(ObjectType)
-      expect(elements[11]).toBeInstanceOf(InstanceElement)
+      expect(elements[11]).toBeInstanceOf(ObjectType)
       expect(elements[12]).toBeInstanceOf(InstanceElement)
-      const recipeCode = elements[9] as ObjectType
-      const recipeCodeNested = elements[10] as ObjectType
-      const recipe123Code = elements[11] as InstanceElement
-      const recipe456Code = elements[12] as InstanceElement
+      expect(elements[13]).toBeInstanceOf(InstanceElement)
+      const recipeCode = elements[10] as ObjectType
+      const recipeCodeNested = elements[11] as ObjectType
+      const recipe123Code = elements[12] as InstanceElement
+      const recipe456Code = elements[13] as InstanceElement
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
@@ -361,14 +369,14 @@ describe('Extract standalone fields', () => {
       expect(elements[5]).toBeInstanceOf(InstanceElement)
       const recipe123 = elements[4] as InstanceElement
       const recipe456 = elements[5] as InstanceElement
-      expect(elements[9]).toBeInstanceOf(ObjectType)
       expect(elements[10]).toBeInstanceOf(ObjectType)
-      expect(elements[11]).toBeInstanceOf(InstanceElement)
+      expect(elements[11]).toBeInstanceOf(ObjectType)
       expect(elements[12]).toBeInstanceOf(InstanceElement)
-      const recipeCode = elements[9] as ObjectType
-      const recipeCodeNested = elements[10] as ObjectType
-      const recipe123Code = elements[11] as InstanceElement
-      const recipe456Code = elements[12] as InstanceElement
+      expect(elements[13]).toBeInstanceOf(InstanceElement)
+      const recipeCode = elements[10] as ObjectType
+      const recipeCodeNested = elements[11] as ObjectType
+      const recipe123Code = elements[12] as InstanceElement
+      const recipe456Code = elements[13] as InstanceElement
 
       expect(Object.keys(recipeCode.fields)).toEqual(['flat', 'nested'])
       expect(Object.keys(recipeCodeNested.fields)).toEqual(['inner', 'other'])
@@ -389,6 +397,11 @@ describe('Extract standalone fields', () => {
       expect((recipe456.value.code as ReferenceExpression).elemID.getFullName()).toEqual(
         recipe456Code.elemID.getFullName()
       )
+    })
+    it('should not create recipe__code instance when original value is "null"', () => {
+      expect(elements[8]).toBeInstanceOf(InstanceElement)
+      const recipeEmpty = elements[8] as InstanceElement
+      expect(recipeEmpty.value.code).toBeUndefined()
     })
 
     it('should not modify the connection type', () => {
@@ -426,6 +439,7 @@ describe('Extract standalone fields', () => {
       expect(elements[4]).toEqual(origInstances[0])
       expect(elements[5]).toEqual(origInstances[1])
       expect(elements[7]).toEqual(origInstances[3])
+      expect(elements[8]).toEqual(origInstances[4])
     })
   })
 
@@ -457,6 +471,7 @@ describe('Extract standalone fields', () => {
       expect(elements[4]).toEqual(origInstances[0])
       expect(elements[5]).toEqual(origInstances[1])
       expect(elements[7]).toEqual(origInstances[3])
+      expect(elements[8]).toEqual(origInstances[4])
     })
   })
 })

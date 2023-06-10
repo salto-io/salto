@@ -110,17 +110,6 @@ type GetPageArgs = {
   usedParams: Set<string>
 }
 
-const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>):void => {
-  const argsHash = objectHash(additionalArgs)
-  if (pageArgs.usedParams.has(argsHash)) {
-    return
-  }
-  pageArgs.usedParams.add(argsHash)
-  // eslint-disable-next-line no-use-before-define
-  const result = singlePagePagination(pageArgs, additionalArgs)
-  pageArgs.promisesQueue.set(argsHash, result)
-}
-
 const singlePagePagination = async (
   pageArgs: GetPageArgs,
   additionalArgs: Record<string, string>
@@ -152,6 +141,16 @@ const singlePagePagination = async (
   const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
 
   return { response, page, additionalArgs, yieldResult: true }
+}
+
+const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>):void => {
+  const argsHash = objectHash(additionalArgs)
+  if (pageArgs.usedParams.has(argsHash)) {
+    return
+  }
+  pageArgs.usedParams.add(argsHash)
+  const result = singlePagePagination(pageArgs, additionalArgs)
+  pageArgs.promisesQueue.set(argsHash, result)
 }
 
 const addNextPages = ({ pageArgs, page, response, additionalArgs } :

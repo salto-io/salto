@@ -28,10 +28,10 @@ describe('issueTypeSchemeDefaultTypeValidator', () => {
         'instance',
         issueTypeSchemeType,
         {
-          defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
+          defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
           issueTypeIds: [
-            new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
-            new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2')),
+            new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
+            new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), {}),
           ],
         }
       ),
@@ -40,7 +40,7 @@ describe('issueTypeSchemeDefaultTypeValidator', () => {
 
   it('should return an error if the default type is not included in issueTypeIds', async () => {
     getChangeData(issueTypeSchemeChange).value.issueTypeIds = [
-      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType2'), {}),
     ]
     expect(await issueTypeSchemeDefaultTypeValidator([issueTypeSchemeChange])).toEqual([
       {

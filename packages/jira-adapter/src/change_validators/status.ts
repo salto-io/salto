@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, isReferenceExpression, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, isInstanceElement } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { STATUS_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -27,7 +28,7 @@ export const statusValidator: ChangeValidator = async changes => (
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === STATUS_TYPE_NAME)
     .filter(instance =>
-      isReferenceExpression(instance.value.statusCategory)
+      isResolvedReferenceExpression(instance.value.statusCategory)
       && isInstanceElement(instance.value.statusCategory.value)
       && instance.value.statusCategory.value.value.name === NO_CATEGORY_STATUS)
     .map(async instance => ({

@@ -14,9 +14,10 @@
 * limitations under the License.
 */
 import { AdditionChange, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
-  isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
+  isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { isFreeLicense } from '../utils'
 import JiraClient from '../client/client'
 import { PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE } from '../constants'
@@ -55,10 +56,10 @@ const schemeWarning = (elemID: ElemID): ChangeError => ({
 const isPermissionSchemeAssociationChange = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 ): boolean => {
-  const elemBefore = isModificationChange(change) && isReferenceExpression(change.data.before.value.permissionScheme)
+  const elemBefore = isModificationChange(change) && isResolvedReferenceExpression(change.data.before.value.permissionScheme)
     ? change.data.before.value.permissionScheme.elemID.getFullName()
     : undefined
-  const elemAfter = isReferenceExpression(change.data.after.value.permissionScheme)
+  const elemAfter = isResolvedReferenceExpression(change.data.after.value.permissionScheme)
     ? change.data.after.value.permissionScheme.elemID.getFullName()
     : undefined
   return (elemBefore !== elemAfter)
@@ -94,7 +95,7 @@ export const permissionSchemeDeploymentValidator = (client: JiraClient): ChangeV
         projectAndSchemeChanges
           .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
           .filter(isAdditionChange)
-          .filter(change => isReferenceExpression(getChangeData(change).value.permissionScheme))
+          .filter(change => isResolvedReferenceExpression(getChangeData(change).value.permissionScheme))
           .map(change => getChangeData(change).value.permissionScheme.elemID.getFullName())
       )
 
@@ -102,7 +103,7 @@ export const permissionSchemeDeploymentValidator = (client: JiraClient): ChangeV
         projectAndSchemeChanges
           .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
           .filter(isModificationChange)
-          .filter(change => isReferenceExpression(change.data.before.value.permissionScheme))
+          .filter(change => isResolvedReferenceExpression(change.data.before.value.permissionScheme))
           .map(change => change.data.before.value.permissionScheme.elemID.getFullName())
       )
 

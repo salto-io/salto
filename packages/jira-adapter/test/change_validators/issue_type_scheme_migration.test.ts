@@ -58,8 +58,8 @@ describe('issue type scheme migration validator', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
-        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme')),
+        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
+        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
       }
     )
     secondProjectInstance = new InstanceElement(
@@ -67,15 +67,15 @@ describe('issue type scheme migration validator', () => {
       projectType,
       {
         name: 'instance',
-        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow')),
-        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme')),
+        workflowScheme: new ReferenceExpression(new ElemID(JIRA, 'WorkflowScheme', 'instance', 'workflow'), {}),
+        issueTypeScheme: new ReferenceExpression(new ElemID(JIRA, 'IssueTypeScheme', 'instance', 'issueTypeScheme'), {}),
       }
     )
     issueTypeScheme = new InstanceElement(
       'issueTypeScheme',
       issueTypeSchemeType,
       {
-        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
+        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
         issueTypeIds: [
           issueTypeReference1,
           issueTypeReference2,
@@ -87,7 +87,7 @@ describe('issue type scheme migration validator', () => {
       'issueTypeScheme',
       issueTypeSchemeType,
       {
-        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1')),
+        defaultIssueTypeId: new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType1'), {}),
         issueTypeIds: [
           issueTypeReference1,
           issueTypeReference4,
@@ -128,7 +128,7 @@ describe('issue type scheme migration validator', () => {
 
   it('should not throw on unresolved issue type reference', async () => {
     issueTypeScheme.value.issueTypeIds = [
-      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType5')),
+      new ReferenceExpression(new ElemID(JIRA, ISSUE_TYPE_NAME, 'instance', 'issueType5'), {}),
     ]
     modifiedIssueTypeScheme.value.issueTypeIds = [
     ]

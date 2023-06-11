@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression } from '@salto-io/adapter-api'
+import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { PROJECT_TYPE } from '../constants'
 
@@ -31,7 +32,7 @@ const convertProjectCategoryToCategoryId = async (
   if (instance.value.projectCategory === undefined) {
     return
   }
-  instance.value.categoryId = isReferenceExpression(instance.value.projectCategory)
+  instance.value.categoryId = isResolvedReferenceExpression(instance.value.projectCategory)
     ? (await instance.value.projectCategory.getResolvedValue()).value.id
     : instance.value.projectCategory
   projectIdToCategory[instance.value.id] = instance.value.projectCategory

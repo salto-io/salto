@@ -37,7 +37,7 @@ const convertOptionsToList = (options: Values): Values[] => (
     .value()
 )
 
-const getOptionsFromContext = (context: InstanceElement): Values[] => [
+export const getOptionsFromContext = (context: InstanceElement): Values[] => [
   ...(Object.values(context.value.options ?? {}) as Values[])
     .flatMap((option: Values) => convertOptionsToList(option.cascadingOptions)
       .map(cascadingOption => ({

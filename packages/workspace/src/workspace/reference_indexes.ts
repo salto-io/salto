@@ -23,6 +23,7 @@ import {
   isRemovalOrModificationChange,
   isAdditionOrModificationChange,
   isTemplateExpression,
+  ReferenceMapping,
   isObjectTypeChange,
 } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -37,28 +38,23 @@ const log = logger(module)
 export const REFERENCE_INDEXES_VERSION = 3
 export const REFERENCE_INDEXES_KEY = 'reference_indexes'
 
-type ReferenceDetails = {
-  referenceSource: ElemID
-  referenceTarget: ElemID
-}
-
 type ChangeReferences = {
-  removed: ReferenceDetails[]
-  currentAndNew: ReferenceDetails[]
+  removed: ReferenceMapping[]
+  currentAndNew: ReferenceMapping[]
 }
 
-const getReferences = (element: Element): ReferenceDetails[] => {
-  const references: ReferenceDetails[] = []
+const getReferences = (element: Element): ReferenceMapping[] => {
+  const references: ReferenceMapping[] = []
   walkOnElement({
     element,
-    func: ({ value, path: referenceSource }) => {
+    func: ({ value, path: source }) => {
       if (isReferenceExpression(value)) {
-        references.push({ referenceSource, referenceTarget: value.elemID })
+        references.push({ source, target: value.elemID })
       }
       if (isTemplateExpression(value)) {
         value.parts.forEach(part => {
           if (isReferenceExpression(part)) {
-            references.push({ referenceSource, referenceTarget: part.elemID })
+            references.push({ source, target: part.elemID })
           }
         })
       }
@@ -68,8 +64,8 @@ const getReferences = (element: Element): ReferenceDetails[] => {
   return references
 }
 
-const getReferenceDetailsIdentifier = (referenceDetails: ReferenceDetails): string =>
-  `${referenceDetails.referenceTarget.getFullName()} - ${referenceDetails.referenceSource.getFullName()}`
+const getReferenceDetailsIdentifier = (referenceDetails: ReferenceMapping): string =>
+  `${referenceDetails.target.getFullName()} - ${referenceDetails.source.getFullName()}`
 
 const getReferencesFromChange = (change: Change<Element>): ChangeReferences => {
   const before = isRemovalOrModificationChange(change) ? getReferences(change.data.before) : []
@@ -165,11 +161,11 @@ const updateIdOfReferenceSourcesIndex = (
 }
 
 const getReferenceSourcesMap = (
-  references: ReferenceDetails[],
+  references: ReferenceMapping[],
 ): Record<string, ElemID[]> => {
   const referenceSourcesChanges = _(references)
-    .groupBy(({ referenceTarget }) => referenceTarget.createBaseID().parent.getFullName())
-    .mapValues(refs => refs.map(ref => ref.referenceSource))
+    .groupBy(({ target }) => target.createBaseID().parent.getFullName())
+    .mapValues(refs => refs.map(ref => ref.source))
     .value()
 
   // Add to a type its fields references

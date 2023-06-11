@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import detector, { SUPPORTED_TYPES } from '../../src/changes_detector/changes_detectors/script'
 import { Change } from '../../src/changes_detector/types'
@@ -27,6 +28,7 @@ describe('script', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(mockSdfClient(), suiteAppClient)
+  const timeDateFormat = 'YYYY-MM-DD h:mm a'
 
   describe('script fields changes', () => {
     let results: Change[]
@@ -48,7 +50,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
       )
     })
     it('should return the changes', () => {
@@ -78,7 +80,7 @@ describe('script', () => {
 
       results = await detector.getChanges(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'))
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), timeDateFormat)
       )
     })
     it('should return the changes', () => {
@@ -122,7 +124,7 @@ describe('script', () => {
   it('return nothing when roles query fails', async () => {
     runSuiteQLMock.mockResolvedValue(undefined)
     expect(
-      await detector.getChanges(client, createDateRange(new Date(), new Date()))
+      await detector.getChanges(client, createDateRange(new Date(), new Date(), timeDateFormat))
     ).toHaveLength(0)
   })
 })

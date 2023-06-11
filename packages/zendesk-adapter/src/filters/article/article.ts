@@ -311,7 +311,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
               ),
             )
           } catch (e) {
-            log.error('Error parsing article body value in deployment', e)
+            log.error(`Error serializing article body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
           }
         })
     },

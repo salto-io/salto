@@ -30,8 +30,8 @@ import {
   CUSTOM_OBJECT,
   UNLIMITED_INSTANCES_VALUE,
   FOLDER_CONTENT_TYPE,
-  API_NAME_SEPARATOR,
   INSTALLED_PACKAGE_METADATA,
+  API_NAME_SEPARATOR,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -173,7 +173,7 @@ const listMetadataObjectsWithinFolders = async (
   return { elements, configChanges }
 }
 
-const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): string => {
+const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): string => {
   if (!obj.namespacePrefix) {
     return obj.fullName
   }
@@ -192,29 +192,29 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean
     return obj.fullName
   }
 
-  if (obj.fullName.startsWith(namePrefix)) {
+  if (!addNamespacePrefixToFullName) {
+    log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
     return obj.fullName
   }
-  if (addNamespacePrefixToFullName) {
-    // Instances of type InstalledPackage fullNames should never include the namespace prefix
-    if (obj.type === INSTALLED_PACKAGE_METADATA) {
-      return obj.fullName
-    }
-
-    // In some cases, obj.fullName does not contain the namespace prefix even though
-    // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
-    if (obj.fullName.includes(API_NAME_SEPARATOR)) {
-    // Case for API name with an object <Object>.X where it should be <Object>.<namespace>__X
-      const [parentName, instanceName] = obj.fullName.split(API_NAME_SEPARATOR)
-      return `${parentName}${API_NAME_SEPARATOR}${namePrefix}${instanceName}`
-    }
-    return `${namePrefix}${obj.fullName}`
+  // Instances of type InstalledPackage fullNames should never include the namespace prefix
+  if (obj.type === INSTALLED_PACKAGE_METADATA) {
+    return obj.fullName
   }
-  log.debug('obj.fullName %s is missing namespace %s. Not adding because addNamespacePrefixToFullName is false. FileProps: %o', obj.fullName, obj.namespacePrefix, obj)
-  return obj.fullName
+
+  const fullNameParts = obj.fullName.split(API_NAME_SEPARATOR)
+  const name = fullNameParts.slice(-1)[0]
+  const parentNames = fullNameParts.slice(0, -1)
+
+  if (name.startsWith(namePrefix)) {
+    return obj.fullName
+  }
+
+  // In some cases, obj.fullName does not contain the namespace prefix even though
+  // obj.namespacePrefix is defined. In these cases, we want to add the prefix manually
+  return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
-const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName?: boolean): FileProperties => {
+const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
   const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
@@ -236,7 +236,8 @@ const getInstanceFromMetadataInformation = (metadata: MetadataInfo,
 
 export const fetchMetadataInstances = async ({
   client, metadataType, fileProps, metadataQuery,
-  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE, addNamespacePrefixToFullName,
+  maxInstancesPerType = UNLIMITED_INSTANCES_VALUE,
+  addNamespacePrefixToFullName = true,
 }: {
   client: SalesforceClient
   fileProps: FileProperties[]
@@ -329,7 +330,7 @@ type RetrieveMetadataInstancesArgs = {
   types: ReadonlyArray<MetadataObjectType>
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
-  addNamespacePrefixToFullName?: boolean
+  addNamespacePrefixToFullName: boolean
 }
 
 export const retrieveMetadataInstances = async ({

@@ -18,14 +18,13 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
-
-// import each from 'jest-each'
 import { collections } from '@salto-io/lowerdash'
-import { registerTestFunction } from '../utils'
+import { registerTestFunction, registerThrowingFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
 import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
+import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 
 const { awu } = collections.asynciterable
 const funcName = 'funcush'
@@ -827,6 +826,50 @@ value
       expect(result.errors[0].summary).toEqual('Invalid attribute definition')
     })
 
+    describe('unexpected parsing failures', () => {
+      let body: string
+      beforeAll(() => {
+        body = `
+        adapter_id.some_asset {
+          content = funcush("some.png")
+        `
+      })
+
+      it('puts unexpected errors into the parse result, without additional information', async () => {
+        const throwingFunctions = registerThrowingFunction(funcName, () => { throw new Error('unexpected') })
+        const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('unexpected')
+        expect(result.errors[0].context).toEqual({
+          filename: 'filename',
+          start: { byte: 1, col: 1, line: 1 },
+          end: { byte: 1, col: 1, line: 1 },
+        })
+      })
+
+      it('puts invalid lexer errors into the parse result, with token information', async () => {
+        const throwingFunctions = registerThrowingFunction(funcName, () => {
+          throw new LexerErrorTokenReachedError({
+            type: 'test',
+            value: 'test',
+            text: 'test',
+            lineBreaks: 1,
+            offset: 5,
+            line: 3,
+            col: 6,
+          })
+        })
+        const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('Invalid syntax')
+        expect(result.errors[0].context).toEqual({
+          filename: 'filename',
+          start: { byte: 5, col: 6, line: 3 },
+          end: { byte: 9, col: 1, line: 4 },
+        })
+      })
+    })
+
     it('fails on invalid object item with unexpected eof', async () => {
       const body = `
       salto {
@@ -910,8 +953,21 @@ value
     })
   })
 
+  it('should fail gracefully with unicode line separators in multiline strings', async () => {
+    const body = `
+    type salesforce.unicodeLines {
+      str = '''
+      Line that ends with unicode line break\u2028
+      '''
+    }
+    `
+    const result = await parse(Buffer.from(body), 'none', functions)
+    expect(result.errors).toHaveLength(1)
+    expect(result.elements).toEqual([])
+  })
+
   describe('tokenizeContent', () => {
-    it('seperate and token each part of a line correctly', () => {
+    it('separate and token each part of a line correctly', () => {
       expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([
         { value: 'aaa', type: 'word', line: 1, col: 1 },
         { value: 'bbb', type: 'word', line: 1, col: 7 },

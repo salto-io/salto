@@ -19,6 +19,7 @@ import { ChangedCustomRecord } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('custom records', () => {
   const runSuiteQLMock = jest.fn()
@@ -43,7 +44,7 @@ describe('custom records', () => {
 
       results = await getChangedCustomRecords(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
         { isCustomRecordTypeMatch: name => name !== 'customrecord2' },
       )
     })
@@ -63,7 +64,7 @@ describe('custom records', () => {
     runSuiteQLMock.mockResolvedValueOnce(undefined)
     await expect(getChangedCustomRecords(
       client,
-      createDateRange(new Date(), new Date()),
+      createDateRange(new Date(), new Date(), TIME_DATE_FORMAT),
       { isCustomRecordTypeMatch: () => true },
     )).resolves.toHaveLength(0)
   })
@@ -78,7 +79,7 @@ describe('custom records', () => {
     runSuiteQLMock.mockResolvedValueOnce(undefined)
     await expect(getChangedCustomRecords(
       client,
-      createDateRange(new Date(), new Date()),
+      createDateRange(new Date(), new Date(), TIME_DATE_FORMAT),
       { isCustomRecordTypeMatch: () => true },
     )).resolves.toHaveLength(0)
   })

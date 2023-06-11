@@ -22,7 +22,7 @@ import {
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DAG } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
@@ -357,7 +357,12 @@ const filterCreator: FilterCreator = () => ({
         }
         const path = attachment.path ?? []
         // path = [zendesk, records, guide, brand, brandName ... ]
-        const staticFilePath = [ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME, ...path.slice(2)]
+        const staticFilePath = [
+          ZENDESK,
+          ARTICLE_ATTACHMENT_TYPE_NAME,
+          ...path.slice(2, -1),
+          normalizeFilePathPart(attachment.value.file_name),
+        ]
         attachment.value.content = new StaticFile({
           filepath: staticFilePath.join('/'),
           content,

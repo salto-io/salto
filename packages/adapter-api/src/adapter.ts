@@ -155,6 +155,16 @@ export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
 
 export type AccountId = string
 
+export type AccountType = string
+
+export type IsProduction = boolean | undefined
+
+export type Account = {
+  accountId: AccountId
+  accountType: AccountType
+  isProduction: IsProduction
+}
+
 export type ConfigCreator = {
   optionsType: ObjectType
   getConfig: (options?: InstanceElement)
@@ -174,7 +184,7 @@ export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<Referen
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<Account>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   configCreator?: ConfigCreator

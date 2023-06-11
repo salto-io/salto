@@ -179,7 +179,7 @@ describe('adapter creator', () => {
       'config',
       accessTokenCredentialsType,
       { token: 'aaa' },
-    ))).toEqual('')
+    ))).toEqual({ accountId: '', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 

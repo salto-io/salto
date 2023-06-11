@@ -41,7 +41,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { flatValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { Options, RequestCallback } from 'request'
-import { AccountId, CredentialError, Value } from '@salto-io/adapter-api'
+import { Account, CredentialError, Value } from '@salto-io/adapter-api'
 import {
   CUSTOM_OBJECT_ID_FIELD,
   DEFAULT_CUSTOM_OBJECTS_DEFAULT_RETRY_OPTIONS,
@@ -446,7 +446,7 @@ export const getConnectionDetails = async (
 
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
-): Promise<AccountId> => {
+): Promise<Account> => {
   const { remainingDailyRequests, orgId } = await getConnectionDetails(
     creds, connection
   )
@@ -455,7 +455,7 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  return orgId
+  return { accountId: orgId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType & isProduction logic
 }
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions

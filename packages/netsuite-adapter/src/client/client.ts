@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData, SaltoElementError, SaltoError, Account } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
@@ -90,7 +90,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountId> {
+  static async validateCredentials(credentials: Credentials): Promise<Account> {
     if (isSuiteAppCredentials(credentials)) {
       try {
         await SuiteAppClient.validateCredentials(credentials)
@@ -103,7 +103,8 @@ export default class NetsuiteClient {
     }
 
     try {
-      return await SdfClient.validateCredentials(credentials)
+      const accountId = await SdfClient.validateCredentials(credentials)
+      return { accountId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType & isProduction logic
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
       throw new CredentialError(e)

@@ -38,7 +38,7 @@ export const configType = new ObjectType({
 
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
-  validateCredentials: async () => '',
+  validateCredentials: async () => ({ accountId: '', accountType: 'Unknown', isProduction: undefined }),
   authenticationMethods: ({ basic: {
     credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
   } }),

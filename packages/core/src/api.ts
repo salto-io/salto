@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
+  Adapter, InstanceElement, ObjectType, ElemID, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
+  AccountId, AccountType, IsProduction,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -63,6 +64,8 @@ const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adap
 type VerifyCredentialsResult = {
     success: true
     accountId: AccountId
+    accountType: AccountType
+    isProduction: IsProduction
 } | {
   success: false
   error: Error
@@ -74,8 +77,8 @@ export const verifyCredentials = async (
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     try {
-      const accountId = await adapterCreator.validateCredentials(loginConfig)
-      return { success: true, accountId }
+      const account = await adapterCreator.validateCredentials(loginConfig)
+      return { success: true, ...account }
     } catch (error) {
       if (isCredentialError(error)) {
         return {

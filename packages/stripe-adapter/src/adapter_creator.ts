@@ -99,12 +99,15 @@ export const adapter: Adapter = {
       deployModifiers: adapterOperations.deployModifiers,
     }
   },
-  validateCredentials: async config => validateCredentials(
-    credentialsFromConfig(config),
-    {
-      createConnection,
-    },
-  ),
+  validateCredentials: async config => {
+    const accountId = await validateCredentials(
+      credentialsFromConfig(config),
+      {
+        createConnection,
+      },
+    )
+    return { accountId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType & isProduction logic
+  },
   authenticationMethods: {
     basic: {
       credentialsType: accessTokenCredentialsType,

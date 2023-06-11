@@ -244,28 +244,28 @@ describe('adapter creator', () => {
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-    ))).toEqual('https://abc.zendesk.com')
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
-    ))).toEqual('https://abc.zendesk.com')
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
 
     // with domain provided
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
-    ))).toEqual('https://abc.zendesk1.com')
+    ))).toEqual({ accountId: 'https://abc.zendesk1.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
 
     // with domain is an empty string
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc', domain: '' },
-    ))).toEqual('https://abc.zendesk.com')
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
 
     expect(connection.createConnection).toHaveBeenCalledTimes(4)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(

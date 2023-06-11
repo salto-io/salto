@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations, AccountType, Account, IsProduction } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { OktaConfig, DEFAULT_CONFIG } from '../src/config'
@@ -47,11 +47,13 @@ describe('adapter creator', () => {
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
       let accountId: AccountId
+      let accountType: AccountType
+      let isProduction: IsProduction
       beforeEach(async () => {
-        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' })
-        accountId = await adapter.validateCredentials(
+        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' });
+        ({ accountId, accountType, isProduction } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
-        )
+        ))
       })
       it('should make an authenticated rest call', () => {
         expect(mockAxiosAdapter.history).toBeDefined()
@@ -59,10 +61,16 @@ describe('adapter creator', () => {
       it('should return org id account ID', () => {
         expect(accountId).toEqual('orgId')
       })
+      it('should return account type Unknown', () => {
+        expect(accountType).toEqual('Unknown') // TODO: modify to actual accountType logic when implemented
+      })
+      it('should return isProduction undefined', () => {
+        expect(isProduction).toBeUndefined() // TODO: modify to actual isProduction logic when implemented
+      })
     })
 
     describe('with invalid credentials', () => {
-      let result: Promise<AccountId>
+      let result: Promise<Account>
       beforeEach(() => {
         mockAxiosAdapter.onGet().reply(403)
         result = adapter.validateCredentials(

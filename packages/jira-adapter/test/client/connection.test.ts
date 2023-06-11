@@ -16,6 +16,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { AccountId, AccountType, IsProduction } from '@salto-io/adapter-api'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../src/client/headers'
 
@@ -36,12 +37,14 @@ describe('connection', () => {
     })
 
     describe('when authorized', () => {
-      let result: string
+      let accountId: AccountId
+      let accountType: AccountType
+      let isProduction: IsProduction
 
       beforeEach(async () => {
-        result = await validateCredentials({
+        ({ accountId, accountType, isProduction } = await validateCredentials({
           connection,
-        })
+        }))
       })
 
       it('should get server info with auth headers', () => {
@@ -53,7 +56,15 @@ describe('connection', () => {
       })
 
       it('should return the base url from the response as account id', () => {
-        expect(result).toEqual('http://my.jira.net')
+        expect(accountId).toEqual('http://my.jira.net')
+      })
+
+      it('should return Unknown as account type', () => {
+        expect(accountType).toEqual('Unknown') // TODO: modify to actual account type logic when implemented
+      })
+
+      it('should return isProduction = false', () => {
+        expect(isProduction).toBeUndefined() // TODO: modify to actual isProduction logic when implemented
       })
     })
 

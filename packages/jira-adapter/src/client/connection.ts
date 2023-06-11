@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AccountId, CredentialError } from '@salto-io/adapter-api'
+import { Account, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
@@ -41,9 +41,10 @@ const getBaseUrl = async (
 
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
-): Promise<AccountId> => {
+): Promise<Account> => {
   if (await isAuthorized(connection)) {
-    return getBaseUrl(connection)
+    const accountId = await getBaseUrl(connection)
+    return { accountId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType + isProduction logic
   }
   throw new CredentialError('Invalid Credentials')
 }

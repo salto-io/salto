@@ -958,6 +958,7 @@ value
     beforeAll(async () => {
       const body = `
       type salesforce.unicodeLines {\u2028
+        // comment\u2028
         multi = '''\u2028
         end with unicode line separator\u2028
         end with unicode paragraph separator\u2029

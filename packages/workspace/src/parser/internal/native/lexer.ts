@@ -49,8 +49,9 @@ export const TOKEN_TYPES = {
 }
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
-const NEWLINE = '[\r\n\u2028\u2029]'
-const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*${NEWLINE}|.*?(?=\\$\\{)|.*${NEWLINE}`)
+const NEWLINE_CHARS = '\r\n\u2028\u2029'
+const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*[${NEWLINE_CHARS}]|.*?(?=\\$\\{)|.*[${NEWLINE_CHARS}]`)
+const SINGLELINE_CONTENT = new RegExp(`[^${NEWLINE_CHARS}\\\\]+?(?=\\$\\{|["${NEWLINE_CHARS}\\\\])`)
 const REFERENCE = new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`)
 
 export const rules: Record<string, moo.Rules> = {
@@ -60,7 +61,7 @@ export const rules: Record<string, moo.Rules> = {
   // We throw our own error with the token and reflect this to the user.
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
-    [TOKEN_TYPES.MULTILINE_START]: { match: new RegExp(`'''[ \t]*${NEWLINE}`), lineBreaks: true, push: 'multilineString' },
+    [TOKEN_TYPES.MULTILINE_START]: { match: new RegExp(`'''[ \t]*[${NEWLINE_CHARS}]`), lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     [TOKEN_TYPES.LEFT_PAREN]: '(',
@@ -74,10 +75,10 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.WORD]: new RegExp(WORD_PART, 's'),
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
-    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`${NEWLINE}+`), lineBreaks: true },
+    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true },
     // The Invalid token is matched when the syntax is not critical - for example in comment content.
     // The parser disregards this token and continues to the next match.
-    [TOKEN_TYPES.INVALID]: { match: /[^ \n\r\u2028\u2029]+/ },
+    [TOKEN_TYPES.INVALID]: { match: new RegExp(`[^ \t${NEWLINE_CHARS}]+`) },
     [TOKEN_TYPES.ERROR]: moo.error,
   },
   string: {
@@ -86,8 +87,8 @@ export const rules: Record<string, moo.Rules> = {
     // This handles regular escapes, unicode escapes and escaped template markers ('\${')
     [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
     // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
-    [TOKEN_TYPES.CONTENT]: { match: /[^\r\n\\]+?(?=\$\{|["\n\r\\])/, lineBreaks: false },
-    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`${NEWLINE}+`), lineBreaks: true, pop: 1 },
+    [TOKEN_TYPES.CONTENT]: { match: SINGLELINE_CONTENT, lineBreaks: false },
+    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true, pop: 1 },
     [TOKEN_TYPES.ERROR]: moo.error,
   },
   multilineString: {

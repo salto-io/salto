@@ -51,6 +51,9 @@ export const TOKEN_TYPES = {
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
 
 export const rules: Record<string, moo.Rules> = {
+  // Regarding ERROR tokens: Each section in the state must have an error token.
+  // When there is no lexer match, the error token is returned with the rest of the buffer.
+  // If there is no error token in a section, an Error is thrown from the lexer.
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
@@ -68,6 +71,8 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
     [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },
+    // The Invalid token is matched when the syntax is not critical - for example in comment content.
+    // The parser disregards this token and continues to the next match.
     [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/ },
     [TOKEN_TYPES.ERROR]: moo.error,
   },

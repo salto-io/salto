@@ -52,8 +52,9 @@ const WORD_PART = '[a-zA-Z_][\\w.@]*'
 
 export const rules: Record<string, moo.Rules> = {
   // Regarding ERROR tokens: Each section in the state must have an error token.
-  // When there is no lexer match, the error token is returned with the rest of the buffer.
-  // If there is no error token in a section, an Error is thrown from the lexer.
+  // If there is no error token in a section, an Error is thrown from the lexer, with missing information.
+  // With an error token - when there is no lexer match, the error token is returned with the rest of the buffer.
+  // We throw our own error with the token and reflect this to the user.
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
     [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },

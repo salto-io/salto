@@ -123,5 +123,43 @@ describe('adapter creator', () => {
         })).toThrow()
       })
     })
+
+    describe('with invalid fetch config', () => {
+      it('should fail if excluded type name does not part of the apiDefinitions', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            fetch: { exclude: [{ type: 'Bla' }] },
+          } as unknown as OktaConfig),
+        })).toThrow()
+      })
+
+      it('should fail if excluded type name is part of private api defs but usePrivateAPI is disabled', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            client: { usePrivateAPI: false },
+            fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
+          } as unknown as OktaConfig),
+        })).toThrow()
+      })
+    })
+
+    describe('with valid fetch config', () => {
+      it('should not fail if excluded type name is part of private api defs', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
+          } as unknown as OktaConfig),
+        })).not.toThrow()
+      })
+    })
   })
 })

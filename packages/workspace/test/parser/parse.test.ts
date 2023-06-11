@@ -23,7 +23,7 @@ import { registerTestFunction, registerThrowingFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
+import { SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
 import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 
 const { awu } = collections.asynciterable
@@ -953,18 +953,46 @@ value
     })
   })
 
-  it('should fail gracefully with unicode line separators in multiline strings', async () => {
-    const body = `
-    type salesforce.unicodeLines {
-      str = '''
-      Line that ends with unicode line break\u2028
-      '''
-    }
-    `
-    const result = await parse(Buffer.from(body), 'none', functions)
-    expect(result.errors).toHaveLength(1)
-    expect(result.elements).toEqual([])
+  describe('parse unicode line terminators', () => {
+    let parsed: ParseResult
+    beforeAll(async () => {
+      const body = `
+      type salesforce.unicodeLines {\u2028
+        // comment\u2028
+        multi = '''\u2028
+        end with unicode line separator\u2028
+        end with unicode paragraph separator\u2029
+        '''\u2028
+        single = "end single with unicode"\u2028
+      }\u2028
+      `.replace(/\n/g, '')
+      parsed = await parse(Buffer.from(body), 'none', functions)
+    })
+
+    it('should not have errors', () => {
+      expect(parsed.errors).toHaveLength(0)
+    })
+
+    describe('multiline strings', () => {
+      it('should parse unicode line separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.multi
+        expect(parsedValue).toContain('end with unicode line separator')
+      })
+
+      it('should parse unicode paragraph separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.multi
+        expect(parsedValue).toContain('end with unicode paragraph separator')
+      })
+    })
+
+    describe('single line strings', () => {
+      it('should parse unicode line separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.single
+        expect(parsedValue).toContain('end single with unicode')
+      })
+    })
   })
+
 
   describe('tokenizeContent', () => {
     it('separate and token each part of a line correctly', () => {

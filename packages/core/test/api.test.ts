@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -29,7 +29,7 @@ import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
-import { getAdapterConfigOptionsType, getLoginStatuses } from '../src/api'
+import { getAdapterConfigOptionsType, getLoginStatuses, getAdditionalReferences } from '../src/api'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
@@ -105,6 +105,7 @@ describe('api.ts', () => {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
     validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
@@ -1004,6 +1005,36 @@ describe('api.ts', () => {
     })
     it('should returns undefined when adapter configCreator is undefined', () => {
       expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()
+    })
+  })
+
+  describe('getAdditionalReferences', () => {
+    let ws: workspace.Workspace
+    let change: Change<ObjectType>
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: ['salto1'],
+        accountToServiceName: {
+          salto1: 'salto',
+        },
+      })
+
+      change = toChange({ after: new ObjectType({ elemID: new ElemID('salto1', 'test') }) })
+    })
+    it('should return additional references', async () => {
+      mockAdapter.getAdditionalReferences.mockResolvedValue([{
+        source: ElemID.fromFullName('salto1.test'),
+        target: ElemID.fromFullName('salto1.test2'),
+      }])
+      const res = await getAdditionalReferences(ws, [change])
+
+      expect(res).toEqual([{
+        source: ElemID.fromFullName('salto1.test'),
+        target: ElemID.fromFullName('salto1.test2'),
+      }])
+
+      expect(mockAdapter.getAdditionalReferences).toHaveBeenCalledWith([change])
     })
   })
 })

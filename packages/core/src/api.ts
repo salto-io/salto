@@ -17,12 +17,12 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections } from '@salto-io/lowerdash'
+import { promises, collections, values } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -674,3 +674,22 @@ export const rename = async (
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
   adapterCreators[adapterName].configCreator?.optionsType
+
+
+export const getAdditionalReferences = async (
+  workspace: Workspace,
+  changes: Change[],
+): Promise<ReferenceMapping[]> => {
+  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
+
+  const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
+
+  const referenceGroups = await Promise.all(
+    Object.entries(changeGroups).map(([account, changeGroup]) =>
+      adapterCreators[accountToService[account]]
+        .getAdditionalReferences?.(changeGroup))
+  )
+  return referenceGroups
+    .flat()
+    .filter(values.isDefined)
+}

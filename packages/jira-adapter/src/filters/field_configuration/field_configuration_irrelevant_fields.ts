@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, isReferenceExpression, isResolvedReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement, isResolvedReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
@@ -41,7 +41,7 @@ const filter: FilterCreator = ({ fetchQuery }) => ({
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {
-          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => (isReferenceExpression(field.id) ? field.id.elemID.getFullName() : field.id)).join(', ')}`)
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => (isResolvedReferenceExpression(field.id) ? field.id.elemID.getFullName() : field.id)).join(', ')}`)
         }
       })
   },

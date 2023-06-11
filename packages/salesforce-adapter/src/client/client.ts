@@ -72,7 +72,7 @@ const { logDecorator, throttle, requiresLogin, createRateLimitersFromConfig } = 
 
 type DeployOptions = Pick<JSForceDeployOptions, 'checkOnly'>
 
-export const API_VERSION = '57.0'
+export const API_VERSION = '58.0'
 export const METADATA_NAMESPACE = 'http://soap.sforce.com/2006/04/metadata'
 
 // Salesforce limitation of maximum number of items per create/update/delete call

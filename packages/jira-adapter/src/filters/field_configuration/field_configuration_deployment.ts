@@ -13,10 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isRemovalChange, isResolvedReferenceExpression, Values } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isRemovalChange, Values } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { JiraConfig } from '../../config/config'
 import { FilterCreator } from '../../filter'
 import { defaultDeployChange, deployChanges } from '../../deployment/standard_deployment'

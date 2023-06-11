@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, isResolvedReferenceExpression } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, isResolvedReferenceExpression, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { DASHBOARD_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable

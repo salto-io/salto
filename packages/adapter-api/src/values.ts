@@ -159,11 +159,6 @@ export const isReferenceExpression = (value: any): value is ReferenceExpression 
   value instanceof ReferenceExpression
 )
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const isResolvedReferenceExpression = (value: any): value is ReferenceExpression => (
-  value instanceof ReferenceExpression && value.value !== undefined
-)
-
 export class VariableExpression extends ReferenceExpression {
   constructor(
     elemID: ElemID,

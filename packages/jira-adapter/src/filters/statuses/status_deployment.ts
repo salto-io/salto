@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values, isResolvedReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { deployChanges } from '../../deployment/standard_deployment'

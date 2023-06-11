@@ -16,7 +16,7 @@
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, ObjectType, toChange, ReadOnlyElementsSource, Field, Element, ChangeDataType } from '@salto-io/adapter-api'
 import uniqueFields from '../../src/change_validators/unique_fields'
-import { CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, FINANCIAL_LAYOUT, METADATA_TYPE, NAME_FIELD, NETSUITE, SAVED_SEARCH } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, FINANCIAL_LAYOUT, METADATA_TYPE, NAME_FIELD, NETSUITE, SAVED_SEARCH, WORKFLOW } from '../../src/constants'
 
 const DUPLICATED_FIELD = 'test uniqueness'
 const UNIQUE_FIELD = 'test uniqueness 2'
@@ -59,6 +59,24 @@ describe('unique fields validator', () => {
       [elem.elemID.createNestedID(nestedField).getFullName(),
         (elem as InstanceElement).value[nestedField]]))
 
+  const getIDToValWorkflow = (
+    testInstances: TestElements,
+    nestedField: string
+  ): Map<string, string> => new Map(Object.values(testInstances)
+    .map(elem =>
+      [elem.elemID.createNestedID(nestedField).getFullName(),
+        (elem as InstanceElement).value
+          .workflowcustomfields.workflowcustomfield.custworkflow1.scriptid]))
+
+  const getIDToValScript = (
+    testInstances: TestElements,
+    nestedField: string
+  ): Map<string, string> => new Map(Object.values(testInstances)
+    .map(elem =>
+      [elem.elemID.createNestedID(nestedField).getFullName(),
+        (elem as InstanceElement).value
+          .scriptcustomfields.scriptcustomfield.custscript1.scriptid]))
+
   const buildMockElementsSource = (
     elementSource: ReadOnlyElementsSource,
     idToVal: Map<string, string>
@@ -81,6 +99,36 @@ describe('unique fields validator', () => {
   const getFinancialLayoutElements = (): TestElements => getTestElements(FINANCIAL_LAYOUT,
     (name: string, elemID: ObjectType, uniqueField: string) =>
       new InstanceElement(name, elemID, { name: uniqueField }))
+
+  const getWorkflowElements = (): TestElements => getTestElements(WORKFLOW,
+    (name: string, elemID: ObjectType, uniqueField: string) => {
+      const custworkflow1 = {
+        scriptid: uniqueField,
+      }
+      const workflowcustomfield = { custworkflow1 }
+      const workflowCustomFields = { workflowcustomfield }
+      return new InstanceElement(name, elemID, { workflowcustomfields: workflowCustomFields })
+    })
+
+  const getScriptSuiteletElements = (): TestElements => getTestElements('suitelet',
+    (name: string, elemID: ObjectType, uniqueField: string) => {
+      const custscript1 = {
+        scriptid: uniqueField,
+      }
+      const scriptcustomfield = { custscript1 }
+      const scriptCustomFields = { scriptcustomfield }
+      return new InstanceElement(name, elemID, { scriptcustomfields: scriptCustomFields })
+    })
+
+  const getScriptRestletElements = (): TestElements => getTestElements('restlet',
+    (name: string, elemID: ObjectType, uniqueField: string) => {
+      const custscript1 = {
+        scriptid: uniqueField,
+      }
+      const scriptcustomfield = { custscript1 }
+      const scriptCustomFields = { scriptcustomfield }
+      return new InstanceElement(name, elemID, { scriptcustomfields: scriptCustomFields })
+    })
 
   const getCustomRecordElements = (): TestElements => getTestElements(CUSTOM_RECORD_TYPE_PREFIX,
     (name: string, elemID: ObjectType, uniqueField: string) =>
@@ -306,15 +354,177 @@ describe('unique fields validator', () => {
     })
   })
 
+  describe('Workflow custom field unique `scriptid` field validator', () => {
+    const testElements = getWorkflowElements()
+    const idToVal = getIDToValWorkflow(testElements, 'workflowcustomfields.workflowcustomfield.custworkflow1.scriptid')
+    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
+      buildMockElementsSource(buildElementsSourceFromElements(elements), idToVal)
+
+    describe('Workflow custom field with a unique scriptid', () => {
+      it('Should not have a change error when adding a new Workflow with a custom field that has unique scriptid', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElements.basic })],
+          undefined,
+          buildElementsSource([
+            testElements.diffField,
+            testElements.basic])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('Should not have a change error when modifying a Workflow with uniwue custom fields', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange(
+            { before: testElements.basic,
+              after: testElements.sameField }
+          )],
+          undefined,
+          buildElementsSource([
+            testElements.diffField,
+            testElements.sameField])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+
+    describe('Workflow with a custom field that has a not-unique scriptid', () => {
+      it('Should have a change error when adding a new Workflow with a custom field that has a not-unique scriptid', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElements.sameField })],
+          undefined,
+          buildElementsSource([
+            testElements.basic,
+            testElements.sameField])
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toBe(testElements.sameField.elemID)
+        expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
+      })
+
+      it('Should have a change error when modifying a custom field scriptid to an existing one', async () => {
+        const changeErrors = await uniqueFields([
+          toChange(
+            { before: testElements.diffField,
+              after: testElements.sameField }
+          ),
+        ], undefined,
+        buildElementsSource([
+          testElements.basic,
+          testElements.sameField]))
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toBe(testElements.sameField.elemID)
+        expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
+      })
+    })
+  })
+
+  describe('Script custom field unique `scriptid` field validator', () => {
+    const testElementsRestlet = getScriptRestletElements()
+    const testElementsSuitelet = getScriptSuiteletElements()
+    const idToValRestlet = getIDToValScript(testElementsRestlet, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
+    const idToValSuitelet = getIDToValScript(testElementsSuitelet, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
+    const idToEval = new Map([...idToValRestlet.entries(), ...idToValSuitelet.entries()])
+
+    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
+      buildMockElementsSource(buildElementsSourceFromElements(elements), idToEval)
+
+    describe('Script custom field with a unique scriptid', () => {
+      it('Should not have a change error when adding a new Script with a custom field that has unique scriptid', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElementsRestlet.basic })],
+          undefined,
+          buildElementsSource([
+            testElementsRestlet.diffField,
+            testElementsRestlet.basic])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+
+      it('Should not have a change error when modifying a Script with unique custom fields', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange(
+            { before: testElementsRestlet.basic,
+              after: testElementsRestlet.sameField }
+          )],
+          undefined,
+          buildElementsSource([
+            testElementsRestlet.diffField,
+            testElementsRestlet.sameField])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+      it('Should not have a change error when adding a new Script with a custom field that has unique scriptid with 2 different script types', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElementsRestlet.basic })],
+          undefined,
+          buildElementsSource([
+            testElementsRestlet.diffField,
+            testElementsSuitelet.basic])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
+    })
+
+    describe('Script with a custom field that has a not-unique scriptid', () => {
+      it('Should have a change error when adding a new Script with a custom field that has a not-unique scriptid', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElementsRestlet.sameField })],
+          undefined,
+          buildElementsSource([
+            testElementsRestlet.basic,
+            testElementsRestlet.sameField])
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toBe(testElementsRestlet.sameField.elemID)
+        expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
+      })
+      it('Should have a change error when adding a new Script with a custom field that has the same scriptid as another custom field in different script type', async () => {
+        const changeErrors = await uniqueFields(
+          [toChange({ after: testElementsRestlet.sameField })],
+          undefined,
+          buildElementsSource([
+            testElementsRestlet.basic,
+            testElementsSuitelet.sameField])
+        )
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toBe(testElementsRestlet.sameField.elemID)
+        expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
+      })
+      it('Should have a change error when modifying a custom field scriptid to an existing one', async () => {
+        const changeErrors = await uniqueFields([
+          toChange(
+            { before: testElementsRestlet.diffField,
+              after: testElementsRestlet.sameField }
+          ),
+        ], undefined,
+        buildElementsSource([
+          testElementsRestlet.basic,
+          testElementsRestlet.sameField]))
+        expect(changeErrors).toHaveLength(1)
+        expect(changeErrors[0].severity).toEqual('Error')
+        expect(changeErrors[0].elemID).toBe(testElementsRestlet.sameField.elemID)
+        expect(changeErrors[0].detailedMessage).toContain(DUPLICATED_FIELD)
+      })
+    })
+  })
+
   describe('Multiple types', () => {
     const savedSearchTestInstances = getSavedSearchElements()
     const financialLayoutTestInstances = getFinancialLayoutElements()
+    const WorkflowTestInstances = getWorkflowElements()
+    const scriptTestInstances = getScriptRestletElements()
     const customRecordTestObjects = getCustomRecordElements()
     const customRecordTestChanges = getCustomRecordChanges(customRecordTestObjects)
 
     const idToValSavedSearch = getIDToVal(savedSearchTestInstances, FIELD_DEFAULT_NAME)
     const idToValFinancialLayout = getIDToVal(financialLayoutTestInstances, NAME_FIELD)
-    const idToVal = new Map([...idToValSavedSearch, ...idToValFinancialLayout])
+    const idToValWorkflow = getIDToValWorkflow(WorkflowTestInstances, 'workflowcustomfields.workflowcustomfield.custworkflow1.scriptid')
+    const idToValScript = getIDToValScript(scriptTestInstances, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
+    const idToVal = new Map([...idToValSavedSearch, ...idToValFinancialLayout, ...idToValWorkflow, ...idToValScript])
 
     const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
       buildMockElementsSource(buildElementsSourceFromElements(elements), idToVal)

@@ -445,7 +445,7 @@ export const loadWorkspace = async (
             persistent,
           }),
           referenceTargets: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
-            namespace: getRemoteMapNamespace('referenceTargetsTree', envName),
+            namespace: getRemoteMapNamespace('referenceTargets', envName),
             serialize: serializeReferenceTree,
             deserialize: deserializeReferenceTree,
             persistent,

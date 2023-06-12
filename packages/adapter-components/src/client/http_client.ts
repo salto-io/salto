@@ -141,7 +141,10 @@ export abstract class AdapterHTTPClient<
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       // include headers related to rate limits
-      ? _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith('rate-') || key.toLowerCase().startsWith('x-rate-'))
+      ? _.pickBy(headers, (_val, key) =>
+        key.toLowerCase().startsWith('rate-')
+        || key.toLowerCase().startsWith('x-rate-')
+        || key.toLowerCase().startsWith('retry-'))
       : undefined
   }
 
@@ -238,7 +241,7 @@ export abstract class AdapterHTTPClient<
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, _.pick(e.response, ['status', 'data']))
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }

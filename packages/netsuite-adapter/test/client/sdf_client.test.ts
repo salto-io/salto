@@ -29,7 +29,8 @@ import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
 import { Graph, GraphNode } from '../../src/client/graph_utils'
 import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
@@ -55,6 +56,7 @@ jest.mock('@salto-io/file', () => ({
   mkdirp: jest.fn(),
   rm: jest.fn(),
   stat: jest.fn().mockImplementation(path => statMockFunction(path)),
+  exists: jest.fn().mockResolvedValue(true),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
@@ -89,6 +91,12 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
     setCommandTimeout: jest.fn((...args) => mockSetCommandTimeout(...args)),
   },
 }))
+
+jest.mock('../../src/client/file_cabinet_utils', () => ({
+  ...jest.requireActual<{}>('../../src/client/file_cabinet_utils'),
+  largeFoldersToExclude: jest.fn().mockReturnValue([]),
+}))
+const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
 
 describe('sdf client', () => {
   const createProjectCommandMatcher = expect
@@ -493,7 +501,7 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
-    it('should NOT exclude types with too many instances', async () => {
+    it('should exclude types with too many instances', async () => {
       mockExecuteAction.mockImplementation(context => {
         const ids = [
           { type: 'addressForm', scriptId: 'a' },
@@ -521,22 +529,19 @@ describe('sdf client', () => {
       await client.getCustomObjects(typeNames, typeNamesQuery)
       // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
       const numberOfExecuteActions = 6
-      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions + 1)
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
-        type: 'addressForm',
-      }))
-      expect(mockExecuteAction.mock.calls[3 + 1][0].arguments).toEqual(expect.objectContaining({
         type: 'advancedpdftemplate',
         scriptid: 'd',
       }))
 
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(5 + 1, importConfigurationCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importConfigurationCommandMatcher)
       expect(mockExecuteAction)
-        .toHaveBeenNthCalledWith(numberOfExecuteActions + 1, deleteAuthIdCommandMatcher)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
     it('should succeed', async () => {
@@ -1211,6 +1216,53 @@ describe('sdf client', () => {
       }])
       expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('should filter out paths under excluded large folders', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      mockLargeFoldersToExclude.mockReturnValue([MOCK_FOLDER_PATH])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
+      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith([
+        { path: MOCK_FILE_PATH, size: 33 },
+        { path: MOCK_FILE_ATTRS_PATH, size: 0 },
+        { path: MOCK_FOLDER_ATTRS_PATH, size: 0 },
+      ], maxFileCabinetSizeInGB)
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [MOCK_FOLDER_PATH], otherError: [] })
     })
   })
 
@@ -1968,7 +2020,12 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         
         An error occurred during custom object validation. (customworkflow1)
         Details: When the SuiteCloud project contains a workflow, the manifest must define the WORKFLOW feature as required.
-        File: ~/Objects/customworkflow1.xml`
+        File: ~/Objects/customworkflow1.xml
+        
+        An error occurred during custom object validation. (customworkflow2)
+        Details: The following features must be specified in the manifest to use the [scriptid=custform1] value with the Transaction Form1 condition builder parameter in the customworkflow2 workflow: RECEIVABLES
+        File: ~/Objects/customworkflow2.xml`
+
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             throw new Error(errorMessage)
           }
@@ -1980,7 +2037,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
           expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW'])
+          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW', 'RECEIVABLES'])
         }
       })
       it('should throw error', async () => {

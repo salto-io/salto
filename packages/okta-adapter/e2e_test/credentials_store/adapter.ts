@@ -13,6 +13,33 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as testUtils from './src'
+import { Adapter } from '@salto-io/e2e-credentials-store'
+import { Credentials } from '../../src/auth'
 
-export default testUtils
+type Args = {
+  baseUrl: string
+  token: string
+}
+
+const adapter: Adapter<Args, Credentials> = {
+  name: 'okta',
+  credentialsOpts: {
+    baseUrl: {
+      type: 'string',
+      demand: true,
+    },
+    token: {
+      type: 'string',
+      demand: true,
+    },
+  },
+  credentials: async args => ({
+    baseUrl: args.baseUrl,
+    token: args.token,
+  }),
+  validateCredentials: async () => {
+    // TODO
+  },
+}
+
+export default adapter

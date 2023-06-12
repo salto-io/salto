@@ -21,7 +21,7 @@ const { awu } = collections.asynciterable
 
 type ElemIDPredicate = (id: ElemID) => boolean
 
-const getUnresolvedReferences = (element: Element, shouldIgnore: ElemIDPredicate): ElemID[] => {
+const getOutgoingUnresolvedReferences = (element: Element, shouldIgnore: ElemIDPredicate): ElemID[] => {
   const unresolvedReferences: ElemID[] = []
   const func: WalkOnFunc = ({ value, path }) => {
     if (shouldIgnore(path)) {
@@ -46,13 +46,13 @@ const getUnresolvedReferences = (element: Element, shouldIgnore: ElemIDPredicate
 }
 
 
-export const createUnresolvedReferencesValidator = (shouldIgnore: ElemIDPredicate = () => false)
+export const createOutgoingUnresolvedReferencesValidator = (shouldIgnore: ElemIDPredicate = () => false)
 : ChangeValidator => async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .map(async element => {
-      const unresolvedReferences = getUnresolvedReferences(element, shouldIgnore)
+      const unresolvedReferences = getOutgoingUnresolvedReferences(element, shouldIgnore)
 
       if (unresolvedReferences.length === 0) {
         return undefined

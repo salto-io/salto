@@ -605,7 +605,7 @@ describe('soap_client', () => {
       })
     })
 
-    it('should NOT exclude types with too many instances from search', async () => {
+    it('should exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
           totalPages: 1,
@@ -629,19 +629,9 @@ describe('soap_client', () => {
         fn => fn(),
         (_type: string, count: number) => count > 1,
       )
-      // await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
-      //   records: [],
-      //   largeTypesError: ['subsidiary'],
-      // })
-      await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
-        customRecords: [{ type: 'custrecord',
-          records: [{
-            id: 'id1',
-            attributes: {
-              internalId: '1',
-            },
-          }] }],
-        largeTypesError: [],
+      await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
+        records: [],
+        largeTypesError: ['subsidiary'],
       })
     })
 
@@ -940,7 +930,7 @@ describe('soap_client', () => {
       })
     })
 
-    it('should NOT exclude types with too many instances from search', async () => {
+    it('should exclude types with too many instances from search', async () => {
       searchAsyncMock.mockResolvedValue([{
         searchResult: {
           totalPages: 1,
@@ -964,17 +954,8 @@ describe('soap_client', () => {
         fn => fn(),
         (_type: string, count: number) => count > 1,
       )
-      // await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject(
-      // { largeTypesError: ['custrecord'], customRecords: [] })
       await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
-        customRecords: [{ type: 'custrecord',
-          records: [{
-            id: 'id1',
-            attributes: {
-              internalId: '1',
-            },
-          }] }],
-        largeTypesError: [],
+        largeTypesError: ['custrecord'], customRecords: [],
       })
     })
   })

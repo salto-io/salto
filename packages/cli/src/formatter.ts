@@ -27,6 +27,7 @@ import { Plan, PlanItem, FetchChange, FetchResult, LocalChange, getSupportedServ
 import { errors, SourceLocation, WorkspaceComponents, StateRecency } from '@salto-io/workspace'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
+import { DeployError } from '@salto-io/core/src/core/deploy'
 import Prompts from './prompts'
 
 const { awu } = collections.asynciterable
@@ -348,7 +349,36 @@ export const cancelDeployOutput = (checkOnly: boolean): string => [
   emptyLine(),
 ].join('\n')
 
-export const deployPhaseEpilogue = (numChanges: number, numErrors: number, checkOnly: boolean): string => {
+export const deployErrorsOutput = (allErrors: DeployError[]): string => {
+  const errorOutputLines = [
+    emptyLine(),
+  ]
+  if (allErrors.length > 0) {
+    const warnings = allErrors.filter(warning => warning.severity === 'Warning')
+    const infos = allErrors.filter(info => info.severity === 'Info')
+    const deployErrors = allErrors.filter(err => err.severity === 'Error')
+    if (!_.isEmpty(deployErrors)) {
+      errorOutputLines.push(error('Errors:'))
+      errorOutputLines.push(...deployErrors.map(deployError => error(`${deployError.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    if (!_.isEmpty(warnings)) {
+      errorOutputLines.push(warn('Warnings:'))
+      errorOutputLines.push(...warnings.map(warning => warn(`${warning.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    if (!_.isEmpty(infos)) {
+      errorOutputLines.push(header('Info:'))
+      errorOutputLines.push(...infos.map(info => header(`${info.message}`)))
+      errorOutputLines.push(emptyLine())
+    }
+    return errorOutputLines.join(EOL)
+  }
+  return ''
+}
+
+export const deployPhaseEpilogue = (numChanges: number,
+  numErrors: number, checkOnly: boolean,): string => {
   const hadChanges = numChanges > 0
   const hadErrors = numErrors > 0
   if (hadChanges || hadErrors) {

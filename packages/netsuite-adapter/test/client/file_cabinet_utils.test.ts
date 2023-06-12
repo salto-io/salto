@@ -14,7 +14,10 @@
 * limitations under the License.
 */
 
-import { filterFilePathsInFolders, filterFilesInFolders, largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
+import { logger } from '@salto-io/logging'
+import { filterFilePathsInFolders, filterFilesInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
+
+const logging = logger('netsuite-adapter/src/client/file_cabinet_utils')
 
 describe('excludeLargeFolders', () => {
   it('should not exclude any folders if there is no size overflow', () => {
@@ -49,14 +52,33 @@ describe('excludeLargeFolders', () => {
       expect(largeFolders).toEqual(['/firstTopFolder/', '/secondTopFolder/'])
     })
   })
+
+  it('should create a log when there is a warning overflow (1GB hardcoded), but no size overflow', () => {
+    const log = jest.spyOn(logging, 'info')
+    const filesToSize = [
+      { path: '/firstTopFolder/path1', size: 1_500_000_000 },
+    ]
+    const largeFolders = largeFoldersToExclude(filesToSize, 2)
+    expect(largeFolders).toEqual([])
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('1.40 GB'))
+  })
 })
 
 describe('filterFilePathsInFolders', () => {
-  it('filters out files or subfolders that appear in one of the folders', () => {
-    const files = [{ path: ['a', 'b', 'c.ts'] }, { path: ['a', 'b', 'd'] }, { path: ['a', 'z', 'w.ts'] }]
+  it('filters out files that appear in one of the folders', () => {
+    const files = [{ path: ['a', 'b', 'c.ts'] }, { path: ['a', 'b', 'd.ts'] }, { path: ['a', 'z', 'w.ts'] }]
     const folders = ['/a/b/']
     const result = filterFilePathsInFolders(files, folders)
     expect(result).toEqual([{ path: ['a', 'z', 'w.ts'] }])
+  })
+})
+
+describe('filterFolderPathsInFolders', () => {
+  it('filters out folders that appear in one of the folders', () => {
+    const files = [{ path: ['a', 'b'] }, { path: ['a', 'b', 'd'] }, { path: ['a', 'z'] }]
+    const folders = ['/a/b/']
+    const result = filterFolderPathsInFolders(files, folders)
+    expect(result).toEqual([{ path: ['a', 'z'] }])
   })
 })
 

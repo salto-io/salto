@@ -156,6 +156,8 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+export const HISTORY_TRACKED_FIELDS = 'historyTrackedFields'
+export const FEED_HISTORY_TRACKED_FIELDS = 'feedHistoryTrackedFields'
 
 // Salesforce annotations
 export const LABEL = 'label'
@@ -170,6 +172,10 @@ export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
+export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
+export const RECORD_TYPE_HISTORY_TRACKING_ENABLED = 'recordTypeTrackHistory'
+export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
+export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED = 'recordTypeTrackFeedHistory'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -332,6 +338,7 @@ export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
+export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
 export const VALIDATION_RULES_METADATA_TYPE = 'ValidationRule'

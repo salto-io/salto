@@ -26,7 +26,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression,
+  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -1067,7 +1067,10 @@ const getResolvedRef = async (
   }
   const sourceVal = await elementsSource.get(ref.elemID)
   if (sourceVal === undefined) {
-    throw Error(`ElemID ${ref.elemID.getFullName()} does not exist on the refType and elementsSource`)
+    log.warn('ElemID %s does not exist on the refType and elementsSource. Returning PlaceholderObjectType instead.', ref.elemID.getFullName())
+    return createRefToElmWithValue(new PlaceholderObjectType({
+      elemID: ref.elemID,
+    }))
   }
   return createRefToElmWithValue(sourceVal)
 }

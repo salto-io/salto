@@ -58,7 +58,7 @@ const updateStateElements = async (
 type ApplyPatchArgs = {
   fromDir: string
   toDir: string
-  accountName: 'salesforce'
+  accountName: 'salesforce' | 'netsuite'
   targetEnvs?: string[]
   updateStateInEnvs?: string[]
 } & UpdateModeArg
@@ -161,8 +161,7 @@ const ApplyPatchCmd = createWorkspaceCommand({
         description: 'The account name for elements, this determines the expected format of the elements in the directories',
         type: 'string',
         required: true,
-        choices: ['salesforce'],
-        default: 'salesforce',
+        choices: ['salesforce', 'netsuite'],
       },
       {
         name: 'targetEnvs',

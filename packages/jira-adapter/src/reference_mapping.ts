@@ -54,8 +54,13 @@ export const resolutionAndPriorityToTypeName: referenceUtils.ContextValueMapperF
   return undefined
 }
 
+export const getGadgetPropertyRefType = (key: string): string | undefined => (
+  key === 'statType' ? FIELD_TYPE_NAME : undefined
+)
+
+
 export type ReferenceContextStrategyName = 'parentSelectedFieldType' | 'parentFieldType' | 'workflowStatusPropertiesContext'
-| 'parentFieldId'
+| 'parentFieldId' | 'gadgetPropertyValue'
 
 export const contextStrategyLookup: Record<
   ReferenceContextStrategyName, referenceUtils.ContextFunc
@@ -64,6 +69,7 @@ export const contextStrategyLookup: Record<
   parentFieldType: neighborContextFunc({ contextFieldName: 'fieldType', levelsUp: 1, contextValueMapper: toTypeName }),
   workflowStatusPropertiesContext: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getRefType }),
   parentFieldId: neighborContextFunc({ contextFieldName: 'fieldId', contextValueMapper: resolutionAndPriorityToTypeName }),
+  gadgetPropertyValue: neighborContextFunc({ contextFieldName: 'key', contextValueMapper: getGadgetPropertyRefType }),
 }
 
 const groupNameSerialize: GetLookupNameFunc = ({ ref }) =>
@@ -590,10 +596,16 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'id',
     target: { type: 'Priority' },
   },
+  // TODO: this is left for backward compatibility, we should remove it
   {
     src: { field: 'statType', parentTypes: ['GadgetConfig'] },
     serializationStrategy: 'id',
     target: { type: 'Field' },
+  },
+  {
+    src: { field: 'value', parentTypes: ['DashboardGadgetProperty'] },
+    serializationStrategy: 'id',
+    target: { typeContext: 'gadgetPropertyValue' },
   },
   {
     src: { field: 'groups', parentTypes: ['UserFilter'] },

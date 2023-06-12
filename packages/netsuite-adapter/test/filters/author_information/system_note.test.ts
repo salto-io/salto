@@ -46,7 +46,7 @@ describe('netsuite system note author information', () => {
   } as unknown as SuiteAppClient
 
   const client = new NetsuiteClient(SDFClient, suiteAppClient)
-  const { type: serverTimeType, instance: serverTimeInstance } = createServerTimeElements(new Date('2022-01-01'))
+  const [serverTimeType, serverTimeInstance] = createServerTimeElements(new Date('2022-01-01'))
 
   beforeEach(async () => {
     runSuiteQLMock.mockReset()

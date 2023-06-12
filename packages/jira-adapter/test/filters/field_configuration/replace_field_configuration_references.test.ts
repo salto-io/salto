@@ -91,6 +91,11 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       })
     })
 
+    it('should convert the fields field', async () => {
+      await filter.onFetch?.([instance, fieldConfigType])
+      expect(await fieldConfigType.fields.fields.getType()).toBeInstanceOf(MapType)
+    })
+
     it('should do nothing if splitFieldConfiguration is true', async () => {
       config.fetch.splitFieldConfiguration = true
       await filter.onFetch?.([instance, fieldConfigType])
@@ -134,11 +139,7 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
       expect(instance.value.fields).toBeArrayOfSize(0)
 
       await filter.onDeploy?.([toChange({ after: instance })])
-      expect(instance.value.fields).toEqual({
-        fieldInstance: {
-          isRequired: true,
-        },
-      })
+      expect(instance.value.fields).toEqual({})
     })
 
     it('should do nothing if splitFieldConfiguration is true', async () => {

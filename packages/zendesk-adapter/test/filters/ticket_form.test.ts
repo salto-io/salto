@@ -16,10 +16,11 @@
 */
 
 import { filterUtils } from '@salto-io/adapter-components'
-import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, toChange } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/ticket_form'
 import { createFilterCreatorParams } from '../utils'
-import { TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { ACCOUNT_FEATURES_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 const mockDeployChange = jest.fn()
 jest.mock('@salto-io/adapter-components', () => {
@@ -32,6 +33,22 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+
+const createElementSource = (customStatusesEnabled: boolean): ReadOnlyElementsSource => {
+  const accountFeaturesType = new ObjectType({
+    elemID: new ElemID(ZENDESK, ACCOUNT_FEATURES_TYPE_NAME),
+  })
+  const accountFeaturesInstance = new InstanceElement(
+    ElemID.CONFIG_NAME,
+    accountFeaturesType,
+    {
+      custom_statuses_enabled: {
+        enabled: customStatusesEnabled,
+      },
+    },
+  )
+  return buildElementsSourceFromElements([accountFeaturesInstance])
+}
 
 describe('ticket form filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -90,12 +107,12 @@ describe('ticket form filter', () => {
     },
   )
 
-  beforeEach(async () => {
-    jest.clearAllMocks()
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
-  })
+  describe('deploy with custom_statuses enabled', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(true) })) as FilterType
+    })
 
-  describe('deploy', () => {
     it('should deploy removal changes', async () => {
       const clonedElement = invalidTicketForm
       mockDeployChange
@@ -236,6 +253,53 @@ describe('ticket form filter', () => {
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({
         change: { action: 'add', data: { after: fixedTicketForm } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ after: clonedElement })])
+    })
+  })
+  describe('deploy with custom_statuses disabled', () => {
+    beforeEach(async () => {
+      jest.clearAllMocks()
+      filter = filterCreator(createFilterCreatorParams({ elementsSource: createElementSource(false) })) as FilterType
+    })
+    it('should deploy modification change when both statuses and custom_statuses appear', async () => {
+      // should keep both status and custom_statuses
+      const clonedElement = invalidTicketForm
+      mockDeployChange
+        .mockImplementation(async () => ({
+          ticket_forms: clonedElement,
+        }))
+      const res = await filter.deploy([toChange({ before: clonedElement, after: clonedElement })])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedElement, after: clonedElement } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        undefined,
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([toChange({ before: clonedElement, after: clonedElement })])
+    })
+    it('should deploy addition change when both statuses and custom_statuses appear', async () => {
+      const clonedElement = invalidTicketForm
+      mockDeployChange
+        .mockImplementation(async () => ({
+          ticket_forms: clonedElement,
+        }))
+      const res = await filter.deploy([toChange({ after: clonedElement })])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedElement } },
         client: expect.anything(),
         endpointDetails: expect.anything(),
         undefined,

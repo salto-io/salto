@@ -45,14 +45,23 @@ export const TOKEN_TYPES = {
   MERGE_CONFLICT_MID: 'mergeConflictMid',
   MERGE_CONFLICT_END: 'mergeConflictEnd',
   CONFLICT_CONTENT: 'mergeConflictContent',
+  ERROR: 'error',
 }
 
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
+const NEWLINE_CHARS = '\r\n\u2028\u2029'
+const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*[${NEWLINE_CHARS}]|.*?(?=\\$\\{)|.*[${NEWLINE_CHARS}]`)
+const SINGLELINE_CONTENT = new RegExp(`[^${NEWLINE_CHARS}\\\\]+?(?=\\$\\{|["${NEWLINE_CHARS}\\\\])`)
+const REFERENCE = new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`)
 
 export const rules: Record<string, moo.Rules> = {
+  // Regarding ERROR tokens: Each section in the state must have an error token.
+  // If there is no error token in a section, an Error is thrown from the lexer, with missing information.
+  // With an error token - when there is no lexer match, the error token is returned with the rest of the buffer.
+  // We throw our own error with the token and reflect this to the user.
   main: {
     [TOKEN_TYPES.MERGE_CONFLICT]: { match: '<<<<<<<', push: 'mergeConflict' },
-    [TOKEN_TYPES.MULTILINE_START]: { match: /'''[ \t]*[(\r\n)(\n)]/, lineBreaks: true, push: 'multilineString' },
+    [TOKEN_TYPES.MULTILINE_START]: { match: new RegExp(`'''[ \t]*[${NEWLINE_CHARS}]`), lineBreaks: true, push: 'multilineString' },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', push: 'string' },
     [TOKEN_TYPES.NUMBER]: /-?(?:0|[1-9]\d*)(?:\.\d*)?(?:[eE][+-]?\d+)?/,
     [TOKEN_TYPES.LEFT_PAREN]: '(',
@@ -66,26 +75,33 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.WORD]: new RegExp(WORD_PART, 's'),
     [TOKEN_TYPES.COMMENT]: /\/\//,
     [TOKEN_TYPES.WHITESPACE]: { match: /[ \t]+/ },
-    [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true },
-    [TOKEN_TYPES.INVALID]: { match: /[^ \n]+/, error: true },
+    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true },
+    // The Invalid token is matched when the syntax is not critical - for example in comment content.
+    // The parser disregards this token and continues to the next match.
+    [TOKEN_TYPES.INVALID]: { match: new RegExp(`[^ \t${NEWLINE_CHARS}]+`) },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   string: {
-    [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
-    [TOKEN_TYPES.ESCAPE]: /\\[^$]|\\\$\{?/, // This handles regular escapes and escaped template markers ('\${')
+    // This handles regular escapes, unicode escapes and escaped template markers ('\${')
+    [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
     // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
-    [TOKEN_TYPES.CONTENT]: { match: /[^\r\n\\]+?(?=\$\{|["\n\r\\])/, lineBreaks: false },
-    [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
+    [TOKEN_TYPES.CONTENT]: { match: SINGLELINE_CONTENT, lineBreaks: false },
+    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true, pop: 1 },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   multilineString: {
-    [TOKEN_TYPES.REFERENCE]: { match: new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`), value: s => s.slice(2, -1).trim() },
+    [TOKEN_TYPES.REFERENCE]: { match: REFERENCE, value: s => s.slice(2, -1).trim() },
     [TOKEN_TYPES.MULTILINE_END]: { match: /^[ \t]*'''/, pop: 1 },
-    [TOKEN_TYPES.CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+    [TOKEN_TYPES.CONTENT]: { match: MULTILINE_CONTENT, lineBreaks: true },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
   mergeConflict: {
     [TOKEN_TYPES.MERGE_CONFLICT_MID]: '=======',
     [TOKEN_TYPES.MERGE_CONFLICT_END]: { match: '>>>>>>>', pop: 1 },
-    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: /.*\\\$\{.*[(\r\n)(\n)]|.*?(?=\$\{)|.*[(\r\n)(\n)]/, lineBreaks: true },
+    [TOKEN_TYPES.CONFLICT_CONTENT]: { match: MULTILINE_CONTENT, lineBreaks: true },
+    [TOKEN_TYPES.ERROR]: moo.error,
   },
 }
 
@@ -93,13 +109,19 @@ export type LexerToken = Required<moo.Token>
 
 export class NoSuchElementError extends Error {
   constructor(public lastValidToken?: LexerToken) {
-    super("All of the lexer's token has already been consumed.")
+    super('All lexer tokens have already been consumed.')
   }
 }
 
 class InvalidLexerTokenError extends Error {
   constructor() {
     super('All lexer tokens must have a type.')
+  }
+}
+
+export class LexerErrorTokenReachedError extends Error {
+  constructor(public lastValidToken?: LexerToken) {
+    super('Invalid syntax')
   }
 }
 
@@ -123,6 +145,8 @@ const validateToken = (token?: moo.Token): token is LexerToken => {
     } else {
       throw new InvalidLexerTokenError()
     }
+  } else if (token.type === TOKEN_TYPES.ERROR) {
+    throw new LexerErrorTokenReachedError(token as LexerToken)
   }
   return true
 }

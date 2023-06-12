@@ -21,9 +21,10 @@ import { EOL } from 'os'
 import { FetchChange } from '@salto-io/core'
 import { errors as wsErrors } from '@salto-io/workspace'
 import chalk from 'chalk'
+import { DeployError } from '@salto-io/core/src/core/deploy'
 import { formatExecutionPlan, formatChange,
   formatFetchChangeForApproval, formatWorkspaceError,
-  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign } from '../src/formatter'
+  formatChangeErrors, formatConfigChangeNeeded, formatShouldChangeFetchModeToAlign, deployErrorsOutput } from '../src/formatter'
 import { elements, preview, detailedChange } from './mocks'
 import Prompts from '../src/prompts'
 
@@ -77,6 +78,30 @@ describe('formatter', () => {
     detailedMessage: '',
     severity: 'Info',
   }
+  const workspaceDeployProblems: DeployError[] = [{
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my error message 1',
+    severity: 'Error',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my error message 2',
+    severity: 'Error',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my warning message',
+    severity: 'Warning',
+    groupId: 'test group',
+  },
+  {
+    elemID: new ElemID('salesforce', 'TestType'),
+    message: 'my info message',
+    severity: 'Info',
+    groupId: 'test group',
+  }]
 
   describe('createPlanOutput', () => {
     const plan = preview()
@@ -103,7 +128,7 @@ describe('formatter', () => {
       expect(output).toMatch(/|[^\n]+salesforce.lead.*|[^\n]+how_many_sales_people.*M[^\n]+label/s)
     })
     it('should return the number of impacted types and instances', () => {
-      expect(output).toMatch(`${chalk.bold('Impacts:')} 3 types and 1 instance.`)
+      expect(output).toMatch(`${chalk.bold('Impacts:')} 7 types and 1 instance.`)
     })
     it('should return pre deploy action suggestions', () => {
       expect(output).toMatch(`${chalk.bold(Prompts.DEPLOY_PRE_ACTION_HEADER)}`)
@@ -538,6 +563,19 @@ describe('formatter', () => {
     })
     it('should print the error', () => {
       expect(formattedErrors).toContain('This is my error')
+    })
+  })
+
+  describe('deployErrorsOutput', () => {
+    let formattedErrors: string
+    beforeEach(() => {
+      formattedErrors = deployErrorsOutput(workspaceDeployProblems)
+    })
+    it('should have both error messages', () => {
+      expect(formattedErrors).toContain('my error message 1')
+      expect(formattedErrors).toContain('my error message 2')
+      expect(formattedErrors).toContain('my warning message')
+      expect(formattedErrors).toContain('my info message')
     })
   })
 })

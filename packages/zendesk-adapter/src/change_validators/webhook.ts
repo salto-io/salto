@@ -34,6 +34,7 @@ export const createChangeError = (instanceElemId: ElemID, baseUrl: string): Chan
     postAction: {
       title: 'Set webhook authentication credentials',
       description: `Please manually set the authentication credentials for webhook ${instanceElemId.name} via the Zendesk UI`,
+      showOnFailure: false,
       subActions: [
         `Go to Zendesk Webhooks panel at ${baseUrl}${WEBHOOKS_SERVICE_URL}`,
         'Click on the modified webhook',

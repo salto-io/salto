@@ -63,6 +63,7 @@ describe('maskingValidator', () => {
           postAction: {
             title: 'Update deployed masked data',
             description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
+            showOnFailure: false,
             subActions: [
               'Go to http://url',
               'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',
@@ -91,6 +92,7 @@ describe('maskingValidator', () => {
           postAction: {
             title: 'Update deployed masked data',
             description: 'Please update the masked values that were deployed to Jira in jira.Automation.instance.instance',
+            showOnFailure: false,
             subActions: [
               'Go to https://ori-salto-test.atlassian.net/ and open the relevant page for jira.Automation.instance.instance',
               'Search for masked values (which contain <SECRET_TOKEN>) and set them to the correct value',

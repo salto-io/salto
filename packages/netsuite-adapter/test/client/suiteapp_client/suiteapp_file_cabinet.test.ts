@@ -24,8 +24,15 @@ import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionErr
 import { customtransactiontypeType } from '../../../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../../../src/client/suiteapp_client/types'
 import { getFileCabinetTypes } from '../../../src/types/file_cabinet_types'
+import { largeFoldersToExclude } from '../../../src/client/file_cabinet_utils'
 
 const { awu } = collections.asynciterable
+
+jest.mock('../../../src/client/file_cabinet_utils', () => ({
+  ...jest.requireActual<{}>('../../../src/client/file_cabinet_utils'),
+  largeFoldersToExclude: jest.fn().mockReturnValue([]),
+}))
+const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
 
 describe('suiteapp_file_cabinet', () => {
   const filesQueryResponse = [{
@@ -256,6 +263,7 @@ describe('suiteapp_file_cabinet', () => {
     mockSuiteAppClient.readFiles.mockImplementation(
       async (ids: string[]) => ids.map(id => filesContent[id])
     )
+    mockLargeFoldersToExclude.mockReturnValue([])
   })
 
   describe('importFileCabinet', () => {
@@ -488,6 +496,40 @@ describe('suiteapp_file_cabinet', () => {
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual([
         expectedResults[0],
+        expectedResults[1],
+        expectedResults[3],
+      ])
+    })
+
+    it('should filter out paths under excluded large folders', async () => {
+      const excludedFolder = '/folder5/folder3/'
+      mockLargeFoldersToExclude.mockReturnValue([excludedFolder])
+      const { elements, failedPaths } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith([
+        {
+          path: '/folder5/folder3/file1',
+          size: 10,
+        },
+        {
+          path: '/folder5/folder4/file2',
+          size: 20,
+        },
+      ], maxFileCabinetSizeInGB)
+      expect(elements).toEqual([
+        expectedResults[0],
+        expectedResults[2],
+        expectedResults[4],
+        expectedResults[5],
+      ])
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [excludedFolder], otherError: [] })
+    })
+
+    it('should return file that was matched by query (works only if query matches also direct parent folder of the file)', async () => {
+      query.isFileMatch.mockImplementation(path => (path === '/folder5/folder3/file1' || path === '/folder5/folder3/'))
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(elements).toEqual([
         expectedResults[1],
         expectedResults[3],
       ])

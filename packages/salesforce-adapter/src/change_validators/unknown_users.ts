@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import {
   ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
   InstanceElement, getChangeData, Values,
@@ -25,7 +24,6 @@ import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/ut
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
@@ -34,7 +32,7 @@ type GetUserField = (instance: InstanceElement, fieldName: string) => string[]
 
 type UserFieldGetter = {
   field: string
-  getter: GetUserField
+  getter: (instance: InstanceElement) => string[]
 }
 
 // https://stackoverflow.com/a/44154193
@@ -42,6 +40,7 @@ const TYPES_WITH_USER_FIELDS = [
   'CaseSettings',
   'FolderShare',
   'WorkflowAlert',
+  'WorkflowTask',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -53,42 +52,22 @@ type MissingUser = {
   userName: string
 }
 
-const getCaseSettingsOwner: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'defaultCaseOwner') {
-    log.error(`Unexpected field name: ${fieldName}.`)
+const userFieldValue = (instance: InstanceElement, fieldName: string): string[] => {
+  if (instance.value[fieldName] === undefined) {
     return []
   }
-  if (instance.value.defaultCaseOwnerType !== 'User') {
-    log.debug('defaultCaseOwnerType is not User. Skipping.')
-    return []
-  }
-  return [instance.value.defaultCaseOwner]
+  return [instance.value[fieldName]]
 }
 
-const userFieldValue = (expectedFieldName: string): GetUserField => (
-  (instance, fieldName) => {
-    if (fieldName !== expectedFieldName) {
-      log.error(`Unexpected field name: ${fieldName} !== ${expectedFieldName}`)
+const getUserDependingOnType = (typeField: string): GetUserField => (
+  (instance: InstanceElement, userField: string) => {
+    const type = instance.value[typeField]
+    if (!type || type.toLocaleLowerCase() !== 'user') {
       return []
     }
-    if (instance.value[fieldName] === undefined) {
-      return []
-    }
-    return [instance.value[fieldName]]
+    return [instance.value[userField]]
   }
 )
-
-const getFolderShareUser: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'sharedTo') {
-    log.error(`Unexpected field name: ${fieldName}.`)
-    return []
-  }
-  if (instance.value.sharedToType !== 'User') {
-    log.debug('sharedToType is not User. Skipping.')
-    return []
-  }
-  return [instance.value.sharedTo]
-}
 
 type EmailRecipientValue = {
   type: string
@@ -100,11 +79,7 @@ const isEmailRecipientsValue = (recipients: Values): recipients is EmailRecipien
   && recipients.every(recipient => _.isString(recipient.type) && _.isString(recipient.recipient))
 )
 
-const getEmailRecipients: GetUserField = (instance, fieldName) => {
-  if (fieldName !== 'recipients') {
-    log.error(`Unexpected field name: ${fieldName}.`)
-    return []
-  }
+const getEmailRecipients: GetUserField = instance => {
   const { recipients } = instance.value
   if (!isEmailRecipientsValue(recipients)) {
     return []
@@ -114,28 +89,29 @@ const getEmailRecipients: GetUserField = (instance, fieldName) => {
     .map((recipient: Values) => recipient.recipient)
 }
 
+const userField = (
+  fieldName: string,
+  userFieldGetter: GetUserField,
+): UserFieldGetter => (
+  {
+    field: fieldName,
+    getter: (instance: InstanceElement) => userFieldGetter(instance, fieldName),
+  }
+)
+
 const USER_GETTERS: TypesWithUserFields = {
   CaseSettings: [
-    {
-      field: 'defaultCaseUser',
-      getter: userFieldValue('defaultCaseUser'),
-    },
-    {
-      field: 'defaultCaseOwner',
-      getter: (instance, fieldName) => getCaseSettingsOwner(instance, fieldName),
-    },
+    userField('defaultCaseUser', userFieldValue),
+    userField('defaultCaseOwner', getUserDependingOnType('defaultCaseOwnerType')),
   ],
   FolderShare: [
-    {
-      field: 'sharedTo',
-      getter: getFolderShareUser,
-    },
+    userField('sharedTo', getUserDependingOnType('sharedToType')),
   ],
   WorkflowAlert: [
-    {
-      field: 'recipients',
-      getter: getEmailRecipients,
-    },
+    userField('recipients', getEmailRecipients),
+  ],
+  WorkflowTask: [
+    userField('assignedTo', getUserDependingOnType('assignedToType')),
   ],
 }
 
@@ -151,7 +127,7 @@ const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, inst
 }
 
 const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
-  getterDefs.flatMap(getterDef => getterDef.getter(instance, getterDef.field))
+  getterDefs.flatMap(getterDef => getterDef.getter(instance))
 )
 
 const getUsersFromInstances = async (
@@ -179,7 +155,7 @@ const getUnknownUsers = async (
   knownUsers: string[],
 ): Promise<MissingUser[]> => {
   const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser[] => {
-    const userNames = userFieldGetter.getter(instance, userFieldGetter.field)
+    const userNames = userFieldGetter.getter(instance)
 
     return userNames.map(userName => ({
       instance,

@@ -13,6 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import * as lowerdash from './src'
-
-export default lowerdash
+export {
+  createRemoteMapCreator,
+  createReadOnlyRemoteMapCreator,
+  closeAllRemoteMaps,
+  closeRemoteMapsOfLocation,
+  cleanDatabases,
+  replicateDB,
+} from './remote_map'

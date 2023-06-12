@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { toChange, ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
+import { toChange, ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { unresolvedFieldConfigurationItemsValidator } from '../../src/change_validators/unresolved_field_configuration_items'
-import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../src/constants'
+import { FIELD_CONFIGURATION_TYPE_NAME } from '../../src/constants'
 import { FIELD_TYPE_NAME } from '../../src/filters/fields/constants'
+import { createEmptyType } from '../utils'
 
 describe('unresolvedFieldConfigurationItemsValidator', () => {
   let type: ObjectType
@@ -26,7 +27,7 @@ describe('unresolvedFieldConfigurationItemsValidator', () => {
   let fieldInstanceA: InstanceElement
   let fieldInstanceB: InstanceElement
   beforeEach(() => {
-    type = new ObjectType({ elemID: new ElemID(JIRA, FIELD_CONFIGURATION_TYPE_NAME) })
+    type = createEmptyType(FIELD_CONFIGURATION_TYPE_NAME)
     instance = new InstanceElement(
       'instance',
       type,
@@ -42,7 +43,7 @@ describe('unresolvedFieldConfigurationItemsValidator', () => {
       }
     )
 
-    fieldType = new ObjectType({ elemID: new ElemID(JIRA, FIELD_TYPE_NAME) })
+    fieldType = createEmptyType(FIELD_TYPE_NAME)
     fieldInstanceA = new InstanceElement(
       'a',
       fieldType,
@@ -64,7 +65,7 @@ describe('unresolvedFieldConfigurationItemsValidator', () => {
       {
         elemID: instance.elemID,
         severity: 'Warning',
-        message: 'Field configuration has configuration about fields that do not exist in the account',
+        message: 'Field configuration has configuration of fields that do not exist in the account',
         detailedMessage: 'The following fields configuration items will not be deployed since their fields do not exist in the account: b',
       },
     ])

@@ -17,11 +17,11 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { createUnresolvedReferencesValidator } from './unresolved_references'
+import { createOutgoingUnresolvedReferencesValidator } from './outgoing_unresolved_references'
 
 
 export const DEFAULT_CHANGE_VALIDATORS = {
-  unresolvedReferencesValidator: createUnresolvedReferencesValidator(),
+  outgoingUnresolvedReferencesValidator: createOutgoingUnresolvedReferencesValidator(),
 }
 
 type ValidatorName = keyof typeof DEFAULT_CHANGE_VALIDATORS

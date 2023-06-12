@@ -83,7 +83,7 @@ describe('filtersRunner', () => {
         deploy: async changes => ({
           deployResult: {
             appliedChanges: [changes[0]],
-            errors: [new Error(changes.length.toString())],
+            errors: [{ message: changes.length.toString(), severity: 'Error' }],
           },
           leftoverChanges: changes.slice(1),
         }),
@@ -100,7 +100,16 @@ describe('filtersRunner', () => {
 
     it('should return the merged deploy results', () => {
       expect(filterRes.deployResult.appliedChanges).toHaveLength(2)
-      expect(filterRes.deployResult.errors).toEqual([new Error('3'), new Error('2')])
+      expect(filterRes.deployResult.errors).toEqual([
+        expect.objectContaining({
+          message: expect.stringContaining('3'),
+          severity: 'Error',
+        }),
+        expect.objectContaining({
+          message: expect.stringContaining('2'),
+          severity: 'Error',
+        }),
+      ])
     })
   })
 })

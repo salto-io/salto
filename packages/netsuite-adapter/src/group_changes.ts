@@ -17,7 +17,7 @@ import wu from 'wu'
 import {
   Change, ChangeGroupIdFunction, ChangeId, getChangeData, isAdditionChange,
   isInstanceElement, isModificationChange, isObjectType, isReferenceExpression,
-  isField, isRemovalChange, Element, isAdditionOrModificationChange,
+  isField, isRemovalChange, Element, isAdditionOrModificationChange, ChangeEntry,
 } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
@@ -95,7 +95,7 @@ const getChangeGroupIdsWithoutSuiteApp: ChangeGroupIdFunction = async changes =>
 }
 
 const getRecordDependencies = (element: Element): string[] => {
-  const dependencies: string[] = []
+  const dependencies = new Set<string>()
   walkOnElement({
     element,
     func: ({ value, path }) => {
@@ -103,38 +103,60 @@ const getRecordDependencies = (element: Element): string[] => {
         return WALK_NEXT_STEP.SKIP
       }
       if (isReferenceExpression(value)) {
-        dependencies.push(value.elemID.getFullName())
+        dependencies.add(value.elemID.getFullName())
         return WALK_NEXT_STEP.SKIP
       }
       return WALK_NEXT_STEP.RECURSE
     },
   })
-  return dependencies
+  return [...dependencies]
 }
 
-const getChangesChunks = async (
-  changes: { change: Change; id: ChangeId }[],
-  groupID: string,
-) : Promise<ChangeId[][]> => {
-  if (SUITEAPP_CREATING_RECORDS_GROUP_ID !== groupID) {
-    return [changes.map(({ id }) => id)]
+const calculateChangesChunks = (changes: ChangeEntry[]): ChangeId[][] => {
+  const changesMap = new Map(changes.map(entry => {
+    const [, change] = entry
+    return [getChangeData(change).elemID.getFullName(), entry]
+  }))
+  const changesChunks: Array<ChangeId[]> = []
+  const chunkIndexMap = new Map<ChangeId, number>()
+  const iteratedIds = new Set<ChangeId>()
+
+  const addChangeToChunk = ([changeId, change]: ChangeEntry): void => {
+    if (iteratedIds.has(changeId)) {
+      return
+    }
+    iteratedIds.add(changeId)
+    const dependencies = getRecordDependencies(getChangeData(change))
+      .map(dep => changesMap.get(dep))
+      .filter(values.isDefined)
+    dependencies.forEach(addChangeToChunk)
+
+    const dependenciesChunkIndexes = dependencies.map(([depId]) => chunkIndexMap.get(depId) ?? -1)
+    const dependencyMaxChunkIndex = _.max(dependenciesChunkIndexes) ?? -1
+    const chunkIndex = dependencyMaxChunkIndex + 1
+    if (chunkIndex === changesChunks.length) {
+      changesChunks.push([])
+    }
+    changesChunks[chunkIndex].push(changeId)
+    chunkIndexMap.set(changeId, chunkIndex)
   }
 
-  const changesChunks: ChangeId[][] = [[]]
-  const iteratedIds: Set<string> = new Set()
-  await awu(changes)
-    .forEach(async change => {
-      const data = getChangeData(change.change)
-      const dependencies = getRecordDependencies(data)
-      if (dependencies.some(dependency => iteratedIds.has(dependency))) {
-        changesChunks.push([])
-        iteratedIds.clear()
-      }
-      changesChunks[changesChunks.length - 1].push(change.id)
-      iteratedIds.add(data.elemID.getFullName())
-    })
+  changes.forEach(addChangeToChunk)
 
   return changesChunks
+}
+
+const getChangesChunks = (
+  changes: ChangeEntry[],
+  groupID: string,
+): ChangeId[][] => {
+  if (SUITEAPP_CREATING_RECORDS_GROUP_ID === groupID) {
+    return calculateChangesChunks(changes)
+  }
+  if (SUITEAPP_DELETING_RECORDS_GROUP_ID === groupID) {
+    return calculateChangesChunks(changes).reverse()
+  }
+  return [changes.map(([id]) => id)]
 }
 
 const isSuiteAppFileCabinetModification = async (change: Change): Promise<boolean> => {
@@ -231,13 +253,15 @@ const getChangeGroupIdsWithSuiteApp: ChangeGroupIdFunction = async changes => {
 
   const groupToChanges = _.groupBy(changesWithGroups, ({ group }) => group)
 
-  const groups = await awu(Object.entries(groupToChanges))
-    .flatMap(async ([groupId, groupChanges]) => {
-      const chunks = await getChangesChunks(groupChanges, groupId)
+  const groups = Object.entries(groupToChanges)
+    .flatMap(([groupId, groupChanges]) => {
+      const entries = groupChanges.map(({ id, change }): ChangeEntry => [id, change])
+      const chunks = getChangesChunks(entries, groupId)
       return chunks.length === 1
-        ? chunks[0].map((id):[collections.set.SetId, string] => [id, groupId])
-        : chunks.map((chunk, i): [collections.set.SetId, string][] => chunk.map(id => [id, `${groupId} - ${i + 1}/${chunks.length}`])).flat()
-    }).toArray()
+        ? chunks[0].map((id): [collections.set.SetId, string] => [id, groupId])
+        : chunks.flatMap((chunk, i): [collections.set.SetId, string][] =>
+          chunk.map(id => [id, `${groupId} - ${i + 1}/${chunks.length}`]))
+    })
 
   return { changeGroupIdMap: new Map(groups) }
 }

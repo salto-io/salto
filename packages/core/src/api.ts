@@ -17,12 +17,12 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections } from '@salto-io/lowerdash'
+import { promises, collections, values } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -126,7 +126,7 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getChangeValidators(adapters, checkOnly),
+    changeValidators: getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
@@ -371,9 +371,13 @@ export const calculatePatch = async (
   }: CalculatePatchArgs,
 ): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
-  const { loadElementsFromFolder } = adapterCreators[accountToServiceNameMap[accountName]]
+  const adapterName = accountToServiceNameMap[accountName]
+  if (adapterName !== accountName) {
+    throw new Error('Account name that is different from the adapter name is not supported')
+  }
+  const { loadElementsFromFolder } = adapterCreators[adapterName]
   if (loadElementsFromFolder === undefined) {
-    throw new Error(`Account ${accountName}'s adapter ${accountToServiceNameMap[accountName]} does not support calculate patch`)
+    throw new Error(`Account ${accountName}'s adapter ${adapterName} does not support calculate patch`)
   }
   const wsElements = await workspace.elements()
   const resolvedWSElements = await expressions.resolve(
@@ -653,3 +657,22 @@ export const rename = async (
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
   adapterCreators[adapterName].configCreator?.optionsType
+
+
+export const getAdditionalReferences = async (
+  workspace: Workspace,
+  changes: Change[],
+): Promise<ReferenceMapping[]> => {
+  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
+
+  const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
+
+  const referenceGroups = await Promise.all(
+    Object.entries(changeGroups).map(([account, changeGroup]) =>
+      adapterCreators[accountToService[account]]
+        .getAdditionalReferences?.(changeGroup))
+  )
+  return referenceGroups
+    .flat()
+    .filter(values.isDefined)
+}

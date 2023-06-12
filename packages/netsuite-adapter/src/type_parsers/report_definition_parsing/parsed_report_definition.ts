@@ -216,7 +216,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
-  const reportDefinitionInnerFieldsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_fields')
+  const reportDefinitionFlagsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_flags')
   const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
   const reportdefinitionAccessAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_accessaudience')
 
@@ -429,8 +429,8 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionInnerFields = createMatchingObjectType<ReportDefinitionInnerFields>({
-    elemID: reportDefinitionInnerFieldsElemID,
+  const reportDefinitionFlags = createMatchingObjectType<ReportDefinitionInnerFields>({
+    elemID: reportDefinitionFlagsElemID,
     annotations: {
     },
     fields: {
@@ -475,7 +475,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   innerTypes.reportDefinitionCriteria = reportDefinitionCriteria
   innerTypes.reportDefinitionCriteriaDescriptor = reportCriteriaDescriptor
   innerTypes.reportDefinitionCriteriaValues = reportCriteriaValues
-  innerTypes.reportDefinitionInnerFields = reportDefinitionInnerFields
+  innerTypes.reportDefinitionFlags = reportDefinitionFlags
   innerTypes.reportdefinition_dependencies = reportDefinitionDependencies
   innerTypes.reportDefinitionFields = reportDefinitionFields
   innerTypes.reportDefinitionLayouts = reportDefinitionLayouts
@@ -540,7 +540,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         refType: reportDefinitionUiPref,
       },
       flags: {
-        refType: reportDefinitionInnerFields,
+        refType: reportDefinitionFlags,
       },
     },
     annotations: {

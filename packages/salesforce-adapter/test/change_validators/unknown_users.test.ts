@@ -15,11 +15,13 @@
 */
 import {
   BuiltinTypes,
-  Change, ChangeError,
+  Change,
+  ChangeError,
   ChangeValidator,
   ElemID,
   getChangeData,
   InstanceElement,
+  ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
@@ -96,18 +98,40 @@ describe('unknown user change validator', () => {
       expect(changeErrors).toBeEmpty()
     })
   })
-  describe('when the username is in a FolderShare instance', () => {
+  describe('when the username should be retrieved depending on a type field', () => {
     let change: Change
+    const instanceElementWithTypeAndUser = (
+      type: ObjectType,
+      userField: string,
+      typeField: string,
+    ): InstanceElement => createInstanceElement({
+      fullName: 'someFullName',
+      [userField]: IRRELEVANT_USERNAME,
+      [typeField]: 'User',
+    }, type)
 
-    describe('when the username exists', () => {
+    describe.each([
+      {
+        type: mockTypes.FolderShare,
+        userField: 'sharedTo',
+        typeField: 'sharedToType',
+      },
+      {
+        type: mockTypes.WorkflowTask,
+        userField: 'assignedTo',
+        typeField: 'assignedToType',
+      },
+      {
+        type: mockTypes.CaseSettings,
+        userField: 'defaultCaseOwner',
+        typeField: 'defaultCaseOwnerType',
+      },
+    ])('when the username exists [$type.elemID.typeName]', ({ type, userField, typeField }) => {
       beforeEach(() => {
-        const beforeRecord = createInstanceElement({
-          fullName: 'someName',
-          sharedTo: IRRELEVANT_USERNAME,
-          sharedToType: 'User',
-        }, mockTypes.FolderShare)
-        const afterRecord = beforeRecord.clone()
-        afterRecord.value.sharedTo = TEST_USERNAME
+        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
+        const beforeRecord = instanceElement
+        const afterRecord = instanceElement.clone()
+        afterRecord.value[userField] = TEST_USERNAME
         change = toChange({ before: beforeRecord, after: afterRecord })
 
         setupClientMock([TEST_USERNAME])
@@ -118,22 +142,67 @@ describe('unknown user change validator', () => {
         expect(changeErrors).toBeEmpty()
       })
     })
-    describe('when the username doesn\'t exist but sharedToType is not \'User\'', () => {
+    describe.each([
+      {
+        type: mockTypes.FolderShare,
+        userField: 'sharedTo',
+        typeField: 'sharedToType',
+      },
+      {
+        type: mockTypes.WorkflowTask,
+        userField: 'assignedTo',
+        typeField: 'assignedToType',
+      },
+      {
+        type: mockTypes.CaseSettings,
+        userField: 'defaultCaseOwner',
+        typeField: 'defaultCaseOwnerType',
+      },
+    ])('when the username doesn\'t exist but type is not \'User\' [$type.elemID.typeName]', ({ type, userField, typeField }) => {
       beforeEach(() => {
-        const beforeRecord = createInstanceElement({
-          fullName: 'someName',
-          sharedTo: IRRELEVANT_USERNAME,
-          sharedToType: 'Role',
-        }, mockTypes.FolderShare)
-        const afterRecord = beforeRecord.clone()
-        afterRecord.value.sharedTo = TEST_USERNAME
+        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
+        const beforeRecord = instanceElement
+        const afterRecord = instanceElement.clone()
+        afterRecord.value[typeField] = 'Role'
+        afterRecord.value[userField] = TEST_USERNAME
         change = toChange({ before: beforeRecord, after: afterRecord })
 
         setupClientMock([])
       })
-      it('should pass validation', async () => {
+      it('should also pass validation', async () => {
         const changeErrors = await validator([change])
         expect(changeErrors).toBeEmpty()
+      })
+    })
+    describe.each([
+      {
+        type: mockTypes.FolderShare,
+        userField: 'sharedTo',
+        typeField: 'sharedToType',
+      },
+      {
+        type: mockTypes.WorkflowTask,
+        userField: 'assignedTo',
+        typeField: 'assignedToType',
+      },
+      {
+        type: mockTypes.CaseSettings,
+        userField: 'defaultCaseOwner',
+        typeField: 'defaultCaseOwnerType',
+      },
+    ])('when the username doesn\'t exist [$type.elemID.typeName]', ({ type, userField, typeField }) => {
+      beforeEach(() => {
+        const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
+        const beforeRecord = instanceElement
+        const afterRecord = instanceElement.clone()
+        afterRecord.value[userField] = TEST_USERNAME
+        change = toChange({ before: beforeRecord, after: afterRecord })
+
+        setupClientMock([])
+      })
+      it('should fail validation', async () => {
+        const changeErrors = await validator([change])
+        expect(changeErrors[0].elemID).toEqual(getChangeData(change).elemID)
       })
     })
   })

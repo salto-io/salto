@@ -78,6 +78,7 @@ const validateAdditionChange = (additionChange: AdditionChange<InstanceElement>)
       postAction: {
         title: 'Edit \'locale\' field',
         description: 'Set the \'locale\' of the newly created currency to the desired value',
+        showOnFailure: false,
         subActions: [
           'Within the NetSuite UI, navigate to Lists > Accounting > Currencies',
           `Choose the newly created currency (${instance.value.name})`,

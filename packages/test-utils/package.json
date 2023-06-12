@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/test-utils",
-  "version": "0.3.38",
+  "version": "0.3.39",
   "license": "Apache-2.0",
   "description": "Test utilities for jest",
   "repository": {
@@ -11,11 +11,9 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src",
-    "index.ts"
+    "dist/src"
   ],
-  "main": "dist/src",
+  "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
     "clean-ts": "../../build_utils/clean-old-ts.sh",

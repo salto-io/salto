@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
+import { Element, Change, PostFetchOptions, DeployResult, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
@@ -145,7 +145,7 @@ export const filtersRunner = <
         {
           deployResult: {
             appliedChanges: [] as ReadonlyArray<Change>,
-            errors: [] as ReadonlyArray<Error>,
+            errors: [] as ReadonlyArray<SaltoError | SaltoElementError | Error>,
           },
           leftoverChanges: changes,
         }

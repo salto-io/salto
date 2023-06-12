@@ -82,7 +82,8 @@ import createMissingInstalledPackagesInstancesFilter from './filters/create_miss
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
+import { FetchElements, SalesforceConfig } from './types'
+import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
@@ -154,6 +155,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   { creator: formulaDepsFilter },
+  // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
+  { creator: centralizeTrackingInfoFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -434,7 +437,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       if (checkOnly) {
         return {
           appliedChanges: [],
-          errors: [new Error('Cannot deploy CustomObject Records as part of check-only deployment')],
+          errors: [{ message: 'Cannot deploy CustomObject Records as part of check-only deployment', severity: 'Error' }],
         }
       }
       deployResult = await deployCustomObjectInstancesGroup(
@@ -552,7 +555,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
+        addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -579,7 +582,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
       maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
-      addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
+      addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

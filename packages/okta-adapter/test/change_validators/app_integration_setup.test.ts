@@ -58,6 +58,7 @@ describe('appIntegrationSetupValidator', () => {
         postAction: {
           title: 'New application integration setup required',
           description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+          showOnFailure: false,
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
             `Click on ${appInstance.value.name}.`,
@@ -86,6 +87,7 @@ describe('appIntegrationSetupValidator', () => {
         postAction: {
           title: 'New application integration setup required',
           description: 'To complete the setup of the new app integration in Okta, follow these steps:',
+          showOnFailure: false,
           subActions: [
             `Go to application page at ${getAdminUrl(client.baseUrl)}/admin/apps/active`,
             'Click on the application.',

@@ -27,6 +27,7 @@ import SuiteAppClient from './client/suiteapp_client/suiteapp_client'
 import SdfClient from './client/sdf_client'
 import NetsuiteClient from './client/client'
 import NetsuiteAdapter from './adapter'
+import loadElementsFromFolder from './sdf_folder_loader'
 
 const log = logger(module)
 
@@ -256,4 +257,5 @@ export const adapter: Adapter = {
       return { success: false, errors: [err.message ?? err] }
     }
   },
+  loadElementsFromFolder,
 }

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange, UnresolvedReference } from '@salto-io/adapter-api'
-import { createUnresolvedReferencesValidator } from '../../../src/deployment/change_validators/unresolved_references'
+import { createOutgoingUnresolvedReferencesValidator } from '../../../src/deployment/change_validators/outgoing_unresolved_references'
 
 describe('unresolved_references', () => {
   const unresolvedElemId = new ElemID('adapter', 'unresolved')
@@ -29,7 +29,7 @@ describe('unresolved_references', () => {
         ),
       }
     )
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: instance })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
@@ -48,7 +48,7 @@ describe('unresolved_references', () => {
         ),
       },
     )
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: instance })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
@@ -65,7 +65,7 @@ describe('unresolved_references', () => {
       },
     })
 
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: type })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: type })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
@@ -87,7 +87,7 @@ describe('unresolved_references', () => {
       },
     })
 
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: type })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: type })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(type.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${type.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
@@ -104,7 +104,7 @@ describe('unresolved_references', () => {
         ), 'template'] }),
       }
     )
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: instance })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: instance })])
     expect(errors).toHaveLength(1)
     expect(errors[0].elemID).toEqual(instance.elemID)
     expect(errors[0].detailedMessage).toEqual(`Element ${instance.elemID.getFullName()} contains unresolved references: ${unresolvedElemId.getFullName()}. Add the missing dependencies and try again.`)
@@ -126,7 +126,7 @@ describe('unresolved_references', () => {
       },
     })
 
-    const errors = await createUnresolvedReferencesValidator()([toChange({ after: type })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ after: type })])
     expect(errors).toHaveLength(0)
   })
   it('should not return errors if there are unresolved references in removal change', async () => {
@@ -140,7 +140,7 @@ describe('unresolved_references', () => {
         ),
       }
     )
-    const errors = await createUnresolvedReferencesValidator()([toChange({ before: instance })])
+    const errors = await createOutgoingUnresolvedReferencesValidator()([toChange({ before: instance })])
     expect(errors).toHaveLength(0)
   })
 
@@ -155,7 +155,7 @@ describe('unresolved_references', () => {
         ),
       }
     )
-    const errors = await createUnresolvedReferencesValidator(id => id.name === 'value')([toChange({ after: instance })])
+    const errors = await createOutgoingUnresolvedReferencesValidator(id => id.name === 'value')([toChange({ after: instance })])
     expect(errors).toHaveLength(0)
   })
 })

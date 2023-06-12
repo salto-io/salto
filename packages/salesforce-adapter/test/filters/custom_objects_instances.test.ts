@@ -1168,6 +1168,20 @@ describe('Custom Object Instances filter', () => {
       }
 
       beforeEach(async () => {
+        filter = filterCreator({
+          client,
+          config: {
+            ...defaultFilterContext,
+            fetchProfile: buildFetchProfile({
+              data: {
+                includeObjects: ['.*'],
+                saltoIDSettings: {
+                  defaultIdFields: ['Id'],
+                },
+              },
+            }),
+          },
+        }) as FilterType
         connection.query = jest.fn().mockImplementation(((query: string) => {
           if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
             return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
@@ -1182,32 +1196,11 @@ describe('Custom Object Instances filter', () => {
         instances = elements.filter(isInstanceElement)
       })
 
-      describe('when skipAliases feature is enabled', () => {
-        beforeEach(async () => {
-          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
-          await createFilterForAliases(true).onFetch(elements)
-          instances = elements.filter(isInstanceElement)
-        })
-        it('should not create aliases', () => {
-          expect(instances).toHaveLength(2)
-          instances.forEach(instance => {
-            expect(instance.annotations).not.toContainKey(CORE_ANNOTATIONS.ALIAS)
-          })
-        })
-      })
-
-      describe('when skipAliases feature is disabled', () => {
-        beforeEach(async () => {
-          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
-          await createFilterForAliases(false).onFetch(elements)
-          instances = elements.filter(isInstanceElement)
-        })
-        it('should create correct aliases', () => {
-          expect(instances).toEqual([
-            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
-            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName' }) }),
-          ])
-        })
+      it('should create correct aliases', () => {
+        expect(instances).toEqual([
+          expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
+          expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName' }) }),
+        ])
       })
     })
 

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/e2e-credentials-store",
-  "version": "0.3.38",
+  "version": "0.3.39",
   "license": "Apache-2.0",
   "description": "Salto E2E tests credentials store",
   "repository": {
@@ -11,10 +11,9 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src"
+    "dist/src"
   ],
-  "main": "dist/src",
+  "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
     "clean-ts": "../../build_utils/clean-old-ts.sh",
@@ -29,9 +28,9 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/logging": "0.3.38",
-    "@salto-io/lowerdash": "0.3.38",
-    "@salto-io/persistent-pool": "0.3.38",
+    "@salto-io/logging": "0.3.39",
+    "@salto-io/lowerdash": "0.3.39",
+    "@salto-io/persistent-pool": "0.3.39",
     "easy-table": "^1.1.1",
     "humanize-duration": "^3.22.0",
     "yargs": "^13.3.0"

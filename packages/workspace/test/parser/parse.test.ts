@@ -18,14 +18,13 @@ import {
   isObjectType, InstanceElement, BuiltinTypes, isListType, isVariable,
   isType, isPrimitiveType, ListType, ReferenceExpression, VariableExpression, TemplateExpression,
 } from '@salto-io/adapter-api'
-
-// import each from 'jest-each'
 import { collections } from '@salto-io/lowerdash'
-import { registerTestFunction } from '../utils'
+import { registerTestFunction, registerThrowingFunction } from '../utils'
 import {
   Functions,
 } from '../../src/parser/functions'
-import { SourceRange, parse, SourceMap, tokenizeContent } from '../../src/parser'
+import { SourceRange, parse, SourceMap, tokenizeContent, ParseResult } from '../../src/parser'
+import { LexerErrorTokenReachedError } from '../../src/parser/internal/native/lexer'
 
 const { awu } = collections.asynciterable
 const funcName = 'funcush'
@@ -205,6 +204,7 @@ describe('Salto parser', () => {
       
       type salesforce.escapedDashBeforeQuote {
         str = "you can't run away \\\\"
+        unicodeStr = "this is \\u0061 basic thing"
       }
 
       type salesforce.templates {
@@ -743,6 +743,9 @@ value
       it('should parsed the double escaped string', () => {
         expect(escapeObj.annotations.str).toEqual('you can\'t run away \\')
       })
+      it('should parse the unicode escaping', () => {
+        expect(escapeObj.annotations.unicodeStr).toEqual('this is a basic thing')
+      })
     })
 
     describe('escaped templates', () => {
@@ -821,6 +824,50 @@ value
       const result = await parse(Buffer.from(body), 'none', functions)
       expect(result.errors).not.toHaveLength(0)
       expect(result.errors[0].summary).toEqual('Invalid attribute definition')
+    })
+
+    describe('unexpected parsing failures', () => {
+      let body: string
+      beforeAll(() => {
+        body = `
+        adapter_id.some_asset {
+          content = funcush("some.png")
+        `
+      })
+
+      it('puts unexpected errors into the parse result, without additional information', async () => {
+        const throwingFunctions = registerThrowingFunction(funcName, () => { throw new Error('unexpected') })
+        const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('unexpected')
+        expect(result.errors[0].context).toEqual({
+          filename: 'filename',
+          start: { byte: 1, col: 1, line: 1 },
+          end: { byte: 1, col: 1, line: 1 },
+        })
+      })
+
+      it('puts invalid lexer errors into the parse result, with token information', async () => {
+        const throwingFunctions = registerThrowingFunction(funcName, () => {
+          throw new LexerErrorTokenReachedError({
+            type: 'test',
+            value: 'test',
+            text: 'test',
+            lineBreaks: 1,
+            offset: 5,
+            line: 3,
+            col: 6,
+          })
+        })
+        const result = await parse(Buffer.from(body), 'filename', throwingFunctions)
+        expect(result.errors).toHaveLength(1)
+        expect(result.errors[0].message).toEqual('Invalid syntax')
+        expect(result.errors[0].context).toEqual({
+          filename: 'filename',
+          start: { byte: 5, col: 6, line: 3 },
+          end: { byte: 9, col: 1, line: 4 },
+        })
+      })
     })
 
     it('fails on invalid object item with unexpected eof', async () => {
@@ -906,8 +953,49 @@ value
     })
   })
 
+  describe('parse unicode line terminators', () => {
+    let parsed: ParseResult
+    beforeAll(async () => {
+      const body = `
+      type salesforce.unicodeLines {\u2028
+        // comment\u2028
+        multi = '''\u2028
+        end with unicode line separator\u2028
+        end with unicode paragraph separator\u2029
+        '''\u2028
+        single = "end single with unicode"\u2028
+      }\u2028
+      `.replace(/\n/g, '')
+      parsed = await parse(Buffer.from(body), 'none', functions)
+    })
+
+    it('should not have errors', () => {
+      expect(parsed.errors).toHaveLength(0)
+    })
+
+    describe('multiline strings', () => {
+      it('should parse unicode line separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.multi
+        expect(parsedValue).toContain('end with unicode line separator')
+      })
+
+      it('should parse unicode paragraph separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.multi
+        expect(parsedValue).toContain('end with unicode paragraph separator')
+      })
+    })
+
+    describe('single line strings', () => {
+      it('should parse unicode line separators', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.single
+        expect(parsedValue).toContain('end single with unicode')
+      })
+    })
+  })
+
+
   describe('tokenizeContent', () => {
-    it('seperate and token each part of a line correctly', () => {
+    it('separate and token each part of a line correctly', () => {
       expect(Array.from(tokenizeContent('aaa   bbb ccc.ddd   "eee fff  ggg.hhh"'))).toEqual([
         { value: 'aaa', type: 'word', line: 1, col: 1 },
         { value: 'bbb', type: 'word', line: 1, col: 7 },

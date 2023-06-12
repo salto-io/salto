@@ -100,4 +100,20 @@ describe('workflowDependencyChanger', () => {
     expect(dependencyChanges[1].dependency.source).toEqual(2)
     expect(dependencyChanges[1].dependency.target).toEqual(0)
   })
+
+  it('should ignore workflow string ids', async () => {
+    workflowSchemeInstance1.value.defaultWorkflow = '5'
+    workflowSchemeInstance2.value.items[0].workflow = '5'
+    const inputChanges = new Map([
+      [0, toChange({ before: workflowInstance, after: workflowInstance })],
+      [1, toChange({ before: workflowSchemeInstance1, after: workflowSchemeInstance1 })],
+      [2, toChange({ before: workflowSchemeInstance2, after: workflowSchemeInstance2 })],
+      [3, toChange({ before: workflowSchemeInstance3, after: workflowSchemeInstance3 })],
+    ])
+
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([])
+
+    const dependencyChanges = [...await workflowDependencyChanger(inputChanges, inputDeps)]
+    expect(dependencyChanges).toHaveLength(0)
+  })
 })

@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
@@ -24,6 +25,7 @@ import { LINK_HEADER_NAME } from './pagination'
 const {
   RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS, DEFAULT_RETRY_OPTS,
 } = clientUtils
+const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
@@ -36,6 +38,9 @@ const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 50,
 }
+
+// The expression match AppUserSchema endpoint used for fetch
+const APP_USER_SCHEMA_URL = /(\/api\/v1\/meta\/schemas\/apps\/[a-zA-Z0-9]+\/default)/
 
 export default class OktaClient extends clientUtils.AdapterHTTPClient<
   Credentials, clientUtils.ClientRateLimitConfig
@@ -60,6 +65,22 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
 
   public get baseUrl(): string {
     return this.credentials.baseUrl
+  }
+
+  public async getSinglePage(
+    args: clientUtils.ClientBaseParams,
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    try {
+      return await super.getSinglePage(args)
+    } catch (e) {
+      const status = e.response?.status
+      // Okta returns 404 when trying fetch AppUserSchema for built-in apps
+      if (status === 404 && args.url.match(APP_USER_SCHEMA_URL)) {
+        log.debug('Suppressing %d error %o for AppUserSchema', status, e)
+        return { data: [], status }
+      }
+      throw e
+    }
   }
 
   /**

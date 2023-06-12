@@ -45,6 +45,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     missingFeatureErrorRegex: [
       RegExp(`Details: You must specify the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature in the project manifest`, 'gm'),
       RegExp(`Details: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
+      RegExp(`Details: The following features must be specified in the manifest to use the .*: (?<${FEATURE_NAME}>\\w+)`, 'gm'),
     ],
     deployedObjectRegex: RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm'),
@@ -60,6 +61,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     missingFeatureErrorRegex: [
       RegExp(`D.tails: Vous devez sp.cifier la fonctionnalit. (?<${FEATURE_NAME}>\\w+)\\(.*?\\) dans le manifeste du projet`, 'gm'),
       RegExp(`D.tails: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
+      RegExp(`D.tails: The following features must be specified in the manifest to use the .*: (?<${FEATURE_NAME}>\\w+)`, 'gm'),
     ],
     deployedObjectRegex: RegExp(`^(Cr.er un objet|Mettre . jour l'objet) -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     // TODO: find in french

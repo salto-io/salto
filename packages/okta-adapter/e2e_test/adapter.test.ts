@@ -275,6 +275,7 @@ describe('Okta adapter E2E', () => {
       })
       elements = fetchResult.elements
       expect(fetchResult.errors).toHaveLength(1)
+      // The feature is disabled in our account
       expect(fetchResult.errors).toEqual([
         {
           severity: 'Warning',

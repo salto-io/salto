@@ -42,7 +42,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES,
+  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENTS_FIELD,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -359,7 +359,7 @@ const filterCreator: FilterCreator = () => ({
         // path = [zendesk, records, guide, brand, brandName ... ]
         const staticFilePath = [
           ZENDESK,
-          ARTICLE_ATTACHMENT_TYPE_NAME,
+          ARTICLE_ATTACHMENTS_FIELD,
           ...path.slice(2, -1),
           normalizeFilePathPart(attachment.value.file_name),
         ]

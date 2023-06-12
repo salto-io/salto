@@ -159,10 +159,8 @@ const createWarnings = async (
   ]
 }
 
-const shouldHandleLookupRef = (field: Field): boolean => (
-  (isLookupField(field) || isMasterDetailField(field))
-  && (field.annotations?.[FIELD_ANNOTATIONS.CREATABLE] || field.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])
-  && !(field.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] === true)
+const isReferenceField = (field?: Field): field is Field => (
+  isDefined(field) && (isLookupField(field) || isMasterDetailField(field))
 )
 
 const replaceLookupsWithRefsAndCreateRefMap = async (
@@ -179,10 +177,10 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
     instance: InstanceElement
   ): Promise<Values> => {
     const transformFunc: TransformFunc = async ({ value, field }) => {
-      if (!isDefined(field) || !shouldHandleLookupRef(field)) {
+      if (!isReferenceField(field)) {
         return value
       }
-      const refTo = makeArray(field.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
+      const refTo = makeArray(field?.annotations?.[FIELD_ANNOTATIONS.REFERENCE_TO])
       const ignoredRefTo = refTo.filter(typeName => dataManagement.shouldIgnoreReference(typeName))
       if (!_.isEmpty(refTo) && ignoredRefTo.length === refTo.length) {
         log.debug(
@@ -205,7 +203,9 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
         .filter(isDefined)
         .pop()
       if (refTarget === undefined) {
-        if (!_.isEmpty(value)) {
+        if (!_.isEmpty(value)
+            && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE] || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])
+            && field?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== true) {
           missingRefs.push({
             origin: {
               type: await apiName(await instance.getType(), true),

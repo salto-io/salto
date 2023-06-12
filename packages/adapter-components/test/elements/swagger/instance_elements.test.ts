@@ -72,6 +72,12 @@ describe('swagger_instance_elements', () => {
           name: { refType: BuiltinTypes.STRING },
         },
       })
+      const Fail401 = new ObjectType({
+        elemID: new ElemID(ADAPTER_NAME, 'Fail401'),
+        fields: {
+          id: { refType: BuiltinTypes.STRING },
+        },
+      })
       const Singleton = new ObjectType({
         elemID: new ElemID(ADAPTER_NAME, 'Singleton'),
         fields: {
@@ -85,6 +91,7 @@ describe('swagger_instance_elements', () => {
         Food,
         Status,
         Fail,
+        Fail401,
         Singleton,
       }
     }
@@ -139,7 +146,10 @@ describe('swagger_instance_elements', () => {
           if (getParams.url === '/fail') {
             throw new HTTPError('failed', { data: {}, status: 403 })
           }
-        }
+          if (getParams.url === '/fail401') {
+            throw new HTTPError('401', { data: {}, status: 401 })
+          }
+        },
       )
     })
 
@@ -147,7 +157,7 @@ describe('swagger_instance_elements', () => {
       jest.clearAllMocks()
     })
 
-    it('should return an error on 403', async () => {
+    it('should return an error on 403 or 401', async () => {
       const objectTypes = generateObjectTypes()
       const res = await getAllInstances({
         paginator: mockPaginator,
@@ -166,16 +176,22 @@ describe('swagger_instance_elements', () => {
                 idFields: ['name'],
               },
             },
+            Fail401: {
+              request: {
+                url: '/fail401',
+              },
+            },
           },
         },
         fetchQuery: createElementQuery({
           include: [
-            { type: 'Fail' },
+            { type: '.*' },
           ],
           exclude: [],
         }),
         supportedTypes: {
           Fail: ['Fail'],
+          Fail401: ['Fail401'],
         },
         objectTypes,
         computeGetArgs: simpleGetArgs,
@@ -185,6 +201,10 @@ describe('swagger_instance_elements', () => {
         {
           severity: 'Warning',
           message: "Salto could not access the Fail resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
+        },
+        {
+          severity: 'Warning',
+          message: "Salto could not access the Fail401 resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource",
         },
       ])
     })

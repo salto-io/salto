@@ -13,18 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, Change, Element, ElemID, Field, InstanceElement, isInstanceChange, isInstanceElement, isObjectType, ObjectType, ReadOnlyElementsSource, Values } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, transformValues } from '@salto-io/adapter-utils'
+import { BuiltinTypes, Element, ElemID, Field, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isObjectType, ObjectType, Values } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { JIRA } from '../constants'
+import { DASHBOARD_TYPE, FILTER_TYPE_NAME, JIRA } from '../constants'
 import { FilterCreator } from '../filter'
 import { setFieldDeploymentAnnotations } from '../utils'
 
-const { awu } = collections.asynciterable
 
 const log = logger(module)
+
+const SHARE_PERMISSION_FIELDS = ['sharePermissions', 'editPermissions']
 
 const transformType = (elements: Element[]): void => {
   const sharePermissionType = elements.filter(isObjectType).find((type => type.elemID.typeName === 'SharePermission'))
@@ -67,89 +66,63 @@ const transformSharePermissionValues = (sharePermissionValues: Values): void => 
   sharePermissionValues.type = sharePermissionValues.type === 'loggedin' ? 'authenticated' : sharePermissionValues.type
 
   if (sharePermissionValues.project !== undefined) {
-    sharePermissionValues.project = { id: sharePermissionValues.project?.id }
+    sharePermissionValues.project = { id: sharePermissionValues.project.id }
   }
 
   if (sharePermissionValues.role !== undefined) {
-    sharePermissionValues.role = { id: sharePermissionValues.role?.id }
+    sharePermissionValues.role = { id: sharePermissionValues.role.id }
   }
 }
 
-const transformSharedPermissions = async (
-  instance: InstanceElement,
-  func: (sharedPermission: Values) => void,
-  elementsSource: ReadOnlyElementsSource,
-): Promise<void> => {
-  await transformValues({
-    values: instance.value,
-    type: await instance.getType(elementsSource),
-    strict: false,
-    allowEmpty: true,
-    elementsSource,
-    transformFunc: async ({ value, field }) => {
-      if ((await field?.getType(elementsSource))?.elemID.typeName === 'SharePermission') {
-        func(value)
-        return undefined
-      }
-      return value
-    },
+const transformSharedPermissions = (instance: InstanceElement, func: (sharedPermission: Values) => void): void => {
+  SHARE_PERMISSION_FIELDS.forEach(field => {
+    if (Array.isArray(instance.value[field])) {
+      instance.value[field].forEach(func)
+    }
   })
 }
+
+const isSharePermissionType = (instance: InstanceElement): boolean =>
+  instance.elemID.typeName === DASHBOARD_TYPE
+  || instance.elemID.typeName === FILTER_TYPE_NAME
 
 /**
  * Change SharePermission structure to fit the deployment endpoint
  */
-const filter: FilterCreator = ({ elementsSource }) => ({
+const filter: FilterCreator = () => ({
   name: 'sharePermissionFilter',
   onFetch: async (elements: Element[]) => {
     transformType(elements)
 
-    await awu(elements)
+    elements
       .filter(isInstanceElement)
-      .forEach(async instance => {
-        await transformSharedPermissions(instance, transformSharePermissionValues, elementsSource)
-      })
+      .filter(isSharePermissionType)
+      .forEach(instance => transformSharedPermissions(instance, transformSharePermissionValues))
   },
 
   preDeploy: async changes =>
-    awu(changes)
+    changes
       .filter(isInstanceChange)
-      .forEach(change =>
-        applyFunctionToChangeData<Change<InstanceElement>>(
-          change,
-          async instance => {
-            await transformSharedPermissions(
-              instance,
-              sharedPermission => {
-                if (sharedPermission.type === 'project' && sharedPermission.role !== undefined) {
-                  sharedPermission.type = 'projectRole'
-                }
-              },
-              elementsSource,
-            )
-            return instance
-          }
-        )),
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isSharePermissionType)
+      .forEach(instance => transformSharedPermissions(instance, sharedPermission => {
+        if (sharedPermission.type === 'project' && sharedPermission.role !== undefined) {
+          sharedPermission.type = 'projectRole'
+        }
+      })),
 
   onDeploy: async changes =>
-    awu(changes)
+    changes
       .filter(isInstanceChange)
-      .forEach(change =>
-        applyFunctionToChangeData<Change<InstanceElement>>(
-          change,
-          async instance => {
-            await transformSharedPermissions(
-              instance,
-              sharedPermission => {
-                if (sharedPermission.type === 'projectRole') {
-                  sharedPermission.type = 'project'
-                }
-              },
-              elementsSource
-            )
-            return instance
-          }
-        )),
+      .filter(isAdditionOrModificationChange)
+      .map(getChangeData)
+      .filter(isSharePermissionType)
+      .forEach(instance => transformSharedPermissions(instance, sharedPermission => {
+        if (sharedPermission.type === 'projectRole') {
+          sharedPermission.type = 'project'
+        }
+      })),
 })
 
 export default filter

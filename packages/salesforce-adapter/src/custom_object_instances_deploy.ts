@@ -25,7 +25,7 @@ import {
   SaltoError,
   SeverityLevel,
 } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { GetLookupNameFunc, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { EOL } from 'os'
 import {
@@ -448,13 +448,31 @@ const isModificationChangeList = <T>(
   )
 
 export const deployCustomObjectInstancesGroup = async (
-  changes: ReadonlyArray<Change<InstanceElement>>,
+  unresolvedChanges: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
+  getLookupFunc: GetLookupNameFunc,
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
-    const instances = changes.map(change => getChangeData(change))
+    const nextDeployChanges: Change<InstanceElement>[] = []
+    const resolvedChanges = await awu(unresolvedChanges)
+      .map(async change => {
+        let hasInvalidResolvedReference = false
+        const resolvedChange = await resolveChangeElement(change, async ({ element, ref }) => {
+          const resolvedReference = await getLookupFunc({ element, ref })
+          if (resolvedReference === undefined) {
+            hasInvalidResolvedReference = true
+          }
+          return resolvedReference
+        })
+        if (hasInvalidResolvedReference) {
+          nextDeployChanges.push(change)
+        }
+        return resolvedChange
+      })
+      .toArray()
+    const instances = resolvedChanges.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]
     if (instanceTypes.length > 1) {
@@ -465,20 +483,35 @@ export const deployCustomObjectInstancesGroup = async (
     if (actualDataManagement === undefined) {
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
-    if (changes.every(isAdditionChange)) {
+    if (resolvedChanges.every(isAdditionChange)) {
       const { idFields, invalidFields } = await getIdFields(
         await instances[0].getType(), actualDataManagement
       )
       if (invalidFields !== undefined && invalidFields.length > 0) {
         throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
       }
-      return await deployAddInstances(instances, idFields, client, groupId)
+      const deployResult = await deployAddInstances(instances, idFields, client, groupId)
+      if (nextDeployChanges.length > 0) {
+        log.info('next deploy changes: %o', nextDeployChanges.map(change => getChangeData(change).elemID.getFullName()))
+        const elemIdToRecordId = Object.fromEntries(
+          instances
+            .map(instance => ([instance.elemID.getFullName(), instance.value[CUSTOM_OBJECT_ID_FIELD]]))
+            .filter(([_elemId, recordId]) => _.isString(recordId))
+        )
+        return deployCustomObjectInstancesGroup(
+          unresolvedChanges,
+          client, groupId,
+          ({ ref }) => elemIdToRecordId[ref.elemID.getFullName()],
+          dataManagement,
+        )
+      }
+      return deployResult
     }
-    if (changes.every(isRemovalChange)) {
+    if (resolvedChanges.every(isRemovalChange)) {
       return await deployRemoveInstances(instances, client, groupId)
     }
-    if (isModificationChangeList(changes)) {
-      return await deployModifyChanges(changes, client, groupId)
+    if (isModificationChangeList(resolvedChanges)) {
+      return await deployModifyChanges(resolvedChanges, client, groupId)
     }
     throw new Error('Custom Object Instances change group must have one action')
   } catch (error: unknown) {

@@ -38,6 +38,7 @@ import {
   getPath,
   getSubtypes,
   formatConfigSuggestionsReasons,
+  isResolvedReferenceExpression,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -2540,6 +2541,15 @@ describe('Test utils.ts', () => {
     it('should return a formatted reasons list', () => {
       const message = formatConfigSuggestionsReasons(['reason A', 'reason B'])
       expect(message).toEqual('    * reason A\n    * reason B')
+    })
+  })
+  describe('isResolvedReferenceExpression', () => {
+    const inst = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }))
+    it('should return false for a reference expression with undefind value', () => {
+      expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID))).toBeFalsy()
+    })
+    it('should return true for a resolved reference expression', () => {
+      expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, inst))).toBeTruthy()
     })
   })
 })

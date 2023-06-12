@@ -56,7 +56,8 @@ const schemeWarning = (elemID: ElemID): ChangeError => ({
 const isPermissionSchemeAssociationChange = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 ): boolean => {
-  const elemBefore = isModificationChange(change) && isResolvedReferenceExpression(change.data.before.value.permissionScheme)
+  const elemBefore = isModificationChange(change)
+  && isResolvedReferenceExpression(change.data.before.value.permissionScheme)
     ? change.data.before.value.permissionScheme.elemID.getFullName()
     : undefined
   const elemAfter = isResolvedReferenceExpression(change.data.after.value.permissionScheme)

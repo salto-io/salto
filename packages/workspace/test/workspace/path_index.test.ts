@@ -27,7 +27,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import {
   updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
-  splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex, pathIndexArgs,
+  splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex, PathIndexArgs,
 } from '../../src/workspace/path_index'
 import { InMemoryRemoteMap, RemoteMapEntry } from '../../src/workspace/remote_map'
 
@@ -427,7 +427,7 @@ describe('updatePathIndex', () => {
   objectsToModifyAfter.forEach(e => { e.path = e.path && [...e.path, 'modify'] })
 
   const runTest = async (
-    updatePathIndexFunc: (args: pathIndexArgs) => Promise<void>,
+    updatePathIndexFunc: (args: PathIndexArgs) => Promise<void>,
     pathHintsFunc: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]): Promise<void> => {
     const index = new InMemoryRemoteMap<Path[]>()
     await index.setAll(pathHintsFunc([...objectsToModifyBefore, ...objectsToRemove]))

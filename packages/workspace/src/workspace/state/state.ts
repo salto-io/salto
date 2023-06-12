@@ -23,7 +23,7 @@ import { StateStaticFilesSource } from '../static_files/common'
 
 export type StateMetadataKey = 'version' | 'hash'
 
-export type updateStateElementsArgs = {
+export type UpdateStateElementsArgs = {
   serviceToStateChanges: DetailedChange[]
   unmergedElements?: Element[]
   fetchAccounts?: string[]
@@ -70,7 +70,7 @@ export interface State extends ElementsSource {
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
-  updateStateFromChanges(args: updateStateElementsArgs): Promise<void>
+  updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
 }
 
 

@@ -27,7 +27,7 @@ import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
-import { State, StateData, updateStateElementsArgs } from './state'
+import { State, StateData, UpdateStateElementsArgs } from './state'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -84,7 +84,7 @@ export const buildInMemState = (
 
   const updateStatePathIndex = async (
     unmergedElements: Element[],
-    removedElementsFullNames?: Set<string>,
+    removedElementsFullNames: Set<string>,
   ): Promise<void> => {
     const currentStateData = await stateData()
     await updateTopLevelPathIndex({
@@ -106,8 +106,9 @@ export const buildInMemState = (
       change => change.id.createTopLevelParentID().parent.getFullName()
     )
     await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
-      const elemID = elemChanges[0].id.createTopLevelParentID().parent
-      if (elemChanges[0].id.isEqual(elemID)) {
+      const elemID = elemChanges[0].id
+      // If the first change is top level, it means the element was added or removed, and it will include all changes
+      if (elemID.isTopLevel()) {
         if (isRemovalChange(elemChanges[0])) {
           await state.delete(elemID)
         } else if (isAdditionChange(elemChanges[0])) {
@@ -116,7 +117,10 @@ export const buildInMemState = (
         return
       }
 
-      const updatedElem = (await state.get(elemID)).clone()
+      // If the first change is not top level, it means this is a modification of an existing element
+      // We need to get that element, apply the changes and set it back
+      const elemTopLevel = elemID.createTopLevelParentID().parent
+      const updatedElem = (await state.get(elemTopLevel)).clone()
       applyDetailedChanges(updatedElem, elemChanges)
       await state.set(updatedElem)
     })
@@ -178,7 +182,7 @@ export const buildInMemState = (
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async (
-      { serviceToStateChanges, unmergedElements, fetchAccounts }: updateStateElementsArgs) => {
+      { serviceToStateChanges, unmergedElements, fetchAccounts }: UpdateStateElementsArgs) => {
       await updateStateElements(serviceToStateChanges)
       if (!_.isEmpty(fetchAccounts)) {
         await updateAccounts(fetchAccounts)

@@ -558,15 +558,15 @@ export const getAdaptersFirstFetchPartial = async (
 }
 
 type CalcFetchChangesResult = {
-    changes: FetchChange[]
-    serviceToStateChanges: DetailedChange[]
+  changes: FetchChange[]
+  serviceToStateChanges: DetailedChange[]
 }
 
 type DetailedChangeTreesResults = {
-    serviceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
-    pendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
-    workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
-    serviceToStateChanges: DetailedChange[]
+  serviceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  pendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  serviceToStateChanges: DetailedChange[]
 }
 
 // Calculate the fetch changes - calculation should be done only if workspace has data,
@@ -613,7 +613,7 @@ export const calcFetchChanges = async (
         [accountFetchFilter, partialFetchFilter],
         'service',
       ),
-      'calculate service-state changes',
+      'calculate service-workspace changes',
     )
 
     return {
@@ -628,7 +628,7 @@ export const calcFetchChanges = async (
     // Changes from the service that are not in the state
     const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time(
       () => getDetailedChangeTree(
-        isStateEmpty ? workspaceElements : stateElements,
+        stateElements,
         partialFetchElementSource,
         [accountFetchFilter, partialFetchFilter],
         'service',

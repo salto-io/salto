@@ -167,18 +167,6 @@ describe('api.ts', () => {
 
     beforeAll(() => {
       mockPartiallyFetchedAccounts.mockReturnValue(new Set())
-      mockFetchChanges.mockImplementation(async () => ({
-        changes: [],
-        serviceToStateChanges: [],
-        errors: [],
-        configChanges: mockPlan.createPlan([[]]),
-        updatedConfig: {},
-        unmergedElements: fetchedElements,
-        elements: fetchedElements,
-        mergeErrors: [],
-        accountNameToConfigMessage: {},
-        partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
-      }))
     })
 
     describe('Full fetch', () => {
@@ -192,6 +180,18 @@ describe('api.ts', () => {
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
         stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
+        mockFetchChanges.mockImplementationOnce(async () => ({
+          changes: [],
+          serviceToStateChanges: [],
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, ACCOUNTS)
       })
@@ -227,7 +227,7 @@ describe('api.ts', () => {
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
-        mockFetchChanges.mockImplementation(async () => ({
+        mockFetchChanges.mockImplementationOnce(async () => ({
           changes: [],
           // This is the field that is used to determine which elements to update in the state
           serviceToStateChanges: fetchedElements.map(e => ({ action: 'add', data: { after: e }, id: e.elemID })),

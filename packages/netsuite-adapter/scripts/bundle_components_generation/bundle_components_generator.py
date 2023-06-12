@@ -16,7 +16,7 @@ SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 BUNDLE_COMPONENTS_DIR = os.path.join(SRC_DIR, 'bundle_components/')
 FULL_LINE_LENGTH = 4
-BUNDLE_IDS = [39609, 53195, 233251]
+BUNDLE_IDS = [39609, 53195, 233251, 47492]
 PRIVATE_BUNDLE = 'Private'
 
 search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/installbundle.nl?whence='

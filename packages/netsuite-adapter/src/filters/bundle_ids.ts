@@ -40,21 +40,14 @@ const addBundleIdField = async (
     const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE_ID)
     if (bundleId.length > 0) {
       const bundleToReference = bundleIdToInstance[bundleId[0]]
-      Object.assign(instance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+      Object.assign(instance.value, { bundleId: new ReferenceExpression(bundleToReference.elemID) })
     }
   } else {
     bundleInstances.forEach(bundle => {
       if (BUNDLE_ID_TO_COMPONENTS[bundle.value.id].has(serviceId)) {
-        Object.assign(instance.value, { bundle: new ReferenceExpression(bundle.elemID) })
+        Object.assign(instance.value, { bundleId: new ReferenceExpression(bundle.elemID) })
       }
     })
-  }
-}
-
-const removeBundleId = (instance: InstanceElement): void => {
-  const bundleId = instance.value?.bundleId
-  if (bundleId) {
-    _.omit(instance.value, [BUNDLE_ID])
   }
 }
 
@@ -64,24 +57,24 @@ const filterCreator: LocalFilterCreator = () => ({
     const [bundleInstances, nonBundleElements] = _.partition(
       elements.filter(isInstanceElement), element => element.elemID.typeName === 'bundle'
     )
-    const [generatedBundles, missingBundles] = _.partition(bundleInstances, bundle =>
+    const [existingBundles, missingBundles] = _.partition(bundleInstances, bundle =>
       bundle.value.id in BUNDLE_ID_TO_COMPONENTS)
     log.debug('The following bundle ids are missing in the bundle record: %o', missingBundles.map(bundle => bundle.value.id))
 
     const bundleIdToInstance: Record<string, InstanceElement> = Object.fromEntries(
       bundleInstances.map(bundle => [bundle.value.id, bundle])
     )
-    generatedBundles.forEach(bundle => {
+    existingBundles.forEach(bundle => {
       bundle.value.isPrivate = BUNDLE_ID_TO_COMPONENTS[bundle.value.id].has(PRIVATE_BUNDLE_STRING)
     })
-    await awu(nonBundleElements).forEach(element => (addBundleIdField(element, generatedBundles, bundleIdToInstance)))
+    await awu(nonBundleElements).forEach(element => (addBundleIdField(element, existingBundles, bundleIdToInstance)))
   },
 
   preDeploy: async changes => {
     changes
       .filter(isInstanceChange)
       .map(getChangeData)
-      .map(removeBundleId)
+      .forEach(element => { element.value = _.omit(element.value, [BUNDLE_ID]) })
   },
 })
 

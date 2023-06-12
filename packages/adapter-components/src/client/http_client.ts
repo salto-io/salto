@@ -241,7 +241,7 @@ export abstract class AdapterHTTPClient<
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, _.pick(e.response, ['status', 'data']))
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }

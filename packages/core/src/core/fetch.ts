@@ -595,7 +595,8 @@ export const calcFetchChanges = async (
     get: async (id: ElemID): Promise<Element | undefined> => {
       const mergedElem = await mergedAccountElementsSource.get(id)
       if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
-        return isStateEmpty ? workspaceElements.get(id) : stateElements.get(id)
+        // Use the same element source as the fetch runs with, see `getFetchAdapterAndServicesSetup`
+        return workspaceElements.get(id)
       }
       return mergedElem
     },

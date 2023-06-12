@@ -64,10 +64,13 @@ const deployOrValidate = async (
   }
   try {
     const result = await deployOrValidateFn(opts)
+    const failedChanges = opts.changeGroup.changes.filter(
+      change => !result.appliedChanges.some(c => getChangeData(c) === getChangeData(change))
+    )
     return {
       appliedChanges: result.appliedChanges,
       extraProperties: result.extraProperties,
-      errors: extractErrors(result, opts.changeGroup.changes),
+      errors: extractErrors(result, failedChanges),
     }
   } catch (error) {
     return {

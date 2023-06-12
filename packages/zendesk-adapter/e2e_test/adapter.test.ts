@@ -737,7 +737,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: fileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachments/${fileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: false,
@@ -753,7 +753,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: inlineFileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachments/${inlineFileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: true,

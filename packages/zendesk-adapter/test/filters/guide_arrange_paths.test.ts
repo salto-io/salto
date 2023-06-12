@@ -38,7 +38,7 @@ import {
   PERMISSION_GROUP_TYPE_NAME,
   GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
-  GUIDE,
+  GUIDE, ARTICLE_ATTACHMENTS_FIELD,
 } from '../../src/constants'
 import filterCreator, {
   GUIDE_ELEMENT_DIRECTORY,
@@ -518,7 +518,7 @@ describe('guide arrange paths', () => {
       const staticFile = elements[3].value.content
       expect(staticFile.filepath).toEqual([
         ZENDESK,
-        ARTICLE_ATTACHMENT_TYPE_NAME,
+        ARTICLE_ATTACHMENTS_FIELD,
         GUIDE,
         ...BRAND_PATH,
         GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],

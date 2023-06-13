@@ -24,6 +24,7 @@ import { setFieldDeploymentAnnotations } from '../utils'
 const log = logger(module)
 
 const SHARE_PERMISSION_FIELDS = ['sharePermissions', 'editPermissions']
+const SHARE_PERMISSION_TYPES = [DASHBOARD_TYPE, FILTER_TYPE_NAME]
 
 const transformType = (elements: Element[]): void => {
   const sharePermissionType = elements.filter(isObjectType).find((type => type.elemID.typeName === 'SharePermission'))
@@ -83,8 +84,7 @@ const transformSharedPermissions = (instance: InstanceElement, func: (sharedPerm
 }
 
 const isSharePermissionType = (instance: InstanceElement): boolean =>
-  instance.elemID.typeName === DASHBOARD_TYPE
-  || instance.elemID.typeName === FILTER_TYPE_NAME
+  SHARE_PERMISSION_TYPES.includes(instance.elemID.typeName)
 
 /**
  * Change SharePermission structure to fit the deployment endpoint

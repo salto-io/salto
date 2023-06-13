@@ -197,8 +197,10 @@ const isUnFoundDelete = (message: DeployMessage, deletionsPackageName: string): 
 const processDeployResponse = (
   result: SFDeployResult,
   deletionsPackageName: string,
+  changeDeployedIds: Record<string, MetadataIdsMap>,
   checkOnly: boolean,
-): { successfulFullNames: ReadonlyArray<MetadataId>; errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
+): { successfulFullNames: ReadonlyArray<MetadataId>
+  errors: ReadonlyArray<SaltoError | SaltoElementError> } => {
   const allFailureMessages = makeArray(result.details)
     .flatMap(detail => makeArray(detail.componentFailures))
 
@@ -219,6 +221,7 @@ const processDeployResponse = (
     .filter(failure => !isUnFoundDelete(failure, deletionsPackageName))
     .map(getUserFriendlyDeployMessage)
     .map(failure => ({
+      elemID: changeDeployedIds[failure.componentType]?.[failure.fullName],
       message: `Failed to ${checkOnly ? 'validate' : 'deploy'} ${failure.fullName} with error: ${failure.problem} (${failure.problemType})`,
       severity: 'Error' as SeverityLevel,
     }))
@@ -379,7 +382,7 @@ export const deployMetadata = async (
   }, undefined, 2))
 
   const { errors, successfulFullNames } = processDeployResponse(
-    sfDeployRes, pkg.getDeletionsPackageName(), checkOnly ?? false
+    sfDeployRes, pkg.getDeletionsPackageName(), changeToDeployedIds, checkOnly ?? false
   )
   const isSuccessfulChange = (change: Change<MetadataInstanceElement>): boolean => {
     const changeElem = getChangeData(change)

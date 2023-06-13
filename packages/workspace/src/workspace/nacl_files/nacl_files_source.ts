@@ -831,8 +831,11 @@ const buildNaclFilesSource = (
 
       fileChanges
         .filter(isModificationChange)
-        .filter(change => isStaticFile(change.data.after) && isStaticFile(change.data.before))
-        .filter(change => change.data.after.filepath !== change.data.before.filepath)
+        .filter(change => isStaticFile(change.data.before))
+        .filter(change => (
+          (isStaticFile(change.data.after) && change.data.before.filepath !== change.data.after.filepath)
+          || !isStaticFile(change.data.after)
+        ))
         .map(change => change.data.before)
         .map(getNestedStaticFiles)
         .flat()

@@ -32,7 +32,7 @@ export interface Values {
 }
 
 export type CompareOptions = {
-  compareReferencesByValue?: boolean
+  compareByValue?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string =>
@@ -250,7 +250,7 @@ const shouldCompareByValue = (
   first: Value,
   second: Value,
   options?: CompareOptions,
-): boolean => Boolean(options?.compareReferencesByValue)
+): boolean => Boolean(options?.compareByValue)
   && shouldResolve(first)
   && shouldResolve(second)
 
@@ -261,7 +261,9 @@ export const compareSpecialValues = (
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
-      && (options?.compareReferencesByValue !== true ? first.filepath === second.filepath : true)
+      && (options?.compareByValue
+        ? true
+        : first.filepath === second.filepath)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
     if (shouldCompareByValue(first, second, options)) {

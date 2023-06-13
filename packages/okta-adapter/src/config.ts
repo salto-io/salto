@@ -1604,14 +1604,14 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
-  EmailNotificationSettings: ['EmailNotifications'],
-  EndUserSupportSettings: ['EndUserSupport'],
-  ThirdPartyAdminSettings: ['ThirdPartyAdmin'],
-  EmbeddedSignInSuppportSettings: ['EmbeddedSignInSuppport'],
-  SignOutPageSettings: ['SignOutPage'],
-  BrowserPluginSettings: ['BrowserPlugin'],
-  DisplayLanguageSettings: ['DisplayLanguage'],
-  ReauthenticationSettings: ['Reauthentication'],
+  EmailNotifications: ['EmailNotifications'],
+  EndUserSupport: ['EndUserSupport'],
+  ThirdPartyAdmin: ['ThirdPartyAdmin'],
+  EmbeddedSignInSuppport: ['EmbeddedSignInSuppport'],
+  SignOutPage: ['SignOutPage'],
+  BrowserPlugin: ['BrowserPlugin'],
+  DisplayLanguage: ['DisplayLanguage'],
+  Reauthentication: ['Reauthentication'],
 }
 
 export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {

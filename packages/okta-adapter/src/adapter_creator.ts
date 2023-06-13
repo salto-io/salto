@@ -45,15 +45,20 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
   }
 }
 
-const validateOktaFetchConfig = (
-  fetchConfig: OktaFetchConfig,
-  clientConfig: OktaClientConfig,
-  apiDefinitions: OktaSwaggerApiConfig,
-  privateApiDefinitions: OktaDuckTypeApiConfig,
-): void => {
+const validateOktaFetchConfig = ({
+  fetchConfig,
+  clientConfig,
+  apiDefinitions,
+  privateApiDefinitions,
+}:
+{ fetchConfig: OktaFetchConfig
+  clientConfig: OktaClientConfig
+  apiDefinitions: OktaSwaggerApiConfig
+  privateApiDefinitions: OktaDuckTypeApiConfig
+}): void => {
   const supportedTypes = clientConfig.usePrivateAPI === false
     ? Object.keys(apiDefinitions.supportedTypes)
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.values(privateApiDefinitions.supportedTypes).flat())
+    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
   validateSupportedTypes(
     FETCH_CONFIG,
     fetchConfig,
@@ -83,12 +88,12 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
-  validateOktaFetchConfig(
-    fetch,
-    client,
+  validateOktaFetchConfig({
+    fetchConfig: fetch,
+    clientConfig: client,
     apiDefinitions,
-    privateApiDefinitions
-  )
+    privateApiDefinitions,
+  })
   validateDuckTypeApiDefinitionConfig(PRIVATE_API_DEFINITIONS_CONFIG, privateApiDefinitions)
 
   const adapterConfig: { [K in keyof Required<OktaConfig>]: OktaConfig[K] } = {

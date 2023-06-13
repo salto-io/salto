@@ -18,6 +18,7 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import axios from 'axios'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { createConnection } from './connection'
 import { OKTA } from '../constants'
 import { Credentials } from '../auth'
@@ -136,14 +137,16 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       const response = await httpClient.get(url, { responseType })
       const { data, status } = response
       log.debug('Received response for resource request %s with status %d', url, status)
+      log.trace('Full HTTP response for resource %s: %s', url, safeJsonStringify({
+        url, response: data,
+      }))
       return {
         data,
         status,
       }
     } catch (e) {
-      const status = e.response?.status
-      log.warn('Suppressing %d error %o', status, e)
-      return { data: [], status }
+      log.warn('Failed to get responce from resource. error %o', e)
+      throw e
     }
   }
 }

@@ -14,22 +14,19 @@
 * limitations under the License.
 */
 
-import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
+
 import _ from 'lodash'
-import { BuiltinTypes, Element, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isAdditionOrModificationChange, isRemovalChange, isStaticFile, DeployResult } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isAdditionOrModificationChange, isRemovalChange, isStaticFile } from '@salto-io/adapter-api'
 import FormData from 'form-data'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { getParent, getParents, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
-import { FilterResult } from '@salto-io/adapter-utils/src/filter'
-import OktaClient from '../client/client'
-import { getOktaError } from '../deployment'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from '../constants'
-import { extractIdFromUrl } from '../utils'
+import OktaClient from './client/client'
+import { getOktaError } from './deployment'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
+import { extractIdFromUrl } from './utils'
 
-const { awu } = collections.asynciterable
-const log = logger(module)
 const { SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } = elementsUtils
+
 type BrandFileValues = {
   fileName: string
   fileType: string
@@ -37,28 +34,30 @@ type BrandFileValues = {
 }
 // standard logo types for Okta
 // https://developer.okta.com/docs/reference/api/brands/#response-10
-const LOGO_TYPES_TO_VALUES: Record<string, BrandFileValues> = {
+export const LOGO_TYPES_TO_VALUES: Record<string, BrandFileValues> = {
   [BRAND_LOGO_TYPE_NAME]: {
     fileName: 'brandLogo',
     fileType: 'png',
     urlSuffix: 'logo',
   },
-  [FAVORITE_ICON_TYPE_NAME]: {
+  [FAV_ICON_TYPE_NAME]: {
     fileName: 'favicon',
     fileType: 'ico',
     urlSuffix: 'favicon',
   },
 }
 
-const getLogoContent = async (link: string, client: OktaClient
-): Promise<Buffer | undefined> => {
-  const res = await client.getResource({ url: link, responseType: 'arraybuffer' })
-  const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
-  if (!Buffer.isBuffer(content)) {
-    log.error('Received invalid response from Okta API for attachment content')
-    return undefined
+const getLogoContent = async (link: string, client: OktaClient): Promise<Buffer | Error> => {
+  try {
+    const res = await client.getResource({ url: link, responseType: 'arraybuffer' })
+    const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
+    if (!Buffer.isBuffer(content)) {
+      return new Error('Received invalid response from Okta API for attachment content')
+    }
+    return content
+  } catch (e) {
+    return new Error('Failed to fetch attachment content from Okta API')
   }
-  return content
 }
 
 const sendLogoRequest = async ({
@@ -149,29 +148,24 @@ export const getLogo = async ({
   parents: InstanceElement[]
   logoType: ObjectType
   contentType: string
-  logoName?: string
-  link?: string
+  logoName: string
+  link: string
 }):
-Promise<InstanceElement | undefined> => {
-  const logoLink = link ?? parents[0].value?.[LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].urlSuffix]
-  if (logoLink === undefined) {
-    return undefined
+Promise<InstanceElement | Error> => {
+  const logoContent = await getLogoContent(link, client)
+  if (logoContent instanceof Error) {
+    return logoContent
   }
-  const logoContent = await getLogoContent(logoLink, client)
-  if (logoContent === undefined) {
-    return undefined
-  }
-  const name = logoName ?? LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileName
-  const pathName = pathNaclCase(name)
-  const resourcePathName = `${normalizeFilePathPart(name)}.${contentType}`
-  const logoId = extractIdFromUrl(logoLink)
+  const pathName = pathNaclCase(logoName)
+  const resourcePathName = `${normalizeFilePathPart(logoName)}.${contentType}`
+  const logoId = extractIdFromUrl(link)
   const refParents = parents.map(parent => new ReferenceExpression(parent.elemID, parent))
   const logo = new InstanceElement(
-    name,
+    logoName,
     logoType,
     {
       id: logoId,
-      fileName: `${name}.${contentType}`,
+      fileName: `${logoName}.${contentType}`,
       contentType,
       content: new StaticFile({
         filepath: `${OKTA}/${logoType.elemID.name}/${resourcePathName}`,
@@ -184,69 +178,4 @@ Promise<InstanceElement | undefined> => {
     }
   )
   return logo
-}
-
-export const getBrandThemeFile = async (
-  client: OktaClient,
-  brandTheme: InstanceElement,
-  logoType: ObjectType,
-): Promise<InstanceElement | undefined> => {
-  const parents = getParents(brandTheme)
-  if (parents.length === 0 || parents[0].value.elemID.typeName !== BRAND_TYPE_NAME) {
-    return undefined
-  }
-  const instances = [brandTheme, parents[0].value]
-  const type = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileType
-  return getLogo({ client, parents: instances, logoType, contentType: type })
-}
-
-export const fetchBrandThemeFiles = async ({
-  brandTheme,
-  client,
-  logoTypeNames,
-  elements,
-}: {
-  brandTheme: InstanceElement
-  client: OktaClient
-  logoTypeNames: string[]
-  elements: Element[]
-}): Promise<void | FilterResult> => {
-  await awu(logoTypeNames).forEach(async logoTypeName => {
-    const brandLogoType = createLogoType(logoTypeName)
-    elements.push(brandLogoType)
-
-    const brandLogoInstances = await getBrandThemeFile(client, brandTheme, brandLogoType)
-    if (brandLogoInstances !== undefined) {
-      elements.push(brandLogoInstances)
-    }
-  })
-}
-
-export const deployBrandThemeFiles = async (
-  changes: Change<InstanceElement>[],
-  client: OktaClient,
-): Promise<{
-  deployResult: DeployResult
-  leftoverChanges: Change[]
-}> => {
-  const [brandLogoChanges, leftoverChanges] = _.partition(
-    changes,
-    change => (Object.keys(LOGO_TYPES_TO_VALUES)).includes(getChangeData(change).elemID.typeName),
-  )
-  const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
-    const deployResult = await deployLogo(change, client)
-    return deployResult === undefined ? change : deployResult
-  }))
-
-  const [deployLogoErrors, successfulChanges] = _.partition(
-    deployLogoResults,
-    _.isError,
-  )
-  return {
-    deployResult: {
-      appliedChanges: successfulChanges,
-      errors: deployLogoErrors,
-    },
-    leftoverChanges,
-  }
 }

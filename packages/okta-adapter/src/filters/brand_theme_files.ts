@@ -14,18 +14,71 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, InstanceElement, ObjectType, isInstanceElement, DeployResult, getChangeData, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAVORITE_ICON_TYPE_NAME } from '../constants'
+import { getParents } from '@salto-io/adapter-utils'
+import _ from 'lodash'
+import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { deployBrandThemeFiles, fetchBrandThemeFiles } from './logo'
+import { LOGO_TYPES_TO_VALUES, createLogoType, deployLogo, getLogo } from '../logo'
+import OktaClient from '../client/client'
 
 const log = logger(module)
 
+const getBrandThemeFile = async (
+  client: OktaClient,
+  brandTheme: InstanceElement,
+  logoType: ObjectType,
+): Promise<InstanceElement | Error> => {
+  const parents = getParents(brandTheme)
+  if (parents.length === 0 || parents[0].value.elemID.typeName !== BRAND_TYPE_NAME) {
+    log.warn('No Brand was found, skipping BrandLogo and BrandFavicon fetch')
+    return new Error('No Brand was found, skipping BrandLogo and BrandFavicon fetch')
+  }
+  const instances = [brandTheme, parents[0].value]
+  const type = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileType
+  const link = brandTheme.value?.[LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].urlSuffix]
+  const logoName = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileName
+  return getLogo({ client, parents: instances, logoType, contentType: type, link, logoName })
+}
+
+const deployBrandThemeFiles = async (
+  changes: Change<InstanceElement>[],
+  client: OktaClient,
+): Promise<{
+  deployResult: DeployResult
+  leftoverChanges: Change[]
+}> => {
+  const [brandLogoChanges, leftoverChanges] = _.partition(
+    changes,
+    change => (Object.keys(LOGO_TYPES_TO_VALUES)).includes(getChangeData(change).elemID.typeName),
+  )
+  const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
+    const deployResult = await deployLogo(change, client)
+    return deployResult === undefined ? change : deployResult
+  }))
+
+  const [deployLogoErrors, successfulChanges] = _.partition(
+    deployLogoResults,
+    _.isError,
+  )
+  return {
+    deployResult: {
+      appliedChanges: successfulChanges,
+      errors: deployLogoErrors,
+    },
+    leftoverChanges,
+  }
+}
+const toSaltoError = (err: Error): SaltoError => ({
+  message: `Failed to fetch brandTheme file. ${err.message}`,
+  severity: 'Warning',
+})
+
 /**
- * Fetches and deploys brand logo as static file.
+ * Fetches and deploys brand theme fiels as static file.
  */
-const brandLogoFilter: FilterCreator = ({ client }) => ({
+const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
   name: 'brandThemeFilesFilter',
   onFetch: async elements => {
     const brandTheme = elements
@@ -33,15 +86,27 @@ const brandLogoFilter: FilterCreator = ({ client }) => ({
       .find(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
 
     if (brandTheme === undefined) {
-      log.debug('No brandTheme was found')
-      return
+      log.warn('No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch')
+      const newEerr: SaltoError = {
+        message: 'No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
+        severity: 'Warning',
+      }
+      return { errors: [newEerr] }
     }
-    // eslint-disable-next-line max-len
-    await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeNames: [BRAND_LOGO_TYPE_NAME, FAVORITE_ICON_TYPE_NAME] })
-    // await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeName: BRAND_LOGO_TYPE_NAME })
-    // await fetchBrandThemeFiles({ client, brandTheme, elements, logoTypeName: FAVORITE_ICON_TYPE_NAME })
+    const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
+
+    const allInstances = await Promise.all(logoTypeNames.map(async logoTypeName => {
+      const brandLogoType = createLogoType(logoTypeName)
+      elements.push(brandLogoType)
+      return getBrandThemeFile(client, brandTheme, brandLogoType)
+    }))
+
+    const [fetchErrors, instances] = _.partition(allInstances, _.isError)
+    instances.forEach(instance => elements.push(instance))
+    const err = fetchErrors.map(toSaltoError)
+    return { errors: err }
   },
   deploy: async (changes: Change<InstanceElement>[]) => deployBrandThemeFiles(changes, client),
 })
 
-export default brandLogoFilter
+export default brandThemeFilesFilter

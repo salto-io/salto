@@ -17,8 +17,8 @@
 import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
 import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
 import OktaClient from '../../src/client/client'
-import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
-import { createLogoType, getLogo } from '../../src/filters/logo'
+import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
+import { createLogoType, getLogo } from '../../src/logo'
 import { mockClient } from '../utils'
 
 describe('logo filter', () => {
@@ -26,29 +26,29 @@ describe('logo filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
-  const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
-  const brandLogoType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_LOGO_TYPE_NAME) })
-  const brandInstance = new InstanceElement(
-    'brand1',
-    brandType,
-    {
-      id: '9',
-      name: 'brand1',
-    },
-  )
-  const brandThemeInstance = new InstanceElement(
-    'brandTheme1',
-    brandThemeType,
-    {
-      id: '11',
-      logo: 'https://ok12static.oktacdn.com/bc/image/111',
-    },
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
-    }
-  )
+  // const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
+  // const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
+  // const brandLogoType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_LOGO_TYPE_NAME) })
+  // const brandInstance = new InstanceElement(
+  //   'brand1',
+  //   brandType,
+  //   {
+  //     id: '9',
+  //     name: 'brand1',
+  //   },
+  // )
+  // const brandThemeInstance = new InstanceElement(
+  //   'brandTheme1',
+  //   brandThemeType,
+  //   {
+  //     id: '11',
+  //     logo: 'https://ok12static.oktacdn.com/bc/image/111',
+  //   },
+  //   undefined,
+  //   {
+  //     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
+  //   }
+  // )
   const appInstance = new InstanceElement(
     'app1',
     appType,
@@ -110,7 +110,7 @@ describe('logo filter', () => {
         logoType: appLogoType,
         contentType,
         logoName: fileName,
-        link })
+        link }) as InstanceElement
       expect(logo?.value).toEqual({
         id: '111',
         fileName: `${fileName}.${contentType}`,
@@ -122,15 +122,6 @@ describe('logo filter', () => {
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT]).toHaveLength(1)
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT])
         .toContainEqual(new ReferenceExpression(appInstance.elemID, appInstance))
-    })
-    it('should return undefined when no logo', async () => {
-      const clonedBradTheme = brandThemeInstance.clone()
-      clonedBradTheme.value.logo = undefined
-      const logo = await getLogo({ client,
-        parents: [clonedBradTheme, brandInstance],
-        logoType: brandLogoType,
-        contentType })
-      expect(logo).toBeUndefined()
     })
   })
 })

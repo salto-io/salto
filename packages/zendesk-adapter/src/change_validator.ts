@@ -64,7 +64,7 @@ import {
   organizationExistenceValidator,
   badFormatWebhookActionValidator,
   guideDisabledValidator,
-  additionOfTicketStatusForTicketFormValidator,
+  additionOfTicketStatusForTicketFormValidator, defaultDynamicContentItemVariantValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -142,6 +142,7 @@ export default ({
     badFormatWebhookActionValidator,
     guideDisabledValidator(fetchConfig),
     additionOfTicketStatusForTicketFormValidator,
+    defaultDynamicContentItemVariantValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

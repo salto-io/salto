@@ -106,9 +106,11 @@ describe('client', () => {
           { id: 'a', type: 'google', methods: [{ google: { secretKey: '<SECRET>' } }, { sso: { secretKey: '<SECRET>' } }] },
           { id: 'b', type: 'password', credentials: { client: '123' }, methods: ['1', '2', '3'], sharedSecret: '<SECRET>' },
         ])
-      expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
       expect(extractHeadersFunc).toHaveNthReturnedWith(1, {})
-      expect(extractHeadersFunc).toHaveNthReturnedWith(2, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
+      expect(extractHeadersFunc).toHaveNthReturnedWith(2, {})
+      expect(extractHeadersFunc).toHaveNthReturnedWith(3, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
+      expect(extractHeadersFunc).toHaveNthReturnedWith(4, { link: 'aaa', 'x-rate-limit': '456', 'x-rate-limit-remaining': '456' })
     })
   })
   describe('get baseurl', () => {

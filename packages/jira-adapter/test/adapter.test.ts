@@ -148,10 +148,17 @@ describe('adapter', () => {
           ],
         },
       })
-
       expect(deployRes.errors).toEqual([
-        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error'),
-        new Error('Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error'),
+        {
+          message: 'Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst1 failed: Error: some error',
+          severity: 'Error',
+          elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst1'),
+        },
+        {
+          message: 'Deployment of jira.FieldConfigurationIssueTypeItem.instance.inst2 failed: Error: some error',
+          severity: 'Error',
+          elemID: ElemID.fromFullName('jira.FieldConfigurationIssueTypeItem.instance.inst2'),
+        },
       ])
     })
 

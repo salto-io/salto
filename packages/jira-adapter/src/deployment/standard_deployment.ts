@@ -13,12 +13,11 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, ElemID, getChangeData, InstanceElement, isAdditionChange, isEqualValues, isModificationChange, ReadOnlyElementsSource, SaltoElementError } from '@salto-io/adapter-api'
 import { config, deployment, client as clientUtils, elements as elementUtils } from '@salto-io/adapter-components'
 import { resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import _ from 'lodash'
+import { collections, values } from '@salto-io/lowerdash'
 import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
 
@@ -101,21 +100,28 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void>
 ): Promise<Omit<DeployResult, 'extraProperties'>> => {
-  const result = await awu(changes)
+  const errors: SaltoElementError[] = []
+
+  const appliedChanges = await awu(changes)
     .map(async change => {
       try {
         await deployChangeFunc(change)
         return change
       } catch (err) {
-        if (err instanceof Error) {
-          err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
-        }
-        return err
+        err.message = `Deployment of ${getChangeData(change).elemID.getFullName()} failed: ${err}`
+        log.error(err)
+        errors.push({
+          message: err.message,
+          severity: 'Error',
+          elemID: getChangeData(change).elemID,
+        })
+        return undefined
       }
     })
+    .filter(values.isDefined)
     .toArray()
 
-  const [errors, appliedChanges] = _.partition(result, _.isError)
+
   return {
     errors,
     appliedChanges,

@@ -92,7 +92,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import { CUSTOM_OBJECT, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -351,6 +351,9 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
+    if (this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingReadApi')) {
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT)
+    }
     this.createFiltersRunner = () => filter.filtersRunner(
       {
         client,

@@ -467,7 +467,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
       || e instanceof InvalidTypeConfig
       || e instanceof TimeoutError
       || e instanceof InvalidSingletonType
-      || (e instanceof HTTPError && e.response.status === 403)) {
+      || (e instanceof HTTPError && (e.response.status === 403 || e.response.status === 401))) {
       throw e
     }
     return []
@@ -528,7 +528,7 @@ export const getAllInstances = async ({
           errors: [],
         }
       } catch (e) {
-        if (e.response?.status === 403) {
+        if (e.response?.status === 403 || e.response?.status === 401) {
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',

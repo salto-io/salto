@@ -168,6 +168,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
   private readonly fetchExclude?: QueryParams
   private readonly lockedElements?: QueryParams
   private readonly fetchTarget?: NetsuiteQueryParameters
+  private readonly withPartialDeletion?: boolean
   private readonly skipList?: NetsuiteQueryParameters // old version
   private readonly useChangesDetection: boolean | undefined // TODO remove this from config SALTO-3676
   private createFiltersRunner: (params: {
@@ -203,6 +204,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     this.fetchExclude = config.fetch?.exclude
     this.lockedElements = config.fetch?.lockedElementsToExclude
     this.fetchTarget = getFixedTargetFetch(config.fetchTarget)
+    this.withPartialDeletion = config.withPartialDeletion
     this.skipList = config.skipList // old version
     this.useChangesDetection = config.useChangesDetection
     this.deployReferencedElements = config.deploy?.deployReferencedElements
@@ -320,7 +322,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
-    const deletedElements = !isPartial ? [] : await getDeletedElements({
+    const deletedElements = (!isPartial || this.withPartialDeletion === false) ? [] : await getDeletedElements({
       client: this.client,
       elementsSource: this.elementsSource,
       fetchQuery,
@@ -329,7 +331,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       serviceCustomRecords: customRecords,
       requestedDataTypes,
       serviceDataElements: dataElements.filter(isInstanceElement),
-    }) // TODO: FF
+    })
 
     const elements = [
       ...baseElements,

@@ -18,12 +18,7 @@ import {
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import {
-  filter,
-  logDuration,
-  resolveChangeElement,
-  restoreChangeElement,
-} from '@salto-io/adapter-utils'
+import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -446,10 +441,9 @@ export default class SalesforceAdapter implements AdapterOperations {
         }
       }
       deployResult = await deployCustomObjectInstancesGroup(
-        changeGroup.changes as Change<InstanceElement>[],
+        resolvedChanges as Change<InstanceElement>[],
         this.client,
         changeGroup.groupID,
-        getLookUpName,
         this.fetchProfile.dataManagement,
       )
     } else {

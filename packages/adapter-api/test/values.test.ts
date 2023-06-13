@@ -146,6 +146,12 @@ describe('Values', () => {
   })
 
   describe('StaticFile', () => {
+    describe('constructor', () => {
+      it('should normalize the file path', () => {
+        const SFile = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('ZOMG') })
+        expect(SFile.filepath).toEqual('some/path.ext')
+      })
+    })
     describe('equality (direct)', () => {
       it('equals', () => {
         const fileFunc1 = new StaticFile({ filepath: 'somepath.ext', content: Buffer.from('ZOMG') })
@@ -170,7 +176,7 @@ describe('Values', () => {
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: true })).toEqual(true)
       })
       it('equals with flag false', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: false })).toEqual(true)
       })

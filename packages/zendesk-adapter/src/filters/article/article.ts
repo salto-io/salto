@@ -305,8 +305,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
               (part: ReferenceExpression) => (
                 part.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
                   ? addedArticleAttachments
-                    .find(attachment => attachment.elemID.isEqual(part.elemID))
-                    ?.value.id.toString()
+                    .find(attachment => attachment.elemID.isEqual(part.elemID))?.value.id.toString()
                   : prepRef(part)
               ),
             )

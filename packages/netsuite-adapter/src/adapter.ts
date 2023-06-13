@@ -320,16 +320,16 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
-    const deletedElements = !isPartial ? [] : await getDeletedElements(
-      this.client,
-      this.elementsSource,
+    const deletedElements = !isPartial ? [] : await getDeletedElements({
+      client: this.client,
+      elementsSource: this.elementsSource,
       fetchQuery,
-      instancesIds,
-      customRecords,
-      customRecordTypes,
-      dataElements.filter(isInstanceElement),
-      new Set(requestedDataTypes),
-    )
+      serviceInstanceIds: instancesIds,
+      requestedCustomTypes: customRecordTypes,
+      serviceCustomRecords: customRecords,
+      requestedDataTypes,
+      serviceDataElements: dataElements.filter(isInstanceElement),
+    }) // TODO: FF
 
     const elements = [
       ...baseElements,

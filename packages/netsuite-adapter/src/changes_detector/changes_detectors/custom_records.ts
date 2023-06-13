@@ -15,13 +15,10 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
 import NetsuiteClient from '../../client/client'
 import { NetsuiteQuery } from '../../query'
 import { CUSTOM_RECORD_TYPE } from '../../constants'
 import { ChangedCustomRecord, DateRange } from '../types'
-
-const { isDefined } = lowerDashValues
 
 const log = logger(module)
 
@@ -74,7 +71,7 @@ export const getCustomRecords = async (
 ): Promise<Map<string, Set<string>>> => {
   const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
 
-  const customRecords = (await Promise.all(
+  const customTypeRecords = (await Promise.all(
     customRecordTypesScriptIds
       .filter(customRecordTypesScriptId => !customRecordTypesToIgnore.has(customRecordTypesScriptId))
       .map(async customRecordTypeScriptId => {
@@ -82,12 +79,12 @@ export const getCustomRecords = async (
         )?.filter(hasScriptId).map(({ scriptid }) => (
           scriptid.toLowerCase()
         ))
-        return scriptIds === undefined ? undefined : {
+        return {
           typeId: customRecordTypeScriptId,
           recordIds: new Set(scriptIds),
         }
       })
-  )).filter(isDefined)
+  ))
 
-  return new Map(customRecords.map(item => [item.typeId, item.recordIds]))
+  return new Map(customTypeRecords.map(customType => [customType.typeId, customType.recordIds]))
 }

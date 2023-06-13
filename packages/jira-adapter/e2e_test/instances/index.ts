@@ -117,13 +117,13 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     createWebhookValues(randomString, fetchedElements),
   )
 
-  // const group = new InstanceElement(
-  //   randomString,
-  //   findType('Group', fetchedElements),
-  //   {
-  //     name: randomString,
-  //   },
-  // )
+  const group = new InstanceElement(
+    randomString,
+    findType('Group', fetchedElements),
+    {
+      name: randomString,
+    },
+  )
 
   const status = new InstanceElement(
     randomString.toLowerCase(),
@@ -148,7 +148,7 @@ export const createInstances = (fetchedElements: Element[], isDataCenter: boolea
     [issueLinkType],
     [projectRole],
     [webhook],
-    // [group],
+    [group],
     [status],
   ]
 }

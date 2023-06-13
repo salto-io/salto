@@ -16,15 +16,16 @@
 
 import { filterUtils } from '@salto-io/adapter-components'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from '../../src/constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from '../../src/constants'
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
 import brandThemeFilesFilter from '../../src/filters/brand_theme_files'
+import { FilterResult } from '../../src/filter'
 
 describe('barnd logo filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
-  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
   let filter: FilterType
   const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
   const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
@@ -89,7 +90,7 @@ describe('barnd logo filter', () => {
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
       const logo = instances.find(e => e.elemID.typeName === BRAND_LOGO_TYPE_NAME)
-      const favicon = instances.find(e => e.elemID.typeName === FAVORITE_ICON_TYPE_NAME)
+      const favicon = instances.find(e => e.elemID.typeName === FAV_ICON_TYPE_NAME)
       expect(logo?.value).toEqual({
         id: '111',
         fileName: 'brandLogo.png',
@@ -105,6 +106,26 @@ describe('barnd logo filter', () => {
         content: new StaticFile({
           filepath: 'okta/FavIcon/favicon.ico', encoding: 'binary', content,
         }),
+      })
+    })
+    it('should return fetch errors for broken link', async () => {
+      const clonedBrandThemeInstance = brandThemeInstance.clone()
+      clonedBrandThemeInstance.value.logo = 'https://ok12static.oktacdn.com/bc/image/error'
+      const elements = [brandThemeType, clonedBrandThemeInstance]
+      const res = await filter.onFetch(elements) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0]).toEqual({
+        message: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
+        severity: 'Warning',
+      })
+    })
+    it('should return errors for not finding brandTheme instance', async () => {
+      const elements = [brandThemeType]
+      const res = await filter.onFetch(elements) as FilterResult
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0]).toEqual({
+        message: 'No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
+        severity: 'Warning',
       })
     })
   })

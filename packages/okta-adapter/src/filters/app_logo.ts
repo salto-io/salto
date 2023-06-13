@@ -14,16 +14,16 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, ObjectType, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
+import { Change, InstanceElement, ObjectType, SaltoError, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { createSchemeGuard, naclCase } from '@salto-io/adapter-utils'
-import { elements as elementsUtils } from '@salto-io/adapter-components'
+import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { OktaConfig } from '../config'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
-import { createLogoType, deployLogo, getLogo } from './logo'
+import { createLogoType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
 
 const log = logger(module)
@@ -60,7 +60,7 @@ const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')
   const fileType = contentTypeParts[contentTypeParts.length - 1]
   if (!ALLOWED_LOGO_FILE_TYPES.has(fileType)) {
-    log.debug(`App logo content type ${contentType} is not supported`)
+    log.warn(`App logo content type ${contentType} is not supported`)
     return undefined
   }
   return fileType
@@ -71,20 +71,22 @@ const getAppLogo = async ({ client, app, appLogoType, config }:{
   app: InstanceElement
   appLogoType: ObjectType
   config: OktaConfig
-}): Promise<InstanceElement | undefined> => {
+}): Promise<InstanceElement | Error> => {
   if (!isApp(app.value)) {
-    return undefined
+    return new Error(`App ${app.value.label} is not valid`)
   }
   const appLogo = app.value[LINKS_FIELD].logo[0]
   const logoLink = appLogo.href
-  const idField = config.apiDefinitions.types[APPLICATION_TYPE_NAME]?.transformation?.idFields
-  if (idField === undefined) {
-    return undefined
+  const { idFields } = configUtils.getTypeTransformationConfig(
+    APPLICATION_TYPE_NAME, config.apiDefinitions.types, config.apiDefinitions.typeDefaults
+  )
+  if (idFields === undefined) {
+    return new Error(`Failed to find id fields for ${app.value.label}`)
   }
-  const name = naclCase(getInstanceName(app.value, idField, APP_LOGO_TYPE_NAME))
+  const name = naclCase(getInstanceName(app.value, idFields, APP_LOGO_TYPE_NAME))
   const contentType = getLogoFileType(appLogo.type)
   if (contentType === undefined) {
-    return undefined
+    return new Error(`Failed to find content type for ${app.value.label}`)
   }
   return getLogo({ client, parents: [app], logoType: appLogoType, contentType, logoName: name, link: logoLink })
 }
@@ -99,14 +101,20 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
     const appsWithLogo = elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APPLICATION_TYPE_NAME)
-      .filter(app => app.value[LINKS_FIELD]?.logo !== undefined)
+      .filter(instance => isApp(instance.value))
     const appLogoType = createLogoType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 
-    const appLogoInstances = (await Promise.all(appsWithLogo
+    const allInstances = (await Promise.all(appsWithLogo
       .map(async app => getAppLogo({ client, app, appLogoType, config }))))
-      .filter(isInstanceElement)
+
+    const [errors, appLogoInstances] = _.partition(allInstances, _.isError)
     appLogoInstances.forEach(logo => elements.push(logo))
+    const fetchError: SaltoError[] = errors.map(err => ({
+      message: `Failed to fetch App logo. ${err.message}`,
+      severity: 'Warning',
+    }))
+    return { errors: fetchError }
   },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [appLogoChanges, leftoverChanges] = _.partition(

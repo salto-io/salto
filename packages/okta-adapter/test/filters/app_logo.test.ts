@@ -20,11 +20,12 @@ import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '..
 import OktaClient from '../../src/client/client'
 import { getFilterParams, mockClient } from '../utils'
 import appLogoFilter from '../../src/filters/app_logo'
+import { FilterResult } from '../../src/filter'
 
 describe('app logo filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
-  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
   let filter: FilterType
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
   const appLogoType = new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) })
@@ -90,13 +91,16 @@ describe('app logo filter', () => {
         }),
       })
     })
-    it('should not create AppLogo instance if file type is forbiden', async () => {
-      appInstance.value[LINKS_FIELD].logo[0].type = 'image/svg+xml'
-      const elements = [appType, appInstance].map(e => e.clone())
-      await filter.onFetch(elements)
+    it('should not create AppLogo instance if file type is forbiden and should create error', async () => {
+      const clonedAppInstance = appInstance.clone()
+      clonedAppInstance.value[LINKS_FIELD].logo[0].type = 'image/svg+xml'
+      const elements = [appType, clonedAppInstance]
+      const res = await filter.onFetch(elements) as FilterResult
       const instances = elements.filter(isInstanceElement)
       const logo = instances.find(e => e.elemID.typeName === APP_LOGO_TYPE_NAME)
       expect(logo).toBeUndefined()
+      expect(res.errors).toHaveLength(1)
+      expect(res.errors?.[0].message).toEqual('Failed to fetch App logo. Failed to find content type for app1')
     })
   })
   describe('deploy', () => {

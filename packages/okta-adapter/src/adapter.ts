@@ -47,7 +47,7 @@ import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
 import appLogoFilter from './filters/app_logo'
 import brandThemeFilesFilter from './filters/brand_theme_files'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAVORITE_ICON_TYPE_NAME, OKTA } from './constants'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
 import { getLookUpName } from './reference_mapping'
 
 
@@ -94,7 +94,7 @@ export const DEFAULT_FILTERS = [
 const SKIP_RESOLVE_TYPE_NAMES = [
   APP_LOGO_TYPE_NAME,
   BRAND_LOGO_TYPE_NAME,
-  FAVORITE_ICON_TYPE_NAME,
+  FAV_ICON_TYPE_NAME,
 ]
 
 export interface OktaAdapterParams {

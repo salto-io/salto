@@ -29,8 +29,7 @@ const log = logger(module)
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  // TODO SALTO-2649: add better handling for rate limits
-  get: 2,
+  get: 15,
   deploy: 2,
 }
 const DEFAULT_MAX_REQUESTS_PER_MINUTE = 700
@@ -55,9 +54,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
-        // TODO SALTO-2649: add better handling for rate limits
         maxRequestsPerMinute: DEFAULT_MAX_REQUESTS_PER_MINUTE,
-        // wait for 10s before trying again, change after SALTO-2649
         retry: { ...DEFAULT_RETRY_OPTS, retryDelay: 10000 },
       }
     )

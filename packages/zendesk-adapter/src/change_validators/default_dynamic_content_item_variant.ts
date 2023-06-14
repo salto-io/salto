@@ -61,7 +61,7 @@ export const defaultDynamicContentItemVariantValidator: ChangeValidator = async 
           detailedMessage: `If you change the default setting of this variant to false, there will be no other variant set as the default for the dynamic content item '${dynamicContentItem.elemID.name}'. Please ensure that you select another variant of this dynamic content item as the default`,
         }
     } catch (e) {
-      log.warn(`Failed to get parent of ${variant.elemID.getFullName()}`, e)
+      log.warn(`Failed to get parent of ${variant.elemID.getFullName()} in defaultDynamicContentItemVariantValidator`, e)
       return undefined
     }
   }).filter(isDefined)

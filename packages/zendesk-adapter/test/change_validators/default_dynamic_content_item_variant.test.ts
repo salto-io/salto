@@ -67,14 +67,14 @@ describe('defaultDynamicContentItemVariantValidator', () => {
       {
         elemID: notDefaultVariant.elemID,
         severity: 'Error',
-        message: 'Dynamic content item must have a default variant',
-        detailedMessage: 'This variant was set as default, you must set another variant as default before removing this one',
+        message: 'Parent dynamic content item must have a default variant',
+        detailedMessage: `If you change the default setting of this variant to false, there will be no other variant set as the default for the dynamic content item '${dynamicContentItem.elemID.name}'. Please ensure that you select another variant of this dynamic content item as the default`,
       },
       {
         elemID: defaultVariant.elemID,
         severity: 'Error',
-        message: 'Dynamic content item must have a default variant',
-        detailedMessage: 'This variant was set as default, you must set another variant as default before removing this one',
+        message: 'Parent dynamic content item must have a default variant',
+        detailedMessage: `If you change the default setting of this variant to false, there will be no other variant set as the default for the dynamic content item '${dynamicContentItem.elemID.name}'. Please ensure that you select another variant of this dynamic content item as the default`,
       },
     ])
   })

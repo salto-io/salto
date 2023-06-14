@@ -47,6 +47,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
+export const ATTACHMENTS_FIELD_NAME = 'attachments'
 
 type Attachment = InstanceElement & {
   value: {

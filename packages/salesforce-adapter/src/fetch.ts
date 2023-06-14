@@ -332,6 +332,7 @@ type RetrieveMetadataInstancesArgs = {
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
   addNamespacePrefixToFullName: boolean
+  typesToSkip: ReadonlySet<string>
 }
 
 export const retrieveMetadataInstances = async ({
@@ -340,6 +341,7 @@ export const retrieveMetadataInstances = async ({
   maxItemsInRetrieveRequest,
   metadataQuery,
   addNamespacePrefixToFullName,
+  typesToSkip,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -433,39 +435,6 @@ export const retrieveMetadataInstances = async ({
     ))
   }
 
-  const retrieveProfilesWithContextTypes = async (
-    profileFileProps: FileProperties[],
-    contextFileProps: FileProperties[],
-  ): Promise<{ profiles: InstanceElement[]; contextInstances: InstanceElement[] }> => {
-    const allInstances = await Promise.all(
-      _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
-        .filter(filesChunk => filesChunk.length > 0)
-        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
-    )
-    const profileInstances = _(allInstances)
-      .flatten()
-      .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
-      .groupBy(instance => instance.value.fullName)
-      .mapValues(mergeProfileInstances)
-      .value()
-
-    const contextInstances = _.flatten(allInstances)
-      .filter(instance => instance.elemID.typeName !== PROFILE_METADATA_TYPE)
-
-    return {
-      profiles: Object.values(profileInstances),
-      contextInstances,
-    }
-  }
-
-  const filesToRetrieve = _.flatten(await Promise.all(
-    types
-      // We get folders as part of getting the records inside them
-      .filter(type => type.annotations.folderContentType === undefined)
-      .map(listFilesOfType)
-  )).filter(props => notInSkipList(metadataQuery, props, false))
-
-  log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const categorizeFiles = (fileProperties: FileProperties[]): {
     profile: FileProperties[]
@@ -506,48 +475,42 @@ export const retrieveMetadataInstances = async ({
     }
   }
 
-
-  const retrieveProfilesAndContext = async (
-    profileFiles: FileProperties[],
-    contextFiles: FileProperties[],
+  const retrieveProfilesWithContextTypes = async (
+    profileFileProps: ReadonlyArray<FileProperties>,
+    contextFileProps: ReadonlyArray<FileProperties>,
   ): Promise<Array<InstanceElement>> => {
-    let allProfilesFetched = false
-    let chunkSize = profileFiles.length
-    let profileInstances: InstanceElement[] = []
-    let contextInstances: InstanceElement[] = []
-    while (!allProfilesFetched) {
-      try {
-        log.debug('Fetching %d profiles', chunkSize)
-        // we're not calling await per element, but as a retry mechanism
-        // eslint-disable-next-line no-await-in-loop
-        const instancesToAdd = await Promise.all(
-          _(profileFiles)
-            .chunk(chunkSize)
-            .map(profilesChunk => retrieveProfilesWithContextTypes(profilesChunk, contextFiles))
-            .value(),
-        )
-        if (contextInstances.length === 0) {
-          // We fetch the same context instances along with every chunk of profiles, so it doesn't matter which retrieve
-          // result we use.
-          contextInstances = instancesToAdd[0].contextInstances
-        }
-        profileInstances = profileInstances.concat(_.flatten(instancesToAdd.map(chunk => chunk.profiles)))
-        allProfilesFetched = true
-      } catch (e) {
-        if (chunkSize <= 1) {
-          log.error('Unable to fetch profiles - a single profile is too large to fetch')
-          break
-        }
-        chunkSize /= 2
-        log.debug('Failed to fetch profiles. Reduced chunk size to %d', chunkSize)
-      }
-    }
-    return contextInstances.concat(profileInstances)
+    const allInstances = await Promise.all(
+      _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
+        .filter(filesChunk => filesChunk.length > 0)
+        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
+    )
+
+    const [partialProfileInstances, contextInstances] = _(allInstances)
+      .flatten()
+      .partition(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .value()
+
+    const profileInstances = _(partialProfileInstances)
+      .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .groupBy(instance => instance.value.fullName)
+      .mapValues(mergeProfileInstances)
+      .value()
+
+    return contextInstances.concat(Object.values(profileInstances))
   }
+
+  const filesToRetrieve = _.flatten(await Promise.all(
+    types
+      // We get folders as part of getting the records inside them
+      .filter(type => type.annotations.folderContentType === undefined)
+      .map(listFilesOfType)
+  )).filter(props => notInSkipList(metadataQuery, props, false))
+
+  log.info('going to retrieve %d files', filesToRetrieve.length)
 
   const categorizedFileProps = categorizeFiles(filesToRetrieve)
 
-  const profileAndContextInstances = await retrieveProfilesAndContext(categorizedFileProps.profile,
+  const profileAndContextInstances = await retrieveProfilesWithContextTypes(categorizedFileProps.profile,
     categorizedFileProps.profileContext)
 
   const otherInstancesChunks = await Promise.all(
@@ -556,8 +519,12 @@ export const retrieveMetadataInstances = async ({
       .map(filesChunk => retrieveInstances(filesChunk))
   )
 
+  const allInstances = profileAndContextInstances
+    .concat(_.flatten(otherInstancesChunks))
+    .filter(instance => !typesToSkip.has(instance.elemID.typeName))
+
   return {
-    elements: profileAndContextInstances.concat(_.flatten(otherInstancesChunks)),
+    elements: allInstances,
     configChanges,
   }
 }

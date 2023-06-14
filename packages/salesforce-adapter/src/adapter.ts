@@ -566,6 +566,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+        typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
     ])

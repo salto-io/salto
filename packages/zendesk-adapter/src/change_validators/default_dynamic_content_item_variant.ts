@@ -18,11 +18,11 @@ import {
   ChangeValidator,
   getChangeData,
   isInstanceChange, isModificationChange,
-  isReferenceExpression, isRemovalOrModificationChange,
+  isRemovalOrModificationChange,
   ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
-import { getParent } from '@salto-io/adapter-utils'
+import { getParent, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DYNAMIC_CONTENT_ITEM_VARIANT_TYPE_NAME } from '../filters/dynamic_content'
 
@@ -51,7 +51,7 @@ export const defaultDynamicContentItemVariantValidator: ChangeValidator = async 
     const variant = getChangeData(change)
     try {
       const dynamicContentItem = getParent(variant)
-      return dynamicContentItem.value.variants.filter(isReferenceExpression)
+      return dynamicContentItem.value.variants.filter(isResolvedReferenceExpression)
         .some((variantRef: ReferenceExpression) => variantRef.value.value.default === true)
         ? undefined
         : {

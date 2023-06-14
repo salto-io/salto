@@ -26,7 +26,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType,
+  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -1163,3 +1163,11 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
 
   return [...reasons.map(formatReason)].join(os.EOL)
 }
+
+/* Checks for references expression with undefined value or for unresolved references
+* during fetch and deploy. In fetch this can happen when the reference is set to be missing reference.
+* In deploy this can happen when the reference is assigned as unresolved reference.
+*/
+export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression => (
+  isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
+)

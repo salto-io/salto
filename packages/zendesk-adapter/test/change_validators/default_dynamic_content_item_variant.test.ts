@@ -56,7 +56,7 @@ describe('defaultDynamicContentItemVariantValidator', () => {
   beforeEach(() => {
     dynamicContentItem.value.variants = []
   })
-  it('should error when the default variant was removed without a new one', async () => {
+  it('should error when the default variant was removed or unset without a new one', async () => {
     const changes = [
       toChange({ before: defaultVariant, after: notDefaultVariant }),
       toChange({ before: defaultVariant }),

@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import path from 'path'
 import { inspect } from 'util'
 import { hash as hashUtils } from '@salto-io/lowerdash'
 // import { ElementsSource } from '@salto-io/workspace'
@@ -33,7 +32,7 @@ export interface Values {
 }
 
 export type CompareOptions = {
-  compareByValue?: boolean
+  compareReferencesByValue?: boolean
 }
 
 export const calculateStaticFileHash = (content: Buffer): string =>
@@ -58,7 +57,7 @@ export class StaticFile {
   public readonly encoding: BufferEncoding
   private internalContent?: Buffer
   constructor(params: StaticFileParameters) {
-    this.filepath = path.normalize(params.filepath)
+    this.filepath = params.filepath
     this.encoding = params.encoding ?? DEFAULT_STATIC_FILE_ENCODING
     if (!Buffer.isEncoding(this.encoding)) {
       throw Error(`Cannot create StaticFile at path - ${this.filepath} due to invalid encoding - ${this.encoding}`)
@@ -251,7 +250,7 @@ const shouldCompareByValue = (
   first: Value,
   second: Value,
   options?: CompareOptions,
-): boolean => Boolean(options?.compareByValue)
+): boolean => Boolean(options?.compareReferencesByValue)
   && shouldResolve(first)
   && shouldResolve(second)
 
@@ -262,9 +261,6 @@ export const compareSpecialValues = (
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
     return first.isEqual(second)
-      && (options?.compareByValue
-        ? true
-        : first.filepath === second.filepath)
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
     if (shouldCompareByValue(first, second, options)) {

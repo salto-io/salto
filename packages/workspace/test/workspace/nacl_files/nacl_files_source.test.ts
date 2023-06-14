@@ -405,7 +405,6 @@ describe('Nacl Files Source', () => {
   describe('removing static files', () => {
     const elemID = new ElemID('salesforce', 'new_elem')
     const filepath = 'to/the/superbowl'
-    const afterFilePath = 'to/the/superbowl2'
     const sfile = new StaticFile({ filepath, hash: 'XI' })
     let src: NaclFilesSource
     beforeEach(async () => {
@@ -427,36 +426,6 @@ describe('Nacl Files Source', () => {
       } as DetailedChange
       await src.updateNaclFiles([change])
       expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
-    })
-    it('should delete before file when path is changed', async () => {
-      const change = {
-        id: elemID,
-        action: 'modify',
-        data: { before: sfile, after: new StaticFile({ filepath: afterFilePath, hash: 'XI' }) },
-        path: ['new', 'file'],
-      } as DetailedChange
-      await src.updateNaclFiles([change])
-      expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
-    })
-    it('should delete before file when it is no longer a static file', async () => {
-      const change = {
-        id: elemID,
-        action: 'modify',
-        data: { before: sfile, after: '' },
-        path: ['new', 'file'],
-      } as DetailedChange
-      await src.updateNaclFiles([change])
-      expect(mockedStaticFilesSource.delete).toHaveBeenCalledWith(sfile)
-    })
-    it('should not delete static file if the change is only in content and not in path', async () => {
-      const change = {
-        id: elemID,
-        action: 'modify',
-        data: { before: sfile, after: new StaticFile({ filepath, hash: 'XII' }) },
-        path: ['new', 'file'],
-      } as DetailedChange
-      await src.updateNaclFiles([change])
-      expect(mockedStaticFilesSource.delete).toHaveBeenCalledTimes(0)
     })
   })
 

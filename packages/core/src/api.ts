@@ -130,7 +130,7 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
-    compareOptions: { compareByValue: true },
+    compareOptions: { compareReferencesByValue: true },
   })
 }
 

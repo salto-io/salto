@@ -148,7 +148,7 @@ describe('Values', () => {
   describe('StaticFile', () => {
     describe('equality (direct)', () => {
       it('equals', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'somepath.ext', content: Buffer.from('ZOMG') })
+        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         expect(fileFunc1.isEqual(fileFunc2)).toEqual(true)
       })
@@ -159,26 +159,6 @@ describe('Values', () => {
       })
     })
     describe('equality (via isEqualValues)', () => {
-      it('unequals by path with flag false', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: false })).toEqual(false)
-      })
-      it('unequals by path with flag true', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.txt', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: true })).toEqual(true)
-      })
-      it('equals with flag false', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some//path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: false })).toEqual(true)
-      })
-      it('equals with flag true', () => {
-        const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
-        expect(isEqualValues(fileFunc1, fileFunc2, { compareByValue: true })).toEqual(true)
-      })
       it('equals by hash', () => {
         const fileFunc1 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
         const fileFunc2 = new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') })
@@ -204,19 +184,19 @@ describe('Values', () => {
       it('References to inner properties with the same should not be equal when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 2)
-        expect(isEqualValues(ref1, ref2, { compareByValue: true })).toBeFalsy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeFalsy()
       })
 
       it('References to inner properties with the same should not be equal', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        expect(isEqualValues(ref1, ref2, { compareByValue: true })).toBeTruthy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeTruthy()
       })
 
       it('References to different inner properties with the same value should be equal', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         const ref2 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val2'), 1)
-        expect(isEqualValues(ref1, ref2, { compareByValue: true })).toBeTruthy()
+        expect(isEqualValues(ref1, ref2, { compareReferencesByValue: true })).toBeTruthy()
       })
 
       it('Reference should not be equal to its resolved value by default', () => {
@@ -226,7 +206,7 @@ describe('Values', () => {
 
       it('Reference should not be equal to its resolved value when compareReferencesByValue is true', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
-        expect(isEqualValues(ref1, 1, { compareByValue: true })).toBeTruthy()
+        expect(isEqualValues(ref1, 1, { compareReferencesByValue: true })).toBeTruthy()
       })
     })
     it('calculate hash', () => {

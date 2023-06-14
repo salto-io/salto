@@ -828,18 +828,6 @@ const buildNaclFilesSource = (
         .map(getNestedStaticFiles)
         .flat()
         .forEach(file => staticFilesSource.delete(file))
-
-      fileChanges
-        .filter(isModificationChange)
-        .filter(change => isStaticFile(change.data.before))
-        .filter(change => (
-          (isStaticFile(change.data.after) && change.data.before.filepath !== change.data.after.filepath)
-          || !isStaticFile(change.data.after)
-        ))
-        .map(change => change.data.before)
-        .map(getNestedStaticFiles)
-        .flat()
-        .forEach(file => staticFilesSource.delete(file))
     }
 
     const changesByFileName = await groupChangesByFilename(changes)

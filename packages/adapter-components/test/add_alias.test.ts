@@ -13,16 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   CORE_ANNOTATIONS,
   ElemID,
   InstanceElement,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
-import { addAliasToInstance, AliasData } from '../src/add_alias'
+import { addAliasToElements, AliasData } from '../src/add_alias'
 
+const groupByTypeName = (instances: InstanceElement[]): Record<string, InstanceElement[]> =>
+  _.groupBy(instances, instance => instance.elemID.typeName)
 
-describe('addAliasToInstance', () => {
+describe('addAliasToElements', () => {
   const appInstallationTypeName = 'app_installation'
   const dynamicContentItemTypeName = 'dynamic_content_item'
   const dynamicContentItemVariantsTypeName = 'dynamic_content_item__variants'
@@ -31,7 +34,7 @@ describe('addAliasToInstance', () => {
   const categoryOrderTypeName = 'category_order'
   const categoryTranslationTypeName = 'category_translation'
   const ZENDESK = 'zendesk'
-  const secondIterationTypeNames = [
+  const secondIterationGroupNames = [
     dynamicContentItemVariantsTypeName,
     categoryOrderTypeName,
     categoryTranslationTypeName,
@@ -192,10 +195,10 @@ describe('addAliasToInstance', () => {
       categoryTranslationInstance,
       categoryTranslationInstanceInvalid,
     ]
-    addAliasToInstance({
-      instances: elements,
+    addAliasToElements({
+      elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationTypeNames,
+      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([
       'app installation name',
@@ -218,10 +221,10 @@ describe('addAliasToInstance', () => {
     const elements = [
       appInstallationInstanceInvalid,
     ]
-    addAliasToInstance({
-      instances: elements,
+    addAliasToElements({
+      elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationTypeNames,
+      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -237,10 +240,10 @@ describe('addAliasToInstance', () => {
     const elements = [
       categoryTranslationInstance,
     ]
-    addAliasToInstance({
-      instances: elements,
+    addAliasToElements({
+      elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationTypeNames,
+      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -259,10 +262,10 @@ describe('addAliasToInstance', () => {
     const elements = [
       categoryTranslationInstance,
     ]
-    addAliasToInstance({
-      instances: elements,
+    addAliasToElements({
+      elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationTypeNames,
+      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
   })
@@ -277,11 +280,37 @@ describe('addAliasToInstance', () => {
     const elements = [
       dynamicContentItemInstance,
     ]
-    addAliasToInstance({
-      instances: elements,
+    addAliasToElements({
+      elementsMap: groupByTypeName(elements),
       aliasMap,
-      secondIterationTypeNames,
+      secondIterationGroupNames,
     })
     expect(elements.map(e => e.annotations[CORE_ANNOTATIONS.ALIAS])).toEqual([undefined])
+  })
+  it('should add alias to object type', () => {
+    const customRecordType = new ObjectType({
+      elemID: new ElemID('netsuite', 'customrecord_123'),
+      annotations: {
+        name: 'Custom Record 123',
+      },
+    })
+    const elementsMap = {
+      customrecordtype: [
+        customRecordType,
+      ],
+    }
+    const aliasMapWithType = {
+      customrecordtype: {
+        aliasComponents: [
+          {
+            fieldName: 'name',
+          },
+        ],
+      },
+    }
+    addAliasToElements({
+      elementsMap,
+      aliasMap: aliasMapWithType,
+    })
   })
 })

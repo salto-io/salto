@@ -13,7 +13,14 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import {
+  Element,
+  ElemID,
+  InstanceElement,
+  isReferenceExpression,
+  ObjectType,
+  ReferenceExpression,
+} from '@salto-io/adapter-api'
 import { naclCase } from '@salto-io/adapter-utils'
 
 export const MISSING_ANNOTATION = 'salto_missing_ref'
@@ -34,4 +41,10 @@ export const createMissingInstance = (
     undefined,
     { [MISSING_ANNOTATION]: true },
   )
+)
+
+/** Check if a value is a reference expression that is not missing reference */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isPresentReferenceExpression = (value: any): value is ReferenceExpression => (
+  isReferenceExpression(value) && checkMissingRef(value.value)
 )

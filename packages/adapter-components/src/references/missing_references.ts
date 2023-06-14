@@ -46,5 +46,5 @@ export const createMissingInstance = (
 /** Check if a value is a reference expression that is not missing reference */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isPresentReferenceExpression = (value: any): value is ReferenceExpression => (
-  isReferenceExpression(value) && checkMissingRef(value.value)
+  isReferenceExpression(value) && value.value !== undefined
 )

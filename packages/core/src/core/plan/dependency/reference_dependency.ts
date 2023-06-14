@@ -42,7 +42,7 @@ const isReferenceValueChanged = (change: Change<ChangeDataType>, refElemId: Elem
   return !isEqualValues(
     resolvePath(beforeTopLevel, refElemId),
     resolvePath(afterTopLevel, refElemId),
-    { compareByValue: true }
+    { compareReferencesByValue: true }
   )
 }
 

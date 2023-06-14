@@ -20,7 +20,8 @@ import {
   isListType, ListType, BuiltinTypes, StaticFile, isPrimitiveType,
   Element, isReferenceExpression, isPrimitiveValue, CORE_ANNOTATIONS, FieldMap, AdditionChange,
   RemovalChange, ModificationChange, isInstanceElement, isObjectType, MapType, isMapType,
-  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData, PlaceholderObjectType,
+  ContainerType, TypeReference, createRefToElmWithValue, VariableExpression, getChangeData,
+  PlaceholderObjectType, UnresolvedReference,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
@@ -2547,6 +2548,10 @@ describe('Test utils.ts', () => {
     const inst = new InstanceElement('inst', new ObjectType({ elemID: new ElemID('test', 'type') }))
     it('should return false for a reference expression with undefind value', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID))).toBeFalsy()
+    })
+    it('should return false for a reference with uresolvedReference as value', () => {
+      expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, new UnresolvedReference(inst.elemID))))
+        .toBeFalsy()
     })
     it('should return true for a resolved reference expression', () => {
       expect(isResolvedReferenceExpression(new ReferenceExpression(inst.elemID, inst))).toBeTruthy()

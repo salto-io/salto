@@ -65,7 +65,7 @@ import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_E
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
 import { getLastServerTime, getOrCreateServerTimeElements, getLastServiceIdToFetchTime } from './server_time'
 import { getChangedObjects } from './changes_detector/changes_detector'
-import { getDeletedElements } from './deletion_calculator'
+import { FetchDeletionResult, getDeletedElements } from './deletion_calculator'
 import NetsuiteClient from './client/client'
 import { createDateRange, getTimeDateFormat, TimeZoneAndFormat } from './changes_detector/date_formats'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
@@ -322,16 +322,17 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
     // we calculate deleted elements only in partial-fetch mode
-    const deletedElements = (!isPartial || this.withPartialDeletion === false) ? [] : await getDeletedElements({
-      client: this.client,
-      elementsSource: this.elementsSource,
-      fetchQuery,
-      serviceInstanceIds: instancesIds,
-      requestedCustomRecordTypes: customRecordTypes,
-      serviceCustomRecords: customRecords,
-      requestedDataTypes,
-      serviceDataElements: dataElements.filter(isInstanceElement),
-    })
+    const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
+      !isPartial || this.withPartialDeletion === false) ? {} : await getDeletedElements({
+        client: this.client,
+        elementsSource: this.elementsSource,
+        fetchQuery,
+        serviceInstanceIds: instancesIds,
+        requestedCustomRecordTypes: customRecordTypes,
+        serviceCustomRecords: customRecords,
+        requestedDataTypes,
+        serviceDataElements: dataElements.filter(isInstanceElement),
+      })
 
     const elements = [
       ...baseElements,
@@ -354,6 +355,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       },
       elements,
       deletedElements,
+      deletedElementErrors,
     }
   }
 
@@ -399,7 +401,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     })
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const { failures, elements, deletedElements } = await this.fetchByQuery(
+    const { failures, elements, deletedElements, deletedElementErrors } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
@@ -409,9 +411,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, deletedElements, isPartial }
+      return { elements, deletedElements, isPartial, errors: deletedElementErrors }
     }
-    return { elements, deletedElements, updatedConfig, isPartial }
+    return { elements, deletedElements, updatedConfig, isPartial, errors: deletedElementErrors }
   }
 
   private async runSuiteAppOperations(

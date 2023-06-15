@@ -44,6 +44,7 @@ import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { Graph, GraphNode } from '../src/client/graph_utils'
 import { getDataElements } from '../src/data_elements/data_elements'
+import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -1199,7 +1200,7 @@ describe('Adapter', () => {
       })
 
       getDeletedElementsMock.mockReset()
-      getDeletedElementsMock.mockResolvedValue([])
+      getDeletedElementsMock.mockResolvedValue({})
 
       getSystemInformationMock.mockReset()
       getSystemInformationMock.mockResolvedValue({
@@ -1415,18 +1416,37 @@ describe('Adapter', () => {
       })
     })
 
-    describe('getDeletedElements', () => {
+    describe('call getDeletedElements and process result', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
       let elemId: ElemID
       beforeEach(() => {
         elemId = new ElemID(NETSUITE, ROLE)
         getDeletedElementsMock.mockReset()
-        getDeletedElementsMock.mockResolvedValue([elemId])
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
       })
 
       it('check call getDeletedElements and verify return value', async () => {
         const { deletedElements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getDeletedElementsMock).toHaveBeenCalled()
         expect(deletedElements).toEqual([elemId])
+        expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
+      })
+    })
+
+    describe('do not call getDeletedElements on full fetch', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts })
+        expect(getDeletedElementsMock).not.toHaveBeenCalled()
+        expect(deletedElements).toEqual(undefined)
+        expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
       })
     })
   })

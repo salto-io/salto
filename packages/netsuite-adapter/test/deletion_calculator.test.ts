@@ -59,9 +59,9 @@ describe('deletion calculator', () => {
     it('should return nothing when current env is empty', async () => {
       const elementsSource = buildElementsSourceFromElements([])
 
-      const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
+      const { deletedElements } = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
 
-      expect(res).toHaveLength(0)
+      expect(deletedElements).toHaveLength(0)
     })
 
     describe('elements in current env', () => {
@@ -99,16 +99,20 @@ describe('deletion calculator', () => {
           isObjectMatch: () => true,
         } as unknown as NetsuiteQuery
 
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, fetchQuery: thinFetchQuery })
+        const { deletedElements } = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          fetchQuery: thinFetchQuery,
+        })
 
-        expect(res).toHaveLength(0)
+        expect(deletedElements).toEqual(undefined)
       })
 
       it('should return all current elements when service return nothing (all deleted)', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
+        const { deletedElements } = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
 
-        expect(res).toHaveLength(5)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(5)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(customRecordType2.elemID.getFullName())
@@ -117,10 +121,14 @@ describe('deletion calculator', () => {
       })
 
       it('should not return current data elements that is not part of the requested data type', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: [] })
+        const { deletedElements } = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          requestedDataTypes: [],
+        })
 
-        expect(res).toHaveLength(4)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(4)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(customRecordType2.elemID.getFullName())
@@ -128,10 +136,14 @@ describe('deletion calculator', () => {
       })
 
       it('should not return current data element that still exists in service', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, serviceDataElements: [dataElement] })
+        const { deletedElements } = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          serviceDataElements: [dataElement],
+        })
 
-        expect(res).toHaveLength(4)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(4)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(customRecordType2.elemID.getFullName())
@@ -139,14 +151,14 @@ describe('deletion calculator', () => {
       })
 
       it('should not return current standard instance that still exists in service', async () => {
-        const res = await getDeletedElements({
+        const { deletedElements } = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,
           serviceInstanceIds: [{ type: stdInstance.elemID.typeName, instanceId: stdInstance.value[SCRIPT_ID] }],
         })
 
-        expect(res).toHaveLength(4)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(4)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(customRecordType2.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
@@ -154,7 +166,7 @@ describe('deletion calculator', () => {
       })
 
       it('should not return current custom record that were returned by the service in the fetch flow', async () => {
-        const res = await getDeletedElements({
+        const { deletedElements } = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,
           serviceCustomRecords: [customRecord],
@@ -163,15 +175,15 @@ describe('deletion calculator', () => {
         })
 
         expect(mockRunSuiteQL).toHaveBeenCalledTimes(2)
-        expect(res).toHaveLength(3)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(3)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
       })
 
       it('should not query SuiteQL for a type that was already requested', async () => {
-        const res = await getDeletedElements({
+        const { deletedElements } = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,
           requestedCustomRecordTypes: [customRecordType1, customRecordType2],
@@ -180,8 +192,8 @@ describe('deletion calculator', () => {
         })
 
         expect(mockRunSuiteQL).toHaveBeenCalledTimes(1)
-        expect(res).toHaveLength(3)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(3)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
@@ -195,15 +207,15 @@ describe('deletion calculator', () => {
         mockRunSuiteQL.mockResolvedValueOnce([
           { scriptid: 'custom_record_script_id' },
         ])
-        const res = await getDeletedElements({
+        const { deletedElements } = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,
           serviceInstanceIds: [{ type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName }],
         })
 
         expect(mockRunSuiteQL).toHaveBeenCalledTimes(2)
-        expect(res).toHaveLength(3)
-        const resNames = res.map(item => item.getFullName())
+        expect(deletedElements).toHaveLength(3)
+        const resNames = deletedElements?.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
         expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())

@@ -82,7 +82,7 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
-const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements?: ElemID[]):
+const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements: ElemID[]):
   Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
@@ -159,7 +159,7 @@ export const createElementsSourceIndex = (
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial, deletedElements), 'createIndexes')
+        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial, deletedElements ?? []), 'createIndexes')
       }
       return cachedIndex
     },

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange, ChangeDataType, ElemID } from '@salto-io/adapter-api'
+import { ProgressReporter, ChangeError, Change, isInstanceElement, isEqualElements, getChangeData, ModificationChange, isRemovalChange, isModificationChange, isAdditionChange, AdditionChange, RemovalChange, isField, InstanceElement, toChange, isFieldChange, ChangeDataType, ElemID, SaltoError } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import { buildNetsuiteQuery, convertToQueryParams, NetsuiteQuery, NetsuiteQueryParameters } from '../query'
 import { isStandardInstanceOrCustomRecordType, isFileCabinetInstance } from '../types'
@@ -32,7 +32,8 @@ export type FetchByQueryFailures = {
 
 export type FetchByQueryReturnType = {
   elements: ChangeDataType[]
-  deletedElements: ElemID[]
+  deletedElements?: ElemID[]
+  deletedElementErrors?: SaltoError[]
   failures: FetchByQueryFailures
 }
 

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource, SaltoError, isInstanceElement, isObjectType } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
@@ -205,7 +205,7 @@ const getCurrentElements = async (
           }
         }
       } else if (isObjectType(element) && isCustomRecordType(element)) {
-        if (fetchQuery.isCustomRecordTypeMatch(element.elemID.typeName)) {
+        if (fetchQuery.isObjectMatch({ type: CUSTOM_RECORD_TYPE, instanceId: element.annotations[SCRIPT_ID] })) {
           currentCustomRecordTypes.push({ elemID: element.elemID, serviceID: getServiceId(element) })
         }
       }
@@ -217,6 +217,11 @@ const getCurrentElements = async (
     currentCustomRecordTypes,
     currentDataElements,
   }
+}
+
+export type FetchDeletionResult = {
+  deletedElements?: ElemID[]
+  errors?: SaltoError[]
 }
 
 export const getDeletedElements = async ({
@@ -237,7 +242,7 @@ export const getDeletedElements = async ({
   serviceCustomRecords: InstanceElement[]
   requestedDataTypes: string[]
   serviceDataElements: InstanceElement[]
-}): Promise<ElemID[]> => {
+}): Promise<FetchDeletionResult> => {
   try {
     const {
       currentStandardInstances,
@@ -270,9 +275,10 @@ export const getDeletedElements = async ({
       serviceDataElements,
     )
 
-    return deletedInstances.concat(deletedDataElements).concat(await deletedCustomRecords)
+    return { deletedElements: deletedInstances.concat(deletedDataElements).concat(await deletedCustomRecords) }
   } catch (e) {
-    log.error(`Failed calculating deleted element: ${e}, stack: ${e.stack}`)
-    return []
+    const errorMessage = 'Failed calculating deleted element'
+    log.error(`${errorMessage}: %o`, e)
+    return { errors: [{ message: errorMessage, severity: 'Error' }] }
   }
 }

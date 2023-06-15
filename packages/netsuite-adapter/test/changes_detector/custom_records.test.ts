@@ -85,7 +85,6 @@ describe('custom records', () => {
   })
 
   describe('get custom records', () => {
-
     beforeEach(() => {
       runSuiteQLMock.mockReset()
     })

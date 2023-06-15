@@ -18,7 +18,7 @@ import Joi from 'joi'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
-import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues } from '@salto-io/adapter-utils'
+import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { collections } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
@@ -57,6 +57,10 @@ type CompareFieldValueObject = {
   }
 }
 
+type RuleScope = {
+  resources: string[]
+}
+
 const LINK_TYPE_SCHEME = Joi.object({
   linkType: Joi.string().required(),
   linkTypeDirection: Joi.string().required(),
@@ -75,6 +79,10 @@ const COMPARE_FIELD_VALUE_SCHEME = Joi.object({
   }).unknown(true).required(),
 }).unknown(true).required()
 
+const RULE_SCOPE_SCHEME = Joi.object({
+  resources: Joi.array().items(Joi.string()).required(),
+}).unknown(true).required()
+
 const isLinkTypeObject = (value: unknown): value is LinkTypeObject => {
   const { error } = LINK_TYPE_SCHEME.validate(value)
   return error === undefined
@@ -90,6 +98,8 @@ const isCompareFieldValueObject = (value: unknown): value is CompareFieldValueOb
   return error === undefined
 }
 
+const isRuleScope = createSchemeGuard<RuleScope>(RULE_SCOPE_SCHEME, 'Wrong rule scope')
+
 const KEYS_TO_REMOVE = [
   'clientKey',
   'updated',
@@ -97,6 +107,19 @@ const KEYS_TO_REMOVE = [
   'ruleScope',
   'conditionParentId',
 ]
+
+const PROJECT_SCOPE_REGEX = /ari:cloud:jira:.+:project\/(.+)/
+const PROJECT_TYPE_SCOPE_REGEX = /ari:cloud:(jira-.+)::site\/.+/
+const GLOBAL_SCOPE_REGEX = /ari:cloud:jira::site\/.+/
+
+export const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
+  software: 'jira-software',
+  service_desk: 'jira-servicedesk',
+  business: 'jira-core',
+}
+
+const findKeyInRecordObject = (obj: Record<string, string>, value: string): string | undefined =>
+  Object.entries(obj).find(([_key, val]) => val === value)?.[0]
 
 const removeRedundantKeys = async (instance: InstanceElement): Promise<void> => {
   instance.value = (await transformElement({
@@ -265,7 +288,31 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
   })).value
 }
 
-const filter: FilterCreator = () => {
+const isOldFormatScope = (projects: Values): boolean =>
+  Array.isArray(projects) && projects.length > 0
+
+const convertRuleScopeToProjects = (instance: InstanceElement): void => {
+  const { ruleScope } = instance.value
+  if (!isRuleScope(ruleScope) || isOldFormatScope(instance.value.projects)) {
+    return
+  }
+  instance.value.projects = []
+  ruleScope.resources.forEach((resource: string) => {
+    if (resource.match(PROJECT_SCOPE_REGEX)) {
+      instance.value.projects.push({ projectId: resource.match(PROJECT_SCOPE_REGEX)?.[1] })
+    } else if (resource.match(PROJECT_TYPE_SCOPE_REGEX)) {
+      const projectTypeKey = findKeyInRecordObject(PROJECT_TYPE_TO_RESOURCE_TYPE, resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1] ?? '')
+      if (projectTypeKey === undefined) {
+        log.error(`Failed to convert automation project type: ${resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1]}`)
+      }
+      instance.value.projects.push({ projectTypeKey })
+    } else if (!resource.match(GLOBAL_SCOPE_REGEX)) {
+      log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
+    }
+  })
+}
+
+const filter: FilterCreator = ({ client }) => {
   let originalAutomationChanges: Record<string, Change<InstanceElement>>
   return {
     name: 'automationStructureFilter',
@@ -279,6 +326,9 @@ const filter: FilterCreator = () => {
             await instance.getType(),
             true,
           )
+          if (!client.isDataCenter) {
+            convertRuleScopeToProjects(instance)
+          }
           await removeRedundantKeys(instance)
           await removeInnerIds(instance)
           await replaceStringValuesFieldName(instance)

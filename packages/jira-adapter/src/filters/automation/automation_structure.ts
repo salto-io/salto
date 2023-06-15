@@ -20,13 +20,14 @@ import { InstanceElement, isInstanceElement, Values, getChangeData,
   Change, isInstanceChange } from '@salto-io/adapter-api'
 import { transformElement, applyFunctionToChangeData, resolveValues, restoreChangeElement, safeJsonStringify, restoreValues, createSchemeGuard } from '@salto-io/adapter-utils'
 import { elements as elementUtils } from '@salto-io/adapter-components'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { AUTOMATION_TYPE, AUTOMATION_COMPONENT_TYPE, AUTOMATION_COMPONENT_VALUE_TYPE, AUTOMATION_OPERATION } from '../../constants'
 import { FilterCreator } from '../../filter'
 import { getLookUpName } from '../../reference_mapping'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+const { isDefined } = lowerDashValues
 
 type LinkTypeObject = {
   linkType: string
@@ -288,28 +289,31 @@ const revertCompareFieldValueStructure = async (instance: InstanceElement): Prom
   })).value
 }
 
-const isOldFormatScope = (projects: Values): boolean =>
-  Array.isArray(projects) && projects.length > 0
+const getScope = (resource: string): { projectId?: string; projectTypeKey?: string } | undefined => {
+  const projectScope = resource.match(PROJECT_SCOPE_REGEX)
+  if (projectScope) {
+    return { projectId: projectScope[1] }
+  }
+  const projectTypeScope = resource.match(PROJECT_TYPE_SCOPE_REGEX)
+  if (projectTypeScope) {
+    const projectTypeKey = findKeyInRecordObject(PROJECT_TYPE_TO_RESOURCE_TYPE, projectTypeScope[1])
+    if (projectTypeKey === undefined) {
+      log.error(`Failed to convert automation project type: ${resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1]}`)
+    }
+    return { projectTypeKey }
+  }
+  if (!resource.match(GLOBAL_SCOPE_REGEX)) {
+    log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
+  }
+  return undefined
+}
 
 const convertRuleScopeToProjects = (instance: InstanceElement): void => {
   const { ruleScope } = instance.value
-  if (!isRuleScope(ruleScope) || isOldFormatScope(instance.value.projects)) {
+  if (!isRuleScope(ruleScope)) {
     return
   }
-  instance.value.projects = []
-  ruleScope.resources.forEach((resource: string) => {
-    if (resource.match(PROJECT_SCOPE_REGEX)) {
-      instance.value.projects.push({ projectId: resource.match(PROJECT_SCOPE_REGEX)?.[1] })
-    } else if (resource.match(PROJECT_TYPE_SCOPE_REGEX)) {
-      const projectTypeKey = findKeyInRecordObject(PROJECT_TYPE_TO_RESOURCE_TYPE, resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1] ?? '')
-      if (projectTypeKey === undefined) {
-        log.error(`Failed to convert automation project type: ${resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1]}`)
-      }
-      instance.value.projects.push({ projectTypeKey })
-    } else if (!resource.match(GLOBAL_SCOPE_REGEX)) {
-      log.error(`Failed to convert automation rule scope, found unknown pattern: ${resource}`)
-    }
-  })
+  instance.value.projects = ruleScope.resources.map(getScope).filter(isDefined)
 }
 
 const filter: FilterCreator = ({ client }) => {

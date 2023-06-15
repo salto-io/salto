@@ -400,9 +400,7 @@ export default class SdfClient {
           const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
             suiteAppId,
-            instancesIds
-              // .filter(item => queries.updatedFetchQuery.isTypeMatch(item.type)) // TODO: verify and remove
-              .filter(queries.updatedFetchQuery.isObjectMatch),
+            instancesIds.filter(queries.updatedFetchQuery.isObjectMatch),
           )
           const elements = await parseObjectsDir(projectPath)
 

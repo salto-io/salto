@@ -85,8 +85,12 @@ describe('custom records', () => {
   })
 
   describe('get custom records', () => {
-    it('should return nothing when custom record types query fails', async () => {
+
+    beforeEach(() => {
       runSuiteQLMock.mockReset()
+    })
+
+    it('should return nothing when custom record types query fails', async () => {
       runSuiteQLMock.mockResolvedValueOnce(undefined)
 
       const results = await getCustomRecords(
@@ -100,7 +104,6 @@ describe('custom records', () => {
     })
 
     it('should return nothing when all custom record types are marked as ignore', async () => {
-      runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
         { scriptid: 'customrecord1' },
         { scriptid: 'customrecord2' },
@@ -117,7 +120,6 @@ describe('custom records', () => {
     })
 
     it('should return nothing when relevant custom record type is marked to ignore', async () => {
-      runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
         { scriptid: 'customrecord1' },
         { scriptid: 'customrecord2' },
@@ -134,7 +136,6 @@ describe('custom records', () => {
     })
 
     it('should return relevant record scripts', async () => {
-      runSuiteQLMock.mockReset()
       runSuiteQLMock.mockResolvedValueOnce([
         { scriptid: 'customrecord1' },
         { scriptid: 'customrecord2' },

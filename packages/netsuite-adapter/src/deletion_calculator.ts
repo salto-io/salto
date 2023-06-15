@@ -21,14 +21,14 @@ import { NetsuiteQuery, ObjectID } from './query'
 import { getCustomRecords } from './changes_detector/changes_detectors/custom_records'
 import NetsuiteClient from './client/client'
 import { ElemServiceID } from './elements_source_index/types'
-import { getServiceId, isCustomRecordType, isCustomRecordTypeName } from './types'
+import { getServiceId, isCustomRecordType } from './types'
 import { isStandardTypeName } from './autogen/types'
-import { CUSTOM_RECORD_TYPE } from './constants'
+import { CUSTOM_RECORD_TYPE, SCRIPT_ID } from './constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const calculateDeletedInstances = (
+const calculateDeletedStandardInstances = (
   currentStandardInstances: ElemServiceID[],
   serviceInstancesIds: ObjectID[],
 ): ElemID[] => {
@@ -63,9 +63,9 @@ const calculateDeletedDataElements = (
 const calculateDeletedCustomRecordsFromFetchResult = (
   currentCustomRecords: ElemServiceID[],
   serviceCustomRecords: InstanceElement[],
-  requestedCustomTypes: Set<string>,
+  requestedCustomRecordTypes: Set<string>,
 ): ElemID[] => {
-  if (currentCustomRecords.length === 0 || serviceCustomRecords.length === 0) {
+  if (currentCustomRecords.length === 0 || requestedCustomRecordTypes.size === 0) {
     return []
   }
 
@@ -73,28 +73,27 @@ const calculateDeletedCustomRecordsFromFetchResult = (
     .map(instance => instance.elemID.getFullName()))
 
   return currentCustomRecords
-    .filter(customRecord => customRecord.elemID.idType === 'instance')
-    .filter(customRecord => requestedCustomTypes.has(customRecord.elemID.typeName))
+    .filter(customRecord => requestedCustomRecordTypes.has(customRecord.elemID.typeName))
     .filter(customRecord => !customRecordElemNames.has(customRecord.elemID.getFullName()))
     .map(customRecord => customRecord.elemID)
 }
 
 const isCustomRecordDeleted = (
   customRecord: ElemServiceID,
-  serviceCustomTypes: Set<string>,
-  serviceCustomTypeRecords: Map<string, Set<string>>,
+  serviceCustomRecordTypes: Set<string>,
+  serviceCustomRecordsByType: Map<string, Set<string>>,
   customRecordTypesToIgnore: Set<string>,
 ): boolean => {
   const type = customRecord.elemID.typeName
   if (customRecordTypesToIgnore.has(type)) {
     return false // we already dealt with this record in calculateDeletedCustomRecordsFromFetchResult
   }
-  if (!serviceCustomTypes.has(type)) {
+  if (!serviceCustomRecordTypes.has(type)) {
     return true // the whole type was deleted
   }
   // some custom types are not returned by SuiteQL queries, so we delete only ones that have SuiteQL results
-  if (serviceCustomTypeRecords.has(type)
-    && !serviceCustomTypeRecords.get(type)?.has(customRecord.serviceID)) {
+  if (serviceCustomRecordsByType.has(type)
+    && !serviceCustomRecordsByType.get(type)?.has(customRecord.serviceID)) {
     return true
   }
   return false
@@ -103,45 +102,38 @@ const isCustomRecordDeleted = (
 const calculateDeletedCustomRecordsFromService = async (
   client: NetsuiteClient,
   currentCustomRecords: ElemServiceID[],
-  currentCustomTypes: ElemServiceID[],
   query: NetsuiteQuery,
-  customRecordTypesToIgnore: Set<string>,
-  serviceCustomTypes: ObjectID[],
+  requestedCustomRecordTypes: Set<string>,
+  requestedCustomRecordTypeScriptIds: Set<string>,
+  serviceCustomRecordTypes: Set<string>,
 ): Promise<ElemID[]> => {
   // We can ignore custom types that were already returned by the service, as the missing records there were
   // calculated in calculateDeletedCustomRecordsFromFetchResult
-  const serviceCustomTypeRecords = await getCustomRecords(
+  const serviceCustomRecordsByType = await getCustomRecords(
     client,
     query,
-    customRecordTypesToIgnore,
+    requestedCustomRecordTypeScriptIds,
   )
-  const serviceCustomTypesSet = new Set(
-    serviceCustomTypes.map(item => item.instanceId).concat(...serviceCustomTypeRecords.keys())
-  )
-
-  const deletedCustomTypes = currentCustomTypes
-    .filter(customType => !serviceCustomTypesSet.has(customType.serviceID))
-    .map(customType => customType.elemID)
 
   const deletedCustomRecords = currentCustomRecords
     .filter(customRecord => isCustomRecordDeleted(
-      customRecord, serviceCustomTypesSet, serviceCustomTypeRecords, customRecordTypesToIgnore
+      customRecord, serviceCustomRecordTypes, serviceCustomRecordsByType, requestedCustomRecordTypes
     ))
     .map(item => item.elemID)
 
-  return deletedCustomTypes.concat(deletedCustomRecords)
+  return deletedCustomRecords
 }
 
 const calculateDeletedCustomRecords = async (
   client: NetsuiteClient,
   currentCustomRecords: ElemServiceID[],
-  currentCustomTypes: ElemServiceID[],
+  currentCustomRecordTypes: ElemServiceID[],
   query: NetsuiteQuery,
   serviceCustomRecords: InstanceElement[],
-  requestedCustomTypes: ObjectType[],
-  serviceCustomTypes: ObjectID[],
+  requestedCustomRecordTypes: ObjectType[],
+  serviceCustomRecordTypes: ObjectID[],
 ): Promise<ElemID[]> => {
-  if (currentCustomTypes.length === 0) {
+  if (currentCustomRecordTypes.length === 0) {
     return []
   }
 
@@ -149,28 +141,37 @@ const calculateDeletedCustomRecords = async (
   // as currently when we identify a change in a custom type we fetch all records, so missing records are easy to spot.
   // Then we need to query the rest of the custom types (that are matching the fetch query conditions, but excluding
   // the ones already covered) and check whether there is any deletion there
-  const requestedCustomTypesSet = new Set(requestedCustomTypes.map(customType => customType.elemID.typeName))
+  const requestedCustomRecordTypeSet = new Set(requestedCustomRecordTypes.map(customType => customType.elemID.typeName))
+  const requestedCustomRecordTypeScriptIds: Set<string> = new Set(
+    requestedCustomRecordTypes.map(customType => customType.annotations[SCRIPT_ID])
+  )
+  const serviceCustomRecordTypeSet = new Set(serviceCustomRecordTypes.map(item => item.instanceId))
+
   const deletedCustomRecordsFromFetchResult = calculateDeletedCustomRecordsFromFetchResult(
     currentCustomRecords,
     serviceCustomRecords,
-    requestedCustomTypesSet,
+    requestedCustomRecordTypeSet,
   )
   const deletedCustomRecordsFromService = await calculateDeletedCustomRecordsFromService(
     client,
     currentCustomRecords,
-    currentCustomTypes,
     query,
-    requestedCustomTypesSet,
-    serviceCustomTypes,
+    requestedCustomRecordTypeSet,
+    requestedCustomRecordTypeScriptIds,
+    serviceCustomRecordTypeSet,
   )
 
-  return deletedCustomRecordsFromFetchResult.concat(deletedCustomRecordsFromService)
+  const deletedCustomRecordTypes = currentCustomRecordTypes
+    .filter(customType => !serviceCustomRecordTypeSet.has(customType.serviceID))
+    .map(customType => customType.elemID)
+
+  return deletedCustomRecordTypes.concat(deletedCustomRecordsFromFetchResult).concat(deletedCustomRecordsFromService)
 }
 
 type CurrentElements = {
   currentStandardInstances: Array<ElemServiceID>
   currentCustomRecords: Array<ElemServiceID>
-  currentCustomTypes: Array<ElemServiceID>
+  currentCustomRecordTypes: Array<ElemServiceID>
   currentDataElements: Array<ElemID>
 }
 
@@ -180,18 +181,20 @@ const getCurrentElements = async (
   requestedDataTypes: string[],
 ): Promise<CurrentElements> => {
   const elements = await elementsSource.getAll()
-  const currentStandardInstances = new Array<ElemServiceID>()
-  const currentCustomRecords = new Array<ElemServiceID>()
-  const currentCustomTypes = new Array<ElemServiceID>()
-  const currentDataElements = new Array<ElemID>()
+  const currentStandardInstances: Array<ElemServiceID> = []
+  const currentCustomRecords: Array<ElemServiceID> = []
+  const currentCustomRecordTypes: Array<ElemServiceID> = []
+  const currentDataElements: Array<ElemID> = []
 
   const requestedDataTypesSet = new Set(requestedDataTypes)
   await awu(elements)
     .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
     .forEach(async element => {
       if (isInstanceElement(element)) {
-        if (isCustomRecordTypeName(element.elemID.typeName)) {
-          if (fetchQuery.isCustomRecordTypeMatch(element.elemID.typeName)) {
+        if (isCustomRecordType(await element.getType(elementsSource))) {
+          if (fetchQuery.isCustomRecordMatch(
+            ({ type: element.elemID.typeName, instanceId: element.value[SCRIPT_ID] })
+          )) {
             currentCustomRecords.push({ elemID: element.elemID, serviceID: getServiceId(element) })
           }
         } else if (fetchQuery.isTypeMatch(element.elemID.typeName)) {
@@ -203,7 +206,7 @@ const getCurrentElements = async (
         }
       } else if (isObjectType(element) && isCustomRecordType(element)) {
         if (fetchQuery.isCustomRecordTypeMatch(element.elemID.typeName)) {
-          currentCustomTypes.push({ elemID: element.elemID, serviceID: getServiceId(element) })
+          currentCustomRecordTypes.push({ elemID: element.elemID, serviceID: getServiceId(element) })
         }
       }
     })
@@ -211,7 +214,7 @@ const getCurrentElements = async (
   return {
     currentStandardInstances,
     currentCustomRecords,
-    currentCustomTypes,
+    currentCustomRecordTypes,
     currentDataElements,
   }
 }
@@ -221,7 +224,7 @@ export const getDeletedElements = async ({
   elementsSource,
   fetchQuery,
   serviceInstanceIds,
-  requestedCustomTypes,
+  requestedCustomRecordTypes,
   serviceCustomRecords,
   requestedDataTypes,
   serviceDataElements,
@@ -230,7 +233,7 @@ export const getDeletedElements = async ({
   elementsSource: ReadOnlyElementsSource
   fetchQuery: NetsuiteQuery
   serviceInstanceIds: ObjectID[]
-  requestedCustomTypes: ObjectType[]
+  requestedCustomRecordTypes: ObjectType[]
   serviceCustomRecords: InstanceElement[]
   requestedDataTypes: string[]
   serviceDataElements: InstanceElement[]
@@ -239,26 +242,27 @@ export const getDeletedElements = async ({
     const {
       currentStandardInstances,
       currentCustomRecords,
-      currentCustomTypes,
+      currentCustomRecordTypes,
       currentDataElements,
     } = await getCurrentElements(elementsSource, fetchQuery, requestedDataTypes)
 
-    const [serviceCustomTypes, serviceInstances] = _
-      .partition(serviceInstanceIds, objectId => objectId.type === CUSTOM_RECORD_TYPE)
+    const [serviceCustomRecordTypes, serviceStandardInstances] = _.partition(
+      serviceInstanceIds, objectId => objectId.type === CUSTOM_RECORD_TYPE
+    )
 
     const deletedCustomRecords = calculateDeletedCustomRecords(
       client,
       currentCustomRecords,
-      currentCustomTypes,
+      currentCustomRecordTypes,
       fetchQuery,
       serviceCustomRecords,
-      requestedCustomTypes,
-      serviceCustomTypes,
+      requestedCustomRecordTypes,
+      serviceCustomRecordTypes,
     )
 
-    const deletedInstances = calculateDeletedInstances(
+    const deletedInstances = calculateDeletedStandardInstances(
       currentStandardInstances,
-      serviceInstances,
+      serviceStandardInstances,
     )
 
     const deletedDataElements = calculateDeletedDataElements(

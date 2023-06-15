@@ -135,8 +135,7 @@ export default class NetsuiteClient {
   async getCustomObjects(
     typeNames: string[],
     queries: NetsuiteFetchQueries,
-  ):
-    Promise<GetCustomObjectsResult> {
+  ): Promise<GetCustomObjectsResult> {
     return this.sdfClient.getCustomObjects(
       typeNames, queries
     )

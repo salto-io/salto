@@ -137,7 +137,8 @@ describe('data_elements', () => {
         return { records: [], largeTypesError: [] }
       })
 
-      const { elements } = await getDataElements(client, query)
+      const { elements, requestedTypes } = await getDataElements(client, query)
+      expect(requestedTypes).toEqual(['subsidiary'])
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name'])
       expect((elements[1] as InstanceElement).value).toEqual({

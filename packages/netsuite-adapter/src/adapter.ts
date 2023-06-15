@@ -327,7 +327,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
       elementsSource: this.elementsSource,
       fetchQuery,
       serviceInstanceIds: instancesIds,
-      requestedCustomTypes: customRecordTypes,
+      requestedCustomRecordTypes: customRecordTypes,
       serviceCustomRecords: customRecords,
       requestedDataTypes,
       serviceDataElements: dataElements.filter(isInstanceElement),

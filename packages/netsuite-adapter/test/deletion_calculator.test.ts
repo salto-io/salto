@@ -18,7 +18,7 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import NetsuiteClient from '../src/client/client'
 import { NetsuiteQuery } from '../src/query'
 import { getDeletedElements } from '../src/deletion_calculator'
-import { CUSTOM_RECORD_TYPE, METADATA_TYPE, SCRIPT_ID } from '../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
 
 describe('deletion calculator', () => {
   const mockRunSuiteQL = jest.fn()
@@ -29,6 +29,7 @@ describe('deletion calculator', () => {
   const fetchQuery = {
     isTypeMatch: () => true,
     isCustomRecordTypeMatch: () => true,
+    isCustomRecordMatch: () => true,
     isObjectMatch: () => true,
   } as unknown as NetsuiteQuery
 
@@ -36,15 +37,22 @@ describe('deletion calculator', () => {
     client,
     fetchQuery,
     serviceInstanceIds: [],
-    requestedCustomTypes: [],
+    requestedCustomRecordTypes: [],
     serviceCustomRecords: [],
-    requestedDataTypes: [],
+    requestedDataTypes: ['location'],
     serviceDataElements: [],
   }
 
   beforeEach(() => {
     mockRunSuiteQL.mockReset()
-    mockRunSuiteQL.mockReturnValue([])
+    mockRunSuiteQL.mockResolvedValueOnce([
+      { scriptid: 'customrecord1' },
+      { scriptid: 'customrecord2' },
+    ])
+    mockRunSuiteQL.mockResolvedValueOnce([])
+    mockRunSuiteQL.mockResolvedValueOnce([
+      { scriptid: 'custom_record_script_id' },
+    ])
   })
 
   describe('get deleted elements', () => {
@@ -59,25 +67,29 @@ describe('deletion calculator', () => {
     describe('elements in current env', () => {
       const stdInstance = new InstanceElement(
         'std_instance',
-        new ObjectType({ elemID: new ElemID('adapter', 'role') }),
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'role') }),
         { [SCRIPT_ID]: 'std_instance_script_id' }
       )
-      const customType = new ObjectType({
-        elemID: new ElemID('adapter', 'customrecord1'),
-        annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE },
+      const customRecordType1 = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [SCRIPT_ID]: 'customrecord1' },
       })
-      const customRecordType = new ObjectType({ elemID: new ElemID('adapter', 'customrecord2') })
+      const customRecordType2 = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord2'),
+        annotations: { [METADATA_TYPE]: CUSTOM_RECORD_TYPE, [SCRIPT_ID]: 'customrecord2' },
+      })
       const customRecord = new InstanceElement(
         'custom_record',
-        customRecordType,
-        { [SCRIPT_ID]: 'custom_record_script_id' }
+        customRecordType2,
+        { [SCRIPT_ID]: 'custom_record_script_id' },
+        [],
+        { [METADATA_TYPE]: CUSTOM_RECORD_TYPE }
       )
       const dataElement = new InstanceElement(
         'data_element',
-        new ObjectType({ elemID: new ElemID('adapter', 'location') }),
-        { [SCRIPT_ID]: 'data_element_script_id' }
+        new ObjectType({ elemID: new ElemID(NETSUITE, 'location') }),
       )
-      const elements = [stdInstance, customType, customRecord, dataElement]
+      const elements = [stdInstance, customRecordType1, customRecordType2, customRecord, dataElement]
       const elementsSource = buildElementsSourceFromElements(elements)
 
       it('should return nothing when current elements do not match fetch query scope', async () => {
@@ -87,39 +99,42 @@ describe('deletion calculator', () => {
           isObjectMatch: () => true,
         } as unknown as NetsuiteQuery
 
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: ['location'], fetchQuery: thinFetchQuery })
+        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, fetchQuery: thinFetchQuery })
 
         expect(res).toHaveLength(0)
       })
 
       it('should return all current elements when service return nothing (all deleted)', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: ['location'] })
+        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
 
-        expect(res).toHaveLength(4)
+        expect(res).toHaveLength(5)
         const resNames = res.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
+        expect(resNames).toContain(customRecordType2.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
       })
 
       it('should not return current data elements that is not part of the requested data type', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource })
+        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: [] })
 
-        expect(res).toHaveLength(3)
+        expect(res).toHaveLength(4)
         const resNames = res.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
+        expect(resNames).toContain(customRecordType2.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
       })
 
       it('should not return current data element that still exists in service', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: ['location'], serviceDataElements: [dataElement] })
+        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, serviceDataElements: [dataElement] })
 
-        expect(res).toHaveLength(3)
+        expect(res).toHaveLength(4)
         const resNames = res.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
+        expect(resNames).toContain(customRecordType2.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
       })
 
@@ -127,43 +142,70 @@ describe('deletion calculator', () => {
         const res = await getDeletedElements({
           ...DEFAULT_PARAMS,
           elementsSource,
-          requestedDataTypes: ['location'],
           serviceInstanceIds: [{ type: stdInstance.elemID.typeName, instanceId: stdInstance.value[SCRIPT_ID] }],
         })
 
-        expect(res).toHaveLength(3)
+        expect(res).toHaveLength(4)
         const resNames = res.map(item => item.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
+        expect(resNames).toContain(customRecordType2.elemID.getFullName())
         expect(resNames).toContain(customRecord.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
       })
 
       it('should not return current custom record that were returned by the service in the fetch flow', async () => {
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: ['location'], serviceCustomRecords: [customRecord], requestedCustomTypes: [customRecordType] })
+        const res = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          serviceCustomRecords: [customRecord],
+          requestedCustomRecordTypes: [customRecordType2],
+          serviceInstanceIds: [{ type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName }],
+        })
 
+        expect(mockRunSuiteQL).toHaveBeenCalledTimes(2)
         expect(res).toHaveLength(3)
         const resNames = res.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
+        expect(resNames).toContain(dataElement.elemID.getFullName())
+      })
+
+      it('should not query SuiteQL for a type that was already requested', async () => {
+        const res = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          requestedCustomRecordTypes: [customRecordType1, customRecordType2],
+          serviceInstanceIds: [{ type: CUSTOM_RECORD_TYPE, instanceId: customRecordType1.elemID.typeName },
+            { type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName }],
+        })
+
+        expect(mockRunSuiteQL).toHaveBeenCalledTimes(1)
+        expect(res).toHaveLength(3)
+        const resNames = res.map(item => item.getFullName())
+        expect(resNames).toContain(stdInstance.elemID.getFullName())
+        expect(resNames).toContain(customRecord.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
       })
 
       it('should not return current custom record that still exists in service', async () => {
         mockRunSuiteQL.mockReset()
         mockRunSuiteQL.mockResolvedValueOnce([
-          { scriptid: 'customrecord1' },
           { scriptid: 'customrecord2' },
         ])
-        mockRunSuiteQL.mockResolvedValueOnce([])
         mockRunSuiteQL.mockResolvedValueOnce([
           { scriptid: 'custom_record_script_id' },
         ])
-        const res = await getDeletedElements({ ...DEFAULT_PARAMS, elementsSource, requestedDataTypes: ['location'] })
+        const res = await getDeletedElements({
+          ...DEFAULT_PARAMS,
+          elementsSource,
+          serviceInstanceIds: [{ type: CUSTOM_RECORD_TYPE, instanceId: customRecordType2.elemID.typeName }],
+        })
 
+        expect(mockRunSuiteQL).toHaveBeenCalledTimes(2)
         expect(res).toHaveLength(3)
         const resNames = res.map(item => item.getFullName())
         expect(resNames).toContain(stdInstance.elemID.getFullName())
-        expect(resNames).toContain(customType.elemID.getFullName())
+        expect(resNames).toContain(customRecordType1.elemID.getFullName())
         expect(resNames).toContain(dataElement.elemID.getFullName())
       })
     })

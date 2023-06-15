@@ -22,7 +22,7 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
+import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT, ROLE } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
@@ -1412,6 +1412,21 @@ describe('Adapter', () => {
           },
           config,
         )
+      })
+    })
+
+    describe('getDeletedElements', () => {
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue([elemId])
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(getDeletedElementsMock).toHaveBeenCalled()
+        expect(deletedElements).toEqual([elemId])
       })
     })
   })

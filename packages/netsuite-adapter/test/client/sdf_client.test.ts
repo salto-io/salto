@@ -570,9 +570,11 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
+        instancesIds: currentInstanceIds,
       } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
       expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
+      expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)

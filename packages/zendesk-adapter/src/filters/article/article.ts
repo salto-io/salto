@@ -72,6 +72,10 @@ const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
   EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
 )
 
+export const getGenericTitle = (title: string): string => `salto generic title for ${title}`
+
+export const getGenericBody = (title: string): string => `salto generic body for ${title}`
+
 const addTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
@@ -79,8 +83,8 @@ const addTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<v
     .filter(isTranslation)
     .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
-    getChangeData(change).value.title = `salto generic title for ${translation.title}`
-    getChangeData(change).value.body = 'salto generic body '
+    getChangeData(change).value.title = getGenericTitle(translation.title)
+    getChangeData(change).value.body = getGenericBody(translation.title)
   }
 }
 

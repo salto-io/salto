@@ -78,7 +78,7 @@ export type OptionalFeatures = {
   describeSObjects?: boolean
   skipAliases?: boolean
   formulaDeps?: boolean
-  fetchCustomObjectUsingReadApi?: boolean
+  fetchCustomObjectUsingRetrieveApi?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -573,7 +573,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
     skipAliases: { refType: BuiltinTypes.BOOLEAN },
     formulaDeps: { refType: BuiltinTypes.BOOLEAN },
-    fetchCustomObjectUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
+    fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

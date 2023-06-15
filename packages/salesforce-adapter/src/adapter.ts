@@ -351,7 +351,7 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
-    if (this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingReadApi')) {
+    if (this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
       _.pull(this.metadataToRetrieve, CUSTOM_OBJECT)
     }
     this.createFiltersRunner = () => filter.filtersRunner(

@@ -16,10 +16,12 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
+import {
+  Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
+  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile,
+} from '@salto-io/adapter-api'
 import {
   resolvePath,
   TransformFuncArgs,

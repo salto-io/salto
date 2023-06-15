@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
-import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, CLIENT_CONFIG, OktaClientConfig, OktaSwaggerApiConfig, PRIVATE_API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig, OktaFetchConfig } from './config'
+import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, CLIENT_CONFIG, OktaClientConfig, OktaSwaggerApiConfig, PRIVATE_API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig, validateOktaFetchConfig } from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
@@ -30,7 +30,6 @@ const { validateClientConfig, validateCredentials } = clientUtils
 const {
   validateSwaggerApiDefinitionConfig,
   validateDuckTypeApiDefinitionConfig,
-  validateSupportedTypes,
 } = configUtils
 
 const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials => {
@@ -43,27 +42,6 @@ const credentialsFromConfig = (config: Readonly<InstanceElement>): Credentials =
     baseUrl,
     token,
   }
-}
-
-const validateOktaFetchConfig = ({
-  fetchConfig,
-  clientConfig,
-  apiDefinitions,
-  privateApiDefinitions,
-}:
-{ fetchConfig: OktaFetchConfig
-  clientConfig: OktaClientConfig
-  apiDefinitions: OktaSwaggerApiConfig
-  privateApiDefinitions: OktaDuckTypeApiConfig
-}): void => {
-  const supportedTypes = clientConfig.usePrivateAPI === false
-    ? Object.keys(apiDefinitions.supportedTypes)
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
-  validateSupportedTypes(
-    FETCH_CONFIG,
-    fetchConfig,
-    supportedTypes
-  )
 }
 
 const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined): OktaConfig => {

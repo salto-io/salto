@@ -1695,6 +1695,27 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   },
 })
 
+export const validateOktaFetchConfig = ({
+  fetchConfig,
+  clientConfig,
+  apiDefinitions,
+  privateApiDefinitions,
+}: {
+  fetchConfig: OktaFetchConfig
+  clientConfig: OktaClientConfig
+  apiDefinitions: OktaSwaggerApiConfig
+  privateApiDefinitions: OktaDuckTypeApiConfig
+}): void => {
+  const supportedTypes = clientConfig.usePrivateAPI === false
+    ? Object.keys(apiDefinitions.supportedTypes)
+    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
+  configUtils.validateSupportedTypes(
+    FETCH_CONFIG,
+    fetchConfig,
+    supportedTypes
+  )
+}
+
 export type FilterContext = {
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig

@@ -16,13 +16,17 @@
 import {
   Change, DeployResult,
   getChangeData,
-  InstanceElement, isAdditionChange,
+  InstanceElement, isAdditionChange, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { removedTranslationParentId } from './guide_section_and_category'
-import { TRANSLATION_TYPE_NAMES } from '../constants'
+import {
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  TRANSLATION_TYPE_NAMES,
+} from '../constants'
+import { deployChange, deployChanges } from '../deployment'
 
 const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {
   if (
@@ -34,7 +38,7 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   const data = getChangeData(change)
   const currentLocale = data.value.locale
   const parents = getParents(data) // the parent is not a reference expression
-  return parents.some(parent => parent.source_locale?.value.value.locale === currentLocale)
+  return parents.some(parent => parent.source_locale?.value.value?.locale === currentLocale)
 }
 
 const parentRemoved = (change: Change<InstanceElement>): boolean => {
@@ -54,16 +58,43 @@ const needToOmit = (change: Change<InstanceElement>): boolean =>
  * this filter marks these translations as successfully deployed without actually deploying them.
  * The rest of the translations will be deployed in the default deploy filter.
  */
-const filterCreator: FilterCreator = () => ({
+const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [translationChangesToIgnore, leftoverChanges] = _.partition(
       changes,
       needToOmit,
     )
+    // split default article translation addition changes out of changes to ignore
+    const [defaultArticleTranslationAdditionChanges, otherTranslationChanges] = _.partition(
+      translationChangesToIgnore,
+      change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME
+      && isDefaultTranslationAddition(change),
+    )
+
+    // creating modification changes from the addition of default article translations
+    const defaultArticleTranslationModificationChanges = defaultArticleTranslationAdditionChanges
+      .map(getChangeData)
+      .map(instance =>
+        toChange({ before: instance, after: instance }))
+
+    // deploy the created modification changes
+    const articleTranslationDeployResult = await deployChanges(
+      defaultArticleTranslationModificationChanges,
+      async change => {
+        await deployChange(change, client, config.apiDefinitions)
+      }
+    )
+    const successfulModificationDeployChangesSet = new Set(articleTranslationDeployResult.appliedChanges
+      .map(change => getChangeData(change).elemID.name))
+
+    // filtering from the addition changes only the changes for which the deploy of the modification was successful
+    const successfulAdditionDeployChanges = defaultArticleTranslationAdditionChanges
+      .filter(change => successfulModificationDeployChangesSet.has(getChangeData(change).elemID.name))
+
     const deployResult: DeployResult = {
-      appliedChanges: translationChangesToIgnore,
-      errors: [],
+      appliedChanges: otherTranslationChanges.concat(successfulAdditionDeployChanges),
+      errors: articleTranslationDeployResult.errors,
     }
     return { deployResult, leftoverChanges }
   },

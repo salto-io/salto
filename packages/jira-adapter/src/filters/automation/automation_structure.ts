@@ -298,7 +298,7 @@ const getScope = (resource: string): { projectId?: string; projectTypeKey?: stri
   if (projectTypeScope) {
     const projectTypeKey = findKeyInRecordObject(PROJECT_TYPE_TO_RESOURCE_TYPE, projectTypeScope[1])
     if (projectTypeKey === undefined) {
-      log.error(`Failed to convert automation project type: ${resource.match(PROJECT_TYPE_SCOPE_REGEX)?.[1]}`)
+      log.error(`Failed to convert automation project type: ${projectTypeScope[1]}`)
     }
     return { projectTypeKey }
   }

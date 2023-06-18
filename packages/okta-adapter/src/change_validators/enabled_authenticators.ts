@@ -84,6 +84,9 @@ export const enabledAuthenticatorsValidator: ChangeValidator = async (changes, e
       isDeactivationChange({ before: change.data.before.value.status, after: change.data.after.value.status }))
     .map(getChangeData)
 
+  if (_.isEmpty(deactivatedAuthenticators)) {
+    return []
+  }
 
   const mfaPolicies = await awu(await elementSource.list())
     .filter(id => id.typeName === MFA_POLICY_TYPE_NAME)

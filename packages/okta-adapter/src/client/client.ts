@@ -145,7 +145,7 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         status,
       }
     } catch (e) {
-      log.warn('Failed to get responce from resource. error %o', e)
+      log.warn('Failed to get response from resource: %s. error %o', args.url, e)
       throw e
     }
   }

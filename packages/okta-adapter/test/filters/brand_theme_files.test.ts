@@ -22,7 +22,7 @@ import { getFilterParams, mockClient } from '../utils'
 import brandThemeFilesFilter from '../../src/filters/brand_theme_files'
 import { FilterResult } from '../../src/filter'
 
-describe('barnd logo filter', () => {
+describe('barnd files filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
@@ -124,7 +124,7 @@ describe('barnd logo filter', () => {
       const res = await filter.onFetch(elements) as FilterResult
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0]).toEqual({
-        message: 'No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
+        message: 'No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
         severity: 'Warning',
       })
     })
@@ -206,7 +206,7 @@ describe('barnd logo filter', () => {
         { action: 'remove', data: { before: clonedLogo } }
       )
     })
-    it('should return errors', async () => {
+    it('should return errors when logo has no parents', async () => {
       const clonedBrand = brandInstance.clone()
       const clonedLogo = brandLogoInstance.clone()
       clonedLogo.annotations[CORE_ANNOTATIONS.PARENT] = []

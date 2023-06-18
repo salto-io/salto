@@ -17,7 +17,7 @@
 import { Change, InstanceElement, ObjectType, SaltoError, getChangeData, isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard, naclCase } from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance, naclCase } from '@salto-io/adapter-utils'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import Joi from 'joi'
 import { OktaConfig } from '../config'
@@ -31,7 +31,7 @@ const { getInstanceName } = elementsUtils
 /* Allowed types by okta docs https://help.okta.com/en-us/Content/Topics/Apps/apps-customize-logo.htm */
 const ALLOWED_LOGO_FILE_TYPES = new Set(['png', 'jpg', 'gif'])
 
-type App = {
+type App = InstanceElement & {
   id: string
   label: string
   _links: {
@@ -54,7 +54,7 @@ const EXPECTED_APP_SCHEMA = Joi.object({
   }).unknown(true).required(),
 }).unknown(true).required()
 
-const isApp = createSchemeGuard<App>(EXPECTED_APP_SCHEMA, 'Received invalid response for app values')
+const isAppInstance = createSchemeGuardForInstance<App>(EXPECTED_APP_SCHEMA, 'Received invalid response for app values')
 
 const getLogoFileType = (contentType: string): string | undefined => {
   const contentTypeParts = contentType.split('/')
@@ -72,21 +72,16 @@ const getAppLogo = async ({ client, app, appLogoType, config }:{
   appLogoType: ObjectType
   config: OktaConfig
 }): Promise<InstanceElement | Error> => {
-  if (!isApp(app.value)) {
-    return new Error(`App ${app.value.label} is not valid`)
-  }
   const appLogo = app.value[LINKS_FIELD].logo[0]
   const logoLink = appLogo.href
-  const { idFields } = configUtils.getTypeTransformationConfig(
+  const idFields = configUtils.getTypeTransformationConfig(
     APPLICATION_TYPE_NAME, config.apiDefinitions.types, config.apiDefinitions.typeDefaults
-  )
-  if (idFields === undefined) {
-    return new Error(`Failed to find id fields for ${app.value.label}`)
-  }
+  ).idFields ?? [app.value.label]
+
   const name = naclCase(getInstanceName(app.value, idFields, APP_LOGO_TYPE_NAME))
   const contentType = getLogoFileType(appLogo.type)
   if (contentType === undefined) {
-    return new Error(`Failed to find content type for ${app.value.label}`)
+    return new Error(`Failed to find content type for ${app.elemID.name}`)
   }
   return getLogo({ client, parents: [app], logoType: appLogoType, contentType, logoName: name, link: logoLink })
 }
@@ -100,8 +95,8 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
   onFetch: async elements => {
     const appsWithLogo = elements
       .filter(isInstanceElement)
-      .filter(e => e.elemID.typeName === APPLICATION_TYPE_NAME)
-      .filter(instance => isApp(instance.value))
+      .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
+      .filter(instance => isAppInstance(instance))
     const appLogoType = createLogoType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 

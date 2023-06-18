@@ -120,7 +120,7 @@ describe('client', () => {
   })
   describe('getResource ', () => {
     let result: clientUtils.ResponseValue
-    it('should return the response', async () => {
+    it('sholud return the response', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
         .onGet('/myPath').replyOnce(200, { response: 'asd' })

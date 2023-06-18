@@ -118,18 +118,4 @@ describe('client', () => {
       expect(client.baseUrl).toEqual('http://my.okta.net')
     })
   })
-  describe('getResource ', () => {
-    let result: clientUtils.ResponseValue
-    it('sholud return the response', async () => {
-      // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
-        .onGet('/myPath').replyOnce(200, { response: 'asd' })
-      result = await client.getResource({ url: '/myPath' })
-      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
-    })
-    it('sholud throw error if the response is not 200', async () => {
-      mockAxios.onGet('/myPath').replyOnce(404)
-      await expect(client.getResource({ url: '/myPath' })).rejects.toThrow('Request failed with status code 404')
-    })
-  })
 })

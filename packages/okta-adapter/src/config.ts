@@ -431,24 +431,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
     },
   },
-  AppLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/apps/{appId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          appId: '_parent.0.id',
-        },
-      },
-    },
-  },
   ApplicationCredentials: {
     transformation: {
       fieldTypeOverrides: [
@@ -840,16 +822,9 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
-      fieldsToHide: [
-        { fieldName: 'id' },
-        { fieldName: '_links' },
-        { fieldName: 'logo' },
-        { fieldName: 'favicon' },
-      ],
+      fieldsToHide: [{ fieldName: 'id' }],
+      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       serviceUrl: '/admin/customizations/branding',
-      fieldTypeOverrides: [
-        { fieldName: '_links', fieldType: 'map<unknown>' },
-      ],
     },
     deployRequests: {
       modify: {
@@ -859,63 +834,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: '_parent.0.id',
           themeId: 'id',
         },
-        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
-      },
-    },
-  },
-  BrandLogo: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-    },
-  },
-  FavIcon: {
-    deployRequests: {
-      add: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      modify: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'post',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
-      },
-      remove: {
-        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
-        method: 'delete',
-        urlParamsToFields: {
-          themeId: '_parent.0.id',
-          brandId: '_parent.1.id',
-        },
+        fieldsToIgnore: ['id', 'logo', 'favicon'],
       },
     },
   },

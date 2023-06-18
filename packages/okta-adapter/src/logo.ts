@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 
-
 import _ from 'lodash'
 import { BuiltinTypes, CORE_ANNOTATIONS, Change, ElemID, InstanceElement, ObjectType, ReferenceExpression, StaticFile, getChangeData, isAdditionOrModificationChange, isRemovalChange, isStaticFile } from '@salto-io/adapter-api'
 import FormData from 'form-data'
@@ -72,27 +71,24 @@ const sendLogoRequest = async ({
   logoInstance: InstanceElement
   url: string
   isRemoval: boolean
-}): Promise<Error | void> => {
+}): Promise<void> => {
   const fileContent = isAdditionOrModificationChange(change)
   && isStaticFile(logoInstance.value.content)
     ? await logoInstance.value.content.getContent()
     : undefined
-  try {
-    if (isRemoval) {
-      await client.delete({ url })
-      return undefined
-    }
-    const form = new FormData()
-    form.append('file', fileContent || Buffer.from(''), logoInstance.value.fileName)
-    await client.post({
-      url,
-      data: form,
-      headers: { ...form.getHeaders() },
-    })
+  if (isRemoval) {
+    await client.delete({ url })
     return undefined
-  } catch (e) {
-    return getOktaError(logoInstance.elemID, e)
   }
+  const form = new FormData()
+  form.append('file', fileContent || Buffer.from(''), logoInstance.value.fileName)
+  // client supports logo upload only with form-data.
+  await client.post({
+    url,
+    data: form,
+    headers: { ...form.getHeaders() },
+  })
+  return undefined
 }
 
 export const deployLogo = async (
@@ -100,10 +96,10 @@ export const deployLogo = async (
   client: OktaClient,
 ): Promise<Error | void> => {
   const logoInstance = getChangeData(change)
-  const logoTypeName = logoInstance.elemID.typeName
+  const { typeName } = logoInstance.elemID
   let logoUrl: string
   try {
-    if (logoTypeName === APP_LOGO_TYPE_NAME) {
+    if (typeName === APP_LOGO_TYPE_NAME) {
       const appId = getParent(logoInstance).value.id
       logoUrl = `/api/v1/apps/${appId}/logo`
     } else {
@@ -112,10 +108,7 @@ export const deployLogo = async (
       const suffix = LOGO_TYPES_TO_VALUES[logoInstance.elemID.typeName].urlSuffix
       logoUrl = `/api/v1/brands/${brand.value.id}/themes/${brandTheme.value.id}/${suffix}`
     }
-    if (isRemovalChange(change)) {
-      return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: true })
-    }
-    return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: false })
+    return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: isRemovalChange(change) })
   } catch (e) {
     return getOktaError(logoInstance.elemID, e)
   }

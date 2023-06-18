@@ -14,41 +14,18 @@
 * limitations under the License.
 */
 
-import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, ReferenceExpression, StaticFile } from '@salto-io/adapter-api'
+import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
 import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
-import OktaClient from '../../src/client/client'
-import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../../src/constants'
-import { createLogoType, getLogo } from '../../src/logo'
-import { mockClient } from '../utils'
+import OktaClient from '../src/client/client'
+import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
+import { createLogoType, deployLogo, getLogo } from '../src/logo'
+import { mockClient } from './utils'
 
 describe('logo filter', () => {
   const content = Buffer.from('test')
   let mockGet: jest.SpyInstance
   let client: OktaClient
   const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
-  // const brandThemeType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_THEME_TYPE_NAME) })
-  // const brandType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_TYPE_NAME) })
-  // const brandLogoType = new ObjectType({ elemID: new ElemID(OKTA, BRAND_LOGO_TYPE_NAME) })
-  // const brandInstance = new InstanceElement(
-  //   'brand1',
-  //   brandType,
-  //   {
-  //     id: '9',
-  //     name: 'brand1',
-  //   },
-  // )
-  // const brandThemeInstance = new InstanceElement(
-  //   'brandTheme1',
-  //   brandThemeType,
-  //   {
-  //     id: '11',
-  //     logo: 'https://ok12static.oktacdn.com/bc/image/111',
-  //   },
-  //   undefined,
-  //   {
-  //     [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(brandInstance.elemID, brandInstance)],
-  //   }
-  // )
   const appInstance = new InstanceElement(
     'app1',
     appType,
@@ -70,7 +47,7 @@ describe('logo filter', () => {
   const fileName = 'app1'
   const link = 'https://ok12static.oktacdn.com/fs/bco/4/111'
   const appLogoType = new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) })
-  describe('cretaeLogoType', () => {
+  describe('createLogoType', () => {
     it('should create logo type', () => {
       const logoType = createLogoType(APP_LOGO_TYPE_NAME)
       expect(logoType.elemID.name).toEqual(APP_LOGO_TYPE_NAME)
@@ -122,6 +99,51 @@ describe('logo filter', () => {
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT]).toHaveLength(1)
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT])
         .toContainEqual(new ReferenceExpression(appInstance.elemID, appInstance))
+    })
+    it('should return error when contentis not buffer', async () => {
+      mockGet.mockImplementationOnce(() => {
+        throw new Error('Err')
+      })
+      const res = await getLogo({ client,
+        parents: [appInstance],
+        logoType: appLogoType,
+        contentType,
+        logoName: fileName,
+        link })
+      expect(res).toEqual(new Error('Failed to fetch attachment content from Okta API'))
+    })
+  })
+  describe('deploy logo', () => {
+    it('should call send Logo Request', async () => {
+      const mockCli = mockClient()
+      client = mockCli.client
+      const mockPost = jest.spyOn(client, 'post')
+      const appLogoInstance = new InstanceElement(
+        'app1',
+        appLogoType,
+        {
+          id: '111',
+          fileName: `${fileName}.${contentType}`,
+          contentType,
+          content: new StaticFile({
+            filepath: 'okta/AppLogo/app1.png', encoding: 'binary', content,
+          }),
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [
+            new ReferenceExpression(appInstance.elemID, appInstance),
+          ],
+        }
+      )
+      const appLogoChange = toChange({ after: appLogoInstance })
+      await deployLogo(appLogoChange, client)
+      expect(mockPost).toHaveBeenCalledTimes(1)
+      expect(mockPost).toHaveBeenCalledWith({
+        url: '/api/v1/apps/11/logo',
+        data: expect.anything(),
+        headers: expect.anything(),
+      })
     })
   })
 })

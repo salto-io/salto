@@ -24,6 +24,7 @@ import { LOGO_TYPES_TO_VALUES, createLogoType, deployLogo, getLogo } from '../lo
 import OktaClient from '../client/client'
 
 const log = logger(module)
+const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
 
 const getBrandThemeFile = async (
   client: OktaClient,
@@ -31,15 +32,10 @@ const getBrandThemeFile = async (
   logoType: ObjectType,
 ): Promise<InstanceElement | Error> => {
   const parents = getParents(brandTheme)
-  if (parents.length === 0 || parents[0].value.elemID.typeName !== BRAND_TYPE_NAME) {
-    log.warn('No Brand was found, skipping BrandLogo and BrandFavicon fetch')
-    return new Error('No Brand was found, skipping BrandLogo and BrandFavicon fetch')
-  }
   const instances = [brandTheme, parents[0].value]
-  const type = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileType
-  const link = brandTheme.value?.[LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].urlSuffix]
-  const logoName = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName].fileName
-  return getLogo({ client, parents: instances, logoType, contentType: type, link, logoName })
+  const { fileType, fileName, urlSuffix } = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName]
+  const link = brandTheme.value?.[urlSuffix]
+  return getLogo({ client, parents: instances, logoType, contentType: fileType, link, logoName: fileName })
 }
 
 const deployBrandThemeFiles = async (
@@ -51,7 +47,7 @@ const deployBrandThemeFiles = async (
 }> => {
   const [brandLogoChanges, leftoverChanges] = _.partition(
     changes,
-    change => (Object.keys(LOGO_TYPES_TO_VALUES)).includes(getChangeData(change).elemID.typeName),
+    change => logoTypeNames.includes(getChangeData(change).elemID.typeName),
   )
   const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
     const deployResult = await deployLogo(change, client)
@@ -84,22 +80,19 @@ const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
     const brandTheme = elements
       .filter(isInstanceElement)
       .find(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
-
-    if (brandTheme === undefined) {
-      log.warn('No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch')
-      const newEerr: SaltoError = {
-        message: 'No BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
+    if (brandTheme === undefined || getParents(brandTheme)[0].value.elemID.typeName !== BRAND_TYPE_NAME) {
+      log.warn('No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch')
+      const saltoErr: SaltoError = {
+        message: 'No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
         severity: 'Warning',
       }
-      return { errors: [newEerr] }
+      return { errors: [saltoErr] }
     }
-    const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
+    const logoTypes = logoTypeNames.map(logoTypeName => createLogoType(logoTypeName))
+    logoTypes.forEach(logoType => elements.push(logoType))
 
-    const allInstances = await Promise.all(logoTypeNames.map(async logoTypeName => {
-      const brandLogoType = createLogoType(logoTypeName)
-      elements.push(brandLogoType)
-      return getBrandThemeFile(client, brandTheme, brandLogoType)
-    }))
+    const allInstances = await Promise.all(logoTypes.map(async logoType =>
+      getBrandThemeFile(client, brandTheme, logoType)))
 
     const [fetchErrors, instances] = _.partition(allInstances, _.isError)
     instances.forEach(instance => elements.push(instance))

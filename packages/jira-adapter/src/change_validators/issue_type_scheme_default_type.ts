@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_SCHEMA_NAME } from '../constants'
 
 export const issueTypeSchemeDefaultTypeValidator: ChangeValidator = async changes =>
@@ -22,9 +23,9 @@ export const issueTypeSchemeDefaultTypeValidator: ChangeValidator = async change
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === ISSUE_TYPE_SCHEMA_NAME)
-    .filter(instance => isReferenceExpression(instance.value.defaultIssueTypeId))
+    .filter(instance => isResolvedReferenceExpression(instance.value.defaultIssueTypeId))
     .filter(instance => (instance.value.issueTypeIds ?? [])
-      .filter(isReferenceExpression)
+      .filter(isResolvedReferenceExpression)
       .every((issueType: ReferenceExpression) => !issueType.elemID.isEqual(instance.value.defaultIssueTypeId.elemID)))
     .map(instance => ({
       elemID: instance.elemID,

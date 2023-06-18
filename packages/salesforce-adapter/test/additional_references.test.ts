@@ -74,8 +74,8 @@ describe('getAdditionalReferences', () => {
     ])
 
     expect(refs).toEqual([
-      { source: field.elemID, target: permissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c') },
-      { source: field.elemID, target: profileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c') },
+      { source: permissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'), target: field.elemID },
+      { source: profileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'), target: field.elemID },
     ])
   })
 

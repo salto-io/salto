@@ -57,8 +57,8 @@ describe('archivedProjectComponentsFilter', () => {
       projectType,
       {
         components: [
-          new ReferenceExpression(projectComponent1.elemID),
-          new ReferenceExpression(projectComponent2.elemID),
+          new ReferenceExpression(projectComponent1.elemID, {}),
+          new ReferenceExpression(projectComponent2.elemID, {}),
         ],
       }
     )
@@ -72,7 +72,7 @@ describe('archivedProjectComponentsFilter', () => {
       expect(elements[0].elemID.getFullName()).toBe(project.elemID.getFullName())
       expect(elements[1].elemID.getFullName()).toBe(projectComponent1.elemID.getFullName())
       expect(project.value.components).toEqual([
-        new ReferenceExpression(projectComponent1.elemID),
+        new ReferenceExpression(projectComponent1.elemID, {}),
       ])
     })
 

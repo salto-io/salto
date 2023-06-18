@@ -116,14 +116,14 @@ describe('sortListsFilter', () => {
             permission: 'C',
             holder: {
               type: 'A',
-              parameter: new ReferenceExpression(new ElemID(JIRA, 'B')),
+              parameter: new ReferenceExpression(new ElemID(JIRA, 'B'), {}),
             },
           },
           {
             permission: 'C',
             holder: {
               type: 'A',
-              parameter: new ReferenceExpression(new ElemID(JIRA, 'A')),
+              parameter: new ReferenceExpression(new ElemID(JIRA, 'A'), {}),
             },
           },
           {
@@ -157,14 +157,14 @@ describe('sortListsFilter', () => {
           permission: 'C',
           holder: {
             type: 'A',
-            parameter: new ReferenceExpression(new ElemID(JIRA, 'A')),
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'A'), {}),
           },
         },
         {
           permission: 'C',
           holder: {
             type: 'A',
-            parameter: new ReferenceExpression(new ElemID(JIRA, 'B')),
+            parameter: new ReferenceExpression(new ElemID(JIRA, 'B'), {}),
           },
         },
       ],

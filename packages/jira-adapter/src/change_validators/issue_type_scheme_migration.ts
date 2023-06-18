@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { Change, ChangeError, ChangeValidator, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
 import { ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE } from '../constants'
 
@@ -31,8 +31,8 @@ const isSameRef = (ref1: ReferenceExpression, ref2: ReferenceExpression): boolea
 
 const getRemovedIssueTypeIds = (change: ModificationChange<InstanceElement>): ReferenceExpression[] => {
   const { before, after } = change.data
-  const beforeIssueIds = (before.value.issueTypeIds ?? []).filter(isReferenceExpression)
-  const afterIssueIds = (after.value.issueTypeIds ?? []).filter(isReferenceExpression)
+  const beforeIssueIds = (before.value.issueTypeIds ?? []).filter(isResolvedReferenceExpression)
+  const afterIssueIds = (after.value.issueTypeIds ?? []).filter(isResolvedReferenceExpression)
   return _.differenceWith(beforeIssueIds, afterIssueIds, isSameRef)
 }
 
@@ -99,7 +99,7 @@ export const issueTypeSchemeMigrationValidator = (
       .toArray()
     const issueTypeSchemesToProjects = _.groupBy(
       projects.filter(project => project.value.issueTypeScheme !== undefined
-        && isReferenceExpression(project.value.issueTypeScheme)),
+        && isResolvedReferenceExpression(project.value.issueTypeScheme)),
       project => project.value.issueTypeScheme.elemID.getFullName(),
     )
     const errors = await awu(relevantChanges).map(async change => {

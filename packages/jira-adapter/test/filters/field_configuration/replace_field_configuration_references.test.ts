@@ -58,6 +58,7 @@ describe('replaceFieldConfigurationReferencesFilter', () => {
           {
             id: new ReferenceExpression(
               new ElemID(JIRA, FIELD_TYPE_NAME, 'instance', 'fieldInstance'),
+              {}
             ),
             isRequired: true,
           },

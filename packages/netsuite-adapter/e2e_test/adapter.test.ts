@@ -842,7 +842,7 @@ describe('Netsuite adapter E2E with real account', () => {
         logMessage('loading elements from SDF project')
         const res = await adapterCreator.loadElementsFromFolder?.({
           baseDir: projectPath,
-          elementSource: buildElementsSourceFromElements([]),
+          elementsSource: buildElementsSourceFromElements([]),
         })
         loadedElements = res?.elements as Element[]
       })

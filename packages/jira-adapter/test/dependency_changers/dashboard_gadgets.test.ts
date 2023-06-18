@@ -102,7 +102,7 @@ describe('dashboardGadgetsDependencyChanger', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'other')),
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'other'), {}),
         ],
       },
     )

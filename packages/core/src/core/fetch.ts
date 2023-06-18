@@ -1155,7 +1155,8 @@ export const getFetchAdapterAndServicesSetup = async (
   workspace: Workspace,
   fetchServices: string[],
   accountToServiceNameMap: Record<string, string>,
-  ignoreStateElemIdMapping?: boolean
+  elementsSource: ReadOnlyElementsSource,
+  ignoreStateElemIdMapping?: boolean,
 ): Promise<{
   adaptersCreatorConfigs: Record<string, AdapterOperationsContext>
   currentConfigs: InstanceElement[]
@@ -1164,14 +1165,14 @@ export const getFetchAdapterAndServicesSetup = async (
     ? {}
     : await mapValuesAsync(accountToServiceNameMap, async (_service, account) =>
       createElemIdGetter(
-        awu(await (await workspace.elements()).getAll()).filter(e => e.elemID.adapter === account),
+        awu(await elementsSource.getAll()).filter(e => e.elemID.adapter === account),
         workspace.state()
       ))
   const adaptersCreatorConfigs = await getAdaptersCreatorConfigs(
     fetchServices,
     await workspace.accountCredentials(fetchServices),
     workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
+    elementsSource,
     accountToServiceNameMap,
     elemIDGetters,
   )

@@ -51,8 +51,8 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
       return profilesAndPermissionSets
         .filter(instance => _.get(instance.value.fieldPermissions, fieldApiName) !== undefined)
         .map(instance => ({
-          source: field.elemID,
-          target: instance.elemID.createNestedID(FIELD_PERMISSIONS, ...fieldApiName.split(API_NAME_SEPARATOR)),
+          source: instance.elemID.createNestedID(FIELD_PERMISSIONS, ...fieldApiName.split(API_NAME_SEPARATOR)),
+          target: field.elemID,
         }))
     })
     .toArray()

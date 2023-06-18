@@ -27,7 +27,6 @@ import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
 import { appIntegrationSetupValidator } from './app_integration_setup'
 import { assignedAccessPoliciesValidator } from './assigned_policies'
-import { brandThemeFilesValidator } from './brand_files'
 import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
 import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
@@ -67,7 +66,6 @@ export default ({
     enabledAuthenticatorsValidator,
     roleAssignmentValidator,
     usersValidator(client, config),
-    brandThemeFilesValidator,
     appUserSchemaWithInactiveAppValidator,
   ]
 

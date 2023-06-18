@@ -84,6 +84,7 @@ describe('OrganizationExistence', () => {
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+    logTrace.mockReset()
   })
 
   afterEach(() => {
@@ -176,7 +177,7 @@ describe('OrganizationExistence', () => {
       'Full HTTP response for %s on %s: %s',
       'GET',
       '/api/v2/organizations/show_many?ids=1,2',
-      '{"url":"/api/v2/organizations/show_many?ids=1,2","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+      '{"url":"/api/v2/organizations/show_many?ids=1,2","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}',
     ])
   })
 })

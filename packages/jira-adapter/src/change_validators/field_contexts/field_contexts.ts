@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
 import { PROJECT_TYPE } from '../../constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -31,7 +32,7 @@ const getFieldContexts = async (
 ): Promise<InstanceElement[]> =>
   awu(field.value.contexts)
     .filter((ref): ref is ReferenceExpression => {
-      if (!isReferenceExpression(ref)) {
+      if (!isResolvedReferenceExpression(ref)) {
         log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
         return false
       }
@@ -83,7 +84,7 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     .map(project => [
       project.elemID.name,
       new Set(project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
-        if (!isReferenceExpression(ref)) {
+        if (!isResolvedReferenceExpression(ref)) {
           log.warn(`Found a non reference expression in project ${project.elemID.getFullName()}`)
           return false
         }

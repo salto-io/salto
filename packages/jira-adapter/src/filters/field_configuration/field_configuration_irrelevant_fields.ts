@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { isInstanceElement } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_TYPE_NAME } from '../fields/constants'
 
@@ -36,12 +37,12 @@ const filter: FilterCreator = ({ fetchQuery }) => ({
       .forEach(instance => {
         const [fields, trashedFields] = _.partition(
           instance.value.fields,
-          field => isReferenceExpression(field.id)
-            && !field.id.value.value.isLocked
+          field => isResolvedReferenceExpression(field.id)
+           && !field.id.value.value.isLocked
         )
         instance.value.fields = fields
         if (trashedFields.length !== 0) {
-          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => (isReferenceExpression(field.id) ? field.id.elemID.getFullName() : field.id)).join(', ')}`)
+          log.debug(`Removed from ${instance.elemID.getFullName()} fields with ids: ${trashedFields.map(field => (isResolvedReferenceExpression(field.id) ? field.id.elemID.getFullName() : field.id)).join(', ')}`)
         }
       })
   },

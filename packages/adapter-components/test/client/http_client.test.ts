@@ -80,9 +80,11 @@ describe('client_http_client', () => {
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
-      expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
       expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
     })
 
     it('should throw Unauthorized on login 401', async () => {

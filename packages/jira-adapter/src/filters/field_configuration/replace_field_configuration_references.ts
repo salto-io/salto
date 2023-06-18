@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, MapType, ReadOnlyElementsSource, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isInstanceElement, MapType, ReadOnlyElementsSource, ReferenceExpression, Value, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { FIELD_CONFIGURATION_TYPE_NAME, JIRA } from '../../constants'
@@ -29,7 +30,7 @@ const { awu } = collections.asynciterable
 
 const replaceToMap = (instance: InstanceElement): void => {
   instance.value.fields = Object.fromEntries(instance.value.fields
-    .filter((field: Values) => isReferenceExpression(field.id))
+    .filter((field: Values) => isResolvedReferenceExpression(field.id))
     .map((field: Values) => [
       field.id.elemID.name,
       _.omit(field, 'id'),

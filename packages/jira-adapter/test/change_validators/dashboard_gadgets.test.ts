@@ -38,7 +38,7 @@ describe('dashboardGadgetsValidator', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent'), {}),
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent')),
         ],
       },
     )
@@ -60,7 +60,7 @@ describe('dashboardGadgetsValidator', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent'), {}),
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent')),
         ],
       },
     )
@@ -105,7 +105,7 @@ describe('dashboardGadgetsValidator', () => {
       undefined,
       {
         [CORE_ANNOTATIONS.PARENT]: [
-          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent2'), {}),
+          new ReferenceExpression(new ElemID(JIRA, DASHBOARD_TYPE, 'instance', 'parent2')),
         ],
       },
     )

@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
-import { getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { getParents } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { DASHBOARD_GADGET_TYPE } from '../constants'
@@ -27,7 +27,7 @@ export const getGadgetKey = (parentId: ElemID, row: number, column: number): str
   `${parentId.name}-${row}-${column}`
 
 export const getGadgetInstanceKey = (instance: InstanceElement): string => {
-  if (!isResolvedReferenceExpression(getParents(instance)[0])
+  if (!isReferenceExpression(getParents(instance)[0])
   || instance.value.position?.row === undefined
   || instance.value.position.column === undefined) {
     throw new Error(`Received an invalid gadget ${instance.elemID.getFullName()}`)

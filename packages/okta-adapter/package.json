@@ -41,7 +41,8 @@
     "parse-link-header": "^2.0.0",
     "uuid": "^8.3.0",
     "wu": "^2.1.0",
-    "xml-js": "^1.6.11"
+    "xml-js": "^1.6.11",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
     "@salto-io/e2e-credentials-store": "0.3.39",
@@ -52,6 +53,7 @@
     "@typescript-eslint/parser": "4.22.1",
     "axios": "^0.21.3",
     "axios-mock-adapter": "^1.19.0",
+    "axios-retry": "^3.1.9",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",
     "eslint-plugin-header": "^3.0.0",

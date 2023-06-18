@@ -13,9 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, StaticFile, toChange, Value, BuiltinTypes, Field } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  StaticFile,
+  toChange,
+  Value,
+  BuiltinTypes,
+  Field,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { serialize } from '../../src/serializer'
 import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
 import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
@@ -245,7 +255,7 @@ describe('state', () => {
             { ...toChange({ before: elem }), id: elem.elemID }, // Removal
             { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
             { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
-            { ...toChange({ before: elem, after: newElem }), id: newElem.elemID }, // Modification
+            ...detailedCompare(elem, newElem), // Modification
           ],
           unmergedElements,
         })
@@ -264,6 +274,24 @@ describe('state', () => {
           unmergedElements,
           removedElementsFullNames,
         })
+      })
+      it('should call removal of static file that was removed', async () => {
+        const beforeElem = new InstanceElement(
+          'elem',
+          new ObjectType({ elemID: new ElemID('salesforce', 'type') }),
+          {
+            f1: staticFile, // To modify
+          }
+        )
+        const afterElem = beforeElem.clone()
+        delete afterElem.value.f1
+
+        await state.set(beforeElem)
+        await state.updateStateFromChanges({
+          changes: detailedCompare(beforeElem, afterElem),
+        })
+
+        expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
       })
     })
   })

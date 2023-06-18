@@ -18,7 +18,7 @@ import {
   Element,
   ElemID,
   getChangeData, isAdditionChange,
-  isRemovalChange, isStaticFile,
+  isRemovalChange,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -28,6 +28,7 @@ import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
 import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
 import { State, StateData, UpdateStateElementsArgs } from './state'
+import { getDanglingStaticFiles } from '../nacl_files/nacl_files_source'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -101,10 +102,8 @@ export const buildInMemState = (
 
   const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
     const { staticFilesSource } = await stateData()
-    await awu(elemChanges).filter(isRemovalChange).map(getChangeData).filter(isStaticFile)
-      .forEach(async file => {
-        await staticFilesSource.delete(file)
-      })
+    const files = getDanglingStaticFiles(elemChanges)
+    await awu(files).forEach(file => staticFilesSource.delete(file))
   }
 
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> => log.time(async () => {

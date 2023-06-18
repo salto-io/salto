@@ -17,6 +17,7 @@ import { Element, ElemID, ObjectType, DetailedChange, StaticFile, SaltoError, Va
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 
 import { naclFilesSource, NaclFilesSource } from '../../../src/workspace/nacl_files'
@@ -29,6 +30,7 @@ import { InMemoryRemoteMap, RemoteMapCreator, RemoteMap, CreateRemoteMapParams }
 import { ParsedNaclFile } from '../../../src/workspace/nacl_files/parsed_nacl_file'
 import * as naclFileSourceModule from '../../../src/workspace/nacl_files/nacl_files_source'
 import { mockDirStore as createMockDirStore } from '../../common/nacl_file_store'
+import { getDanglingStaticFiles } from '../../../src/workspace/nacl_files/nacl_files_source'
 
 const { awu } = collections.asynciterable
 
@@ -666,6 +668,48 @@ describe('Nacl Files Source', () => {
       expect(Array.from(res.entries())).toEqual([
         ['salesforce.new_elem', ['file']],
       ])
+    })
+  })
+  describe('getDanglingStaticFiles', () => {
+    let beforeElem: InstanceElement
+    let afterElem: InstanceElement
+    let result: StaticFile[] = []
+    const staticFile1 = new StaticFile({ filepath: 'path1', hash: 'hash1' })
+    const staticFile2 = new StaticFile({ filepath: 'path2', hash: 'hash2' })
+    const staticFile3 = new StaticFile({ filepath: 'path3', hash: 'hash3' })
+    const staticFile4 = new StaticFile({ filepath: 'path4', hash: 'hash4' })
+    beforeAll(() => {
+      beforeElem = new InstanceElement(
+        'elem',
+        new ObjectType({ elemID: new ElemID('salesforce', 'type') }),
+        {
+          f1: staticFile1, // To modify
+          f2: staticFile2, // To remove
+          a: { f3: staticFile3 }, // To modify
+          b: { f4: staticFile4 }, // To remove
+        }
+      )
+      afterElem = beforeElem.clone()
+
+      afterElem.value.f1 = staticFile2
+      delete afterElem.value.f2
+      afterElem.value.a = 's'
+      delete afterElem.value.b
+
+      result = getDanglingStaticFiles(detailedCompare(beforeElem, afterElem))
+      expect(result).toHaveLength(4)
+    })
+    it('should return static file that was modified', () => {
+      expect(result).toContain(staticFile1)
+    })
+    it('should return static file that was removed', () => {
+      expect(result).toContain(staticFile2)
+    })
+    it('should return static file nested inside modification of another field', () => {
+      expect(result).toContain(staticFile3)
+    })
+    it('should return static file nested inside removal of another field', () => {
+      expect(result).toContain(staticFile4)
     })
   })
 })

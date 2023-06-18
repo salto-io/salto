@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isReferenceExpression, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { Change, ElemID, InstanceElement, isInstanceChange, isInstanceElement, isTemplateExpression, TemplateExpression } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, setPath, walkOnElement, WALK_NEXT_STEP, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -158,7 +158,7 @@ const filter: FilterCreator = ({ config }) => {
                   isTemplateExpression(jql.jql))
                 .forEach(jql => {
                   const resolvedJql = jql.jql.parts.map(part => {
-                    if (!isReferenceExpression(part)) {
+                    if (!isResolvedReferenceExpression(part)) {
                       return part
                     }
 

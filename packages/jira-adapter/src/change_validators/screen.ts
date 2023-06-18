@@ -13,7 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, isReferenceExpression, SeverityLevel, Values } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel, Values } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 
@@ -30,7 +31,7 @@ export const screenValidator: ChangeValidator = async changes => (
         .flatMap(tab => tab.fields ?? [])
 
       const duplicateFields = _(usedFields)
-        .map(field => (isReferenceExpression(field) ? field.elemID.getFullName() : field))
+        .map(field => (isResolvedReferenceExpression(field) ? field.elemID.getFullName() : field))
         .countBy()
         .pickBy(count => count > 1)
         .keys()

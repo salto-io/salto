@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { transformElement } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression, transformElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject } from '../../utils'
@@ -47,7 +47,7 @@ const replaceWorkflowInScheme = async (
     allowEmpty: true,
     elementsSource,
     transformFunc: ({ value }) => {
-      if (isReferenceExpression(value) && value.elemID.isEqual(beforeWorkflow.elemID)) {
+      if (isResolvedReferenceExpression(value) && value.elemID.isEqual(beforeWorkflow.elemID)) {
         wasChanged = true
         return new ReferenceExpression(afterWorkflow.elemID, afterWorkflow)
       }

@@ -724,7 +724,7 @@ describe('handleHiddenChanges', () => {
         await state.set(hiddenObjClone)
         // This only updates the pathIndex
         await state.updateStateFromChanges({
-          serviceToStateChanges: [],
+          changes: [],
           unmergedElements: [obj, hiddenObj, inst, hidden1, hidden2],
         })
 

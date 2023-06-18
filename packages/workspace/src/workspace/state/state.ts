@@ -24,7 +24,7 @@ import { StateStaticFilesSource } from '../static_files/common'
 export type StateMetadataKey = 'version' | 'hash'
 
 export type UpdateStateElementsArgs = {
-  serviceToStateChanges: DetailedChange[]
+  changes: DetailedChange[]
   unmergedElements?: Element[]
   fetchAccounts?: string[]
 }

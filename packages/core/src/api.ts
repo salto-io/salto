@@ -277,7 +277,7 @@ export const fetch: FetchFunc = async (
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
     await workspace.state().updateStateFromChanges({
-      serviceToStateChanges,
+      changes: serviceToStateChanges,
       unmergedElements,
       fetchAccounts,
     })
@@ -339,7 +339,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
   await workspace.state().updateStateFromChanges({
-    serviceToStateChanges,
+    changes: serviceToStateChanges,
     unmergedElements,
     fetchAccounts,
   })

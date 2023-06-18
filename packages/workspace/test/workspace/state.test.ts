@@ -209,7 +209,7 @@ describe('state', () => {
         await state.setAll(awu([toRemove, toModify, newElem]))
 
         await state.updateStateFromChanges({
-          serviceToStateChanges: [
+          changes: [
             { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
             { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
 
@@ -231,7 +231,7 @@ describe('state', () => {
       it('should update the accounts update dates', async () => {
         const accountsUpdateDates = await state.getAccountsUpdateDates()
         await state.updateStateFromChanges({
-          serviceToStateChanges: [],
+          changes: [],
           fetchAccounts: [adapter],
         })
         const newAccountsUpdateDates = await state.getAccountsUpdateDates()
@@ -241,7 +241,7 @@ describe('state', () => {
         const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
         const unmergedElements = [newElem, elem, nonTopLevelElem]
         await state.updateStateFromChanges({
-          serviceToStateChanges: [
+          changes: [
             { ...toChange({ before: elem }), id: elem.elemID }, // Removal
             { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
             { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition

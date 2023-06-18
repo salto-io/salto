@@ -220,7 +220,7 @@ describe('local state', () => {
       const newElem = new ObjectType({ elemID: new ElemID('mock_adapter', 'new') })
       await state.set(newElem)
       await state.updateStateFromChanges({
-        serviceToStateChanges: [{ action: 'add', data: { after: mockElement }, id: mockElement.elemID }],
+        changes: [{ action: 'add', data: { after: mockElement }, id: mockElement.elemID }],
       })
       const retrievedState = await awu(await state.getAll()).toArray()
       expect(retrievedState.length).toBe(2)
@@ -289,7 +289,7 @@ describe('local state', () => {
     const state = localState('full', '', remoteMapCreator, mockStaticFilesSource())
     // This doesn't fully test the update functionality. That should be tested in path index test.
     // This just tests that we reach the function.
-    await state.updateStateFromChanges({ serviceToStateChanges: [], unmergedElements: [mockElement] })
+    await state.updateStateFromChanges({ changes: [], unmergedElements: [mockElement] })
     const entries = await awu((await state.getPathIndex()).entries()).toArray()
     expect(entries).toEqual(pathIndex.getElementsPathHints([mockElement]))
   })
@@ -385,7 +385,7 @@ describe('local state', () => {
       expect(beforeOverrideDate.salto).toEqual(saltoModificationDate)
       expect(beforeOverrideDate.netsuite).toEqual(netsuiteModificationDate)
       await state.updateStateFromChanges({
-        serviceToStateChanges: [],
+        changes: [],
         unmergedElements: [mockElement],
         fetchAccounts: await state.existingAccounts(),
       })

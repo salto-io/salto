@@ -18,7 +18,7 @@ import {
   Element,
   ElemID,
   getChangeData, isAdditionChange,
-  isRemovalChange,
+  isRemovalChange, isStaticFile,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
@@ -99,7 +99,15 @@ export const buildInMemState = (
     })
   }
 
-  const updateStateElements = async (changes: DetailedChange<Element>[]): Promise<void> => log.time(async () => {
+  const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
+    const { staticFilesSource } = await stateData()
+    await awu(elemChanges).filter(isRemovalChange).map(getChangeData).filter(isStaticFile)
+      .forEach(async file => {
+        await staticFilesSource.delete(file)
+      })
+  }
+
+  const updateStateElements = async (changes: DetailedChange[]): Promise<void> => log.time(async () => {
     const state = (await stateData()).elements
     const changesByTopLevelElement = _.groupBy(
       changes,
@@ -110,7 +118,7 @@ export const buildInMemState = (
       // If the first change is top level, it means the element was added or removed, and it will include all changes
       if (elemID.isTopLevel()) {
         if (isRemovalChange(elemChanges[0])) {
-          await state.delete(elemID)
+          await removeId(elemID)
         } else if (isAdditionChange(elemChanges[0])) {
           await state.set(getChangeData(elemChanges[0]))
         }
@@ -123,6 +131,7 @@ export const buildInMemState = (
       const updatedElem = (await state.get(elemTopLevel)).clone()
       applyDetailedChanges(updatedElem, elemChanges)
       await state.set(updatedElem)
+      await deleteRemovedStaticFiles(elemChanges)
     })
   }, 'updateStateElements')
 
@@ -182,8 +191,8 @@ export const buildInMemState = (
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async (
-      { serviceToStateChanges, unmergedElements, fetchAccounts }: UpdateStateElementsArgs) => {
-      await updateStateElements(serviceToStateChanges)
+      { changes, unmergedElements, fetchAccounts }: UpdateStateElementsArgs) => {
+      await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {
         await updateAccounts(fetchAccounts)
       }
@@ -192,7 +201,7 @@ export const buildInMemState = (
         return
       }
 
-      const removedElementsFullNames = new Set(serviceToStateChanges
+      const removedElementsFullNames = new Set(changes
         .filter(isRemovalChange)
         .map(change => change.id.getFullName()))
 

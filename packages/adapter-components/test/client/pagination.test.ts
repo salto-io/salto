@@ -16,6 +16,7 @@
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
 import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination, getAllPagesWithOffsetAndTotal } from '../../src/client'
+import * as traverseAsync from '../../src/client/pagination/pagination_async'
 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -23,7 +24,10 @@ const { makeArray } = collections.array
 const extractPageEntries: PageEntriesExtractor = page => makeArray(page) as ResponseValue[]
 
 describe('client_pagination', () => {
-  describe('traverseRequests', () => {
+  describe.each([
+    [traverseRequests],
+    [traverseAsync.traverseRequestsAsync],
+  ])('traverseRequests with async %s', traverseRequestsFunc => {
     const client: MockInterface<HTTPReadClientInterface> = {
       getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
@@ -46,7 +50,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -71,7 +75,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -129,7 +133,7 @@ describe('client_pagination', () => {
       }))
       paginationFunc.mockReturnValueOnce([]).mockReturnValueOnce([])
         .mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -165,7 +169,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -228,7 +232,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -285,7 +289,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries,
         customEntryExtractor
@@ -328,7 +332,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries,
         customEntryExtractor
@@ -370,7 +374,7 @@ describe('client_pagination', () => {
           arg1: 'val1',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -405,7 +409,7 @@ describe('client_pagination', () => {
           arg1: 'val1',
         },
       }
-      await expect(toArrayAsync(traverseRequests(
+      await expect(toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -414,84 +418,92 @@ describe('client_pagination', () => {
         getParams,
       }))).rejects.toThrow('Something went wrong')
     })
-    describe('parallel requests', () => {
-      const getParams = {
-        url: '/ep',
-        paginationField: 'page',
-        queryParams: {
-          arg1: 'val1',
-        },
-      }
-      const getNthItem = async (iterable: AsyncIterable<ResponseValue[]>, n: number)
-      : Promise<ResponseValue[] | undefined> => {
-        let currentNum = 0
-        for await (const item of iterable) {
-          if (currentNum === n) {
-            return item
-          }
-          currentNum += 1
+  })
+  describe('traverse requests async', () => {
+    const getParams = {
+      url: '/ep',
+      paginationField: 'page',
+      queryParams: {
+        arg1: 'val1',
+      },
+    }
+    const getNthItem = async (iterable: AsyncIterable<ResponseValue[]>, n: number)
+    : Promise<ResponseValue[] | undefined> => {
+      let currentNum = 0
+      for await (const item of iterable) {
+        if (currentNum === n) {
+          return item
         }
-        return undefined
+        currentNum += 1
       }
-      beforeEach(() => {
-        client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
-          data: {
-            items: [{
-              a: 'a1',
-            }],
-          },
-          status: 200,
-          statusText: 'OK',
-        })).mockResolvedValueOnce(Promise.resolve({
-          data: {
-            items: [{
-              a: 'a2',
-            }],
-          },
-          status: 200,
-          statusText: 'OK',
-        })).mockResolvedValueOnce(Promise.resolve({
-          data: {
-            items: [{
-              a: 'a3',
-            }],
-          },
-          status: 200,
-          statusText: 'OK',
-        }))
-        paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
-          .mockReturnValueOnce([{ page: '6' }]).mockReturnValueOnce([{ page: '8' }])
-      })
-      it('should not call additional calls before asked', async () => {
-        const result = await getNthItem(traverseRequests(
-          paginationFunc,
-          extractPageEntries
-        )({
-          client,
-          pageSize: 1,
-          getParams,
-        }), 0)
-        expect(result).toEqual([{ a: 'a1' }])
-        expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-        expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-        expect(paginationFunc).toHaveBeenCalledTimes(0)
-      })
-      it('should call pages in parallel and return the correct page', async () => {
-        const result = await getNthItem(traverseRequests(
-          paginationFunc,
-          extractPageEntries
-        )({
-          client,
-          pageSize: 1,
-          getParams,
-        }), 1)
-        expect(result).toEqual([{ a: 'a2' }])
-        expect(client.getSinglePage).toHaveBeenCalledTimes(3)
-        expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-        expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
-        expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4', arg1: 'val1' } })
-        expect(paginationFunc).toHaveBeenCalledTimes(1)
-      })
+      return undefined
+    }
+    const client: MockInterface<HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
+    }
+    const paginationFunc = mockFunction<PaginationFunc>()
+    beforeEach(() => {
+      client.getSinglePage.mockReset()
+      client.getPageSize.mockReset()
+      paginationFunc.mockReset()
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a1',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a2',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a3',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
+        .mockReturnValueOnce([{ page: '6' }]).mockReturnValueOnce([{ page: '8' }])
+    })
+    it('should not call additional calls before asked', async () => {
+      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }), 0)
+      expect(result).toEqual([{ a: 'a1' }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(0)
+    })
+    it('should call pages in parallel and return the correct page', async () => {
+      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }), 1)
+      expect(result).toEqual([{ a: 'a2' }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(3)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4', arg1: 'val1' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
     })
   })
   describe('getWithItemIndexPagination', () => {
@@ -1127,12 +1139,15 @@ describe('client_pagination', () => {
   })
 
   describe('createPaginator', () => {
-    const client: MockInterface<HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
-    }
+    let client: MockInterface<HTTPReadClientInterface>
+    beforeEach(() => {
+      client = {
+        getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+        getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
+      }
+    })
 
-    it('should call the pagination function with the right paramters', () => {
+    it('should call the pagination function with the right parameters', () => {
       const paginationFuncCreator: PaginationFuncCreator = mockFunction<PaginationFuncCreator>()
       const paginator = createPaginator({ client, paginationFuncCreator })
       const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
@@ -1143,6 +1158,20 @@ describe('client_pagination', () => {
         pageSize: 3,
         getParams: params,
       })
+    })
+    it('should call the async pagination function with the right parameters', () => {
+      const paginationFuncCreator = mockFunction<PaginationFuncCreator>()
+      const traverseSpy = jest.spyOn(traverseAsync, 'traverseRequestsAsync')
+      const paginator = createPaginator({ client, paginationFuncCreator, asyncRun: true })
+      const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
+      paginator(params, extractPageEntries)
+      expect(paginationFuncCreator).toHaveBeenCalledTimes(1)
+      expect(paginationFuncCreator).toHaveBeenLastCalledWith({
+        client,
+        pageSize: 3,
+        getParams: params,
+      })
+      expect(traverseSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

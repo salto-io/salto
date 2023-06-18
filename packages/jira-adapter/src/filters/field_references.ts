@@ -27,7 +27,7 @@ const filter: FilterCreator = ({ config }) => ({
   onFetch: async (elements: Element[]) => {
     const fixedDefs = referencesRules
       .map(def => (
-        config.fetch.enableMissingReferences ? def : _.omit(def, 'JiraMissingRefStrategy')
+        config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
       ))
     await referenceUtils.addReferences({
       elements,

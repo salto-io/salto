@@ -43,13 +43,11 @@ import privateApiDeployFilter from './filters/private_api_deploy'
 import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
 import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
+import templateUrlsFilter from './filters/template_urls'
+import { OKTA } from './constants'
+import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
 import schemaFieldsRemovalFilter from './filters/schema_field_removal'
-import appLogoFilter from './filters/app_logo'
-import brandThemeFilesFilter from './filters/brand_theme_files'
-import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
-import { getLookUpName } from './reference_mapping'
-
 
 const { awu } = collections.asynciterable
 
@@ -75,26 +73,19 @@ export const DEFAULT_FILTERS = [
   userFilter,
   oktaExpressionLanguageFilter,
   profileEnrollmentAttributesFilter,
-  defaultPolicyRuleDeployment,
-  policyRuleRemoval,
-  schemaFieldsRemovalFilter,
-  appLogoFilter,
-  brandThemeFilesFilter,
+  templateUrlsFilter,
   fieldReferencesFilter,
   // should run before appDeploymentFilter and after userSchemaFilter
   serviceUrlFilter,
   appDeploymentFilter,
+  defaultPolicyRuleDeployment,
+  policyRuleRemoval,
+  schemaFieldsRemovalFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,
   // should run last
   defaultDeployFilter,
-]
-
-const SKIP_RESOLVE_TYPE_NAMES = [
-  APP_LOGO_TYPE_NAME,
-  BRAND_LOGO_TYPE_NAME,
-  FAV_ICON_TYPE_NAME,
 ]
 
 export interface OktaAdapterParams {
@@ -269,9 +260,7 @@ export default class OktaAdapter implements AdapterOperations {
 
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
-          ? change
-          : resolveChangeElement(change, getLookUpName))).toArray()
+        resolveChangeElement(change, getLookUpName)).toArray()
     const runner = this.createFiltersRunner()
     await runner.preDeploy(resolvedChanges)
 

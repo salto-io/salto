@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -181,58 +181,84 @@ const deployWorkflowModification = async ({
   await cleanTempInstance()
 }
 
-const filter: FilterCreator = ({ client, config, elementsSource, paginator }) => ({
-  name: 'workflowModificationFilter',
-  onFetch: async elements => {
-    if (!config.client.usePrivateAPI) {
-      log.debug('Skipping workflow modification filter because private API is not enabled')
-
-      return
+const getWorkflowSchemeIds = (elementsSource: ReadOnlyElementsSource): () => Promise<ElemID[]> => {
+  let ids: ElemID[]
+  let workflowSchemesPromise: Promise<ElemID[]>
+  return async (): Promise<ElemID[]> => {
+    if (ids === undefined) {
+      if (workflowSchemesPromise === undefined) {
+        workflowSchemesPromise = awu(await elementsSource.list())
+          .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+          .filter(id => id.idType === 'instance')
+          .toArray()
+      }
+      ids = await workflowSchemesPromise
     }
-    const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
-    if (workflowType !== undefined) {
-      workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
-      await addAnnotationRecursively(workflowType, CORE_ANNOTATIONS.UPDATABLE)
-    }
-  },
+    return ids
+  }
+}
 
-  deploy: async changes => {
-    const [relevantChanges, leftoverChanges] = _.partition(
-      changes,
-      change => isInstanceChange(change)
-        && isModificationChange(change)
-        && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
-    )
+const filter: FilterCreator = ({ client, config, elementsSource, paginator }) => {
+  const workflowSchemesIdsCache = getWorkflowSchemeIds(elementsSource)
+  return {
+    name: 'workflowModificationFilter',
+    onFetch: async elements => {
+      if (!config.client.usePrivateAPI) {
+        log.debug('Skipping workflow modification filter because private API is not enabled')
 
-    const workflowSchemes = await awu(await elementsSource.list())
-      .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementsSource.get(id))
-      // instance.value.id is undefined when the workflow scheme
-      // is an addition change in the current deployment and was
-      // not deployed yet
-      .filter(instance => instance.value.id !== undefined)
-      .toArray()
+        return
+      }
+      const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
+      if (workflowType !== undefined) {
+        workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE] = true
+        await addAnnotationRecursively(workflowType, CORE_ANNOTATIONS.UPDATABLE)
+      }
+    },
 
-    const deployResult = await deployChanges(
-      relevantChanges
-        .filter(isInstanceChange)
-        .filter(isModificationChange),
-      async change => deployWorkflowModification({
-        change,
-        client,
-        paginator,
-        config,
-        workflowSchemes,
-        elementsSource,
-      }),
-    )
+    deploy: async changes => {
+      const [relevantChanges, leftoverChanges] = _.partition(
+        changes,
+        change => isInstanceChange(change)
+          && isModificationChange(change)
+          && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
+      )
+      if (relevantChanges.length === 0) {
+        return {
+          leftoverChanges,
+          deployResult: { appliedChanges: [], errors: [] },
+        }
+      }
+      // We want to store the schemes as RocksDb is single threaded and calling list() is expensive
+      // However, elementInstances can change so the 'get' is outside the cache
+      const workflowSchemesIds = await workflowSchemesIdsCache()
+      const workflowSchemes = await awu(workflowSchemesIds)
+        .map(id => elementsSource.get(id))
+        // instance.value.id is undefined when the workflow scheme
+        // is an addition change in the current deployment and was
+        // not deployed yet
+        .filter(instance => instance.value.id !== undefined)
+        .toArray()
 
-    return {
-      leftoverChanges,
-      deployResult,
-    }
-  },
-})
+      const deployResult = await deployChanges(
+        relevantChanges
+          .filter(isInstanceChange)
+          .filter(isModificationChange),
+        async change => deployWorkflowModification({
+          change,
+          client,
+          paginator,
+          config,
+          workflowSchemes,
+          elementsSource,
+        }),
+      )
+
+      return {
+        leftoverChanges,
+        deployResult,
+      }
+    },
+  }
+}
 
 export default filter

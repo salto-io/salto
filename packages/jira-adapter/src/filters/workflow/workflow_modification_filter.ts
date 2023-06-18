@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { logger } from '@salto-io/logging'
-import { AdditionChange, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
+import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression, RemovalChange, toChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -181,25 +181,26 @@ const deployWorkflowModification = async ({
   await cleanTempInstance()
 }
 
-const getWorkflowSchemeIds = (elementsSource: ReadOnlyElementsSource): () => Promise<ElemID[]> => {
-  let ids: ElemID[]
-  let workflowSchemesPromise: Promise<ElemID[]>
-  return async (): Promise<ElemID[]> => {
-    if (ids === undefined) {
-      if (workflowSchemesPromise === undefined) {
-        workflowSchemesPromise = awu(await elementsSource.list())
-          .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
-          .filter(id => id.idType === 'instance')
-          .toArray()
-      }
-      ids = await workflowSchemesPromise
+const getWorkflowSchemes = (elementsSource: ReadOnlyElementsSource): () => Promise<InstanceElement[]> => {
+  let workflowSchemesPromise: Promise<InstanceElement[]>
+  return async (): Promise<InstanceElement[]> => {
+    if (workflowSchemesPromise === undefined) {
+      workflowSchemesPromise = awu(await elementsSource.list())
+        .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+        .filter(id => id.idType === 'instance')
+        .map(id => elementsSource.get(id))
+        // instance.value.id is undefined when the workflow scheme
+        // is an addition change in the current deployment and was
+        // not deployed yet
+        .filter(instance => instance.value.id !== undefined)
+        .toArray()
     }
-    return ids
+    return workflowSchemesPromise
   }
 }
 
 const filter: FilterCreator = ({ client, config, elementsSource, paginator }) => {
-  const workflowSchemesIdsCache = getWorkflowSchemeIds(elementsSource)
+  const workflowSchemesCache = getWorkflowSchemes(elementsSource)
   return {
     name: 'workflowModificationFilter',
     onFetch: async elements => {
@@ -229,15 +230,7 @@ const filter: FilterCreator = ({ client, config, elementsSource, paginator }) =>
         }
       }
       // We want to store the schemes as RocksDb is single threaded and calling list() is expensive
-      // However, elementInstances can change so the 'get' is outside the cache
-      const workflowSchemesIds = await workflowSchemesIdsCache()
-      const workflowSchemes = await awu(workflowSchemesIds)
-        .map(id => elementsSource.get(id))
-        // instance.value.id is undefined when the workflow scheme
-        // is an addition change in the current deployment and was
-        // not deployed yet
-        .filter(instance => instance.value.id !== undefined)
-        .toArray()
+      const workflowSchemes = await workflowSchemesCache()
 
       const deployResult = await deployChanges(
         relevantChanges

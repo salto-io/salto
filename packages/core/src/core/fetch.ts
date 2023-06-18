@@ -575,7 +575,7 @@ export const calcFetchChanges = async (
   accountElements: ReadonlyArray<Element>,
   mergedAccountElements: ReadonlyArray<Element>,
   stateElements: elementSource.ElementsSource,
-  workspaceElements: elementSource.ElementsSource,
+  workspaceElements: ReadOnlyElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
 ): Promise<CalcFetchChangesResult> => {

@@ -202,7 +202,7 @@ describe('api.ts', () => {
       it('should update the state', async () => {
         const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
         expect(updateParams).toEqual({
-          serviceToStateChanges: [],
+          changes: [],
           unmergedElements: fetchedElements,
           fetchAccounts: ACCOUNTS,
         })

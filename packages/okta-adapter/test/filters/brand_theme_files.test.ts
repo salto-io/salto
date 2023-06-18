@@ -22,7 +22,7 @@ import { getFilterParams, mockClient } from '../utils'
 import brandThemeFilesFilter from '../../src/filters/brand_theme_files'
 import { FilterResult } from '../../src/filter'
 
-describe('barnd files filter', () => {
+describe('brand files filter', () => {
   let mockGet: jest.SpyInstance
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'deploy' | 'onFetch', FilterResult>
@@ -72,7 +72,7 @@ describe('barnd files filter', () => {
         throw new Error('Err')
       })
     })
-    it('should create brandLogo type favIcon type and brnadLogo instance and favIcon instance', async () => {
+    it('should create brandLogo type favIcon type and brandLogo instance and favIcon instance', async () => {
       const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       expect(elements.map(e => e.elemID.getFullName()).sort())

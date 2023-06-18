@@ -100,7 +100,7 @@ describe('logo filter', () => {
       expect(logo?.annotations[CORE_ANNOTATIONS.PARENT])
         .toContainEqual(new ReferenceExpression(appInstance.elemID, appInstance))
     })
-    it('should return error when contentis not buffer', async () => {
+    it('should return error when content is not buffer', async () => {
       mockGet.mockImplementationOnce(() => {
         throw new Error('Err')
       })

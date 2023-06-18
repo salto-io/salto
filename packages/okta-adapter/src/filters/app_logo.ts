@@ -32,6 +32,7 @@ const { getInstanceName } = elementsUtils
 const ALLOWED_LOGO_FILE_TYPES = new Set(['png', 'jpg', 'gif'])
 
 type App = InstanceElement & {
+  value:{
   id: string
   label: string
   _links: {
@@ -41,6 +42,7 @@ type App = InstanceElement & {
     name: string
     }]
   }
+}
 }
 const EXPECTED_APP_SCHEMA = Joi.object({
   id: Joi.string().required(),

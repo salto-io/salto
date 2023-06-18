@@ -63,6 +63,38 @@ export type PaginationFuncCreator<T = {}> = (args: {
   getParams: ClientGetWithPaginationParams
 } & T) => PaginationFunc
 
+const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<void> => {
+  await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
+}
+
+type keyFromPromiseResult<T> = (result: T) => string
+class PromisesQueue<T> {
+  private readonly promises: Map<string, Promise<T>>
+  private readonly hashFunc: keyFromPromiseResult<T>
+  constructor(hashFunc: keyFromPromiseResult<T>) {
+    this.promises = new Map()
+    this.hashFunc = hashFunc
+  }
+
+  enqueue(key: string, promise: Promise<T>): void {
+    this.promises.set(key, promise)
+  }
+
+  async dequeue(): Promise<T> {
+    const promise = await Promise.race(this.promises.values())
+    this.promises.delete(this.hashFunc(promise))
+    return promise
+  }
+
+  size(): number {
+    return this.promises.size
+  }
+
+  async clear(): Promise<void> {
+    await allSettled(this.promises.values())
+  }
+}
+
 /**
  * Helper function for generating individual recursive queries based on past responses.
  *
@@ -87,10 +119,6 @@ const computeRecursiveArgs = (
     : []
 )
 
-const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<void> => {
-  await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
-}
-
 
 type PaginationResult = {
   page: ResponseValue[]
@@ -100,7 +128,7 @@ type PaginationResult = {
 }
 
 type GetPageArgs = {
-  promisesQueue: Map<string, Promise<PaginationResult>>
+  promisesQueue: PromisesQueue<PaginationResult>
   paginationFunc: PaginationFunc
   client: HTTPReadClientInterface
   extractPageEntries: PageEntriesExtractor
@@ -150,14 +178,15 @@ const pushPage = (pageArgs: GetPageArgs, additionalArgs: Record<string, string>)
   }
   pageArgs.usedParams.add(argsHash)
   const result = singlePagePagination(pageArgs, additionalArgs)
-  pageArgs.promisesQueue.set(argsHash, result)
+  pageArgs.promisesQueue.enqueue(argsHash, result)
 }
 
-const addNextPages = ({ pageArgs, page, response, additionalArgs } :
-  { pageArgs: GetPageArgs
+const addNextPages = ({ pageArgs, page, response, additionalArgs } :{
+    pageArgs: GetPageArgs
     response: Response<ResponseValue | ResponseValue[]>
     page: ResponseValue[]
-    additionalArgs: Record<string, string> }): void => {
+    additionalArgs: Record<string, string>
+}): void => {
   const { getParams, paginationFunc, pageSize } = pageArgs
   const { recursiveQueryParams } = getParams
   paginationFunc({
@@ -174,15 +203,18 @@ const addNextPages = ({ pageArgs, page, response, additionalArgs } :
     computeRecursiveArgs(page, recursiveQueryParams).forEach(args => pushPage(pageArgs, args))
   }
 }
-
-// The traverseRequests function is a generator that yields pages of results from a paginated
-// endpoint. It takes a paginationFunc that is responsible for extracting the next pages of results
-// from the response, and an extractPageEntries function that is responsible for extracting the
-// entries from the page.
-// the function processes all existing pages simultaneously, and yields the pages as they arrive.
-// Its primary priority is to keep the number of concurrent requests to a maximum, and deal with results only
-// when there are no requests to send
-export const traverseRequests: (
+/**
+* The traverseRequests function is a generator that yields pages of results from a paginated
+* endpoint.
+* the function processes all existing pages simultaneously, and yields the pages as they arrive.
+* Its primary priority is to keep the number of concurrent requests to a maximum, and deal with results only
+* when there are no requests to send
+* @param paginationFunc a function that is responsible for extracting the next pages of results
+* from the response
+* @param extractPageEntries a function that is responsible for extracting the
+* entries from the page.
+*/
+export const traverseRequestsAsync: (
   paginationFunc: PaginationFunc,
   extractPageEntries: PageEntriesExtractor,
   customEntryExtractor?: PageEntriesExtractor,
@@ -194,7 +226,9 @@ export const traverseRequests: (
   getParams,
 }) {
   const usedParams = new Set<string>()
-  const promisesQueue: Map<string, Promise<PaginationResult>> = new Map()
+  const promisesQueue: PromisesQueue<PaginationResult> = new PromisesQueue<PaginationResult>(
+    (result: PaginationResult): string => objectHash(result.additionalArgs)
+  )
   let numResults = 0
   const pageArgs = {
     promisesQueue,
@@ -207,11 +241,10 @@ export const traverseRequests: (
     usedParams,
   }
   pushPage(pageArgs, {})
-  while (promisesQueue.size > 0) {
+  while (promisesQueue.size() > 0) {
     try {
       // eslint-disable-next-line no-await-in-loop
-      const result = await Promise.race(promisesQueue.values())
-      promisesQueue.delete(objectHash(result.additionalArgs))
+      const result = await promisesQueue.dequeue()
       if (result.yieldResult) {
         yield result.page
         numResults += result.page.length
@@ -225,12 +258,83 @@ export const traverseRequests: (
     } catch (e) {
       // avoid leaking promises
       // eslint-disable-next-line no-await-in-loop
-      await allSettled(promisesQueue.values())
+      await promisesQueue.clear()
       throw e
     }
   }
   // the number of results may be lower than actual if the instances are under a nested field
   log.info('Received %d results for endpoint %s', numResults, getParams.url)
+}
+
+export const traverseRequests: (
+  paginationFunc: PaginationFunc,
+  extractPageEntries: PageEntriesExtractor,
+  customEntryExtractor?: PageEntriesExtractor,
+) => GetAllItemsFunc = (
+  paginationFunc, extractPageEntries, customEntryExtractor,
+) => async function *getPages({
+  client,
+  pageSize,
+  getParams,
+}) {
+  const { url, queryParams, recursiveQueryParams, headers } = getParams
+  const requestQueryArgs: Record<string, string>[] = [{}]
+  const usedParams = new Set<string>()
+  let numResults = 0
+
+  while (requestQueryArgs.length > 0) {
+    const additionalArgs = requestQueryArgs.pop() as Record<string, string>
+    const serializedArgs = safeJsonStringify(additionalArgs)
+    if (usedParams.has(serializedArgs)) {
+      // eslint-disable-next-line no-continue
+      continue
+    }
+    usedParams.add(serializedArgs)
+    const params = { ...queryParams, ...additionalArgs }
+    // eslint-disable-next-line no-await-in-loop
+    const response = await client.getSinglePage({
+      url,
+      queryParams: Object.keys(params).length > 0 ? params : undefined,
+      headers,
+    })
+
+    if (response.status !== 200) {
+      log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
+      break
+    }
+
+    const entries = (
+      (!Array.isArray(response.data) && Array.isArray(response.data.items))
+        ? response.data.items
+        : makeArray(response.data)
+    ).flatMap(extractPageEntries)
+
+    // checking original entries and not the ones that passed the custom extractor, because even if all entries are
+    // filtered out we should still continue querying
+    if (entries.length === 0) {
+      // eslint-disable-next-line no-continue
+      continue
+    }
+    const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
+
+    yield page
+    numResults += page.length
+
+    requestQueryArgs.unshift(...paginationFunc({
+      responseData: response.data,
+      page,
+      getParams,
+      pageSize,
+      currentParams: additionalArgs,
+      responseHeaders: response.headers,
+    }))
+
+    if (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0) {
+      requestQueryArgs.unshift(...computeRecursiveArgs(page, recursiveQueryParams))
+    }
+  }
+  // the number of results may be lower than actual if the instances are under a nested field
+  log.info('Received %d results for endpoint %s', numResults, url)
 }
 
 /**
@@ -386,14 +490,16 @@ export type Paginator = (
 /**
  * Wrap a pagination function for use by the adapter
  */
-export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client }: {
+export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client, asyncRun = false }: {
   paginationFuncCreator: PaginationFuncCreator
   customEntryExtractor?: PageEntriesExtractor
   client: HTTPReadClientInterface
-}): Paginator => (
-  (getParams, extractPageEntries) => traverseRequests(
+  asyncRun?: boolean
+}): Paginator => {
+  const traverseRequestsFunc = asyncRun ? traverseRequestsAsync : traverseRequests
+  return (getParams, extractPageEntries) => traverseRequestsFunc(
     paginationFuncCreator({ client, pageSize: client.getPageSize(), getParams }),
     extractPageEntries,
     customEntryExtractor,
   )({ client, pageSize: client.getPageSize(), getParams })
-)
+}

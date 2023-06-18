@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployResult, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, DeployModifiers, getChangeData, isObjectType,
+  FetchOptions, DeployModifiers, getChangeData, isObjectType, ElemID,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -309,8 +309,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
       : []
     const { elements: customRecords, largeTypesError: failedCustomRecords } = await customRecordsPromise
 
+    const almostAll = baseElements.filter(elem => (elem.elemID.typeName !== 'role' || elem.elemID.idType === 'type'))
+    const deletedElements: ElemID[] = baseElements.filter(elem => elem.elemID.typeName === 'role').filter(elem => elem.elemID.idType === 'instance').map(elem => elem.elemID)
+    // const deletedElements: ElemID[] = []
+
     const elements = [
-      ...baseElements,
+      ...almostAll,
       ...dataElements,
       ...suiteAppConfigElements,
       ...serverTimeElements,
@@ -327,6 +331,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         failedCustomRecords,
       },
       elements,
+      deletedElements,
     }
   }
 
@@ -372,7 +377,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     })
     const isPartial = fetchWithChangesDetection || hasFetchTarget
 
-    const { failures, elements } = await this.fetchByQuery(
+    const { failures, elements, deletedElements } = await this.fetchByQuery(
       fetchQuery,
       progressReporter,
       fetchWithChangesDetection,
@@ -382,9 +387,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
     if (_.isUndefined(updatedConfig)) {
-      return { elements, isPartial }
+      return { elements, isPartial, deletedElements }
     }
-    return { elements, updatedConfig, isPartial }
+    return { elements, updatedConfig, isPartial, deletedElements }
   }
 
   private async runSuiteAppOperations(

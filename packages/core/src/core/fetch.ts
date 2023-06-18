@@ -319,6 +319,7 @@ const isAdapterOperationsWithPostFetch = (
 const runPostFetch = async ({
   adapters,
   accountElements,
+  accountDeletedElements,
   stateElementsByAccount,
   partiallyFetchedAccounts,
   accountToServiceNameMap,
@@ -326,18 +327,21 @@ const runPostFetch = async ({
 }: {
   adapters: Record<string, AdapterOperationsWithPostFetch>
   accountElements: Element[]
+  accountDeletedElements: ElemID[]
   stateElementsByAccount: Record<string, ReadonlyArray<Element>>
   partiallyFetchedAccounts: Set<string>
   accountToServiceNameMap: Record<string, string>
   progressReporters: Record<string, ProgressReporter>
 }): Promise<void> => {
   const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
+  const serviceDeletedElementsByAccount = _.groupBy(accountDeletedElements, elemId => elemId.adapter)
   const getAdapterElements = (accountName: string): ReadonlyArray<Element> => {
     if (!partiallyFetchedAccounts.has(accountName)) {
       return serviceElementsByAccount[accountName] ?? stateElementsByAccount[accountName]
     }
     const fetchedIDs = new Set(
       serviceElementsByAccount[accountName].map(e => e.elemID.getFullName())
+        .concat(serviceDeletedElementsByAccount[accountName].map(elemId => elemId.getFullName()))
     )
     const missingElements = stateElementsByAccount[accountName].filter(
       e => !fetchedIDs.has(e.elemID.getFullName())
@@ -376,6 +380,7 @@ const fetchAndProcessMergeErrors = async (
 ):
   Promise<{
     accountElements: Element[]
+    accountDeletedElements: ElemID[]
     errors: SaltoError[]
     processErrorsResult: ProcessMergeErrorsResult
     updatedConfigs: UpdatedConfig[]
@@ -457,6 +462,7 @@ const fetchAndProcessMergeErrors = async (
           // of the flattenElementStr method for more details.
           return {
             elements: fetchResult.elements.map(flattenElementStr),
+            deletedElements: fetchResult.deletedElements ?? [],
             errors: errors ?? [],
             updatedConfig: updatedConfig
               ? {
@@ -471,6 +477,7 @@ const fetchAndProcessMergeErrors = async (
         })
     )
     const accountElements = _.flatten(fetchResults.map(res => res.elements))
+    const accountDeletedElements = _.flatten(fetchResults.map(res => res.deletedElements))
     const fetchErrors = fetchResults.flatMap(res => res.errors)
     const updatedConfigs = fetchResults
       .map(res => res.updatedConfig)
@@ -501,6 +508,7 @@ const fetchAndProcessMergeErrors = async (
         await runPostFetch({
           adapters: adaptersWithPostFetch,
           accountElements,
+          accountDeletedElements,
           stateElementsByAccount,
           partiallyFetchedAccounts,
           accountToServiceNameMap,
@@ -533,6 +541,7 @@ const fetchAndProcessMergeErrors = async (
 
     return {
       accountElements: validAccountElements,
+      accountDeletedElements,
       errors: fetchErrors,
       processErrorsResult,
       updatedConfigs,
@@ -577,7 +586,8 @@ export const calcFetchChanges = async (
   stateElements: elementSource.ElementsSource,
   workspaceElements: elementSource.ElementsSource,
   partiallyFetchedAccounts: Set<string>,
-  allFetchedAccounts: Set<string>
+  allFetchedAccounts: Set<string>,
+  accountDeletedElementNames?: ReadonlyArray<string>,
 ): Promise<CalcFetchChangesResult> => {
   const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
   // When we init a new env, state will be empty. We fallback to the workspace
@@ -587,6 +597,7 @@ export const calcFetchChanges = async (
 
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
+    || accountDeletedElementNames?.includes(id.getFullName())
     || mergedAccountElementsSource.has(id)
   )
   const accountFetchFilter: IDFilter = id =>
@@ -594,7 +605,9 @@ export const calcFetchChanges = async (
   const partialFetchElementSource: ReadOnlyElementsSource = {
     get: async (id: ElemID): Promise<Element | undefined> => {
       const mergedElem = await mergedAccountElementsSource.get(id)
-      if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
+      if (mergedElem === undefined
+        && partiallyFetchedAccounts.has(id.adapter)
+        && !accountDeletedElementNames?.includes(id.getFullName())) {
         // Use the same element source as the fetch runs with, see `getFetchAdapterAndServicesSetup`
         return workspaceElements.get(id)
       }
@@ -705,6 +718,7 @@ type CreateFetchChangesParams = {
   workspaceElements: elementSource.ElementsSource
   stateElements: elementSource.ElementsSource
   unmergedElements: Element[]
+  deletedElements: ElemID[]
   processErrorsResult: ProcessMergeErrorsResult
   currentConfigs: InstanceElement[]
   getChangesEmitter: StepEmitter
@@ -714,7 +728,7 @@ type CreateFetchChangesParams = {
   progressEmitter?: EventEmitter<FetchProgressEvents>
 }
 const createFetchChanges = async ({
-  adapterNames, workspaceElements, stateElements, unmergedElements,
+  adapterNames, workspaceElements, stateElements, unmergedElements, deletedElements,
   processErrorsResult, currentConfigs, getChangesEmitter, partiallyFetchedAccounts = new Set(),
   updatedConfigs = [], errors = [], progressEmitter,
 }: CreateFetchChangesParams
@@ -724,6 +738,7 @@ const createFetchChanges = async ({
     getChangesEmitter.emit('completed')
     progressEmitter.emit('diffWillBeCalculated', calculateDiffEmitter)
   }
+  const deletedElementNames = deletedElements.map(elemId => elemId.getFullName())
   const isFirstFetch = await awu(await workspaceElements.list())
     .concat(await stateElements.list())
     .filter(e => !e.isConfigType())
@@ -737,7 +752,8 @@ const createFetchChanges = async ({
       stateElements,
       workspaceElements,
       partiallyFetchedAccounts,
-      new Set(adapterNames)
+      new Set(adapterNames),
+      deletedElementNames,
     )
   log.debug('finished to calculate fetch changes')
   if (progressEmitter) {
@@ -770,6 +786,7 @@ const createFetchChanges = async ({
     ? _(await awu(await stateElements.getAll()).toArray())
       .filter(e => partiallyFetchedAccounts.has(e.elemID.adapter))
       .unshift(...processErrorsResult.keptElements)
+      .filter(e => !deletedElementNames.includes(e.elemID.getFullName()))
       .uniqBy(e => e.elemID.getFullName())
       .value()
     : processErrorsResult.keptElements
@@ -802,7 +819,7 @@ export const fetchChanges = async (
     progressEmitter.emit('changesWillBeFetched', getChangesEmitter, accountNames)
   }
   const {
-    accountElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAccounts,
+    accountElements, accountDeletedElements, errors, processErrorsResult, updatedConfigs, partiallyFetchedAccounts,
   } = await fetchAndProcessMergeErrors(
     accountsToAdapters,
     stateElements,
@@ -821,6 +838,7 @@ export const fetchChanges = async (
   )
   return createFetchChanges({
     unmergedElements: accountElements,
+    deletedElements: accountDeletedElements,
     adapterNames: Object.keys(accountsToAdapters),
     workspaceElements,
     stateElements,
@@ -1039,6 +1057,7 @@ export const fetchChangesFromWorkspace = async (
       stateElements,
       workspaceElements,
       unmergedElements,
+      deletedElements: [],
     }), 'Creating Fetch Changes')
   // We currently cannot access the content of static files from the state so when fetching
   // from the state we use the content from the NaCls, if there is a mis-match there we have

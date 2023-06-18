@@ -24,10 +24,10 @@ import { mockTypes } from '../mock_elements'
 describe('loadElementsFromFolder', () => {
   let elements: Element[]
   beforeAll(async () => {
-    const elementSource = buildElementsSourceFromElements(Object.values(mockTypes))
+    const elementsSource = buildElementsSourceFromElements(Object.values(mockTypes))
     const loadElementsRes = await loadElementsFromFolder({
       baseDir: path.join(__dirname, 'test_sfdx_project'),
-      elementSource,
+      elementsSource,
     })
     elements = loadElementsRes.elements
   })

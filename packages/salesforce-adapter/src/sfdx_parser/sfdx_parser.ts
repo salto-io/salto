@@ -216,13 +216,13 @@ const getDXPackageDirs = async (baseDir: string): Promise<string[]> => {
 
 export const loadElementsFromFolder = async ({
   baseDir,
-  elementSource,
+  elementsSource,
 }: LoadElementsFromFolderArgs): Promise<FetchResult> => {
   const packages = await getDXPackageDirs(baseDir)
-  const types = await getElementTypesForSFDX(elementSource)
+  const types = await getElementTypesForSFDX(elementsSource)
   return {
     elements: await awu(packages)
-      .flatMap(pkg => getElementsFromDXFolder(pkg, elementSource, types))
+      .flatMap(pkg => getElementsFromDXFolder(pkg, elementsSource, types))
       .toArray(),
   }
 }

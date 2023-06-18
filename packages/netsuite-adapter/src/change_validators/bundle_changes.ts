@@ -25,7 +25,7 @@ const isBundleInstance = (element: Element): element is InstanceElement =>
   isInstanceElement(element) && isBundleType(element.refType)
 
 const getBundlesChangeError = (changeData: ChangeDataType): ChangeError | undefined => {
-  if (isFileCabinetInstance(changeData) && isDefined(changeData.value.bundleId)) {
+  if (isFileCabinetInstance(changeData) && isDefined(changeData.value.bundle)) {
     return {
       // TODO: consult PM on error messages
       message: '',

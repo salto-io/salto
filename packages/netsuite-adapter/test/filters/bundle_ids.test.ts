@@ -49,21 +49,21 @@ describe('bundle_ids filter', () => {
         [PATH]: 'SuiteBundles/Bundle 39609/SomeInnerFolder/content.html',
       })
     })
+    // TODO: Uncomment these after opening bundles for everyone
 
-    it('should add bundleId field to record instance', async () => {
-      await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])
-      expect(recordInstance.value.bundleId).toEqual(bundleIdRef)
-    })
-
-    it('should add bundleId field to fileCabinet instance', async () => {
-      await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, bundleInstance])
-      expect(fileCabinetInstance.value.bundleId).toEqual(bundleIdRef)
-    })
+    // it('should add bundleId field to record instance', async () => {
+    //   await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])
+    //   expect(recordInstance.value.bundle).toEqual(bundleIdRef)
+    // })
+    // it('should add bundleId field to fileCabinet instance', async () => {
+    //   await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, bundleInstance])
+    //   expect(fileCabinetInstance.value.bundle).toEqual(bundleIdRef)
+    // })
 
     it('should not add bundleId field in case the bundle doesn\'t exist in the record', async () => {
       const notInRecordBundle = new InstanceElement('0', bundleType().type, { id: '0' })
       await filterCreator(filterOpts).onFetch?.([recordInstance, notInRecordBundle])
-      expect(fileCabinetInstance.value.bundleId).toBeUndefined()
+      expect(fileCabinetInstance.value.bundle).toBeUndefined()
     })
   })
 

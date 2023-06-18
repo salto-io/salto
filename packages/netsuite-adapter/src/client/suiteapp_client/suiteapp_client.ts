@@ -76,7 +76,7 @@ const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
-const LIST_BUNDLES_APP_VERSION = '0.1.6'
+const LIST_BUNDLES_APP_VERSION = '0.1.7'
 
 type VersionFeatures = {
   activationKey: boolean

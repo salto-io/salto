@@ -21,11 +21,11 @@ import { restoreValues, resolveValues } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 
 import {
-  getSObjectFieldElement, Types, toCustomField, toCustomProperties, instancesToUpdateRecords,
+  getSObjectFieldElement, Types, toCustomField, toCustomProperties,
   getValueTypeFieldElement, createMetadataTypeElements, MetadataObjectType,
-  METADATA_TYPES_TO_RENAME, instancesToDeleteRecords, instancesToCreateRecords,
+  METADATA_TYPES_TO_RENAME, instancesToDeleteRecords,
   isMetadataObjectType, isMetadataInstanceElement, toDeployableInstance, transformPrimitive,
-  getAuthorAnnotations,
+  getAuthorAnnotations, instancesToRecords,
 } from '../../src/transformers/transformer'
 import { getLookUpName } from '../../src/transformers/reference_mapping'
 import {
@@ -1289,7 +1289,7 @@ describe('transformer', () => {
     describe('instancesToCreateRecords', () => {
       let recordResult: SalesforceRecord[]
       beforeEach(async () => {
-        recordResult = await instancesToCreateRecords([instance])
+        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.CREATABLE))
         expect(recordResult).toBeDefined()
         expect(recordResult.length).toEqual(1)
       })
@@ -1329,7 +1329,7 @@ describe('transformer', () => {
     describe('instancesToUpdateRecords', () => {
       let recordResult: SalesforceRecord[]
       beforeEach(async () => {
-        recordResult = await instancesToUpdateRecords([instance])
+        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.UPDATEABLE))
         expect(recordResult).toBeDefined()
         expect(recordResult.length).toEqual(1)
       })

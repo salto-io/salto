@@ -323,7 +323,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     // we calculate deleted elements only in partial-fetch mode
     const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
-      !isPartial || this.withPartialDeletion === false) ? {} : await getDeletedElements({
+      isPartial && this.withPartialDeletion === true) ? await getDeletedElements({
         client: this.client,
         elementsSource: this.elementsSource,
         fetchQuery,
@@ -332,7 +332,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         serviceCustomRecords: customRecords,
         requestedDataTypes,
         serviceDataElements: dataElements.filter(isInstanceElement),
-      })
+      }) : {}
 
     const elements = [
       ...baseElements,

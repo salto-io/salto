@@ -112,6 +112,7 @@ describe('Adapter', () => {
       fetchAllTypesAtOnce: true,
       fetchTypeTimeoutInMinutes: 1,
     },
+    withPartialDeletion: true,
   }
 
   const suiteAppImportFileCabinetMock = jest.fn()

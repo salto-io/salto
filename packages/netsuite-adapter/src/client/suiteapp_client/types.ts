@@ -101,6 +101,13 @@ export type SavedSearchQuery = {
   filters: Array<string[] | string>
 }
 
+export enum EnvType {
+  PRODUCTION,
+  SANDBOX,
+  BETA,
+  INTERNAL
+}
+
 export const SYSTEM_INFORMATION_SCHEME = {
   type: 'object',
   properties: {
@@ -109,15 +116,19 @@ export const SYSTEM_INFORMATION_SCHEME = {
       type: 'array',
       items: { type: 'number' },
     },
+    envType: {
+      type: 'number',
+      enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
+    },
   },
-  required: ['time', 'appVersion'],
+  required: ['time', 'appVersion', 'envType'],
   additionalProperties: true,
 }
-
 
 export type SystemInformation = {
   time: Date
   appVersion: number[]
+  envType: EnvType
 }
 
 export const FILES_READ_SCHEMA = {

@@ -17,6 +17,7 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
+import { EnvType } from '../../../src/client/suiteapp_client/types'
 import SoapClient from '../../../src/client/suiteapp_client/soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
 import SuiteAppClient, { PAGE_SIZE } from '../../../src/client/suiteapp_client/suiteapp_client'
@@ -55,6 +56,7 @@ describe('SuiteAppClient', () => {
         results: {
           appVersion: [0, 1, 7],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       await client.getSystemInformation()
@@ -291,12 +293,13 @@ describe('SuiteAppClient', () => {
           results: {
             appVersion: [0, 1, 3],
             time: 1000,
+            envType: EnvType.PRODUCTION,
           },
         })
 
         const results = await client.getSystemInformation()
 
-        expect(results).toEqual({ appVersion: [0, 1, 3], time: new Date(1000) })
+        expect(results).toEqual({ appVersion: [0, 1, 3], time: new Date(1000), envType: EnvType.PRODUCTION })
         expect(mockAxiosAdapter.history.post.length).toBe(1)
         const req = mockAxiosAdapter.history.post[0]
         expect(JSON.parse(req.data)).toEqual({
@@ -697,6 +700,7 @@ describe('SuiteAppClient', () => {
         results: {
           appVersion: [0, 1, 3],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
@@ -707,6 +711,7 @@ describe('SuiteAppClient', () => {
         results: {
           appVersion: [0, 1, 3],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       await Promise.all([

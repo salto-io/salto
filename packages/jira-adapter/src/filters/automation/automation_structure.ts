@@ -313,7 +313,9 @@ const convertRuleScopeToProjects = (instance: InstanceElement): void => {
   if (!isRuleScope(ruleScope)) {
     return
   }
-  instance.value.projects = ruleScope.resources.map(getScope).filter(isDefined)
+  instance.value.projects = ruleScope.resources
+    .map(getScope)
+    .filter(isDefined)
 }
 
 const filter: FilterCreator = ({ client }) => {

@@ -25,7 +25,7 @@ import { captureServiceIdInfo } from '../service_id_info'
 import { NetsuiteFetchQueries, NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
-import SuiteAppClient from './suiteapp_client/suiteapp_client'
+import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
@@ -124,6 +124,10 @@ export default class NetsuiteClient {
   @NetsuiteClient.logDecorator
   async getInstalledBundles(): Promise<BundleType[]> {
     return this.suiteAppClient?.getInstalledBundles() ?? []
+  }
+
+  async getInstalledSuiteApps(): Promise<SuiteAppType[]> {
+    return this.suiteAppClient?.getInstalledSuiteApps() ?? []
   }
 
   @NetsuiteClient.logDecorator

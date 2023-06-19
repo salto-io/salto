@@ -53,7 +53,7 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 4],
+          appVersion: [0, 1, 7],
           time: 1000,
         },
       })
@@ -553,6 +553,66 @@ describe('SuiteAppClient', () => {
           results,
         })
         expect(await client.setConfigRecordsValues([])).toEqual(results)
+      })
+    })
+    describe('getInstalledBundlesOrSuiteApps', () => {
+      it('should return empty array when getInstalledBundles feature is not supported', async () => {
+        const unsupportedClient = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+          instanceLimiter: (_t: string, _c: number) => false,
+        })
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await unsupportedClient.getInstalledBundles()).toEqual([])
+      })
+      it('should return empty list on error', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'error', message: '', error: new Error('error'),
+        })
+        expect(await client.getInstalledBundles()).toEqual([])
+      })
+      it('should return empty list on invalid result', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            results: ['wrong', 'value'],
+            errors: [],
+          },
+        })
+        expect(await client.getInstalledBundles()).toEqual([])
+      })
+      it('should return an array of bundles', async () => {
+        const results = [
+          { id: 47492, name: 'Tax Audit Files', version: '1.86.2', isManaged: true, description: 'Description', publisher: { id: '3838953', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
+          { id: 53195, name: 'Last SalesActivity', version: '1.11.2', isManaged: false, description: 'Description', publisher: { id: '3912261', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
+        ]
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results,
+        })
+        expect(await client.getInstalledBundles()).toEqual(results)
+      })
+      it('should return an array of suiteApps', async () => {
+        const results = [
+          { appId: 'appId', name: 'suiteApp name', version: '1.23.5', dateInstalled: Date() },
+          { appId: 'appId.other', name: 'suiteApp name2', version: '1.65.4', dateInstalled: Date() },
+        ]
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results,
+        })
+        expect(await client.getInstalledSuiteApps()).toEqual(results)
       })
     })
   })

@@ -25,7 +25,7 @@ import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_com
 
 const log = logger(module)
 const BUNDLE = 'bundle'
-// const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE_ID}>\\d+)`, 'g')
+// const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 const PRIVATE_BUNDLE_STRING = 'Private'
 const { awu } = collections.asynciterable
 
@@ -38,7 +38,7 @@ const addBundleIdField = async (
   const instanceType = await instance.getType()
   if (isFileCabinetType(instanceType)) {
     // TODO: Uncomment this when opening bundles for everyone
-    // const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE_ID)
+    // const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
     // if (bundleId.length > 0) {
     //   const bundleToReference = bundleIdToInstance[bundleId[0]]
     //   Object.assign(instance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })

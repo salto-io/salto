@@ -181,7 +181,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles' | 'listSuiteApps'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -357,29 +357,21 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
       id: { type: 'number' },
       name: { type: 'string' },
       version: { type: 'string' },
-      // description: { type: 'string' },
-      // installedFrom: { type: 'string' },
-      // isManaged: { type: 'boolean' },
-      // dateInstalled: { type: 'string' },
-      // dateLastUpdated: { type: 'string' },
-      // publisher: {
-      //   type: 'object',
-      //   properties: {
-      //     id: { type: 'string' },
-      //     name: { type: 'string' },
-      //   },
-      //   required: ['id', 'name'],
-      // },
-      // installedBy: {
-      //   type: 'object',
-      //   properties: {
-      //     id: { type: 'number' },
-      //     name: { type: 'string' },
-      //   },
-      //   required: ['id', 'name'],
-      // },
     },
     required: ['id', 'name', 'version'],
+  },
+}
+
+export const GET_SUITEAPPS_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      appId: { type: 'string' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+    },
+    required: ['appId', 'name', 'version'],
   },
 }
 

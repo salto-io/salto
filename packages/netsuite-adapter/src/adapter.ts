@@ -81,7 +81,6 @@ import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ConfigRecord } from './client/suiteapp_client/types'
-
 import { bundleType } from './types/bundle_type'
 
 const { makeArray } = collections.array

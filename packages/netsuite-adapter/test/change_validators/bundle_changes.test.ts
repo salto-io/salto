@@ -24,7 +24,7 @@ describe('bundle changes', () => {
   const bundleInstanceBefore = new InstanceElement('39609', bundleType().type, { id: '39609', name: 'testName' })
   const fileInstanceBefore = new InstanceElement('fileInstance', fileType(), {
     [PATH]: 'SuiteBundles/Bundle 39609/SomeInnerFolder/content.html',
-    bundleId: new ReferenceExpression(bundleInstanceBefore.elemID),
+    bundle: new ReferenceExpression(bundleInstanceBefore.elemID),
     availablewithoutlogin: false,
   })
   let fileInstanceAfter: InstanceElement
@@ -36,7 +36,7 @@ describe('bundle changes', () => {
     fileInstanceAfter = fileInstanceBefore.clone()
     recordInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(NETSUITE, 'currency') }),
       {
-        bundleId: new ReferenceExpression(bundleInstanceBefore.elemID),
+        bundle: new ReferenceExpression(bundleInstanceBefore.elemID),
       })
   })
 
@@ -45,13 +45,13 @@ describe('bundle changes', () => {
     const changeError = await bundleChangesValidation([
       toChange({ after: bundleInstanceAfter, before: bundleInstanceBefore }),
     ])
-    expect(changeError.length).toBe(1)
+    expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual(
       {
-        message: '',
+        message: 'Can\'t deploy bundle',
         severity: 'Error',
         elemID: bundleInstanceAfter.elemID,
-        detailedMessage: '',
+        detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed. \nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account: <guide to install>',
       }
     )
   })
@@ -64,10 +64,10 @@ describe('bundle changes', () => {
     expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual(
       {
-        message: '',
+        message: 'Can\'t deploy file cabinet elements which are part of a bundle',
         severity: 'Error',
         elemID: fileInstanceAfter.elemID,
-        detailedMessage: '',
+        detailedMessage: 'Netsuite does not support modifying file cabinet elements that are part of a bundle.\nUsually, these files are installed with the bundle itself.',
       }
     )
   })

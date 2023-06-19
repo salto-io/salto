@@ -33,7 +33,7 @@ describe('bundle_ids filter', () => {
     },
   } as unknown as LocalFilterOpts
   const bundleInstance = new InstanceElement('39609', bundleType().type, { id: '39609' })
-  const bundleIdRef = new ReferenceExpression(bundleInstance.elemID)
+  const bundleRef = new ReferenceExpression(bundleInstance.elemID)
 
   describe('onFetch', () => {
     let fileCabinetInstance: InstanceElement
@@ -51,16 +51,16 @@ describe('bundle_ids filter', () => {
     })
     // TODO: Uncomment these after opening bundles for everyone
 
-    // it('should add bundleId field to record instance', async () => {
+    // it('should add bundle field to record instance', async () => {
     //   await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])
-    //   expect(recordInstance.value.bundle).toEqual(bundleIdRef)
+    //   expect(recordInstance.value.bundle).toEqual(bundleRef)
     // })
-    // it('should add bundleId field to fileCabinet instance', async () => {
+    // it('should add bundle field to fileCabinet instance', async () => {
     //   await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, bundleInstance])
-    //   expect(fileCabinetInstance.value.bundle).toEqual(bundleIdRef)
+    //   expect(fileCabinetInstance.value.bundle).toEqual(bundleRef)
     // })
 
-    it('should not add bundleId field in case the bundle doesn\'t exist in the record', async () => {
+    it('should not add bundle field in case the bundle doesn\'t exist in the record', async () => {
       const notInRecordBundle = new InstanceElement('0', bundleType().type, { id: '0' })
       await filterCreator(filterOpts).onFetch?.([recordInstance, notInRecordBundle])
       expect(fileCabinetInstance.value.bundle).toBeUndefined()
@@ -75,11 +75,12 @@ describe('bundle_ids filter', () => {
         'customlist_ns_ps_process_list',
         customlistType().type,
         {
-          bundleId: bundleIdRef,
+          bundle: bundleRef,
         }
       )
     })
     it('should remove bundle field in preDeploy', async () => {
+      expect(instanceWithBundle.value.bundle).toEqual(bundleRef)
       await filterCreator(filterOpts).preDeploy?.([toChange({ after: instanceWithBundle })])
       expect(instanceWithBundle.value.bundle).toBeUndefined()
     })

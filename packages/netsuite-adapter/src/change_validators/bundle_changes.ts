@@ -27,18 +27,17 @@ const isBundleInstance = (element: Element): element is InstanceElement =>
 const getBundlesChangeError = (changeData: ChangeDataType): ChangeError | undefined => {
   if (isFileCabinetInstance(changeData) && isDefined(changeData.value.bundle)) {
     return {
-      // TODO: consult PM on error messages
-      message: '',
+      message: 'Can\'t deploy file cabinet elements which are part of a bundle',
       severity: 'Error',
       elemID: changeData.elemID,
-      detailedMessage: '',
+      detailedMessage: 'Netsuite does not support modifying file cabinet elements that are part of a bundle.\nUsually, these files are installed with the bundle itself.',
     }
   } if (isBundleInstance(changeData)) {
     return {
-      message: '',
+      message: 'Can\'t deploy bundle',
       severity: 'Error',
       elemID: changeData.elemID,
-      detailedMessage: '',
+      detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed. \nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account: <guide to install>',
     }
   }
   return undefined

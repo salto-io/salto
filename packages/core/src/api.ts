@@ -14,10 +14,26 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
-  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
-  isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
+  Adapter,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  AccountId,
+  getChangeData,
+  isField,
+  Change,
+  ChangeDataType,
+  AdapterFailureInstallResult,
+  isAdapterSuccessInstallResult,
+  AdapterSuccessInstallResult,
+  AdapterAuthentication,
+  SaltoError,
+  Element,
+  DetailedChange,
+  isCredentialError,
+  DeployExtraProperties,
+  ReferenceMapping,
+  isAdditionOrModificationChange, isFieldChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -25,7 +41,10 @@ import _ from 'lodash'
 import { promises, collections, values } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
-import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import {
+  buildElementsSourceFromElements,
+  getDetailedChanges as getDetailedChangesFromChanges,
+} from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -47,7 +66,7 @@ import { createRestoreChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
-import { renameChecks, renameElement, updateStateElements } from './core/rename'
+import { renameChecks, renameElement } from './core/rename'
 import { ChangeWithDetails } from './core/plan/plan_item'
 
 export { cleanWorkspace } from './core/clean'
@@ -175,15 +194,17 @@ export const deploy = async (
   }
 
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
-    await promises.array.series(appliedChanges.map(change => async () => {
-      const updatedElement = await getUpdatedElement(change)
-      if (change.action === 'remove' && !isFieldChange(change)) {
-        await workspace.state().remove(updatedElement.elemID)
-      } else {
-        await workspace.state().set(updatedElement)
-        await changedElements.set(updatedElement)
-      }
-    }))
+    // create updated elements before updating the state, to prevent any unwanted behavior
+    const updatedElements = awu(appliedChanges)
+      .filter(change => (isAdditionOrModificationChange(change) || isFieldChange(change)))
+      .map(getUpdatedElement)
+
+    const detailedChanges = appliedChanges.map(change => getDetailedChangesFromChanges(change)).flat()
+    await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+
+    await updatedElements.forEach(async updatedElement => {
+      await changedElements.set(updatedElement)
+    })
   }
   const { errors, appliedChanges, extraProperties } = await deployActions(
     actionPlan, adapters, reportProgress, postDeployAction, checkOnly
@@ -658,7 +679,7 @@ export const rename = async (
       sourceElemId,
       targetElemId,
     )
-    await updateStateElements(workspace.state(), changes)
+    await workspace.state().updateStateFromChanges({ changes })
   }
 
   return renameElementChanges

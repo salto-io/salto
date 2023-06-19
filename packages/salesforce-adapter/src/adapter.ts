@@ -92,7 +92,12 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { CUSTOM_OBJECT, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import {
+  CUSTOM_OBJECT,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  PROFILE_METADATA_TYPE,
+} from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -357,7 +362,9 @@ export default class SalesforceAdapter implements AdapterOperations {
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
-      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT)
+      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
+      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
     }
     this.createFiltersRunner = () => filter.filtersRunner(
       {

@@ -108,27 +108,42 @@ export enum EnvType {
   INTERNAL
 }
 
-export const SYSTEM_INFORMATION_SCHEME = {
-  type: 'object',
-  properties: {
-    time: { type: 'number' },
-    appVersion: {
-      type: 'array',
-      items: { type: 'number' },
-    },
-    envType: {
-      type: 'number',
-      enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
-    },
+const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
+  time: { type: 'number' },
+  appVersion: {
+    type: 'array',
+    items: { type: 'number' },
   },
-  required: ['time', 'appVersion', 'envType'],
+}
+
+export const SYSTEM_INFORMATION_SCHEME = {
+  anyOf: [
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+        envType: {
+          type: 'number',
+          enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
+        },
+      },
+      required: ['time', 'appVersion', 'envType'],
+    },
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+      },
+      required: ['time', 'appVersion'],
+    },
+  ],
   additionalProperties: true,
 }
 
 export type SystemInformation = {
   time: Date
   appVersion: number[]
-  envType: EnvType
+  envType?: EnvType
 }
 
 export const FILES_READ_SCHEMA = {

@@ -225,7 +225,7 @@ export default class SuiteAppClient {
   }
 
   private parseSystemInformation(results: unknown): SystemInformation | undefined {
-    if (!this.ajv.validate<{ time: number; appVersion: number[]; envType: EnvType }>(
+    if (!this.ajv.validate<SystemInformation>(
       SYSTEM_INFORMATION_SCHEME,
       results
     )) {

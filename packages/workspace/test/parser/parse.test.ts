@@ -964,6 +964,7 @@ value
         end with unicode paragraph separator\u2029
         '''\u2028
         single = "end single with unicode"\u2028
+        terminatorInString = "have \u2029 in the string"
       }\u2028
       `.replace(/\n/g, '')
       parsed = await parse(Buffer.from(body), 'none', functions)
@@ -989,6 +990,10 @@ value
       it('should parse unicode line separators', () => {
         const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.single
         expect(parsedValue).toContain('end single with unicode')
+      })
+      it('should support unicode newlines inside the string', () => {
+        const parsedValue = (parsed.elements as InstanceElement[])[0].annotations.terminatorInString
+        expect(parsedValue).toEqual('have \u2029 in the string')
       })
     })
   })

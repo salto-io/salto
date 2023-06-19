@@ -38,6 +38,7 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [AUTOMATION_TYPE]: {
     tags: ['tagType', 'tagValue'],
+    projects: ['projectId', 'projectTypeKey'],
   },
   [WORKFLOW_TYPE_NAME]: {
     transitions: ['name'],

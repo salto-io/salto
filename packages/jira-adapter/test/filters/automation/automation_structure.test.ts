@@ -314,13 +314,13 @@ describe('automationStructureFilter', () => {
             projectId: '10024',
           },
           {
+            projectTypeKey: 'software',
+          },
+          {
             projectId: '10034',
           },
           {
             projectTypeKey: 'business',
-          },
-          {
-            projectTypeKey: 'software',
           },
         ])
       })
@@ -337,25 +337,6 @@ describe('automationStructureFilter', () => {
         ruleScopeInstance.value.ruleScope.resources = ['ari:cloud:not-a--known-pattern']
         await filter.onFetch([ruleScopeInstance])
         expect(ruleScopeInstance.value.projects).toEqual([])
-      })
-      it('should sort projects by id', async () => {
-        ruleScopeInstance.value.ruleScope.resources.push('ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10030')
-        await filter.onFetch([ruleScopeInstance])
-        expect(ruleScopeInstance.value.projects).toEqual([{
-          projectId: '10024',
-        },
-        {
-          projectId: '10030',
-        },
-        {
-          projectId: '10034',
-        },
-        {
-          projectTypeKey: 'business',
-        },
-        {
-          projectTypeKey: 'software',
-        }])
       })
     })
   })

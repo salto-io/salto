@@ -313,7 +313,11 @@ const convertRuleScopeToProjects = (instance: InstanceElement): void => {
   if (!isRuleScope(ruleScope)) {
     return
   }
-  instance.value.projects = ruleScope.resources.map(getScope).filter(isDefined)
+  instance.value.projects = ruleScope.resources
+    .map(getScope)
+    .filter(isDefined)
+    // we sort to reduce noise, seems like the API is not consistent with the order
+    .sort((a, b) => (a.projectId ?? a.projectTypeKey ?? '').localeCompare(b.projectId ?? b.projectTypeKey ?? ''))
 }
 
 const filter: FilterCreator = ({ client }) => {

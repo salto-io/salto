@@ -92,7 +92,7 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import { CUSTOM_OBJECT, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -230,6 +230,7 @@ const METADATA_TO_RETRIEVE = [
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
   'CustomMetadata', // For the XML attributes
+  'CustomObject',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
@@ -239,6 +240,7 @@ const METADATA_TO_RETRIEVE = [
   'EmailTemplate', // contains encoded zip content, is under a folder
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
+  'PermissionSet',
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',
   'ReportType',
@@ -349,6 +351,9 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
+    if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT)
+    }
     this.createFiltersRunner = () => filter.filtersRunner(
       {
         client,

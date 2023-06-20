@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, isAdditionChange, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
-import { apiName } from './transformers/transformer'
+import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
+import { safeApiName } from './filters/utils'
+import { ADD_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION, SBAA_APPROVAL_RULE } from './constants'
 
 const { awu } = collections.asynciterable
+
 
 type ChangeGroupDescription = {
   groupId: string
@@ -27,11 +29,19 @@ type ChangeGroupDescription = {
 
 type ChangeIdFunction = (change: Change) => Promise<ChangeGroupDescription> | ChangeGroupDescription
 
+const getGroupId = async (change: Change<InstanceElement>): Promise<string> => {
+  const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
+  if (change.action === 'add' && (typeName === SBAA_APPROVAL_RULE || typeName === SBAA_APPROVAL_CONDITION)) {
+    return ADD_APPROVAL_RULE_AND_CONDITION_GROUP
+  }
+  return `${change.action}_${typeName}_instances`
+}
+
 const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => ({
-  groupId: `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`,
+  groupId: await getGroupId(change as Change<InstanceElement>),
   // CustomObjects instances might have references to instances of the same type (via Lookup
   // fields), and if we deploy them together the reference gets removed.
-  disjoint: isAdditionChange(change),
+  disjoint: false,
 })
 
 // Everything that is not a custom object instance goes into the deploy api

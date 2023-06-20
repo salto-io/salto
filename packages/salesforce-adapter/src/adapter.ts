@@ -18,7 +18,13 @@ import {
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  applyFunctionToChangeData,
+  filter,
+  logDuration,
+  resolveChangeElement,
+  restoreChangeElement,
+} from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -86,13 +92,19 @@ import { FetchElements, SalesforceConfig } from './types'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults } from './filters/utils'
+import { addDefaults, isInstanceOfTypeChange } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import {
+  ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  SBAA_APPROVAL_RULE,
+} from './constants'
+import { DataManagement } from './fetch_profile/data_management'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -279,6 +291,54 @@ export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastViewedDate',
 ]
 
+const deployAddApprovalRuleAndCondition = async (
+  changes: Change<InstanceElement>[],
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => {
+  const approvalRuleChanges = await awu(changes)
+    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
+    .toArray()
+  const [rulesWithCustomCondition, rulesWithoutCustomCondition] = _.partition(
+    approvalRuleChanges,
+    change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
+  )
+  const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
+  const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
+    rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
+      .map(change => applyFunctionToChangeData(change, instance => {
+        instance.value.sbaa__ConditionsMet__c = 'All'
+        return instance
+      })).toArray()),
+    client,
+    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  const conditionsDeployResult = await deployCustomObjectInstancesGroup(
+    approvalConditionChanges,
+    client,
+    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  const approvalRulesWithCustomDeployResult = await deployCustomObjectInstancesGroup(
+    rulesWithCustomCondition,
+    client,
+    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  const appliedApprovalRulesWithCustomElemIds = new Set(
+    approvalRulesWithCustomDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName())
+  )
+  return {
+    appliedChanges: approvalRulesNoCustomDeployResult.appliedChanges
+      .filter(change => appliedApprovalRulesWithCustomElemIds.has(getChangeData(change).elemID.getFullName()))
+      .concat(conditionsDeployResult.appliedChanges, approvalRulesWithCustomDeployResult.appliedChanges),
+    errors: approvalRulesNoCustomDeployResult.errors.concat(
+      conditionsDeployResult.errors,
+      approvalRulesWithCustomDeployResult.errors,
+    ),
+  }
+}
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -439,6 +499,13 @@ export default class SalesforceAdapter implements AdapterOperations {
           appliedChanges: [],
           errors: [{ message: 'Cannot deploy CustomObject Records as part of check-only deployment', severity: 'Error' }],
         }
+      }
+      if (changeGroup.groupID === ADD_APPROVAL_RULE_AND_CONDITION_GROUP) {
+        return deployAddApprovalRuleAndCondition(
+          resolvedChanges as Change<InstanceElement>[],
+          this.client,
+          this.fetchProfile.dataManagement
+        )
       }
       deployResult = await deployCustomObjectInstancesGroup(
         resolvedChanges as Change<InstanceElement>[],

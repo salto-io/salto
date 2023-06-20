@@ -400,6 +400,9 @@ export const KEY_PREFIX_LENGTH = 3
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
 
+// Change Groups
+export const ADD_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_ApprovalRule_and_ApprovalCondition_instances'
+
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'

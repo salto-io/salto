@@ -245,7 +245,7 @@ describe('adapter creator', () => {
       'config',
       oauthClientCredentialsType,
       { clientId: 'id', clientSecret: 'secret', subdomain: 'sandbox.na', production: false },
-    ))).toEqual({ accountId: '', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
+    ))).toEqual({ accountId: '', accountType: 'Unknown' })
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 

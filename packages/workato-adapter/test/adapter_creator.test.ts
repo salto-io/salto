@@ -162,7 +162,7 @@ describe('adapter creator', () => {
       'config',
       usernameTokenCredentialsType,
       { username: 'user123', token: 'token456' },
-    ))).toEqual({ accountId: '', accountType: 'Unknown', isProduction: undefined })
+    ))).toEqual({ accountId: '', accountType: 'Unknown' })
     expect(connection.createConnection).toHaveBeenCalledTimes(1)
   })
 })

@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations, AccountType, Account, IsProduction } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, ReadOnlyElementsSource, AdapterOperations, Account } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { OktaConfig, DEFAULT_CONFIG } from '../src/config'
@@ -46,12 +46,11 @@ describe('adapter creator', () => {
 
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
-      let accountId: AccountId
-      let accountType: AccountType
-      let isProduction: IsProduction
+      let accountId: string
+      let accountType: string
       beforeEach(async () => {
         mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' });
-        ({ accountId, accountType, isProduction } = await adapter.validateCredentials(
+        ({ accountId, accountType } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
         ))
       })
@@ -62,10 +61,7 @@ describe('adapter creator', () => {
         expect(accountId).toEqual('orgId')
       })
       it('should return account type Unknown', () => {
-        expect(accountType).toEqual('Unknown') // TODO: modify to actual accountType logic when implemented
-      })
-      it('should return isProduction undefined', () => {
-        expect(isProduction).toBeUndefined() // TODO: modify to actual isProduction logic when implemented
+        expect(accountType).toEqual('Unknown')
       })
     })
 

@@ -44,7 +44,7 @@ export const validateCredentials = async (
 ): Promise<Account> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
-    return { accountId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType + isProduction logic
+    return { accountId, accountType: 'Unknown' }
   }
   throw new CredentialError('Invalid Credentials')
 }

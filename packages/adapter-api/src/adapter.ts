@@ -153,16 +153,10 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
-export type AccountId = string
-
-export type AccountType = string
-
-export type IsProduction = boolean | undefined
-
 export type Account = {
-  accountId: AccountId
-  accountType: AccountType
-  isProduction: IsProduction
+  accountId: string
+  accountType: string
+  isProduction?: boolean
 }
 
 export type ConfigCreator = {

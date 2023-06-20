@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations, AccountType, Account, IsProduction } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, ReadOnlyElementsSource, AdapterOperations, Account } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { JiraConfig, getDefaultConfig } from '../src/config/config'
@@ -41,12 +41,11 @@ describe('adapter creator', () => {
 
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
-      let accountId: AccountId
-      let accountType: AccountType
-      let isProduction: IsProduction
+      let accountId: string
+      let accountType: string
       beforeEach(async () => {
         mockAxiosAdapter.onGet().reply(200, { baseUrl: 'http://my_account.net' });
-        ({ accountId, accountType, isProduction } = await adapter.validateCredentials(
+        ({ accountId, accountType } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my.net', user: 'u', token: 't' })
         ))
       })
@@ -57,10 +56,7 @@ describe('adapter creator', () => {
         expect(accountId).toEqual('http://my_account.net')
       })
       it('should return Unknown as account type', () => {
-        expect(accountType).toEqual('Unknown') // TODO: modify to actual accountType logic when implemented
-      })
-      it('should return isProduction = false', () => {
-        expect(isProduction).toBeUndefined() // TODO: modify to actual isProduction logic when implemented
+        expect(accountType).toEqual('Unknown')
       })
     })
 

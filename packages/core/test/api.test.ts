@@ -104,21 +104,21 @@ describe('api.ts', () => {
   const mockAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown', isProduction: undefined }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown' }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown', isProduction: undefined }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown' }),
   }
   const mockAdapterWithInstall = {
     authenticationMethods: { basic: {
       credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
     } },
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown', isProduction: undefined }),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown' }),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
   }
 
@@ -534,7 +534,7 @@ describe('api.ts', () => {
         adapter = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
           authenticationMethods: { basic: { credentialsType: mockConfigType } },
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown', isProduction: false }),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown' }),
         }
         adapterCreators.test = adapter
 
@@ -648,7 +648,7 @@ describe('api.ts', () => {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
           },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown', isProduction: false }),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Unknown' }),
         }
       })
 

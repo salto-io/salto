@@ -244,28 +244,28 @@ describe('adapter creator', () => {
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
 
     // with domain provided
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
-    ))).toEqual({ accountId: 'https://abc.zendesk1.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
+    ))).toEqual({ accountId: 'https://abc.zendesk1.com', accountType: 'Unknown' })
 
     // with domain is an empty string
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc', domain: '' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown', isProduction: undefined }) // TODO: modify to actual accountType & isProduction logic when implemented
+    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
 
     expect(connection.createConnection).toHaveBeenCalledTimes(4)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(

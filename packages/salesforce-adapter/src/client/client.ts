@@ -455,7 +455,7 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  return { accountId: orgId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType & isProduction logic
+  return { accountId: orgId, accountType: 'Unknown' }
 }
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions

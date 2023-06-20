@@ -31,7 +31,7 @@ describe('adapter creator', () => {
     expect(
       await adapter.validateCredentials(new InstanceElement(DUMMY_ADAPTER,
         adapter.authenticationMethods.basic.credentialsType))
-    ).toEqual({ accountId: '', accountType: 'Unknown', isProduction: undefined })
+    ).toEqual({ accountId: '', accountType: 'Unknown' })
   })
   it('should return the dummy adapter', () => {
     expect(adapter.operations({

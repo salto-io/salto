@@ -18,7 +18,7 @@ import {
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
-  AccountId, AccountType, IsProduction,
+  AccountId, AccountType, IsProduction, Account,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -61,12 +61,9 @@ const { mapValuesAsync } = promises.object
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
-type VerifyCredentialsResult = {
-    success: true
-    accountId: AccountId
-    accountType: AccountType
-    isProduction: IsProduction
-} | {
+type VerifyCredentialsResult = (
+  { success: true} & Account
+  ) | {
   success: false
   error: Error
 }

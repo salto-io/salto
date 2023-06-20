@@ -16,7 +16,6 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { AccountId, AccountType, IsProduction } from '@salto-io/adapter-api'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from '../../src/client/headers'
 
@@ -37,12 +36,11 @@ describe('connection', () => {
     })
 
     describe('when authorized', () => {
-      let accountId: AccountId
-      let accountType: AccountType
-      let isProduction: IsProduction
+      let accountId: string
+      let accountType: string
 
       beforeEach(async () => {
-        ({ accountId, accountType, isProduction } = await validateCredentials({
+        ({ accountId, accountType } = await validateCredentials({
           connection,
         }))
       })
@@ -60,11 +58,7 @@ describe('connection', () => {
       })
 
       it('should return Unknown as account type', () => {
-        expect(accountType).toEqual('Unknown') // TODO: modify to actual account type logic when implemented
-      })
-
-      it('should return isProduction = false', () => {
-        expect(isProduction).toBeUndefined() // TODO: modify to actual isProduction logic when implemented
+        expect(accountType).toEqual('Unknown')
       })
     })
 

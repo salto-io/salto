@@ -175,7 +175,7 @@ export const adapter: Adapter = {
         createConnection,
       },
     )
-    return { accountId, accountType: 'Unknown', isProduction: undefined } // TODO: implement actual accountType & isProduction logic
+    return { accountId, accountType: 'Unknown' }
   },
   authenticationMethods: {
     basic: {

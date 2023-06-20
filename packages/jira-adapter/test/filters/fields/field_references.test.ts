@@ -63,7 +63,6 @@ describe('fieldReferencesFilter', () => {
       })
       it('should create missing references if enableMissingReferences flag is enabled', async () => {
         const configWithMissingRefs = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
-        configWithMissingRefs.fetch.enableMissingReferences = true
         const filter = fieldReferencesFilter(getFilterParams({ config: configWithMissingRefs })) as filterType
         await filter.onFetch(elements)
         const screenScheme2 = elements.find(e => e.elemID.name === 'screenScheme2') as InstanceElement

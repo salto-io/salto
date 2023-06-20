@@ -147,7 +147,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'issueTypeId', parentTypes: ['IssueTypeScreenSchemeItem', 'FieldConfigurationIssueTypeItem', SCRIPT_RUNNER_TYPE] },
     serializationStrategy: 'id',
-    // jiraMissingRefStrategy -  Field can be string
+    // No missing references strategy - field can be a string
     target: { type: ISSUE_TYPE_NAME },
   },
   {
@@ -266,13 +266,13 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
     serializationStrategy: 'id',
-    // jiraMissingRefStrategy -  Field can be string
+    // No missing references strategy - field can be a string
     target: { type: 'Field' },
   },
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
     serializationStrategy: 'id',
-    // jiraMissingRefStrategy -  Field can be string
+    // No missing references strategy - field can be a string
     target: { type: 'ProjectRole' },
   },
   {
@@ -523,7 +523,7 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
   {
     src: { field: 'parameter', parentTypes: ['PermissionHolder'] },
     jiraSerializationStrategy: 'groupStrategyByOriginalName',
-    // jiraMissingRefStrategy -  Field can be string,
+    // No missing references strategy - field can be a string
     target: { type: GROUP_TYPE_NAME },
   },
   {

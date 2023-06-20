@@ -57,6 +57,13 @@ describe('client', () => {
       result = await client.getSinglePage({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
       expect(result.data).toEqual([])
     })
+    it('should return empty array for 410 errors', async () => {
+      mockAxios
+        .onGet('/api/v1/deprecated')
+        .replyOnce(410)
+      result = await client.getSinglePage({ url: '/api/v1/deprecated' })
+      expect(result.data).toEqual([])
+    })
   })
 
   describe('clearValuesFromResponseData + extractHeaders', () => {

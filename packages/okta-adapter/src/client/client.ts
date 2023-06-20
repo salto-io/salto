@@ -82,6 +82,11 @@ export default class OktaClient extends clientUtils.AdapterHTTPClient<
         log.debug('Suppressing %d error %o for AppUserSchema', status, e)
         return { data: [], status }
       }
+      // Okta returns 410 for deprecated endpoints
+      if (status === 410) {
+        log.warn('Suppressing %d error %o for endpoint: %s', status, e, args.url)
+        return { data: [], status }
+      }
       throw e
     }
   }

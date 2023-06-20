@@ -17,8 +17,9 @@ import { ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { BulkLoadOperation } from 'jsforce-types'
 import { SalesforceRecord } from '../src/client/types'
 import { CrudFn, retryFlow, deleteInstances } from '../src/custom_object_instances_deploy'
-import { instancesToCreateRecords } from '../src/transformers/transformer'
+import { instancesToRecords } from '../src/transformers/transformer'
 import mockClient from './client'
+import { FIELD_ANNOTATIONS } from '../src/constants'
 
 describe('Custom Object Deploy', () => {
   describe('retry mechanism', () => {
@@ -32,10 +33,13 @@ describe('Custom Object Deploy', () => {
       const results = await sfClient.bulkLoadOperation(
         typeName,
         'insert',
-        await instancesToCreateRecords(instances)
+        (await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE)).records
       )
-      return instances.map((instance, index) =>
-        ({ instance, result: results[index] }))
+      return {
+        results: instances.map((instance, index) =>
+          ({ instance, result: results[index] })),
+        instancesToUpdate: [],
+      }
     }
 
     beforeEach(() => {
@@ -56,7 +60,7 @@ describe('Custom Object Deploy', () => {
         ]
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [], instancesToUpdate: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -200,7 +204,7 @@ describe('Custom Object Deploy', () => {
 
       )
       const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [], instancesToUpdate: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
     })
 
@@ -259,7 +263,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1', 'ENTITY_IS_DELETED:entity is deleted:--', 'error2'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const { results: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ errors: ['error1', 'error2'] })
     })
@@ -267,7 +271,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: ['ENTITY_IS_DELETED:entity is deleted:--'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const { results: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: [] })
     })
@@ -275,7 +279,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const { results: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: ['error1'] })
     })
@@ -283,7 +287,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: [] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const { results: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: [] })
     })
@@ -291,7 +295,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: true, errors: ['error'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const { results: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: ['error'] })
     })

@@ -819,7 +819,7 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        return defaultStrategy.serialize({ ref, element })
+        return await defaultStrategy.serialize({ ref, element }) ?? ref.value
       }
     }
     return ref.value

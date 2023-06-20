@@ -941,31 +941,52 @@ const transformCompoundValues = async (
 const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
-): Promise<SalesforceRecord> => {
+): Promise<{record: SalesforceRecord; needsUpdate: boolean}> => {
+  let needsUpdate = false
   const instanceType = await instance.getType()
   const valsWithNulls = {
     ..._.mapValues(instanceType.fields, () => null),
-    ...instance.value,
+    ..._.mapValues(instance.value, val => {
+      if (isInstanceElement(val)) {
+        const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
+        if (referencedRecordId === undefined) {
+          needsUpdate = true
+          return null
+        }
+        return referencedRecordId
+      }
+      return val
+    }),
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       valsWithNulls,
-      (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (v, k) => !isInstanceElement(v) && instanceType.fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
-  return transformCompoundValues(filteredRecordValues, instance)
+  return {
+    record: await transformCompoundValues(filteredRecordValues, instance),
+    needsUpdate,
+  }
 }
 
-export const instancesToUpdateRecords = async (
-  instances: InstanceElement[]
-): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE)))
-
-export const instancesToCreateRecords = (
-  instances: InstanceElement[]
-): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE)))
+export const instancesToRecords = async (
+  instances: InstanceElement[],
+  fieldAnnotationToFilterBy: string,
+): Promise<{records: SalesforceRecord[]; instancesToUpdate: InstanceElement[]}> => {
+  const records: SalesforceRecord[] = []
+  const instancesToUpdate: InstanceElement[] = []
+  await awu(instances)
+    .forEach(async instance => {
+      const { record, needsUpdate } = await toRecord(instance, fieldAnnotationToFilterBy)
+      records.push(record)
+      if (needsUpdate) {
+        instancesToUpdate.push(instance)
+      }
+    })
+  return { records, instancesToUpdate }
+}
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
@@ -1334,8 +1355,6 @@ export const getSObjectFieldElement = (
   // Name is an exception because it can be editable and visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-    annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
-    annotations[FIELD_ANNOTATIONS.CREATABLE] = false
     delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 

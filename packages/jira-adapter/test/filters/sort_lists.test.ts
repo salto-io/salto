@@ -17,23 +17,23 @@ import { BuiltinTypes, ElemID, InstanceElement, ListType, ObjectType, ReferenceE
 import { getFilterParams } from '../utils'
 import sortListsFilter from '../../src/filters/sort_lists'
 import { Filter } from '../../src/filter'
-import { DASHBOARD_TYPE, JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
+import { AUTOMATION_PROJECT_TYPE, DASHBOARD_TYPE, JIRA, PROJECT_ROLE_TYPE } from '../../src/constants'
 
 describe('sortListsFilter', () => {
   let filter: Filter
   let permissionSchemeType: ObjectType
-  let projectRoleType: ObjectType
-  let dashboardType: ObjectType
   let permissionSchemeInstance: InstanceElement
   let projectRoleInstance: InstanceElement
   let dashboardInstance: InstanceElement
+  let automationInstance: InstanceElement
   let sortedDashboardValues: Values
   let sortedProjectRoleValues: Values
   let sortedPermissionValues: Values
+  let sortedAutomationValues: Values
   beforeEach(async () => {
     filter = sortListsFilter(getFilterParams())
 
-    projectRoleType = new ObjectType({
+    const projectRoleType = new ObjectType({
       elemID: new ElemID(JIRA, PROJECT_ROLE_TYPE),
       fields: {
         actors: { refType: new ListType(BuiltinTypes.UNKNOWN) },
@@ -59,7 +59,7 @@ describe('sortListsFilter', () => {
       ],
     }
 
-    dashboardType = new ObjectType({
+    const dashboardType = new ObjectType({
       elemID: new ElemID(JIRA, DASHBOARD_TYPE),
       fields: {
         gadgets: { refType: new ListType(BuiltinTypes.UNKNOWN) },
@@ -169,6 +169,50 @@ describe('sortListsFilter', () => {
         },
       ],
     }
+    const automationProjectType = new ObjectType({
+      elemID: new ElemID(JIRA, AUTOMATION_PROJECT_TYPE),
+      fields: {
+        projectId: { refType: BuiltinTypes.STRING },
+        projectTypeKey: { refType: BuiltinTypes.STRING },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const automationType = new ObjectType({
+      elemID: new ElemID(JIRA, 'Automation'),
+      fields: {
+        projects: { refType: new ListType(automationProjectType) },
+      },
+    })
+    automationInstance = new InstanceElement(
+      'instance',
+      automationType,
+      {
+        projects: [
+          {
+            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'c'), {}),
+          },
+          {
+            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'b'), {}),
+          },
+          {
+            projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'a'), {}),
+          },
+        ],
+      }
+    )
+    sortedAutomationValues = {
+      projects: [
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'a'), {}),
+        },
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'b'), {}),
+        },
+        {
+          projectId: new ReferenceExpression(new ElemID(JIRA, 'Project', 'instance', 'c'), {}),
+        },
+      ],
+    }
   })
 
   describe('onFetch', () => {
@@ -184,7 +228,10 @@ describe('sortListsFilter', () => {
       await filter.onFetch?.([permissionSchemeInstance])
       expect(permissionSchemeInstance.value).toEqual(sortedPermissionValues)
     })
-
+    it('should sort the automation projects', async () => {
+      await filter.onFetch?.([automationInstance])
+      expect(automationInstance.value).toEqual(sortedAutomationValues)
+    })
     it('should do nothing when field is undefined', async () => {
       delete permissionSchemeInstance.value.permissions
       await filter.onFetch?.([permissionSchemeInstance])

@@ -16,19 +16,28 @@
 import {
   Change, DeployResult,
   getChangeData,
-  InstanceElement, isAdditionChange, toChange,
+  InstanceElement, isAdditionChange, isInstanceElement, toChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getParents } from '@salto-io/adapter-utils'
+import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { removedTranslationParentId } from './guide_section_and_category'
 import {
-  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TRANSLATION_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
   TRANSLATION_TYPE_NAMES,
 } from '../constants'
 import { deployChange, deployChanges } from '../deployment'
 
-const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean => {
+const log = logger(module)
+const { awu } = collections.asynciterable
+
+
+const isDefaultTranslationAddition = (
+  change: Change<InstanceElement>,
+  languageSettingsByIds: Record<string, InstanceElement>
+): boolean => {
   if (
     !isAdditionChange(change)
     || (!TRANSLATION_TYPE_NAMES.includes(getChangeData(change).elemID.typeName))
@@ -38,7 +47,19 @@ const isDefaultTranslationAddition = (change: Change<InstanceElement>): boolean 
   const data = getChangeData(change)
   const currentLocale = data.value.locale
   const parents = getParents(data) // the parent is not a reference expression
-  return parents.some(parent => parent.source_locale?.value.value?.locale === currentLocale)
+  return parents.some(parent => {
+    const sourceLocaleName = parent.source_locale?.elemID.name
+    if (sourceLocaleName === undefined) {
+      log.warn(`could not get name from source locale for parent of ${data.elemID.getFullName()}`)
+      return false
+    }
+    const sourceLocaleInstance = languageSettingsByIds[sourceLocaleName]
+    if (!isInstanceElement(sourceLocaleInstance)) {
+      log.warn(`could not get sourceLocaleInstance for parent of ${data.elemID.getFullName()}`)
+      return false
+    }
+    return sourceLocaleInstance.value.locale === currentLocale
+  })
 }
 
 const parentRemoved = (change: Change<InstanceElement>): boolean => {
@@ -49,8 +70,8 @@ const parentRemoved = (change: Change<InstanceElement>): boolean => {
   return removedTranslationParentId.includes(getParents(getChangeData(change))[0].id)
 }
 
-const needToOmit = (change: Change<InstanceElement>): boolean =>
-  isDefaultTranslationAddition(change) || parentRemoved(change)
+const needToOmit = (change: Change<InstanceElement>, languageSettingsByIds: Record<string, InstanceElement>): boolean =>
+  isDefaultTranslationAddition(change, languageSettingsByIds) || parentRemoved(change)
 
 /**
  * a different filter is needed for the default translation and translations for which the parent
@@ -60,18 +81,23 @@ const needToOmit = (change: Change<InstanceElement>): boolean =>
  * we transform the change to a modification change and deploy it in this way.
  * The rest of the translations will be deployed in the default deploy filter.
  */
-const filterCreator: FilterCreator = ({ config, client }) => ({
+const filterCreator: FilterCreator = ({ config, client, elementsSource }) => ({
   name: 'guideTranslationFilter',
   deploy: async (changes: Change<InstanceElement>[]) => {
+    const guideLanguageSettingsInstances = await (awu(await elementsSource.list())
+      .filter(id => id.typeName === GUIDE_LANGUAGE_SETTINGS_TYPE_NAME)
+      .map(async id => elementsSource.get(id))
+      .toArray())
+    const languageSettingsByIds = _.keyBy(guideLanguageSettingsInstances, instance => instance.elemID.name)
     const [translationChangesToIgnore, leftoverChanges] = _.partition(
       changes,
-      needToOmit,
+      change => needToOmit(change, languageSettingsByIds),
     )
     // split default article translation addition changes out of changes to ignore
     const [defaultArticleTranslationAdditionChanges, otherTranslationChanges] = _.partition(
       translationChangesToIgnore,
       change => getChangeData(change).elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME
-      && isDefaultTranslationAddition(change),
+        && isDefaultTranslationAddition(change, languageSettingsByIds),
     )
 
     // creating modification changes from the addition of default article translations

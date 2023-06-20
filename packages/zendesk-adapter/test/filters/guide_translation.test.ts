@@ -21,6 +21,7 @@ import {
   InstanceElement,
   ObjectType, ReferenceExpression,
 } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
 import {
@@ -43,7 +44,7 @@ jest.mock('@salto-io/adapter-components', () => {
   }
 })
 
-describe('guild section translation filter', () => {
+describe('guide translation filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
   let filter: FilterType
 
@@ -63,7 +64,7 @@ describe('guild section translation filter', () => {
 
 
   const guideLanguageSettingsInstance = new InstanceElement(
-    'instance',
+    'test1',
     guideLanguageSettingsType,
     {
       locale: 'he',
@@ -103,7 +104,7 @@ describe('guild section translation filter', () => {
     {
       id: 2,
       source_locale: new ReferenceExpression(
-        guideLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
+        guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance
       ),
       translations: [
         heArticleTranslationInstance.value,
@@ -121,7 +122,7 @@ describe('guild section translation filter', () => {
       name: 'name',
       description: 'description',
       source_locale: new ReferenceExpression(
-        guideLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
+        guideLanguageSettingsInstance.elemID, guideLanguageSettingsInstance
       ),
       translations: [
         heSectionTranslationInstance.value,
@@ -135,7 +136,11 @@ describe('guild section translation filter', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks()
-    filter = filterCreator(createFilterCreatorParams({})) as FilterType
+    filter = filterCreator(createFilterCreatorParams({
+      elementsSource: buildElementsSourceFromElements([
+        guideLanguageSettingsInstance,
+      ]),
+    })) as FilterType
   })
 
   describe('deploy', () => {

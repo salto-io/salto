@@ -14,8 +14,9 @@
 * limitations under the License.
 */
 
-import { isAdditionOrModificationChange, ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isReferenceExpression, UnresolvedReference, ReferenceExpression } from '@salto-io/adapter-api'
+import { isAdditionOrModificationChange, ChangeValidator, getChangeData, isInstanceChange, SeverityLevel, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE } from '../constants'
 
 
@@ -27,8 +28,7 @@ export const isProjectType = (element: unknown): element is ProjectType => {
 }
 
 export const isProjectReferenceBroken = (project: ProjectType): boolean =>
-  project.projectId.value instanceof UnresolvedReference
-
+  !isResolvedReferenceExpression(project.projectId)
 
 export const automationProjectUnresolvedReferenceValidator: ChangeValidator = async changes =>
   changes

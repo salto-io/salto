@@ -251,6 +251,94 @@ describe('automationStructureFilter', () => {
       expect(instance.value.components[4].value.compareFieldValue).toBeObject()
       expect(instance.value.components[4].value.compareFieldValue.value).toEqual('Done')
     })
+
+    it('should not throw if wrong structure', async () => {
+      const exceptionInstance = new InstanceElement(
+        'instance',
+        type,
+        {
+          id: '111',
+          components: [
+            {
+              id: '0',
+              value: {
+                compareValue: {
+                  multiValue: true,
+                  value: 'notAJson',
+                },
+              },
+            },
+          ],
+        }
+      )
+      await filter.onFetch([exceptionInstance])
+      expect(exceptionInstance.value.components[0].value.compareFieldValue.value).toBeDefined()
+    })
+
+    describe('ruleScope', () => {
+      let ruleScopeInstance: InstanceElement
+      let globalScopeInstance: InstanceElement
+      beforeEach(() => {
+        ruleScopeInstance = new InstanceElement(
+          'instance',
+          type,
+          {
+            projects: [],
+            ruleScope: {
+              resources: [
+                'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10024',
+                'ari:cloud:jira-software::site/128baddc-c238-4857-b249-cfc84bd10c4b',
+                'ari:cloud:jira:128baddc-c238-4857-b249-cfc84bd10c4b:project/10034',
+                'ari:cloud:jira-core::site/128baddc-c238-4857-b249-cfc84bd10c4b',
+              ],
+            },
+          }
+        )
+        globalScopeInstance = new InstanceElement(
+          'instance',
+          type,
+          {
+            projects: [],
+            ruleScope: {
+              resources: [
+                'ari:cloud:jira::site/128baddc-c238-4857-b249-cfc84bd10c4b',
+              ],
+            },
+          }
+        )
+      })
+      it('should covert rule scope to projects', async () => {
+        await filter.onFetch([ruleScopeInstance])
+        expect(ruleScopeInstance.value.projects).toEqual([
+          {
+            projectId: '10024',
+          },
+          {
+            projectTypeKey: 'software',
+          },
+          {
+            projectId: '10034',
+          },
+          {
+            projectTypeKey: 'business',
+          },
+        ])
+      })
+      it('should covert global rule scope', async () => {
+        await filter.onFetch([globalScopeInstance])
+        expect(globalScopeInstance.value.projects).toEqual([])
+      })
+      it('should not covert if unknown project type', async () => {
+        ruleScopeInstance.value.ruleScope.resources[1] = 'ari:cloud:jira-none::site/128baddc-c238-4857-b249-cfc84bd10c4b'
+        await filter.onFetch([ruleScopeInstance])
+        expect(ruleScopeInstance.value.projects.length).toEqual(3)
+      })
+      it('should not covert if unknown resource', async () => {
+        ruleScopeInstance.value.ruleScope.resources = ['ari:cloud:not-a--known-pattern']
+        await filter.onFetch([ruleScopeInstance])
+        expect(ruleScopeInstance.value.projects).toEqual([])
+      })
+    })
   })
 
   describe('preDeploy', () => {

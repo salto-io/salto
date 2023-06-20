@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   Element,
   isInstanceElement,
 } from '@salto-io/adapter-api'
-import { addAliasToInstance, AliasData } from '@salto-io/adapter-components'
+import { addAliasToElements, AliasData } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 
@@ -87,11 +88,14 @@ const filterCreator: FilterCreator = ({ config }) => ({
       log.info('not running addAlias filter as addAlias in the config is false')
       return
     }
-    const instances = elements.filter(isInstanceElement)
-    addAliasToInstance({
-      instances,
+    const elementsMap = _.groupBy(
+      elements.filter(isInstanceElement),
+      instance => instance.elemID.typeName,
+    )
+    addAliasToElements({
+      elementsMap,
       aliasMap,
-      secondIterationTypeNames: SECOND_ITERATION_TYPES,
+      secondIterationGroupNames: SECOND_ITERATION_TYPES,
     })
   },
 })

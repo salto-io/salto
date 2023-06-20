@@ -97,20 +97,20 @@ describe('sdf folder loader', () => {
       name: 'filter',
       onFetch: () => Promise.resolve(undefined),
     })
-    const elementSource = buildElementsSourceFromElements([])
+    const elementsSource = buildElementsSourceFromElements([])
 
     const { elements } = await loadElementsFromFolder(
       {
         baseDir: 'projectDir',
-        elementSource,
+        elementsSource,
       },
       [filterMock]
     )
 
-    expect(createElementsSourceIndexMock).toHaveBeenCalledWith(elementSource, true)
+    expect(createElementsSourceIndexMock).toHaveBeenCalledWith(elementsSource, true)
     expect(filterMock).toHaveBeenCalledWith({
       elementsSourceIndex,
-      elementsSource: elementSource,
+      elementsSource,
       isPartial: true,
       config: {},
     })

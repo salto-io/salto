@@ -19,27 +19,28 @@ import { allFilters } from './adapter'
 import { createElementsSourceIndex } from './elements_source_index/elements_source_index'
 import { parseSdfProjectDir } from './client/sdf_parser'
 import { createElements } from './transformer'
+import { netsuiteConfigFromConfig } from './config'
 
 const localFilters = allFilters
   .filter(filter.isLocalFilterCreator)
   .map(({ creator }) => creator)
 
 const loadElementsFromFolder = async (
-  { baseDir, elementSource }: LoadElementsFromFolderArgs,
+  { baseDir, elementsSource, config, getElemIdFunc }: LoadElementsFromFolderArgs,
   filters = localFilters,
 ): Promise<FetchResult> => {
   const isPartial = true
   const filtersRunner = filter.filtersRunner(
     {
-      elementsSourceIndex: createElementsSourceIndex(elementSource, isPartial),
-      elementsSource: elementSource,
+      elementsSourceIndex: createElementsSourceIndex(elementsSource, isPartial),
+      elementsSource,
       isPartial,
-      config: {},
+      config: netsuiteConfigFromConfig(config),
     },
     filters,
   )
   const customizationInfos = await parseSdfProjectDir(baseDir)
-  const elements = await createElements(customizationInfos)
+  const elements = await createElements(customizationInfos, getElemIdFunc)
   await filtersRunner.onFetch(elements)
 
   return { elements }

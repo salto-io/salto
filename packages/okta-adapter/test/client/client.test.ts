@@ -57,6 +57,13 @@ describe('client', () => {
       result = await client.getSinglePage({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
       expect(result.data).toEqual([])
     })
+    it('should return empty array for 410 errors', async () => {
+      mockAxios
+        .onGet('/api/v1/deprecated')
+        .replyOnce(410)
+      result = await client.getSinglePage({ url: '/api/v1/deprecated' })
+      expect(result.data).toEqual([])
+    })
   })
 
   describe('clearValuesFromResponseData + extractHeaders', () => {
@@ -116,6 +123,20 @@ describe('client', () => {
   describe('get baseurl', () => {
     it('should return the base url', () => {
       expect(client.baseUrl).toEqual('http://my.okta.net')
+    })
+  })
+  describe('getResource ', () => {
+    let result: clientUtils.ResponseValue
+    it('should return the response', async () => {
+      // The first replyOnce with 200 is for the client authentication
+      mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
+        .onGet('/myPath').replyOnce(200, { response: 'asd' })
+      result = await client.getResource({ url: '/myPath' })
+      expect(result).toEqual({ status: 200, data: { response: 'asd' } })
+    })
+    it('sholud throw error if the response is not 200', async () => {
+      mockAxios.onGet('/myPath').replyOnce(404)
+      await expect(client.getResource({ url: '/myPath' })).rejects.toThrow('Request failed with status code 404')
     })
   })
 })

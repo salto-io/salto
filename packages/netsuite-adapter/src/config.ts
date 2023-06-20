@@ -25,7 +25,7 @@ import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
 } from './constants'
-import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch } from './query'
+import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
@@ -922,4 +922,94 @@ export const getConfigFromConfigChanges = (
     config: splitConfig(config),
     message: formatConfigSuggestionsReasons(messages),
   } : undefined
+}
+
+
+const validateRegularExpressions = (regularExpressions: string[]): void => {
+  const invalidRegularExpressions = regularExpressions
+    .filter(strRegex => !regex.isValidRegex(strRegex))
+  if (!_.isEmpty(invalidRegularExpressions)) {
+    const errMessage = `received an invalid ${CONFIG.filePathRegexSkipList} value. The following regular expressions are invalid: ${invalidRegularExpressions}`
+    throw new Error(errMessage)
+  }
+}
+
+function validateConfig(config: Record<string, unknown>): asserts config is NetsuiteConfig {
+  const {
+    fetch,
+    fetchTarget,
+    skipList, // support deprecated version
+    deploy,
+    client,
+    filePathRegexSkipList,
+    typesToSkip,
+    suiteAppClient,
+  } = _.pick(config, Object.values(CONFIG))
+
+  if (filePathRegexSkipList !== undefined) {
+    validateArrayOfStrings(filePathRegexSkipList, CONFIG.filePathRegexSkipList)
+    validateRegularExpressions(filePathRegexSkipList)
+  }
+  if (typesToSkip !== undefined) {
+    validateArrayOfStrings(typesToSkip, CONFIG.typesToSkip)
+  }
+
+  if (client !== undefined) {
+    validatePlainObject(client, CONFIG.client)
+    validateClientConfig(client, fetchTarget !== undefined)
+  }
+
+  if (fetchTarget !== undefined) {
+    validatePlainObject(fetchTarget, CONFIG.fetchTarget)
+    validateNetsuiteQueryParameters(fetchTarget, CONFIG.fetchTarget)
+    validateFetchParameters(convertToQueryParams(fetchTarget))
+  }
+
+  if (skipList !== undefined) {
+    validatePlainObject(skipList, CONFIG.skipList)
+    validateNetsuiteQueryParameters(skipList, CONFIG.skipList)
+    validateFetchParameters(convertToQueryParams(skipList))
+  }
+
+  if (fetch !== undefined) {
+    validatePlainObject(fetch, CONFIG.fetch)
+    validateFetchConfig(fetch)
+  }
+
+  if (deploy !== undefined) {
+    validatePlainObject(deploy, CONFIG.deploy)
+    validateDeployParams(deploy)
+  }
+
+  if (suiteAppClient !== undefined) {
+    validatePlainObject(suiteAppClient, CONFIG.suiteAppClient)
+    validateSuiteAppClientParams(suiteAppClient)
+  }
+}
+
+export const netsuiteConfigFromConfig = (
+  configInstance: Readonly<InstanceElement> | undefined
+): NetsuiteConfig => {
+  try {
+    if (!configInstance) {
+      return {}
+    }
+    const { value: config } = configInstance
+    validateConfig(config)
+    log.debug('using netsuite adapter config: %o', {
+      ...config,
+      fetch: _.omit(config.fetch, FETCH_PARAMS.lockedElementsToExclude),
+    })
+    return _.pickBy(config, (_value, key) => {
+      if (key in CONFIG) {
+        return true
+      }
+      log.debug('Unknown config property was found: %s', key)
+      return false
+    })
+  } catch (e) {
+    e.message = `Failed to load Netsuite config: ${e.message}`
+    log.error(e.message)
+    throw e
+  }
 }

@@ -29,15 +29,10 @@ import { getLookUpName } from '../../reference_mapping'
 import { getCloudId } from './cloud_id'
 import { getAutomations } from './automation_fetch'
 import { JiraConfig } from '../../config/config'
+import { PROJECT_TYPE_TO_RESOURCE_TYPE } from './automation_structure'
 
 
 const log = logger(module)
-
-const PROJECT_TYPE_TO_RESOURCE_TYPE: Record<string, string> = {
-  software: 'jira-software',
-  service_desk: 'jira-servicedesk',
-  business: 'jira-core',
-}
 
 type AutomationResponse = {
   id: number

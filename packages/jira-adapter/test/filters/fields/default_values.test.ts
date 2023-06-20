@@ -53,7 +53,7 @@ describe('default values', () => {
           },
           defaultValue: {
             type: 'float',
-            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p1')),
+            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p1'), {}),
           },
         }
       )
@@ -74,7 +74,7 @@ describe('default values', () => {
           },
           defaultValue: {
             type: 'float',
-            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p2')),
+            optionId: new ReferenceExpression(type.elemID.createNestedID('instance', 'instance', 'options', 'p2'), {}),
           },
         },
         undefined,

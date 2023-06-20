@@ -13,8 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isReferenceExpression } from '@salto-io/adapter-api'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
@@ -88,14 +87,14 @@ export const deploySteps = async (
   const statusIdToStepId = await getStatusIdToStepId(workflowName, client)
 
   await awu(statuses)
-    .filter(status => !isReferenceExpression(status.id)
+    .filter(status => !isResolvedReferenceExpression(status.id)
       || status.name !== status.id.value.value.name)
     .forEach(async status => {
       if (status.name === undefined) {
         throw new Error(`status name is missing in ${instance.elemID.getFullName()}`)
       }
 
-      const statusId = isReferenceExpression(status.id) ? status.id.value.value.id : status.id
+      const statusId = isResolvedReferenceExpression(status.id) ? status.id.value.value.id : status.id
       if (statusId === undefined) {
         throw new Error(`status id is missing for ${status.name} in ${instance.elemID.getFullName()}`)
       }

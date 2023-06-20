@@ -74,7 +74,7 @@ describe('permissionSchemeDeploymentValidator', () => {
       `project${index}`,
       projectType,
       {
-        permissionScheme: new ReferenceExpression(permissionInstances[index].elemID),
+        permissionScheme: new ReferenceExpression(permissionInstances[index].elemID, {}),
       }
     ))
     project3NoScheme = new InstanceElement(
@@ -86,7 +86,7 @@ describe('permissionSchemeDeploymentValidator', () => {
       'project0',
       projectType,
       {
-        permissionScheme: new ReferenceExpression(permissionInstances[0].elemID),
+        permissionScheme: new ReferenceExpression(permissionInstances[0].elemID, {}),
         description: 'test',
       }
     )

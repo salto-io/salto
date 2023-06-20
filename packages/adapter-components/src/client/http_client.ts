@@ -204,7 +204,9 @@ export abstract class AdapterHTTPClient<
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const logResponse = (res: Response<any>): void => {
-      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
+      log.debug('Received response for %s on %s', method.toUpperCase(), url)
+
+      const responseText = safeJsonStringify({
         url,
         method: method.toUpperCase(),
         status: res.status,
@@ -213,7 +215,11 @@ export abstract class AdapterHTTPClient<
           ? `<omitted buffer of length ${res.data.length}>`
           : this.clearValuesFromResponseData(res.data, url),
         headers: this.extractHeaders(res.headers),
-      }))
+      })
+
+      log.debug('Response size for %s on %s is %d', method.toUpperCase(), url, responseText.length)
+
+      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, responseText)
     }
 
     try {

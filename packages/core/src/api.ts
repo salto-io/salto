@@ -274,6 +274,7 @@ export const fetch: FetchFunc = async (
     workspace,
     fetchAccounts,
     accountToServiceNameMap,
+    await workspace.elements(),
     ignoreStateElemIdMapping,
   )
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
@@ -342,6 +343,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     workspace,
     fetchAccounts,
     getAccountToServiceNameMap(workspace, fetchAccounts),
+    await workspace.elements()
   )
 
   const {
@@ -377,6 +379,7 @@ type CalculatePatchArgs = {
   fromDir: string
   toDir: string
   accountName: string
+  ignoreStateElemIdMapping?: boolean
 }
 
 export const calculatePatch = async (
@@ -385,6 +388,7 @@ export const calculatePatch = async (
     fromDir,
     toDir,
     accountName,
+    ignoreStateElemIdMapping,
   }: CalculatePatchArgs,
 ): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
@@ -401,7 +405,15 @@ export const calculatePatch = async (
     await awu(await wsElements.getAll()).toArray(),
     wsElements,
   )
-  const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
+  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup(
+    workspace,
+    [accountName],
+    accountToServiceNameMap,
+    elementSource.createInMemoryElementSource(resolvedWSElements),
+    ignoreStateElemIdMapping
+  )
+  const adapterContext = adaptersCreatorConfigs[accountName]
+
   const loadElementsAndMerge = async (
     dir: string,
   ): Promise<{
@@ -410,10 +422,7 @@ export const calculatePatch = async (
     mergeErrors: MergeErrorWithElements[]
     mergedElements: Element[]
   }> => {
-    const { elements, errors } = await loadElementsFromFolder({
-      baseDir: dir,
-      elementSource: resolvedWSElementSource,
-    })
+    const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
     const mergeResult = await merger.mergeElements(awu(elements))
     return {
       elements,
@@ -455,7 +464,7 @@ export const calculatePatch = async (
     afterElements,
     elementSource.createInMemoryElementSource(mergedAfterElements),
     elementSource.createInMemoryElementSource(mergedBeforeElements),
-    resolvedWSElementSource,
+    adapterContext.elementsSource,
     new Set([accountName]),
     new Set([accountName]),
   )

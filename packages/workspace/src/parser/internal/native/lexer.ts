@@ -51,7 +51,10 @@ export const TOKEN_TYPES = {
 const WORD_PART = '[a-zA-Z_][\\w.@]*'
 const NEWLINE_CHARS = '\r\n\u2028\u2029'
 const MULTILINE_CONTENT = new RegExp(`.*\\\\\\$\\{.*[${NEWLINE_CHARS}]|.*?(?=\\$\\{)|.*[${NEWLINE_CHARS}]`)
-const SINGLELINE_CONTENT = new RegExp(`[^${NEWLINE_CHARS}\\\\]+?(?=\\$\\{|["${NEWLINE_CHARS}\\\\])`)
+// Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
+// We accept unicode newline characters because the string dump code does not treat them as newlines so they can appear
+// in a single line string
+const SINGLELINE_CONTENT = /[^\r\n\\]+?(?=\$\{|["\r\n\\])/
 const REFERENCE = new RegExp(`\\$\\{[ \\t]*${WORD_PART}[ \\t]*\\}`)
 
 export const rules: Record<string, moo.Rules> = {
@@ -86,9 +89,10 @@ export const rules: Record<string, moo.Rules> = {
     [TOKEN_TYPES.DOUBLE_QUOTES]: { match: '"', pop: 1 },
     // This handles regular escapes, unicode escapes and escaped template markers ('\${')
     [TOKEN_TYPES.ESCAPE]: { match: /\\[^$u]|\\u[0-9a-fA-F]{4}|\\\$\{?/ },
-    // Template markers are added to prevent incorrect parsing of user created strings that look like Salto references.
     [TOKEN_TYPES.CONTENT]: { match: SINGLELINE_CONTENT, lineBreaks: false },
-    [TOKEN_TYPES.NEWLINE]: { match: new RegExp(`[${NEWLINE_CHARS}]+`), lineBreaks: true, pop: 1 },
+    // In this context we do not treat unicode newlines as new lines because the dump code
+    // can put them in a single line string
+    [TOKEN_TYPES.NEWLINE]: { match: /[\r\n]+/, lineBreaks: true, pop: 1 },
     [TOKEN_TYPES.ERROR]: moo.error,
   },
   multilineString: {

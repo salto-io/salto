@@ -709,6 +709,10 @@ describe('Nacl Files Source', () => {
     const staticFile2 = new StaticFile({ filepath: 'path2', hash: 'hash2' })
     const staticFile3 = new StaticFile({ filepath: 'path3', hash: 'hash3' })
     const staticFile4 = new StaticFile({ filepath: 'path4', hash: 'hash4' })
+    const staticFile5 = new StaticFile({ filepath: 'path5', hash: 'hash5' })
+    const staticFile6 = new StaticFile({ filepath: 'path6', hash: 'hash6' })
+
+
     beforeAll(() => {
       beforeElem = new InstanceElement(
         'elem',
@@ -716,14 +720,17 @@ describe('Nacl Files Source', () => {
         {
           f1: staticFile1, // To modify
           f2: staticFile2, // To remove
+          f3: staticFile5, // To change location
           a: { f3: staticFile3 }, // To modify
           b: { f4: staticFile4 }, // To remove
         }
       )
       afterElem = beforeElem.clone()
 
-      afterElem.value.f1 = staticFile2
+      afterElem.value.f1 = staticFile6
+      afterElem.value.f5 = staticFile5
       delete afterElem.value.f2
+      delete afterElem.value.f3
       afterElem.value.a = 's'
       delete afterElem.value.b
 
@@ -741,6 +748,9 @@ describe('Nacl Files Source', () => {
     })
     it('should return static file nested inside removal of another field', () => {
       expect(result).toContain(staticFile4)
+    })
+    it('should not return static file if the path in element has changed', () => {
+      expect(result).not.toContain(staticFile5)
     })
   })
 })

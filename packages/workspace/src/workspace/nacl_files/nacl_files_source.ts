@@ -837,8 +837,9 @@ const buildNaclFilesSource = (
 
     // This method was written with the assumption that each static file is pointed by no more
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
-    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> =>
-      getDanglingStaticFiles(fileChanges).forEach(file => staticFilesSource.delete(file))
+    const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
+      await Promise.all(getDanglingStaticFiles(fileChanges).map(file => staticFilesSource.delete(file)))
+    }
 
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(

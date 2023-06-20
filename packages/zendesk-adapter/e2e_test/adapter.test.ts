@@ -143,6 +143,7 @@ const deployChanges = async (
         .filter(e => [
           ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
           PERMISSION_GROUP_TYPE_NAME,
+          ARTICLE_ATTACHMENT_TYPE_NAME,
         ].includes(e.elemID.typeName))
         .forEach(updatedElement => {
           const planElement = planElementById[updatedElement.elemID.getFullName()]
@@ -918,11 +919,11 @@ describe('Zendesk adapter E2E', () => {
         articleAttachment,
         articleInlineAttachment,
         articleInstance,
+        article2Instance,
+        article3Instance,
         articleTranslationEn,
         articleTranslationHe,
-        article2Instance,
         article2TranslationEn,
-        article3Instance,
         article3TranslationEn,
         articleOrder,
       ]

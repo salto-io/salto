@@ -398,7 +398,7 @@ describe('api.ts', () => {
     describe('with partial success from the adapter', () => {
       let newEmployee: InstanceElement
       let existingEmployee: InstanceElement
-      let stateSet: jest.SpyInstance
+      let updateStateFromChangesSpy: jest.SpyInstance
       beforeAll(async () => {
         const wsElements = mockElements.getAllElements()
         existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
@@ -411,7 +411,7 @@ describe('api.ts', () => {
         existingEmployee.value.name = 'updated name'
         const stateElements = mockElements.getAllElements()
         ws = mockWorkspace({ elements: wsElements, stateElements })
-        stateSet = jest.spyOn(ws.state(), 'set')
+        updateStateFromChangesSpy = jest.spyOn(ws.state(), 'updateStateFromChanges')
 
         // Create plan where both changes are in the same group
         const actionPlan = await plan.getPlan({
@@ -451,7 +451,20 @@ describe('api.ts', () => {
         expect(appliedChange?.data?.after).toEqual(existingEmployee)
       })
       it('should update state with applied change', () => {
-        expect(stateSet).toHaveBeenCalledWith(existingEmployee)
+        expect(updateStateFromChangesSpy).toHaveBeenCalledWith(
+          {
+            changes: [
+              expect.objectContaining(
+                {
+                  data: {
+                    before: 'FirstEmployee',
+                    after: 'updated name',
+                  },
+                }
+              ),
+            ],
+          }
+        )
       })
     })
     describe('with checkOnly deployment', () => {

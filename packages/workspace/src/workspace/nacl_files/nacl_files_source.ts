@@ -20,7 +20,7 @@ import {
   Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
   isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
   placeholderReadonlyElementsSource, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile,
+  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile, isRemovalChange,
 } from '@salto-io/adapter-api'
 import {
   resolvePath,
@@ -561,6 +561,22 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data after:\n%s', naclDataAfter)
 }
 
+// Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
+export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFile[] => {
+  const removalFiles = fileChanges.filter(isRemovalChange).map(getChangeData).map(getNestedStaticFiles).flat()
+
+  const modifications = fileChanges.filter(isModificationChange)
+  const modificationAfterFilesIds = new Set<string>(
+    modifications.map(change => change.data.after).map(getNestedStaticFiles).flat().map(file => file.filepath)
+  )
+  const modificationRemovedFiles = modifications.map(change => change.data.before).map(getNestedStaticFiles).flat()
+    // Using filepath is currently enough because all implementations of static files have unique file paths
+    // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
+    .filter(file => !modificationAfterFilesIds.has(file.filepath))
+
+  return removalFiles.concat(modificationRemovedFiles)
+}
+
 const buildNaclFilesSource = (
   sourceName: string,
   naclFilesStore: DirectoryStore<string>,
@@ -824,26 +840,8 @@ const buildNaclFilesSource = (
     // This method was written with the assumption that each static file is pointed by no more
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      fileChanges
-        .filter(change => change.action === 'remove')
-        .map(getChangeData)
-        .map(getNestedStaticFiles)
-        .flat()
-        .forEach(file => staticFilesSource.delete(file))
-
-      fileChanges
-        .filter(isModificationChange)
-        .filter(change => isStaticFile(change.data.before))
-        .filter(change => (
-          (isStaticFile(change.data.after) && change.data.before.filepath !== change.data.after.filepath)
-          || !isStaticFile(change.data.after)
-        ))
-        .map(change => change.data.before)
-        .map(getNestedStaticFiles)
-        .flat()
-        .forEach(file => staticFilesSource.delete(file))
+      await Promise.all(getDanglingStaticFiles(fileChanges).map(file => staticFilesSource.delete(file)))
     }
-
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(
       'Nacl source %s going to update %d nacl files with %d changes',

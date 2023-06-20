@@ -24,7 +24,7 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { createFilterCreatorParams } from '../../utils'
 import ZendeskClient from '../../../src/client/client'
 import { ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME, BRAND_TYPE_NAME, USER_SEGMENT_TYPE_NAME, ZENDESK } from '../../../src/constants'
-import filterCreator, { getGenericBody, getGenericTitle } from '../../../src/filters/article/article'
+import filterCreator, { getGenericTitle } from '../../../src/filters/article/article'
 import { DEFAULT_CONFIG, FETCH_CONFIG } from '../../../src/config'
 import { createEveryoneUserSegmentInstance } from '../../../src/filters/everyone_user_segment'
 import * as articleUtils from '../../../src/filters/article/utils'
@@ -341,7 +341,7 @@ describe('article filter', () => {
       ])
       const filteredArticle = getChangeData(articleAddition)
       expect(filteredArticle.value.title).toBe(getGenericTitle('The title of the article'))
-      expect(filteredArticle.value.body).toBe(getGenericBody('The title of the article'))
+      expect(filteredArticle.value.body).toBe('')
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
     it('should run the creation of unassociated attachment', async () => {

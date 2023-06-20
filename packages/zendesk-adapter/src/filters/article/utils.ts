@@ -186,7 +186,7 @@ export const createUnassociatedAttachment = async (
       log.error(`Received an invalid response from Zendesk API, ${safeJsonStringify(res.data, undefined, 2).slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)}. Not adding article attachments`)
       return
     }
-    const createdAttachment = [res.data.article_attachment] // why is this an array??
+    const createdAttachment = [res.data.article_attachment]
     if (!isAttachmentsResponse(createdAttachment)) {
       return
     }

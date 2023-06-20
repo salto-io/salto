@@ -53,9 +53,11 @@ const needToOmit = (change: Change<InstanceElement>): boolean =>
   isDefaultTranslationAddition(change) || parentRemoved(change)
 
 /**
- * a different filter is needed for the default translation and translations for which the section
- * has been removed, as they are deployed during the deployment of the section itself. Therefore,
- * this filter marks these translations as successfully deployed without actually deploying them.
+ * a different filter is needed for the default translation and translations for which the parent
+ * has been removed, as they are deployed during the deployment of the parent itself. Therefore,
+ * this filter marks translations as successfully deployed without actually deploying them.
+ * For addition of default article translation, as we deploy the article with a temporary title and body,
+ * we transform the change to a modification change and deploy it in this way.
  * The rest of the translations will be deployed in the default deploy filter.
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({

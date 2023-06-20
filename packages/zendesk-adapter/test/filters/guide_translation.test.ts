@@ -23,8 +23,25 @@ import {
 } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/guide_translation'
 import { createFilterCreatorParams } from '../utils'
-import { GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, ZENDESK } from '../../src/constants'
+import {
+  ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  ZENDESK,
+} from '../../src/constants'
 import { removedTranslationParentId } from '../../src/filters/guide_section_and_category'
+
+const mockDeployChange = jest.fn()
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
+  return {
+    ...actual,
+    deployment: {
+      ...actual.deployment,
+      deployChange: jest.fn((...args) => mockDeployChange(...args)),
+    },
+  }
+})
 
 describe('guild section translation filter', () => {
   type FilterType = filterUtils.FilterWith<'deploy'>
@@ -35,6 +52,10 @@ describe('guild section translation filter', () => {
   const sectionType = new ObjectType({ elemID: new ElemID(ZENDESK, sectionTypeName) })
   const sectionTranslationType = new ObjectType(
     { elemID: new ElemID(ZENDESK, sectionTranslationTypename) }
+  )
+  const articleType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_TYPE_NAME) })
+  const articleTranslationType = new ObjectType(
+    { elemID: new ElemID(ZENDESK, ARTICLE_TRANSLATION_TYPE_NAME) }
   )
   const guideLanguageSettingsType = new ObjectType({
     elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME),
@@ -49,6 +70,15 @@ describe('guild section translation filter', () => {
     }
   )
 
+  const heArticleTranslationInstance = new InstanceElement(
+    'instance',
+    articleTranslationType,
+    {
+      locale: 'he',
+      title: 'name',
+      body: 'description',
+    }
+  )
   const heSectionTranslationInstance = new InstanceElement(
     'instance',
     sectionTranslationType,
@@ -67,6 +97,21 @@ describe('guild section translation filter', () => {
       body: 'description',
     }
   )
+  const articleInstance = new InstanceElement(
+    'instance',
+    articleType,
+    {
+      id: 2,
+      source_locale: new ReferenceExpression(
+        guideLanguageSettingsType.elemID.createNestedID('instance', 'Test1'), guideLanguageSettingsInstance
+      ),
+      translations: [
+        heArticleTranslationInstance.value,
+      ],
+    }
+  )
+
+  heArticleTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [articleInstance.value]
 
   const sectionInstance = new InstanceElement(
     'instance',
@@ -89,10 +134,43 @@ describe('guild section translation filter', () => {
   enSectionTranslationInstance.annotations[CORE_ANNOTATIONS.PARENT] = [sectionInstance.value]
 
   beforeEach(async () => {
+    jest.clearAllMocks()
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
   describe('deploy', () => {
+    it('should deploy added default article translation as modification', async () => {
+      mockDeployChange.mockImplementation(async () => ({ translation: { id: 3 } }))
+      const res = await filter.deploy([
+        { action: 'add', data: { after: heArticleTranslationInstance } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: heArticleTranslationInstance, after: heArticleTranslationInstance } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([{ action: 'add', data: { after: heArticleTranslationInstance } }])
+    })
+    it('should not deploy added default article translation if there is an error', async () => {
+      mockDeployChange.mockImplementation(async () => { throw new Error('err') })
+      const res = await filter.deploy([
+        { action: 'add', data: { after: heArticleTranslationInstance } },
+      ])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: heArticleTranslationInstance, after: heArticleTranslationInstance } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
+    })
     it('should consider only added default translation in appliedChanges', async () => {
       const res = await filter.deploy([
         { action: 'add', data: { after: heSectionTranslationInstance } },

@@ -72,11 +72,9 @@ const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
   EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
 )
 
-export const getGenericTitle = (title: string): string => `salto generic title for ${title}`
+export const getGenericTitle = (title: string): string => `salto temporary title for article with title: ${title}`
 
-export const getGenericBody = (title: string): string => `salto generic body for ${title}`
-
-const addTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
+const addPlaceholderTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
@@ -84,7 +82,7 @@ const addTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<v
     .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = getGenericTitle(translation.title)
-    getChangeData(change).value.body = getGenericBody(translation.title)
+    getChangeData(change).value.body = ''
   }
 }
 
@@ -298,7 +296,7 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
         .forEach(async change => {
           // We add the title and the body values for articles creation
-          await addTitleAndBodyValues(change)
+          await addPlaceholderTitleAndBodyValues(change)
         })
     },
 

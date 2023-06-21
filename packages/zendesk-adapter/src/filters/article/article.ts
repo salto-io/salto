@@ -72,8 +72,6 @@ const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
   EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
 )
 
-export const getGenericTitle = (title: string): string => `salto temporary title for article with title: ${title}`
-
 const addPlaceholderTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
@@ -81,7 +79,7 @@ const addPlaceholderTitleAndBodyValues = async (change: Change<InstanceElement>)
     .filter(isTranslation)
     .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
-    getChangeData(change).value.title = getGenericTitle(translation.title)
+    getChangeData(change).value.title = translation.title
     getChangeData(change).value.body = ''
   }
 }

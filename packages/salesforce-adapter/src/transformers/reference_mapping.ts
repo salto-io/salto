@@ -244,7 +244,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
-    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'ProfileApexClassAccess', 'TransactionSecurityPolicy'] },
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'] },
     target: { type: 'ApexClass' },
   },
   {
@@ -252,28 +252,8 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Role' },
   },
   {
-    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
-    target: { type: 'CustomApplication' },
-  },
-  {
     src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup', 'DelegateGroup'] },
     target: { type: 'PermissionSet' },
-  },
-  {
-    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'Layout' },
-  },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'RecordType' },
-  },
-  {
-    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
-    target: { type: 'Flow' },
-  },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
-    target: { type: 'RecordType' },
   },
   {
     src: { field: 'tabs', parentTypes: ['CustomApplication'] },
@@ -309,7 +289,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'object', parentTypes: ['ProfileObjectPermissions', 'FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
+    src: { field: 'object', parentTypes: ['FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -675,10 +655,41 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on
-const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
+export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
     target: { type: CUSTOM_FIELD },
+  },
+]
+
+export const referencesFromProfile: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'apexClass', parentTypes: ['ProfileApexClassAccess'] },
+    target: { type: 'ApexClass' },
+  },
+  {
+    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
+    target: { type: 'Layout' },
+  },
+  {
+    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
+    target: { type: 'RecordType' },
+  },
+  {
+    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
+    target: { type: 'Flow' },
+  },
+  {
+    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
+    target: { type: 'RecordType' },
+  },
+  {
+    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
+    target: { type: 'CustomApplication' },
   },
 ]
 
@@ -693,10 +704,24 @@ const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = 
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...defaultFieldNameToTypeMappingDefs,
   ...fieldPermissionEnumDisabledExtraMappingDefs,
+  ...referencesFromProfile,
 ]
+
+export const getReferenceMappingDefs = (
+  args: {enumFieldPermissions: boolean; fetchProfiles: boolean }
+): FieldReferenceDefinition[] => {
+  let refDefs = defaultFieldNameToTypeMappingDefs
+  if (args.enumFieldPermissions) {
+    refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
+  }
+  if (args.fetchProfiles) {
+    refDefs = refDefs.concat(referencesFromProfile)
+  }
+  return refDefs
+}
 
 const matchName = (name: string, matcher: string | RegExp): boolean => (
   _.isString(matcher)
@@ -756,8 +781,10 @@ export type ReferenceResolverFinder = (
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = (
-  defs = fieldNameToTypeMappingDefs
+  defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
+// TODO how to get optional features from here?
+
   const referenceDefinitions = defs.map(
     def => FieldReferenceResolver.create(def)
   )
@@ -829,4 +856,4 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl()
+export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)

@@ -57,6 +57,13 @@ describe('client', () => {
       result = await client.getSinglePage({ url: '/api/v1/meta/schemas/apps/0oa6e1b1916fcAiWq5d7/default' })
       expect(result.data).toEqual([])
     })
+    it('should return empty array for 410 errors', async () => {
+      mockAxios
+        .onGet('/api/v1/deprecated')
+        .replyOnce(410)
+      result = await client.getSinglePage({ url: '/api/v1/deprecated' })
+      expect(result.data).toEqual([])
+    })
   })
 
   describe('clearValuesFromResponseData + extractHeaders', () => {
@@ -120,7 +127,7 @@ describe('client', () => {
   })
   describe('getResource ', () => {
     let result: clientUtils.ResponseValue
-    it('sholud return the response', async () => {
+    it('should return the response', async () => {
       // The first replyOnce with 200 is for the client authentication
       mockAxios.onGet('/api/v1/org').replyOnce(200, { id: 1 })
         .onGet('/myPath').replyOnce(200, { response: 'asd' })

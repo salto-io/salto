@@ -13,17 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/change_validator'
-export * from './src/change'
-export * from './src/compare'
-export * from './src/decorators'
-export * from './src/dependencies'
-export * from './src/element_source'
-export * from './src/element'
-export * as filter from './src/filter'
-export * from './src/nacl_case_utils'
-export * from './src/utils'
-export * from './src/template'
-export * from './src/walk_element'
-export * from './src/collisions'
-export * as references from './src/references'
+import { Change, isAdditionOrModificationChange, isRemovalOrModificationChange, toChange } from '@salto-io/adapter-api'
+
+export const reverseChange = <T extends Change>(change: T): T => {
+  const before = isAdditionOrModificationChange(change) ? change.data.after : undefined
+  const after = isRemovalOrModificationChange(change) ? change.data.before : undefined
+  return {
+    ...change,
+    ...toChange({ before, after }),
+  }
+}

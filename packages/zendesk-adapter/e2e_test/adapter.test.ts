@@ -60,12 +60,12 @@ import {
   SUPPORTED_TYPES,
 } from '../src/config'
 import {
-  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ORDER_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ORDER_TYPE_NAME,
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
   BRAND_TYPE_NAME,
   CATEGORY_TRANSLATION_TYPE_NAME,
-  CATEGORY_TYPE_NAME,
+  CATEGORY_TYPE_NAME, GUIDE,
   PERMISSION_GROUP_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
   SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
@@ -143,6 +143,7 @@ const deployChanges = async (
         .filter(e => [
           ...Object.keys(GUIDE_BRAND_SPECIFIC_TYPES),
           PERMISSION_GROUP_TYPE_NAME,
+          ARTICLE_ATTACHMENT_TYPE_NAME,
         ].includes(e.elemID.typeName))
         .forEach(updatedElement => {
           const planElement = planElementById[updatedElement.elemID.getFullName()]
@@ -737,7 +738,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: fileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${fileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${fileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: false,
@@ -753,7 +754,7 @@ describe('Zendesk adapter E2E', () => {
           file_name: inlineFileName,
           content_type: 'image/png',
           content: new StaticFile({
-            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENT_TYPE_NAME}/${articleName}/${inlineFileName}`,
+            filepath: `${ZENDESK}/${ARTICLE_ATTACHMENTS_FIELD}/${GUIDE}/brands/${HELP_CENTER_BRAND_NAME}/categories/${categoryName}/sections/${sectionName}/articles/${articleName}/article_attachment/${inlineFileName}`,
             content: fs.readFileSync(path.resolve(`${__dirname}/../e2e_test/images/nacl.png`)),
           }),
           inline: true,
@@ -918,11 +919,11 @@ describe('Zendesk adapter E2E', () => {
         articleAttachment,
         articleInlineAttachment,
         articleInstance,
+        article2Instance,
+        article3Instance,
         articleTranslationEn,
         articleTranslationHe,
-        article2Instance,
         article2TranslationEn,
-        article3Instance,
         article3TranslationEn,
         articleOrder,
       ]

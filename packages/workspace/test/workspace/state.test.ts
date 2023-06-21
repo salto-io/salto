@@ -22,6 +22,7 @@ import {
   BuiltinTypes,
   Field,
   InstanceElement,
+  Element,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
@@ -200,7 +201,7 @@ describe('state', () => {
     })
 
     describe('updateStateFromChanges', () => {
-      describe('should update changed elements correctly without changing non-changed elements', async () => {
+      describe('should update changed elements correctly without changing non-changed elements', () => {
         const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
         const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
         const toModify = new ObjectType({
@@ -215,21 +216,25 @@ describe('state', () => {
         const fieldToModifyElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'modifyMe')
         const fieldToRemoveElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'removeMe')
 
-        await state.clear()
-        await state.setAll(awu([toRemove, toModify, newElem]))
+        let allElements: Element[]
+        beforeAll(async () => {
+          await state.clear()
+          await state.setAll(awu([toRemove, toModify, newElem]))
 
-        await state.updateStateFromChanges({
-          changes: [
-            { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
-            { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
+          await state.updateStateFromChanges({
+            changes: [
+              { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
+              { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
 
-            { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be added
-            { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be removed
-            { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
-          ],
+              { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be added
+              { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be removed
+              { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
+            ],
+          })
+
+          allElements = await awu(await state.getAll()).toArray()
         })
 
-        const allElements = await awu(await state.getAll()).toArray()
 
         it('should not add or remove unexpected elements', async () => {
           expect(allElements).toHaveLength(3)

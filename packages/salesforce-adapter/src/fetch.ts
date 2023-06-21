@@ -372,8 +372,8 @@ export const retrieveMetadataInstances = async ({
     fileProps: ReadonlyArray<FileProperties>,
     filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
   ): Promise<InstanceElement[]> => {
-    // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
+    // Salesforce quirk - folder instances are listed under their content's type in the manifest
     const filesToRetrieve = allFileProps.map(inst => (
       { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
     ))
@@ -435,46 +435,6 @@ export const retrieveMetadataInstances = async ({
     ))
   }
 
-
-  const categorizeFiles = (fileProperties: FileProperties[]): {
-    profile: FileProperties[]
-    profileContext: FileProperties[]
-    other: FileProperties[]
-  } => {
-    /* Salesforce returns the parts of the profile that apply to the instances that are requested along with the
-    profile, as described in https://developer.salesforce.com/docs/atlas.en-us.api_meta.meta/api_meta/meta_profile.htm
-    The following list of types that affect the contents of retrieved profile instances was discovered by trial and
-    error.
-    */
-    const profileContextTypes = new Set(['ApexClass',
-      'ApexPage',
-      'CustomApplication',
-      'CustomPermission',
-      'CustomObject',
-      'ExternalDataSource',
-      'FlowDefinition',
-      'Layout'])
-
-    return {
-      profile: [],
-      profileContext: [],
-      other: [],
-      ..._.groupBy(
-        fileProperties,
-        fileProps => {
-          if (fileProps.type === PROFILE_METADATA_TYPE) {
-            return 'profile'
-          }
-          if (profileContextTypes.has(fileProps.type)) {
-            return 'profileContext'
-          }
-
-          return 'other'
-        },
-      ),
-    }
-  }
-
   const retrieveProfilesWithContextTypes = async (
     profileFileProps: ReadonlyArray<FileProperties>,
     contextFileProps: ReadonlyArray<FileProperties>,
@@ -508,23 +468,12 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const categorizedFileProps = categorizeFiles(filesToRetrieve)
+  const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
 
-  const profileAndContextInstances = await retrieveProfilesWithContextTypes(categorizedFileProps.profile,
-    categorizedFileProps.profileContext)
-
-  const otherInstancesChunks = await Promise.all(
-    _.chunk(categorizedFileProps.other, maxItemsInRetrieveRequest)
-      .filter(filesChunk => filesChunk.length > 0)
-      .map(filesChunk => retrieveInstances(filesChunk))
-  )
-
-  const allInstances = profileAndContextInstances
-    .concat(_.flatten(otherInstancesChunks))
-    .filter(instance => !typesToSkip.has(instance.elemID.typeName))
+  const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
 
   return {
-    elements: allInstances,
+    elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,
   }
 }

@@ -586,22 +586,20 @@ const logNaclFileUpdateErrorContext = (
 
 // Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
 export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFile[] => {
-  const modificationAndAdditionAfterFilesIds = new Set<string>(
+  // Using filepath is currently enough because all implementations of static files have unique file paths
+  // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
+  const afterFilePaths = new Set<string>(
     fileChanges
       .filter(isAdditionOrModificationChange)
       .map(change => change.data.after)
-      .map(getNestedStaticFiles)
-      .flat()
+      .flatMap(getNestedStaticFiles)
       .map(file => file.filepath)
   )
   return fileChanges
     .filter(isRemovalOrModificationChange)
     .map(change => change.data.before)
-    .map(getNestedStaticFiles)
-    .flat()
-    // Using filepath is currently enough because all implementations of static files have unique file paths
-    // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
-    .filter(file => !modificationAndAdditionAfterFilesIds.has(file.filepath))
+    .flatMap(getNestedStaticFiles)
+    .filter(file => !afterFilePaths.has(file.filepath))
 }
 
 const buildNaclFilesSource = (

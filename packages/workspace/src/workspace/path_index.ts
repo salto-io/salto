@@ -205,7 +205,6 @@ const updateIndex = async (
     if (removedElementsFullNames.has(key)) {
       return true
     }
-    // Needed for createTopLevelParentID() function
     const keyElemId = ElemID.fromFullName(key)
     // If any of the levels above the key was removed, delete the key
     return keyElemId.createAllElemIdParents()

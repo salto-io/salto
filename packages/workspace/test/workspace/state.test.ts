@@ -18,7 +18,6 @@ import {
   ElemID,
   StaticFile,
   toChange,
-  Value,
   BuiltinTypes,
   Field,
   InstanceElement,
@@ -34,18 +33,7 @@ import { createInMemoryElementSource } from '../../src/workspace/elements_source
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 import { mockStaticFilesSource } from '../utils'
-
-const updatePathMock = jest.fn()
-const updateTopLevelPathMock = jest.fn()
-
-jest.mock('../../src/workspace/path_index', () => {
-  const actual = jest.requireActual('../../src/workspace/path_index')
-  return {
-    ...actual,
-    updatePathIndex: (args: Value) => updatePathMock(args),
-    updateTopLevelPathIndex: (args: Value) => updateTopLevelPathMock(args),
-  }
-})
+import * as pathIndexModule from '../../src/workspace/path_index'
 
 const { awu } = collections.asynciterable
 
@@ -201,7 +189,7 @@ describe('state', () => {
     })
 
     describe('updateStateFromChanges', () => {
-      describe('state elements', () => {
+      describe('elements state', () => {
         const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
         const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
         const toModify = new ObjectType({
@@ -233,22 +221,19 @@ describe('state', () => {
           })
 
           allElements = await awu(await state.getAll()).toArray()
-        })
-
-
-        it('should not add or remove unexpected elements', async () => {
           expect(allElements).toHaveLength(3)
         })
-        it('should not remove existing elements', async () => {
+
+        it('should not remove existing elements', () => {
           expect(allElements.some(e => e.isEqual(newElem))).toBeTruthy()
         })
-        it('should remove elements that were removed', async () => {
+        it('should remove elements that were removed', () => {
           expect(allElements.some(e => e.isEqual(toRemove))).toBeFalsy()
         })
-        it('should add elements that were added', async () => {
+        it('should add elements that were added', () => {
           expect(allElements.some(e => e.isEqual(toAdd))).toBeTruthy()
         })
-        it('should modify elements that were modified', async () => {
+        it('should modify elements that were modified', () => {
           expect(allElements[2].isEqual(new ObjectType({
             elemID: new ElemID(adapter, 'modify', 'type'),
             fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
@@ -267,6 +252,9 @@ describe('state', () => {
       it('should call updatePathIndex functions with all elements and removals', async () => {
         const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
         const unmergedElements = [newElem, elem, nonTopLevelElem]
+        const updatePathSpyIndex = jest.spyOn(pathIndexModule, 'updatePathIndex')
+        const updateTopLevelPathSpyIndex = jest.spyOn(pathIndexModule, 'updateTopLevelPathIndex')
+
         await state.updateStateFromChanges({
           changes: [
             { ...toChange({ before: elem }), id: elem.elemID }, // Removal
@@ -281,12 +269,12 @@ describe('state', () => {
           elem.elemID.getFullName(),
           nonTopLevelElem.elemID.getFullName(),
         ])
-        expect(updatePathMock).toHaveBeenCalledWith({
+        expect(updatePathSpyIndex).toHaveBeenCalledWith({
           pathIndex,
           unmergedElements,
           removedElementsFullNames,
         })
-        expect(updateTopLevelPathMock).toHaveBeenCalledWith({
+        expect(updateTopLevelPathSpyIndex).toHaveBeenCalledWith({
           pathIndex: topLevelPathIndex,
           unmergedElements,
           removedElementsFullNames,

@@ -103,7 +103,7 @@ export const buildInMemState = (
   const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
     const { staticFilesSource } = await stateData()
     const files = getDanglingStaticFiles(elemChanges)
-    await awu(files).forEach(file => staticFilesSource.delete(file))
+    await Promise.all(files.map(file => staticFilesSource.delete(file)))
   }
 
   const updateStateElements = async (changes: DetailedChange[]): Promise<void> => log.time(async () => {
@@ -144,7 +144,7 @@ export const buildInMemState = (
       : []
 
     await state.elements.set(element)
-    await awu(filesToDelete).forEach(async f => state.staticFilesSource.delete(f))
+    await Promise.all(filesToDelete.map(async f => state.staticFilesSource.delete(f)))
   }
 
   return {

@@ -199,10 +199,11 @@ export const deploy = async (
       .filter(change => (isAdditionOrModificationChange(change) || isFieldChange(change)))
       .map(getUpdatedElement)
       .toArray()
-    await changedElements.setAll(updatedElements)
 
     const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChanges(change))
     await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+
+    await changedElements.setAll(updatedElements)
   }, 'postDeployAction')
 
   const { errors, appliedChanges, extraProperties } = await deployActions(

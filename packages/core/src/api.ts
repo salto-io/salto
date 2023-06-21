@@ -17,12 +17,12 @@ import {
   Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections } from '@salto-io/lowerdash'
+import { promises, collections, values } from '@salto-io/lowerdash'
 import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
@@ -130,7 +130,7 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
-    compareOptions: { compareReferencesByValue: true },
+    compareOptions: { compareByValue: true },
   })
 }
 
@@ -274,6 +274,7 @@ export const fetch: FetchFunc = async (
     workspace,
     fetchAccounts,
     accountToServiceNameMap,
+    await workspace.elements(),
     ignoreStateElemIdMapping,
   )
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
@@ -342,6 +343,7 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     workspace,
     fetchAccounts,
     getAccountToServiceNameMap(workspace, fetchAccounts),
+    await workspace.elements()
   )
 
   const {
@@ -377,6 +379,7 @@ type CalculatePatchArgs = {
   fromDir: string
   toDir: string
   accountName: string
+  ignoreStateElemIdMapping?: boolean
 }
 
 export const calculatePatch = async (
@@ -385,6 +388,7 @@ export const calculatePatch = async (
     fromDir,
     toDir,
     accountName,
+    ignoreStateElemIdMapping,
   }: CalculatePatchArgs,
 ): Promise<FetchResult> => {
   const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
@@ -401,7 +405,15 @@ export const calculatePatch = async (
     await awu(await wsElements.getAll()).toArray(),
     wsElements,
   )
-  const resolvedWSElementSource = elementSource.createInMemoryElementSource(resolvedWSElements)
+  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup(
+    workspace,
+    [accountName],
+    accountToServiceNameMap,
+    elementSource.createInMemoryElementSource(resolvedWSElements),
+    ignoreStateElemIdMapping
+  )
+  const adapterContext = adaptersCreatorConfigs[accountName]
+
   const loadElementsAndMerge = async (
     dir: string,
   ): Promise<{
@@ -410,10 +422,7 @@ export const calculatePatch = async (
     mergeErrors: MergeErrorWithElements[]
     mergedElements: Element[]
   }> => {
-    const { elements, errors } = await loadElementsFromFolder({
-      baseDir: dir,
-      elementSource: resolvedWSElementSource,
-    })
+    const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
     const mergeResult = await merger.mergeElements(awu(elements))
     return {
       elements,
@@ -455,7 +464,7 @@ export const calculatePatch = async (
     afterElements,
     elementSource.createInMemoryElementSource(mergedAfterElements),
     elementSource.createInMemoryElementSource(mergedBeforeElements),
-    resolvedWSElementSource,
+    adapterContext.elementsSource,
     new Set([accountName]),
     new Set([accountName]),
   )
@@ -674,3 +683,22 @@ export const rename = async (
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
   adapterCreators[adapterName].configCreator?.optionsType
+
+
+export const getAdditionalReferences = async (
+  workspace: Workspace,
+  changes: Change[],
+): Promise<ReferenceMapping[]> => {
+  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
+
+  const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
+
+  const referenceGroups = await Promise.all(
+    Object.entries(changeGroups).map(([account, changeGroup]) =>
+      adapterCreators[accountToService[account]]
+        .getAdditionalReferences?.(changeGroup))
+  )
+  return referenceGroups
+    .flat()
+    .filter(values.isDefined)
+}

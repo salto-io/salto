@@ -1334,8 +1334,6 @@ export const getSObjectFieldElement = (
   // Name is an exception because it can be editable and visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-    annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
-    annotations[FIELD_ANNOTATIONS.CREATABLE] = false
     delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 

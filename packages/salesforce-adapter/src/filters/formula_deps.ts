@@ -22,7 +22,7 @@ import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier, extractF
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
+import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomObjectFields } from './utils'
 
 const log = logger(module)
 const { awu, groupByAsync } = collections.asynciterable
@@ -154,6 +154,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
   }
 }
 
+const FILTER_NAME = 'formulaDeps'
 /**
  * Extract references from formulas
  * Formulas appear in the field definitions of types and may refer to fields in their parent type or in another type.
@@ -162,20 +163,21 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
  */
 const filter: LocalFilterCreator = ({ config }) => ({
-  name: 'formula_deps',
-  onFetch: async fetchedElements => {
-    if (config.fetchProfile.isFeatureEnabled('skipParsingFormulas')) {
-      log.info('Formula parsing is disabled. Skipping formula_deps filter.')
-      return
-    }
-    const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-    const fetchedFormulaFields = await awu(fetchedObjectTypes)
-      .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
-      .filter(isFormulaField)
-      .toArray()
-    const allElements = buildElementsSourceForFetch(fetchedElements, config)
-    await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
-  },
+  name: FILTER_NAME,
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: 'Error while parsing formulas',
+    config,
+    filterName: FILTER_NAME,
+    fetchFilterFunc: async fetchedElements => {
+      const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+      const fetchedFormulaFields = await awu(fetchedObjectTypes)
+        .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
+        .filter(isFormulaField)
+        .toArray()
+      const allElements = buildElementsSourceForFetch(fetchedElements, config)
+      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
+    },
+  }),
 })
 
 export default filter

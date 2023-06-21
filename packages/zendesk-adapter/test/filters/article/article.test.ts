@@ -341,7 +341,7 @@ describe('article filter', () => {
       ])
       const filteredArticle = getChangeData(articleAddition)
       expect(filteredArticle.value.title).toBe('The title of the article')
-      expect(filteredArticle.value.body).toBe('<p>ppppp</p>')
+      expect(filteredArticle.value.body).toBe('')
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
     it('should run the creation of unassociated attachment', async () => {

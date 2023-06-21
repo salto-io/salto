@@ -168,6 +168,20 @@ describe('Custom Object Instances References filter', () => {
             ],
           },
         },
+        HiddenValueField: {
+          refType: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'hiddenValueField',
+            [API_NAME]: 'HiddenValueField',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            referenceTo: [
+              masterName,
+            ],
+          },
+        },
       },
     }
   )
@@ -197,6 +211,7 @@ describe('Custom Object Instances References filter', () => {
       LookupExample: 'refToId',
       MasterDetailExample: 'masterToId',
       NonDeployableLookup: 'ToNothing',
+      HiddenValueField: 'ToNothing',
       RefToUser: 'aaa',
     }
     const refToInstanceName = 'refToInstance'
@@ -319,15 +334,18 @@ describe('Custom Object Instances References filter', () => {
     })
 
     it('should replace lookup and master values with reference and not replace ref to user', () => {
-      const afterFilterRefToInst = elements.find(e => e.elemID.isEqual(refFromInstance.elemID))
+      const afterFilterRefToInst = elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.isEqual(refFromInstance.elemID)) as InstanceElement
       expect(afterFilterRefToInst).toBeDefined()
-      expect(isInstanceElement(afterFilterRefToInst)).toBeTruthy()
-      expect((afterFilterRefToInst as InstanceElement).value.LookupExample)
-        .toEqual(new ReferenceExpression(refToInstance.elemID))
-      expect((afterFilterRefToInst as InstanceElement).value.MasterDetailExample)
-        .toEqual(new ReferenceExpression(masterToInstance.elemID))
-      expect((afterFilterRefToInst as InstanceElement).value.RefToUser)
-        .toEqual('aaa')
+      expect(afterFilterRefToInst.value).toEqual({
+        Id: '1234',
+        LookupExample: new ReferenceExpression(refToInstance.elemID),
+        MasterDetailExample: new ReferenceExpression(masterToInstance.elemID),
+        NonDeployableLookup: 'ToNothing',
+        RefToUser: 'aaa',
+        HiddenValueField: 'ToNothing',
+      })
     })
 
     it('should drop the referencing instance if ref is to non existing instance', () => {

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FilterCreator } from '../filter'
 import { PROJECT_COMPONENT_TYPE, PROJECT_TYPE } from '../constants'
 
@@ -39,7 +40,7 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         _.remove(
           instance.value.components,
-          ref => isReferenceExpression(ref) && removedComponentsIds.has(ref.elemID.getFullName())
+          ref => isResolvedReferenceExpression(ref) && removedComponentsIds.has(ref.elemID.getFullName())
         )
       })
 

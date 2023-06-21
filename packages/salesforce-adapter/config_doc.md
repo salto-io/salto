@@ -149,14 +149,16 @@ salesforce {
 
 ## Optional Features
 
-| Name              | Default when undefined | Description                                                                                                                            |
-|-------------------|------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
-| extraDependencies | true                   | Find additional dependencies between configuration elements by using the salesforce tooling API                                        |
-| elementsUrls      | true                   | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen |
-| addMissingIds     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                         |
-| profilePaths      | true                   | Update file names for profiles whose API name is different from their display name                                                     |
-| authorInformation | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                              |
-| describeSObjects  | true                   | Fetch additional information about CustomObjects from the soap API                                                                     |
+| Name                              | Default when undefined | Description                                                                                                                                                 |
+|-----------------------------------|------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| extraDependencies                 | true                   | Find additional dependencies between configuration elements by using the salesforce tooling API                                                             |
+| elementsUrls                      | true                   | Populate URLs for your salesforce configuration elements and enable quick navigation from Salto to the corresponding salesforce screen                      |
+| addMissingIds                     | true                   | Populate Salesforce internal ids for a few types that require special handling                                                                              |
+| profilePaths                      | true                   | Update file names for profiles whose API name is different from their display name                                                                          |
+| authorInformation                 | true                   | Populate Salesforce author information about who and when last changed Salesforce configuration elements.                                                   |
+| describeSObjects                  | true                   | Fetch additional information about CustomObjects from the soap API                                                                                          |
+| formulaDeps                       | true                   | Parse formula fields in custom objects for additional dependencies beyond those provided by the tooling API                                                 |
+| fetchCustomObjectUsingRetrieveApi | true                   | Use the Salesforce Metadata Retrieve API to fetch CustomObjects. This should improve reliability and data accuracy, but may have a small performance impact | 
 
 ### Data management configuration options
 

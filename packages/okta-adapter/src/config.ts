@@ -431,6 +431,24 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       ],
     },
   },
+  AppLogo: {
+    deployRequests: {
+      add: {
+        url: '/api/v1/apps/{appId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/apps/{appId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          appId: '_parent.0.id',
+        },
+      },
+    },
+  },
   ApplicationCredentials: {
     transformation: {
       fieldTypeOverrides: [
@@ -822,9 +840,16 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     transformation: {
       isSingleton: true,
       serviceIdField: 'id',
-      fieldsToHide: [{ fieldName: 'id' }],
-      fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+      fieldsToHide: [
+        { fieldName: 'id' },
+        { fieldName: '_links' },
+        { fieldName: 'logo' },
+        { fieldName: 'favicon' },
+      ],
       serviceUrl: '/admin/customizations/branding',
+      fieldTypeOverrides: [
+        { fieldName: '_links', fieldType: 'map<unknown>' },
+      ],
     },
     deployRequests: {
       modify: {
@@ -834,7 +859,63 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
           brandId: '_parent.0.id',
           themeId: 'id',
         },
-        fieldsToIgnore: ['id', 'logo', 'favicon'],
+        fieldsToIgnore: ['id', 'logo', 'favicon', '_links'],
+      },
+    },
+  },
+  BrandLogo: {
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/logo',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+    },
+  },
+  FavIcon: {
+    deployRequests: {
+      add: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      modify: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
+        method: 'post',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
+      },
+      remove: {
+        url: '/api/v1/brands/{brandId}/themes/{themeId}/favicon',
+        method: 'delete',
+        urlParamsToFields: {
+          themeId: '_parent.0.id',
+          brandId: '_parent.1.id',
+        },
       },
     },
   },
@@ -1523,14 +1604,14 @@ const DUCKTYPE_TYPES: OktaDuckTypeApiConfig['types'] = {
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
-  EmailNotificationSettings: ['EmailNotifications'],
-  EndUserSupportSettings: ['EndUserSupport'],
-  ThirdPartyAdminSettings: ['ThirdPartyAdmin'],
-  EmbeddedSignInSuppportSettings: ['EmbeddedSignInSuppport'],
-  SignOutPageSettings: ['SignOutPage'],
-  BrowserPluginSettings: ['BrowserPlugin'],
-  DisplayLanguageSettings: ['DisplayLanguage'],
-  ReauthenticationSettings: ['Reauthentication'],
+  EmailNotifications: ['EmailNotifications'],
+  EndUserSupport: ['EndUserSupport'],
+  ThirdPartyAdmin: ['ThirdPartyAdmin'],
+  EmbeddedSignInSuppport: ['EmbeddedSignInSuppport'],
+  SignOutPage: ['SignOutPage'],
+  BrowserPlugin: ['BrowserPlugin'],
+  DisplayLanguage: ['DisplayLanguage'],
+  Reauthentication: ['Reauthentication'],
 }
 
 export const DUCKTYPE_API_DEFINITIONS: OktaDuckTypeApiConfig = {
@@ -1613,6 +1694,27 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
+export const validateOktaFetchConfig = ({
+  fetchConfig,
+  clientConfig,
+  apiDefinitions,
+  privateApiDefinitions,
+}: {
+  fetchConfig: OktaFetchConfig
+  clientConfig: OktaClientConfig
+  apiDefinitions: OktaSwaggerApiConfig
+  privateApiDefinitions: OktaDuckTypeApiConfig
+}): void => {
+  const supportedTypes = clientConfig.usePrivateAPI === false
+    ? Object.keys(apiDefinitions.supportedTypes)
+    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(privateApiDefinitions.supportedTypes))
+  configUtils.validateSupportedTypes(
+    FETCH_CONFIG,
+    fetchConfig,
+    supportedTypes
+  )
+}
 
 export type FilterContext = {
   [FETCH_CONFIG]: OktaFetchConfig

@@ -15,13 +15,14 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, ReferenceExpression, TemplateExpression, toChange } from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
+import { collections } from '@salto-io/lowerdash'
 import { REFERENCE_INDEXES_VERSION, updateReferenceIndexes } from '../../src/workspace/reference_indexes'
 import { createInMemoryElementSource, ElementsSource } from '../../src/workspace/elements_source'
 import { RemoteMap } from '../../src/workspace/remote_map'
 import { createMockRemoteMap } from '../utils'
 
 describe('updateReferenceIndexes', () => {
-  let referenceTargetsIndex: MockInterface<RemoteMap<ElemID[]>>
+  let referenceTargetsIndex: MockInterface<RemoteMap<collections.treeMap.TreeMap<ElemID>>>
   let referenceSourcesIndex: MockInterface<RemoteMap<ElemID[]>>
   let mapVersions: MockInterface<RemoteMap<number>>
   let elementsSource: ElementsSource
@@ -29,7 +30,7 @@ describe('updateReferenceIndexes', () => {
   let instance: InstanceElement
 
   beforeEach(() => {
-    referenceTargetsIndex = createMockRemoteMap<ElemID[]>()
+    referenceTargetsIndex = createMockRemoteMap<collections.treeMap.TreeMap<ElemID>>()
 
     referenceSourcesIndex = createMockRemoteMap<ElemID[]>()
     referenceSourcesIndex.getMany.mockResolvedValue([])
@@ -94,48 +95,55 @@ describe('updateReferenceIndexes', () => {
       )
     })
     it('should add the new references to the referenceTargets index', () => {
-      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
-        key: 'test.object.instance.instance',
-        value: [
-          new ElemID('test', 'target2', 'field', 'someField', 'value'),
-          new ElemID('test', 'target2', 'instance', 'someInstance'),
-          new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-          new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-        ],
-      },
-      {
-        key: 'test.object.field.someField',
-        value: [
-          new ElemID('test', 'target2'),
-        ],
-      },
-      {
-        key: 'test.object.field.someTemplateField',
-        value: [
-          new ElemID('test', 'target2', 'type'),
-        ],
-      },
-      {
-        key: 'test.object.field.anotherTemplateField',
-        value: [
-          new ElemID('test', 'target2', 'type'),
-        ],
-      },
-      {
-        key: 'test.object.field.fieldWithRefToType',
-        value: [
-          new ElemID('test', 'object'),
-        ],
-      },
-      {
-        key: 'test.object',
-        value: [
-          new ElemID('test', 'target1'),
-          new ElemID('test', 'target1', 'attr', 'someAttr'),
-          new ElemID('test', 'target2'),
-          new ElemID('test', 'object'),
-        ],
-      }])
+      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: 'test.object.instance.instance',
+          value: new collections.treeMap.TreeMap<ElemID>([
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
+              new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+              new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
+            ],
+            ],
+          ]),
+        },
+        {
+          key: 'test.object.field.someField',
+          value: new collections.treeMap.TreeMap([
+            ['fieldRef', [new ElemID('test', 'target2')]],
+          ]),
+        },
+        {
+          key: 'test.object.field.someTemplateField',
+          value: new collections.treeMap.TreeMap([
+            ['fieldRef', [new ElemID('test', 'target2')]],
+          ]),
+        },
+        {
+          key: 'test.object.field.anotherTemplateField',
+          value: new collections.treeMap.TreeMap([
+            ['fieldRef', [new ElemID('test', 'target2')]],
+          ]),
+        },
+        {
+          key: 'test.object.field.fieldWithRefToType',
+          value: new collections.treeMap.TreeMap([
+            ['fieldRef', [new ElemID('test', 'object')]],
+          ]),
+        },
+        {
+          key: 'test.object',
+          value: new collections.treeMap.TreeMap([
+            ['typeRef', [new ElemID('test', 'target1')]],
+            ['inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'target2')]],
+            ['', [new ElemID('test', 'object')]],
+          ]),
+        },
+      ])
     })
 
     it('should add the new references to the referenceSources index', () => {
@@ -199,16 +207,6 @@ describe('updateReferenceIndexes', () => {
 
       instanceAfter.annotations.someAnnotation2 = new ReferenceExpression(new ElemID('test', 'target2', 'instance', 'someInstance', 'value'))
       const changes = [toChange({ before: instance, after: instanceAfter })]
-      referenceTargetsIndex.getMany.mockImplementation(async ids => ids.map(id => (
-        instanceAfter.elemID.getFullName() === id
-          ? [
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-          ]
-          : undefined
-      )))
 
       referenceSourcesIndex.getMany.mockImplementation(async ids => ids.map(id => {
         if (id === 'test.target2.field.someField') {
@@ -244,14 +242,13 @@ describe('updateReferenceIndexes', () => {
         true
       )
     })
-
     it('old values should be removed and new values should be added from referenceTargets index', () => {
       expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
         key: 'test.object.instance.instance',
-        value: [
-          new ElemID('test', 'target2', 'instance', 'someInstance', 'value'),
-          new ElemID('test', 'target2', 'instance', 'someInstance'),
-        ],
+        value: new collections.treeMap.TreeMap([
+          ['someAnnotation2', [new ElemID('test', 'target2', 'instance', 'someInstance', 'value')]],
+          ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+        ]),
       }])
     })
 
@@ -304,8 +301,22 @@ describe('updateReferenceIndexes', () => {
         true
       )
     })
-
-    it('should remove the references from the referenceTargets index', () => {
+    it('should set the new tree in the referenceTargets index', () => {
+      expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([
+        {
+          key: 'test.object.field.fieldWithRefToType',
+          value: new collections.treeMap.TreeMap([
+            ['fieldRef', [new ElemID('test', 'object')]],
+          ]),
+        },
+        {
+          key: 'test.object',
+          value: new collections.treeMap.TreeMap([
+            ['typeRef', [new ElemID('test', 'target1')]],
+            ['inner.innerTypeRef', [new ElemID('test', 'target1', 'attr', 'someAttr')]],
+            ['', [new ElemID('test', 'object')]],
+          ]),
+        }])
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
         'test.object.field.someField',
         'test.object.field.someTemplateField',
@@ -322,15 +333,7 @@ describe('updateReferenceIndexes', () => {
 
   describe('when elements were removed', () => {
     beforeEach(async () => {
-      const changes = [toChange({ before: instance })]
-      referenceTargetsIndex.getMany.mockImplementation(async ids => ids.map(id => (
-        instance.elemID.getFullName() === id
-          ? [
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-          ]
-          : undefined
-      )))
+      const changes = [toChange({ before: instance }), toChange({ before: object })]
 
       referenceSourcesIndex.getMany.mockImplementation(async ids => ids.map(id => {
         if (id === 'test.target2.field.someField') {
@@ -360,6 +363,11 @@ describe('updateReferenceIndexes', () => {
     it('should remove the references from the referenceTargets index', () => {
       expect(referenceTargetsIndex.deleteAll).toHaveBeenCalledWith([
         'test.object.instance.instance',
+        'test.object.field.someField',
+        'test.object.field.someTemplateField',
+        'test.object.field.anotherTemplateField',
+        'test.object.field.fieldWithRefToType',
+        'test.object',
       ])
     })
 
@@ -369,7 +377,9 @@ describe('updateReferenceIndexes', () => {
         'test.target2.instance.someInstance',
         'test.target2.field.someTemplateField',
         'test.target2.field.anotherTemplateField',
+        'test.target1',
         'test.target2',
+        'test.object',
       ])
     })
   })
@@ -390,12 +400,15 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
-          value: [
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-          ],
+          value: new collections.treeMap.TreeMap<ElemID>([
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
+              new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+              new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
+            ],
+            ],
+          ]),
         }])
       })
 
@@ -449,12 +462,15 @@ describe('updateReferenceIndexes', () => {
         expect(referenceTargetsIndex.clear).toHaveBeenCalled()
         expect(referenceTargetsIndex.setAll).toHaveBeenCalledWith([{
           key: 'test.object.instance.instance',
-          value: [
-            new ElemID('test', 'target2', 'field', 'someField', 'value'),
-            new ElemID('test', 'target2', 'instance', 'someInstance'),
-            new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
-            new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
-          ],
+          value: new collections.treeMap.TreeMap<ElemID>([
+            ['someAnnotation', [new ElemID('test', 'target2', 'field', 'someField', 'value')]],
+            ['someValue', [new ElemID('test', 'target2', 'instance', 'someInstance')]],
+            ['templateValue', [
+              new ElemID('test', 'target2', 'field', 'someTemplateField', 'value'),
+              new ElemID('test', 'target2', 'field', 'anotherTemplateField', 'value'),
+            ],
+            ],
+          ]),
         }])
       })
 

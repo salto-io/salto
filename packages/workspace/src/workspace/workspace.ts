@@ -19,7 +19,12 @@ import { Element, SaltoError, SaltoElementError, ElemID, InstanceElement, Detail
   Value, toChange, isRemovalChange, getChangeData,
   ReadOnlyElementsSource, isAdditionOrModificationChange, StaticFile, isInstanceElement, AuthorInformation } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
-import { applyDetailedChanges, naclCase, resolvePath, safeJsonStringify } from '@salto-io/adapter-utils'
+import {
+  applyDetailedChanges,
+  naclCase,
+  resolvePath,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { ValidationError, validateElements, isUnresolvedRefError } from '../validator'
 import { SourceRange, ParseError, SourceMap } from '../parser'
@@ -182,7 +187,6 @@ export type Workspace = {
   getSourceRanges: (elemID: ElemID) => Promise<SourceRange[]>
   getElementReferencedFiles: (id: ElemID) => Promise<string[]>
   getReferenceSourcesIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
-  getReferenceTargetsIndex: (envName?: string) => Promise<ReadOnlyRemoteMap<ElemID[]>>
   getElementOutgoingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementIncomingReferences: (id: ElemID, envName?: string) => Promise<ElemID[]>
   getElementAuthorInformation: (id: ElemID, envName?: string) => Promise<AuthorInformation>
@@ -275,7 +279,7 @@ type SingleState = {
   alias: RemoteMap<string>
   referencedStaticFiles: RemoteMap<string[]>
   referenceSources: RemoteMap<ElemID[]>
-  referenceTargets: RemoteMap<ElemID[]>
+  referenceTargets: RemoteMap<collections.treeMap.TreeMap<ElemID>>
   mapVersions: RemoteMap<number>
 }
 type WorkspaceState = {
@@ -296,6 +300,26 @@ const compact = (sortedIds: ElemID[]): ElemID[] => {
     }
   })
   return ret
+}
+
+/**
+ * Serialize a reference tree to a JSON of path (without baseId) to ElemID
+ * example: (adapter.type.instance.instanceName.)field.nestedField -> ElemID
+ */
+export const serializeReferenceTree = async (val: collections.treeMap.TreeMap<ElemID>): Promise<string> => {
+  const entriesToSerialize = Array.from(val.entries()).map(([key, ids]) => [key, ids.map(id => id.getFullName())])
+  return safeJsonStringify(entriesToSerialize)
+}
+
+export const deserializeReferenceTree = async (data: string): Promise<collections.treeMap.TreeMap<ElemID>> => {
+  const parsedEntries = JSON.parse(data)
+
+  // Backwards compatibility for old serialized data, should be removed in the future
+  const isOldFormat = Array.isArray(parsedEntries) && parsedEntries.length > 0 && _.isString(parsedEntries[0])
+  const entries = isOldFormat ? [['', parsedEntries]] : parsedEntries
+
+  const elemIdsEntries = entries.map(([key, ids]: [string, string[]]) => [key, ids.map(ElemID.fromFullName)])
+  return new collections.treeMap.TreeMap<ElemID>(elemIdsEntries)
 }
 
 export const loadWorkspace = async (
@@ -420,10 +444,10 @@ export const loadWorkspace = async (
             deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
             persistent,
           }),
-          referenceTargets: await remoteMapCreator<ElemID[]>({
+          referenceTargets: await remoteMapCreator<collections.treeMap.TreeMap<ElemID>>({
             namespace: getRemoteMapNamespace('referenceTargets', envName),
-            serialize: async val => safeJsonStringify(val.map(id => id.getFullName())),
-            deserialize: data => JSON.parse(data).map((id: string) => ElemID.fromFullName(id)),
+            serialize: serializeReferenceTree,
+            deserialize: deserializeReferenceTree,
             persistent,
           }),
           mapVersions: await remoteMapCreator<number>({
@@ -1147,14 +1171,21 @@ export const loadWorkspace = async (
     ),
     getReferenceSourcesIndex: async (envName = currentEnv()) => (await getWorkspaceState())
       .states[envName].referenceSources,
-    getReferenceTargetsIndex: async (envName = currentEnv()) => (await getWorkspaceState())
-      .states[envName].referenceTargets,
     getElementOutgoingReferences: async (id, envName = currentEnv()) => {
-      if (!id.isBaseID()) {
-        throw new Error(`getElementOutgoingReferences only support base ids, received ${id.getFullName()}`)
+      const baseId = id.createBaseID().parent.getFullName()
+      const referencesTree = await (await getWorkspaceState()).states[envName].referenceTargets.get(baseId)
+
+      if (referencesTree === undefined) {
+        return []
       }
-      return await (await getWorkspaceState()).states[envName]
-        .referenceTargets.get(id.getFullName()) ?? []
+
+      const idPath = id.createBaseID().path.join(ElemID.NAMESPACE_SEPARATOR)
+      const references = idPath === ''
+      // Empty idPath means we are requesting the base level element, which includes all references
+        ? referencesTree.values()
+        : referencesTree.valuesWithPrefix(idPath)
+
+      return _.uniqBy(Array.from(references).flat(), elemId => elemId.getFullName())
     },
     getElementIncomingReferences: async (id, envName = currentEnv()) => {
       if (!id.isBaseID()) {

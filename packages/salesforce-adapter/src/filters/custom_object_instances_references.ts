@@ -26,7 +26,16 @@ import {
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { Element, Values, Field, InstanceElement, ReferenceExpression, SaltoError, ElemID } from '@salto-io/adapter-api'
+import {
+  Element,
+  Values,
+  Field,
+  InstanceElement,
+  ReferenceExpression,
+  SaltoError,
+  ElemID,
+  CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isInstanceOfCustomObject, isCustomObject } from '../transformers/transformer'
 import { FIELD_ANNOTATIONS, KEY_PREFIX, KEY_PREFIX_LENGTH, SALESFORCE } from '../constants'
@@ -194,8 +203,9 @@ const replaceLookupsWithRefsAndCreateRefMap = async (
         .filter(isDefined)
         .pop()
       if (refTarget === undefined) {
-        if (!_.isEmpty(value) && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE]
-            || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])) {
+        if (!_.isEmpty(value)
+            && (field?.annotations?.[FIELD_ANNOTATIONS.CREATABLE] || field?.annotations?.[FIELD_ANNOTATIONS.UPDATEABLE])
+            && field?.annotations?.[CORE_ANNOTATIONS.HIDDEN_VALUE] !== true) {
           missingRefs.push({
             origin: {
               type: await apiName(await instance.getType(), true),

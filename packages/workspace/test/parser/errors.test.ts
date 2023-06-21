@@ -87,6 +87,7 @@ describe('parsing errors', () => {
       })
     })
   })
+
   describe('primitive type definition errors', () => {
     describe('invalid primitive type error', () => {
       describe('with unknown primitive type', () => {

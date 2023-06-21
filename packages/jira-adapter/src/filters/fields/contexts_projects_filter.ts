@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, isRemovalOrModificationChange, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
+import { Change, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isRemovalOrModificationChange, ReadOnlyElementsSource, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { applyFunctionToChangeData, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { collections, values } from '@salto-io/lowerdash'
 import { PROJECT_TYPE } from '../../constants'
 import { FilterCreator } from '../../filter'
@@ -105,7 +105,7 @@ const filter: FilterCreator = ({ elementsSource, adapterContext }) => {
         .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
         .forEach(instance => {
           instance.value.projectIds
-            ?.filter(isReferenceExpression)
+            ?.filter(isResolvedReferenceExpression)
             .filter((ref: ReferenceExpression) => ref.elemID.typeName === 'Project')
             .forEach((ref: ReferenceExpression) => {
               appendReference(

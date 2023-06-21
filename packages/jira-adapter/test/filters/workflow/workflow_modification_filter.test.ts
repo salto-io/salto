@@ -55,6 +55,7 @@ describe('workflowModificationFilter', () => {
   let config: JiraConfig
 
   let elementsSource: ReadOnlyElementsSource
+  let elementsSourceSpy: jest.SpyInstance
   beforeEach(async () => {
     workflowStatusType = new ObjectType({ elemID: new ElemID(JIRA, WORKFLOW_STATUS_TYPE_NAME) })
     workflowStatusType.fields.status = new Field(workflowStatusType, 'status', workflowStatusType)
@@ -119,6 +120,8 @@ describe('workflowModificationFilter', () => {
       workflowInstance,
     ])
 
+    elementsSourceSpy = jest.spyOn(elementsSource, 'list')
+
     filter = workflowModificationFilter(getFilterParams({
       client,
       paginator,
@@ -139,6 +142,10 @@ describe('workflowModificationFilter', () => {
       config.client.usePrivateAPI = false
       await filter.onFetch([workflowType])
       expect(workflowType.annotations[CORE_ANNOTATIONS.UPDATABLE]).toBeUndefined()
+    })
+
+    it('should not throw if no workflow type', async () => {
+      await filter.onFetch([])
     })
   })
 
@@ -299,7 +306,11 @@ describe('workflowModificationFilter', () => {
 
       const res = await filter.deploy([change])
 
-      expect(res.deployResult.errors).toEqual([new Error('Deployment of jira.Workflow.instance.workflowInstance failed: Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible')])
+      expect(res.deployResult.errors).toEqual([{
+        message: 'Deployment of jira.Workflow.instance.workflowInstance failed: Error: Modification to an active workflow jira.Workflow.instance.workflowInstance is not backward compatible',
+        severity: 'Error',
+        elemID: workflowInstance.elemID,
+      }])
 
       expectCreateOfTempWorkflow(1)
       expectDeleteOfTempWorkflow(2)
@@ -349,7 +360,11 @@ describe('workflowModificationFilter', () => {
       }))
       const res = await filter.deploy([change])
 
-      expect(res.deployResult.errors).toEqual([new Error('Deployment of jira.Workflow.instance.workflowInstance failed: Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again')])
+      expect(res.deployResult.errors).toEqual([{
+        message: 'Deployment of jira.Workflow.instance.workflowInstance failed: Error: The environment is not synced to the Jira Service for jira.Workflow.instance.workflowInstance, run fetch and try again',
+        severity: 'Error',
+        elemID: workflowInstance.elemID,
+      }])
 
       expectCreateOfTempWorkflow(1)
       expectDeleteOfBeforeWorkflow(2)
@@ -374,6 +389,17 @@ describe('workflowModificationFilter', () => {
       expectDeleteOfTempWorkflow(2)
       expectSchemeChangeToTemp(1)
       expectSchemeChangeBack(2)
+    })
+
+    it('should not call element source if no workflow changes', async () => {
+      await filter.deploy([])
+      expect(elementsSourceSpy).toHaveBeenCalledTimes(0)
+    })
+
+    it('should not call element source twice', async () => {
+      await filter.deploy([change])
+      await filter.deploy([change])
+      expect(elementsSourceSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

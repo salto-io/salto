@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 export * from './src/change_validator'
+export * from './src/change'
 export * from './src/compare'
 export * from './src/decorators'
 export * from './src/dependencies'

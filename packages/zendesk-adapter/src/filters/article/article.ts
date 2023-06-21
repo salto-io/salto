@@ -25,7 +25,6 @@ import {
 import {
   createSchemeGuard,
   getParents,
-  replaceTemplatesWithValues,
   resolveChangeElement,
 } from '@salto-io/adapter-utils'
 import Joi from 'joi'
@@ -41,7 +40,6 @@ import {
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
-import { prepRef } from './article_body'
 import ZendeskClient from '../../client/client'
 import {
   createUnassociatedAttachment,
@@ -74,7 +72,7 @@ const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
   EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
 )
 
-const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
+const addPlaceholderTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
@@ -82,7 +80,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
     .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = translation.title
-    getChangeData(change).value.body = translation.body ?? ''
+    getChangeData(change).value.body = ''
   }
 }
 
@@ -288,31 +286,15 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(
+      await handleArticleAttachmentsPreDeploy(
         { changes, client, elementsSource, articleNameToAttachments }
       )
       await awu(changes)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
         .forEach(async change => {
-          // We add the title and the resolved body values for articles creation
-          await addTranslationValues(change)
-          const instance = getChangeData(change)
-          try {
-            replaceTemplatesWithValues(
-              { values: [instance.value], fieldName: 'body' },
-              {},
-              (part: ReferenceExpression) => (
-                part.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
-                  ? addedArticleAttachments
-                    .find(attachment => attachment.elemID.isEqual(part.elemID))
-                    ?.value.id.toString()
-                  : prepRef(part)
-              ),
-            )
-          } catch (e) {
-            log.error(`Error serializing article body in deployment for ${instance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
-          }
+          // We add the title and the body values for articles creation
+          await addPlaceholderTitleAndBodyValues(change)
         })
     },
 

@@ -62,6 +62,17 @@ export const registerTestFunction = (
   )
 )
 
+export const registerThrowingFunction = (
+  funcName: string, parse: () => Promise<void>
+): Functions => registerFunction(
+  funcName,
+  {
+    parse,
+    dump: () => Promise.reject(),
+    isSerializedAsFunction: () => true,
+  },
+)
+
 export const mockStaticFilesSource = (staticFiles: StaticFile[] = []): StaticFilesSource => ({
   load: jest.fn().mockResolvedValue([]),
   getStaticFile: jest.fn().mockImplementation((filepath: string, _encoding: BufferEncoding) => (

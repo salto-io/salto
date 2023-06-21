@@ -15,19 +15,24 @@
 */
 import { Element } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { referencesRules, JiraFieldReferenceResolver, contextStrategyLookup } from '../reference_mapping'
 import { FilterCreator } from '../filter'
 
 /**
  * Convert field values into references, based on predefined rules.
  */
-const filter: FilterCreator = () => ({
+const filter: FilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async (elements: Element[]) => {
+    const fixedDefs = referencesRules
+      .map(def => (
+        config.fetch.enableMissingReferences ? def : _.omit(def, 'jiraMissingRefStrategy')
+      ))
     await referenceUtils.addReferences({
       elements,
       fieldsToGroupBy: ['id', 'name', 'originalName', 'groupId', 'key'],
-      defs: referencesRules,
+      defs: fixedDefs,
       contextStrategyLookup,
       fieldReferenceResolverCreator: defs => new JiraFieldReferenceResolver(defs),
     })

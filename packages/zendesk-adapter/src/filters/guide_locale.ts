@@ -56,6 +56,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       brandToLocale[settings.value.brand] = brandToLocale[settings.value.brand] ?? {} // Init inner dict if needed
       brandToLocale[settings.value.brand][settings.value.locale] = settings
     })
+    const logsSet = new Set<string>()
 
     instancesWithLocale.forEach(instance => {
       const brandLocales = brandToLocale[instance.value.brand] ?? {}
@@ -65,7 +66,7 @@ const filterCreator: FilterCreator = ({ config }) => ({
       if (locale !== undefined) {
         instance.value.locale = new ReferenceExpression(locale.elemID, locale)
       } else {
-        log.error(`Could not find '${instance.value.locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
+        logsSet.add(`Could not find locale '${instance.value.locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
       }
 
       if (TYPES_WITH_SOURCE_LOCALE.includes(instance.elemID.typeName)) {
@@ -73,10 +74,11 @@ const filterCreator: FilterCreator = ({ config }) => ({
         if (sourceLocale !== undefined) {
           instance.value.source_locale = new ReferenceExpression(sourceLocale.elemID, sourceLocale)
         } else {
-          log.error(`Could not find '${instance.value.source_locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
+          logsSet.add(`Could not find source_locale '${instance.value.source_locale}' ${GUIDE_LANGUAGE_SETTINGS_TYPE_NAME} of brand ${brandName}`)
         }
       }
     })
+    logsSet.forEach(message => log.error(message))
   },
 })
 

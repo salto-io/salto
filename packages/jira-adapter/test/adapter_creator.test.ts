@@ -95,27 +95,6 @@ describe('adapter creator', () => {
       })
     })
 
-    describe('without config', () => {
-      it('should fail to create operations', () => {
-        expect(
-          () => adapter.operations({ elementsSource, credentials: credentialsInstance })
-        ).toThrow()
-      })
-    })
-
-    describe('without fetch config', () => {
-      it('should fail to create operations', () => {
-        expect(() => adapter.operations({
-          elementsSource,
-          credentials: credentialsInstance,
-          config: createConfigInstance({
-            ...getDefaultConfig({ isDataCenter: false }),
-            fetch: undefined,
-          } as unknown as JiraConfig),
-        })).toThrow()
-      })
-    })
-
     describe('with an invalid api config', () => {
       it('should fail to create operations', () => {
         expect(() => adapter.operations({

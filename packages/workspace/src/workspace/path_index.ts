@@ -190,26 +190,6 @@ export type PathIndexArgs = {
 }
 
 /**
- * Returns all paths from the parent to the element, for example:
- * 'a.b.c.d' and 'a.b.c.d.e.f.g' will return ['a.b.c.d', 'a.b.c.d.e', 'a.b.c.d.e.f', 'a.b.c.d.e.f.g']
- */
-const getPathsFromParent = (parentPath: string, elemPath: string): string[] => {
-  // If the parent is not the prefix of the element, it means the element is not a child of the parent
-  if (!elemPath.startsWith(parentPath)) {
-    return []
-  }
-
-  const parentSegments = parentPath.split(ElemID.NAMESPACE_SEPARATOR)
-  const elemSegments = elemPath.split(ElemID.NAMESPACE_SEPARATOR)
-
-  const subPaths = [parentPath]
-  for (let i = parentSegments.length; i < elemSegments.length - 1; i += 1) {
-    subPaths.push(elemSegments.slice(0, i + 1).join(ElemID.NAMESPACE_SEPARATOR))
-  }
-
-  return subPaths
-}
-/**
  *  Because currently a change in an element's path doesn't create a change, we are unable to detect it
  *  We have to override the path index with all the elements, and delete the elements that were removed
 * */
@@ -226,10 +206,11 @@ const updateIndex = async (
       return true
     }
     // Needed for createTopLevelParentID() function
-    const tempElemID = ElemID.fromFullName(key)
-    const parentFullName = tempElemID.createTopLevelParentID().parent.getFullName()
-    // If any of the levels above the element was removed, delete the element
-    return getPathsFromParent(parentFullName, key).some(path => removedElementsFullNames.has(path))
+    const keyElemId = ElemID.fromFullName(key)
+    // If any of the levels above the key was removed, delete the key
+    return keyElemId.createAllElemIdParents()
+      .map(id => id.getFullName())
+      .some(fullName => removedElementsFullNames.has(fullName))
   }).toArray()
 
   await pathIndex.deleteAll(entriesToDelete)

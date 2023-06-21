@@ -201,7 +201,7 @@ describe('state', () => {
     })
 
     describe('updateStateFromChanges', () => {
-      describe('should update changed elements correctly without changing non-changed elements', () => {
+      describe('state elements', () => {
         const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
         const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
         const toModify = new ObjectType({

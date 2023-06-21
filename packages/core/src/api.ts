@@ -197,7 +197,8 @@ export const deploy = async (
     // update changedElements before updating the state because we rely on the state data for the calculation
     const updatedElements = await awu(appliedChanges)
       .filter(change => (isAdditionOrModificationChange(change) || isFieldChange(change)))
-      .map(getUpdatedElement).toArray()
+      .map(getUpdatedElement)
+      .toArray()
     await changedElements.setAll(updatedElements)
 
     const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChanges(change))

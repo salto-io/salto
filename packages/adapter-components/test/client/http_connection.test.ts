@@ -41,7 +41,7 @@ describe('client_http_connection', () => {
         accountId: 'ACCOUNT_ID',
       })
       const validateRes = validateCredentials({ username: 'user123', password: 'pass' }, { createConnection })
-      expect(await validateRes).toEqual('ACCOUNT_ID:user123')
+      expect(await validateRes).toEqual({ accountId: 'ACCOUNT_ID:user123', accountType: 'Unknown' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
       const req = mockAxiosAdapter.history.get[0]
       expect(req.url).toEqual('/users/me')

@@ -62,6 +62,6 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
       }
     ),
     baseURLFunc: ({ baseUrl }) => baseUrl,
-    credValidateFunc: async () => '', // There is no login endpoint to call
+    credValidateFunc: async () => ({ accountId: '', accountType: 'Unknown' }), // There is no login endpoint to call
   })
 )

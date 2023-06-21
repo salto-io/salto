@@ -119,6 +119,7 @@ describe('client_http_client', () => {
           patch: mockFunction<APIConnection['patch']>(),
           delete: mockFunction<APIConnection['delete']>(),
           accountId: 'ACCOUNT_ID',
+          accountType: 'Unknown',
         }),
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })

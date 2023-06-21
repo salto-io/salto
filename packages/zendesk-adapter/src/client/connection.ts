@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import axiosRetry from 'axios-retry'
-import { AccountId } from '@salto-io/adapter-api'
+import { Account } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
@@ -42,14 +42,15 @@ export const APP_MARKETPLACE_HEADERS = {
 export const validateCredentials = async ({ credentials, connection }: {
   credentials: Credentials
   connection: clientUtils.APIConnection
-}): Promise<AccountId> => {
+}): Promise<Account> => {
   try {
     await connection.get('/api/v2/account/settings')
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)
   }
-  return instanceUrl(credentials.subdomain, credentials.domain)
+  const accountId = instanceUrl(credentials.subdomain, credentials.domain)
+  return { accountId, accountType: 'Unknown' }
 }
 
 const usernamePasswordAuthParamsFunc = (
@@ -99,6 +100,7 @@ export const createResourceConnection:
       return {
         ...httpClient,
         accountId: creds.subdomain,
+        accountType: 'Unknown',
       }
     }
     return {

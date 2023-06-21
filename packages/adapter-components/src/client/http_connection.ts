@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
 import axiosRetry from 'axios-retry'
-import { AccountId, CredentialError } from '@salto-io/adapter-api'
+import { Account, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
@@ -49,9 +49,7 @@ export type APIConnection<T = any, S = any> = {
     => Promise<Response<T>>
 }
 
-export type AuthenticatedAPIConnection = APIConnection & {
-  accountId: AccountId
-}
+export type AuthenticatedAPIConnection = APIConnection & Account
 
 export type RetryOptions = {
   retries: number
@@ -151,10 +149,10 @@ export const createClientConnection = <TCredentials>({
 export const validateCredentials = async <TCredentials>(
   creds: TCredentials,
   createConnectionArgs: ConnectionParams<TCredentials>,
-): Promise<AccountId> => {
+): Promise<Account> => {
   const conn = createClientConnection(createConnectionArgs)
-  const { accountId } = await conn.login(creds)
-  return accountId
+  const { accountId, accountType } = await conn.login(creds)
+  return { accountId, accountType }
 }
 
 export type AuthParams = {
@@ -169,7 +167,7 @@ type AxiosConnectionParams<TCredentials> = {
   credValidateFunc: ({ credentials, connection }: {
     credentials: TCredentials
     connection: APIConnection
-  }) => Promise<AccountId>
+  }) => Promise<Account>
 }
 
 export const axiosConnection = <TCredentials>({
@@ -188,10 +186,10 @@ export const axiosConnection = <TCredentials>({
     axiosRetry(httpClient, retryOptions)
 
     try {
-      const accountId = await credValidateFunc({ credentials: creds, connection: httpClient })
+      const account = await credValidateFunc({ credentials: creds, connection: httpClient })
       return {
         ...httpClient,
-        accountId,
+        ...account,
       }
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)

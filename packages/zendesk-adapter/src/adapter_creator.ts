@@ -168,15 +168,12 @@ export const adapter: Adapter = {
       deployModifiers: adapterOperations.deployModifiers,
     }
   },
-  validateCredentials: async config => {
-    const accountId = await validateCredentials(
-      credentialsFromConfig(config),
-      {
-        createConnection,
-      },
-    )
-    return { accountId, accountType: 'Unknown' }
-  },
+  validateCredentials: async config => validateCredentials(
+    credentialsFromConfig(config),
+    {
+      createConnection,
+    },
+  ),
   authenticationMethods: {
     basic: {
       credentialsType: usernamePasswordCredentialsType,

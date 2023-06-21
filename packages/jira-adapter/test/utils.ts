@@ -68,6 +68,7 @@ export const mockClient = (isDataCenter = false): ClientWithMockConnection => {
     connection: {
       login: async () => ({
         accountId: 'test',
+        accountType: 'testType',
         ...connection,
       }),
     },

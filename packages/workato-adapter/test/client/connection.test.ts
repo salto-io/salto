@@ -43,8 +43,8 @@ describe('client connection', () => {
           ? ({ data: { id: 'id456' }, status: 200, statusText: 'OK' })
           : { data: {}, status: 200, statusText: 'OK' }
       ))
-      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
-      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
+      expect((await validateCredentials({ connection: mockConnection })).accountId).toEqual('')
+      expect((await validateCredentials({ connection: mockConnection })).accountId).toEqual('')
     })
     it('should throw credential error when response is 401', async () => {
       mockGet.mockRejectedValueOnce({ response: { status: 401 } })

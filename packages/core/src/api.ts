@@ -18,7 +18,7 @@ import {
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
-  AccountId, AccountType, IsProduction, Account,
+  Account,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'

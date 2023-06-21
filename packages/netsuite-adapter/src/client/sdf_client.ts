@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, Account } from '@salto-io/adapter-api'
 import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -167,7 +167,7 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
+  static async validateCredentials(credentials: SdfCredentials): Promise<Account> {
     const netsuiteClient = new SdfClient({
       credentials,
       globalLimiter: new Bottleneck(),
@@ -175,7 +175,8 @@ export default class SdfClient {
     })
     const { projectPath, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectPath, authId)
-    return Promise.resolve(netsuiteClient.credentials.accountId)
+    const accountId = await Promise.resolve(netsuiteClient.credentials.accountId)
+    return { accountId, accountType: 'Unknown' }
   }
 
   public getCredentials(): Readonly<SdfCredentials> {

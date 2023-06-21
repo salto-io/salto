@@ -103,8 +103,7 @@ export default class NetsuiteClient {
     }
 
     try {
-      const accountId = await SdfClient.validateCredentials(credentials)
-      return { accountId, accountType: 'Unknown' }
+      return await SdfClient.validateCredentials(credentials)
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
       throw new CredentialError(e)

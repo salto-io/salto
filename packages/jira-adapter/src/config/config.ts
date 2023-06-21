@@ -63,6 +63,7 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   removeDuplicateProjectRoles?: boolean
   addAlias?: boolean
   splitFieldConfiguration?: boolean
+  enableMissingReferences?: boolean
 }
 
 export type MaskingConfig = {
@@ -141,6 +142,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+    enableMissingReferences: true,
   },
   deploy: {
     forceDelete: false,
@@ -201,6 +203,7 @@ const fetchConfigType = createUserFetchConfigType(
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
     splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -230,7 +233,7 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     masking: { refType: maskingConfigType },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking', 'fetch.hideTypes']),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking', 'fetch.hideTypes', 'fetch.enableMissingReferences']),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })

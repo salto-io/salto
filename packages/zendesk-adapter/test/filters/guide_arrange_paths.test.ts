@@ -19,17 +19,26 @@ import {
   ElemID,
   InstanceElement,
   ObjectType,
-  ReferenceExpression,
+  ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import ZendeskClient from '../../src/client/client'
 import {
   ARTICLE_TRANSLATION_TYPE_NAME,
   ARTICLE_TYPE_NAME,
-  BRAND_TYPE_NAME, CATEGORY_TRANSLATION_TYPE_NAME, CATEGORY_TYPE_NAME,
-  GUIDE_SETTINGS_TYPE_NAME, SECTION_TRANSLATION_TYPE_NAME,
+  BRAND_TYPE_NAME,
+  CATEGORY_TRANSLATION_TYPE_NAME,
+  CATEGORY_TYPE_NAME,
+  GUIDE_SETTINGS_TYPE_NAME,
+  SECTION_TRANSLATION_TYPE_NAME,
   SECTION_TYPE_NAME,
-  ZENDESK, CATEGORY_ORDER_TYPE_NAME, SECTION_ORDER_TYPE_NAME,
-  USER_SEGMENT_TYPE_NAME, PERMISSION_GROUP_TYPE_NAME, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  ZENDESK,
+  CATEGORY_ORDER_TYPE_NAME,
+  SECTION_ORDER_TYPE_NAME,
+  USER_SEGMENT_TYPE_NAME,
+  PERMISSION_GROUP_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
+  GUIDE, ARTICLE_ATTACHMENTS_FIELD,
 } from '../../src/constants'
 import filterCreator, {
   GUIDE_ELEMENT_DIRECTORY,
@@ -81,6 +90,10 @@ describe('guide arrange paths', () => {
   const categoryOrderType = new ObjectType({
     elemID: new ElemID(ZENDESK, CATEGORY_ORDER_TYPE_NAME),
   })
+  const articleAttachmentType = new ObjectType({
+    elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME),
+  })
+
   const BRAND_PATH = ['brands', 'best brand']
 
   const brandInstance = new InstanceElement(
@@ -169,6 +182,22 @@ describe('guide arrange paths', () => {
   articleInstance.value.translations = [
     new ReferenceExpression(articleTranslationInstance.elemID, articleTranslationInstance),
   ]
+  const content = Buffer.from('test')
+  const articleAttachmentInstance = new InstanceElement(
+    'attachment',
+    articleAttachmentType,
+    {
+      brand: new ReferenceExpression(brandInstance.elemID, brandInstance),
+      content: new StaticFile({ filepath: 'something', content }),
+      file_name: 'attachment',
+    }
+  )
+  articleAttachmentInstance.annotations[CORE_ANNOTATIONS.PARENT] = [new ReferenceExpression(
+    articleInstance.elemID, articleInstance
+  )]
+  articleInstance.value.attachments = [
+    new ReferenceExpression(articleAttachmentInstance.elemID, articleAttachmentInstance),
+  ]
 
   const sectionTranslationInstance = new InstanceElement(
     'instance10',
@@ -248,6 +277,7 @@ describe('guide arrange paths', () => {
         languageSettingsInstance,
         sectionOrderInstance,
         categoryOrderInstance,
+        articleAttachmentInstance,
       ].map(e => e.clone())
       await filter.onFetch([elements, brandInstance].flat())
       expect(elements
@@ -368,6 +398,18 @@ describe('guide arrange paths', () => {
           GUIDE_ELEMENT_DIRECTORY[CATEGORY_ORDER_TYPE_NAME],
           'category_order',
         ],
+        [
+          ...GUIDE_PATH,
+          ...BRAND_PATH,
+          GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+          'category_name',
+          GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+          'section_name',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+          'article_name',
+          GUIDE_ELEMENT_DIRECTORY[ARTICLE_ATTACHMENT_TYPE_NAME],
+          'attachment',
+        ],
       ])
     })
     it('should not raise error when global types dont exist', async () => {
@@ -464,6 +506,31 @@ describe('guide arrange paths', () => {
           'en_us',
         ],
       ])
+    })
+    it('should handle article attachment static file correctly', async () => {
+      const elements = [
+        sectionInstance,
+        categoryInstance,
+        articleInstance,
+        articleAttachmentInstance,
+      ].map(e => e.clone())
+      await filter.onFetch([elements, brandInstance].flat())
+      const staticFile = elements[3].value.content
+      expect(staticFile.filepath).toEqual([
+        ZENDESK,
+        ARTICLE_ATTACHMENTS_FIELD,
+        GUIDE,
+        ...BRAND_PATH,
+        GUIDE_ELEMENT_DIRECTORY[CATEGORY_TYPE_NAME],
+        'category_name',
+        GUIDE_ELEMENT_DIRECTORY[SECTION_TYPE_NAME],
+        'section_name',
+        GUIDE_ELEMENT_DIRECTORY[ARTICLE_TYPE_NAME],
+        'article_name',
+        GUIDE_ELEMENT_DIRECTORY[ARTICLE_ATTACHMENT_TYPE_NAME],
+        'attachment',
+      ].join('/'))
+      expect(staticFile.isEqual(articleAttachmentInstance.value.content)).toBeTruthy()
     })
     it('should not raise error when parent types dont exist', async () => {
       const elements = [

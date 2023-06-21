@@ -302,10 +302,6 @@ const deployAddApprovalRuleAndCondition = async (
   const approvalRuleChanges = await awu(changes)
     .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
     .toArray()
-  const [rulesWithCustomCondition, rulesWithoutCustomCondition] = _.partition(
-    approvalRuleChanges,
-    change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
-  )
   const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
   // Replacing the ApprovalRule instances with the resolved instances that will later contain Record Ids.
   const approvalRuleInstancesByElemId = _.keyBy(
@@ -320,6 +316,11 @@ const deployAddApprovalRuleAndCondition = async (
         instance.value[SBAA_APPROVAL_RULE] = approvalRuleInstancesByElemId[approvalRule.elemID.getFullName()]
       }
     })
+  const [rulesWithCustomCondition, rulesWithoutCustomCondition] = _.partition(
+    approvalRuleChanges,
+    change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
+  )
+
   const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
     rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
       .map(change => applyFunctionToChangeData(change, instance => {
@@ -330,12 +331,14 @@ const deployAddApprovalRuleAndCondition = async (
     ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
+  log.debug('Deploying Approval Condition Instances')
   const conditionsDeployResult = await deployCustomObjectInstancesGroup(
     approvalConditionChanges,
     client,
     ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
+  log.debug('Deploying Approval Rules with Custom ConditionsMet')
   const approvalRulesWithCustomDeployResult = await deployCustomObjectInstancesGroup(
     rulesWithCustomCondition,
     client,
@@ -347,7 +350,7 @@ const deployAddApprovalRuleAndCondition = async (
   )
   return {
     appliedChanges: approvalRulesNoCustomDeployResult.appliedChanges
-      // Only apply the changes that contain Custom instead of All.
+      // Omit the first-deployment changes of Approval Rules with Custom ConditionsMet
       .filter(change => appliedApprovalRulesWithCustomElemIds.has(getChangeData(change).elemID.getFullName()))
       .concat(conditionsDeployResult.appliedChanges, approvalRulesWithCustomDeployResult.appliedChanges),
     errors: approvalRulesNoCustomDeployResult.errors.concat(

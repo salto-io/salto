@@ -473,10 +473,6 @@ export const deployCustomObjectInstancesGroup = async (
   dataManagement?: DataManagement,
 ): Promise<DeployResult> => {
   try {
-    if (changes.length === 0) {
-      log.debug('Received empty array of changes for group %s.', groupId)
-      return { appliedChanges: [], errors: [] }
-    }
     const instances = changes.map(change => getChangeData(change))
     const instanceTypes = [...new Set(await awu(instances)
       .map(async inst => apiName(await inst.getType())).toArray())]

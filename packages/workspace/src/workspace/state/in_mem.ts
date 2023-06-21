@@ -78,9 +78,7 @@ export const buildInMemState = (
   const updateAccounts = async (accounts?: string[]): Promise<void> => {
     const data = await stateData()
     const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
-    return getUpdateDate(data).setAll(
-      awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
-    )
+    return getUpdateDate(data).setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
   }
 
   const updateStatePathIndex = async (
@@ -144,7 +142,7 @@ export const buildInMemState = (
       : []
 
     await state.elements.set(element)
-    await Promise.all(filesToDelete.map(async f => state.staticFilesSource.delete(f)))
+    await Promise.all(filesToDelete.map(f => state.staticFilesSource.delete(f)))
   }
 
   return {
@@ -160,8 +158,8 @@ export const buildInMemState = (
       return (await stateData()).elements.deleteAll(ids)
     },
     set: setElement,
-    setAll: async (elements: ThenableIterable<Element>): Promise<void> =>
-      (await stateData()).elements.setAll(elements),
+    // This is inefficient, but this shouldn't be used and removing this function is not a small task
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
     getAccountsUpdateDates,

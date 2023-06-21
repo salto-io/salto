@@ -200,7 +200,7 @@ describe('state', () => {
     })
 
     describe('updateStateFromChanges', () => {
-      it('should update changed elements correctly without changing non-changed elements', async () => {
+      describe('should update changed elements correctly without changing non-changed elements', async () => {
         const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
         const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
         const toModify = new ObjectType({
@@ -230,13 +230,25 @@ describe('state', () => {
         })
 
         const allElements = await awu(await state.getAll()).toArray()
-        expect(allElements).toHaveLength(3)
-        expect(allElements[0]).toEqual(newElem)
-        expect(allElements[1]).toEqual(toAdd)
-        expect(allElements[2].isEqual(new ObjectType({
-          elemID: new ElemID(adapter, 'modify', 'type'),
-          fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
-        }))).toBeTruthy()
+
+        it('should not add or remove unexpected elements', async () => {
+          expect(allElements).toHaveLength(3)
+        })
+        it('should not remove existing elements', async () => {
+          expect(allElements.some(e => e.isEqual(newElem))).toBeTruthy()
+        })
+        it('should remove elements that were removed', async () => {
+          expect(allElements.some(e => e.isEqual(toRemove))).toBeFalsy()
+        })
+        it('should add elements that were added', async () => {
+          expect(allElements.some(e => e.isEqual(toAdd))).toBeTruthy()
+        })
+        it('should modify elements that were modified', async () => {
+          expect(allElements[2].isEqual(new ObjectType({
+            elemID: new ElemID(adapter, 'modify', 'type'),
+            fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
+          }))).toBeTruthy()
+        })
       })
       it('should update the accounts update dates', async () => {
         const accountsUpdateDates = await state.getAccountsUpdateDates()

@@ -711,6 +711,8 @@ describe('Nacl Files Source', () => {
     const staticFile4 = new StaticFile({ filepath: 'path4', hash: 'hash4' })
     const staticFile5 = new StaticFile({ filepath: 'path5', hash: 'hash5' })
     const staticFile6 = new StaticFile({ filepath: 'path6', hash: 'hash6' })
+
+    
     beforeAll(() => {
       beforeElem = new InstanceElement(
         'elem',

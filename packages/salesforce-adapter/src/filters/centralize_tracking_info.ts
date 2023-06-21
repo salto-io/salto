@@ -51,6 +51,7 @@ const log = logger(module)
 // https://help.salesforce.com/s/articleView?id=sf.tracking_field_history_for_standard_objects.htm&type=5 have an
 // object-level enable. For other types, we should assume tracking is supported and enabled.
 const TYPES_WITH_NO_OBJECT_LEVEL_ENABLE_HISTORY = [
+  'ActiveScratchOrg', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
   'Article',
   'Asset',
   'Campaign',
@@ -66,14 +67,23 @@ const TYPES_WITH_NO_OBJECT_LEVEL_ENABLE_HISTORY = [
   'Individual',
   'InternalOrganizationUnit',
   'Knowledge',
+  'LiveChatTranscript', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'NamespaceRegistry', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
   'Order',
-  'OrderProduct',
+  'OrderItem', // API name of 'Order Product'
+  'PartnerMarketingBudget', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'PartnerFundAllocation', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'Pricebook2', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'PricebookEntry',
   'Product',
-  'PriceBookEntry',
+  'Product2', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
   'Quote',
   'QuoteLineItem',
+  'ScratchOrgInfo', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
   'ServiceAppointment',
   'ServiceContract',
+  'ServiceResource', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
+  'SignupRequest', // This type does not appear in the SF docs, but we saw it with fields where trackHistory=true
   'Solution',
   'Task',
   'WorkOrder',

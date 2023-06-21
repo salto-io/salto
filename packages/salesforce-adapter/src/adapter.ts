@@ -16,7 +16,7 @@
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
-  ReadOnlyElementsSource,
+  ReadOnlyElementsSource, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
   applyFunctionToChangeData,
@@ -307,6 +307,19 @@ const deployAddApprovalRuleAndCondition = async (
     change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
   )
   const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
+  // Replacing the ApprovalRule instances with the resolved instances that will later contain Record Ids.
+  const approvalRuleInstancesByElemId = _.keyBy(
+    approvalRuleChanges.map(getChangeData),
+    instance => instance.elemID.getFullName()
+  )
+  await awu(approvalConditionChanges)
+    .map(getChangeData)
+    .forEach(instance => {
+      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
+      if (isInstanceElement(approvalRule)) {
+        instance.value[SBAA_APPROVAL_RULE] = approvalRuleInstancesByElemId[approvalRule.elemID.getFullName()]
+      }
+    })
   const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
     rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
       .map(change => applyFunctionToChangeData(change, instance => {
@@ -334,6 +347,7 @@ const deployAddApprovalRuleAndCondition = async (
   )
   return {
     appliedChanges: approvalRulesNoCustomDeployResult.appliedChanges
+      // Only apply the changes that contain Custom instead of All.
       .filter(change => appliedApprovalRulesWithCustomElemIds.has(getChangeData(change).elemID.getFullName()))
       .concat(conditionsDeployResult.appliedChanges, approvalRulesWithCustomDeployResult.appliedChanges),
     errors: approvalRulesNoCustomDeployResult.errors.concat(

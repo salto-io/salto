@@ -49,7 +49,7 @@ const isDeflectionAction = (action: Values): boolean =>
   _.isPlainObject(action) && action.field === DEFLECTION_TYPE
 
 /**
- * TODODODOD
+ * Validates that if an action of deflection is added or modified, the environment has the feature for it activated
  */
 export const deflectionActionValidator: ChangeValidator = async (
   changes, elementSource

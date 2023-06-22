@@ -21,8 +21,7 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
 
 /**
- * TODOTODOTODO
- * @param changes
+ * Warns the user if he activates a feature, some features maybe cost money or be limited
  */
 export const featureActivationValidator: ChangeValidator = async changes => {
   const accountSettingsChange = changes

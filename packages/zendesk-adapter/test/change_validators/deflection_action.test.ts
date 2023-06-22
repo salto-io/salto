@@ -35,15 +35,12 @@ const createTestInstance = (type: string, isDeflection: boolean): InstanceElemen
 )
 
 describe('deflectionActionValidator', () => {
-  const accountSettingType = new ObjectType({
-    elemID: new ElemID(ZENDESK, ACCOUNT_SETTING_TYPE_NAME),
-  })
   const deflectionTrigger = createTestInstance(TRIGGER_TYPE_NAME, true)
   const deflectionAutomation = createTestInstance(AUTOMATION_TYPE_NAME, true)
   const deflectionMacro = createTestInstance(MACRO_TYPE_NAME, true)
   const accountSetting = new InstanceElement(
     '_config',
-    accountSettingType,
+    new ObjectType({ elemID: new ElemID(ZENDESK, ACCOUNT_SETTING_TYPE_NAME) }),
     {
       active_features: {
         automatic_answers: true,

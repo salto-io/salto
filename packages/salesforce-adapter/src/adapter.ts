@@ -16,10 +16,9 @@
 import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
-  ReadOnlyElementsSource, isInstanceElement,
+  ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
 import {
-  applyFunctionToChangeData,
   filter,
   logDuration,
   resolveChangeElement,
@@ -92,7 +91,7 @@ import { FetchElements, SalesforceConfig } from './types'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
-import { addDefaults, isInstanceOfTypeChange } from './filters/utils'
+import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 import { getLookUpName } from './transformers/reference_mapping'
@@ -102,10 +101,9 @@ import {
   ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
-  SBAA_APPROVAL_RULE,
   CUSTOM_OBJECT,
 } from './constants'
-import { DataManagement } from './fetch_profile/data_management'
+import { deployAddApprovalRuleAndCondition } from './sbaa_approval_rules_and_conditions_deploy'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -294,71 +292,6 @@ export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastViewedDate',
 ]
 
-const deployAddApprovalRuleAndCondition = async (
-  changes: Change<InstanceElement>[],
-  client: SalesforceClient,
-  dataManagement: DataManagement | undefined
-): Promise<DeployResult> => {
-  const approvalRuleChanges = await awu(changes)
-    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
-    .toArray()
-  const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
-  // Replacing the ApprovalRule instances with the resolved instances that will later contain Record Ids.
-  const approvalRuleInstancesByElemId = _.keyBy(
-    approvalRuleChanges.map(getChangeData),
-    instance => instance.elemID.getFullName()
-  )
-  await awu(approvalConditionChanges)
-    .map(getChangeData)
-    .forEach(instance => {
-      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
-      if (isInstanceElement(approvalRule)) {
-        instance.value[SBAA_APPROVAL_RULE] = approvalRuleInstancesByElemId[approvalRule.elemID.getFullName()]
-      }
-    })
-  const [rulesWithCustomCondition, rulesWithoutCustomCondition] = _.partition(
-    approvalRuleChanges,
-    change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
-  )
-
-  const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
-    rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
-      .map(change => applyFunctionToChangeData(change, instance => {
-        instance.value.sbaa__ConditionsMet__c = 'All'
-        return instance
-      })).toArray()),
-    client,
-    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
-    dataManagement,
-  )
-  log.debug('Deploying Approval Condition Instances')
-  const conditionsDeployResult = await deployCustomObjectInstancesGroup(
-    approvalConditionChanges,
-    client,
-    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
-    dataManagement,
-  )
-  log.debug('Deploying Approval Rules with Custom ConditionsMet')
-  const approvalRulesWithCustomDeployResult = await deployCustomObjectInstancesGroup(
-    rulesWithCustomCondition,
-    client,
-    ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
-    dataManagement,
-  )
-  const appliedApprovalRulesWithCustomElemIds = new Set(
-    approvalRulesWithCustomDeployResult.appliedChanges.map(change => getChangeData(change).elemID.getFullName())
-  )
-  return {
-    appliedChanges: approvalRulesNoCustomDeployResult.appliedChanges
-      // Omit the first-deployment changes of Approval Rules with Custom ConditionsMet
-      .filter(change => appliedApprovalRulesWithCustomElemIds.has(getChangeData(change).elemID.getFullName()))
-      .concat(conditionsDeployResult.appliedChanges, approvalRulesWithCustomDeployResult.appliedChanges),
-    errors: approvalRulesNoCustomDeployResult.errors.concat(
-      conditionsDeployResult.errors,
-      approvalRulesWithCustomDeployResult.errors,
-    ),
-  }
-}
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]

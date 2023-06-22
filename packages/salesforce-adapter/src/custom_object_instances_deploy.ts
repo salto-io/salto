@@ -23,17 +23,17 @@ import {
   TypeElement,
   SaltoElementError,
   SaltoError,
-  SeverityLevel, isInstanceElement,
+  SeverityLevel,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
 import { EOL } from 'os'
 import {
-  isInstanceOfCustomObject, instancesToRecords, apiName,
-  instancesToDeleteRecords, Types,
+  isInstanceOfCustomObject, instancesToCreateRecords, apiName,
+  instancesToDeleteRecords, instancesToUpdateRecords, Types,
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
-import { CUSTOM_OBJECT_ID_FIELD, FIELD_ANNOTATIONS } from './constants'
+import { CUSTOM_OBJECT_ID_FIELD } from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
 import { buildSelectQueries, getFieldNamesForQuery } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
@@ -50,7 +50,6 @@ const log = logger(module)
 type ActionResult = {
   successInstances: InstanceElement[]
   errorInstances: (SaltoElementError | SaltoError)[]
-  instancesToUpdate: InstanceElement[]
 }
 
 type InstanceAndResult = {
@@ -187,8 +186,7 @@ type CrudFnArgs = {
   client: SalesforceClient
 }
 
-export type CrudFn = (fnArgs: CrudFnArgs)
-    => Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}>
+export type CrudFn = (fnArgs: CrudFnArgs) => Promise<InstanceAndResult[]>
 
 const isRetryableErr = (retryableFailures: string[]) =>
   (instAndRes: InstanceAndResult): boolean =>
@@ -207,7 +205,7 @@ export const retryFlow = async (
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
 
-  const { results: instanceResults, instancesToUpdate } = await crudFn({ typeName, instances, client })
+  const instanceResults = await crudFn({ typeName, instances, client })
 
   const [succeeded, failed] = _.partition(instanceResults, instanceResult =>
     instanceResult.result.success)
@@ -217,13 +215,12 @@ export const retryFlow = async (
   errors = errors.concat(getAndLogErrors(notRecoverable))
 
   if (_.isEmpty(recoverable)) {
-    return { successInstances: successes, errorInstances: errors, instancesToUpdate }
+    return { successInstances: successes, errorInstances: errors }
   }
   if (retriesLeft === 0) {
     return {
       successInstances: successes,
       errorInstances: errors.concat(getAndLogErrors(recoverable)),
-      instancesToUpdate,
     }
   }
 
@@ -232,7 +229,7 @@ export const retryFlow = async (
   log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
                   remaining retryable failures are: ${recoverable}`)
 
-  const { successInstances, errorInstances, instancesToUpdate: additionalInstancesToUpdate } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
     retriesLeft - 1
@@ -240,7 +237,6 @@ export const retryFlow = async (
   return {
     successInstances: successes.concat(successInstances),
     errorInstances: errors.concat(errorInstances),
-    instancesToUpdate: instancesToUpdate.concat(additionalInstancesToUpdate),
   }
 }
 
@@ -248,12 +244,15 @@ const insertInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<InstanceAndResult[]> => {
   if (instances.length === 0) {
-    return { results: [], instancesToUpdate: [] }
+    return []
   }
-  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE)
-  const results = await client.bulkLoadOperation(typeName, 'insert', records)
+  const results = await client.bulkLoadOperation(
+    typeName,
+    'insert',
+    await instancesToCreateRecords(instances)
+  )
   const instancesAndResults = groupInstancesAndResultsByIndex(results, instances)
 
   // Add IDs to success instances
@@ -261,20 +260,23 @@ const insertInstances: CrudFn = async (
     .forEach(({ instance, result }) => {
       instance.value[CUSTOM_OBJECT_ID_FIELD] = result.id
     })
-  return { results: instancesAndResults, instancesToUpdate }
+  return instancesAndResults
 }
 
 const updateInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<InstanceAndResult[]> => {
   if (instances.length === 0) {
-    return { results: [], instancesToUpdate: [] }
+    return []
   }
-  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.UPDATEABLE)
-  const results = await client.bulkLoadOperation(typeName, 'update', records)
-  return { results: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate }
+  const results = await client.bulkLoadOperation(
+    typeName,
+    'update',
+    await instancesToUpdateRecords(instances)
+  )
+  return groupInstancesAndResultsByIndex(results, instances)
 }
 
 const ALREADY_DELETED_ERROR = 'ENTITY_IS_DELETED:entity is deleted:--'
@@ -294,14 +296,15 @@ export const deleteInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<InstanceAndResult[]> => {
   const results = (await client.bulkLoadOperation(
     typeName,
     'delete',
     instancesToDeleteRecords(instances)
   )).map(removeSilencedDeleteErrors)
-  return { results: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate: [] }
+  return groupInstancesAndResultsByIndex(results, instances)
 }
+
 const cloneWithoutNulls = (val: Values): Values =>
   (Object.fromEntries(Object.entries(val).filter(([_k, v]) => (v !== null)).map(([k, v]) => {
     if (_.isObject(v)) {
@@ -332,13 +335,6 @@ const deployAddInstances = async (
     const recordValuesWithoutNulls = cloneWithoutNulls(recordValues)
     return computeSaltoIdHash(recordValuesWithoutNulls)
   }
-  // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
-  const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
-  await awu(instances).forEach(instance => {
-    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
-      ? instanceByElemId[val.elemID.getFullName()] ?? val
-      : val))
-  })
   const existingRecordsLookup = await keyByAsync(
     await getRecordsBySaltoIds(type, instances, idFields, client),
     computeRecordSaltoIdHash,
@@ -351,7 +347,6 @@ const deployAddInstances = async (
   const {
     successInstances: successInsertInstances,
     errorInstances: insertErrorInstances,
-    instancesToUpdate: insertInstancesToUpdate,
   } = await retryFlow(
     insertInstances,
     { typeName, instances: newInstances, client },
@@ -365,29 +360,15 @@ const deployAddInstances = async (
   const {
     successInstances: successUpdateInstances,
     errorInstances: errorUpdateInstances,
-    instancesToUpdate: updateInstancesToUpdate,
   } = await retryFlow(
     updateInstances,
     { typeName: await apiName(type), instances: existingInstances, client },
     client.dataRetry.maxAttempts
   )
-  const secondUpdateInstances = insertInstancesToUpdate.concat(updateInstancesToUpdate)
-  const {
-    successInstances: successSecondUpdateInstances,
-    errorInstances: errorSecondUpdateInstances,
-  } = await retryFlow(
-    updateInstances,
-    { typeName: await apiName(type), instances: secondUpdateInstances, client },
-    client.dataRetry.maxAttempts
-  )
-  const secondUpdateInstancesElemIds = new Set(successSecondUpdateInstances
-    .map(instance => instance.elemID.getFullName()))
-  const allSuccessInstances = successInsertInstances.concat(successUpdateInstances)
-    .filter(instance => !secondUpdateInstancesElemIds.has(instance.elemID.getFullName()))
-    .concat(successSecondUpdateInstances)
+  const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: insertErrorInstances.concat(errorUpdateInstances).concat(errorSecondUpdateInstances),
+    errors: [...insertErrorInstances, ...errorUpdateInstances],
     extraProperties: {
       groups: [{ id: groupId }],
     },

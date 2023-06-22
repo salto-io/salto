@@ -25,9 +25,9 @@ const extractPageEntries: PageEntriesExtractor = page => makeArray(page) as Resp
 
 describe('client_pagination', () => {
   describe.each([
-    [traverseRequests],
-    [traverseAsync.traverseRequestsAsync],
-  ])('traverseRequests with async %s', traverseRequestsFunc => {
+    [traverseRequests, 'traverseRequests'],
+    [traverseAsync.traverseRequestsAsync, 'traverseRequestsAsync'],
+  ])('traverseRequests with function %s', (traverseRequestsFunc, funcName) => {
     const client: MockInterface<HTTPReadClientInterface> = {
       getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
@@ -41,7 +41,7 @@ describe('client_pagination', () => {
       customEntryExtractor.mockReset()
     })
 
-    it('should query the pagination function even if paginationField is not specified', async () => {
+    it(`${funcName} should query the pagination function even if paginationField is not specified`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -66,7 +66,7 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
-    it('should use query args', async () => {
+    it(`${funcName}  should use query args`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -97,7 +97,7 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a' }], pageSize: 123, responseData: { a: 'a' } })
     })
 
-    it('should use recursive query args', async () => {
+    it(`${funcName}  should use recursive query args`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
@@ -160,7 +160,7 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledTimes(3)
     })
 
-    it('should stop querying if pagination function returns empty', async () => {
+    it(`${funcName}  should stop querying if pagination function returns empty`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -196,7 +196,7 @@ describe('client_pagination', () => {
       })
     })
 
-    it('should query multiple pages if pagination function returns next pages', async () => {
+    it(`${funcName}  should query multiple pages if pagination function returns next pages`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -266,7 +266,7 @@ describe('client_pagination', () => {
       })
     })
 
-    it('should use page entries from paginator result if provided', async () => {
+    it(`${funcName}  should use page entries from paginator result if provided`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -309,7 +309,7 @@ describe('client_pagination', () => {
         page: [{ something: 'a' }],
       })
     })
-    it('should continue querying while there are results even if extractor returns empty', async () => {
+    it(`${funcName}  should continue querying while there are results even if extractor returns empty`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -352,7 +352,7 @@ describe('client_pagination', () => {
         page: [],
       })
     })
-    it('should fail gracefully on HTTP errors', async () => {
+    it(`${funcName}  should fail gracefully on HTTP errors`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
@@ -389,7 +389,7 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
     })
-    it('should throw if encountered unknown HTTP exception errors', async () => {
+    it(`${funcName}  should throw if encountered unknown HTTP exception errors`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{

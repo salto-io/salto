@@ -31,23 +31,25 @@ const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<vo
   await Promise.all(Array.from(promises).map(p => p.catch(() => undefined)))
 }
 
-type keyFromPromiseResult<T> = (result: T) => string
+type KeyFromPromiseResult<T> = (result: T) => string
 class PromisesQueue<T> {
   private readonly promises: Map<string, Promise<T>>
-  private readonly hashFunc: keyFromPromiseResult<T>
-  constructor(hashFunc: keyFromPromiseResult<T>) {
+  private readonly hashFunc: KeyFromPromiseResult<T>
+  constructor(hashFunc: KeyFromPromiseResult<T>) {
     this.promises = new Map()
     this.hashFunc = hashFunc
   }
 
   enqueue(key: string, promise: Promise<T>): void {
     this.promises.set(key, promise)
+    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.size}`)
   }
 
   async dequeue(): Promise<T> {
-    const promise = await Promise.race(this.promises.values())
-    this.promises.delete(this.hashFunc(promise))
-    return promise
+    const settledPromise = await Promise.race(this.promises.values())
+    this.promises.delete(this.hashFunc(settledPromise))
+    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.size}`)
+    return settledPromise
   }
 
   size(): number {

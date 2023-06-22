@@ -36,24 +36,12 @@ export const deployAddApprovalRuleAndCondition = async (
     .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
     .toArray()
   const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
-  // Replacing the ApprovalRule instances with the resolved instances that will later contain Record Ids.
-  const approvalRuleInstancesByElemId = _.keyBy(
-    approvalRuleChanges.map(getChangeData),
-    instance => instance.elemID.getFullName()
-  )
-  await awu(approvalConditionChanges)
-    .map(getChangeData)
-    .forEach(instance => {
-      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
-      if (isInstanceElement(approvalRule)) {
-        instance.value[SBAA_APPROVAL_RULE] = approvalRuleInstancesByElemId[approvalRule.elemID.getFullName()]
-      }
-    })
   const [rulesWithCustomCondition, rulesWithoutCustomCondition] = _.partition(
     approvalRuleChanges,
     change => getChangeData(change).value.sbaa__ConditionsMet__c === 'Custom'
   )
 
+  log.debug('Deploying Approval Rules without Custom ConditionsMet')
   const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
     rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
       .map(change => applyFunctionToChangeData(change, instance => {
@@ -64,6 +52,16 @@ export const deployAddApprovalRuleAndCondition = async (
     ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
+  // Set the ApprovalRule Ids for the ApprovalCondition instances
+  await awu(approvalConditionChanges)
+    .forEach(change => applyFunctionToChangeData(change, instance => {
+      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
+      if (isInstanceElement(approvalRule)) {
+        instance.value[SBAA_APPROVAL_RULE] = approvalRulesNoCustomDeployResult.appliedChanges
+          .find(c => getChangeData(c).elemID.getFullName() === approvalRule.elemID.getFullName())
+      }
+      return instance
+    }))
   log.debug('Deploying Approval Condition Instances')
   const conditionsDeployResult = await deployCustomObjectInstancesGroup(
     approvalConditionChanges,

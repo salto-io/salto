@@ -65,7 +65,6 @@ import {
   guideDisabledValidator,
   additionOfTicketStatusForTicketFormValidator,
   defaultDynamicContentItemVariantValidator,
-  deflectionActionValidator,
   featureActivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -144,7 +143,6 @@ export default ({
     guideDisabledValidator(fetchConfig),
     additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariantValidator,
-    deflectionActionValidator,
     featureActivationValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,

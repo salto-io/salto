@@ -16,6 +16,7 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { createEmptyType, getFilterParams, mockClient } from '../../utils'
 import orFilter, { MAIL_LISTS_FIELDS } from '../../../src/filters/script_runner/workflow/workflow_lists_parsing'
 import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -95,6 +96,13 @@ describe('ScriptRunner mail lists in DC', () => {
       }
       await filter.onFetch([instance])
       expect(instance.value.transitions[0].rules.postFunctions[1].configuration.FIELD_TO_USER_FIELDS).toEqual('reporter assignee')
+    })
+    it('should log error if mail list is incorrect', async () => {
+      const logging = logger('jira-adapter/src/filters/script_runner/workflow/workflow_lists_parsing')
+      const logErrorSpy = jest.spyOn(logging, 'error')
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_TO_USER_FIELDS = 'assignee reporter group:abc role:ecd group:"space'
+      await filter.onFetch([instance])
+      expect(logErrorSpy).toHaveBeenCalledWith('Invalid input to splitBySpaceNotInQuotes: %s', 'assignee reporter group:abc role:ecd group:"space')
     })
   })
   describe('pre deploy', () => {

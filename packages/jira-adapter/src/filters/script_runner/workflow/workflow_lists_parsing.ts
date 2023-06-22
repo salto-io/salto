@@ -50,21 +50,25 @@ const ROLE_PREFIX = 'role:'
 const SPACE = ' '
 const FIELD_LINK_DIRECTION = 'FIELD_LINK_DIRECTION'
 const FIELD_LINK_TYPE = 'FIELD_LINK_TYPE'
+const DEFAULT_LINK_TYPE_DIRECTION = 'outward'
 
 type LinkObject = {
   linkType: string
-  direction: string
+  direction?: string
 }
 
 const LINK_OBJECT_SCHEME = Joi.object({
   linkType: Joi.string().required(),
-  direction: Joi.string().required(),
+  direction: Joi.string().optional(),
 }).required()
 
 const isLinkObject = createSchemeGuard<LinkObject>(LINK_OBJECT_SCHEME, 'Link object does not fit the scheme')
 
 
-const createLinkString = (linkObj: LinkObject, separator: string): string => `${linkObj.linkType}${separator}${linkObj.direction}`
+const createLinkString = (linkObj: LinkObject, separator: string): string =>
+  (linkObj.direction !== undefined
+    ? `${linkObj.linkType}${separator}${linkObj.direction}`
+    : linkObj.linkType)
 
 const stringifyDirectionFields = (value: Value): void => {
   if (_.isPlainObject(value)) {
@@ -85,13 +89,22 @@ const stringifyDirectionFields = (value: Value): void => {
 
 const createLinkObject = (
   directionString: string,
-  separator: string
+  separator: string,
+  directionDefault?: string
 ): LinkObject | string => {
-  if (directionString.split(separator).length !== 2) {
+  const splitString = directionString.split(separator)
+  if (directionDefault !== undefined && splitString.length === 1) {
+    splitString.push(directionDefault)
+  }
+
+  if (splitString.length === 1) {
+    return { linkType: directionString }
+  }
+  if (splitString.length !== 2) {
     log.error(`Invalid link type string: ${directionString}`)
     return directionString
   }
-  const [id, direction] = directionString.split(separator)
+  const [id, direction] = splitString
   return { linkType: id, direction }
 }
 
@@ -108,7 +121,7 @@ const objectifyDirectionFields = (value: Value): void => {
       .filter(([key]) => key === FIELD_LINK_TYPE)
       .filter((entry): entry is [string, string] => typeof entry[1] === 'string')
       .forEach(([key, val]) => {
-        value[key] = createLinkObject(val, ' ')
+        value[key] = createLinkObject(val, ' ', DEFAULT_LINK_TYPE_DIRECTION)
       })
   }
 }

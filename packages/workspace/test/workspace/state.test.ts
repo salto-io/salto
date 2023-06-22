@@ -207,7 +207,7 @@ describe('state', () => {
         let allElements: Element[]
         beforeAll(async () => {
           await state.clear()
-          await state.setAll(awu([toRemove, toModify, newElem]))
+          await state.setAll([toRemove, toModify, newElem])
 
           await state.updateStateFromChanges({
             changes: [
@@ -240,6 +240,63 @@ describe('state', () => {
           }))).toBeTruthy()
         })
       })
+      describe('pathIndex', () => {
+        const updatePathSpyIndex = jest.spyOn(pathIndexModule, 'updatePathIndex')
+        const updateTopLevelPathSpyIndex = jest.spyOn(pathIndexModule, 'updateTopLevelPathIndex')
+
+        beforeEach(async () => {
+          updatePathSpyIndex.mockClear()
+          updateTopLevelPathSpyIndex.mockClear()
+        })
+        it('should call updatePathIndex functions with all elements and removals', async () => {
+          const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
+          const unmergedElements = [newElem, elem, nonTopLevelElem]
+
+          await state.updateStateFromChanges({
+            changes: [
+              { ...toChange({ before: elem }), id: elem.elemID }, // Removal
+              { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
+              { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
+              ...detailedCompare(elem, newElem), // Modification
+            ],
+            unmergedElements,
+          })
+
+          const removedElementsFullNames = new Set<string>([
+            elem.elemID.getFullName(),
+            nonTopLevelElem.elemID.getFullName(),
+          ])
+          expect(updatePathSpyIndex).toHaveBeenCalledWith({
+            pathIndex,
+            unmergedElements,
+            removedElementsFullNames,
+          })
+          expect(updateTopLevelPathSpyIndex).toHaveBeenCalledWith({
+            pathIndex: topLevelPathIndex,
+            unmergedElements,
+            removedElementsFullNames,
+          })
+        })
+        it('should delete path index of removal changes when called without unmerged elements', async () => {
+          await pathIndex.clear()
+          await pathIndex.set(newElem.elemID.getFullName(), [])
+
+          await state.updateStateFromChanges({
+            changes: [{ ...toChange({ before: newElem }), id: newElem.elemID }],
+          })
+
+          const elemPath = await pathIndex.get(newElem.elemID.getFullName())
+          expect(elemPath).toBeUndefined()
+        })
+        it('should not call updatePathIndex when when called without unmerged element and the are no removals', async () => {
+          await state.updateStateFromChanges({
+            changes: [{ ...toChange({ after: newElem }), id: newElem.elemID }],
+          })
+
+          expect(updatePathSpyIndex).not.toHaveBeenCalled()
+          expect(updateTopLevelPathSpyIndex).not.toHaveBeenCalled()
+        })
+      })
       it('should update the accounts update dates', async () => {
         const accountsUpdateDates = await state.getAccountsUpdateDates()
         await state.updateStateFromChanges({
@@ -248,37 +305,6 @@ describe('state', () => {
         })
         const newAccountsUpdateDates = await state.getAccountsUpdateDates()
         expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
-      })
-      it('should call updatePathIndex functions with all elements and removals', async () => {
-        const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
-        const unmergedElements = [newElem, elem, nonTopLevelElem]
-        const updatePathSpyIndex = jest.spyOn(pathIndexModule, 'updatePathIndex')
-        const updateTopLevelPathSpyIndex = jest.spyOn(pathIndexModule, 'updateTopLevelPathIndex')
-
-        await state.updateStateFromChanges({
-          changes: [
-            { ...toChange({ before: elem }), id: elem.elemID }, // Removal
-            { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
-            { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
-            ...detailedCompare(elem, newElem), // Modification
-          ],
-          unmergedElements,
-        })
-
-        const removedElementsFullNames = new Set<string>([
-          elem.elemID.getFullName(),
-          nonTopLevelElem.elemID.getFullName(),
-        ])
-        expect(updatePathSpyIndex).toHaveBeenCalledWith({
-          pathIndex,
-          unmergedElements,
-          removedElementsFullNames,
-        })
-        expect(updateTopLevelPathSpyIndex).toHaveBeenCalledWith({
-          pathIndex: topLevelPathIndex,
-          unmergedElements,
-          removedElementsFullNames,
-        })
       })
       it('should call removal of static file that was removed', async () => {
         const beforeElem = new InstanceElement(

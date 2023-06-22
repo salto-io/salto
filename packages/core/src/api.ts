@@ -43,7 +43,7 @@ import { Workspace, ElementSelector, elementSource, expressions, merger } from '
 import { EOL } from 'os'
 import {
   buildElementsSourceFromElements,
-  getDetailedChanges as getDetailedChangesFromChanges,
+  getDetailedChanges as getDetailedChangesFromChange,
 } from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
@@ -188,7 +188,7 @@ export const deploy = async (
         : changeElem
     }
 
-    const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChanges(change))
+    const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChange(change))
     await workspace.state().updateStateFromChanges({ changes: detailedChanges })
 
     const updatedElements = await awu(appliedChanges)

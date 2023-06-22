@@ -199,21 +199,19 @@ export const buildInMemState = (
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
     updateStateFromChanges: async (
-      { changes, unmergedElements, fetchAccounts }: UpdateStateElementsArgs) => {
+      { changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
       await updateStateElements(changes)
       if (!_.isEmpty(fetchAccounts)) {
         await updateAccounts(fetchAccounts)
-      }
-
-      if (unmergedElements === undefined || _.isEmpty(unmergedElements)) {
-        return
       }
 
       const removedElementsFullNames = new Set(changes
         .filter(isRemovalChange)
         .map(change => change.id.getFullName()))
 
-      await updateStatePathIndex(unmergedElements, removedElementsFullNames)
+      if (unmergedElements.length > 0 || removedElementsFullNames.size > 0) {
+        await updateStatePathIndex(unmergedElements, removedElementsFullNames)
+      }
     },
   }
 }

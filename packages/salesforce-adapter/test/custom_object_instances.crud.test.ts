@@ -469,7 +469,6 @@ describe('Custom Object Instances CRUD', () => {
             expect(insertCall[3][0].NotCreatable).toBeUndefined()
             expect(insertCall[3][0].AnotherField).toBeDefined()
             expect(insertCall[3][0].AnotherField).toEqual('Type')
-            // Should deploy fields with no values as null
             expect(insertCall[3][0].FieldWithNoValue).toBeUndefined()
           })
 

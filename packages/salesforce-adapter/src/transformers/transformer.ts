@@ -941,16 +941,17 @@ const transformCompoundValues = async (
 const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
+  withNulls: boolean
 ): Promise<SalesforceRecord> => {
   const instanceType = await instance.getType()
-  const valsWithNulls = {
-    ..._.mapValues(instanceType.fields, () => null),
+  const values = {
+    ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
     ...instance.value,
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
-      valsWithNulls,
+      values,
       (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
@@ -960,12 +961,12 @@ const toRecord = async (
 export const instancesToUpdateRecords = async (
   instances: InstanceElement[]
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE)))
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, false)))
 
 export const instancesToCreateRecords = (
   instances: InstanceElement[]
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE)))
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, true)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))

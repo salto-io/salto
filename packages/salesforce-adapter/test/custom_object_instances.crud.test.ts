@@ -454,7 +454,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(updateCall[3][0].NotCreatable).toBeDefined()
             expect(updateCall[3][0].NotCreatable).toEqual('DontSendMeOnCreate')
             // Should deploy fields with no values as null
-            expect(updateCall[3][0].FieldWithNoValue).toBeNull()
+            expect(updateCall[3][0].FieldWithNoValue).toBeUndefined()
           })
 
           it('Should call load operation with insert for the "new" record', () => {

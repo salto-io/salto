@@ -306,6 +306,7 @@ export default class JiraAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
       customEntryExtractor: removeScopedObjects,
+      asyncRun: config.fetch.asyncPagination ?? true,
     })
 
     this.fetchQuery = elementUtils.query.createElementQuery(

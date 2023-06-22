@@ -336,7 +336,7 @@ describe('workflowScheme', () => {
       connection.get.mockResolvedValueOnce({
         status: 200,
         data: {
-          isLast: true,
+          total: 1,
           startAt: 0,
           values: [{
             id: '2',
@@ -472,7 +472,7 @@ describe('workflowScheme', () => {
       connection.get.mockResolvedValueOnce({
         status: 200,
         data: {
-          isLast: true,
+          total: 0,
           startAt: 0,
           values: [],
         },

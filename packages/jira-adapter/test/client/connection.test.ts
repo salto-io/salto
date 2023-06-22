@@ -37,10 +37,9 @@ describe('connection', () => {
 
     describe('when authorized', () => {
       let accountId: string
-      let accountType: string
 
       beforeEach(async () => {
-        ({ accountId, accountType } = await validateCredentials({
+        ({ accountId } = await validateCredentials({
           connection,
         }))
       })
@@ -55,10 +54,6 @@ describe('connection', () => {
 
       it('should return the base url from the response as account id', () => {
         expect(accountId).toEqual('http://my.jira.net')
-      })
-
-      it('should return Unknown as account type', () => {
-        expect(accountType).toEqual('Unknown')
       })
     })
 

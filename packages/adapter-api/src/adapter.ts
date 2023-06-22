@@ -153,9 +153,9 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
-export type Account = {
+export type AccountInfo = {
   accountId: string
-  accountType: string
+  accountType?: string
   isProduction?: boolean
 }
 
@@ -178,7 +178,7 @@ export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<Referen
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<Account>
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   configCreator?: ConfigCreator

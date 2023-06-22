@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Account, CredentialError } from '@salto-io/adapter-api'
+import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
@@ -41,10 +41,10 @@ const getBaseUrl = async (
 
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
-): Promise<Account> => {
+): Promise<AccountInfo> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
-    return { accountId, accountType: 'Unknown' }
+    return { accountId }
   }
   throw new CredentialError('Invalid Credentials')
 }
@@ -62,6 +62,6 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
       }
     ),
     baseURLFunc: ({ baseUrl }) => baseUrl,
-    credValidateFunc: async () => ({ accountId: '', accountType: 'Unknown' }), // There is no login endpoint to call
+    credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
   })
 )

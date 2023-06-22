@@ -244,28 +244,28 @@ describe('adapter creator', () => {
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
+    ))).toEqual({ accountId: 'https://abc.zendesk.com' })
 
     // OAuth auth method
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
+    ))).toEqual({ accountId: 'https://abc.zendesk.com' })
 
     // with domain provided
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       usernamePasswordCredentialsType,
       { username: 'user123', password: 'pwd456', subdomain: 'abc', domain: 'zendesk1.com' },
-    ))).toEqual({ accountId: 'https://abc.zendesk1.com', accountType: 'Unknown' })
+    ))).toEqual({ accountId: 'https://abc.zendesk1.com' })
 
     // with domain is an empty string
     expect(await adapter.validateCredentials(new InstanceElement(
       'config',
       oauthAccessTokenCredentialsType,
       { authType: 'oauth', accessToken: 'token', subdomain: 'abc', domain: '' },
-    ))).toEqual({ accountId: 'https://abc.zendesk.com', accountType: 'Unknown' })
+    ))).toEqual({ accountId: 'https://abc.zendesk.com' })
 
     expect(connection.createConnection).toHaveBeenCalledTimes(4)
     expect(connection.validateCredentials).toHaveBeenNthCalledWith(

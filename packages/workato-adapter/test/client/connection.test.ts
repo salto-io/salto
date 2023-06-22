@@ -82,7 +82,7 @@ describe('client connection', () => {
         something: 'bla',
       })
       const apiConn = await conn.login({ token: 'token123' })
-      expect(apiConn.accountId).toEqual('')
+      expect(apiConn.accountInfo).toEqual({ accountId: '' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/a/b')
@@ -103,7 +103,7 @@ describe('client connection', () => {
         something: 'bla',
       })
       const apiConn = await conn.login({ username: 'user123', token: 'token123' })
-      expect(apiConn.accountId).toEqual('')
+      expect(apiConn.accountInfo).toEqual({ accountId: '' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/a/b')

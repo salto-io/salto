@@ -118,8 +118,11 @@ describe('client_http_client', () => {
           put: mockFunction<APIConnection['put']>(),
           patch: mockFunction<APIConnection['patch']>(),
           delete: mockFunction<APIConnection['delete']>(),
-          accountId: 'ACCOUNT_ID',
-          accountType: 'Unknown',
+          accountInfo: {
+            accountId: 'ACCOUNT_ID',
+            accountType: 'Sandbox',
+            isProduction: false,
+          },
         }),
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })

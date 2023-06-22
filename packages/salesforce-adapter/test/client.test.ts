@@ -511,8 +511,8 @@ describe('salesforce client', () => {
         validateCredentials(credentials, 100000, connection)
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
-    it('should return empty string as accountId and Unknown as account type', async () => {
-      expect(await validateCredentials(credentials, 3, connection)).toEqual({ accountId: '', accountType: 'Unknown' })
+    it('should return empty string as accountId', async () => {
+      expect(await validateCredentials(credentials, 3, connection)).toEqual({ accountId: '' })
     })
   })
 

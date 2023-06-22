@@ -18,7 +18,7 @@ import {
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
-  Account,
+  AccountInfo,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -62,7 +62,7 @@ const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adap
   adapterCreators[loginConfig.elemID.adapter]
 
 type VerifyCredentialsResult = (
-  { success: true} & Account
+  { success: true} & AccountInfo
   ) | {
   success: false
   error: Error

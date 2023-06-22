@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Account } from '@salto-io/adapter-api'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils, client } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { Credentials, AccessTokenCredentials } from '../auth'
@@ -23,10 +23,10 @@ const log = logger(module)
 export const validateCredentials = async (_creds: {
   credentials: Credentials
   connection: clientUtils.APIConnection
-}): Promise<Account> => {
+}): Promise<AccountInfo> => {
   try {
     const response = await _creds.connection.get('/api/v1/org')
-    return { accountId: response.data.id, accountType: 'Unknown' }
+    return { accountId: response.data.id }
   } catch (error) {
     if (error.response?.status === 401) {
       log.error('Failed to validate credentials: %s', error)

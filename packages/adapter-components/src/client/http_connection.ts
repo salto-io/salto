@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
 import axiosRetry from 'axios-retry'
-import { Account, CredentialError } from '@salto-io/adapter-api'
+import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
@@ -49,7 +49,9 @@ export type APIConnection<T = any, S = any> = {
     => Promise<Response<T>>
 }
 
-export type AuthenticatedAPIConnection = APIConnection & Account
+export type AuthenticatedAPIConnection = APIConnection & {
+  accountInfo: AccountInfo
+}
 
 export type RetryOptions = {
   retries: number
@@ -149,10 +151,10 @@ export const createClientConnection = <TCredentials>({
 export const validateCredentials = async <TCredentials>(
   creds: TCredentials,
   createConnectionArgs: ConnectionParams<TCredentials>,
-): Promise<Account> => {
+): Promise<AccountInfo> => {
   const conn = createClientConnection(createConnectionArgs)
-  const { accountId, accountType } = await conn.login(creds)
-  return { accountId, accountType }
+  const { accountInfo } = await conn.login(creds)
+  return accountInfo
 }
 
 export type AuthParams = {
@@ -167,7 +169,7 @@ type AxiosConnectionParams<TCredentials> = {
   credValidateFunc: ({ credentials, connection }: {
     credentials: TCredentials
     connection: APIConnection
-  }) => Promise<Account>
+  }) => Promise<AccountInfo>
 }
 
 export const axiosConnection = <TCredentials>({
@@ -186,10 +188,10 @@ export const axiosConnection = <TCredentials>({
     axiosRetry(httpClient, retryOptions)
 
     try {
-      const account = await credValidateFunc({ credentials: creds, connection: httpClient })
+      const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
       return {
         ...httpClient,
-        ...account,
+        accountInfo,
       }
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)

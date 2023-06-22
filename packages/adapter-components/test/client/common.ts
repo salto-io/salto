@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Account } from '@salto-io/adapter-api'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { axiosConnection, ConnectionCreator, APIConnection } from '../../src/client/http_connection'
 
 export type Credentials = { username: string; password: string}
@@ -23,11 +23,12 @@ export const BASE_URL = 'http://localhost:1234/api/v1'
 export const validateCreds = async ({ credentials, connection }: {
   credentials: Credentials
   connection: APIConnection
-}): Promise<Account> => {
+}): Promise<AccountInfo> => {
   const user = await connection.get('/users/me')
   return {
     accountId: `${user.data.accountId}:${credentials.username}`,
-    accountType: 'Unknown',
+    accountType: 'Sandbox',
+    isProduction: false,
   }
 }
 

@@ -37,7 +37,6 @@ import {
 } from './connection'
 import { ZipFile } from './utils'
 import { MetadataObjectType } from '../src/transformers/transformer'
-import { isInstanceOfType } from '../src/filters/utils'
 
 describe('Fetch via retrieve API', () => {
   let connection: MockInterface<Connection>
@@ -190,7 +189,7 @@ describe('Fetch via retrieve API', () => {
         .filter(({ type }) => type.elemID.typeName === 'CustomObject')
         .map(({ instanceName }) => instanceName)
       elements
-        .filter(isInstanceOfType(PROFILE_METADATA_TYPE))
+        .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
         .forEach(profileInstance => {
           // ensure we got permissions for all the customobjects we sent with the profile
           expect(profileInstance.value.fieldPermissions).not.toBeEmpty()

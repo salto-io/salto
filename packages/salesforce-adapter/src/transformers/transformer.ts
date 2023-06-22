@@ -961,12 +961,12 @@ const toRecord = async (
 export const instancesToUpdateRecords = async (
   instances: InstanceElement[]
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, false)))
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, true)))
 
 export const instancesToCreateRecords = (
   instances: InstanceElement[]
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, true)))
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, false)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))

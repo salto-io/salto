@@ -178,31 +178,24 @@ export const deploy = async (
     getAccountToServiceNameMap(workspace, accounts)
   )
 
-  const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-    const changeElem = getChangeData(change)
-    if (!isField(changeElem)) {
-      return changeElem
-    }
-    const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
-    return new ObjectType({
-      ...topLevelElem,
-      annotationRefsOrTypes: topLevelElem.annotationRefTypes,
-      fields: change.action === 'remove'
-        ? _.omit(topLevelElem.fields, changeElem.name)
-        : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
-    })
-  }
-
   const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => log.time(async () => {
-    // update changedElements before updating the state because we rely on the state data for the calculation
+    // This function is inside 'postDeployAction' because it assumes the state is already updated
+    const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
+      const changeElem = getChangeData(change)
+      // Because this function is called after we updated the state, the top level is already update with the field
+      return isField(changeElem)
+        ? workspace.state().get(changeElem.parent.elemID)
+        : changeElem
+    }
+
+    const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChanges(change))
+    await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+
     const updatedElements = await awu(appliedChanges)
       .filter(change => (isAdditionOrModificationChange(change) || isFieldChange(change)))
       .map(getUpdatedElement)
       .toArray()
     await changedElements.setAll(updatedElements)
-
-    const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChanges(change))
-    await workspace.state().updateStateFromChanges({ changes: detailedChanges })
   }, 'postDeployAction')
 
   const { errors, appliedChanges, extraProperties } = await deployActions(

@@ -46,7 +46,7 @@ const TYPES_WITH_USER_FIELDS = [
   'Approver',
   'CustomSite',
   'EmailServicesAddress',
-  'PresenceConfigUserAssignments',
+  'PresenceConfigAssignments',
   'Users',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
@@ -136,7 +136,7 @@ const USER_GETTERS: TypesWithUserFields = {
   EmailServicesAddress: [
     userField('runAsUser', userFieldValue),
   ],
-  PresenceConfigUserAssignments: [
+  PresenceConfigAssignments: [
     userField('user', userFieldValue),
   ],
   Users: [

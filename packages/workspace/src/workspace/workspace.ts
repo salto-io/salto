@@ -378,6 +378,8 @@ export const loadWorkspace = async (
     validate?: boolean
   }): Promise<WorkspaceState> => {
     const initState = async (): Promise<WorkspaceState> => {
+      const wsConfig = await config.getWorkspaceConfig()
+      log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
       const states: Record<string, SingleState> = Object.fromEntries(await awu(envs())
         .map(async envName => [envName, {
           merged: new RemoteElementSource(
@@ -758,6 +760,8 @@ export const loadWorkspace = async (
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     if (_.isUndefined(workspaceState)) {
+      const wsConfig = await config.getWorkspaceConfig()
+      log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
       const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
       workspaceState = buildWorkspaceState({
         workspaceChanges,

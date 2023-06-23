@@ -41,6 +41,13 @@ const TYPES_WITH_USER_FIELDS = [
   'FolderShare',
   'WorkflowAlert',
   'WorkflowTask',
+  'WorkflowOutboundMessage',
+  'RuleEntry',
+  'Approver',
+  'CustomSite',
+  'EmailServicesAddress',
+  'PresenceConfigUserAssignments',
+  'Users',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -112,6 +119,28 @@ const USER_GETTERS: TypesWithUserFields = {
   ],
   WorkflowTask: [
     userField('assignedTo', getUserDependingOnType('assignedToType')),
+  ],
+  WorkflowOutboundMessage: [
+    userField('integrationUser', userFieldValue),
+  ],
+  RuleEntry: [
+    userField('assignedTo', getUserDependingOnType('assignedToType')),
+  ],
+  Approver: [
+    userField('name', getUserDependingOnType('type')),
+  ],
+  CustomSite: [
+    userField('siteAdmin', userFieldValue),
+    userField('siteGuestRecordDefaultOwner', userFieldValue),
+  ],
+  EmailServicesAddress: [
+    userField('runAsUser', userFieldValue),
+  ],
+  PresenceConfigUserAssignments: [
+    userField('user', userFieldValue),
+  ],
+  Users: [
+    userField('user', userFieldValue),
   ],
 }
 

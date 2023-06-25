@@ -81,11 +81,10 @@ export const deflectionActionValidator: ChangeValidator = async (
 
   const isDeflectionOn = accountSettings.value.active_features.automatic_answers
 
-  // TODO: talk to tomer about the message
   return isDeflectionOn ? [] : relevantInstances.map(instance => ({
     elemID: instance.elemID,
     severity: 'Error',
-    message: 'Cannot change this element since one of its action types is not supported',
-    detailedMessage: `Action field '${DEFLECTION_TYPE}' is not supported, please turn on automatic answers in your account settings`,
+    message: 'Action requires turning on automatic answers',
+    detailedMessage: `To enable the configuration of the '${DEFLECTION_TYPE}' field action, which allows for ‘autoreply with articles’, please ensure that the automatic answers feature is turned on. To do so, please update the 'automatic_answers' setting to 'true' in the account_settings.`,
   }))
 }

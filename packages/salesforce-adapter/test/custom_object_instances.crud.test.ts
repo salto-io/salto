@@ -469,8 +469,7 @@ describe('Custom Object Instances CRUD', () => {
             expect(insertCall[3][0].NotCreatable).toBeUndefined()
             expect(insertCall[3][0].AnotherField).toBeDefined()
             expect(insertCall[3][0].AnotherField).toEqual('Type')
-            // Should deploy fields with no values as null
-            expect(insertCall[3][0].FieldWithNoValue).toBeNull()
+            expect(insertCall[3][0].FieldWithNoValue).toBeUndefined()
           })
 
           it('Should have result with 2 applied changes, add 2 instances with new Id', async () => {

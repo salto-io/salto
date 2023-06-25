@@ -175,7 +175,7 @@ export default class SdfClient {
     })
     const { projectPath, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectPath, authId)
-    const accountId = await Promise.resolve(netsuiteClient.credentials.accountId)
+    const { accountId } = netsuiteClient.credentials
     return { accountId }
   }
 

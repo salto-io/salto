@@ -62,7 +62,7 @@ const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adap
   adapterCreators[loginConfig.elemID.adapter]
 
 type VerifyCredentialsResult = (
-  { success: true} & AccountInfo
+  { success: true } & AccountInfo
   ) | {
   success: false
   error: Error

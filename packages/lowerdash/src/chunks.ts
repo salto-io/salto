@@ -33,3 +33,15 @@ export const weightedChunks = <T>(
   }, 0)
   return chunks
 }
+
+export const chunkByEvenly = <T>(
+  values: T[],
+  size: number,
+  weightFunc: (val: T) => number,
+): T[][] => {
+  const totalSize = values.reduce((sum, change) => sum + weightFunc(change), 0)
+  const avgChunkSize = totalSize / Math.ceil(totalSize / size)
+  const avgItemSize = totalSize / values.length
+  const desiredChunkSize = Math.min(size, avgChunkSize + (avgItemSize / 2))
+  return weightedChunks(values, desiredChunkSize, weightFunc)
+}

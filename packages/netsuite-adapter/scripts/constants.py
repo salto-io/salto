@@ -15,6 +15,7 @@ LICENSE_HEADER = '''/*
 */
 '''
 
-LINE_SEPERATOR = '\n  '
+LINE_SEPERATOR = '\n'
+TAB = ' '
 TABLE_ROW = 'tr'
 TABLE_DATA = 'td'

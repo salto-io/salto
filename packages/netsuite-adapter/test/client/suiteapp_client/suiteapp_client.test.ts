@@ -579,13 +579,13 @@ describe('SuiteAppClient', () => {
         })
         expect(await unsupportedClient.getInstalledBundles()).toEqual([])
       })
-      it('should return empty list on error', async () => {
+      it('should throw on error', async () => {
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'error', message: '', error: new Error('error'),
         })
-        expect(await client.getInstalledBundles()).toEqual([])
+        await expect(() => client.getInstalledBundles()).rejects.toThrow()
       })
-      it('should return empty list on invalid result', async () => {
+      it('should throw on invalid result', async () => {
         mockAxiosAdapter.onPost().replyOnce(200, {
           status: 'success',
           results: {
@@ -593,7 +593,7 @@ describe('SuiteAppClient', () => {
             errors: [],
           },
         })
-        expect(await client.getInstalledBundles()).toEqual([])
+        await expect(() => client.getInstalledBundles()).rejects.toThrow()
       })
       it('should return an array of bundles', async () => {
         const results = [

@@ -17,7 +17,7 @@
 import { BuiltinTypes, ElemID, ObjectType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { TypeAndInnerTypes } from './object_types'
-import { NETSUITE, TYPES_PATH } from '../constants'
+import { BUNDLE, NETSUITE, TYPES_PATH } from '../constants'
 
 type BundleInstalledBy = {
   id?: number
@@ -46,7 +46,7 @@ export type BundleType = {
 export const bundleType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
 
-  const bundleElemID = new ElemID(NETSUITE, 'bundle')
+  const bundleElemID = new ElemID(NETSUITE, BUNDLE)
   const BundleInstalledByElemID = new ElemID(NETSUITE, 'bundle_ installedby')
   const BundlePublisherElemID = new ElemID(NETSUITE, 'bundle_publisher')
 

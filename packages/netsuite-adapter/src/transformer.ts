@@ -88,7 +88,7 @@ export const createInstanceElement = async (
         [OBJECT_NAME]: type.elemID.getFullName(),
       }),
     }
-    const desiredName = naclCase(transformedValues[serviceIdFieldName].toString()
+    const desiredName = naclCase(transformedValues[serviceIdFieldName]
       .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
     return getElemIdFunc ? getElemIdFunc(NETSUITE, serviceIds, desiredName).name : desiredName
   }

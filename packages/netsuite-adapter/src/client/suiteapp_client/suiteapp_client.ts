@@ -396,12 +396,13 @@ export default class SuiteAppClient {
           this.ajv.errorsText(),
           result
         )
-        return []
+        throw Error(this.ajv.errorsText())
       }
       return result
     } catch (e) {
-      log.error(`${operation} failed. Recieved the following error: %s`, e.message)
-      return []
+      const errorMessage = `${operation} operation failed. Recieved the following error: ${e.message}`
+      log.error(errorMessage)
+      throw Error(errorMessage)
     }
   }
 

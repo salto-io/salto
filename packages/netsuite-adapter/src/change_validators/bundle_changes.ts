@@ -14,15 +14,12 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import { ChangeDataType, ChangeError, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, Element } from '@salto-io/adapter-api'
+import { ChangeDataType, ChangeError, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { NetsuiteChangeValidator } from './types'
-import { isBundleType, isFileCabinetInstance } from '../types'
+import { isBundleInstance, isFileCabinetInstance } from '../types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
-
-const isBundleInstance = (element: Element): element is InstanceElement =>
-  isInstanceElement(element) && isBundleType(element.refType)
 
 const getBundlesChangeError = (changeData: ChangeDataType): ChangeError | undefined => {
   if (isFileCabinetInstance(changeData) && isDefined(changeData.value.bundle)) {

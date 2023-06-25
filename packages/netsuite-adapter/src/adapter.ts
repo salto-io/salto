@@ -61,7 +61,7 @@ import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
-import bundleIds from './filters/bundle_ids'
+import addBundleReferences from './filters/bundle_ids'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -129,7 +129,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addAliasFilter },
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
-  { creator: bundleIds },
+  { creator: addBundleReferences },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
   // additionalChanges should be the first preDeploy filter to run
@@ -284,8 +284,9 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
+    const bundleTypeName = bundleType().type.elemID.typeName
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
-      .map(bundle => ({ typeName: bundleType().type.elemID.typeName, values: bundle }))
+      .map(bundle => ({ typeName: bundleTypeName, values: { ...bundle, id: bundle.id.toString() } }))
 
     const {
       elements: fileCabinetContent,
@@ -302,9 +303,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await getCustomObjectsResult
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-
+    const elementsToCreate = this.userConfig?.fetch?.addBundles
+      ? [...customObjects, ...fileCabinetContent, ...bundlesCustomInfo] : [...customObjects, ...fileCabinetContent]
     const baseElements = await createElements(
-      [...customObjects, ...fileCabinetContent, ...bundlesCustomInfo],
+      elementsToCreate,
       this.getElemIdFunc,
     )
 

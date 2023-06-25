@@ -14,11 +14,10 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, isInstanceChange, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, ReferenceExpression, Element } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
-import { getServiceId, isFileCabinetType } from '../types'
+import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
 // import { getGroupItemFromRegex } from '../client/utils'
@@ -27,48 +26,47 @@ const log = logger(module)
 const BUNDLE = 'bundle'
 // const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 const PRIVATE_BUNDLE_STRING = 'Private'
-const { awu } = collections.asynciterable
 
-const addBundleIdField = async (
-  instance: InstanceElement,
+const addBundleIdField = (
+  element: Element,
   bundleInstances: InstanceElement[],
   // bundleIdToInstance: Record<string, InstanceElement>
-): Promise<void> => {
-  const serviceId = getServiceId(instance)
-  const instanceType = await instance.getType()
-  if (isFileCabinetType(instanceType)) {
+): void => {
+  const serviceId = getServiceId(element)
+  if (isFileCabinetInstance(element)) {
     // TODO: Uncomment this when opening bundles for everyone
     // const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
     // if (bundleId.length > 0) {
     //   const bundleToReference = bundleIdToInstance[bundleId[0]]
-    //   Object.assign(instance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    //   Object.assign(element.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
     // }
   } else {
     bundleInstances.forEach(bundle => {
       if (BUNDLE_ID_TO_COMPONENTS[bundle.value.id].has(serviceId)) {
-        Object.assign(instance.value, { bundle: new ReferenceExpression(bundle.elemID) })
+        getElementValueOrAnnotations(element).bundle = new ReferenceExpression(bundle.elemID)
       }
     })
   }
 }
 
+
 const filterCreator: LocalFilterCreator = () => ({
   name: 'bundleIds',
   onFetch: async elements => {
-    const [bundleInstances, nonBundleElements] = _.partition(
-      elements.filter(isInstanceElement), element => element.elemID.typeName === 'bundle'
-    )
+    const [bundleInstances, nonBundleElements] = _.partition(elements, isBundleInstance)
     const [existingBundles, missingBundles] = _.partition(bundleInstances, bundle =>
       bundle.value.id in BUNDLE_ID_TO_COMPONENTS)
     log.debug('The following bundle ids are missing in the bundle record: %o', missingBundles.map(bundle => bundle.value.id))
-
+    // TODO: uncomment this once we enable bundle
     // const bundleIdToInstance: Record<string, InstanceElement> = Object.fromEntries(
     //   bundleInstances.map(bundle => [bundle.value.id, bundle])
     // )
     existingBundles.forEach(bundle => {
       bundle.value.isPrivate = BUNDLE_ID_TO_COMPONENTS[bundle.value.id].has(PRIVATE_BUNDLE_STRING)
     })
-    await awu(nonBundleElements).forEach(element => (addBundleIdField(element, existingBundles)))
+    nonBundleElements
+      .filter(element => isStandardInstanceOrCustomRecordType(element) || isFileCabinetInstance(element))
+      .forEach(element => (addBundleIdField(element, existingBundles)))
   },
 
   preDeploy: async changes => {

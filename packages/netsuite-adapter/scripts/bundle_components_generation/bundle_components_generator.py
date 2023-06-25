@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from collections import defaultdict
 from types_generation.types_generator import login
-from constants import LICENSE_HEADER, LINE_SEPERATOR, TABLE_ROW, TABLE_DATA
+from constants import LICENSE_HEADER, LINE_SEPERATOR, TABLE_ROW, TABLE_DATA, TAB
 
 SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
@@ -69,7 +69,7 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
 
 def generate_bundle_map_file(bundle_id_to_components):
   formatted_components = ["{key}: new Set({value}),".format(key = bundle_id, value = bundle_id_to_components[bundle_id]) for bundle_id in bundle_id_to_components]
-  file_content = bundle_components_file_template.format(bundle_id_to_components = LINE_SEPERATOR.join(formatted_components))
+  file_content = bundle_components_file_template.format(bundle_id_to_components = (LINE_SEPERATOR + TAB).join(formatted_components))
   Path(BUNDLE_COMPONENTS_DIR).mkdir(parents=True, exist_ok=True)
   with open(BUNDLE_COMPONENTS_DIR + 'bundle_components.ts', 'w') as file:
     file.write(file_content)

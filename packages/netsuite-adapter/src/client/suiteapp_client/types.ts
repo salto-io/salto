@@ -143,6 +143,7 @@ export const SYSTEM_INFORMATION_SCHEME = {
 export type SystemInformation = {
   time: Date
   appVersion: number[]
+  // TODO: make this field not optional once SALTO-2602 is merged and users are upgraded to SuiteApp version 0.1.7
   envType?: EnvType
 }
 

@@ -3,7 +3,7 @@ from selenium import webdriver
 from bs4 import BeautifulSoup
 import os
 from pathlib import Path
-from constants import LICENSE_HEADER, LINE_SEPERATOR, TABLE_DATA
+from constants import LICENSE_HEADER, LINE_SEPERATOR, TABLE_DATA, TAB
 
 SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
@@ -46,7 +46,7 @@ def parse_permissions_table(driver):
 
 def create_permissions_file(permissions):
   formatted_permissions = ["{key}: new Set({value}),".format(key = key,value = [level.upper() for level in permissions[key]]) for key in permissions]
-  file_content = role_permissions_file_template.format(permission_id_to_valid_levels = LINE_SEPERATOR.join(formatted_permissions))
+  file_content = role_permissions_file_template.format(permission_id_to_valid_levels = (LINE_SEPERATOR + TAB).join(formatted_permissions))
   Path(PERMISSIONS_DIR).mkdir(parents=True, exist_ok=True)
   with open(PERMISSIONS_DIR + 'role_permissions.ts', 'w') as file:
     file.write(file_content)

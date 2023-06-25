@@ -121,6 +121,10 @@ describe('smart_value_reference_filter', () => {
           ],
         }))
       })
+      it('should not fail if value is boolean', () => {
+        automation.value.components[0].value = true
+        expect(() => filter.onFetch(elements)).not.toThrow()
+      })
     })
 
     describe('on fetch failure', () => {

@@ -44,7 +44,7 @@ type AutomationInstance = InstanceElement & {
 }
 
 const COMPONENT_SCHEME = Joi.object({
-  value: Joi.object().optional(),
+  value: Joi.alternatives(Joi.object(), Joi.boolean()).optional(),
   rawValue: Joi.optional(),
 }).unknown(true)
 

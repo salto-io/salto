@@ -15,9 +15,9 @@
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import { elementSource } from '@salto-io/workspace'
-import { AUTOMATION_TYPE_NAME, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { AUTOMATION_TYPE_NAME, DEFLECTION_TYPE, MACRO_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { ACCOUNT_SETTING_TYPE_NAME } from '../../src/filters/account_settings'
-import { DEFLECTION_TYPE, deflectionActionValidator } from '../../src/change_validators/deflection_action'
+import { deflectionActionValidator } from '../../src/change_validators/deflection_action'
 
 const { createInMemoryElementSource } = elementSource
 

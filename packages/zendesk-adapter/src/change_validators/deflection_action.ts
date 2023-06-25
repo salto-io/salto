@@ -21,6 +21,7 @@ import {
 import { logger } from '@salto-io/logging'
 import {
   AUTOMATION_TYPE_NAME,
+  DEFLECTION_TYPE,
   MACRO_TYPE_NAME,
   TRIGGER_TYPE_NAME,
   ZENDESK,
@@ -30,7 +31,6 @@ import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
 const log = logger(module)
 
 const TYPES_WITH_ACTIONS = [TRIGGER_TYPE_NAME, MACRO_TYPE_NAME, AUTOMATION_TYPE_NAME]
-export const DEFLECTION_TYPE = 'deflection'
 
 type SettingsInstanceWithAutomaticAnswers = {
   value: {
@@ -75,7 +75,7 @@ export const deflectionActionValidator: ChangeValidator = async (
   )
 
   if (!isValidSettings(accountSettings)) {
-    log.error('Failed to run deflectionActionValidator because account settings instance is invalid')
+    log.warn('Failed to run deflectionActionValidator because account settings instance is invalid')
     return []
   }
 

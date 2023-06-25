@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { auth as authUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { Credentials } from '../auth'
@@ -26,7 +26,7 @@ const BASE_SERVICE = '/odata/v4/api/mcm/v1/'
 
 export const validateCredentials = async ({ connection }: {
   connection: clientUtils.APIConnection
-}): Promise<AccountId> => {
+}): Promise<AccountInfo> => {
   // oauth was already authenticated when the connection was created, but validating just in case
   try {
     const res = await connection.get('/')
@@ -40,7 +40,7 @@ export const validateCredentials = async ({ connection }: {
   }
 
   // default to empty to avoid preventing users from refreshing their credentials in the SaaS.
-  return ''
+  return { accountId: '' }
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

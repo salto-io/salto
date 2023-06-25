@@ -43,8 +43,8 @@ describe('client connection', () => {
           ? ({ data: { id: 'id456' }, status: 200, statusText: 'OK' })
           : { data: {}, status: 200, statusText: 'OK' }
       ))
-      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
-      expect(await validateCredentials({ connection: mockConnection })).toEqual('')
+      expect((await validateCredentials({ connection: mockConnection })).accountId).toEqual('')
+      expect((await validateCredentials({ connection: mockConnection })).accountId).toEqual('')
     })
     it('should throw credential error when response is 401', async () => {
       mockGet.mockRejectedValueOnce({ response: { status: 401 } })
@@ -82,7 +82,7 @@ describe('client connection', () => {
         something: 'bla',
       })
       const apiConn = await conn.login({ token: 'token123' })
-      expect(apiConn.accountId).toEqual('')
+      expect(apiConn.accountInfo).toEqual({ accountId: '' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/a/b')
@@ -103,7 +103,7 @@ describe('client connection', () => {
         something: 'bla',
       })
       const apiConn = await conn.login({ username: 'user123', token: 'token123' })
-      expect(apiConn.accountId).toEqual('')
+      expect(apiConn.accountInfo).toEqual({ accountId: '' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/a/b')

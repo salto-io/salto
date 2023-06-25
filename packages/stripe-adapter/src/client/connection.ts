@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AccountId } from '@salto-io/adapter-api'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { Credentials } from '../auth'
@@ -24,7 +24,7 @@ const BASE_URL = 'https://api.stripe.com'
 
 export const validateCredentials = async ({ connection }: {
   connection: clientUtils.APIConnection
-}): Promise<AccountId> => {
+}): Promise<AccountInfo> => {
   try {
     const res = await connection.get('/v1/products')
     if (res.status !== 200) {
@@ -34,7 +34,7 @@ export const validateCredentials = async ({ connection }: {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)
   }
-  return ''
+  return { accountId: '' }
 }
 
 export const createConnection: clientUtils.ConnectionCreator<Credentials> = retryOptions => (

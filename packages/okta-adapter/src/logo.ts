@@ -111,7 +111,7 @@ export const deployLogo = async (
   }
 }
 
-export const createLogoType = (objectTypeName: string): ObjectType =>
+export const createFileType = (objectTypeName: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(OKTA, objectTypeName),
     fields: {

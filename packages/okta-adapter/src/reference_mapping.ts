@@ -212,12 +212,11 @@ export const referencesRules: OktaFieldReferenceDefinition[] = [
   { src: { field: 'include', parentTypes: ['DeviceCondition'] },
     serializationStrategy: 'id',
     target: { type: 'DeviceAssurance' } },
-  // TODO figure out type
-  // {
-  //   src: { field: 'emailDomainId', parentTypes: ['Brand'] },
-  //   serializationStrategy: 'id',
-  //   target: { type:  },
-  // },
+  {
+    src: { field: 'emailDomainId', parentTypes: ['Brand'] },
+    serializationStrategy: 'id',
+    target: { type: 'EmailDomain' },
+  },
   {
     src: { field: 'appInstanceId', parentTypes: ['DefaultApp'] },
     serializationStrategy: 'id',

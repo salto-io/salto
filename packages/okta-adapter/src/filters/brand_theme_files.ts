@@ -19,7 +19,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { LOGO_TYPES_TO_VALUES, createLogoType, deployLogo, getLogo } from '../logo'
+import { LOGO_TYPES_TO_VALUES, createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
 
 const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
@@ -86,7 +86,8 @@ const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
 
-    const [logoType, faviconType] = [createLogoType(BRAND_LOGO_TYPE_NAME), createLogoType(FAV_ICON_TYPE_NAME)]
+    const [logoType, faviconType] = [createFileType(BRAND_LOGO_TYPE_NAME), createFileType(FAV_ICON_TYPE_NAME)]
+    elements.push(logoType, faviconType)
 
     const brandLogosInstances = await Promise.all(brandThemes.map(async brand => {
       const logoInstance = await getBrandThemeFile(client, brand, logoType)

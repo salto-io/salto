@@ -23,7 +23,7 @@ import Joi from 'joi'
 import { OktaConfig } from '../config'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD } from '../constants'
 import { FilterCreator } from '../filter'
-import { createLogoType, deployLogo, getLogo } from '../logo'
+import { createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
 
 const log = logger(module)
@@ -99,7 +99,7 @@ const appLogoFilter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === APPLICATION_TYPE_NAME)
       .filter(instance => isAppInstance(instance))
-    const appLogoType = createLogoType(APP_LOGO_TYPE_NAME)
+    const appLogoType = createFileType(APP_LOGO_TYPE_NAME)
     elements.push(appLogoType)
 
     const allInstances = (await Promise.all(appsWithLogo

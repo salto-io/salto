@@ -787,6 +787,21 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
   },
+  'api__v1__email_domains@uuuub': {
+    request: {
+      url: '/api/v1/email-domains',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  EmailDomain: {
+    transformation: {
+      idFields: ['displayName'],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
+    },
+  },
   OrgSetting: {
     request: {
       url: '/api/v1/org',
@@ -1439,6 +1454,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'EmailDomainResponse', newName: 'EmailDomain' },
     { originalName: 'ThemeResponse', newName: 'BrandTheme' },
     { originalName: 'Role', newName: 'RoleAssignment' },
     { originalName: 'IamRole', newName: 'Role' },
@@ -1478,6 +1494,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
+  EmailDomain: ['api__v1__email_domains@uuuub'],
   Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
   PerClientRateLimit: ['PerClientRateLimitSettings'],

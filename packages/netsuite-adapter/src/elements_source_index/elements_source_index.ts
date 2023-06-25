@@ -123,7 +123,7 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     }
   }
 
-  const deletedElementSet = new Set(deletedElements?.map(elemId => elemId.getFullName()))
+  const deletedElementSet = new Set(deletedElements.map(elemId => elemId.getFullName()))
   const elements = await elementsSource.getAll()
   await awu(elements)
     // avoid creating reference to a deleted element

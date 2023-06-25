@@ -99,14 +99,21 @@ const isCustomRecordDeleted = (
   return false
 }
 
-const calculateDeletedCustomRecordsFromService = async (
-  client: NetsuiteClient,
-  currentCustomRecords: ElemServiceID[],
-  query: NetsuiteQuery,
-  requestedCustomRecordTypes: Set<string>,
-  requestedCustomRecordTypeScriptIds: Set<string>,
-  serviceCustomRecordTypes: Set<string>,
-): Promise<ElemID[]> => {
+const calculateDeletedCustomRecordsFromService = async ({
+  client,
+  currentCustomRecords,
+  query,
+  requestedCustomRecordTypes,
+  requestedCustomRecordTypeScriptIds,
+  serviceCustomRecordTypes,
+} : {
+  client: NetsuiteClient
+  currentCustomRecords: ElemServiceID[]
+  query: NetsuiteQuery
+  requestedCustomRecordTypes: Set<string>
+  requestedCustomRecordTypeScriptIds: Set<string>
+  serviceCustomRecordTypes: Set<string>
+}): Promise<ElemID[]> => {
   // We can ignore custom types that were already returned by the service, as the missing records there were
   // calculated in calculateDeletedCustomRecordsFromFetchResult
   const serviceCustomRecordsByType = await getCustomRecords(
@@ -124,15 +131,23 @@ const calculateDeletedCustomRecordsFromService = async (
   return deletedCustomRecords
 }
 
-const calculateDeletedCustomRecords = async (
-  client: NetsuiteClient,
-  currentCustomRecords: ElemServiceID[],
-  currentCustomRecordTypes: ElemServiceID[],
-  query: NetsuiteQuery,
-  serviceCustomRecords: InstanceElement[],
-  requestedCustomRecordTypes: ObjectType[],
-  serviceCustomRecordTypes: ObjectID[],
-): Promise<ElemID[]> => {
+const calculateDeletedCustomRecords = async ({
+  client,
+  currentCustomRecords,
+  currentCustomRecordTypes,
+  query,
+  serviceCustomRecords,
+  requestedCustomRecordTypeList,
+  serviceCustomRecordTypeList,
+} : {
+  client: NetsuiteClient
+  currentCustomRecords: ElemServiceID[]
+  currentCustomRecordTypes: ElemServiceID[]
+  query: NetsuiteQuery
+  serviceCustomRecords: InstanceElement[]
+  requestedCustomRecordTypeList: ObjectType[]
+  serviceCustomRecordTypeList: ObjectID[]
+}): Promise<ElemID[]> => {
   if (currentCustomRecordTypes.length === 0) {
     return []
   }
@@ -141,28 +156,28 @@ const calculateDeletedCustomRecords = async (
   // as currently when we identify a change in a custom type we fetch all records, so missing records are easy to spot.
   // Then we need to query the rest of the custom types (that are matching the fetch query conditions, but excluding
   // the ones already covered) and check whether there is any deletion there
-  const requestedCustomRecordTypeSet = new Set(requestedCustomRecordTypes.map(customType => customType.elemID.typeName))
-  const requestedCustomRecordTypeScriptIds: Set<string> = new Set(
-    requestedCustomRecordTypes.map(customType => customType.annotations[SCRIPT_ID])
+  const requestedCustomRecordTypes = new Set(requestedCustomRecordTypeList.map(type => type.elemID.typeName))
+  const requestedCustomRecordTypeScriptIds = new Set(
+    requestedCustomRecordTypeList.map(type => type.annotations[SCRIPT_ID] as string)
   )
-  const serviceCustomRecordTypeSet = new Set(serviceCustomRecordTypes.map(item => item.instanceId))
+  const serviceCustomRecordTypes = new Set(serviceCustomRecordTypeList.map(item => item.instanceId))
 
   const deletedCustomRecordsFromFetchResult = calculateDeletedCustomRecordsFromFetchResult(
     currentCustomRecords,
     serviceCustomRecords,
-    requestedCustomRecordTypeSet,
+    requestedCustomRecordTypes,
   )
-  const deletedCustomRecordsFromService = await calculateDeletedCustomRecordsFromService(
+  const deletedCustomRecordsFromService = await calculateDeletedCustomRecordsFromService({
     client,
     currentCustomRecords,
     query,
-    requestedCustomRecordTypeSet,
+    requestedCustomRecordTypes,
     requestedCustomRecordTypeScriptIds,
-    serviceCustomRecordTypeSet,
-  )
+    serviceCustomRecordTypes,
+  })
 
   const deletedCustomRecordTypes = currentCustomRecordTypes
-    .filter(customType => !serviceCustomRecordTypeSet.has(customType.serviceID))
+    .filter(customType => !serviceCustomRecordTypes.has(customType.serviceID))
     .map(customType => customType.elemID)
 
   return deletedCustomRecordTypes.concat(deletedCustomRecordsFromFetchResult).concat(deletedCustomRecordsFromService)
@@ -251,23 +266,23 @@ export const getDeletedElements = async ({
       currentDataElements,
     } = await getCurrentElements(elementsSource, fetchQuery, requestedDataTypes)
 
-    const [serviceCustomRecordTypes, serviceStandardInstances] = _.partition(
+    const [serviceCustomRecordTypeList, serviceStandardInstanceList] = _.partition(
       serviceInstanceIds, objectId => objectId.type === CUSTOM_RECORD_TYPE
     )
 
-    const deletedCustomRecords = calculateDeletedCustomRecords(
+    const deletedCustomRecords = calculateDeletedCustomRecords({
       client,
       currentCustomRecords,
       currentCustomRecordTypes,
-      fetchQuery,
+      query: fetchQuery,
       serviceCustomRecords,
-      requestedCustomRecordTypes,
-      serviceCustomRecordTypes,
-    )
+      requestedCustomRecordTypeList: requestedCustomRecordTypes,
+      serviceCustomRecordTypeList,
+    })
 
     const deletedInstances = calculateDeletedStandardInstances(
       currentStandardInstances,
-      serviceStandardInstances,
+      serviceStandardInstanceList,
     )
 
     const deletedDataElements = calculateDeletedDataElements(
@@ -277,7 +292,7 @@ export const getDeletedElements = async ({
 
     return { deletedElements: deletedInstances.concat(deletedDataElements).concat(await deletedCustomRecords) }
   } catch (e) {
-    const errorMessage = 'Failed calculating deleted element'
+    const errorMessage = 'Failed calculating deleted elements'
     log.error(`${errorMessage}: %o`, e)
     return { errors: [{ message: errorMessage, severity: 'Error' }] }
   }

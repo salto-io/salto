@@ -82,8 +82,7 @@ describe('deletion calculator', () => {
         'custom_record',
         customRecordType2,
         { [SCRIPT_ID]: 'custom_record_script_id' },
-        [],
-        { [METADATA_TYPE]: CUSTOM_RECORD_TYPE }
+        []
       )
       const dataElement = new InstanceElement(
         'data_element',

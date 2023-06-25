@@ -946,7 +946,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   EmailTemplate: {
     transformation: {
-      idFields: [],
+      idFields: ['name'],
       extendsParentId: true,
       serviceIdField: 'name',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),

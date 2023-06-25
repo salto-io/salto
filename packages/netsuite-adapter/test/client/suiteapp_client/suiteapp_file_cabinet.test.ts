@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { NetsuiteQuery } from '../../../src/query'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
-import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable } from '../../../src/client/suiteapp_client/suiteapp_file_cabinet'
+import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable, SUITEBUNDLES_DISABLED_ERROR } from '../../../src/client/suiteapp_client/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
 import { customtransactiontypeType } from '../../../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../../../src/client/suiteapp_client/types'
@@ -533,6 +533,14 @@ describe('suiteapp_file_cabinet', () => {
         expectedResults[1],
         expectedResults[3],
       ])
+    })
+
+    it('should return remove \'bundleable\' from query and try again if SuiteBundles ins\'t enabled', async () => {
+      mockSuiteAppClient.runSuiteQL.mockRejectedValueOnce(Error(SUITEBUNDLES_DISABLED_ERROR))
+      await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(1, "SELECT name, id, bundleable, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(2, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(4, 'SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url FROM file WHERE folder IN (5, 3, 4) ORDER BY id ASC')
     })
   })
 

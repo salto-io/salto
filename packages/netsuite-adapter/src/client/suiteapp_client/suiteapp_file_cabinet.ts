@@ -130,7 +130,6 @@ const FILES_SCHEMA = {
       'isinactive',
       'isonline',
       'addtimestamptourl',
-      'hideinbundle',
       'folder',
     ],
   },
@@ -163,6 +162,8 @@ const FILES_CHUNK_SIZE = 5 * 1024 * 1024
 const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 const MAX_ITEMS_IN_WHERE_QUERY = 200
+export const SUITEBUNDLES_DISABLED_ERROR = 'Failed to list folders. Please verify that the "Create bundles with SuiteBundler" feature is enabled in the account.'
+
 
 export const THROW_ON_MISSING_FEATURE_ERROR: Record<string, string> = {
   'Search error occurred: Unknown identifier \'bundleable\'':
@@ -236,15 +237,7 @@ export const createSuiteAppFileCabinetOperations = (suiteAppClient: SuiteAppClie
 SuiteAppFileCabinetOperations => {
   let fileCabinetResults: FileCabinetResults
 
-  const queryFolders = (
-    whereQuery: string
-  ): Promise<FolderResult[]> => retryOnRetryableError(async () => {
-    const foldersResults = await suiteAppClient.runSuiteQL(
-      'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
-      + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`,
-      THROW_ON_MISSING_FEATURE_ERROR,
-    )
-
+  const validateFoldersResults = (foldersResults: Record<string, unknown>[] | undefined): FolderResult[] => {
     if (foldersResults === undefined) {
       throw new RetryableError(new Error('Failed to list folders'))
     }
@@ -260,9 +253,27 @@ SuiteAppFileCabinetOperations => {
     }
 
     return foldersResults
+  }
+
+  const queryFolders = (
+    whereQuery: string
+  ): Promise<{folderResults: FolderResult[]; isSuiteBundlesEnabled: boolean}> => retryOnRetryableError(async () => {
+    const foldersQuery = 'SELECT name, id, bundleable, isinactive, isprivate, description, parent'
+    + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
+    try {
+      const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
+      return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
+    } catch (e) {
+      if (e.message === SUITEBUNDLES_DISABLED_ERROR) {
+        const noBundleableQuery = foldersQuery.replace(', bundleable', '')
+        const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)
+        return { folderResults: validateFoldersResults(queryResult), isSuiteBundlesEnabled: false }
+      }
+      throw e
+    }
   })
 
-  const queryTopLevelFolders = async (): Promise<FolderResult[]> =>
+  const queryTopLevelFolders = async (): Promise<{folderResults: FolderResult[]; isSuiteBundlesEnabled: boolean}> =>
     queryFolders('istoplevel = \'T\'')
 
   const querySubFolders = async (topLevelFolders: FolderResult[]): Promise<FolderResult[]> => {
@@ -270,20 +281,22 @@ SuiteAppFileCabinetOperations => {
     const whereQuery = topLevelFolders.length > 0
       ? `${subFolderCriteria} AND (${topLevelFolders.map(folder => `appfolder LIKE '${folder.name}%'`).join(' OR ')})`
       : subFolderCriteria
-    return queryFolders(whereQuery)
+    return (await queryFolders(whereQuery)).folderResults
   }
 
   const queryFiles = (
-    folderIdsToQuery: string[]
+    folderIdsToQuery: string[],
+    isSuiteBundlesEnabled: boolean,
   ): Promise<FileResult[]> => retryOnRetryableError(async () => {
     const fileCriteria = 'hideinbundle = \'F\''
     const whereQueries = _.chunk(folderIdsToQuery, MAX_ITEMS_IN_WHERE_QUERY).map(foldersToQueryChunk =>
-      `${fileCriteria} AND folder IN (${foldersToQueryChunk.join(', ')})`)
+      (isSuiteBundlesEnabled ? `${fileCriteria} AND ` : '').concat(`folder IN (${foldersToQueryChunk.join(', ')})`))
     const results = await Promise.all(whereQueries.map(async whereQuery => {
+      const selectQuery = isSuiteBundlesEnabled
+        ? 'SELECT name, id, filesize, bundleable, isinactive, isonline, addtimestamptourl, hideinbundle, description, folder, islink, url'
+        : 'SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url'
       const filesResults = await suiteAppClient.runSuiteQL(
-        'SELECT name, id, filesize, bundleable, isinactive, isonline,'
-        + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
-        + ` FROM file WHERE ${whereQuery} ORDER BY id ASC`
+        `${selectQuery} FROM file WHERE ${whereQuery} ORDER BY id ASC`
       )
 
       if (filesResults === undefined) {
@@ -357,7 +370,8 @@ SuiteAppFileCabinetOperations => {
 
   const queryFileCabinet = async (query: NetsuiteQuery): Promise<FileCabinetResults> => {
     if (fileCabinetResults === undefined) {
-      const topLevelFoldersResults = (await queryTopLevelFolders())
+      const { folderResults, isSuiteBundlesEnabled } = await queryTopLevelFolders()
+      const topLevelFoldersResults = folderResults
         .filter(folder => query.isParentFolderMatch(`/${folder.name}`))
 
       if (topLevelFoldersResults.length === 0) {
@@ -381,7 +395,8 @@ SuiteAppFileCabinetOperations => {
       )
       log.debug('removed the following %d folder before querying files: %o', removedFolders.length, removedFolders)
       const filesResults = filteredFolderResults.length > 0 ? await queryFiles(
-        filteredFolderResults.map(folder => folder.id)
+        filteredFolderResults.map(folder => folder.id),
+        isSuiteBundlesEnabled
       ) : []
       const filteredFilesResults = removeFilesWithoutParentFolder(filesResults, filteredFolderResults)
         .map(file => ({ path: [...fullPathParts(idToFolder[file.folder], idToFolder), file.name], ...file }))

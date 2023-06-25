@@ -21,7 +21,7 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
 
 /**
- * Warns the user if he activates a feature, some features maybe cost money or be limited
+ * Warns the user if he activates a feature, some features may cost money or be limited
  */
 export const featureActivationValidator: ChangeValidator = async changes => {
   const accountSettingsChange = changes
@@ -35,6 +35,7 @@ export const featureActivationValidator: ChangeValidator = async changes => {
 
   const activatedFeatures = detailedCompare(accountSettingsChange.data.before, accountSettingsChange.data.after)
     .filter(isModificationChange)
+    // zendesk.account_settings.instance._config.active_features.<feature_name>
     .filter(detailedChange => detailedChange.id.getFullNameParts()[4] === 'active_features')
     .filter(detailedChange => detailedChange.data.before === false && detailedChange.data.after === true)
     .map(detailedChange => detailedChange.id.name)

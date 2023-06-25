@@ -22,7 +22,7 @@ const TYPES_TO_FIELDS: Record<string, string[]> = {
   [APPLICATION_TYPE_NAME]: ['appUserSchema'],
   [AUTHORIZATION_POLICY_RULE]: ['policyRules'],
   ...Object.fromEntries(POLICY_TYPE_NAMES.map(typeName => [typeName, ['policyRules']])),
-  Brand: ['theme'],
+  Brand: ['theme', 'emailTemplates'],
 }
 
 /**

@@ -28,7 +28,6 @@ import {
   parentAnnotationToHaveSingleValueValidatorCreator,
   customRoleNameValidator,
   customRoleRemovalValidator,
-  invalidActionsValidator,
   orderInstanceContainsAllTheInstancesValidator,
   triggerOrderInstanceContainsAllTheInstancesValidator,
   brandCreationValidator,
@@ -67,6 +66,7 @@ import {
   additionOfTicketStatusForTicketFormValidator,
   defaultDynamicContentItemVariantValidator,
   featureActivationValidator,
+  deflectionActionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -110,7 +110,6 @@ export default ({
     noDuplicateLocaleIdInDynamicContentItemValidator,
     onlyOneTicketFormDefaultValidator,
     customRoleNameValidator,
-    invalidActionsValidator,
     orderInstanceContainsAllTheInstancesValidator,
     triggerOrderInstanceContainsAllTheInstancesValidator,
     brandCreationValidator(client),
@@ -146,6 +145,7 @@ export default ({
     additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariantValidator,
     featureActivationValidator,
+    deflectionActionValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

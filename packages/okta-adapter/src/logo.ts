@@ -27,7 +27,6 @@ import { extractIdFromUrl } from './utils'
 const { SUBTYPES_PATH, TYPES_PATH, RECORDS_PATH } = elementsUtils
 
 type BrandFileValues = {
-  fileName: string
   fileType: string
   urlSuffix: string
 }
@@ -35,12 +34,10 @@ type BrandFileValues = {
 // https://developer.okta.com/docs/reference/api/brands/#response-10
 export const LOGO_TYPES_TO_VALUES: Record<string, BrandFileValues> = {
   [BRAND_LOGO_TYPE_NAME]: {
-    fileName: 'brandLogo',
     fileType: 'png',
     urlSuffix: 'logo',
   },
   [FAV_ICON_TYPE_NAME]: {
-    fileName: 'favicon',
     fileType: 'ico',
     urlSuffix: 'favicon',
   },
@@ -114,7 +111,7 @@ export const deployLogo = async (
   }
 }
 
-export const createLogoType = (objectTypeName: string): ObjectType =>
+export const createFileType = (objectTypeName: string): ObjectType =>
   new ObjectType({
     elemID: new ElemID(OKTA, objectTypeName),
     fields: {

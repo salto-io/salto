@@ -20,6 +20,15 @@ import { Change, ChangeGroupId, ChangeGroupIdFunction, ChangeId, getChangeData }
 const { awu } = collections.asynciterable
 export type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
+
+/**
+ * Make an unified ChangeGroupIdFunction which classified changes to distinguished groupIDs above
+ * input ChangeIdFunctions. When no ChangeIdFunction match the change, classify change by name.
+ * Each ChangeIdFunction is responsible for specific groupIds and should return suitable ID (string)
+ * for change which should be in one of its groupIDs and undefined otherwise.
+ * @param changeIdProviders Array of ChangeIdFunctions.
+ * @returns: Unified ChangeGroupIdFunction.
+ */
 export const getChangeGroupIdsFunc = (
   changeIdProviders: ChangeIdFunction[]
 ): ChangeGroupIdFunction => (async changes => ({

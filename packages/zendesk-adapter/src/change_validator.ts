@@ -65,8 +65,8 @@ import {
   guideDisabledValidator,
   additionOfTicketStatusForTicketFormValidator,
   defaultDynamicContentItemVariantValidator,
-  deflectionActionValidator,
   featureActivationValidator,
+  deflectionActionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -144,8 +144,8 @@ export default ({
     guideDisabledValidator(fetchConfig),
     additionOfTicketStatusForTicketFormValidator,
     defaultDynamicContentItemVariantValidator,
-    deflectionActionValidator,
     featureActivationValidator,
+    deflectionActionValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

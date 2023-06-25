@@ -63,9 +63,9 @@ describe('ScriptRunner linkTypes in DC', () => {
       )
     })
     it('should not replace FIELD_LINK_DIRECTION if wrong format', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = '10001 inward|||10003-outward-wow'
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = '10001|||10003-outward-wow'
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual(['10001 inward', '10003-outward-wow'])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual(['10003-outward-wow', { linkType: '10001' }])
     })
     it('should replace FIELD_LINK_TYPE', async () => {
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE = '10002 inward'
@@ -75,12 +75,23 @@ describe('ScriptRunner linkTypes in DC', () => {
       )
     })
     it('should not replace FIELD_LINK_TYPE if wrong format', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE = '10001-inward'
-      await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE).toEqual('10001-inward')
       instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE = '10001 inward wow'
       await filter.onFetch([instance])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE).toEqual('10001 inward wow')
+    })
+    it('should use structure if no separator in FIELD_LINK_DIRECTION', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = '10001'
+      await filter.onFetch([instance])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual(
+        [{ linkType: '10001' }]
+      )
+    })
+    it('should use outward direction in  FIELD_LINK_TYPE if not separator', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE = '10002'
+      await filter.onFetch([instance])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE).toEqual(
+        { linkType: '10002', direction: 'outward' }
+      )
     })
   })
   describe('pre deploy', () => {
@@ -97,6 +108,11 @@ describe('ScriptRunner linkTypes in DC', () => {
       await filter.preDeploy([toChange({ after: instance })])
       expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_TYPE).toEqual('10001 inward')
     })
+    it('should replace object if only linkType', async () => {
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = [{ linkType: '10001' }]
+      await filter.preDeploy([toChange({ after: instance })])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual('10001')
+    })
   })
   describe('on deploy', () => {
     it('should replace FIELD_LINK_DIRECTION', async () => {
@@ -109,9 +125,9 @@ describe('ScriptRunner linkTypes in DC', () => {
       )
     })
     it('should not replace FIELD_LINK_DIRECTION if wrong format', async () => {
-      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = '10001 inward|||10003-outward-wow'
+      instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION = '10001-inward-more|||10003'
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual(['10001 inward', '10003-outward-wow'])
+      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.FIELD_LINK_DIRECTION).toEqual(['10001-inward-more', { linkType: '10003' }])
     })
   })
 })

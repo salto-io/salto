@@ -188,7 +188,7 @@ describe('sdf client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const accountId = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
+      const { accountId } = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
@@ -205,7 +205,7 @@ describe('sdf client', () => {
         }),
       })
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const accountId = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
+      const { accountId } = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, credentialsWithSpaces)
       expect(accountId).toEqual('account with space')

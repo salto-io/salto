@@ -21,7 +21,7 @@ import { detailedCompare } from '@salto-io/adapter-utils'
 import { ACCOUNT_SETTING_TYPE_NAME } from '../filters/account_settings'
 
 /**
- * Warns the user if he activates a feature, some features maybe cost money or be limited
+ * Warns the user if he activates a feature, some features may cost money or be limited
  */
 export const featureActivationValidator: ChangeValidator = async changes => {
   const accountSettingsChange = changes
@@ -35,16 +35,15 @@ export const featureActivationValidator: ChangeValidator = async changes => {
 
   const activatedFeatures = detailedCompare(accountSettingsChange.data.before, accountSettingsChange.data.after)
     .filter(isModificationChange)
+    // zendesk.account_settings.instance._config.active_features.<feature_name>
     .filter(detailedChange => detailedChange.id.getFullNameParts()[4] === 'active_features')
     .filter(detailedChange => detailedChange.data.before === false && detailedChange.data.after === true)
     .map(detailedChange => detailedChange.id.name)
 
-
-  // TODO: talk to Tomer
   return activatedFeatures.length === 0 ? [] : [{
     elemID: accountSettingsChange.data.after.elemID,
     severity: 'Info',
-    message: 'Features activated',
-    detailedMessage: `The features ${activatedFeatures.join(', ')} were activated, this may cost moneeeey`,
+    message: 'Activating new features may include additional cost',
+    detailedMessage: `Features ${activatedFeatures.join(', ')} are marked for activation and may require additional cost in order to operate`,
   }]
 }

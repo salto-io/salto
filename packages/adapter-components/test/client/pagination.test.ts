@@ -15,7 +15,8 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, getWithOffsetAndLimit, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination, getAllPagesWithOffsetAndTotal } from '../../src/client'
+import * as traverseAsync from '../../src/client/pagination/pagination_async'
 
 const { toArrayAsync } = collections.asynciterable
 const { makeArray } = collections.array
@@ -23,7 +24,10 @@ const { makeArray } = collections.array
 const extractPageEntries: PageEntriesExtractor = page => makeArray(page) as ResponseValue[]
 
 describe('client_pagination', () => {
-  describe('traverseRequests', () => {
+  describe.each([
+    [traverseRequests, 'traverseRequests'],
+    [traverseAsync.traverseRequestsAsync, 'traverseRequestsAsync'],
+  ])('traverseRequests with function %s', (traverseRequestsFunc, funcName) => {
     const client: MockInterface<HTTPReadClientInterface> = {
       getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
       getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
@@ -37,7 +41,7 @@ describe('client_pagination', () => {
       customEntryExtractor.mockReset()
     })
 
-    it('should query the pagination function even if paginationField is not specified', async () => {
+    it(`${funcName} should query the pagination function even if paginationField is not specified`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -46,7 +50,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -62,7 +66,7 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep' })
     })
 
-    it('should use query args', async () => {
+    it(`${funcName}  should use query args`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -71,7 +75,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -93,7 +97,7 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a' }], pageSize: 123, responseData: { a: 'a' } })
     })
 
-    it('should use recursive query args', async () => {
+    it(`${funcName}  should use recursive query args`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [
@@ -129,7 +133,7 @@ describe('client_pagination', () => {
       }))
       paginationFunc.mockReturnValueOnce([]).mockReturnValueOnce([])
         .mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -156,7 +160,7 @@ describe('client_pagination', () => {
       expect(paginationFunc).toHaveBeenCalledTimes(3)
     })
 
-    it('should stop querying if pagination function returns empty', async () => {
+    it(`${funcName}  should stop querying if pagination function returns empty`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           a: 'a',
@@ -165,7 +169,7 @@ describe('client_pagination', () => {
         statusText: 'OK',
       }))
       paginationFunc.mockReturnValueOnce([])
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -192,7 +196,7 @@ describe('client_pagination', () => {
       })
     })
 
-    it('should query multiple pages if pagination function returns next pages', async () => {
+    it(`${funcName}  should query multiple pages if pagination function returns next pages`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -228,7 +232,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -262,7 +266,7 @@ describe('client_pagination', () => {
       })
     })
 
-    it('should use page entries from paginator result if provided', async () => {
+    it(`${funcName}  should use page entries from paginator result if provided`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -285,7 +289,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries,
         customEntryExtractor
@@ -305,7 +309,7 @@ describe('client_pagination', () => {
         page: [{ something: 'a' }],
       })
     })
-    it('should continue querying while there are results even if extractor returns empty', async () => {
+    it(`${funcName}  should continue querying while there are results even if extractor returns empty`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{ a: 'a1' }],
@@ -328,7 +332,7 @@ describe('client_pagination', () => {
           paginationField: 'page',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries,
         customEntryExtractor
@@ -348,7 +352,7 @@ describe('client_pagination', () => {
         page: [],
       })
     })
-    it('should fail gracefully on HTTP errors', async () => {
+    it(`${funcName}  should fail gracefully on HTTP errors`, async () => {
       client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
         data: {
           items: [{
@@ -370,7 +374,7 @@ describe('client_pagination', () => {
           arg1: 'val1',
         },
       }
-      const result = (await toArrayAsync(traverseRequests(
+      const result = (await toArrayAsync(traverseRequestsFunc(
         paginationFunc,
         extractPageEntries
       )({
@@ -384,6 +388,122 @@ describe('client_pagination', () => {
       expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
       expect(paginationFunc).toHaveBeenCalledTimes(1)
       expect(paginationFunc).toHaveBeenCalledWith({ currentParams: {}, getParams, page: [{ a: 'a1' }], pageSize: 1, responseData: { items: [{ a: 'a1' }] } })
+    })
+    it(`${funcName}  should throw if encountered unknown HTTP exception errors`, async () => {
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a1',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+        .mockRejectedValueOnce(new Error('Something went wrong'))
+        .mockRejectedValueOnce(new Error('Something else went wrong'))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
+      const getParams = {
+        url: '/ep',
+        paginationField: 'page',
+        queryParams: {
+          arg1: 'val1',
+        },
+      }
+      await expect(toArrayAsync(traverseRequestsFunc(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }))).rejects.toThrow('Something went wrong')
+    })
+  })
+  describe('traverse requests async', () => {
+    const getParams = {
+      url: '/ep',
+      paginationField: 'page',
+      queryParams: {
+        arg1: 'val1',
+      },
+    }
+    const getNthItem = async (iterable: AsyncIterable<ResponseValue[]>, n: number)
+    : Promise<ResponseValue[] | undefined> => {
+      let currentNum = 0
+      for await (const item of iterable) {
+        if (currentNum === n) {
+          return item
+        }
+        currentNum += 1
+      }
+      return undefined
+    }
+    const client: MockInterface<HTTPReadClientInterface> = {
+      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
+    }
+    const paginationFunc = mockFunction<PaginationFunc>()
+    beforeEach(() => {
+      client.getSinglePage.mockReset()
+      client.getPageSize.mockReset()
+      paginationFunc.mockReset()
+      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a1',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a2',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      })).mockResolvedValueOnce(Promise.resolve({
+        data: {
+          items: [{
+            a: 'a3',
+          }],
+        },
+        status: 200,
+        statusText: 'OK',
+      }))
+      paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
+        .mockReturnValueOnce([{ page: '6' }]).mockReturnValueOnce([{ page: '8' }])
+    })
+    it('should not call additional calls before asked', async () => {
+      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }), 0)
+      expect(result).toEqual([{ a: 'a1' }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(0)
+    })
+    it('should call pages in parallel and return the correct page', async () => {
+      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
+        paginationFunc,
+        extractPageEntries
+      )({
+        client,
+        pageSize: 1,
+        getParams,
+      }), 1)
+      expect(result).toEqual([{ a: 'a2' }])
+      expect(client.getSinglePage).toHaveBeenCalledTimes(3)
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
+      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4', arg1: 'val1' } })
+      expect(paginationFunc).toHaveBeenCalledTimes(1)
     })
   })
   describe('getWithItemIndexPagination', () => {
@@ -930,48 +1050,75 @@ describe('client_pagination', () => {
     })
   })
 
-  describe('getWithOffsetAndLimit', () => {
+  describe('getAllPagesWithOffsetAndTotal', () => {
     let paginate: PaginationFunc
     beforeEach(async () => {
-      paginate = getWithOffsetAndLimit()
+      paginate = getAllPagesWithOffsetAndTotal()
     })
     describe('with paginationField', () => {
       describe('when response is a valid page', () => {
-        it('should query next page based on pagination field and number of entries in page', () => {
+        it('should query next pages based on pagination field and number of entries in page', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
             currentParams: {},
-            responseData: { isLast: false, startAt: 0, values: [1, 2] },
-            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
-          })).toEqual([{ startAt: '2' }])
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toEqual([{ startAt: '2' }, { startAt: '4' }, { startAt: '6' }, { startAt: '8' }])
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: {},
+            responseData: { total: 11, startAt: 0, values: [1, 2] },
+            page: [{ total: 11, startAt: 0, values: [1, 2] }],
+          })).toEqual([{ startAt: '2' }, { startAt: '4' }, { startAt: '6' }, { startAt: '8' }, { startAt: '10' }])
+        })
+        it('should not query next pages if not first page', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
             currentParams: { startAt: '2' },
-            responseData: { isLast: false, startAt: 2, values: [3] },
-            page: [{ isLast: false, startAt: 2, values: [3] }],
-          })).toEqual([{ startAt: '3' }])
+            responseData: { total: 10, startAt: 2, values: [3, 4] },
+            page: [{ total: 10, startAt: 2, values: [3, 4] }],
+          })).toEqual([])
         })
-        it('should stop querying when isLast is true', () => {
+        it('should not query next pages if got all answers', () => {
           expect(paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'startAt' },
-            currentParams: { startAt: '3' },
-            responseData: { isLast: true, startAt: 3, values: [4, 5] },
-            page: [{ isLast: true, startAt: 3, values: [4, 5] }],
+            currentParams: { },
+            responseData: { total: 2, startAt: 0, values: [3, 4] },
+            page: [{ total: 2, startAt: 0, values: [3, 4] }],
           })).toEqual([])
         })
       })
       describe('when response is not a valid page', () => {
-        it('should throw error', async () => {
+        it('should throw error when wrong pagination field', async () => {
           expect(() => paginate({
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'wrong' },
             currentParams: {},
-            responseData: { isLast: false, startAt: 0, values: [1, 2] },
-            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
           })).toThrow('Response from /ep expected page with pagination field wrong')
+        })
+        it('should return empty of there is no pagination field', () => {
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep' },
+            currentParams: { },
+            responseData: { total: 10, startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toEqual([])
+        })
+        it('should throw error when wrong response structure', () => {
+          expect(() => paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: { },
+            responseData: { startAt: 0, values: [1, 2] },
+            page: [{ total: 10, startAt: 0, values: [1, 2] }],
+          })).toThrow('Response from /ep expected page with pagination field startAt, got {"startAt":0,"values":[1,2]}')
         })
       })
     })
@@ -983,8 +1130,8 @@ describe('client_pagination', () => {
             pageSize: 2,
             getParams: { url: '/ep', paginationField: 'pagination.startAt' },
             currentParams: {},
-            responseData: { isLast: false, pagination: { startAt: 0 }, values: [1, 2] },
-            page: [{ isLast: false, pagination: { startAt: 0 }, values: [1, 2] }],
+            responseData: { total: 4, pagination: { startAt: 0 }, values: [1, 2] },
+            page: [{ totak: 4, pagination: { startAt: 0 }, values: [1, 2] }],
           })).toEqual([{ 'pagination.startAt': '2' }])
         })
       })
@@ -992,12 +1139,15 @@ describe('client_pagination', () => {
   })
 
   describe('createPaginator', () => {
-    const client: MockInterface<HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
-    }
+    let client: MockInterface<HTTPReadClientInterface>
+    beforeEach(() => {
+      client = {
+        getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
+        getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>().mockReturnValueOnce(3),
+      }
+    })
 
-    it('should call the pagination function with the right paramters', () => {
+    it('should call the pagination function with the right parameters', () => {
       const paginationFuncCreator: PaginationFuncCreator = mockFunction<PaginationFuncCreator>()
       const paginator = createPaginator({ client, paginationFuncCreator })
       const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
@@ -1008,6 +1158,20 @@ describe('client_pagination', () => {
         pageSize: 3,
         getParams: params,
       })
+    })
+    it('should call the async pagination function with the right parameters', () => {
+      const paginationFuncCreator = mockFunction<PaginationFuncCreator>()
+      const traverseSpy = jest.spyOn(traverseAsync, 'traverseRequestsAsync')
+      const paginator = createPaginator({ client, paginationFuncCreator, asyncRun: true })
+      const params = { url: 'url', queryParams: { a: 'b' }, paginationField: 'abc' }
+      paginator(params, extractPageEntries)
+      expect(paginationFuncCreator).toHaveBeenCalledTimes(1)
+      expect(paginationFuncCreator).toHaveBeenLastCalledWith({
+        client,
+        pageSize: 3,
+        getParams: params,
+      })
+      expect(traverseSpy).toHaveBeenCalledTimes(1)
     })
   })
 })

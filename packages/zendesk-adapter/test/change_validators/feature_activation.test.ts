@@ -45,8 +45,8 @@ describe('featureActivationValidator', () => {
     expect(errors).toMatchObject([{
       elemID: accountSetting.elemID,
       severity: 'Info',
-      message: 'Features activated',
-      detailedMessage: 'The features a, b were activated, this may cost moneeeey',
+      message: 'Activating new features may include additional cost',
+      detailedMessage: 'Features a, b are marked for activation and may require additional cost in order to operate',
     }])
   })
 

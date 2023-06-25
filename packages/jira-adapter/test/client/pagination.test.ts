@@ -21,7 +21,7 @@ import JiraClient from '../../src/client/client'
 import { removeScopedObjects } from '../../src/client/pagination'
 
 const { toArrayAsync } = collections.asynciterable
-const { createPaginator, getWithOffsetAndLimit } = clientUtils
+const { createPaginator, getAllPagesWithOffsetAndTotal } = clientUtils
 const { extractPageEntriesByNestedField } = elementUtils.swagger
 
 describe('pageByOffset', () => {
@@ -50,7 +50,7 @@ describe('pageByOffset', () => {
       const args = { url: 'http://myjira.net/thing' }
       const paginator = createPaginator({
         client,
-        paginationFuncCreator: getWithOffsetAndLimit,
+        paginationFuncCreator: getAllPagesWithOffsetAndTotal,
         customEntryExtractor: removeScopedObjects,
       })
       responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
@@ -81,7 +81,7 @@ describe('pageByOffset', () => {
       const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
       const paginator = createPaginator({
         client,
-        paginationFuncCreator: getWithOffsetAndLimit,
+        paginationFuncCreator: getAllPagesWithOffsetAndTotal,
         customEntryExtractor: removeScopedObjects,
       })
       responses = await toArrayAsync(paginator(args, extractPageEntriesByNestedField()))
@@ -99,7 +99,7 @@ describe('pageByOffset', () => {
       const args = { url: 'http://myjira.net/thing/1', paginationField: 'startAt' }
       const paginator = createPaginator({
         client,
-        paginationFuncCreator: getWithOffsetAndLimit,
+        paginationFuncCreator: getAllPagesWithOffsetAndTotal,
         customEntryExtractor: removeScopedObjects,
       })
       responseIter = paginator(args, extractPageEntriesByNestedField())

@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, ReadOnlyElementsSource, AdapterOperations, AccountInfo } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { OktaConfig, DEFAULT_CONFIG } from '../src/config'
@@ -46,12 +46,12 @@ describe('adapter creator', () => {
 
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
-      let accountId: AccountId
+      let accountId: string
       beforeEach(async () => {
-        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' })
-        accountId = await adapter.validateCredentials(
+        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' });
+        ({ accountId } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
-        )
+        ))
       })
       it('should make an authenticated rest call', () => {
         expect(mockAxiosAdapter.history).toBeDefined()
@@ -62,7 +62,7 @@ describe('adapter creator', () => {
     })
 
     describe('with invalid credentials', () => {
-      let result: Promise<AccountId>
+      let result: Promise<AccountInfo>
       beforeEach(() => {
         mockAxiosAdapter.onGet().reply(403)
         result = adapter.validateCredentials(

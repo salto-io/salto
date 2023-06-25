@@ -33,6 +33,7 @@ import {
   isCredentialError,
   DeployExtraProperties,
   ReferenceMapping,
+  AccountInfo,
   isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'

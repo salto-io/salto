@@ -43,7 +43,7 @@ type SettingsInstanceWithAutomaticAnswers = {
 }
 
 const isValidSettings = (instance: Value): instance is SettingsInstanceWithAutomaticAnswers =>
-  _.isBoolean(instance?.value?.active_features?.automatic_answers)
+  _.isObject(instance?.value?.active_features)
 
 const isDeflectionAction = (action: Values): boolean =>
   _.isPlainObject(action) && action.field === DEFLECTION_TYPE
@@ -75,7 +75,7 @@ export const deflectionActionValidator: ChangeValidator = async (
   )
 
   if (!isValidSettings(accountSettings)) {
-    log.warn('Failed to run deflectionActionValidator because account settings instance is invalid')
+    log.error('Failed to run deflectionActionValidator because account settings instance is invalid')
     return []
   }
 

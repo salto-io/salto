@@ -63,8 +63,10 @@ export const mockClient = (): ClientWithMockConnection => {
     },
     connection: {
       login: async () => ({
-        accountId: 'test',
         ...connection,
+        accountInfo: {
+          accountId: 'test',
+        },
       }),
     },
   })

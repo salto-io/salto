@@ -22,12 +22,13 @@ export type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
 
 /**
- * Make an unified ChangeGroupIdFunction which classified changes to distinguished groupIDs above
- * input ChangeIdFunctions. When no ChangeIdFunction match the change, classify change by name.
- * Each ChangeIdFunction is responsible for specific groupIds and should return suitable ID (string)
- * for change which should be in one of its groupIDs and undefined otherwise.
- * @param changeIdProviders Array of ChangeIdFunctions.
- * @returns: Unified ChangeGroupIdFunction.
+ * Make a unified ChangeGroupIdFunction that classifies changes into distinct groupIDs
+ * based on the input ChangeIdFunctions.
+ * If no ChangeIdFunction matches the change, it will be classified by full name.
+ * Each ChangeIdFunction is responsible for specific groupIDs and should return a suitable ID
+ * (string) for a change that belongs to one of its groupIDs and 'undefined' otherwise.
+ * @param changeIdProviders An array of ChangeIdFunctions.
+ * @returns: A Unified ChangeGroupIdFunction.
  */
 export const getChangeGroupIdsFunc = (
   changeIdProviders: ChangeIdFunction[]

@@ -399,6 +399,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       idFields: [],
+      extendsParentId: true,
       dataField: '.',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
         { fieldName: '$schema' },
@@ -862,6 +863,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   BrandTheme: {
     transformation: {
       idFields: [],
+      extendsParentId: true,
       serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },
@@ -945,6 +947,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   EmailTemplate: {
     transformation: {
       idFields: [],
+      extendsParentId: true,
       serviceIdField: 'name',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },

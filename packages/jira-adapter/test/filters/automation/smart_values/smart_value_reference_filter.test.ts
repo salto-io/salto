@@ -126,8 +126,7 @@ describe('smart_value_reference_filter', () => {
               },
             ],
           })
-        automation2.value.components[0].value = true
-        expect(async () => filter.onFetch([automation2])).not.toThrow()
+        await expect(filter.onFetch([automation2])).resolves.not.toThrow()
       })
     })
 

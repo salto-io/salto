@@ -39,12 +39,10 @@ export const featureActivationValidator: ChangeValidator = async changes => {
     .filter(detailedChange => detailedChange.data.before === false && detailedChange.data.after === true)
     .map(detailedChange => detailedChange.id.name)
 
-
-  // TODO: talk to Tomer
   return activatedFeatures.length === 0 ? [] : [{
     elemID: accountSettingsChange.data.after.elemID,
     severity: 'Info',
-    message: 'Features activated',
-    detailedMessage: `The features ${activatedFeatures.join(', ')} were activated, this may cost moneeeey`,
+    message: 'Activating new features may include additional cost',
+    detailedMessage: `Features ${activatedFeatures.join(', ')} are marked for activation and may require additional cost in order to operate`,
   }]
 }

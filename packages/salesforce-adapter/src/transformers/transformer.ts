@@ -941,54 +941,32 @@ const transformCompoundValues = async (
 const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
-  withNulls: boolean,
-): Promise<{record: SalesforceRecord; needsUpdate: boolean}> => {
-  let needsUpdate = false
+  withNulls: boolean
+): Promise<SalesforceRecord> => {
   const instanceType = await instance.getType()
   const values = {
     ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
-    ..._.mapValues(instance.value, val => {
-      if (isInstanceElement(val)) {
-        const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
-        if (referencedRecordId === undefined) {
-          needsUpdate = true
-          return null
-        }
-        return referencedRecordId
-      }
-      return val
-    }),
+    ...instance.value,
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
       values,
-      (v, k) => !isInstanceElement(v) && instanceType.fields[k]?.annotations[fieldAnnotationToFilterBy]
+      (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
-  return {
-    record: await transformCompoundValues(filteredRecordValues, instance),
-    needsUpdate,
-  }
+  return transformCompoundValues(filteredRecordValues, instance)
 }
 
-export const instancesToRecords = async (
-  instances: InstanceElement[],
-  fieldAnnotationToFilterBy: string,
-  withNulls: boolean,
-): Promise<{records: SalesforceRecord[]; instancesToUpdate: InstanceElement[]}> => {
-  const records: SalesforceRecord[] = []
-  const instancesToUpdate: InstanceElement[] = []
-  await awu(instances)
-    .forEach(async instance => {
-      const { record, needsUpdate } = await toRecord(instance, fieldAnnotationToFilterBy, withNulls)
-      records.push(record)
-      if (needsUpdate) {
-        instancesToUpdate.push(instance)
-      }
-    })
-  return { records, instancesToUpdate }
-}
+export const instancesToUpdateRecords = async (
+  instances: InstanceElement[]
+): Promise<SalesforceRecord[]> =>
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, true)))
+
+export const instancesToCreateRecords = (
+  instances: InstanceElement[]
+): Promise<SalesforceRecord[]> =>
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, false)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))

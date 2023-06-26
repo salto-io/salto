@@ -783,8 +783,6 @@ export type ReferenceResolverFinder = (
 export const generateReferenceResolverFinder = (
   defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
-// TODO how to get optional features from here?
-
   const referenceDefinitions = defs.map(
     def => FieldReferenceResolver.create(def)
   )

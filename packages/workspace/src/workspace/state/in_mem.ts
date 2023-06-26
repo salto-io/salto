@@ -13,18 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
+import {
+  DetailedChange,
+  Element,
+  ElemID,
+  getChangeData, isAdditionChange,
+  isRemovalChange,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
+import { applyDetailedChanges, detailedCompare } from '@salto-io/adapter-utils'
 import { getNestedStaticFiles } from '../nacl_files/nacl_file_update'
-import {
-  updatePathIndex,
-  overridePathIndex,
-  PathIndex,
-  overrideTopLevelPathIndex,
-} from '../path_index'
+import { PathIndex, updateTopLevelPathIndex, updatePathIndex } from '../path_index'
 import { RemoteMap } from '../remote_map'
-import { State, StateData } from './state'
+import { State, StateData, UpdateStateElementsArgs } from './state'
+import { getDanglingStaticFiles } from '../nacl_files/nacl_files_source'
 
 type ThenableIterable<T> = collections.asynciterable.ThenableIterable<T>
 
@@ -71,6 +75,76 @@ export const buildInMemState = (
     await (await stateData()).elements.delete(id)
   }
 
+  const updateAccounts = async (accounts?: string[]): Promise<void> => {
+    const data = await stateData()
+    const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
+    return getUpdateDate(data).setAll(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
+  }
+
+  const updateStatePathIndex = async (
+    unmergedElements: Element[],
+    removedElementsFullNames: Set<string>,
+  ): Promise<void> => {
+    const currentStateData = await stateData()
+    await updateTopLevelPathIndex({
+      pathIndex: currentStateData.topLevelPathIndex,
+      unmergedElements,
+      removedElementsFullNames,
+    })
+    await updatePathIndex({
+      pathIndex: currentStateData.pathIndex,
+      unmergedElements,
+      removedElementsFullNames,
+    })
+  }
+
+  const deleteRemovedStaticFiles = async (elemChanges: DetailedChange[]): Promise<void> => {
+    const { staticFilesSource } = await stateData()
+    const files = getDanglingStaticFiles(elemChanges)
+    await Promise.all(files.map(file => staticFilesSource.delete(file)))
+  }
+
+  const updateStateElements = async (changes: DetailedChange[]): Promise<void> => log.time(async () => {
+    const state = (await stateData()).elements
+    const changesByTopLevelElement = _.groupBy(
+      changes,
+      change => change.id.createTopLevelParentID().parent.getFullName()
+    )
+    await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
+      const elemID = elemChanges[0].id
+      // If the first change is top level, it means the element was added or removed, and it will include all changes
+      if (elemID.isTopLevel()) {
+        if (isRemovalChange(elemChanges[0])) {
+          await removeId(elemID)
+        } else if (isAdditionChange(elemChanges[0])) {
+          await state.set(getChangeData(elemChanges[0]))
+        }
+        return
+      }
+
+      // If the first change is not top level, it means this is a modification of an existing element
+      // We need to get that element, apply the changes and set it back
+      const elemTopLevel = elemID.createTopLevelParentID().parent
+      const updatedElem = (await state.get(elemTopLevel)).clone()
+      applyDetailedChanges(updatedElem, elemChanges)
+      await state.set(updatedElem)
+      await deleteRemovedStaticFiles(elemChanges)
+    })
+  }, 'updateStateElements')
+
+  // Sets the element and delete all the static files that no longer exists on it
+  const setElement = async (element: Element): Promise<void> => {
+    const state = await stateData()
+    const beforeElement = await state.elements.get(element.elemID)
+
+    const filesToDelete = beforeElement !== undefined
+      ? getDanglingStaticFiles(detailedCompare(beforeElement, element))
+      : []
+
+    await state.elements.set(element)
+    await Promise.all(filesToDelete.map(f => state.staticFilesSource.delete(f)))
+  }
+
   return {
     getAll: async (): Promise<AsyncIterable<Element>> => (await stateData()).elements.getAll(),
     list: async (): Promise<AsyncIterable<ElemID>> => (await stateData()).elements.list(),
@@ -83,58 +157,15 @@ export const buildInMemState = (
       )
       return (await stateData()).elements.deleteAll(ids)
     },
-    set: async (element: Element): Promise<void> =>
-      (await stateData()).elements.set(element),
-    setAll: async (elements: ThenableIterable<Element>): Promise<void> =>
-      (await stateData()).elements.setAll(elements),
+    set: setElement,
+    // This is inefficient, but this shouldn't be used and removing this function is not a small task
+    setAll: async (elements: ThenableIterable<Element>): Promise<void> => awu(elements).forEach(setElement),
     remove: removeId,
     isEmpty: async (): Promise<boolean> => (await stateData()).elements.isEmpty(),
-    override: (elements: AsyncIterable<Element>, accounts?: string[])
-      : Promise<void> => log.time(
-      async () => {
-        const data = await stateData()
-        const newAccounts = accounts ?? await awu(getUpdateDate(data).keys()).toArray()
-
-        await data.staticFilesSource.clear()
-
-        await data.elements.overide(elements)
-        return getUpdateDate(data).setAll(
-          awu(newAccounts.map(s => ({ key: s, value: new Date(Date.now()) })))
-        )
-      },
-      'state override'
-    ),
     getAccountsUpdateDates,
     getServicesUpdateDates: getAccountsUpdateDates,
     existingAccounts: async (): Promise<string[]> =>
       awu(getUpdateDate(await stateData()).keys()).toArray(),
-    overridePathIndex: async (unmergedElements: Element[]): Promise<void> => {
-      const currentStateData = await stateData()
-      await overridePathIndex(currentStateData.pathIndex, unmergedElements)
-      await overrideTopLevelPathIndex(currentStateData.topLevelPathIndex, unmergedElements)
-    },
-    updatePathIndex: async (
-      unmergedElements: Element[],
-      servicesNotToChange: string[]
-    ): Promise<void> => {
-      const currentStateData = await stateData()
-      await updatePathIndex(
-        {
-          index: currentStateData.pathIndex,
-          elements: unmergedElements,
-          accountsToMaintain: servicesNotToChange,
-          isTopLevel: false,
-        }
-      )
-      await updatePathIndex(
-        {
-          index: currentStateData.topLevelPathIndex,
-          elements: unmergedElements,
-          accountsToMaintain: servicesNotToChange,
-          isTopLevel: true,
-        }
-      )
-    },
     getPathIndex: async (): Promise<PathIndex> =>
       (await stateData()).pathIndex,
     getTopLevelPathIndex: async (): Promise<PathIndex> =>
@@ -167,5 +198,20 @@ export const buildInMemState = (
     calculateHash: async () => Promise.resolve(),
     getStateSaltoVersion: async () => (await stateData()).saltoMetadata.get('version'),
     setVersion: async (version: string) => (await stateData()).saltoMetadata.set('version', version),
+    updateStateFromChanges: async (
+      { changes, unmergedElements = [], fetchAccounts }: UpdateStateElementsArgs) => {
+      await updateStateElements(changes)
+      if (!_.isEmpty(fetchAccounts)) {
+        await updateAccounts(fetchAccounts)
+      }
+
+      const removedElementsFullNames = new Set(changes
+        .filter(isRemovalChange)
+        .map(change => change.id.getFullName()))
+
+      if (unmergedElements.length > 0 || removedElementsFullNames.size > 0) {
+        await updateStatePathIndex(unmergedElements, removedElementsFullNames)
+      }
+    },
   }
 }

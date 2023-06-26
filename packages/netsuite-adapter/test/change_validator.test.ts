@@ -59,6 +59,7 @@ describe('change validator', () => {
           failedCustomRecords: [],
         },
         elements: [],
+        deletedElements: [],
       }))
     })
     describe('without SuiteApp', () => {
@@ -134,6 +135,7 @@ describe('change validator', () => {
           failedCustomRecords: [],
         },
         elements: [serviceInstance],
+        deletedElements: [],
       }))
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {

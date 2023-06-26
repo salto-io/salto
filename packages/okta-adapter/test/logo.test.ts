@@ -18,7 +18,7 @@ import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, Re
 import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
 import OktaClient from '../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
-import { createLogoType, deployLogo, getLogo } from '../src/logo'
+import { createFileType, deployLogo, getLogo } from '../src/logo'
 import { mockClient } from './utils'
 
 describe('logo filter', () => {
@@ -47,9 +47,9 @@ describe('logo filter', () => {
   const fileName = 'app1'
   const link = 'https://ok12static.oktacdn.com/fs/bco/4/111'
   const appLogoType = new ObjectType({ elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME) })
-  describe('createLogoType', () => {
+  describe('createFileType', () => {
     it('should create logo type', () => {
-      const logoType = createLogoType(APP_LOGO_TYPE_NAME)
+      const logoType = createFileType(APP_LOGO_TYPE_NAME)
       expect(logoType.elemID.name).toEqual(APP_LOGO_TYPE_NAME)
       expect(logoType).toEqual(new ObjectType({
         elemID: new ElemID(OKTA, APP_LOGO_TYPE_NAME),

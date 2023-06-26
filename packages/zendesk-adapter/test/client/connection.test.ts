@@ -34,7 +34,7 @@ describe('client connection', () => {
         .onGet('/api/v2/account/settings').reply(200, { settings: {} })
         .onGet('/api/v2/a/b').reply(200, { something: 'bla' })
       const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
-      expect(apiConn.accountId).toEqual('https://abc.zendesk.com')
+      expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
 
       const getRes = apiConn.get('/api/v2/a/b')

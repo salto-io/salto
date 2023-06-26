@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AccountId, CredentialError } from '@salto-io/adapter-api'
+import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 
@@ -22,12 +22,12 @@ const BASE_URL = 'https://www.workato.com/api'
 
 export const validateCredentials = async ({ connection }: {
   connection: clientUtils.APIConnection
-}): Promise<AccountId> => {
+}): Promise<AccountInfo> => {
   try {
     await connection.get('/users/me')
     // there is no good stable account id in workato, so we default to empty string to avoid
     // preventing users from refreshing their credentials in the SaaS.
-    return ''
+    return { accountId: '' }
   } catch (error) {
     if (error.response?.status === 401) {
       throw new CredentialError('Invalid Credentials')

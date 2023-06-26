@@ -15,15 +15,13 @@
 */
 
 import { Change, InstanceElement, ObjectType, isInstanceElement, DeployResult, getChangeData, SaltoError } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, BRAND_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
+import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
-import { LOGO_TYPES_TO_VALUES, createLogoType, deployLogo, getLogo } from '../logo'
+import { LOGO_TYPES_TO_VALUES, createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
 
-const log = logger(module)
 const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
 
 const getBrandThemeFile = async (
@@ -33,9 +31,16 @@ const getBrandThemeFile = async (
 ): Promise<InstanceElement | Error> => {
   const parents = getParents(brandTheme)
   const instances = [brandTheme, parents[0].value]
-  const { fileType, fileName, urlSuffix } = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName]
+  const { fileType, urlSuffix } = LOGO_TYPES_TO_VALUES[logoType.elemID.typeName]
   const link = brandTheme.value?.[urlSuffix]
-  return getLogo({ client, parents: instances, logoType, contentType: fileType, link, logoName: fileName })
+  return getLogo({
+    client,
+    parents: instances,
+    logoType,
+    contentType: fileType,
+    link,
+    logoName: brandTheme.elemID.name,
+  })
 }
 
 const deployBrandThemeFiles = async (
@@ -77,24 +82,20 @@ const toSaltoError = (err: Error): SaltoError => ({
 const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
   name: 'brandThemeFilesFilter',
   onFetch: async elements => {
-    const brandTheme = elements
+    const brandThemes = elements
       .filter(isInstanceElement)
-      .find(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
-    if (brandTheme === undefined || getParents(brandTheme)[0].value.elemID.typeName !== BRAND_TYPE_NAME) {
-      log.warn('No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch')
-      const saltoErr: SaltoError = {
-        message: 'No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
-        severity: 'Warning',
-      }
-      return { errors: [saltoErr] }
-    }
-    const logoTypes = logoTypeNames.map(logoTypeName => createLogoType(logoTypeName))
-    logoTypes.forEach(logoType => elements.push(logoType))
+      .filter(instance => instance.elemID.typeName === BRAND_THEME_TYPE_NAME)
 
-    const allInstances = await Promise.all(logoTypes.map(async logoType =>
-      getBrandThemeFile(client, brandTheme, logoType)))
+    const [logoType, faviconType] = [createFileType(BRAND_LOGO_TYPE_NAME), createFileType(FAV_ICON_TYPE_NAME)]
+    elements.push(logoType, faviconType)
 
-    const [fetchErrors, instances] = _.partition(allInstances, _.isError)
+    const brandLogosInstances = await Promise.all(brandThemes.map(async brand => {
+      const logoInstance = await getBrandThemeFile(client, brand, logoType)
+      const faviconInstance = await getBrandThemeFile(client, brand, faviconType)
+      return [logoInstance, faviconInstance]
+    }))
+
+    const [fetchErrors, instances] = _.partition(brandLogosInstances.flat(), _.isError)
     instances.forEach(instance => elements.push(instance))
     const err = fetchErrors.map(toSaltoError)
     return { errors: err }

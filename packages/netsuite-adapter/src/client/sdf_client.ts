@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections, decorators, objects as lowerdashObjects, promises, values as valuesUtils } from '@salto-io/lowerdash'
-import { Values, AccountId } from '@salto-io/adapter-api'
+import { Values, AccountInfo } from '@salto-io/adapter-api'
 import { mkdirp, readFile, writeFile, rm, stat, rename } from '@salto-io/file'
 import { logger } from '@salto-io/logging'
 import {
@@ -38,7 +38,7 @@ import {
   DEFAULT_FETCH_ALL_TYPES_AT_ONCE, DEFAULT_COMMAND_TIMEOUT_IN_MINUTES,
   DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST, DEFAULT_CONCURRENCY, ClientConfig, InstanceLimiterFunc,
 } from '../config'
-import { NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery, NetsuiteTypesQueryParams, ObjectID } from '../query'
 import { FeaturesDeployError, ManifestValidationError, ObjectsDeployError, SettingsDeployError, MissingManifestFeaturesError } from './errors'
 import { SdfCredentials } from './credentials'
 import {
@@ -56,7 +56,7 @@ import { detectLanguage, FEATURE_NAME, fetchLockedObjectErrorRegex, fetchUnexpec
 import { Graph } from './graph_utils'
 import { FileSize, filterFilesInFolders, largeFoldersToExclude } from './file_cabinet_utils'
 import { reorderDeployXml } from './deploy_xml_utils'
-import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, FEATURES_XML, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFeaturesXmlPath, getDeployFilePath, getManifestFilePath, getSrcDirPath, getFileCabinetDirPath } from './sdf_parser'
+import { OBJECTS_DIR, ADDITIONAL_FILE_PATTERN, ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX, READ_CONCURRENCY, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, convertToFeaturesXmlContent, FEATURES_XML, getCustomTypeInfoPath, getFileCabinetCustomInfoPath, getFileCabinetDirPath, getSrcDirPath, getDeployFilePath, getManifestFilePath, getFeaturesXmlPath } from './sdf_parser'
 
 const { makeArray } = collections.array
 const { withLimitedConcurrency } = promises.array
@@ -167,7 +167,7 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  static async validateCredentials(credentials: SdfCredentials): Promise<AccountId> {
+  static async validateCredentials(credentials: SdfCredentials): Promise<AccountInfo> {
     const netsuiteClient = new SdfClient({
       credentials,
       globalLimiter: new Bottleneck(),
@@ -175,7 +175,8 @@ export default class SdfClient {
     })
     const { projectPath, authId } = await netsuiteClient.initProject()
     await netsuiteClient.projectCleanup(projectPath, authId)
-    return Promise.resolve(netsuiteClient.credentials.accountId)
+    const { accountId } = netsuiteClient.credentials
+    return { accountId }
   }
 
   public getCredentials(): Readonly<SdfCredentials> {
@@ -372,11 +373,16 @@ export default class SdfClient {
   }
 
   @SdfClient.logDecorator
-  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
+  async getCustomObjects(
+    typeNames: string[],
+    queries: NetsuiteFetchQueries,
+  ):
     Promise<GetCustomObjectsResult> {
-    if (typeNames.concat(CONFIG_FEATURES).every(type => !query.isTypeMatch(type))) {
+    // in case of partial fetch we'd need to proceed in order to calculate deleted elements
+    if (typeNames.concat(CONFIG_FEATURES).every(type => !queries.originFetchQuery.isTypeMatch(type))) {
       return {
         elements: [],
+        instancesIds: [],
         failedToFetchAllAtOnce: false,
         failedTypes: { unexpectedError: {}, lockedError: {}, excludedTypes: [] },
       }
@@ -387,18 +393,22 @@ export default class SdfClient {
       [undefined, ...this.installedSuiteApps]
         .map(async suiteAppId => {
           const { executor, projectPath, authId } = await this.initProject()
+          const instancesIds = await this.listInstances(
+            executor,
+            typeNames.filter(queries.originFetchQuery.isTypeMatch),
+            suiteAppId,
+          )
           const { failedTypes, failedToFetchAllAtOnce } = await this.importObjects(
             executor,
-            typeNames,
-            query,
             suiteAppId,
+            instancesIds.filter(queries.updatedFetchQuery.isObjectMatch),
           )
           const elements = await parseObjectsDir(projectPath)
 
           if (suiteAppId !== undefined) {
             elements.forEach(e => { e.values[APPLICATION_ID] = suiteAppId })
           }
-          if (suiteAppId === undefined && query.isTypeMatch(CONFIG_FEATURES)) {
+          if (suiteAppId === undefined && queries.updatedFetchQuery.isTypeMatch(CONFIG_FEATURES)) {
             // use existing project to import features object
             const { typeName, values } = await this.getFeaturesObject(executor, projectPath)
             elements.push({
@@ -409,7 +419,7 @@ export default class SdfClient {
           }
           await this.projectCleanup(projectPath, authId)
 
-          return { elements, failedToFetchAllAtOnce, failedTypes }
+          return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
         })
     )
 
@@ -425,8 +435,9 @@ export default class SdfClient {
 
     const elements = importResult.flatMap(res => res.elements)
     const failedToFetchAllAtOnce = importResult.some(res => res.failedToFetchAllAtOnce)
+    const instancesIds = importResult.flatMap(res => res.instancesIds)
 
-    return { elements, failedToFetchAllAtOnce, failedTypes }
+    return { elements, instancesIds, failedToFetchAllAtOnce, failedTypes }
   }
 
   private async getFeaturesObject(
@@ -451,9 +462,8 @@ export default class SdfClient {
 
   private async importObjects(
     executor: CommandActionExecutor,
-    typeNames: string[],
-    query: NetsuiteQuery,
     suiteAppId: string | undefined,
+    instancesIds: ObjectID[],
   ): Promise<{
     failedToFetchAllAtOnce: boolean
     failedTypes: FailedTypes
@@ -479,18 +489,17 @@ export default class SdfClient {
     }
     const failedTypes = await this.importObjectsInChunks(
       executor,
-      typeNames,
-      query,
       suiteAppId,
+      instancesIds,
     )
     return { failedToFetchAllAtOnce: this.fetchAllTypesAtOnce, failedTypes }
   }
 
+
   private async importObjectsInChunks(
     executor: CommandActionExecutor,
-    typeNames: string[],
-    query: NetsuiteQuery,
     suiteAppId: string | undefined,
+    instancesIds: ObjectID[]
   ): Promise<FailedTypes> {
     const importObjectsChunk = async (
       { type, ids, index, total }: ObjectsChunk, retriesLeft = SINGLE_OBJECT_RETRIES
@@ -549,12 +558,6 @@ export default class SdfClient {
         }
       }
     }
-
-    const instancesIds = (await this.listInstances(
-      executor,
-      typeNames.filter(query.isTypeMatch),
-      suiteAppId,
-    )).filter(query.isObjectMatch)
 
     const instancesIdsByType = _.groupBy(instancesIds, id => id.type)
 

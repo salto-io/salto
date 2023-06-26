@@ -32,7 +32,7 @@ const log = logger(module)
 
 
 type Component = {
-  value?: Values
+  value?: Values | boolean
   rawValue?: unknown
 }
 
@@ -44,7 +44,7 @@ type AutomationInstance = InstanceElement & {
 }
 
 const COMPONENT_SCHEME = Joi.object({
-  value: Joi.object().optional(),
+  value: Joi.alternatives(Joi.object(), Joi.boolean()).optional(),
   rawValue: Joi.optional(),
 }).unknown(true)
 
@@ -69,7 +69,7 @@ const getPossibleSmartValues = (automation: AutomationInstance): SmartValueConta
     .flatMap(component => {
       const containers: SmartValueContainer[] = []
 
-      if (component.value !== undefined) {
+      if (component.value !== undefined && !_.isBoolean(component.value)) {
         const { value } = component
         Object.keys(component.value)
           .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))

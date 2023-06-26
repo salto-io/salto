@@ -129,7 +129,6 @@ import scriptRunnerTemplateExpressionFilter from './filters/script_runner/script
 import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
-import circularTransitionFilter from './filters/workflow/circular_transitions_filter'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 
 const {
@@ -178,7 +177,6 @@ export const DEFAULT_FILTERS = [
   triggersFilter,
   transitionIdsFilter,
   resolutionPropertyFilter,
-  circularTransitionFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
@@ -306,6 +304,7 @@ export default class JiraAdapter implements AdapterOperations {
       client: this.client,
       paginationFuncCreator: paginate,
       customEntryExtractor: removeScopedObjects,
+      asyncRun: config.fetch.asyncPagination ?? true,
     })
 
     this.fetchQuery = elementUtils.query.createElementQuery(

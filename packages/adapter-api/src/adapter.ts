@@ -25,6 +25,7 @@ import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
 export interface FetchResult {
   elements: Element[]
+  deletedElements?: ElemID[]
   errors?: SaltoError[]
   updatedConfig?: { config: InstanceElement[]; message: string }
   isPartial?: boolean
@@ -153,7 +154,11 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
-export type AccountId = string
+export type AccountInfo = {
+  accountId: string
+  accountType?: string
+  isProduction?: boolean
+}
 
 export type ConfigCreator = {
   optionsType: ObjectType
@@ -174,7 +179,7 @@ export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<Referen
 
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   configCreator?: ConfigCreator

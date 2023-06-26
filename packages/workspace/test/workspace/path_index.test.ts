@@ -13,11 +13,23 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, TypeReference, createRefToElmWithValue, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  BuiltinTypes,
+  ListType,
+  InstanceElement,
+  TypeReference,
+  createRefToElmWithValue,
+  CORE_ANNOTATIONS,
+  Element,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
-  overridePathIndex, splitElementByPath, getTopLevelPathHints } from '../../src/workspace/path_index'
-import { InMemoryRemoteMap } from '../../src/workspace/remote_map'
+import {
+  updatePathIndex, getElementsPathHints, PathIndex, getFromPathIndex, Path,
+  splitElementByPath, getTopLevelPathHints, updateTopLevelPathIndex, PathIndexArgs,
+} from '../../src/workspace/path_index'
+import { InMemoryRemoteMap, RemoteMapEntry } from '../../src/workspace/remote_map'
 
 const { awu } = collections.asynciterable
 
@@ -35,9 +47,9 @@ const nestedType = new ObjectType({
     },
   },
 })
-// singlePathObject
-const singlePathObject = new ObjectType({
-  elemID: new ElemID('salto', 'singlePathObj'),
+
+const createSinglePathObject = (nameAddition = ''): ObjectType => new ObjectType({
+  elemID: new ElemID('salto', `singlePathObj${nameAddition}`),
   fields: {
     simple: {
       refType: BuiltinTypes.STRING,
@@ -60,6 +72,8 @@ const singlePathObject = new ObjectType({
   },
   path: ['salto', 'obj', 'simple'],
 })
+const singlePathObject = createSinglePathObject()
+
 const oldPartiallyFetchedObject = new ObjectType({
   elemID: new ElemID('salto', 'partial'),
   fields: {
@@ -84,11 +98,9 @@ const updatedPartiallyFetchedObject = new ObjectType({
   },
   path: ['salto', 'obj', 'newPartial'],
 })
-// multiPathObject
-// singlePathObject
-const multiPathObjID = new ElemID('salto', 'multiPathObj')
-const multiPathAnnoObj = new ObjectType({
-  elemID: multiPathObjID,
+
+const createMultiPathAnnObject = (nameAddition = ''): ObjectType => new ObjectType({
+  elemID: new ElemID('salto', `multiPathObj${nameAddition}`),
   annotationRefsOrTypes: {
     simple: BuiltinTypes.STRING,
     nested: nestedType,
@@ -104,9 +116,10 @@ const multiPathAnnoObj = new ObjectType({
   },
   path: ['salto', 'obj', 'multi', 'anno'],
 })
+const multiPathAnnoObj = createMultiPathAnnObject()
 
-const multiPathFieldsObj = new ObjectType({
-  elemID: multiPathObjID,
+const createMultiPathFieldsObj = (nameAddition = ''): ObjectType => new ObjectType({
+  elemID: new ElemID('salto', `multiPathObj${nameAddition}`),
   fields: {
     field: {
       refType: BuiltinTypes.STRING,
@@ -114,20 +127,21 @@ const multiPathFieldsObj = new ObjectType({
   },
   path: ['salto', 'obj', 'multi', 'fields'],
 })
+const multiPathFieldsObj = createMultiPathFieldsObj()
 
 const multiPathInstanceTypeID = new ElemID('salto', 'obj')
-
-const multiPathInstanceA = new InstanceElement(
-  'inst',
+const createMultiPathInstanceA = (nameAddition = ''): InstanceElement => new InstanceElement(
+  `inst${nameAddition}`,
   new TypeReference(multiPathInstanceTypeID),
   {
     a: 'A',
   },
   ['salto', 'inst', 'A']
 )
+const multiPathInstanceA = createMultiPathInstanceA()
 
-const multiPathInstanceB = new InstanceElement(
-  'inst',
+const createMultiPathInstanceB = (nameAddition = ''): InstanceElement => new InstanceElement(
+  `inst${nameAddition}`,
   new TypeReference(multiPathInstanceTypeID),
   {
     b: 'B',
@@ -137,6 +151,7 @@ const multiPathInstanceB = new InstanceElement(
     [CORE_ANNOTATIONS.CHANGED_BY]: 'Me',
   },
 )
+const multiPathInstanceB = createMultiPathInstanceB()
 
 const multiPathInstanceFull = new InstanceElement(
   'inst',
@@ -150,6 +165,7 @@ const multiPathInstanceFull = new InstanceElement(
     [CORE_ANNOTATIONS.CHANGED_BY]: 'Me',
   },
 )
+
 describe('topLevelPathIndex', () => {
   it('get top level path hints should return correct path hints', () => {
     expect(getTopLevelPathHints(
@@ -179,9 +195,9 @@ describe('topLevelPathIndex', () => {
   it('should only add new top level elements paths to index', async () => {
     const topLevelPathIndex = new InMemoryRemoteMap<Path[]>()
     await topLevelPathIndex.setAll(getTopLevelPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updatePathIndex({
-      index: topLevelPathIndex,
-      elements: [
+    await updateTopLevelPathIndex({
+      pathIndex: topLevelPathIndex,
+      unmergedElements: [
         multiPathAnnoObj,
         multiPathFieldsObj,
         multiPathInstanceA,
@@ -190,8 +206,7 @@ describe('topLevelPathIndex', () => {
         // but there will also be elements of that account in the elements array
         updatedPartiallyFetchedObject,
       ],
-      accountsToMaintain: ['salto'],
-      isTopLevel: true,
+      removedElementsFullNames: new Set<string>(),
     })
     expect(await awu(topLevelPathIndex.entries()).toArray()).toEqual(
       [
@@ -207,71 +222,6 @@ describe('topLevelPathIndex', () => {
         ),
       ]
     )
-  })
-})
-
-describe('updatePathIndex', () => {
-  let index: PathIndex
-  beforeAll(async () => {
-    index = new InMemoryRemoteMap<Path[]>()
-    await index.setAll(getElementsPathHints([singlePathObject, oldPartiallyFetchedObject]))
-    await updatePathIndex({
-      index,
-      elements: [
-        multiPathAnnoObj,
-        multiPathFieldsObj,
-        multiPathInstanceA,
-        multiPathInstanceB,
-        // when there is a partial fetch, the account name will be in accountsToMaintain
-        // but there will also be elements of that account in the elements array
-        updatedPartiallyFetchedObject,
-      ],
-      accountsToMaintain: ['salto'],
-      isTopLevel: false,
-    })
-  })
-  it('should add new elements with proper paths', async () => {
-    expect(await index.get(multiPathObjID.getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'anno'],
-        ['salto', 'obj', 'multi', 'fields'],
-      ])
-    expect(await index.get(multiPathFieldsObj.elemID.createNestedID('field').getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'fields'],
-      ])
-    expect(await index.get(multiPathObjID.createNestedID('attr', 'simple').getFullName()))
-      .toEqual([
-        ['salto', 'obj', 'multi', 'anno'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'A'],
-        ['salto', 'inst', 'B'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.createNestedID('a').getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'A'],
-      ])
-    expect(await index.get(multiPathInstanceA.elemID.createNestedID('b').getFullName()))
-      .toEqual([
-        ['salto', 'inst', 'B'],
-      ])
-    expect(
-      await index.get(multiPathInstanceA.elemID
-        .createNestedID(CORE_ANNOTATIONS.CHANGED_BY).getFullName()),
-    ).toEqual([
-      ['salto', 'inst', 'B'],
-    ])
-  })
-
-  it('should maintain old elements', async () => {
-    expect(await index.get(singlePathObject.elemID.getFullName()))
-      .toEqual([singlePathObject.path])
-  })
-  it('partial fetch flow should update pathIndex', async () => {
-    expect(await index.get(updatedPartiallyFetchedObject.elemID.getFullName()))
-      .toEqual([updatedPartiallyFetchedObject.path])
   })
 })
 
@@ -431,7 +381,7 @@ describe('split element by path', () => {
   const pi = new InMemoryRemoteMap<Path[]>()
 
   beforeAll(async () => {
-    await overridePathIndex(pi, unmergedElements)
+    await updatePathIndex({ pathIndex: pi, unmergedElements })
   })
 
   it('should split an element with multiple pathes', async () => {
@@ -459,5 +409,77 @@ describe('split element by path', () => {
     const splitedElements = await splitElementByPath(noPathObj, pi)
     expect(splitedElements).toHaveLength(1)
     expect(splitedElements[0]).toEqual(noPathObj)
+  })
+})
+
+describe('updatePathIndex', () => {
+  const createObjectsFunctions = [
+    createSinglePathObject,
+    createMultiPathAnnObject,
+    createMultiPathFieldsObj,
+    createMultiPathInstanceA,
+    createMultiPathInstanceB,
+  ]
+  const objectsToAdd = createObjectsFunctions.map(f => f('add'))
+  const objectsToRemove = createObjectsFunctions.map(f => f('remove'))
+  const objectsToModifyBefore = createObjectsFunctions.map(f => f('modify'))
+  const objectsToModifyAfter = objectsToModifyBefore.map(e => e.clone())
+  objectsToModifyAfter.forEach(e => { e.path = e.path && [...e.path, 'modify'] })
+
+  const runTest = async (
+    updatePathIndexFunc: (args: PathIndexArgs) => Promise<void>,
+    pathHintsFunc: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[]): Promise<void> => {
+    const index = new InMemoryRemoteMap<Path[]>()
+    await index.setAll(pathHintsFunc([...objectsToModifyBefore, ...objectsToRemove]))
+    await updatePathIndexFunc({
+      pathIndex: index,
+      unmergedElements: [
+        ...objectsToAdd,
+        ...objectsToModifyAfter,
+      ],
+      removedElementsFullNames: new Set<string>([
+        'salto.multiPathObjremove.attr.nested', // Removes the 'nested' field from multiPathAnnObject
+        createMultiPathInstanceA('remove').elemID.createTopLevelParentID().parent.getFullName(), // Removes instance A and B
+      ]),
+    })
+    const indexEntries = await awu(index.entries()).toArray()
+
+    const removedMultiPathAnnObject = objectsToRemove[1].clone()
+    delete removedMultiPathAnnObject.annotations.nested
+
+    expect(indexEntries).toEqual(expect.arrayContaining(
+      [
+        ...pathHintsFunc([
+          ...objectsToAdd,
+          ...objectsToModifyAfter,
+          objectsToRemove[0],
+          removedMultiPathAnnObject, // only the 'nested' field was removed
+          objectsToRemove[2],
+          // [3] and [4] were removed
+        ]),
+      ]
+    ))
+  }
+
+  it('should update pathIndex correctly', async () => {
+    await runTest(updatePathIndex, getElementsPathHints)
+  })
+  it('should update topLevelPathIndex correctly', async () => {
+    await runTest(updateTopLevelPathIndex, getTopLevelPathHints)
+  })
+
+  it('should override pathIndex when called without removedElementsFullNames', async () => {
+    const index = new InMemoryRemoteMap<Path[]>()
+    await index.setAll(getElementsPathHints([...objectsToModifyBefore, ...objectsToRemove]))
+    await updatePathIndex({ pathIndex: index, unmergedElements: [...objectsToAdd] })
+
+    const indexEntries = await awu(index.entries()).toArray()
+    expect(indexEntries).toEqual(expect.arrayContaining(
+      [
+        ...getElementsPathHints([
+          ...objectsToAdd,
+        ]),
+      ]
+    ))
   })
 })

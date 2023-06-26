@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ElemID } from '@salto-io/adapter-api'
+import { DetailedChange, Element, ElemID } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { PathIndex, Path } from '../path_index'
@@ -22,6 +22,12 @@ import { serialize, deserializeSingleElement } from '../../serializer/elements'
 import { StateStaticFilesSource } from '../static_files/common'
 
 export type StateMetadataKey = 'version' | 'hash'
+
+export type UpdateStateElementsArgs = {
+  changes: DetailedChange[]
+  unmergedElements?: Element[]
+  fetchAccounts?: string[]
+}
 
 // This distinction is temporary for the transition to multiple services.
 // Remove this when no longer used, SALTO-1661
@@ -52,21 +58,19 @@ export type StateData = OldStateData | NewStateData
 export interface State extends ElementsSource {
   set(element: Element): Promise<void>
   remove(id: ElemID): Promise<void>
-  override(elements: AsyncIterable<Element>, accounts?: string[]): Promise<void>
   getAccountsUpdateDates(): Promise<Record<string, Date>>
   // getServicesUpdateDates is deprecated, kept for backwards compatibility.
   // use getAccountsUpdateDates.
   // Remove this when no longer used, SALTO-1661
   getServicesUpdateDates(): Promise<Record<string, Date>>
   existingAccounts(): Promise<string[]>
-  overridePathIndex(unmergedElements: Element[]): Promise<void>
-  updatePathIndex(unmergedElements: Element[], accountsToMaintain: string[]): Promise<void>
   getPathIndex(): Promise<PathIndex>
   getTopLevelPathIndex(): Promise<PathIndex>
   getHash(): Promise<string | undefined>
   setHash(hash: string): Promise<void>
   calculateHash(): Promise<void>
   getStateSaltoVersion(): Promise<string | undefined>
+  updateStateFromChanges(args: UpdateStateElementsArgs): Promise<void>
 }
 
 

@@ -13,13 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
-import { ElemID, Element, isElement, InstanceElement, DetailedChange,
-  getChangeData, isRemovalOrModificationChange,
-  isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { ElemID, Element, isElement, InstanceElement, DetailedChange } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
-import { applyDetailedChanges, transformElement, references as referencesUtils } from '@salto-io/adapter-utils'
-import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, State, Workspace } from '@salto-io/workspace'
+import { transformElement, references as referencesUtils } from '@salto-io/adapter-utils'
+import { ElementsSource, getElementsPathHints, PathIndex, splitElementByPath, Workspace } from '@salto-io/workspace'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
@@ -183,42 +180,4 @@ export const renameElement = async (
   }
 
   return [...elementChanges, ...referencesChanges]
-}
-
-const getUpdatedTopLevelElements = async (
-  elementsSource: ElementsSource,
-  changes: DetailedChange[]
-): Promise<Element[]> => {
-  const changesByTopLevelElemId = _.groupBy(
-    changes, change => change.id.createTopLevelParentID().parent.getFullName()
-  )
-
-  const topLevelElements = await Promise.all(
-    Object.entries(changesByTopLevelElemId).map(async ([elemId, changesInTopLevelElement]) => {
-      const topLevelElem = await elementsSource.get(ElemID.fromFullName(elemId))
-      if (isDefined(topLevelElem)) {
-        applyDetailedChanges(topLevelElem, changesInTopLevelElement)
-      }
-      return topLevelElem
-    })
-  )
-
-  return topLevelElements.filter(isDefined)
-}
-
-export const updateStateElements = async (
-  stateSource: State,
-  changes: DetailedChange[]
-): Promise<void> => {
-  const [topLevelElementsChanges, nestedElementsChanges] = _.partition(
-    changes, change => change.id.isTopLevel()
-  )
-
-  await Promise.all(topLevelElementsChanges.filter(isRemovalOrModificationChange)
-    .map(change => stateSource.remove(change.id)))
-  await Promise.all(topLevelElementsChanges.filter(isAdditionOrModificationChange)
-    .map(change => stateSource.set(getChangeData(change))))
-
-  const updatedElements = await getUpdatedTopLevelElements(stateSource, nestedElementsChanges)
-  await Promise.all(updatedElements.map(element => stateSource.set(element)))
 }

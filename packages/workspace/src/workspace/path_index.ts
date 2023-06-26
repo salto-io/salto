@@ -18,10 +18,13 @@ import { collections, values, serialize as lowerdashSerialize } from '@salto-io/
 import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
   ObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { filterByID } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { RemoteMapEntry, RemoteMap } from './remote_map'
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
+
+const log = logger(module)
 
 export type Path = readonly string[]
 
@@ -169,15 +172,6 @@ RemoteMapEntry<Path[]>[] => {
     ))
 }
 
-export const overridePathIndex = async (
-  current: PathIndex,
-  unmergedElements: Element[],
-): Promise<void> => {
-  const entries = getElementsPathHints(unmergedElements)
-  await current.clear()
-  await current.setAll(entries)
-}
-
 export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] => {
   const topLevelElementsWithPath = unmergedElements
     .filter(e => e.path !== undefined)
@@ -189,44 +183,46 @@ export const getTopLevelPathHints = (unmergedElements: Element[]): PathHint[] =>
     }))
 }
 
-export const overrideTopLevelPathIndex = async (
-  current: PathIndex,
-  unmergedElements: Element[],
-): Promise<void> => {
-  const entries = getTopLevelPathHints(unmergedElements)
-  await current.clear()
-  await current.setAll(entries)
+export type PathIndexArgs = {
+  pathIndex: PathIndex
+  unmergedElements: Element[]
+  removedElementsFullNames?: Set<string>
 }
 
-type UpdateIndexParams = {
-  index: PathIndex
-  elements: Element[]
-  accountsToMaintain: string[]
-  isTopLevel: boolean
-}
-
-export const updatePathIndex = async (
-  { index,
-    elements,
-    accountsToMaintain,
-    isTopLevel }: UpdateIndexParams
+/**
+ *  Because currently a change in an element's path doesn't create a change, we are unable to detect it
+ *  We have to override the path index with all the elements, and delete the elements that were removed
+* */
+const updateIndex = async (
+  { pathIndex, unmergedElements, removedElementsFullNames = new Set<string>(), getHintsFunction }:
+    PathIndexArgs &
+    { getHintsFunction: (unmergedElements: Element[]) => RemoteMapEntry<Path[]>[] }
 ): Promise<void> => {
-  if (accountsToMaintain.length === 0) {
-    if (isTopLevel) {
-      await overrideTopLevelPathIndex(index, elements)
-      return
+  const entriesToSet = getHintsFunction(unmergedElements)
+
+  // Entries that are related to an element that was removed should be deleted
+  const entriesToDelete = await awu(pathIndex.keys()).filter(key => {
+    if (removedElementsFullNames.has(key)) {
+      return true
     }
-    await overridePathIndex(index, elements)
-    return
-  }
-  const entries = isTopLevel ? getTopLevelPathHints(elements) : getElementsPathHints(elements)
-  const oldPathHintsToMaintain = await awu(index.entries())
-    .filter(e => accountsToMaintain.includes(ElemID.fromFullName(e.key).adapter))
-    .toArray()
-  const updatedEntries = _.unionBy(entries, oldPathHintsToMaintain, e => e.key)
-  await index.clear()
-  await index.setAll(awu(updatedEntries))
+    const keyElemId = ElemID.fromFullName(key)
+    // If any of the levels above the key was removed, delete the key
+    return keyElemId.createAllElemIdParents()
+      .map(id => id.getFullName())
+      .some(fullName => removedElementsFullNames.has(fullName))
+  }).toArray()
+
+  await pathIndex.deleteAll(entriesToDelete)
+  await pathIndex.setAll(entriesToSet)
 }
+
+export const updatePathIndex = async (args: PathIndexArgs): Promise<void> => log.time(async () => {
+  await updateIndex({ ...args, getHintsFunction: getElementsPathHints })
+}, 'updatePathIndex')
+
+export const updateTopLevelPathIndex = async (args: PathIndexArgs): Promise<void> => log.time(async () => {
+  await updateIndex({ ...args, getHintsFunction: getTopLevelPathHints })
+}, 'updateTopLevelPathIndex')
 
 export const loadPathIndex = (parsedEntries: [string, Path[]][]): RemoteMapEntry<Path[], string>[] =>
   parsedEntries.flatMap(e => ({ key: e[0], value: e[1] }))

@@ -399,6 +399,7 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
     },
     transformation: {
       idFields: [],
+      extendsParentId: true,
       dataField: '.',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat(
         { fieldName: '$schema' },
@@ -729,11 +730,18 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   api__v1__brands: {
     request: {
       url: '/api/v1/brands',
-      recurseInto: [{
-        type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
-        toField: 'theme',
-        context: [{ name: 'brandId', fromField: 'id' }],
-      }],
+      recurseInto: [
+        {
+          type: 'api__v1__brands___brandId___themes@uuuuuu_00123_00125uu',
+          toField: 'theme',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
+        {
+          type: 'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu',
+          toField: 'emailTemplates',
+          context: [{ name: 'brandId', fromField: 'id' }],
+        },
+      ],
     },
     transformation: {
       dataField: '.',
@@ -750,7 +758,6 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   'api__v1__brands___brandId___templates__email@uuuuuu_00123_00125uuuu': {
     request: {
       url: '/api/v1/brands/{brandId}/templates/email',
-      dependsOn: [{ pathParam: 'brandId', from: { type: 'api__v1__brands', field: 'id' } }],
     },
     transformation: {
       dataField: '.',
@@ -775,10 +782,25 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   Domain: {
     transformation: {
-      isSingleton: true,
+      idFields: ['domain'],
       serviceIdField: 'id',
       fieldsToHide: [{ fieldName: 'id' }],
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
+    },
+  },
+  'api__v1__email_domains@uuuub': {
+    request: {
+      url: '/api/v1/email-domains',
+    },
+    transformation: {
+      dataField: '.',
+    },
+  },
+  EmailDomain: {
+    transformation: {
+      idFields: ['displayName'],
+      serviceIdField: 'id',
+      fieldsToHide: [{ fieldName: 'id' }],
     },
   },
   OrgSetting: {
@@ -817,13 +839,15 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   Brand: {
     transformation: {
-      isSingleton: true,
       serviceIdField: 'id',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
       fieldsToHide: [{ fieldName: 'id' }],
-      standaloneFields: [{ fieldName: 'theme' }],
+      standaloneFields: [{ fieldName: 'theme' }, { fieldName: 'emailTemplates' }],
       nestStandaloneInstances: false,
-      fieldTypeOverrides: [{ fieldName: 'theme', fieldType: 'list<BrandTheme>' }],
+      fieldTypeOverrides: [
+        { fieldName: 'theme', fieldType: 'list<BrandTheme>' },
+        { fieldName: 'emailTemplates', fieldType: 'list<EmailTemplate>' },
+      ],
       serviceUrl: '/admin/customizations/footer',
     },
     deployRequests: {
@@ -838,7 +862,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   BrandTheme: {
     transformation: {
-      isSingleton: true,
+      idFields: [],
+      extendsParentId: true,
       serviceIdField: 'id',
       fieldsToHide: [
         { fieldName: 'id' },
@@ -921,6 +946,8 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: OktaSwaggerApiConfig['types'] = {
   },
   EmailTemplate: {
     transformation: {
+      idFields: ['name'],
+      extendsParentId: true,
       serviceIdField: 'name',
       fieldsToOmit: DEFAULT_FIELDS_TO_OMIT.concat({ fieldName: '_links' }),
     },
@@ -1430,6 +1457,7 @@ const DEFAULT_SWAGGER_CONFIG: OktaSwaggerApiConfig['swagger'] = {
   ],
   typeNameOverrides: [
     { originalName: 'DomainResponse', newName: 'Domain' },
+    { originalName: 'EmailDomainResponse', newName: 'EmailDomain' },
     { originalName: 'ThemeResponse', newName: 'BrandTheme' },
     { originalName: 'Role', newName: 'RoleAssignment' },
     { originalName: 'IamRole', newName: 'Role' },
@@ -1469,6 +1497,7 @@ export const SUPPORTED_TYPES = {
   TrustedOrigin: ['api__v1__trustedOrigins'],
   NetworkZone: ['api__v1__zones'],
   Domain: ['DomainListResponse'],
+  EmailDomain: ['api__v1__email_domains@uuuub'],
   Role: ['IamRoles'],
   BehaviorRule: ['api__v1__behaviors'],
   PerClientRateLimit: ['PerClientRateLimitSettings'],

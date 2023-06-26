@@ -206,7 +206,7 @@ describe('notificationSchemeDeploymentFilter', () => {
             id: '1',
           }],
           startAt: 0,
-          isLast: true,
+          total: 1,
         },
       })
 

@@ -75,6 +75,41 @@ describe('createElementsSourceIndex', () => {
       '-123-2': new ElemID(NETSUITE, 'customrecord1'),
     })
   })
+  it('should not create internal ids index for a deleted element', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    const toBeDeleted = new InstanceElement(
+      'name',
+      type,
+      { internalId: '4' },
+    )
+    getMock.mockImplementation(buildElementsSourceFromElements([
+      type,
+    ]).get)
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      toBeDeleted,
+      new InstanceElement(
+        'name2',
+        type,
+        { internalId: '5', isSubInstance: true },
+      ),
+      type,
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord1',
+          [INTERNAL_ID]: '2',
+        },
+      }),
+    ]).getAll)
+
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource, true, [toBeDeleted.elemID])
+    const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
+    expect(index).toEqual({
+      'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
+      '-123-2': new ElemID(NETSUITE, 'customrecord1'),
+    })
+  })
   it('should not create internal ids index on full fetch', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getMock.mockImplementation(buildElementsSourceFromElements([

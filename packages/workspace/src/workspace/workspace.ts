@@ -380,6 +380,7 @@ export const loadWorkspace = async (
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
+      log.debug('Full workspace config: %o', wsConfig)
       const states: Record<string, SingleState> = Object.fromEntries(await awu(envs())
         .map(async envName => [envName, {
           merged: new RemoteElementSource(

@@ -187,8 +187,13 @@ type CrudFnArgs = {
   client: SalesforceClient
 }
 
+type CrudFnResult = {
+  deployedInstancesResults: InstanceAndResult[]
+  instancesToUpdate: InstanceElement[]
+}
+
 export type CrudFn = (fnArgs: CrudFnArgs)
-    => Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}>
+    => Promise<CrudFnResult>
 
 const isRetryableErr = (retryableFailures: string[]) =>
   (instAndRes: InstanceAndResult): boolean =>
@@ -207,9 +212,9 @@ export const retryFlow = async (
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
 
-  const { results: instanceResults, instancesToUpdate } = await crudFn({ typeName, instances, client })
+  const { deployedInstancesResults, instancesToUpdate } = await crudFn({ typeName, instances, client })
 
-  const [succeeded, failed] = _.partition(instanceResults, instanceResult =>
+  const [succeeded, failed] = _.partition(deployedInstancesResults, instanceResult =>
     instanceResult.result.success)
   const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
@@ -248,9 +253,9 @@ const insertInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<CrudFnResult> => {
   if (instances.length === 0) {
-    return { results: [], instancesToUpdate: [] }
+    return { deployedInstancesResults: [], instancesToUpdate: [] }
   }
   const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE, false)
   const results = await client.bulkLoadOperation(typeName, 'insert', records)
@@ -261,20 +266,20 @@ const insertInstances: CrudFn = async (
     .forEach(({ instance, result }) => {
       instance.value[CUSTOM_OBJECT_ID_FIELD] = result.id
     })
-  return { results: instancesAndResults, instancesToUpdate }
+  return { deployedInstancesResults: instancesAndResults, instancesToUpdate }
 }
 
 const updateInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<CrudFnResult> => {
   if (instances.length === 0) {
-    return { results: [], instancesToUpdate: [] }
+    return { deployedInstancesResults: [], instancesToUpdate: [] }
   }
   const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.UPDATEABLE, true)
   const results = await client.bulkLoadOperation(typeName, 'update', records)
-  return { results: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate }
+  return { deployedInstancesResults: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate }
 }
 
 const ALREADY_DELETED_ERROR = 'ENTITY_IS_DELETED:entity is deleted:--'
@@ -294,13 +299,13 @@ export const deleteInstances: CrudFn = async (
   { typeName,
     instances,
     client }
-): Promise<{results: InstanceAndResult[]; instancesToUpdate: InstanceElement[]}> => {
+): Promise<CrudFnResult> => {
   const results = (await client.bulkLoadOperation(
     typeName,
     'delete',
     instancesToDeleteRecords(instances)
   )).map(removeSilencedDeleteErrors)
-  return { results: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate: [] }
+  return { deployedInstancesResults: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate: [] }
 }
 
 const cloneWithoutNulls = (val: Values): Values =>

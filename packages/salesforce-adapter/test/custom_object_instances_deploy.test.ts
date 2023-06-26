@@ -36,7 +36,7 @@ describe('Custom Object Deploy', () => {
         (await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE, false)).records
       )
       return {
-        results: instances.map((instance, index) =>
+        deployedInstancesResults: instances.map((instance, index) =>
           ({ instance, result: results[index] })),
         instancesToUpdate: [],
       }
@@ -263,7 +263,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1', 'ENTITY_IS_DELETED:entity is deleted:--', 'error2'] },
       ])
-      const { results: result } = await deleteInstances({ typeName, instances, client })
+      const { deployedInstancesResults: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ errors: ['error1', 'error2'] })
     })
@@ -271,7 +271,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: ['ENTITY_IS_DELETED:entity is deleted:--'] },
       ])
-      const { results: result } = await deleteInstances({ typeName, instances, client })
+      const { deployedInstancesResults: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: [] })
     })
@@ -279,7 +279,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1'] },
       ])
-      const { results: result } = await deleteInstances({ typeName, instances, client })
+      const { deployedInstancesResults: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: ['error1'] })
     })
@@ -287,7 +287,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: [] },
       ])
-      const { results: result } = await deleteInstances({ typeName, instances, client })
+      const { deployedInstancesResults: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: [] })
     })
@@ -295,7 +295,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: true, errors: ['error'] },
       ])
-      const { results: result } = await deleteInstances({ typeName, instances, client })
+      const { deployedInstancesResults: result } = await deleteInstances({ typeName, instances, client })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: ['error'] })
     })

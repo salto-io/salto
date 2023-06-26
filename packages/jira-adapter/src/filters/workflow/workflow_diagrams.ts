@@ -175,7 +175,7 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
       }
     })
   delete element.value.diagramInitialEntry
-  delete element.value.globalLoopedTransition
+  delete element.value.diagramGlobalLoopedTransition
 }
 
 const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>)
@@ -300,7 +300,7 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
     x: statusIdToStatus.initial?.x,
     y: statusIdToStatus.initial?.y,
   }
-  workflow.value.globalLoopedTransition = loopedTransitionContainer
+  workflow.value.diagramGlobalLoopedTransition = loopedTransitionContainer
   workflow.value.transitions.forEach(transition => {
     const transitionName = transition.name
     if (transition.type === INITIAL_TRANSITION_TYPE && transitionName !== undefined) {
@@ -331,13 +331,15 @@ export const deployWorkflowDiagram = async (
   const { statusIdToStepId, actionKeyToTransition } = workflowDiagramMaps
   const statuses = buildStatusDiagramFields(instance, statusIdToStepId)
   const transitions = buildTransitionsDiagramFields(instance, statusIdToStepId, actionKeyToTransition)
-
+  const layout = instance.value.diagramGlobalLoopedTransition !== undefined
+    ? { statuses, transitions, loopedTransitionContainer: instance.value.diagramGlobalLoopedTransition }
+    : { statuses, transitions }
   const response = await client.postPrivate({
     url: '/rest/workflowDesigner/latest/workflows',
     data: {
       draft: false,
       name: instance.value.name,
-      layout: { statuses, transitions, loopedTransitionContainer: instance.value.globalLoopedTransition },
+      layout,
     },
   })
   if (response.status !== 200) {
@@ -365,8 +367,8 @@ const filter: FilterCreator = ({ client }) => ({
     if (workflowType !== undefined) {
       workflowType.fields.diagramInitialEntry = new Field(workflowType, 'diagramInitialEntry', statusLocationType)
       setFieldDeploymentAnnotations(workflowType, 'diagramInitialEntry')
-      workflowType.fields.globalLoopedTransition = new Field(workflowType, 'globalLoopedTransition', statusLocationType)
-      setFieldDeploymentAnnotations(workflowType, 'globalLoopedTransition')
+      workflowType.fields.diagramGlobalLoopedTransition = new Field(workflowType, 'diagramGlobalLoopedTransition', statusLocationType)
+      setFieldDeploymentAnnotations(workflowType, 'diagramGlobalLoopedTransition')
     }
     elements.push(transitionFromType)
     elements.push(statusLocationType)

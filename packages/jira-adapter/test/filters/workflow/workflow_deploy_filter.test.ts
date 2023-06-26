@@ -24,7 +24,6 @@ import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow
 import { getFilterParams, mockClient } from '../../utils'
 import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
 
-jest.setTimeout(99999999)
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -504,7 +503,7 @@ describe('workflowDeployFilter', () => {
               x: 33,
               y: 66,
             },
-            globalLoopedTransition: {
+            diagramGlobalLoopedTransition: {
               x: -15.85,
               y: 109.40,
             },
@@ -571,6 +570,8 @@ describe('workflowDeployFilter', () => {
               },
               {
                 name: 'looped',
+                from: [],
+                to: '',
                 type: 'global',
               },
             ],

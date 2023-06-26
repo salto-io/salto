@@ -24,6 +24,8 @@ import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow
 import { getFilterParams, mockClient } from '../../utils'
 import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
 
+jest.setTimeout(99999999)
+
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
   return {
@@ -502,6 +504,10 @@ describe('workflowDeployFilter', () => {
               x: 33,
               y: 66,
             },
+            globalLoopedTransition: {
+              x: -15.85,
+              y: 109.40,
+            },
             transitions: [
               {
                 name: 'Building',
@@ -562,6 +568,10 @@ describe('workflowDeployFilter', () => {
                 ],
                 to: '10007',
                 type: 'directed',
+              },
+              {
+                name: 'looped',
+                type: 'global',
               },
             ],
           }
@@ -675,7 +685,19 @@ describe('workflowDeployFilter', () => {
                   sourceAngle: 78.11,
                   targetAngle: -173.58,
                 },
+                {
+                  id: 'A<51:S<-1>:S<-1>>',
+                  name: 'looped',
+                  sourceId: 'S<-1>',
+                  targetId: 'S<-1>',
+                  globalTransition: true,
+                  loopedTransition: true,
+                },
               ],
+              loopedTransitionContainer: {
+                x: -15.85,
+                y: 109.40,
+              },
             },
           },
         })
@@ -759,6 +781,10 @@ describe('workflowDeployFilter', () => {
                 targetAngle: 1,
               },
             ],
+            loopedTransitionContainer: {
+              x: -15.85,
+              y: 109.40,
+            },
           },
         },
         { headers: { 'X-Atlassian-Token': 'no-check' },

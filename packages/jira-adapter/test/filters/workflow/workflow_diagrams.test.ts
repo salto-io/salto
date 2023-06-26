@@ -202,7 +202,19 @@ describe('workflowDiagramFilter', () => {
               sourceAngle: 78.11,
               targetAngle: -173.58,
             },
+            {
+              id: 'A<51:S<-1>:S<-1>>',
+              name: 'looped',
+              sourceId: 'S<-1>',
+              targetId: 'S<-1>',
+              globalTransition: true,
+              loopedTransition: true,
+            },
           ],
+          loopedTransitionContainer: {
+            x: -15.85,
+            y: 109.40,
+          },
         },
       },
     })
@@ -233,6 +245,12 @@ describe('workflowDiagramFilter', () => {
       const elements = [workflowType]
       await filter.onFetch(elements)
       expect(workflowType.fields.diagramInitialEntry).toBeDefined()
+      expect(elements).toHaveLength(3)
+    })
+    it('should set the globalLoopedTransition field in Workflow', async () => {
+      const elements = [workflowType]
+      await filter.onFetch(elements)
+      expect(workflowType.fields.globalLoopedTransition).toBeDefined()
       expect(elements).toHaveLength(3)
     })
 
@@ -299,6 +317,21 @@ describe('workflowDiagramFilter', () => {
       )
       expect(elements).toHaveLength(3)
       expect(instance.value.transitions[0].from).toBeUndefined()
+    })
+    it('should add globalLoopedTransition angles to the instance', async () => {
+      const elements = [instance]
+      await filter.onFetch(elements)
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/workflowDesigner/1.0/workflows',
+        {
+          headers: { 'X-Atlassian-Token': 'no-check' },
+          params: { name: 'workflowName' },
+        },
+      )
+      expect(elements).toHaveLength(3)
+      expect(instance.value.globalLoopedTransition).toBeDefined()
+      expect(instance.value.globalLoopedTransition.x).toEqual(-15.85)
+      expect(instance.value.globalLoopedTransition.y).toEqual(109.40)
     })
 
     it('should log error when response is not valid', async () => {

@@ -22,7 +22,7 @@ import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { addAnnotationRecursively, findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { JIRA, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
-import { isWorkflowInstance, TransitionFrom, WorkflowInstance } from './types'
+import { isWorkflowInstance, StatusLocation, TransitionFrom, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
@@ -48,6 +48,7 @@ type TransitionDiagramFields = {
 type WorkflowLayout = {
     statuses: StatusDiagramFields[]
     transitions: TransitionDiagramFields[]
+    loopedTransitionContainer?: StatusLocation
 }
 
 type WorkflowDiagramResponse = {
@@ -72,6 +73,7 @@ export type WorkflowDiagramMaps = {
   statusIdToStatus: Record<string, StatusDiagramFields>
   statusIdToStepId: Record<string, string>
   actionKeyToTransition: Record<string, TransitionDiagramFields>
+  loopedTransitionContainer?: StatusLocation
 }
 
 const INITIAL_TRANSITION_TYPE = 'initial'
@@ -122,6 +124,10 @@ const WORKFLOW_DIAGRAM_SCHEME = Joi.object({
       sourceAngle: Joi.number(),
       targetAngle: Joi.number(),
     }).unknown(true)),
+    loopedTransitionContainer: Joi.object({
+      x: Joi.number(),
+      y: Joi.number(),
+    }).unknown(true),
   }).unknown(true).required(),
 }).unknown(true).required()
 
@@ -169,6 +175,7 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
       }
     })
   delete element.value.diagramInitialEntry
+  delete element.value.globalLoopedTransition
 }
 
 const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>)
@@ -276,11 +283,12 @@ const buildDiagramMaps = async ({ client, workflow }:
     .filter(status => status.initial) // there is always only one initial status
     .map(status => status.id)
   statusIdToStepId.initial = initialStepId
-  return { statusIdToStatus, statusIdToStepId, actionKeyToTransition }
+  const { loopedTransitionContainer } = layout
+  return { statusIdToStatus, statusIdToStepId, actionKeyToTransition, loopedTransitionContainer }
 }
 
 const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
-  { statusIdToStatus, statusIdToStepId, actionKeyToTransition }: WorkflowDiagramMaps)
+  { statusIdToStatus, statusIdToStepId, actionKeyToTransition, loopedTransitionContainer }: WorkflowDiagramMaps)
   : void => {
   workflow.value.statuses?.forEach(status => {
     if (typeof status.id === 'string') {
@@ -292,6 +300,7 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
     x: statusIdToStatus.initial?.x,
     y: statusIdToStatus.initial?.y,
   }
+  workflow.value.globalLoopedTransition = loopedTransitionContainer
   workflow.value.transitions.forEach(transition => {
     const transitionName = transition.name
     if (transition.type === INITIAL_TRANSITION_TYPE && transitionName !== undefined) {
@@ -328,7 +337,7 @@ export const deployWorkflowDiagram = async (
     data: {
       draft: false,
       name: instance.value.name,
-      layout: { statuses, transitions },
+      layout: { statuses, transitions, loopedTransitionContainer: instance.value.globalLoopedTransition },
     },
   })
   if (response.status !== 200) {
@@ -356,6 +365,8 @@ const filter: FilterCreator = ({ client }) => ({
     if (workflowType !== undefined) {
       workflowType.fields.diagramInitialEntry = new Field(workflowType, 'diagramInitialEntry', statusLocationType)
       setFieldDeploymentAnnotations(workflowType, 'diagramInitialEntry')
+      workflowType.fields.globalLoopedTransition = new Field(workflowType, 'globalLoopedTransition', statusLocationType)
+      setFieldDeploymentAnnotations(workflowType, 'globalLoopedTransition')
     }
     elements.push(transitionFromType)
     elements.push(statusLocationType)

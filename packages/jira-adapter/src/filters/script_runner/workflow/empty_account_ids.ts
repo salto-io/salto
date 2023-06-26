@@ -22,13 +22,11 @@ import { SCRIPT_RUNNER_POST_FUNCTION_TYPE, SCRIPT_RUNNER_SEND_NOTIFICATIONS } fr
 
 const { makeArray } = collections.array
 
-const changeAccountIds = (func: (scriptRunner: Value) => Value):
-((workflowInstance: WorkflowInstance) => void) => (workflowInstance: WorkflowInstance): void => {
+const changeAccountIds = (workflowInstance: WorkflowInstance, func: (scriptRunner: Value) => Value): void => {
   workflowInstance.value.transitions.forEach(transition => {
     makeArray(transition.rules?.postFunctions).forEach(postFunction => {
       if (postFunction.type === SCRIPT_RUNNER_POST_FUNCTION_TYPE
-          && postFunction.configuration?.scriptRunner !== undefined
-          && postFunction.configuration.scriptRunner.className === SCRIPT_RUNNER_SEND_NOTIFICATIONS) {
+          && postFunction.configuration?.scriptRunner?.className === SCRIPT_RUNNER_SEND_NOTIFICATIONS) {
         postFunction.configuration.scriptRunner = func(postFunction.configuration.scriptRunner)
       }
     })
@@ -63,7 +61,7 @@ const filter: FilterCreator = ({ client, config }) => ({
     elements
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
-      .forEach(changeAccountIds(deleteEmptyAccountsId))
+      .forEach(workflowInstance => changeAccountIds(workflowInstance, deleteEmptyAccountsId))
   },
   preDeploy: async changes => {
     if (client.isDataCenter || !config.fetch.enableScriptRunnerAddon) {
@@ -75,7 +73,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(isWorkflowInstance)
-      .forEach(changeAccountIds(addEmptyAccountsId))
+      .forEach(workflowInstance => changeAccountIds(workflowInstance, addEmptyAccountsId))
   },
   onDeploy: async changes => {
     if (client.isDataCenter || !config.fetch.enableScriptRunnerAddon) {
@@ -87,7 +85,7 @@ const filter: FilterCreator = ({ client, config }) => ({
       .filter(isInstanceChange)
       .map(getChangeData)
       .filter(isWorkflowInstance)
-      .forEach(changeAccountIds(deleteEmptyAccountsId))
+      .forEach(workflowInstance => changeAccountIds(workflowInstance, deleteEmptyAccountsId))
   },
 })
 export default filter

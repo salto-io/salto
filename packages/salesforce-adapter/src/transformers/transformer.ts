@@ -946,7 +946,16 @@ const toRecord = async (
   const instanceType = await instance.getType()
   const values = {
     ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
-    ...instance.value,
+    ..._.mapValues(instance.value, val => {
+      if (isInstanceElement(val)) {
+        const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
+        if (referencedRecordId === undefined) {
+          return null
+        }
+        return referencedRecordId
+      }
+      return val
+    }),
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],

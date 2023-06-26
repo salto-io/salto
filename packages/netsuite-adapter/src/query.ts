@@ -129,6 +129,11 @@ export type CustomRecordsQuery = {
 
 export type NetsuiteQuery = TypesQuery & FileCabinetQuery & CustomRecordsQuery
 
+export type NetsuiteFetchQueries = {
+  updatedFetchQuery: NetsuiteQuery
+  originFetchQuery: NetsuiteQuery
+}
+
 export const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
   regex.isFullRegexMatch(str, type.name)
 

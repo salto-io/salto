@@ -650,7 +650,7 @@ describe('Custom Object Instances CRUD', () => {
                 'TestType__c', 'insert', expect.anything(), [
                   { Id: undefined, Name: 'firstInstance', Number__c: 1, TestType__c: null },
                   { Id: undefined, Name: 'secondInstance', Number__c: 1, TestType__c: null },
-                  { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1, TestType__c: null },
+                  { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1 },
                 ]
               )
               expect(connection.bulk.load).toHaveBeenCalledWith(

@@ -18,11 +18,11 @@ import {
   isInstanceElement,
   InstanceElement,
   isReferenceExpression,
-  ReferenceExpression,
+  ReferenceExpression, isStaticFile, StaticFile,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
-import { getParent, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { getParent, naclCase, normalizeFilePathPart, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { DAG } from '@salto-io/dag'
 import { collections } from '@salto-io/lowerdash'
@@ -42,7 +42,7 @@ import {
   ARTICLE_ORDER_TYPE_NAME,
   CATEGORY_ORDER_TYPE_NAME,
   SECTION_ORDER_TYPE_NAME,
-  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES,
+  ARTICLE_ATTACHMENT_TYPE_NAME, TRANSLATION_TYPE_NAMES, ARTICLE_ATTACHMENTS_FIELD,
 } from '../constants'
 
 const { RECORDS_PATH } = elementsUtils
@@ -341,6 +341,31 @@ const filterCreator: FilterCreator = () => ({
           needTypeDirectory: true,
           needOwnFolder: false,
           parent: parentsById[parentId],
+        })
+      })
+
+    await awu(guideGrouped[ARTICLE_ATTACHMENT_TYPE_NAME] ?? [])
+      .forEach(async attachment => {
+        const staticFile = attachment.value.content
+        if (!isStaticFile(staticFile)) {
+          return
+        }
+        const content = await staticFile.getContent()
+        if (content === undefined) {
+          log.warn(`content is undefined for attachment ${attachment.elemID.getFullName()}`)
+          return
+        }
+        const path = attachment.path ?? []
+        // path = [zendesk, records, guide, brand, brandName ... ]
+        const staticFilePath = [
+          ZENDESK,
+          ARTICLE_ATTACHMENTS_FIELD,
+          ...path.slice(2, -1),
+          normalizeFilePathPart(attachment.value.file_name),
+        ]
+        attachment.value.content = new StaticFile({
+          filepath: staticFilePath.join('/'),
+          content,
         })
       })
   },

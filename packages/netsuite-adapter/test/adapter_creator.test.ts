@@ -77,11 +77,12 @@ describe('NetsuiteAdapter creator', () => {
   describe('validateCredentials', () => {
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
     const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
+      .mockResolvedValue({ accountId: '' })
 
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
-      suiteAppClientValidateMock.mockReset()
-      netsuiteValidateMock.mockReset()
+      suiteAppClientValidateMock.mockClear()
+      netsuiteValidateMock.mockClear()
     })
 
     it('should call validateCredentials with the correct credentials', async () => {

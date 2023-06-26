@@ -98,13 +98,13 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     identifiersInfo: FormulaIdentifierInfo[][]
   ): void => {
     if (invalidReferences.length > 0) {
-      log.error('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+      log.debug('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
         formula,
         field.elemID.getFullName(),
         identifiersInfo.flat().map(info => info.instance))
     }
     invalidReferences.forEach(refElemId => {
-      log.error(`Invalid reference: ${refElemId.getFullName()}`)
+      log.debug(`Invalid reference: ${refElemId.getFullName()}`)
     })
   }
 

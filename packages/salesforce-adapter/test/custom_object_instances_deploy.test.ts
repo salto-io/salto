@@ -33,7 +33,7 @@ describe('Custom Object Deploy', () => {
       const results = await sfClient.bulkLoadOperation(
         typeName,
         'insert',
-        (await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE)).records
+        (await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE, false)).records
       )
       return {
         results: instances.map((instance, index) =>

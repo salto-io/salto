@@ -1289,7 +1289,7 @@ describe('transformer', () => {
     describe('instancesToCreateRecords', () => {
       let recordResult: SalesforceRecord[]
       beforeEach(async () => {
-        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.CREATABLE))
+        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.CREATABLE, false))
         expect(recordResult).toBeDefined()
         expect(recordResult.length).toEqual(1)
       })
@@ -1329,7 +1329,7 @@ describe('transformer', () => {
     describe('instancesToUpdateRecords', () => {
       let recordResult: SalesforceRecord[]
       beforeEach(async () => {
-        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.UPDATEABLE))
+        ({ records: recordResult } = await instancesToRecords([instance], FIELD_ANNOTATIONS.UPDATEABLE, true))
         expect(recordResult).toBeDefined()
         expect(recordResult.length).toEqual(1)
       })

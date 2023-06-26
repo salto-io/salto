@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
+  Adapter, InstanceElement, ObjectType, ElemID, getChangeData, isField,
   Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
   isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
   SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties, ReferenceMapping,
+  AccountInfo,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
@@ -60,10 +61,9 @@ const { mapValuesAsync } = promises.object
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
-type VerifyCredentialsResult = {
-    success: true
-    accountId: AccountId
-} | {
+type VerifyCredentialsResult = (
+  { success: true } & AccountInfo
+  ) | {
   success: false
   error: Error
 }
@@ -74,8 +74,8 @@ export const verifyCredentials = async (
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     try {
-      const accountId = await adapterCreator.validateCredentials(loginConfig)
-      return { success: true, accountId }
+      const account = await adapterCreator.validateCredentials(loginConfig)
+      return { success: true, ...account }
     } catch (error) {
       if (isCredentialError(error)) {
         return {
@@ -130,7 +130,7 @@ export const preview = async (
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
-    compareOptions: { compareReferencesByValue: true },
+    compareOptions: { compareByValue: true },
   })
 }
 

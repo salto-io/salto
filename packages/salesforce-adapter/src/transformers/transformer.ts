@@ -941,11 +941,12 @@ const transformCompoundValues = async (
 const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
+  withNulls: boolean,
 ): Promise<{record: SalesforceRecord; needsUpdate: boolean}> => {
   let needsUpdate = false
   const instanceType = await instance.getType()
-  const valsWithNulls = {
-    ..._.mapValues(instanceType.fields, () => null),
+  const values = {
+    ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
     ..._.mapValues(instance.value, val => {
       if (isInstanceElement(val)) {
         const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
@@ -961,7 +962,7 @@ const toRecord = async (
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
-      valsWithNulls,
+      values,
       (v, k) => !isInstanceElement(v) && instanceType.fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
@@ -974,12 +975,13 @@ const toRecord = async (
 export const instancesToRecords = async (
   instances: InstanceElement[],
   fieldAnnotationToFilterBy: string,
+  withNulls: boolean,
 ): Promise<{records: SalesforceRecord[]; instancesToUpdate: InstanceElement[]}> => {
   const records: SalesforceRecord[] = []
   const instancesToUpdate: InstanceElement[] = []
   await awu(instances)
     .forEach(async instance => {
-      const { record, needsUpdate } = await toRecord(instance, fieldAnnotationToFilterBy)
+      const { record, needsUpdate } = await toRecord(instance, fieldAnnotationToFilterBy, withNulls)
       records.push(record)
       if (needsUpdate) {
         instancesToUpdate.push(instance)

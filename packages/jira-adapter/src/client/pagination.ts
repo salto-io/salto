@@ -59,5 +59,5 @@ export const paginate: clientUtils.PaginationFuncCreator = args => {
       }
     )
   }
-  return clientUtils.getWithOffsetAndLimit()
+  return clientUtils.getAllPagesWithOffsetAndTotal()
 }

@@ -252,7 +252,7 @@ const insertInstances: CrudFn = async (
   if (instances.length === 0) {
     return { results: [], instancesToUpdate: [] }
   }
-  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE)
+  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.CREATABLE, false)
   const results = await client.bulkLoadOperation(typeName, 'insert', records)
   const instancesAndResults = groupInstancesAndResultsByIndex(results, instances)
 
@@ -272,7 +272,7 @@ const updateInstances: CrudFn = async (
   if (instances.length === 0) {
     return { results: [], instancesToUpdate: [] }
   }
-  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.UPDATEABLE)
+  const { records, instancesToUpdate } = await instancesToRecords(instances, FIELD_ANNOTATIONS.UPDATEABLE, true)
   const results = await client.bulkLoadOperation(typeName, 'update', records)
   return { results: groupInstancesAndResultsByIndex(results, instances), instancesToUpdate }
 }

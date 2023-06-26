@@ -17,13 +17,12 @@ SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 BUNDLE_COMPONENTS_DIR = os.path.join(SRC_DIR, 'bundle_components/')
 FULL_LINE_LENGTH = 4
 BUNDLE_IDS = [39609, 53195, 233251, 47492]
-PRIVATE_BUNDLE = 'Private'
 
 search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/installbundle.nl?whence='
 
 bundle_components_file_template = LICENSE_HEADER + '''
 
-export const BUNDLE_ID_TO_COMPONENTS: Readonly<Record<string, ReadonlySet<string>>> = {{
+export const BUNDLE_ID_TO_COMPONENTS: Readonly<Record<string, Readonly<Record<string, Set<string>>>>> = {{
   {bundle_id_to_components}
 }}
 '''
@@ -34,12 +33,13 @@ def wait_on_element(webpage):
   return False
 
 def parse_components_table(bundle_id_to_components, bundle_id, components_table, webpage, driverWait):
+  version = webpage.find_element(By.CSS_SELECTOR, '[data-searchable-id="mainmainversion"] > .uir-field')
   # wait until loading row disappears and the table is fully loaded.
   driverWait.until(wait_on_element)
   for row in components_table.find_elements(By.TAG_NAME, TABLE_ROW)[3:]:
     cells = row.find_elements(By.TAG_NAME, TABLE_DATA)
     if len(cells) >= FULL_LINE_LENGTH and cells[3].text.strip()!= '' :
-      bundle_id_to_components[bundle_id].append(cells[3].text)
+      bundle_id_to_components[bundle_id][version.text.strip()].append(cells[3].text)
   webpage.back()
 
 
@@ -48,7 +48,7 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
   try:
     webpage.get(search_bundles_link_template.format(account_id = account_id))
     login(username, password, secret_key_2fa, webpage)
-    bundle_id_to_components = defaultdict(lambda: [])
+    bundle_id_to_components = defaultdict(lambda: defaultdict(list))
     for bundle_id in BUNDLE_IDS:
       search_field = driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="keywords"]'))
       search_field.clear() # clear previous input if it exits
@@ -57,7 +57,8 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
       driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="name1href"]')).click()
       try:
         driverWait.until(EC.text_to_be_present_in_element((By.TAG_NAME, 'body'), 'You have not been granted access to the bundle.'))
-        bundle_id_to_components[bundle_id].append(PRIVATE_BUNDLE)
+        # for private bundles we return an empty Record
+        bundle_id_to_components[bundle_id] = {}
         webpage.back()
       except TimeoutException:
         driverWait.until(lambda driver: driver.find_element(By.XPATH, '//*[@id="componentstabtxt"]')).click()
@@ -67,9 +68,19 @@ def parse_bundle_components(account_id, username, password, secret_key_2fa, webp
     webpage.quit()
   return bundle_id_to_components
 
+def format_components(bundle_id_to_components):
+  table_content = ""
+
+  for bundle_id, bundle_versions in bundle_id_to_components.items():
+    table_content += f'{bundle_id}: {{\n'
+    for version, files in bundle_versions.items():
+        table_content += f'    \'{version}\': new Set({files}),\n'
+    table_content += "  },\n"
+  return table_content
+
 def generate_bundle_map_file(bundle_id_to_components):
-  formatted_components = ["{key}: new Set({value}),".format(key = bundle_id, value = bundle_id_to_components[bundle_id]) for bundle_id in bundle_id_to_components]
-  file_content = bundle_components_file_template.format(bundle_id_to_components = (LINE_SEPERATOR + TAB).join(formatted_components))
+  formatted_components = format_components(bundle_id_to_components)
+  file_content = bundle_components_file_template.format(bundle_id_to_components = formatted_components)
   Path(BUNDLE_COMPONENTS_DIR).mkdir(parents=True, exist_ok=True)
   with open(BUNDLE_COMPONENTS_DIR + 'bundle_components.ts', 'w') as file:
     file.write(file_content)

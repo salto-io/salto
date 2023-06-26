@@ -24,7 +24,7 @@ import { PATH } from '../../src/constants'
 
 describe('bundle_ids filter', () => {
   const filterOpts = {
-    config: {},
+    config: { fetch: { addBundles: true } },
     isPartial: false,
     elementsSourceIndex: {
       getIndexes: () => {
@@ -51,14 +51,14 @@ describe('bundle_ids filter', () => {
     })
     // TODO: Uncomment these after opening bundles for everyone
 
-    // it('should add bundle field to record instance', async () => {
-    //   await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])
-    //   expect(recordInstance.value.bundle).toEqual(bundleRef)
-    // })
-    // it('should add bundle field to fileCabinet instance', async () => {
-    //   await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, bundleInstance])
-    //   expect(fileCabinetInstance.value.bundle).toEqual(bundleRef)
-    // })
+    it('should add bundle field to record instance', async () => {
+      await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])
+      expect(recordInstance.value.bundle).toEqual(bundleRef)
+    })
+    it('should add bundle field to fileCabinet instance', async () => {
+      await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, bundleInstance])
+      expect(fileCabinetInstance.value.bundle).toEqual(bundleRef)
+    })
 
     it('should not add bundle field in case the bundle doesn\'t exist in the record', async () => {
       const notInRecordBundle = new InstanceElement('0', bundleType().type, { id: '0' })

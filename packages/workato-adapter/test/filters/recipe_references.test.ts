@@ -130,6 +130,16 @@ describe('Recipe references filter', () => {
       }
     )
 
+    const zendeskSandbox = new InstanceElement(
+      'zendesk_sbx_123',
+      connectionType,
+      {
+        id: 1237,
+        application: 'zendesk',
+        name: 'zendesk sbx 123',
+      }
+    )
+
     const secondarySalesforce = new InstanceElement(
       'secondary_sf',
       connectionType,
@@ -822,6 +832,162 @@ describe('Recipe references filter', () => {
       code: new ReferenceExpression(recipe8JiraCode.elemID),
     })
 
+    const recipe9ZendeskCode = new InstanceElement('recipe9_code', codeType, {
+      as: 'zendesk9id',
+      provider: 'zendesk',
+      name: 'new_ticket_polling',
+      keyword: 'trigger',
+      dynamicPickListSelection: {
+      },
+      input: {
+        since: '2000-00-00T00:00:00-00:00',
+      },
+      block: [
+        {
+          number: 1,
+          keyword: 'if',
+          input: {
+            type: 'compound',
+            operand: 'and',
+            conditions: [
+              {
+                operand: 'greater_than',
+                lhs: "#{_('data.zendesk.zendesk9id.priority')}", // check
+                rhs: '111111111',
+                uuid: 'condition-uuid',
+              },
+            ],
+          },
+          block: [
+            {
+              number: 2,
+              provider: 'zendesk',
+              name: 'update_ticket',
+              as: 'recipe9id_nested',
+              description: 'Update <span class="provider">accounting code</span> in <span class="provider">Zuora</span>',
+              keyword: 'action',
+              dynamicPickListSelection: {
+                ticket_form_id: 'Premier Priority Ticket',
+              },
+              input: {
+                macro_ids: {
+                  more: 'string',
+                  id: 10,
+                },
+                group_id: 11,
+                brand_id: 'not a number', // check ID is number
+                ticket_form_id: 1000, // check non exist ID
+                status: 'my status',
+                priority: 'very high',
+                not_in_standard_fields: 'without reference', // check non exist standard field
+                field_12: 'field 12 value 1',
+                field_13: 4, // exist field with non exist value
+                field_1001: 3, // non exist field with non exist value
+                field_14: 'same value name', // exist field_ID with exist value same as user and organziation
+                field_same: 'same', // exist field_key in organization and user. shouldnt referenced
+              },
+              visible_config_fields: [
+                'object',
+                'Fax',
+              ],
+              uuid: 'uuid1',
+            },
+          ],
+          uuid: 'uuid2',
+        },
+        {
+          number: 3,
+          provider: 'zendesk',
+          name: 'create_ticket',
+          as: 'recipe9id_3',
+          description: 'Search <span class="provider">products</span> in <span class="provider">Zuora</span>',
+          keyword: 'action',
+          dynamicPickListSelection: {
+          },
+          input: {
+            macro_ids: {
+              more: 'string',
+              id: 'not a number', // check ID is number
+            },
+            // check group_id undefined
+            brand_id: 15,
+            ticket_form_id: 16,
+            field_12: 'field 12 value 2',
+          },
+          visible_config_fields: [
+          ],
+          uuid: 'uuid3',
+        },
+        {
+          number: 4,
+          provider: 'zendesk',
+          name: 'update_organization',
+          as: 'recipe9id_4',
+          description: 'Search <span class="provider">products</span> in <span class="provider">Zuora</span>',
+          keyword: 'action',
+          dynamicPickListSelection: {
+          },
+          input: {
+            field_organization_field_1: 'org field 1 value 1',
+            field_organization_field_2: 'same value name', // exist field_key with exist value same as ticket and organziation
+            field_organization_field_3: 4, // exist field_key with non exist value
+            field_organization_field_1002: 4, // non exist field_key
+            field_same: 'same', // exist field_key in ticket and user. should reference the organization field
+          },
+          visible_config_fields: [
+          ],
+          uuid: 'uuid4',
+        },
+        {
+          number: 5,
+          provider: 'zendesk',
+          name: 'update_organization',
+          as: 'recipe9id_5',
+          description: 'Search <span class="provider">products</span> in <span class="provider">Zuora</span>',
+          keyword: 'action',
+          dynamicPickListSelection: {
+          },
+          input: {
+            field_user_field_1: 'user field 1 value 1',
+            field_user_field_2: 'same value name', // exist field_key with exist value same as ticket and organziation
+            field_user_field_3: 4, // exist field_key with non exist value
+            field_user_field_1002: 4, // non exist field_key
+            field_same: 'same', // exist field_key in ticket and organization. should reference the user field
+
+            comment: `should referenced #{_('data.zendesk.recipe9id_nested.priority')}
+                      should referenced #{_('data.zendesk.recipe9id_nested.status')}
+                      should referenced #{_('data.zendesk.recipe9id_nested.custom_fields.field_100')}
+                      should referenced #{_('data.zendesk.recipe9id_3.custom_fields.field_101')}
+                      should referenced #{_('data.zendesk.recipe9id_4.organization_fields.field_org1')}
+                      should referenced #{_('data.zendesk.recipe9id_4.organization_fields.field_field')}
+                      should referenced #{_('data.zendesk.recipe9id_5.user_fields.field_user1')}
+                      should referenced #{_('data.zendesk.recipe9id_5.user_fields.field_field')}
+                      should referenced #{_('data.zendesk.recipe9id_3.users.first.user_fields.field_user1')} - user block with user field
+
+                      should not referenced #{_('data.zendesk.non_exist_block.priority')} - non-exist block
+                      should not referenced #{_('data.zendesk.non_exist_block.organization_fields.field_field')} - non-exist block
+                      should not referenced #{_('data.zendesk.recipe9id_4.status')} - not ticket block
+                      `,
+          },
+          visible_config_fields: [
+          ],
+          uuid: 'uuid5',
+        },
+      ],
+    })
+
+    const recipe9Zendesk = new InstanceElement('recipe9', recipeType, {
+      config: [
+        {
+          keyword: 'application',
+          name: 'zendesk',
+          provider: 'zendesk',
+          account_id: new ReferenceExpression(zendeskSandbox.elemID),
+        },
+      ],
+      code: new ReferenceExpression(recipe9ZendeskCode.elemID),
+    })
+
     return [
       connectionType,
       sfSandbox1,
@@ -829,6 +995,7 @@ describe('Recipe references filter', () => {
       netsuiteSandbox123,
       zuoraSandbox,
       jiraSandbox,
+      zendeskSandbox,
       secondarySalesforce,
       secondaryNetsuite,
       labelValueType,
@@ -856,6 +1023,8 @@ describe('Recipe references filter', () => {
       recipe7ZuoraCode,
       recipe8Jira,
       recipe8JiraCode,
+      recipe9Zendesk,
+      recipe9ZendeskCode,
     ]
   }
 
@@ -1181,12 +1350,372 @@ describe('Recipe references filter', () => {
       fieldType, regularField, customField, inIssueField, withSpacesField, arrayField,
     ]
   }
+
+  const generateZendeskElements = (): Element[] => {
+    const ticketOptionType = new ObjectType({
+      elemID: new ElemID('zendesk', 'ticket_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const ticketFieldType = new ObjectType({
+      elemID: new ElemID('zendesk', 'ticket_field'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        type: { refType: BuiltinTypes.STRING },
+        key: { refType: BuiltinTypes.STRING },
+        raw_title: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(ticketOptionType) },
+      },
+    })
+
+    const organizationOptionType = new ObjectType({
+      elemID: new ElemID('zendesk', 'organization_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const organizationFieldType = new ObjectType({
+      elemID: new ElemID('zendesk', 'organization_field'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        key: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(organizationOptionType) },
+      },
+    })
+
+    const userOptionType = new ObjectType({
+      elemID: new ElemID('zendesk', 'user_field__custom_field_options'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        value: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const userFieldType = new ObjectType({
+      elemID: new ElemID('zendesk', 'user_field'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        key: { refType: BuiltinTypes.STRING },
+        custom_field_options: { refType: new ListType(userOptionType) },
+      },
+    })
+
+    const macroType = new ObjectType({
+      elemID: new ElemID('zendesk', 'macro'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const groupType = new ObjectType({
+      elemID: new ElemID('zendesk', 'group'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const brandType = new ObjectType({
+      elemID: new ElemID('zendesk', 'brand'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+      },
+    })
+
+    const ticketFormType = new ObjectType({
+      elemID: new ElemID('zendesk', 'ticket_form'),
+      fields: {
+        id: { refType: BuiltinTypes.NUMBER },
+        default: { refType: BuiltinTypes.BOOLEAN },
+        ticket_field_ids: { refType: new ListType(BuiltinTypes.BOOLEAN) },
+      },
+    })
+
+    const macroInst = new InstanceElement(
+      'macroInstName',
+      macroType,
+      { id: 10 }
+    )
+
+    const groupInst = new InstanceElement(
+      'groupInstName',
+      groupType,
+      { id: 11 }
+    )
+
+    const brandInst = new InstanceElement(
+      'brandInstName',
+      groupType,
+      { id: 15 }
+    )
+
+    const ticketFormInst = new InstanceElement(
+      'ticketFormInstName',
+      ticketFormType,
+      { id: 16, default: false }
+    )
+
+    const ticketFieldPriority = new InstanceElement(
+      'priority',
+      ticketFieldType,
+      {
+        id: 1,
+        type: 'priority',
+        raw_title: 'Priority',
+      }
+    )
+
+    const ticketFieldStatus = new InstanceElement(
+      'status',
+      ticketFieldType,
+      {
+        id: 2,
+        type: 'status',
+        raw_title: 'Stauts',
+      }
+    )
+
+    const defaultTicketFormInst = new InstanceElement(
+      'defaultTicketFormInstName',
+      ticketFormType,
+      { id: 17, default: true, ticket_field_ids: [ticketFieldStatus.value.id, ticketFieldPriority.value.id] }
+    )
+
+    const ticketField12Option1 = new InstanceElement(
+      'ticketField12Option1Name',
+      ticketOptionType,
+      {
+        id: 121,
+        value: 'field 12 value 1',
+      }
+    )
+
+    const ticketField12Option2 = new InstanceElement(
+      'ticketField12Option2Name',
+      ticketOptionType,
+      {
+        id: 122,
+        value: 'field 12 value 2',
+      }
+    )
+
+    const ticketField12 = new InstanceElement(
+      'ticketField12Name',
+      ticketFieldType,
+      {
+        id: 12,
+        custom_field_options: {
+          ticketField12Option1,
+          ticketField12Option2,
+        },
+      }
+    )
+
+    const ticketField13 = new InstanceElement(
+      'ticketField13Name',
+      ticketFieldType,
+      {
+        id: 13,
+      }
+    )
+
+    const ticketField14Option = new InstanceElement(
+      'ticketField14OptionName',
+      ticketOptionType,
+      {
+        id: 141,
+        value: 'same value name',
+      }
+    )
+
+    const ticketField14 = new InstanceElement(
+      'ticketField14Name',
+      ticketFieldType,
+      {
+        id: 14,
+        custom_field_options: {
+          ticketField14Option,
+        },
+      }
+    )
+
+    const ticketFieldSame = new InstanceElement(
+      'ticketFieldSameName',
+      ticketFieldType,
+      {
+        id: 0,
+        key: 'same',
+      }
+    )
+
+    const organizationField1Option = new InstanceElement(
+      'organizationField1OptionName',
+      organizationOptionType,
+      {
+        id: 311,
+        value: 'org field 1 value 1',
+      }
+    )
+
+    const organizationField1 = new InstanceElement(
+      'organizationField1Name',
+      organizationFieldType,
+      {
+        id: 31,
+        key: 'organization_field_1',
+        custom_field_options: {
+          organizationField1Option,
+        },
+      }
+    )
+
+    const organizationField2Option = new InstanceElement(
+      'organizationField2OptionName',
+      organizationOptionType,
+      {
+        id: 321,
+        value: 'same value name',
+      }
+    )
+
+    const organizationField2 = new InstanceElement(
+      'organizationField2Name',
+      organizationFieldType,
+      {
+        id: 32,
+        key: 'organization_field_2',
+        custom_field_options: {
+          organizationField2Option,
+        },
+      }
+    )
+
+    const organizationField3 = new InstanceElement(
+      'organizationField3Name',
+      organizationFieldType,
+      {
+        id: 33,
+        key: 'organization_field_3',
+      }
+    )
+
+    const organizationFieldSameOption = new InstanceElement(
+      'organizationFieldSameOptionName',
+      organizationOptionType,
+      {
+        id: 341,
+        value: 'same',
+      }
+    )
+
+    const organizationFieldSame = new InstanceElement(
+      'organizationFieldSameName',
+      organizationFieldType,
+      {
+        id: 34,
+        key: 'same',
+        custom_field_options: {
+          organizationFieldSameOption,
+        },
+      }
+    )
+
+
+    const userField1Option = new InstanceElement(
+      'userField1OptionName',
+      userOptionType,
+      {
+        id: 411,
+        value: 'user field 1 value 1',
+      }
+    )
+
+    const userField1 = new InstanceElement(
+      'userField1Name',
+      userFieldType,
+      {
+        id: 41,
+        key: 'user_field_1',
+        custom_field_options: {
+          userField1Option,
+        },
+      }
+    )
+
+    const userField2Option = new InstanceElement(
+      'userField2OptionName',
+      userOptionType,
+      {
+        id: 421,
+        value: 'same value name',
+      }
+    )
+
+    const userField2 = new InstanceElement(
+      'userField2Name',
+      userFieldType,
+      {
+        id: 42,
+        key: 'user_field_2',
+        custom_field_options: {
+          userField2Option,
+        },
+      }
+    )
+
+    const userField3 = new InstanceElement(
+      'userField3Name',
+      userFieldType,
+      {
+        id: 43,
+        key: 'user_field_3',
+      }
+    )
+
+    const userFieldSameOption = new InstanceElement(
+      'userFieldSameOptionName',
+      userOptionType,
+      {
+        id: 441,
+        value: 'same',
+      }
+    )
+
+    const userFieldSame = new InstanceElement(
+      'userFieldSameName',
+      userFieldType,
+      {
+        id: 44,
+        key: 'same',
+        custom_field_options: {
+          userFieldSameOption,
+        },
+      }
+    )
+
+    return [
+      ticketOptionType, ticketFieldType, organizationOptionType, organizationFieldType,
+      userOptionType, userFieldType, macroType, groupType, brandType, ticketFormType,
+      macroInst, groupInst, brandInst, ticketFormInst, ticketFieldPriority, ticketFieldStatus,
+      defaultTicketFormInst, ticketField12Option1, ticketField12Option2, ticketField12,
+      ticketField13, ticketField14Option, ticketField14, ticketFieldSame, organizationField1Option,
+      organizationField1, organizationField2Option, organizationField2, organizationField3,
+      organizationFieldSameOption, organizationFieldSame, userField1Option, userField1,
+      userField2Option, userField2, userField3, userFieldSameOption, userFieldSame,
+    ]
+  }
+
   describe('on post-fetch primary', () => {
     let currentAdapterElements: Element[]
     let salesforceElements: Element[]
     let netsuiteElements: Element[]
     let zuoraElements: Element[]
     let jiraElements: Element[]
+    let zendeskElements: Element[]
 
     beforeAll(async () => {
       filter = filterCreator({
@@ -1203,6 +1732,7 @@ describe('Recipe references filter', () => {
               netsuite: ['netsuite sbx 123'],
               zuora_billing: ['zuora sbx 123'],
               jira: ['jira sbx 123'],
+              zendesk: ['zendesk sbx 123'],
             },
           },
           apiDefinitions: {
@@ -1223,6 +1753,7 @@ describe('Recipe references filter', () => {
       netsuiteElements = generateNetsuiteElements()
       zuoraElements = generateZuoraElements()
       jiraElements = generateJiraElements()
+      zendeskElements = generateZendeskElements()
       await filter.onPostFetch({
         currentAdapterElements,
         elementsByAccount: {
@@ -1230,12 +1761,14 @@ describe('Recipe references filter', () => {
           netsuite: netsuiteElements,
           zuora_billing: zuoraElements,
           jira: jiraElements,
+          zendesk: zendeskElements,
         },
         accountToServiceNameMap: {
           zuora_billing: 'zuora_billing',
           salesforce: 'salesforce',
           netsuite: 'netsuite',
           jira: 'jira',
+          zendesk: 'zendesk',
         },
         progressReporter: { reportProgress: () => null },
       })
@@ -1546,6 +2079,61 @@ describe('Recipe references filter', () => {
         expect(secondBlock.input.issueType.elemID.getFullName()).toEqual('jira.IssueType.instance.ThirdType')
       })
     })
+
+    describe('recipe9Zendesk', () => {
+      it('should show all resolved references in the _generated_dependencies annotation, in alphabetical order', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe9_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        // expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(7)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          dereferenceDep
+        )).toEqual([
+          { reference: 'zendesk.group.instance.brandInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
+          { reference: 'zendesk.group.instance.groupInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zendesk.macro.instance.macroInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.organization_field.instance.organizationFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_organization_field_2', direction: 'input' }] },
+          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_same', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.priority', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.status', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField12Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }, { location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField13Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField14Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.organizationField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_organization_field_1', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0.input.field_12', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1.input.field_12', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField14OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0.input.field_14', direction: 'input' }] },
+          { reference: 'zendesk.ticket_form.instance.ticketFormInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
+          { reference: 'zendesk.user_field.instance.userField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.user_field.instance.userField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.user_field.instance.userField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.user_field.instance.userFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_user_field_1', direction: 'input' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_user_field_2', direction: 'input' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_same', direction: 'input' }] },// TODO check this
+        ])
+      })
+
+      it('should resolve references in-place where possible', () => { // TODO
+        const recipeCode = currentAdapterElements.find(
+          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe7_code'
+        ) as InstanceElement
+        expect(recipeCode).toBeInstanceOf(InstanceElement)
+        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
+        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
+        expect(recipeCode.value.block[0].block[0].input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.object.elemID.getFullName()).toEqual('zuora_billing.accountingcode')
+        expect(recipeCode.value.block[1].input.object).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[1].input.object.elemID.getFullName()).toEqual('zuora_billing.product')
+      })
+    })
+
 
     it('should return false if no elements were modified', async () => {
       const elements = generateCurrentAdapterElements()

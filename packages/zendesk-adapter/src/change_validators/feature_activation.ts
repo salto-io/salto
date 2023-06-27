@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ChangeValidator, getChangeData,
+  ChangeValidator, getChangeData, isAdditionChange, isAdditionOrModificationChange,
   isInstanceChange, isModificationChange,
 } from '@salto-io/adapter-api'
 import { detailedCompare } from '@salto-io/adapter-utils'
@@ -34,10 +34,13 @@ export const featureActivationValidator: ChangeValidator = async changes => {
   }
 
   const activatedFeatures = detailedCompare(accountSettingsChange.data.before, accountSettingsChange.data.after)
-    .filter(isModificationChange)
+    .filter(isAdditionOrModificationChange)
     // zendesk.account_settings.instance._config.active_features.<feature_name>
-    .filter(detailedChange => detailedChange.id.getFullNameParts()[4] === 'active_features')
-    .filter(detailedChange => detailedChange.data.before === false && detailedChange.data.after === true)
+    .filter(detailedChange => detailedChange.id.createTopLevelParentID().path[0] === 'active_features')
+    .filter(detailedChange =>
+      (isAdditionChange(detailedChange)
+        ? detailedChange.data.after === true
+        : detailedChange.data.before === false && detailedChange.data.after === true))
     .map(detailedChange => detailedChange.id.name)
 
   return activatedFeatures.length === 0 ? [] : [{

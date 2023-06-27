@@ -39,6 +39,7 @@ describe('featureActivationValidator', () => {
       b: true,
       c: false,
       d: true,
+      e: true,
     }
 
     const errors = await featureActivationValidator([toChange({ before, after })])
@@ -46,7 +47,7 @@ describe('featureActivationValidator', () => {
       elemID: accountSetting.elemID,
       severity: 'Info',
       message: 'Activating new features may include additional cost',
-      detailedMessage: 'Features a, b are marked for activation and may require additional cost in order to operate',
+      detailedMessage: 'Features a, b, e are marked for activation and may require additional cost in order to operate',
     }])
   })
 

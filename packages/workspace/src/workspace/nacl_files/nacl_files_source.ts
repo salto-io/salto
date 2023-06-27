@@ -248,20 +248,20 @@ export const toParsedNaclFile = async (
 }
 
 async function parseNaclFile(
-  naclFile: NaclFile, functions: Functions, createSourceMap?: true
+  naclFile: NaclFile, functions: Functions, createSourceMap?: 'createSourceMap'
 ): Promise<Required<ParseResult>>
 async function parseNaclFile(
-  naclFile: NaclFile, functions: Functions, createSourceMap: boolean
+  naclFile: NaclFile, functions: Functions, createSourceMap: 'createSourceMap' | 'noSourceMap'
 ): Promise<ParseResult>
 
 async function parseNaclFile(
-  naclFile: NaclFile, functions: Functions, createSourceMap = true
+  naclFile: NaclFile, functions: Functions, createSourceMap: 'createSourceMap' | 'noSourceMap' = 'createSourceMap'
 ): Promise<ParseResult> {
-  return parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap)
+  return parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap === 'createSourceMap')
 }
 
 const parseNaclFiles = async (
-  naclFiles: NaclFile[], functions: Functions, createSourceMap: boolean
+  naclFiles: NaclFile[], functions: Functions, createSourceMap: 'createSourceMap' | 'noSourceMap'
 ): Promise<ParsedNaclFile[]> => (
   withLimitedConcurrency(
     naclFiles.map(
@@ -676,7 +676,7 @@ const buildNaclFilesSource = (
       const parsedModifiedFiles = await parseNaclFiles(
         modifiedNaclFiles,
         functions,
-        false,
+        'noSourceMap',
       )
       const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
@@ -772,7 +772,7 @@ const buildNaclFilesSource = (
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
-    const parsedResult = await parseNaclFile(naclFile, functions, true)
+    const parsedResult = await parseNaclFile(naclFile, functions, 'createSourceMap')
     if (useCache) {
       const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
       await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
@@ -1014,7 +1014,7 @@ const buildNaclFilesSource = (
       const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), functions, false),
+        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), functions, 'noSourceMap'),
       )
       state = Promise.resolve(res.state)
       res.changes.preChangeHash = preChangeHash
@@ -1097,7 +1097,7 @@ const buildNaclFilesSource = (
     setNaclFiles: async naclFiles => {
       await setNaclFiles(naclFiles)
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(naclFiles, functions, false)
+        await parseNaclFiles(naclFiles, functions, 'noSourceMap')
       )
       state = Promise.resolve(res.state)
       return res.changes

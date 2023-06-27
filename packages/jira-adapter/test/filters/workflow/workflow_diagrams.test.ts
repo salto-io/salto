@@ -202,7 +202,19 @@ describe('workflowDiagramFilter', () => {
               sourceAngle: 78.11,
               targetAngle: -173.58,
             },
+            {
+              id: 'A<51:S<-1>:S<-1>>',
+              name: 'looped',
+              sourceId: 'S<-1>',
+              targetId: 'S<-1>',
+              globalTransition: true,
+              loopedTransition: true,
+            },
           ],
+          loopedTransitionContainer: {
+            x: -15.85,
+            y: 109.40,
+          },
         },
       },
     })
@@ -233,6 +245,12 @@ describe('workflowDiagramFilter', () => {
       const elements = [workflowType]
       await filter.onFetch(elements)
       expect(workflowType.fields.diagramInitialEntry).toBeDefined()
+      expect(elements).toHaveLength(3)
+    })
+    it('should set the diagramGlobalLoopedTransition field in Workflow', async () => {
+      const elements = [workflowType]
+      await filter.onFetch(elements)
+      expect(workflowType.fields.diagramGlobalLoopedTransition).toBeDefined()
       expect(elements).toHaveLength(3)
     })
 
@@ -299,6 +317,143 @@ describe('workflowDiagramFilter', () => {
       )
       expect(elements).toHaveLength(3)
       expect(instance.value.transitions[0].from).toBeUndefined()
+    })
+    it('should add diagramGlobalLoopedTransition angles to the instance', async () => {
+      const elements = [instance]
+      await filter.onFetch(elements)
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/workflowDesigner/1.0/workflows',
+        {
+          headers: { 'X-Atlassian-Token': 'no-check' },
+          params: { name: 'workflowName' },
+        },
+      )
+      expect(elements).toHaveLength(3)
+      expect(instance.value.diagramGlobalLoopedTransition).toBeDefined()
+      expect(instance.value.diagramGlobalLoopedTransition.x).toEqual(-15.85)
+      expect(instance.value.diagramGlobalLoopedTransition.y).toEqual(109.40)
+    })
+    it('should fetch diagram values without diagramGlobalLoopedTransition', async () => {
+      instance.value.diagramGlobalLoopedTransition = undefined
+      mockConnection.get.mockResolvedValue({
+        status: 200,
+        data: {
+          isDraft: false,
+          layout: {
+            statuses: [
+              {
+                id: 'S<3>',
+                name: 'Open',
+                stepId: '3',
+                statusId: '1',
+                x: 3,
+                y: 6,
+              },
+              {
+                id: 'I<1>',
+                name: 'Create',
+                stepId: '1',
+                x: 33,
+                y: 66,
+                initial: true,
+              },
+              {
+                id: 'S<4>',
+                name: 'Resolved',
+                stepId: '4',
+                statusId: '5',
+                x: -3,
+                y: 6,
+              },
+              {
+                id: 'S<1>',
+                name: 'Building',
+                stepId: '1',
+                statusId: '400',
+                x: 3,
+                y: -66,
+              },
+              {
+                id: 'S<2>',
+                name: 'The best name',
+                stepId: '2',
+                statusId: '10007',
+                x: 33,
+                y: -66,
+              },
+            ],
+            transitions: [
+              {
+                id: 'A<31:S<2>:S<1>>',
+                name: 'super',
+                sourceId: 'S<2>',
+                targetId: 'S<1>',
+                sourceAngle: 34.11,
+                targetAngle: 173.58,
+              },
+              {
+                id: 'IA<1:I<1>:S<3>>',
+                name: 'Create',
+                sourceId: 'I<1>',
+                targetId: 'S<3>',
+                sourceAngle: 99.11,
+                targetAngle: 173.58,
+              },
+              {
+                id: 'A<41:S<4>:S<2>>',
+                name: 'yey',
+                sourceId: 'S<4>',
+                targetId: 'S<2>',
+                sourceAngle: 78.11,
+                targetAngle: 122.58,
+              },
+              {
+                id: 'A<21:S<3>:S<4>>',
+                name: 'hey',
+                sourceId: 'S<3>',
+                targetId: 'S<4>',
+                sourceAngle: -78.11,
+                targetAngle: 173.58,
+              },
+              {
+                id: 'A<11:S<1>:S<1>>',
+                name: 'Building',
+                sourceId: 'S<1>',
+                targetId: 'S<1>',
+                sourceAngle: 78.11,
+                targetAngle: -173.58,
+              },
+              {
+                id: 'A<51:S<-1>:S<-1>>',
+                name: 'looped',
+                sourceId: 'S<-1>',
+                targetId: 'S<-1>',
+                globalTransition: true,
+                loopedTransition: true,
+              },
+            ],
+          },
+        },
+      })
+      const elements = [instance]
+      filter = workflowDiagramsFilter(getFilterParams({
+        client,
+      })) as typeof filter
+      await filter.onFetch(elements)
+      expect(mockConnection.get).toHaveBeenCalledWith(
+        '/rest/workflowDesigner/1.0/workflows',
+        {
+          headers: { 'X-Atlassian-Token': 'no-check' },
+          params: { name: 'workflowName' },
+        },
+      )
+      expect(instance.value.diagramGlobalLoopedTransition).toBeUndefined()
+      expect(instance.value.statuses[0].location).toBeDefined()
+      expect(instance.value.statuses[0].location.x).toEqual(-3)
+      expect(instance.value.statuses[0].location.y).toEqual(6)
+      expect(instance.value.transitions[2].from[0].id).toBeDefined()
+      expect(instance.value.transitions[2].from[0].sourceAngle).toEqual(-78.11)
+      expect(instance.value.transitions[2].from[0].targetAngle).toEqual(173.58)
     })
 
     it('should log error when response is not valid', async () => {

@@ -146,7 +146,7 @@ salesforce {
           "SBQQ__WebQuote__c",
           "SBQQ__WebQuoteLine__c",
           "SBQQ__QuoteLineConsumptionSchedule__c",
-          "SBQQ__QuoteLineConsumptionsRate__c",
+          "SBQQ__QuoteLineConsumptionRate__c",
           "SBQQ__InstallProcessorLog__c",
           "SBQQ__ProcessInputValue__c",
           "SBQQ__RecordJob__c",

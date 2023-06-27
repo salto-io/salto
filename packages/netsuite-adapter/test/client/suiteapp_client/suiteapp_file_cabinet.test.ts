@@ -537,7 +537,7 @@ describe('suiteapp_file_cabinet', () => {
 
     it('should remove \'bundleable\' from query and try again if SuiteBundles ins\'t enabled', async () => {
       mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
-        if (suiteQlQuery.includes('hidebundle', 'bundleabe')) {
+        if (suiteQlQuery.includes('bundleable') || suiteQlQuery.includes('hideinbundle')) {
           throw new Error(SUITEBUNDLES_DISABLED_ERROR)
         }
         if (suiteQlQuery.includes('FROM file')) {
@@ -545,7 +545,6 @@ describe('suiteapp_file_cabinet', () => {
         }
         return getFoldersResponse(suiteQlQuery)
       })
-      mockSuiteAppClient.runSuiteQL.mockRejectedValueOnce(Error(SUITEBUNDLES_DISABLED_ERROR))
       await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(1, "SELECT name, id, bundleable, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(2, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)

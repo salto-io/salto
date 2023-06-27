@@ -264,6 +264,7 @@ SuiteAppFileCabinetOperations => {
       const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
       return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
     } catch (e) {
+      console.log(e.message)
       if (e.message === SUITEBUNDLES_DISABLED_ERROR) {
         const noBundleableQuery = foldersQuery.replace(', bundleable', '')
         const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)

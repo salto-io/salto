@@ -947,6 +947,7 @@ const toRecord = async (
   const values = {
     ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
     ..._.mapValues(instance.value, val => {
+      // Lookups to the same types will have an Id value only after the referenced Record was deployed
       if (isInstanceElement(val)) {
         const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
         if (referencedRecordId === undefined) {

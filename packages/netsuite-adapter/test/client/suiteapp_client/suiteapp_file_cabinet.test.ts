@@ -19,7 +19,7 @@ import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
 import { NetsuiteQuery } from '../../../src/query'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
-import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable } from '../../../src/client/suiteapp_client/suiteapp_file_cabinet'
+import { THROW_ON_MISSING_FEATURE_ERROR, createSuiteAppFileCabinetOperations, isChangeDeployable, SUITEBUNDLES_DISABLED_ERROR } from '../../../src/client/suiteapp_client/suiteapp_file_cabinet'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
 import { customtransactiontypeType } from '../../../src/autogen/types/standard_types/customtransactiontype'
 import { ExistingFileCabinetInstanceDetails, FileCabinetInstanceDetails } from '../../../src/client/suiteapp_client/types'
@@ -490,8 +490,8 @@ describe('suiteapp_file_cabinet', () => {
       const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
         .importFileCabinet(query, maxFileCabinetSizeInGB)
       const testWhereQuery = 'hideinbundle = \'F\' AND folder IN (5, 3)'
-      const suiteQlQuery = 'SELECT name, id, filesize, bundleable, isinactive, isonline,'
-      + ' addtimestamptourl, hideinbundle, description, folder, islink, url'
+      const suiteQlQuery = 'SELECT name, id, filesize, isinactive, isonline,'
+      + ' addtimestamptourl, description, folder, islink, url, bundleable, hideinbundle'
       + ` FROM file WHERE ${testWhereQuery} ORDER BY id ASC`
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, suiteQlQuery)
       expect(elements).toEqual([
@@ -533,6 +533,25 @@ describe('suiteapp_file_cabinet', () => {
         expectedResults[1],
         expectedResults[3],
       ])
+    })
+
+    it('should remove \'bundleable\' from query and try again if SuiteBundles ins\'t enabled', async () => {
+      mockSuiteAppClient.runSuiteQL.mockImplementation(async suiteQlQuery => {
+        if (suiteQlQuery.includes('bundleable') || suiteQlQuery.includes('hideinbundle')) {
+          throw new Error(SUITEBUNDLES_DISABLED_ERROR)
+        }
+        if (suiteQlQuery.includes('FROM file')) {
+          return filesQueryResponse
+        }
+        return getFoldersResponse(suiteQlQuery)
+      })
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(elements).toEqual(expectedResults)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(1, "SELECT name, id, bundleable, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(2, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'F' AND (appfolder LIKE 'folder5%') ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
+      expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(4, 'SELECT name, id, filesize, isinactive, isonline, addtimestamptourl, description, folder, islink, url FROM file WHERE folder IN (5, 3, 4) ORDER BY id ASC')
     })
   })
 

@@ -545,7 +545,9 @@ describe('suiteapp_file_cabinet', () => {
         }
         return getFoldersResponse(suiteQlQuery)
       })
-      await createSuiteAppFileCabinetOperations(suiteAppClient).importFileCabinet(query, maxFileCabinetSizeInGB)
+      const { elements } = await createSuiteAppFileCabinetOperations(suiteAppClient)
+        .importFileCabinet(query, maxFileCabinetSizeInGB)
+      expect(elements).toEqual(expectedResults)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(1, "SELECT name, id, bundleable, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(2, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'T' ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)
       expect(suiteAppClient.runSuiteQL).toHaveBeenNthCalledWith(3, "SELECT name, id, isinactive, isprivate, description, parent FROM mediaitemfolder WHERE istoplevel = 'F' AND (appfolder LIKE 'folder5%') ORDER BY id ASC", THROW_ON_MISSING_FEATURE_ERROR)

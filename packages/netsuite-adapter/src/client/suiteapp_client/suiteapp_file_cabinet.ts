@@ -143,7 +143,7 @@ type FileResult = {
   isinactive: 'T' | 'F'
   isonline: 'T' | 'F'
   addtimestamptourl: 'T' | 'F'
-  hideinbundle: 'T' | 'F'
+  hideinbundle?: 'T' | 'F'
   description?: string
   islink: 'T' | 'F'
   url: string
@@ -162,6 +162,7 @@ const FILES_CHUNK_SIZE = 5 * 1024 * 1024
 const MAX_DEPLOYABLE_FILE_SIZE = 10 * 1024 * 1024
 const DEPLOY_CHUNK_SIZE = 50
 const MAX_ITEMS_IN_WHERE_QUERY = 200
+const BUNDLEABLE = ', bundleable'
 export const SUITEBUNDLES_DISABLED_ERROR = 'Failed to list folders. Please verify that the "Create bundles with SuiteBundler" feature is enabled in the account.'
 
 
@@ -258,14 +259,15 @@ SuiteAppFileCabinetOperations => {
     whereQuery: string,
     isSuiteBundlesEnabled = true,
   ): Promise<{folderResults: FolderResult[]; isSuiteBundlesEnabled: boolean}> => retryOnRetryableError(async () => {
-    const foldersQuery = `SELECT name, id${isSuiteBundlesEnabled ? ', bundleable' : ''}, isinactive, isprivate, description, parent`
+    const foldersQuery = `SELECT name, id${isSuiteBundlesEnabled ? BUNDLEABLE : ''}, isinactive, isprivate, description, parent`
     + ` FROM mediaitemfolder WHERE ${whereQuery} ORDER BY id ASC`
     try {
       const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
       return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
     } catch (e) {
-      if (e.message === SUITEBUNDLES_DISABLED_ERROR) {
-        const noBundleableQuery = foldersQuery.replace(', bundleable', '')
+      if (e.message === SUITEBUNDLES_DISABLED_ERROR && isSuiteBundlesEnabled) {
+        log.debug('SuiteBundles not enabled in the account, removing \'bundleable\' from query')
+        const noBundleableQuery = foldersQuery.replace(BUNDLEABLE, '')
         const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)
         return { folderResults: validateFoldersResults(queryResult), isSuiteBundlesEnabled: false }
       }
@@ -435,7 +437,7 @@ SuiteAppFileCabinetOperations => {
         isinactive: file.isinactive,
         availablewithoutlogin: file.isonline,
         generateurltimestamp: file.addtimestamptourl,
-        hideinbundle: file.hideinbundle,
+        hideinbundle: file.hideinbundle ?? 'F',
         internalId: file.id,
         ...file.islink === 'T' ? { link: file.url } : {},
       },

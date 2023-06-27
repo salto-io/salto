@@ -13,17 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { values, collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId,
-  isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { getChangeData, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import { SECTION_TYPE_NAME, TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME,
   ORG_FIELD_TYPE_NAME, ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_TYPE_NAME } from './constants'
 
-
-const { awu } = collections.asynciterable
-
-type ChangeIdFunction = (change: Change) => Promise<string | undefined>
 
 const PARENT_GROUPED_WITH_INNER_TYPE = [
   TICKET_FIELD_TYPE_NAME,
@@ -42,7 +37,7 @@ const INNER_TYPE_GROUPED_WITH_PARENT = [
   ARTICLE_ATTACHMENT_TYPE_NAME,
 ]
 
-const recurseIntoInstanceChangeToGroupId: ChangeIdFunction = async change => {
+const recurseIntoInstanceChangeToGroupId: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (isInstanceElement(instance)) {
     const { typeName } = instance.elemID
@@ -57,34 +52,18 @@ const recurseIntoInstanceChangeToGroupId: ChangeIdFunction = async change => {
   return undefined
 }
 
-const typeNameChangeGroupId: ChangeIdFunction = async change =>
+const typeNameChangeGroupId: deployment.ChangeIdFunction = async change =>
   getChangeData(change).elemID.typeName
 
 // sections need to be grouped separately as there are dependencies with 'parent_section_id'
-const sectionChangeGroupId: ChangeIdFunction = async change =>
+const sectionChangeGroupId: deployment.ChangeIdFunction = async change =>
   ((getChangeData(change).elemID.typeName === SECTION_TYPE_NAME)
     ? getChangeData(change).elemID.getFullName()
     : undefined)
 
 
-const changeIdProviders: ChangeIdFunction[] = [
+export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   recurseIntoInstanceChangeToGroupId,
   sectionChangeGroupId,
   typeNameChangeGroupId,
-]
-
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => ({
-  changeGroupIdMap: new Map(
-    await awu(changes.entries())
-      .map(async ([id, change]) => {
-        const groupId = await awu(changeIdProviders)
-          .map(provider => provider(change))
-          .find(values.isDefined)
-        return groupId === undefined
-          ? [id, getChangeData(change).elemID.getFullName()] as [ChangeId, ChangeGroupId]
-          : [id, groupId] as [ChangeId, ChangeGroupId]
-      })
-      .filter(values.isDefined)
-      .toArray()
-  ),
-})
+])

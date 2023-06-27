@@ -15,15 +15,24 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import {
-  ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
-  InstanceElement, getChangeData, Values,
+  ChangeError,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  ChangeValidator,
+  InstanceElement,
+  getChangeData,
+  Values,
+  Value,
 } from '@salto-io/adapter-api'
+import { resolvePath } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { apiName } from '../transformers/transformer'
 import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/utils'
 import SalesforceClient from '../client/client'
+import { NAMESPACE_SEPARATOR } from '../constants'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
@@ -37,17 +46,18 @@ type UserFieldGetter = {
 
 // https://stackoverflow.com/a/44154193
 const TYPES_WITH_USER_FIELDS = [
+  'AssignmentRules',
   'CaseSettings',
+  'EscalationRules',
   'FolderShare',
   'WorkflowAlert',
   'WorkflowTask',
   'WorkflowOutboundMessage',
-  'RuleEntry',
-  'Approver',
+  'ApprovalProcess',
   'CustomSite',
-  'EmailServicesAddress',
-  'PresenceConfigAssignments',
-  'Users',
+  'EmailServicesFunction',
+  'PresenceUserConfig',
+  'Queue',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
@@ -59,20 +69,26 @@ type MissingUser = {
   userName: string
 }
 
-const userFieldValue = (instance: InstanceElement, fieldName: string): string[] => {
-  if (instance.value[fieldName] === undefined) {
-    return []
+const nestedFieldValue = (container: InstanceElement | Value, fieldName: string): Value => {
+  if (container instanceof InstanceElement) {
+    return resolvePath(container, container.elemID.createNestedID(...fieldName.split(NAMESPACE_SEPARATOR)))
   }
-  return [instance.value[fieldName]]
+  return _.get(container, fieldName)
 }
 
-const getUserDependingOnType = (typeField: string): GetUserField => (
-  (instance: InstanceElement, userField: string) => {
-    const type = instance.value[typeField]
+const userFieldValue = (instance: InstanceElement, fieldName: string): string[] => (
+  makeArray(nestedFieldValue(instance, fieldName))
+)
+
+const getUserDependingOnType = (typeField: string):
+  (container: InstanceElement | Value, userField: string) => string[] => (
+  (container: InstanceElement | Value, userField: string): string[] => {
+    const type = nestedFieldValue(container, typeField)
+    const user = nestedFieldValue(container, userField)
     if (!type || type.toLocaleLowerCase() !== 'user') {
       return []
     }
-    return [instance.value[userField]]
+    return [user]
   }
 )
 
@@ -96,6 +112,16 @@ const getEmailRecipients: GetUserField = instance => {
     .map((recipient: Values) => recipient.recipient)
 }
 
+const getUsersFromArray = (
+  fieldInArrayElement: string,
+  userFromArrayElement: (arrayElement: Value, fieldName: string) => string[]
+): GetUserField => (
+  (container: InstanceElement | Value, arrayField: string) => {
+    const array = nestedFieldValue(container, arrayField)
+    return array.flatMap((arrayElement: Value) => userFromArrayElement(arrayElement, fieldInArrayElement))
+  }
+)
+
 const userField = (
   fieldName: string,
   userFieldGetter: GetUserField,
@@ -111,6 +137,16 @@ const USER_GETTERS: TypesWithUserFields = {
     userField('defaultCaseUser', userFieldValue),
     userField('defaultCaseOwner', getUserDependingOnType('defaultCaseOwnerType')),
   ],
+  EscalationRules: [
+    userField(
+      'escalationRule.ruleEntry',
+      getUsersFromArray('escalationAction.notifyTo', userFieldValue),
+    ),
+    userField(
+      'escalationRule.ruleEntry',
+      getUsersFromArray('escalationAction.assignedTo', getUserDependingOnType('assignedToType')),
+    ),
+  ],
   FolderShare: [
     userField('sharedTo', getUserDependingOnType('sharedToType')),
   ],
@@ -123,24 +159,36 @@ const USER_GETTERS: TypesWithUserFields = {
   WorkflowOutboundMessage: [
     userField('integrationUser', userFieldValue),
   ],
-  RuleEntry: [
-    userField('assignedTo', getUserDependingOnType('assignedToType')),
+  AssignmentRules: [
+    userField(
+      'assignmentRule',
+      getUsersFromArray(
+        'ruleEntry',
+        getUsersFromArray('assignedTo', getUserDependingOnType('assignedToType'))
+      )
+    ),
   ],
-  Approver: [
-    userField('name', getUserDependingOnType('type')),
+  ApprovalProcess: [
+    userField(
+      'approvalStep',
+      getUsersFromArray('assignedApprover.approver.name', getUserDependingOnType('assignedApprover.approver.type'))
+    ),
   ],
   CustomSite: [
     userField('siteAdmin', userFieldValue),
     userField('siteGuestRecordDefaultOwner', userFieldValue),
   ],
-  EmailServicesAddress: [
-    userField('runAsUser', userFieldValue),
+  EmailServicesFunction: [
+    userField(
+      'emailServicesAddresses',
+      getUsersFromArray('runAsUser', userFieldValue),
+    ),
   ],
-  PresenceConfigAssignments: [
-    userField('user', userFieldValue),
+  PresenceUserConfig: [
+    userField('assignments.users.user', userFieldValue),
   ],
-  Users: [
-    userField('user', userFieldValue),
+  Queue: [
+    userField('users.user', userFieldValue),
   ],
 }
 

@@ -32,7 +32,7 @@ describe('bundle_ids filter', () => {
       },
     },
   } as unknown as LocalFilterOpts
-  const bundleInstance = new InstanceElement('39609', bundleType().type, { id: '39609' })
+  const bundleInstance = new InstanceElement('39609', bundleType().type, { id: '39609', version: 'v4.0.0' })
   const bundleRef = new ReferenceExpression(bundleInstance.elemID)
 
   describe('onFetch', () => {
@@ -49,7 +49,6 @@ describe('bundle_ids filter', () => {
         [PATH]: 'SuiteBundles/Bundle 39609/SomeInnerFolder/content.html',
       })
     })
-    // TODO: Uncomment these after opening bundles for everyone
 
     it('should add bundle field to record instance', async () => {
       await filterCreator(filterOpts).onFetch?.([recordInstance, bundleInstance])

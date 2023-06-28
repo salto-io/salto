@@ -22,10 +22,10 @@ import { Value } from '@salto-io/adapter-api'
 import { renameKey } from '../../../utils'
 
 const log = logger(module)
-const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
+export const SCRIPT_RUNNER_POST_FUNCTION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-postfunction'
 const SCRIPT_RUNNER_VALIDATOR_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-validators'
 const SCRIPT_RUNNER_CONDITION_TYPE = 'com.onresolve.jira.groovy.groovyrunner__script-workflow-conditions'
-const SCRIPT_RUNNER_SEND_NOTIFICATIONS = 'com.adaptavist.sr.cloud.workflow.SendNotification'
+export const SCRIPT_RUNNER_SEND_NOTIFICATIONS = 'com.adaptavist.sr.cloud.workflow.SendNotification'
 export const SCRIPT_RUNNER_FIELD = 'scriptRunner'
 const VALUE = 'value'
 export const SCRIPT_RUNNER_CLOUD_TYPES = [

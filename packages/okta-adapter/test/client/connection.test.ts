@@ -16,6 +16,7 @@
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { client as clientUtils } from '@salto-io/adapter-components'
+import { AccountInfo } from '@salto-io/adapter-api'
 import { createConnection, validateCredentials } from '../../src/client/connection'
 
 describe('validateCredentials', () => {
@@ -34,7 +35,7 @@ describe('validateCredentials', () => {
   })
 
   describe('when authorized', () => {
-    let result: string
+    let result: AccountInfo
 
     beforeEach(async () => {
       result = await validateCredentials({
@@ -54,7 +55,7 @@ describe('validateCredentials', () => {
     })
 
     it('should return the org id from the response as account id', () => {
-      expect(result).toEqual('abc123')
+      expect(result).toEqual({ accountId: 'abc123' })
     })
   })
 

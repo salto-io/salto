@@ -14,22 +14,27 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError,
+  isAdditionChange, isAdditionOrModificationChange, isFieldChange, ElemID, ChangeData, SaltoElementError,
+  SaltoError, AccountInfo } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
 import SuiteAppClient from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
 import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
-import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
+import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
+  getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
-import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
+import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId,
+  isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
+  SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
 import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
 import { APPLICATION_ID, PATH, SCRIPT_ID } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
@@ -90,7 +95,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountId> {
+  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
     if (isSuiteAppCredentials(credentials)) {
       try {
         await SuiteAppClient.validateCredentials(credentials)
@@ -132,9 +137,13 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
-    Promise<GetCustomObjectsResult> {
-    return this.sdfClient.getCustomObjects(typeNames, query)
+  async getCustomObjects(
+    typeNames: string[],
+    queries: NetsuiteFetchQueries,
+  ): Promise<GetCustomObjectsResult> {
+    return this.sdfClient.getCustomObjects(
+      typeNames, queries
+    )
   }
 
   @NetsuiteClient.logDecorator

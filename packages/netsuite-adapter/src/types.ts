@@ -21,7 +21,7 @@ import { StandardType, getStandardTypes, isStandardTypeName, getStandardTypesNam
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH } from './constants'
+import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX } from './constants'
 import { SUPPORTED_TYPES } from './data_elements/types'
 
 const { isDefined } = lowerDashValues
@@ -43,6 +43,8 @@ export const isStandardInstanceOrCustomRecordType = (element: Element): boolean 
 ) || (
   isField(element) && isCustomRecordType(element.parent)
 )
+
+export const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
 
 export const isFileCabinetType = (type: ObjectType | TypeReference): boolean =>
   fileCabinetTypesNames.has(type.elemID.name)

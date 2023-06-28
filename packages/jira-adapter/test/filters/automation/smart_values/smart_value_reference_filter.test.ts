@@ -16,14 +16,10 @@
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
   BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { getDefaultConfig, JiraConfig } from '../../../../src/config/config'
 import filterCreator from '../../../../src/filters/automation/smart_values/smart_value_reference_filter'
 import { getFilterParams } from '../../../utils'
-
-const logging = logger('jira-adapter/src/filters/automation/smart_values/smart_value_reference_filter')
-const logErrorSpy = jest.spyOn(logging, 'error')
 
 describe('smart_value_reference_filter', () => {
     type FilterType = filterUtils.FilterWith<'onFetch' | 'onDeploy' | 'preDeploy'>
@@ -36,8 +32,6 @@ describe('smart_value_reference_filter', () => {
     let config: JiraConfig
 
     beforeEach(() => {
-      logErrorSpy.mockReset()
-
       config = _.cloneDeep(getDefaultConfig({ isDataCenter: false }))
 
       filter = filterCreator(getFilterParams({ config })) as FilterType
@@ -120,6 +114,19 @@ describe('smart_value_reference_filter', () => {
             '}} ending',
           ],
         }))
+      })
+      it('should not fail if value is boolean', async () => {
+        const automation2 = new InstanceElement('autom2', automationType,
+          {
+            trigger: { value: true },
+            components: [
+              {
+                value: true,
+                rawValue: 'Field is: {{issue.fieldOne}} {{issue.fieldId}} ending',
+              },
+            ],
+          })
+        await expect(filter.onFetch([automation2])).resolves.not.toThrow()
       })
     })
 

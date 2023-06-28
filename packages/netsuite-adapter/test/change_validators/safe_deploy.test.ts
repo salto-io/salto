@@ -32,6 +32,7 @@ const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
     failedCustomRecords: [],
   },
   elements: [],
+  deletedElements: [],
 }
 
 describe('safe deploy change validator', () => {
@@ -146,6 +147,7 @@ describe('safe deploy change validator', () => {
               failedCustomRecords: [],
             },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: customRecordType, after: afterCustomRecordType })],
@@ -183,6 +185,7 @@ describe('safe deploy change validator', () => {
               failedCustomRecords: [],
             },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator([toChange({
             before: customRecordType.fields.custom_field,

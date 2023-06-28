@@ -15,75 +15,14 @@
 */
 import _ from 'lodash'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
-import { collections, values as lowerdashValues } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { ResponseValue } from './http_connection'
-import { ClientBaseParams, HTTPReadClientInterface } from './http_client'
+import { HTTPReadClientInterface } from '../http_client'
+import { traverseRequestsAsync } from './pagination_async'
+import { GetAllItemsFunc, PageEntriesExtractor, PaginationFunc, PaginationFuncCreator, Paginator, computeRecursiveArgs } from './common'
 
-const { isDefined } = lowerdashValues
 const { makeArray } = collections.array
 const log = logger(module)
-
-type RecursiveQueryArgFunc = Record<string, (entry: ResponseValue) => string>
-
-export type ClientGetWithPaginationParams = ClientBaseParams & {
-  recursiveQueryParams?: RecursiveQueryArgFunc
-  paginationField?: string
-  pageSizeArgName?: string
-}
-
-export type PageEntriesExtractor = (page: ResponseValue) => ResponseValue[]
-export type GetAllItemsFunc = (args: {
-  client: HTTPReadClientInterface
-  pageSize: number
-  getParams: ClientGetWithPaginationParams
-}) => AsyncIterable<ResponseValue[]>
-
-export type PaginationFunc = ({
-  responseData,
-  page,
-  pageSize,
-  getParams,
-  currentParams,
-  responseHeaders,
-}: {
-  responseData: unknown
-  page: ResponseValue[]
-  pageSize: number
-  getParams: ClientGetWithPaginationParams
-  currentParams: Record<string, string>
-  responseHeaders?: unknown
-}) => Record<string, string>[]
-
-export type PaginationFuncCreator<T = {}> = (args: {
-  client: HTTPReadClientInterface
-  pageSize: number
-  getParams: ClientGetWithPaginationParams
-} & T) => PaginationFunc
-
-/**
- * Helper function for generating individual recursive queries based on past responses.
- *
- * For example, the endpoint /folder may have an optional parent_id parameter that is called
- * to list the folders under parent_id. So for each item returned from /folder, we should make
- * a subsequent call to /folder?parent_id=<id>
- */
-const computeRecursiveArgs = (
-  responses: ResponseValue[],
-  recursiveQueryParams?: RecursiveQueryArgFunc,
-): Record<string, string>[] => (
-  (recursiveQueryParams !== undefined && Object.keys(recursiveQueryParams).length > 0)
-    ? responses
-      .map(res => _.pickBy(
-        _.mapValues(
-          recursiveQueryParams,
-          mapper => mapper(res),
-        ),
-        isDefined,
-      ))
-      .filter(args => Object.keys(args).length > 0)
-    : []
-)
 
 export const traverseRequests: (
   paginationFunc: PaginationFunc,
@@ -269,62 +208,19 @@ export const getWithCursorPagination = (pathChecker = defaultPathChecker): Pagin
   return nextPageCursorPages
 }
 
-export const getWithOffsetAndLimit = (): PaginationFunc => {
-  // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
-  // "paginationField" to be configured
-  type PageResponse = {
-    isLast: boolean
-    values: unknown[]
-    [k: string]: unknown
-  }
-  const isPageResponse = (
-    responseData: unknown,
-    paginationField: string
-  ): responseData is PageResponse => (
-    _.isObject(responseData)
-    && _.isBoolean(_.get(responseData, 'isLast'))
-    && Array.isArray(_.get(responseData, 'values'))
-    && _.isNumber(_.get(responseData, paginationField))
-  )
-
-  const getNextPage: PaginationFunc = (
-    { responseData, getParams, currentParams }
-  ) => {
-    const { paginationField } = getParams
-    if (paginationField === undefined) {
-      return []
-    }
-    if (!isPageResponse(responseData, paginationField)) {
-      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
-    }
-    if (responseData.isLast) {
-      return []
-    }
-    const currentPageStart = _.get(responseData, paginationField) as number
-    const nextPageStart = currentPageStart + responseData.values.length
-    const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
-    return [nextPage]
-  }
-
-  return getNextPage
-}
-
-export type Paginator = (
-  params: ClientGetWithPaginationParams,
-  extractPageEntries: PageEntriesExtractor,
-) => AsyncIterable<ResponseValue[]>
-
 /**
  * Wrap a pagination function for use by the adapter
  */
-export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client }: {
+export const createPaginator = ({ paginationFuncCreator, customEntryExtractor, client, asyncRun = false }: {
   paginationFuncCreator: PaginationFuncCreator
   customEntryExtractor?: PageEntriesExtractor
   client: HTTPReadClientInterface
-}): Paginator => (
-  (getParams, extractPageEntries) => traverseRequests(
+  asyncRun?: boolean
+}): Paginator => {
+  const traverseRequestsFunc = asyncRun ? traverseRequestsAsync : traverseRequests
+  return (getParams, extractPageEntries) => traverseRequestsFunc(
     paginationFuncCreator({ client, pageSize: client.getPageSize(), getParams }),
     extractPageEntries,
     customEntryExtractor,
   )({ client, pageSize: client.getPageSize(), getParams })
-)
+}

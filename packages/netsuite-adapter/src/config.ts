@@ -27,7 +27,7 @@ import {
 } from './constants'
 import { NetsuiteQueryParameters, FetchParams, convertToQueryParams, QueryParams, FetchTypeQueryParams, FieldToOmitParams, validateArrayOfStrings, validatePlainObject, validateFetchParameters, FETCH_PARAMS, validateFieldsToOmitConfig, NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, checkTypeNameRegMatch, noSupportedTypeMatch, validateNetsuiteQueryParameters } from './query'
 import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
-import { netsuiteSupportedTypes } from './types'
+import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
 
@@ -36,7 +36,7 @@ const log = logger(module)
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
-export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
+export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 10
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 3
 export const WARNING_MAX_FILE_CABINET_SIZE_IN_GB = 1
@@ -132,6 +132,7 @@ export type NetsuiteConfig = {
   fetchTarget?: NetsuiteQueryParameters
   skipList?: NetsuiteQueryParameters
   useChangesDetection?: boolean // TODO remove this from config SALTO-3676
+  withPartialDeletion?: boolean
   deployReferencedElements?: boolean
 }
 
@@ -146,6 +147,7 @@ export const CONFIG: lowerdashTypes.TypeKeysEnum<NetsuiteConfig> = {
   fetchTarget: 'fetchTarget',
   skipList: 'skipList',
   useChangesDetection: 'useChangesDetection',
+  withPartialDeletion: 'withPartialDeletion',
   deployReferencedElements: 'deployReferencedElements',
 }
 
@@ -232,8 +234,6 @@ const validateInstalledSuiteApps = (installedSuiteApps: unknown): void => {
     throw new Error(`${CLIENT_CONFIG.installedSuiteApps} values should contain only lowercase characters or numbers and exactly two dots (such as com.saltoio.salto). The following values are invalid: ${invalidValues.join(', ')}`)
   }
 }
-
-const isCustomRecordTypeName = (name: string): boolean => name.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)
 
 function validateMaxInstancesPerType(maxInstancesPerType: unknown):
   asserts maxInstancesPerType is MaxInstancesPerType[] {
@@ -684,6 +684,9 @@ export const configType = createMatchingObjectType<NetsuiteConfig>({
       refType: queryConfigType,
     },
     useChangesDetection: {
+      refType: BuiltinTypes.BOOLEAN,
+    },
+    withPartialDeletion: {
       refType: BuiltinTypes.BOOLEAN,
     },
     typesToSkip: {

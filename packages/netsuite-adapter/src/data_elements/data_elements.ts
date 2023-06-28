@@ -142,7 +142,7 @@ export const getDataElements = async (
 
   const typesToFetch = SUPPORTED_TYPES.filter(query.isTypeMatch)
   if (typesToFetch.length === 0) {
-    return { elements: types, largeTypesError: [] }
+    return { elements: types, requestedTypes: [], largeTypesError: [] }
   }
 
   const typesMap = _.keyBy(types, e => e.elemID.name)
@@ -150,7 +150,7 @@ export const getDataElements = async (
   const availableTypesToFetch = typesToFetch.filter(typeName => typeName in typesMap)
 
   if (availableTypesToFetch.length === 0) {
-    return { elements: types, largeTypesError: [] }
+    return { elements: types, requestedTypes: [], largeTypesError: [] }
   }
 
   const { records: allRecords, largeTypesError } = await client.getAllRecords(availableTypesToFetch)
@@ -171,6 +171,7 @@ export const getDataElements = async (
         })
       }).toArray(),
     ],
+    requestedTypes: availableTypesToFetch,
     largeTypesError,
   }
 }

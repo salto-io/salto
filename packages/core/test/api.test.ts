@@ -104,21 +104,21 @@ describe('api.ts', () => {
   const mockAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
     getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
   }
   const mockAdapterWithInstall = {
     authenticationMethods: { basic: {
       credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
     } },
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
   }
 
@@ -167,30 +167,31 @@ describe('api.ts', () => {
 
     beforeAll(() => {
       mockPartiallyFetchedAccounts.mockReturnValue(new Set())
-      mockFetchChanges.mockImplementation(async () => ({
-        changes: [],
-        errors: [],
-        configChanges: mockPlan.createPlan([[]]),
-        updatedConfig: {},
-        unmergedElements: fetchedElements,
-        elements: fetchedElements,
-        mergeErrors: [],
-        accountNameToConfigMessage: {},
-        partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
-      }))
     })
 
     describe('Full fetch', () => {
       let ws: workspace.Workspace
-      let stateOverride: jest.SpyInstance
+      let stateUpdateElements: jest.SpyInstance
       let mockGetAdaptersCreatorConfigs: jest.SpyInstance
 
       beforeAll(async () => {
         const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override')
+        stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
+        mockFetchChanges.mockImplementationOnce(async () => ({
+          changes: [],
+          serviceToStateChanges: [],
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, ACCOUNTS)
       })
@@ -198,10 +199,13 @@ describe('api.ts', () => {
       it('should call fetch changes', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      // eslint-disable-next-line jest/no-disabled-tests
-      it.skip('should override state', async () => {
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual(fetchedElements)
+      it('should update the state', async () => {
+        const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
+        expect(updateParams).toEqual({
+          changes: [],
+          unmergedElements: fetchedElements,
+          fetchAccounts: ACCOUNTS,
+        })
       })
 
       it('should not call flush', () => {
@@ -214,38 +218,28 @@ describe('api.ts', () => {
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
       })
     })
-    describe('Partial fetch', () => {
-      let ws: workspace.Workspace
-      let stateElements: InstanceElement[]
-      let mockStateUpdatePathIndex: jest.SpyInstance
-      beforeAll(async () => {
-        stateElements = [
-          new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
-          new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
-        ]
-        ws = mockWorkspace({ stateElements })
-        mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
-        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
-        await api.fetch(ws, undefined, [mockService])
-      })
-      it('should maintain path index entries', async () => {
-        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
-          fetchedElements,
-          [mockService, 'salto2'],
-        )
-      })
-    })
     describe('Fetch one service out of two.', () => {
       let ws: workspace.Workspace
       let stateElements: InstanceElement[]
-      let stateOverride: jest.SpyInstance
       beforeAll(async () => {
         stateElements = [
           new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override').mockResolvedValue(undefined)
+        mockFetchChanges.mockImplementationOnce(async () => ({
+          changes: [],
+          // This is the field that is used to determine which elements to update in the state
+          serviceToStateChanges: fetchedElements.map(e => ({ action: 'add', data: { after: e }, id: e.elemID })),
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
@@ -253,10 +247,9 @@ describe('api.ts', () => {
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      it('should override state but also include existing elements', async () => {
-        const existingElements = [stateElements[1]]
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
+      it('should update state with the new elements and keep the old ones', async () => {
+        const elements = await awu(await ws.state().getAll()).toArray()
+        expect(elements).toEqual(expect.arrayContaining([...fetchedElements, ...stateElements]))
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
@@ -405,7 +398,7 @@ describe('api.ts', () => {
     describe('with partial success from the adapter', () => {
       let newEmployee: InstanceElement
       let existingEmployee: InstanceElement
-      let stateSet: jest.SpyInstance
+      let updateStateFromChangesSpy: jest.SpyInstance
       beforeAll(async () => {
         const wsElements = mockElements.getAllElements()
         existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
@@ -418,7 +411,7 @@ describe('api.ts', () => {
         existingEmployee.value.name = 'updated name'
         const stateElements = mockElements.getAllElements()
         ws = mockWorkspace({ elements: wsElements, stateElements })
-        stateSet = jest.spyOn(ws.state(), 'set')
+        updateStateFromChangesSpy = jest.spyOn(ws.state(), 'updateStateFromChanges')
 
         // Create plan where both changes are in the same group
         const actionPlan = await plan.getPlan({
@@ -458,7 +451,20 @@ describe('api.ts', () => {
         expect(appliedChange?.data?.after).toEqual(existingEmployee)
       })
       it('should update state with applied change', () => {
-        expect(stateSet).toHaveBeenCalledWith(existingEmployee)
+        expect(updateStateFromChangesSpy).toHaveBeenCalledWith(
+          {
+            changes: [
+              expect.objectContaining(
+                {
+                  data: {
+                    before: 'FirstEmployee',
+                    after: 'updated name',
+                  },
+                }
+              ),
+            ],
+          }
+        )
       })
     })
     describe('with checkOnly deployment', () => {
@@ -534,7 +540,7 @@ describe('api.ts', () => {
         adapter = {
           operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
           authenticationMethods: { basic: { credentialsType: mockConfigType } },
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
         }
         adapterCreators.test = adapter
 
@@ -648,7 +654,7 @@ describe('api.ts', () => {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
           },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
         }
       })
 
@@ -759,6 +765,7 @@ describe('api.ts', () => {
     beforeAll(() => {
       mockFetchChangesFromWorkspace.mockResolvedValue({
         changes: [],
+        serviceToStateChanges: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
         unmergedElements: fetchedElements,

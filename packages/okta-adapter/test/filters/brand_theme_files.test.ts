@@ -78,14 +78,14 @@ describe('brand files filter', () => {
       expect(elements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
           'okta.BrandLogo',
-          'okta.BrandLogo.instance.brandLogo',
+          'okta.BrandLogo.instance.brandTheme1',
           'okta.BrandTheme',
           'okta.BrandTheme.instance.brandTheme1',
           'okta.FavIcon',
-          'okta.FavIcon.instance.favicon',
+          'okta.FavIcon.instance.brandTheme1',
         ])
     })
-    it('check that barndLogo instance and the favicon instance have the correct values', async () => {
+    it('check that brandLogo instance and the favicon instance have the correct values', async () => {
       const elements = [brandThemeType, brandThemeInstance].map(e => e.clone())
       await filter.onFetch(elements)
       const instances = elements.filter(isInstanceElement)
@@ -93,18 +93,18 @@ describe('brand files filter', () => {
       const favicon = instances.find(e => e.elemID.typeName === FAV_ICON_TYPE_NAME)
       expect(logo?.value).toEqual({
         id: '111',
-        fileName: 'brandLogo.png',
+        fileName: 'brandTheme1.png',
         contentType: 'png',
         content: new StaticFile({
-          filepath: 'okta/BrandLogo/brandLogo.png', encoding: 'binary', content,
+          filepath: 'okta/BrandLogo/brandTheme1.png', encoding: 'binary', content,
         }),
       })
       expect(favicon?.value).toEqual({
         id: '111',
-        fileName: 'favicon.ico',
+        fileName: 'brandTheme1.ico',
         contentType: 'ico',
         content: new StaticFile({
-          filepath: 'okta/FavIcon/favicon.ico', encoding: 'binary', content,
+          filepath: 'okta/FavIcon/brandTheme1.ico', encoding: 'binary', content,
         }),
       })
     })
@@ -116,15 +116,6 @@ describe('brand files filter', () => {
       expect(res.errors).toHaveLength(1)
       expect(res.errors?.[0]).toEqual({
         message: 'Failed to fetch brandTheme file. Failed to fetch attachment content from Okta API',
-        severity: 'Warning',
-      })
-    })
-    it('should return errors for not finding brandTheme instance', async () => {
-      const elements = [brandThemeType]
-      const res = await filter.onFetch(elements) as FilterResult
-      expect(res.errors).toHaveLength(1)
-      expect(res.errors?.[0]).toEqual({
-        message: 'No valid BrandTheme was found, skipping BrandLogo and BrandFavicon fetch',
         severity: 'Warning',
       })
     })

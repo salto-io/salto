@@ -62,6 +62,7 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
   include: FetchEntry<T>[]
   exclude: FetchEntry<T>[]
   hideTypes?: boolean
+  asyncPagination?: boolean
 }
 
 export type UserDeployConfig = {
@@ -192,6 +193,7 @@ export const createUserFetchConfigType = (
         annotations: { _required: true },
       },
       hideTypes: { refType: BuiltinTypes.BOOLEAN },
+      asyncPagination: { refType: BuiltinTypes.BOOLEAN },
       ...additionalFields,
     },
     annotations: {

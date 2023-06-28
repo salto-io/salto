@@ -22,7 +22,7 @@ import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
+import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT, ROLE } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
@@ -32,6 +32,7 @@ import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
+import * as deletionCalculator from '../src/deletion_calculator'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
 import * as suiteAppFileCabinet from '../src/client/suiteapp_client/suiteapp_file_cabinet'
@@ -43,6 +44,7 @@ import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
 import { Graph, GraphNode } from '../src/client/graph_utils'
 import { getDataElements } from '../src/data_elements/data_elements'
+import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -110,6 +112,7 @@ describe('Adapter', () => {
       fetchAllTypesAtOnce: true,
       fetchTypeTimeoutInMinutes: 1,
     },
+    withPartialDeletion: true,
   }
 
   const suiteAppImportFileCabinetMock = jest.fn()
@@ -141,6 +144,7 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
+        instancesIds: [],
         failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedToFetchAllAtOnce: false,
       })
@@ -197,12 +201,13 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo, featuresCustomTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(isPartial).toBeFalsy()
-      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
@@ -281,7 +286,7 @@ describe('Adapter', () => {
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -295,7 +300,7 @@ describe('Adapter', () => {
         const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -314,7 +319,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithIncludeButNoExclude)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someType')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someType1')).toBeTruthy()
@@ -336,7 +341,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithExcludeButNoInclude)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip1')).toBeFalsy()
@@ -358,7 +363,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithSkipListAndTypesToSkip)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -380,7 +385,7 @@ describe('Adapter', () => {
         const adapter = createAdapter(configWithAllFormats)
         const { isPartial } = await adapter.fetch(mockFetchOpts)
         expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -478,7 +483,7 @@ describe('Adapter', () => {
         it('should match the types that match fetchTarget and exclude', async () => {
           await adapter.fetch(mockFetchOpts)
 
-          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
           expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
           expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
           expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
@@ -518,6 +523,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
         })
@@ -560,6 +566,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
@@ -575,7 +582,7 @@ describe('Adapter', () => {
 
     it('should call getCustomObjects with query that matches types that match the types in fetch config', async () => {
       await netsuiteAdapter.fetch(mockFetchOpts)
-      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })
@@ -623,6 +630,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
         })
@@ -646,6 +654,7 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: true,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
@@ -1173,6 +1182,7 @@ describe('Adapter', () => {
     const elementsSource = buildElementsSourceFromElements([dummyElement])
     const getElementMock = jest.spyOn(elementsSource, 'get')
     const getChangedObjectsMock = jest.spyOn(changesDetector, 'getChangedObjects')
+    const getDeletedElementsMock = jest.spyOn(deletionCalculator, 'getDeletedElements')
 
     beforeEach(() => {
       getElementMock.mockReset()
@@ -1189,6 +1199,9 @@ describe('Adapter', () => {
         areAllCustomRecordsMatch: () => true,
         isCustomRecordMatch: () => true,
       })
+
+      getDeletedElementsMock.mockReset()
+      getDeletedElementsMock.mockResolvedValue({})
 
       getSystemInformationMock.mockReset()
       getSystemInformationMock.mockResolvedValue({
@@ -1317,7 +1330,7 @@ describe('Adapter', () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
         await adapter.fetch(mockFetchOpts)
 
-        const passedQuery = getCustomObjectsMock.mock.calls[0][1]
+        const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
         expect(passedQuery.isObjectMatch({ instanceId: 'bbbb', type: 'workflow' })).toBeFalsy()
       })
@@ -1401,6 +1414,40 @@ describe('Adapter', () => {
           },
           config,
         )
+      })
+    })
+
+    describe('call getDeletedElements and process result', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(getDeletedElementsMock).toHaveBeenCalled()
+        expect(deletedElements).toEqual([elemId])
+        expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
+      })
+    })
+
+    describe('do not call getDeletedElements on full fetch', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts })
+        expect(getDeletedElementsMock).not.toHaveBeenCalled()
+        expect(deletedElements).toEqual(undefined)
+        expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
       })
     })
   })

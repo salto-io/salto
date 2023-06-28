@@ -14,10 +14,8 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { DetailedChange, getChangeData, isAdditionChange, isRemovalChange } from '@salto-io/adapter-api'
-import { applyDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { State, Workspace } from '@salto-io/workspace'
+import { Workspace } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
 import { calculatePatch } from '@salto-io/core'
 import { WorkspaceCommandAction, createWorkspaceCommand } from '../command_builder'
@@ -29,31 +27,6 @@ import { formatFetchWarnings } from '../formatter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-
-const updateStateElements = async (
-  state: State,
-  changes: DetailedChange[],
-): Promise<void> => {
-  const changesByTopLevelElement = _.groupBy(
-    changes,
-    change => change.id.createTopLevelParentID().parent.getFullName()
-  )
-  await awu(Object.values(changesByTopLevelElement)).forEach(async elemChanges => {
-    const elemID = elemChanges[0].id.createTopLevelParentID().parent
-    if (elemChanges[0].id.isEqual(elemID)) {
-      if (isRemovalChange(elemChanges[0])) {
-        await state.remove(elemID)
-      } else if (isAdditionChange(elemChanges[0])) {
-        await state.set(getChangeData(elemChanges[0]))
-      }
-      return
-    }
-
-    const updatedElem = (await state.get(elemID)).clone()
-    applyDetailedChanges(updatedElem, elemChanges)
-    await state.set(updatedElem)
-  })
-}
 
 type ApplyPatchArgs = {
   fromDir: string
@@ -105,7 +78,7 @@ const applyPatchToWorkspace = async (
   }
   if (updateState) {
     outputLine(`Updating state for environment ${workspace.currentEnv()}`, output)
-    await updateStateElements(workspace.state(), changes.map(change => change.change))
+    await workspace.state().updateStateFromChanges({ changes: changes.map(change => change.change) })
   }
   outputLine(`Updating NaCl for environment ${workspace.currentEnv()}`, output)
   await workspace.updateNaclFiles(changes.map(change => change.change), input.mode)

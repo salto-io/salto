@@ -150,25 +150,28 @@ export const createEnvironmentSource = async ({
   remoteMapCreator: remoteMap.RemoteMapCreator
   stateStaticFilesSource?: staticFiles.StateStaticFilesSource
   persistent: boolean
-}): Promise<EnvironmentSource> => ({
-  naclFiles: await loadNaclFileSource(
-    baseDir,
-    path.resolve(localStorage, CACHE_DIR_NAME),
-    getLocalEnvName(env),
-    persistent,
-    remoteMapCreator,
-  ),
-  state: localState(
-    path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
-    env,
-    remoteMapCreator,
-    stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(localDirectoryStore({
-      baseDir: path.resolve(localStorage, STATIC_RESOURCES_FOLDER),
-      name: env,
-    })),
-    persistent
-  ),
-})
+}): Promise<EnvironmentSource> => {
+  log.debug('Creating environment source for %s at %s', env, baseDir)
+  return {
+    naclFiles: await loadNaclFileSource(
+      baseDir,
+      path.resolve(localStorage, CACHE_DIR_NAME),
+      getLocalEnvName(env),
+      persistent,
+      remoteMapCreator,
+    ),
+    state: localState(
+      path.join(path.resolve(baseDir), CONFIG_DIR_NAME, STATES_DIR_NAME, env),
+      env,
+      remoteMapCreator,
+      stateStaticFilesSource ?? state.buildOverrideStateStaticFilesSource(localDirectoryStore({
+        baseDir: path.resolve(localStorage, STATIC_RESOURCES_FOLDER),
+        name: env,
+      })),
+      persistent
+    ),
+  }
+}
 
 export const loadLocalElementsSources = async ({
   baseDir,

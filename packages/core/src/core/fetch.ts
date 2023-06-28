@@ -107,17 +107,24 @@ type WorkspaceDetailedChange = {
   change: DetailedChange
   origin: WorkspaceDetailedChangeOrigin
 }
+
+type DetailedChangeTreeResult = {
+    changesTree: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+    changes: DetailedChange[]
+}
+
 const getDetailedChangeTree = async (
   before: ReadOnlyElementsSource,
   after: ReadOnlyElementsSource,
   topLevelFilters: IDFilter[],
   origin: WorkspaceDetailedChangeOrigin,
-): Promise<collections.treeMap.TreeMap<WorkspaceDetailedChange>> => (
-  new collections.treeMap.TreeMap(
-    wu(await getDetailedChanges(before, after, topLevelFilters))
-      .map(change => [change.id.getFullName(), [{ change, origin }]])
+): Promise<DetailedChangeTreeResult> => {
+  const changes = wu(await getDetailedChanges(before, after, topLevelFilters)).toArray()
+  const changesTree = new collections.treeMap.TreeMap(
+    changes.map(change => [change.id.getFullName(), [{ change, origin }]])
   )
-)
+  return { changesTree, changes }
+}
 
 const findNestedElementPath = (
   changeElemID: ElemID,
@@ -241,6 +248,7 @@ const toFetchChanges = (
 
 export type FetchChangesResult = {
   changes: FetchChange[]
+  serviceToStateChanges: DetailedChange[]
   elements: Element[]
   errors: SaltoError[]
   unmergedElements: Element[]
@@ -549,71 +557,127 @@ export const getAdaptersFirstFetchPartial = async (
   return collections.set.difference(partiallyFetchedAdapters, adaptersWithElements)
 }
 
+type CalcFetchChangesResult = {
+  changes: FetchChange[]
+  serviceToStateChanges: DetailedChange[]
+}
+
+type DetailedChangeTreesResults = {
+  serviceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  pendingChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  workspaceToServiceChanges: collections.treeMap.TreeMap<WorkspaceDetailedChange>
+  serviceToStateChanges: DetailedChange[]
+}
+
 // Calculate the fetch changes - calculation should be done only if workspace has data,
 // o/w all account elements should be consider as "add" changes.
 export const calcFetchChanges = async (
   accountElements: ReadonlyArray<Element>,
-  mergedAccountElements: ReadOnlyElementsSource,
-  stateElements: ReadOnlyElementsSource,
+  mergedAccountElements: ReadonlyArray<Element>,
+  stateElements: elementSource.ElementsSource,
   workspaceElements: ReadOnlyElementsSource,
   partiallyFetchedAccounts: Set<string>,
   allFetchedAccounts: Set<string>
-): Promise<FetchChange[]> => {
+): Promise<CalcFetchChangesResult> => {
+  const mergedAccountElementsSource = elementSource.createInMemoryElementSource(mergedAccountElements)
+
   const partialFetchFilter: IDFilter = id => (
     !partiallyFetchedAccounts.has(id.adapter)
-    || mergedAccountElements.has(id)
+    || mergedAccountElementsSource.has(id)
   )
   const accountFetchFilter: IDFilter = id =>
     allFetchedAccounts.has(id.adapter)
   const partialFetchElementSource: ReadOnlyElementsSource = {
     get: async (id: ElemID): Promise<Element | undefined> => {
-      const mergedElem = await mergedAccountElements.get(id)
+      const mergedElem = await mergedAccountElementsSource.get(id)
       if (mergedElem === undefined && partiallyFetchedAccounts.has(id.adapter)) {
-        return stateElements.get(id)
+        // Use the same element source as the fetch runs with, see `getFetchAdapterAndServicesSetup`
+        return workspaceElements.get(id)
       }
       return mergedElem
     },
-    getAll: () => mergedAccountElements.getAll(),
-    has: id => mergedAccountElements.has(id),
-    list: () => mergedAccountElements.list(),
+    getAll: () => mergedAccountElementsSource.getAll(),
+    has: id => mergedAccountElementsSource.has(id),
+    list: () => mergedAccountElementsSource.list(),
   }
 
-  const serviceChanges = await log.time(
-    () => getDetailedChangeTree(
-      stateElements,
-      partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter],
-      'service',
-    ),
-    'calculate service-state changes',
-  )
+  // If the state is empty, no need to do all calculations, and just the workspaceToServiceChanges is enough
+  const calculateChangesWithEmptyState = async (): Promise<DetailedChangeTreesResults> => {
+    const { changesTree: workspaceToServiceChanges } = await log.time(
+      () => getDetailedChangeTree(
+        workspaceElements,
+        partialFetchElementSource,
+        [accountFetchFilter, partialFetchFilter],
+        'service',
+      ),
+      'calculate service-workspace changes',
+    )
 
-  // We only care about conflicts with changes from the service, so for the next two comparisons
-  // we only need to check elements for which we have service changes
-  const serviceChangesTopLevelIDs = new Set(
-    wu(serviceChanges.values())
-      .map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName())
-  )
-  const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
+    return {
+      serviceChanges: workspaceToServiceChanges,
+      pendingChanges: new collections.treeMap.TreeMap(),
+      workspaceToServiceChanges,
+      serviceToStateChanges: mergedAccountElements.map(toAddFetchChange).map(change => change.change),
+    }
+  }
 
-  const pendingChanges = await log.time(
-    () => getDetailedChangeTree(
-      stateElements,
-      workspaceElements,
-      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
-      'workspace',
-    ),
-    'calculate pending changes',
-  )
-  const workspaceToServiceChanges = await log.time(
-    () => getDetailedChangeTree(
-      workspaceElements,
-      partialFetchElementSource,
-      [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
-      'service',
-    ),
-    'calculate service-workspace changes',
-  )
+  const calculateChangesWithState = async (): Promise<DetailedChangeTreesResults> => {
+    // Changes from the service that are not in the state
+    const { changesTree: serviceChanges, changes: serviceToStateChanges } = await log.time(
+      () => getDetailedChangeTree(
+        stateElements,
+        partialFetchElementSource,
+        [accountFetchFilter, partialFetchFilter],
+        'service',
+      ),
+      'calculate service-state changes',
+    )
+
+    // We only care about conflicts with changes from the service, so for the next two comparisons
+    // we only need to check elements for which we have service changes
+    const serviceChangesTopLevelIDs = new Set(
+      wu(serviceChanges.values())
+        .map(changes => changes[0].change.id.createTopLevelParentID().parent.getFullName())
+    )
+    const serviceChangeIdsFilter: IDFilter = id => serviceChangesTopLevelIDs.has(id.getFullName())
+
+    // Changes from the nacls that are not in the state
+    const { changesTree: pendingChanges } = await log.time(
+      () => getDetailedChangeTree(
+        stateElements,
+        workspaceElements,
+        [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+        'workspace',
+      ),
+      'calculate pending changes',
+    )
+
+    // Changes from the service that are not in the nacls
+    const { changesTree: workspaceToServiceChanges } = await log.time(
+      () => getDetailedChangeTree(
+        workspaceElements,
+        partialFetchElementSource,
+        [accountFetchFilter, partialFetchFilter, serviceChangeIdsFilter],
+        'service',
+      ),
+      'calculate service-workspace changes',
+    )
+
+    return {
+      serviceChanges,
+      pendingChanges,
+      workspaceToServiceChanges,
+      serviceToStateChanges,
+    }
+  }
+
+  // When we init a new env, state will be empty. We fallback to the workspace
+  // elements since they should be considered a part of the env and the diff
+  // should be calculated with them in mind.
+  const isStateEmpty = await stateElements.isEmpty()
+  const { serviceChanges, pendingChanges, workspaceToServiceChanges, serviceToStateChanges } = isStateEmpty
+    ? await calculateChangesWithEmptyState()
+    : await calculateChangesWithState()
 
   // Merge pending changes and service changes into one tree so we can find conflicts between them
   serviceChanges.merge(pendingChanges)
@@ -623,11 +687,18 @@ export const calcFetchChanges = async (
     e => e.elemID.getFullName()
   )
 
-  return awu(fetchChanges)
+  const changes = await awu(fetchChanges)
     .flatMap(toChangesWithPath(async name => serviceElementsMap[name.getFullName()] ?? []))
     .flatMap(addFetchChangeMetadata(partialFetchElementSource))
     .toArray()
+  return { changes, serviceToStateChanges }
 }
+
+const createFirstFetchChanges = async (unmergedElements: Element[], mergedElements: Element[]):
+  Promise<CalcFetchChangesResult> => ({
+  changes: unmergedElements.map(toAddFetchChange),
+  serviceToStateChanges: mergedElements.map(toAddFetchChange).map(change => change.change),
+})
 
 type CreateFetchChangesParams = {
   adapterNames: string[]
@@ -657,15 +728,13 @@ const createFetchChanges = async ({
     .concat(await stateElements.list())
     .filter(e => !e.isConfigType())
     .isEmpty()
-  const changes = isFirstFetch
-    ? unmergedElements.map(toAddFetchChange)
+
+  const { changes, serviceToStateChanges } = isFirstFetch
+    ? await createFirstFetchChanges(unmergedElements, processErrorsResult.keptElements)
     : await calcFetchChanges(
       unmergedElements,
-      elementSource.createInMemoryElementSource(processErrorsResult.keptElements),
-      // When we init a new env, state will be empty. We fallback to the workspace
-      // elements since they should be considered a part of the env and the diff
-      // should be calculated with them in mind.
-      await awu(await stateElements.list()).isEmpty() ? workspaceElements : stateElements,
+      processErrorsResult.keptElements,
+      stateElements,
       workspaceElements,
       partiallyFetchedAccounts,
       new Set(adapterNames)
@@ -706,6 +775,7 @@ const createFetchChanges = async ({
     : processErrorsResult.keptElements
   return {
     changes,
+    serviceToStateChanges,
     elements,
     errors,
     unmergedElements,
@@ -768,6 +838,7 @@ const createEmptyFetchChangeDueToError = (errMsg: string): FetchChangesResult =>
   log.warn(`creating empty fetch result due to ${errMsg}`)
   return {
     changes: [],
+    serviceToStateChanges: [],
     elements: [],
     mergeErrors: [],
     unmergedElements: [],
@@ -878,7 +949,10 @@ export const fetchChangesFromWorkspace = async (
       )
     )).filter(values.isDefined).flat()
     const naclPathIndex = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
-    await pathIndex.overridePathIndex(naclPathIndex, naclFragments)
+    await pathIndex.updatePathIndex({
+      pathIndex: naclPathIndex,
+      unmergedElements: naclFragments,
+    })
     return pathIndex.splitElementByPath(element, naclPathIndex)
   }
 

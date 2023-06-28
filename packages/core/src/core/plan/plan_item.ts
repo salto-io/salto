@@ -17,7 +17,7 @@ import wu from 'wu'
 
 import { NodeId, Group, ActionName } from '@salto-io/dag'
 import { Change, getChangeData, DetailedChange, CompareOptions } from '@salto-io/adapter-api'
-import { detailedCompare } from '@salto-io/adapter-utils'
+import { getDetailedChanges } from '@salto-io/adapter-utils'
 
 export type PlanItemId = NodeId
 export type ChangeWithDetails = Change & {
@@ -40,18 +40,6 @@ const getGroupAction = (group: Group<Change>): ActionName => {
   return changeTypes.length === 1
     ? changeTypes[0]
     : 'modify'
-}
-
-const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
-  const elem = getChangeData(change)
-  if (change.action !== 'modify') {
-    return [{ ...change, id: elem.elemID }]
-  }
-  return detailedCompare(
-    change.data.before,
-    change.data.after,
-    compareOptions,
-  )
 }
 
 export const addPlanItemAccessors = (

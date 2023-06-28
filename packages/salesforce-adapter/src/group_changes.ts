@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, isAdditionChange, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
+import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
 import { apiName } from './transformers/transformer'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 
@@ -31,7 +31,7 @@ const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => 
   groupId: `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`,
   // CustomObjects instances might have references to instances of the same type (via Lookup
   // fields), and if we deploy them together the reference gets removed.
-  disjoint: isAdditionChange(change),
+  disjoint: false,
 })
 
 // Everything that is not a custom object instance goes into the deploy api

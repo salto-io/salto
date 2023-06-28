@@ -15,8 +15,10 @@
 */
 import _ from 'lodash'
 import { Field, isObjectType, PrimitiveTypes, isPrimitiveType, Element, isInstanceElement, Value, INSTANCE_ANNOTATIONS, isReferenceExpression, isField, ElemID, ReferenceMap, TypeReference } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { dump as hclDump, dumpValue } from './internal/dump'
 import { DumpedHclBlock } from './internal/types'
+
 import { Keywords } from './language'
 import {
   getFunctionExpression,
@@ -25,6 +27,8 @@ import {
 } from './functions'
 import { ValuePromiseWatcher } from './internal/native/types'
 import { addValuePromiseWatcher, replaceValuePromises } from './internal/native/helpers'
+
+const log = logger(module)
 
 /**
  * @param primitiveType Primitive type identifier
@@ -180,7 +184,7 @@ const wrapBlocks = (blocks: DumpedHclBlock[]): DumpedHclBlock => ({
 
 export const dumpElements = async (
   elements: Readonly<Element>[], functions: Functions = {}, indentationLevel = 0
-): Promise<string> => {
+): Promise<string> => log.time(async () => {
   const valuePromiseWatchers: ValuePromiseWatcher[] = []
 
   const warpedBlocks = wrapBlocks(
@@ -188,7 +192,7 @@ export const dumpElements = async (
   )
   await replaceValuePromises(valuePromiseWatchers)
   return hclDump(warpedBlocks, indentationLevel)
-}
+}, 'workspace.dumpElements')
 
 export const dumpSingleAnnotationType = (
   name: string, refType: TypeReference, indentationLevel = 0

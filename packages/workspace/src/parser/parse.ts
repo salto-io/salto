@@ -63,7 +63,7 @@ export async function parse(
   calcSourceMap = true,
 ): Promise<ParseResult> {
   const srcString = naclFile.toString()
-  return parseBuffer(srcString, filename, functions, calcSourceMap)
+  return log.time(() => parseBuffer(srcString, filename, functions, calcSourceMap), 'workspace.parse')
 }
 
 export type Token = {

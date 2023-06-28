@@ -67,7 +67,7 @@ const mergeElement = (
 
 export const mergeElements = async (
   elements: AsyncIterable<Element>
-): Promise<MergeResult> => {
+): Promise<MergeResult> => log.time(async () => {
   let elementsCounter = 0
   let mergedCounter = 0
   let errorsCounter = 0
@@ -96,7 +96,7 @@ export const mergeElements = async (
   }
 
   return { merged, errors }
-}
+}, 'workspace.mergeElements')
 
 export const mergeSingleElement = async <T extends Element>(elementParts: T[]): Promise<T> => {
   const mergeRes = await mergeElements(awu(elementParts))

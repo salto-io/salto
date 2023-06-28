@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { createChangeValidatorV2 } from '@salto-io/adapter-utils'
 import { GeneratorParams } from './generator'
 import fromAdapterConfig from './change_validators/from_adapter_config'
 
@@ -22,9 +22,11 @@ import fromAdapterConfig from './change_validators/from_adapter_config'
 export const changeValidator = (
   config: GeneratorParams,
 ): ChangeValidator => {
-  const validators: ChangeValidator[] = [
-    fromAdapterConfig(config),
-  ]
+  const validators: Record<string, ChangeValidator> = {
+    dummy: fromAdapterConfig(config),
+  }
 
-  return createChangeValidator(validators)
+  return createChangeValidatorV2({
+    validators,
+  })
 }

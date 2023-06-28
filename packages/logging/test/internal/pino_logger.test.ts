@@ -837,7 +837,7 @@ describe('pino based logger', () => {
           arg0: 'moo',
           extra: 'should be in log',
           arg2: true,
-          arg3: '"string with \\"bad chars\\"\\t\\n"',
+          arg3: 'string with "bad chars"\t\n',
         })
       })
 

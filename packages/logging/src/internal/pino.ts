@@ -23,7 +23,6 @@ import pino, { LevelWithSilent, DestinationStream } from 'pino'
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
 import chalk from 'chalk'
-import safeStringify from 'fast-safe-stringify'
 import { streams, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -88,12 +87,13 @@ const formatExcessTagsPerMessage = (
   excessArgs?: LogTags,
 ): LogTags => {
   // We slice first the excess args and then the logTags
-  const entriesObject = [...Object.entries(excessArgs ?? {}), ...Object.entries(logTags ?? {})]
+  const entriesObject = Object.entries(excessArgs ?? {}).concat(Object.entries(logTags ?? {}))
   const countCurrentTags = entriesObject.length + COUNT_DEFAULT_TAGS
+  const countRemovedTags = countCurrentTags - maxTagsPerLogMessage
   if (countCurrentTags > maxTagsPerLogMessage) {
     return {
-      ...Object.fromEntries(entriesObject.slice(countCurrentTags - maxTagsPerLogMessage)),
-      countRemovedTags: countCurrentTags - maxTagsPerLogMessage,
+      ...Object.fromEntries(entriesObject.slice(countRemovedTags)),
+      countRemovedTags,
     }
   }
   return { ...logTags, ...excessArgs }
@@ -170,16 +170,12 @@ const toStream = (
     : consoleToStream(consoleStream)
 )
 
-const formatJsonStringValue = (s: string): string => (
-  s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
-)
-
 const formatTags = (config: Config, excessArgs: unknown[], logTags: LogTags): LogTags => {
   const formattedExcessArgs: LogTags = {}
   Object.entries(formatExcessArgs(excessArgs))
     .forEach(([key, value]) => {
       if (typeof value === 'string') {
-        Object.assign(formattedExcessArgs, { [key]: formatJsonStringValue(value) })
+        Object.assign(formattedExcessArgs, { [key]: value })
         return
       }
       if (value instanceof Error) {

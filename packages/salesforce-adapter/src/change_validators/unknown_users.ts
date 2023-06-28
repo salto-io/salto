@@ -23,6 +23,7 @@ import {
   getChangeData,
   Values,
   Value,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { resolvePath } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -70,7 +71,7 @@ type MissingUser = {
 }
 
 const nestedFieldValue = (container: InstanceElement | Value, fieldName: string): Value => {
-  if (container instanceof InstanceElement) {
+  if (isInstanceElement(container)) {
     return resolvePath(container, container.elemID.createNestedID(...fieldName.split(NAMESPACE_SEPARATOR)))
   }
   return _.get(container, fieldName)

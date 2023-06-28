@@ -368,7 +368,7 @@ export const retrieveMetadataInstances = async ({
   const typesWithContent = await getTypesWithContent(types)
 
   const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
-    const result = instances[0]
+    const result = instances[0].clone()
     result.value = _.merge({}, ...instances.map(instance => instance.value))
     return result
   }

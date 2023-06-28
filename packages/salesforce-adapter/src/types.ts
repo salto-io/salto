@@ -713,6 +713,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
+    // TODO seroussi - this is wrong
     [DEPLOY_CONFIG]: {
       refType: changeValidatorConfigType,
     },

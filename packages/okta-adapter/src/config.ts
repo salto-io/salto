@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
@@ -23,6 +23,7 @@ const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDuck
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
@@ -44,6 +45,7 @@ export type OktaConfig = {
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
   [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -1696,6 +1698,10 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
+    },
+    // TODO seroussi - this is wrong
+    [DEPLOY_CONFIG]: {
+      refType: createClientConfigType(),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

@@ -53,7 +53,7 @@ type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
                                client: SalesforceClient) => ChangeValidator
 
-const defaultDeployConfig = {
+export const defaultDeployConfig = {
   validate: {
     dataChange: false,
   },

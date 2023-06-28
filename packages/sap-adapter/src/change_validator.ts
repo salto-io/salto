@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { createChangeValidatorV2 } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
 
 const { deployNotSupportedValidator, getDefaultChangeValidators } = deployment.changeValidators
 
-const validators: ChangeValidator[] = [
+const validators: Record<string, ChangeValidator> = {
   ...getDefaultChangeValidators(),
-  deployNotSupportedValidator,
-]
+  deployNotSupported: deployNotSupportedValidator,
+}
 
-export default createChangeValidator(validators)
+export default createChangeValidatorV2({ validators })

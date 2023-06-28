@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { JIRA } from '../constants'
@@ -46,7 +46,7 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = configUtils.UserDeployConfig & {
+type JiraDeployConfig = configUtils.UserDeployConfig & ChangeValidatorConfig & {
   forceDelete: boolean
 }
 

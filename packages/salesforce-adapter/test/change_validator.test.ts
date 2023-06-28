@@ -58,6 +58,8 @@ describe('createSalesforceChangeValidator', () => {
         expect(
           createChangeValidatorMock.mock.calls[0][0]
         ).toHaveLength(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
           + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
         )
@@ -85,6 +87,8 @@ describe('createSalesforceChangeValidator', () => {
         const disabledValidators = [changeValidators.customFieldType({}, false, client)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.toBeArrayOfSize(
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
             Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1
             + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
           ),
@@ -114,6 +118,8 @@ describe('createSalesforceChangeValidator', () => {
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
             expect.toBeArrayOfSize(
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
               + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
             ),
@@ -127,6 +133,8 @@ describe('createSalesforceChangeValidator', () => {
           expect(validator).toBeDefined()
           expect(createChangeValidator).toHaveBeenCalledWith(
             expect.toBeArrayOfSize(
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
               Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
               + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
             ),
@@ -149,6 +157,8 @@ describe('createSalesforceChangeValidator', () => {
       expect(validator).toBeDefined()
       expect(createChangeValidator).toHaveBeenCalledWith(
         expect.toBeArrayOfSize(
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
           Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
           + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
         ),

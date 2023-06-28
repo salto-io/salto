@@ -153,12 +153,9 @@ export default ({
     guideOrderDeletion: guideOrderDeletionValidator,
     // ******************************
   }
-  const mustRunValidators: Record<string, ChangeValidator> = {
-  }
 
   return createSkipParentsOfSkippedInstancesValidator({
     validators,
-    mustRunValidators,
     validatorsConfig: deployConfig?.changeValidators?.deploy,
   })
 }

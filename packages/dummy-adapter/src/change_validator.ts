@@ -26,7 +26,5 @@ export const changeValidator = (
     dummy: fromAdapterConfig(config),
   }
 
-  return createChangeValidatorV2({
-    validators,
-  })
+  return createChangeValidatorV2({ validators })
 }

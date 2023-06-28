@@ -50,8 +50,7 @@ export default ({
   const validators: Record<string, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
-      typesConfig: _
-        .merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
+      typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
     }),
     application: applicationValidator,
     appGroup: appGroupValidator,

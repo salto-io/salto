@@ -85,6 +85,7 @@ export default (
     activeSchemeDeletion: activeSchemeDeletionValidator,
     sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
     statusMigrationChange: statusMigrationChangeValidator,
+    // Must run after statusMigrationChangeValidator
     workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
     issueTypeSchemeMigration: issueTypeSchemeMigrationValidator(client),
     activeSchemeChange: activeSchemeChangeValidator(client),

@@ -16,9 +16,9 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import {
   buildLazyShallowTypeResolverElementsSource,
-  createChangeValidator,
+  createChangeValidatorV2,
 } from '@salto-io/adapter-utils'
-import { deployment } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -47,49 +47,49 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
-import { ChangeValidatorName, SalesforceConfig } from './types'
+import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
                                client: SalesforceClient) => ChangeValidator
 
-type ChangeValidatorDefinition = {
-  creator: ChangeValidatorCreator
-  defaultInDeploy: boolean
-  defaultInValidate: boolean
+const defaultDeployConfig = {
+  validate: {
+    dataChange: false,
+  },
+  deploy: {
+    omitData: false,
+  },
 }
 
-const defaultAlwaysRun = { defaultInDeploy: true, defaultInValidate: true }
-
-export const changeValidators: Record<ChangeValidatorName, ChangeValidatorDefinition> = {
-  managedPackage: { creator: () => packageValidator, ...defaultAlwaysRun },
-  picklistStandardField: { creator: () => picklistStandardFieldValidator, ...defaultAlwaysRun },
-  customObjectInstances: { creator: () => customObjectInstancesValidator, ...defaultAlwaysRun },
-  unknownField: { creator: () => unknownFieldValidator, ...defaultAlwaysRun },
-  customFieldType: { creator: () => customFieldTypeValidator, ...defaultAlwaysRun },
-  standardFieldLabel: { creator: () => standardFieldLabelValidator, ...defaultAlwaysRun },
-  mapKeys: { creator: () => mapKeysValidator, ...defaultAlwaysRun },
-  multipleDefaults: { creator: () => multipleDefaultsValidator, ...defaultAlwaysRun },
-  picklistPromote: { creator: () => picklistPromoteValidator, ...defaultAlwaysRun },
-  cpqValidator: { creator: () => cpqValidator, ...defaultAlwaysRun },
-  sbaaApprovalRulesCustomCondition: { creator: () => sbaaApprovalRulesCustomCondition, ...defaultAlwaysRun },
-  recordTypeDeletion: { creator: () => recordTypeDeletionValidator, ...defaultAlwaysRun },
-  flowsValidator: { creator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
-    ...defaultAlwaysRun },
-  fullNameChangedValidator: { creator: () => fullNameChangedValidator, ...defaultAlwaysRun },
-  invalidListViewFilterScope: { creator: () => invalidListViewFilterScope, ...defaultAlwaysRun },
-  caseAssignmentRulesValidator: { creator: () => caseAssignmentRulesValidator, ...defaultAlwaysRun },
-  omitData: { creator: omitDataValidator, defaultInDeploy: false, defaultInValidate: true },
-  dataChange: { creator: () => dataChangeValidator, defaultInDeploy: true, defaultInValidate: false },
-  unknownUser: { creator: (_config, _isSandbox, client) => unknownUser(client), ...defaultAlwaysRun },
-  animationRuleRecordType: { creator: () => animationRuleRecordType, ...defaultAlwaysRun },
-  duplicateRulesSortOrder: { creator: () => duplicateRulesSortOrder, ...defaultAlwaysRun },
-  currencyIsoCodes: { creator: () => currencyIsoCodes, ...defaultAlwaysRun },
-  lastLayoutRemoval: { creator: () => lastLayoutRemoval, ...defaultAlwaysRun },
-  accountSettings: { creator: () => accountSettings(), ...defaultAlwaysRun },
-  unknownPicklistValues: { creator: () => unknownPicklistValues, ...defaultAlwaysRun },
-  installedPackages: { creator: () => installedPackages, ...defaultAlwaysRun },
-  dataCategoryGroup: { creator: () => dataCategoryGroupValidator, ...defaultAlwaysRun },
+export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
+  managedPackage: () => packageValidator,
+  picklistStandardField: () => picklistStandardFieldValidator,
+  customObjectInstances: () => customObjectInstancesValidator,
+  unknownField: () => unknownFieldValidator,
+  customFieldType: () => customFieldTypeValidator,
+  standardFieldLabel: () => standardFieldLabelValidator,
+  mapKeys: () => mapKeysValidator,
+  multipleDefaults: () => multipleDefaultsValidator,
+  picklistPromote: () => picklistPromoteValidator,
+  cpqValidator: () => cpqValidator,
+  sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
+  recordTypeDeletion: () => recordTypeDeletionValidator,
+  flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
+  fullNameChangedValidator: () => fullNameChangedValidator,
+  invalidListViewFilterScope: () => invalidListViewFilterScope,
+  caseAssignmentRulesValidator: () => caseAssignmentRulesValidator,
+  omitData: () => omitDataValidator,
+  dataChange: () => dataChangeValidator,
+  unknownUser: (_config, _isSandbox, client) => unknownUser(client),
+  animationRuleRecordType: () => animationRuleRecordType,
+  duplicateRulesSortOrder: () => duplicateRulesSortOrder,
+  currencyIsoCodes: () => currencyIsoCodes,
+  lastLayoutRemoval: () => lastLayoutRemoval,
+  accountSettings: () => accountSettings,
+  unknownPicklistValues: () => unknownPicklistValues,
+  installedPackages: () => installedPackages,
+  dataCategoryGroup: () => dataCategoryGroupValidator,
 }
 
 const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client }: {
@@ -99,19 +99,15 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   client: SalesforceClient
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
-  const activeValidators = Object.entries(changeValidators).filter(
-    ([name, definition]) => config.validators?.[name as ChangeValidatorName]
-          ?? (isCheckOnly ? definition.defaultInValidate : definition.defaultInDeploy)
-  )
-  const disabledValidators = Object.entries(changeValidators).filter(
-    ([name]) => config.validators?.[name as ChangeValidatorName] === false
-  )
-  const changeValidator = createChangeValidator(
-    activeValidators
-      .map(([_name, validator]) => validator.creator(config, isSandbox, client))
-      .concat(deployment.changeValidators.getDefaultChangeValidators()),
-    disabledValidators.map(([_name, validator]) => validator.creator(config, isSandbox, client)),
-  )
+  const defaultValidatorsConfig = defaultDeployConfig[isCheckOnly ? 'validate' : 'deploy']
+  const validatorsConfig = config[DEPLOY_CONFIG]?.changeValidators?.[isCheckOnly ? 'validate' : 'deploy']
+
+  const changeValidator = createChangeValidatorV2({
+    validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
+    mustRunValidators: {},
+    validatorsConfig: { ...defaultValidatorsConfig, ...validatorsConfig },
+  })
+
   // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow
   // upon usage. This is relevant to Change Validators that get instances from the elementsSource.
   return async (changes, elementSource) => ((elementSource === undefined)

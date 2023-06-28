@@ -20,10 +20,10 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 const log = logger(module)
 
 export type validatorConfig = Record<string, boolean>
-export type ChangeValidatorsConfig = {
+export type ChangeValidatorConfig = {
   changeValidators?: {
     deploy: validatorConfig
-    validate: validatorConfig
+    validate?: validatorConfig
   }
 }
 

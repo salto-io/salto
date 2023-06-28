@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
@@ -34,6 +34,7 @@ export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
@@ -111,7 +112,7 @@ export type ChangeValidatorName = (
   | 'dataCategoryGroup'
 )
 
-export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+export type ChangeValidatorNamesConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
   objectsRegex: string
@@ -261,7 +262,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
-  validators?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -580,7 +581,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
-const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorNamesConfig>({
   elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
   fields: {
     managedPackage: { refType: BuiltinTypes.BOOLEAN },
@@ -712,7 +713,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
-    validators: {
+    [DEPLOY_CONFIG]: {
       refType: changeValidatorConfigType,
     },
   },

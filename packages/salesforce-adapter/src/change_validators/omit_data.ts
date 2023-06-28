@@ -30,12 +30,10 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
  * Data (CustomObject instances) is deployed although running in Salesforce validation process
  * (salesforce.client.deploy.checkOnly=true)
  */
-const createOmitDataValidator = (): ChangeValidator => (
-  async changes => awu(changes)
-    .filter(isInstanceOfCustomObjectChange)
-    .map(getChangeData)
-    .map(changeInstance => createChangeError(changeInstance.elemID))
-    .toArray()
-)
+const createOmitDataValidator: ChangeValidator = async changes => awu(changes)
+  .filter(isInstanceOfCustomObjectChange)
+  .map(getChangeData)
+  .map(changeInstance => createChangeError(changeInstance.elemID))
+  .toArray()
 
 export default createOmitDataValidator

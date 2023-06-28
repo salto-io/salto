@@ -66,8 +66,13 @@ describe('createSalesforceChangeValidator', () => {
     describe('with a disabled validator config', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({
-          config: { validators:
-                { customFieldType: false } },
+          config: {
+            deploy: {
+              changeValidators: {
+                deploy: { customFieldType: false },
+              },
+            },
+          },
           isSandbox: false,
           checkOnly: false,
           client,
@@ -77,7 +82,7 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should customFieldType in the disabled validator list', () => {
-        const disabledValidators = [changeValidators.customFieldType.creator({}, false, client)]
+        const disabledValidators = [changeValidators.customFieldType({}, false, client)]
         expect(createChangeValidator).toHaveBeenCalledWith(
           expect.toBeArrayOfSize(
             Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1

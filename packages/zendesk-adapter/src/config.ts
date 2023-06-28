@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { ChangeValidatorsConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
+import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
@@ -83,7 +83,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig & ChangeValidatorsConfig
+export type ZedneskDeployConfig = configUtils.UserDeployConfig & ChangeValidatorConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
   >

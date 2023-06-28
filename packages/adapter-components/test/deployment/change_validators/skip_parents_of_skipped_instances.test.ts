@@ -28,17 +28,19 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInstance.elemID, parentInstance)],
     },
   )
-  const mockChangeValidator: ChangeValidator = async () => [
-    {
-      elemID: skippedInst.elemID,
-      severity: 'Error',
-      message: 'Error',
-      detailedMessage: 'detailed error',
-    },
-  ]
+  const mockChangeValidator: Record<string, ChangeValidator> = {
+    mockValidator: async () => [
+      {
+        elemID: skippedInst.elemID,
+        severity: 'Error',
+        message: 'Error',
+        detailedMessage: 'detailed error',
+      },
+    ],
+  }
 
   it('should skip the parent instance as well', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator([mockChangeValidator])([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
       toChange({ after: parentInstance }),
       toChange({ after: skippedInst }),
     ])
@@ -47,40 +49,42 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
       .toEqual([skippedInst.elemID.getFullName(), parentInstance.elemID.getFullName()])
   })
   it('should not skip the parent instance if it did not change', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator([mockChangeValidator])([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
       toChange({ after: skippedInst }),
     ])
     expect(errors).toHaveLength(1)
     expect(errors.map(e => e.elemID.getFullName())).toEqual([skippedInst.elemID.getFullName()])
   })
   it('should not skip the parent instance if its child did not change', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator([mockChangeValidator])([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
       toChange({ after: parentInstance }),
     ])
     expect(errors).toHaveLength(1)
   })
   it('should add only one error to parent even if child has multiple', async () => {
-    const otherMockChangeValidator: ChangeValidator = async () => [
-      {
-        elemID: skippedInst.elemID,
-        severity: 'Error',
-        message: 'Error',
-        detailedMessage: 'detailed error',
-      },
-      {
-        elemID: skippedInst.elemID,
-        severity: 'Error',
-        message: 'Error',
-        detailedMessage: 'another detailed error',
-      },
-      {
-        elemID: skippedInst.elemID,
-        severity: 'Error',
-        message: 'Error',
-        detailedMessage: 'and another detailed error',
-      },
-    ]
-    const errors = await createSkipParentsOfSkippedInstancesValidator([otherMockChangeValidator])([
+    const otherMockChangeValidator: Record<string, ChangeValidator> = {
+      otherMockValidator: async () => [
+        {
+          elemID: skippedInst.elemID,
+          severity: 'Error',
+          message: 'Error',
+          detailedMessage: 'detailed error',
+        },
+        {
+          elemID: skippedInst.elemID,
+          severity: 'Error',
+          message: 'Error',
+          detailedMessage: 'another detailed error',
+        },
+        {
+          elemID: skippedInst.elemID,
+          severity: 'Error',
+          message: 'Error',
+          detailedMessage: 'and another detailed error',
+        },
+      ],
+    }
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: otherMockChangeValidator })([
       toChange({ after: parentInstance }),
       toChange({ after: skippedInst }),
     ])

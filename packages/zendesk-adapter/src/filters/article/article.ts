@@ -35,7 +35,7 @@ import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
-  EVERYONE_USER_TYPE,
+  EVERYONE_USER_TYPE, ARTICLE_ATTACHMENTS_FIELD,
 } from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
@@ -54,6 +54,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
+const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
 
 export type TranslationType = {
   title: string
@@ -234,11 +235,69 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
-const getName = (instance: InstanceElement): string => instance.elemID.name
+const getName = (element: InstanceElement | ReferenceExpression): string => element.elemID.name
 const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
 const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
 const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
+const shouldRemoveAttachment = (attachment: Element, allRemovedAttachmentsIds: Set<number>): boolean =>
+  isInstanceElement(attachment) && allRemovedAttachmentsIds.has(attachment.value.id)
 
+const isRemovedAttachment = (
+  attachment: unknown,
+  articleRemovedAttachmentsIds: Set<number>,
+  attachmentByName: Record<string, InstanceElement>
+): boolean => {
+  const name = isReferenceExpression(attachment) ? getName(attachment) : undefined
+  const attachmentInstance = name ? attachmentByName[name] : undefined
+  return isInstanceElement(attachmentInstance)
+    && articleRemovedAttachmentsIds.has(attachmentInstance.value.id)
+}
+
+const getAttachmentData = (
+  article: InstanceElement,
+  attachmentByName: Record<string, InstanceElement>
+): {inlineAttachmentsNameById: Record<number, string>; attachmentIdsFromArticleBody: Set<number | undefined>} => {
+  const attachmentsNames: string[] = article.value.attachments?.filter(isReferenceExpression).map(getName)
+  const inlineAttachmentInstances = attachmentsNames
+    .map(name => attachmentByName[name])
+    .filter(isInstanceElement)
+    .filter(attachment => attachment.value.inline)
+  const inlineAttachmentsNameById = _.mapValues(_.keyBy(inlineAttachmentInstances, getId), getName)
+  const articleBody = article.value.body ?? ''
+  const attachmentIdsFromArticleBody = new Set(
+    Array.from(articleBody.matchAll(ATTACHMENTS_IDS_REGEX), (match: RegExpMatchArray | undefined) => match?.groups?.id)
+      .filter(id => id !== undefined).map(Number)
+  )
+  return { inlineAttachmentsNameById, attachmentIdsFromArticleBody }
+}
+
+/**
+ * returns deleted attachments ids
+ */
+const calculateAndRemoveDeletedAttachments = (
+  articleInstances: InstanceElement[],
+  attachmentByName: Record<string, InstanceElement>
+): Set<number> => {
+  const allRemovedAttachmentsIds = new Set<number>()
+  const allRemovedAttachmentsNames = new Set<string>()
+  articleInstances.forEach(article => {
+    const articleRemovedAttachmentsIds = new Set<number>()
+    const attachmentData = getAttachmentData(article, attachmentByName)
+    Object.keys(attachmentData.inlineAttachmentsNameById).forEach(id => {
+      const numberId = Number(id)
+      if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
+        allRemovedAttachmentsIds.add(numberId)
+        articleRemovedAttachmentsIds.add(numberId)
+        allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
+      }
+    })
+    article.value.attachments = article.value.attachments?.filter(
+      (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds, attachmentByName)
+    )
+  })
+  log.info(`the article attachments ${Array.from(allRemovedAttachmentsNames)} are going to be deleted since they are inline but do not appear in the body`)
+  return allRemovedAttachmentsIds
+}
 
 /**
  * Deploys articles and adds default user_segment value to visible articles
@@ -267,6 +326,16 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           .filter(isInstanceElement)
           .filter(attachment => getName(attachment) !== undefined),
         getName,
+      )
+      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments(articleInstances, attachmentByName)
+      _.remove(
+        attachments,
+        (attachment => shouldRemoveAttachment(attachment, allRemovedAttachmentsIds))
+      )
+      _.remove(
+        elements,
+        (element => element.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
+          && shouldRemoveAttachment(element, allRemovedAttachmentsIds))
       )
       await getArticleAttachments({
         brandIdToClient,

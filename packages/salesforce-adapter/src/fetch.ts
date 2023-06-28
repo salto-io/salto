@@ -398,7 +398,7 @@ export const retrieveMetadataInstances = async ({
         'retrieve request for types %s failed, zipFile is %o, Result is %o',
         typesToRetrieve, result.zipFile, result,
       )
-      throw new Error(`Retrieve request for ${typesToRetrieve} failed. messages: ${safeJsonStringify(result.messages)}`)
+      throw new Error(`Retrieve request for ${typesToRetrieve} failed. messages: ${makeArray(safeJsonStringify(result.messages)).concat(result.errorMessage ?? [])}`)
     }
     const allValues = await fromRetrieveResult(
       result,

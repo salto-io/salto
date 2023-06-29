@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
@@ -68,6 +68,7 @@ type PostFunctionConfiguration = {
   projectRole?: ConfigRef
   event?: ConfigRef
   id?: unknown
+  scriptRunner?: Value
 }
 
 const postFunctionConfigurationSchema = Joi.object({
@@ -184,6 +185,7 @@ export type Workflow = {
   transitions: Transition[]
   statuses?: Status[]
   diagramInitialEntry?: StatusLocation
+  diagramGlobalLoopedTransition?: StatusLocation
 }
 
 export const workflowSchema = Joi.object({

@@ -35,6 +35,11 @@ salto deploy -C 'salesforce.client.deploy.checkOnly=true' -C 'salesforce.client.
 salto deploy -C 'salesforce.client.deploy.checkOnly=true' -C 'salesforce.client.deploy.testLevel=RunSpecifiedTests' -C 'salesforce.client.deploy.runTests=["TestName1", "TestName2"]'
 ```
 
+#### Dont Run Any Tests:
+```bash
+salto deploy -C 'salesforce.client.deploy.checkOnly=true' -C 'salesforce.client.deploy.testLevel=NoTestRun'
+```
+
 ### Quick Deploy
 In order to deploy a recent validation in Salto (quick deploy), you should use the requestId and the hash from your successful validation:
 ```bash

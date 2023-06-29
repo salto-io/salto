@@ -24,6 +24,7 @@ import {
   SaltoElementError,
   SaltoError,
   SeverityLevel,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'

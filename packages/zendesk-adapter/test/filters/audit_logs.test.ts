@@ -319,7 +319,7 @@ describe('audit_logs filter', () => {
         notUpdatedAutomation.clone(),
       ]
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(4) // time, 1 automation, ticket_field, custom_field
+      expect(mockGet).toHaveBeenCalledTimes(5) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(7)
       // automation and translation
       expect(elements.filter(e => e.elemID.typeName !== AUDIT_TIME_TYPE_NAME)
@@ -371,7 +371,7 @@ describe('audit_logs filter', () => {
         return e
       })
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(2) // time, 1 automation, ticket_field, custom_field
+      expect(mockGet).toHaveBeenCalledTimes(3) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(3)
       expect(elements.filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
         .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
@@ -429,7 +429,7 @@ describe('audit_logs filter', () => {
         return e
       })
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(2) // time, 1 automation, ticket_field, custom_field
+      expect(mockGet).toHaveBeenCalledTimes(3) // time, 1 automation, ticket_field, custom_field, count
       expect(elements).toHaveLength(3)
       expect(elements.filter(e => e.elemID.typeName === AUTOMATION_TYPE_NAME)
         .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
@@ -483,7 +483,7 @@ describe('audit_logs filter', () => {
         return e
       })
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(2) // time, ticket_field
+      expect(mockGet).toHaveBeenCalledTimes(3) // time, ticket_field, count
       expect(elements).toHaveLength(3)
       expect(elements.filter(e => e.elemID.typeName === TICKET_FIELD_TYPE_NAME)
         .filter(e => e.annotations[CORE_ANNOTATIONS.CHANGED_BY] === undefined)).toHaveLength(1)
@@ -640,7 +640,7 @@ describe('audit_logs filter', () => {
         })
 
       await filter.onFetch(elements)
-      expect(mockGet).toHaveBeenCalledTimes(1) // time
+      expect(mockGet).toHaveBeenCalledTimes(2) // time, count
       expect(elements).toHaveLength(3)
       // automation and translation
       expect(elements.filter(e => e.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME)

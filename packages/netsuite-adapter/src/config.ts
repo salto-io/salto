@@ -36,7 +36,7 @@ const log = logger(module)
 // in small Netsuite accounts the concurrency limit per integration can be between 1-4
 export const DEFAULT_CONCURRENCY = 4
 export const DEFAULT_FETCH_ALL_TYPES_AT_ONCE = false
-export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 4
+export const DEFAULT_COMMAND_TIMEOUT_IN_MINUTES = 10
 export const DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST = 40
 export const DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB = 3
 export const WARNING_MAX_FILE_CABINET_SIZE_IN_GB = 1

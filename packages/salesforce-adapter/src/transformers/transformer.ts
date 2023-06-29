@@ -946,10 +946,8 @@ const toRecord = async (
   const instanceType = await instance.getType()
   const values = {
     ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
-<<<<<<< HEAD
-    ...instance.value,
-=======
     ..._.mapValues(instance.value, val => {
+      // Lookups to the same types will have an Id value only after the referenced Record was deployed
       if (isInstanceElement(val)) {
         const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
         if (referencedRecordId === undefined) {
@@ -959,7 +957,6 @@ const toRecord = async (
       }
       return val
     }),
->>>>>>> SALTO-4322-SF-circular-dependencies
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],

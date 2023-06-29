@@ -37,6 +37,7 @@ describe('bundle changes', () => {
     recordInstance = new InstanceElement('instance', new ObjectType({ elemID: new ElemID(NETSUITE, 'currency') }),
       {
         bundle: new ReferenceExpression(bundleInstanceBefore.elemID),
+        field: 'before',
       })
   })
 
@@ -56,25 +57,27 @@ describe('bundle changes', () => {
     )
   })
 
-  it('should have changeError when trying to deploy a fileCabinet instance that is included in a bundle', async () => {
+  it('should have changeError when trying to deploy a new element with bundle field', async () => {
     fileInstanceAfter.value.availablewithoutlogin = true
     const changeError = await bundleChangesValidation([
-      toChange({ after: fileInstanceAfter, before: fileInstanceBefore }),
+      toChange({ after: fileInstanceAfter }),
     ])
     expect(changeError).toHaveLength(1)
     expect(changeError[0]).toEqual(
       {
-        message: 'Can\'t deploy file cabinet elements which are part of a bundle',
+        message: 'Can\'t add new elements to bundle',
         severity: 'Error',
         elemID: fileInstanceAfter.elemID,
-        detailedMessage: 'Netsuite does not support modifying file cabinet elements that are part of a bundle.\nUsually, these files are installed with the bundle itself.',
+        detailedMessage: 'Adding elements to a bundle is not supported.',
       }
     )
   })
 
   it('should not have changeError', async () => {
+    const recordInstanceAfter = recordInstance.clone()
+    recordInstanceAfter.value.field = 'after'
     const changeErrors = await bundleChangesValidation([
-      toChange({ after: recordInstance }),
+      toChange({ after: recordInstanceAfter, before: recordInstance }),
     ])
     expect(changeErrors).toHaveLength(0)
   })

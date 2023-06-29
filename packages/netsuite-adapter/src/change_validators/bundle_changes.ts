@@ -14,20 +14,21 @@
 * limitations under the License.
 */
 import { values, collections } from '@salto-io/lowerdash'
-import { ChangeDataType, ChangeError, getChangeData, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { Change, ChangeError, getChangeData, isAdditionChange, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { NetsuiteChangeValidator } from './types'
-import { isBundleInstance, isFileCabinetInstance } from '../types'
+import { getElementValueOrAnnotations, isBundleInstance } from '../types'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
 
-const getBundlesChangeError = (changeData: ChangeDataType): ChangeError | undefined => {
-  if (isFileCabinetInstance(changeData) && isDefined(changeData.value.bundle)) {
+const getBundlesChangeError = (change: Change): ChangeError | undefined => {
+  const changeData = getChangeData(change)
+  if (isAdditionChange(change) && isDefined(getElementValueOrAnnotations(changeData).bundle)) {
     return {
-      message: 'Can\'t deploy file cabinet elements which are part of a bundle',
+      message: 'Can\'t add new elements to bundle',
       severity: 'Error',
       elemID: changeData.elemID,
-      detailedMessage: 'Netsuite does not support modifying file cabinet elements that are part of a bundle.\nUsually, these files are installed with the bundle itself.',
+      detailedMessage: 'Adding elements to a bundle is not supported.',
     }
   } if (isBundleInstance(changeData)) {
     return {
@@ -43,7 +44,6 @@ const getBundlesChangeError = (changeData: ChangeDataType): ChangeError | undefi
 const changeValidator: NetsuiteChangeValidator = async changes => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
     .map(getBundlesChangeError)
     .filter(isDefined)
     .toArray()

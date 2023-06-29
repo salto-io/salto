@@ -64,6 +64,12 @@ describe('bundle_ids filter', () => {
       await filterCreator(filterOpts).onFetch?.([recordInstance, notInRecordBundle])
       expect(fileCabinetInstance.value.bundle).toBeUndefined()
     })
+
+    it('should get serviceId\'s from existing bundle version if the installed version doesn\'t exist', async () => {
+      const notInRecordVersion = new InstanceElement('39609', bundleType().type, { id: '39609', version: 'v4.1.0' })
+      await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, notInRecordVersion])
+      expect(fileCabinetInstance.value.bundle).toEqual(bundleRef)
+    })
   })
 
   describe('preDeploy', () => {

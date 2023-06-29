@@ -18,24 +18,34 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import {
   AdditionChange,
-  Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isModificationChange,
-  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
-  isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS, isObjectType,
+  Change,
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  isReferenceExpression,
+  isRemovalChange,
+  ModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
-import {
-  createSchemeGuard,
-  getParents,
-  resolveChangeElement,
-} from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
 import {
-  ARTICLE_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENTS_FIELD, ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  EVERYONE_USER_TYPE,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
-  EVERYONE_USER_TYPE, ARTICLE_ATTACHMENTS_FIELD,
 } from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
@@ -44,7 +54,8 @@ import ZendeskClient from '../../client/client'
 import {
   createUnassociatedAttachment,
   deleteArticleAttachment,
-  getArticleAttachments, isAttachments,
+  getArticleAttachments,
+  isAttachments,
   updateArticleTranslationBody,
 } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
@@ -235,12 +246,12 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
-const getName = (element: InstanceElement | ReferenceExpression): string => element.elemID.name
+const getName = (instanceOrRef: InstanceElement | ReferenceExpression): string => instanceOrRef.elemID.name
 const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
 const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
 const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
-const shouldRemoveAttachment = (attachment: Element, allRemovedAttachmentsIds: Set<number>): boolean =>
-  isInstanceElement(attachment) && allRemovedAttachmentsIds.has(attachment.value.id)
+const shouldRemoveAttachment = (attachment: Element | undefined, removedAttachmentsIds: Set<number>): boolean =>
+  isInstanceElement(attachment) && removedAttachmentsIds.has(attachment.value.id)
 
 const isRemovedAttachment = (
   attachment: unknown,
@@ -249,44 +260,54 @@ const isRemovedAttachment = (
 ): boolean => {
   const name = isReferenceExpression(attachment) ? getName(attachment) : undefined
   const attachmentInstance = name ? attachmentByName[name] : undefined
-  return isInstanceElement(attachmentInstance)
-    && articleRemovedAttachmentsIds.has(attachmentInstance.value.id)
+  return shouldRemoveAttachment(attachmentInstance, articleRemovedAttachmentsIds)
 }
 
 const getAttachmentData = (
   article: InstanceElement,
-  attachmentByName: Record<string, InstanceElement>
-): {inlineAttachmentsNameById: Record<number, string>; attachmentIdsFromArticleBody: Set<number | undefined>} => {
+  attachmentByName: Record<string, InstanceElement>,
+  translationByName: Record<string, InstanceElement>
+): {
+  inlineAttachmentsNameById: Record<number, string>
+  attachmentIdsFromArticleBody: Set<number | undefined>
+} => {
   const attachmentsNames: string[] = article.value.attachments?.filter(isReferenceExpression).map(getName)
   const inlineAttachmentInstances = attachmentsNames
     .map(name => attachmentByName[name])
     .filter(isInstanceElement)
     .filter(attachment => attachment.value.inline)
+    .filter(attachment => getId(attachment) !== undefined)
   const inlineAttachmentsNameById = _.mapValues(_.keyBy(inlineAttachmentInstances, getId), getName)
-  const articleBody = article.value.body ?? ''
+  const articleBodies = article.value.translations?.filter(isReferenceExpression)
+    .map((ref: ReferenceExpression) => translationByName[ref.elemID.name]?.value.body).join('\n')
   const attachmentIdsFromArticleBody = new Set(
-    Array.from(articleBody.matchAll(ATTACHMENTS_IDS_REGEX), (match: RegExpMatchArray | undefined) => match?.groups?.id)
-      .filter(id => id !== undefined).map(Number)
+    Array.from(
+      articleBodies.matchAll(ATTACHMENTS_IDS_REGEX),
+      (match: RegExpMatchArray | undefined) => match?.groups?.id
+    ).filter(id => id !== undefined).map(Number)
   )
   return { inlineAttachmentsNameById, attachmentIdsFromArticleBody }
 }
 
 /**
  * returns deleted attachments ids
+ * due to an API limitation on the zendesk side, inline attachments deleted from the article body are still returned
+ * from the call to /api/v2/help_center/articles/{article_id}/attachments even though they no longer exist.
+ * we do not want to include these orphaned attachments in the fetch results, so we omit inline attachments that are not
+ * referenced from the article body.
  */
 const calculateAndRemoveDeletedAttachments = (
   articleInstances: InstanceElement[],
-  attachmentByName: Record<string, InstanceElement>
+  attachmentByName: Record<string, InstanceElement>,
+  translationByName: Record<string, InstanceElement>
 ): Set<number> => {
-  const allRemovedAttachmentsIds = new Set<number>()
   const allRemovedAttachmentsNames = new Set<string>()
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
-    const attachmentData = getAttachmentData(article, attachmentByName)
+    const attachmentData = getAttachmentData(article, attachmentByName, translationByName)
     Object.keys(attachmentData.inlineAttachmentsNameById).forEach(id => {
       const numberId = Number(id)
       if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
-        allRemovedAttachmentsIds.add(numberId)
         articleRemovedAttachmentsIds.add(numberId)
         allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
       }
@@ -295,8 +316,8 @@ const calculateAndRemoveDeletedAttachments = (
       (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds, attachmentByName)
     )
   })
-  log.info(`the article attachments ${Array.from(allRemovedAttachmentsNames)} are going to be deleted since they are inline but do not appear in the body`)
-  return allRemovedAttachmentsIds
+  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
+  return new Set(Array.from(allRemovedAttachmentsNames).map(name => getId(attachmentByName[name])))
 }
 
 /**
@@ -327,11 +348,23 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           .filter(attachment => getName(attachment) !== undefined),
         getName,
       )
-      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments(articleInstances, attachmentByName)
+      const translationsByName = _.keyBy(
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME),
+        getName,
+      )
+      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments(
+        articleInstances,
+        attachmentByName,
+        translationsByName,
+      )
       _.remove(
         attachments,
         (attachment => shouldRemoveAttachment(attachment, allRemovedAttachmentsIds))
       )
+      // If in the future articles could share attachments this would have to be changed! We delete attachments that
+      // do not appear in one article, we currently do not check across all articles.
       _.remove(
         elements,
         (element => element.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME

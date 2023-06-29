@@ -1870,6 +1870,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // currently articles do not share attachments, if this changes the attachment code should be reviewed!
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
     request: {
       url: '/api/v2/help_center/articles/{article_id}/attachments',

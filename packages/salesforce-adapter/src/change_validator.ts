@@ -47,7 +47,7 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
-import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
+import { DEPLOY_CONFIG, SalesforceConfig } from './types'
 
 type validatorConfig = deployment.changeValidators.validatorConfig
 const { createChangeValidator } = deployment.changeValidators
@@ -68,7 +68,7 @@ export const defaultChangeValidatorConfig: {
   },
 }
 
-export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreator> = {
+export const changeValidators: Record<string, ChangeValidatorCreator> = {
   managedPackage: () => packageValidator,
   picklistStandardField: () => picklistStandardFieldValidator,
   customObjectInstances: () => customObjectInstancesValidator,

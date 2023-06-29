@@ -19,6 +19,7 @@ import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -26,17 +27,19 @@ import {
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ChangeValidatorNamesConfig, ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG,
+  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
-import createChangeValidator, { changeValidators } from './change_validator'
+import createChangeValidator from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
+
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 const log = logger(module)
 
@@ -96,20 +99,18 @@ SalesforceConfig => {
     }
   }
 
-  const validateValidatorsConfig = (validators: ChangeValidatorNamesConfig | undefined): void => {
+  const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
     if (_.isPlainObject(validators)) {
-      const validValidatorsNames = Object.keys(changeValidators)
-      Object.entries(validators as {}).forEach(([key, value]) => {
-        if (!validValidatorsNames.includes(key)) {
-          throw new ConfigValidationError(['validators', key], `Validator ${key} does not exist, expected one of ${validValidatorsNames.join(',')}`)
-        }
-        if (!_.isBoolean(value)) {
-          throw new ConfigValidationError(['validators', key], 'Value must be true or false')
-        }
-      })
+      Object.entries(validators?.changeValidators?.validate ?? {})
+        .concat(Object.entries(validators?.changeValidators?.deploy ?? {}))
+        .forEach(([key, value]) => {
+          if (!_.isBoolean(value)) {
+            throw new ConfigValidationError(['validators', key], 'Value must be true or false')
+          }
+        })
     }
   }
 
@@ -123,7 +124,7 @@ SalesforceConfig => {
 
   validateClientConfig(config?.value?.client)
 
-  validateValidatorsConfig(config?.value?.validators)
+  validateValidatorsConfig(config?.value?.deploy?.changeValidators)
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 

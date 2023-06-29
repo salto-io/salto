@@ -85,38 +85,6 @@ export type OptionalFeatures = {
   fetchCustomObjectUsingRetrieveApi?: boolean
 }
 
-export type ChangeValidatorName = (
-  'managedPackage'
-  | 'picklistStandardField'
-  | 'customObjectInstances'
-  | 'unknownField'
-  | 'customFieldType'
-  | 'standardFieldLabel'
-  | 'mapKeys'
-  | 'multipleDefaults'
-  | 'picklistPromote'
-  | 'cpqValidator'
-  | 'sbaaApprovalRulesCustomCondition'
-  | 'recordTypeDeletion'
-  | 'flowsValidator'
-  | 'fullNameChangedValidator'
-  | 'invalidListViewFilterScope'
-  | 'caseAssignmentRulesValidator'
-  | 'omitData'
-  | 'unknownUser'
-  | 'animationRuleRecordType'
-  | 'currencyIsoCodes'
-  | 'dataChange'
-  | 'duplicateRulesSortOrder'
-  | 'lastLayoutRemoval'
-  | 'accountSettings'
-  | 'unknownPicklistValues'
-  | 'installedPackages'
-  | 'dataCategoryGroup'
-)
-
-export type ChangeValidatorNamesConfig = Partial<Record<ChangeValidatorName, boolean>>
-
 type ObjectIdSettings = {
   objectsRegex: string
   idFields: string[]

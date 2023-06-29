@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { CORE_ANNOTATIONS, isObjectType } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { StandardType } from '../autogen/types'
 import { ServiceUrlSetter } from './types'
 
@@ -85,9 +85,9 @@ const TYPE_TO_URL: Record<StandardType | 'file' | 'folder', string| undefined> =
 
 const setServiceUrl: ServiceUrlSetter = (elements, client) => {
   elements
-    .filter(isObjectType)
+    .filter(element => element.annotations[CORE_ANNOTATIONS.SERVICE_URL] === undefined)
     .forEach(element => {
-      const url = TYPE_TO_URL[element.elemID.name as StandardType]
+      const url = TYPE_TO_URL[element.elemID.typeName as StandardType]
       if (url !== undefined) {
         element.annotations[CORE_ANNOTATIONS.SERVICE_URL] = new URL(url, client.url).href
       }

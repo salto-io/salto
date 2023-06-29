@@ -13,57 +13,90 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
 import { getFieldContexts } from './field_contexts'
 
 
 const { awu } = collections.asynciterable
+const log = logger(module)
+
+type ContextData = {
+  isNeedToProduceError: boolean
+  elemId: ElemID
+}
+
+const createErrorMessage = (elemID: ElemID, fieldName: string): ChangeError => ({
+  elemID,
+  severity: 'Error' as SeverityLevel,
+  message: 'A field can only have a single global context',
+  detailedMessage: `Can't deploy this global context because the deployment will result in more than a single global context for field ${fieldName}.`,
+})
 
 export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
+    log.error('Failed to run fieldSecondGlobalContextValidator because element source is undefined')
     return []
   }
-  const fieldToGlobalContextsCount: Record<string, number> = {}
+  const resultErrors: ChangeError[] = []
+  const fieldToGlobalContexts: Record<string, Record<string, ContextData>> = {}
+  const validateSecondGlobalContest = async (
+    {
+      field,
+      context,
+    } :
+    {
+      field: InstanceElement
+      context: InstanceElement
+    }
+  ): Promise<void> => {
+    const fieldId = field.elemID.getFullName()
+    const fieldName = field.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+      ? field.annotations[CORE_ANNOTATIONS.ALIAS]
+      : field.elemID.getFullName()
+    const contextId = context.elemID.getFullName()
+    if (fieldToGlobalContexts[fieldId] === undefined) {
+      const contextData: Record<string, ContextData> = {}
+      contextData[contextId] = {
+        isNeedToProduceError: true,
+        elemId: context.elemID,
+      }
+      fieldToGlobalContexts[fieldId] = contextData
+      const globalContexts = (await getFieldContexts(field, elementSource))
+        .filter(fieldContext => fieldContext.value.isGlobalContext)
+      globalContexts.forEach(contextOnField => {
+        const currentContextId = contextOnField.elemID.getFullName()
+        if (fieldToGlobalContexts[fieldId][currentContextId] === undefined) {
+          // which means there is a second global context
+          resultErrors.push(createErrorMessage(fieldToGlobalContexts[fieldId][contextId].elemId, fieldName))
+          fieldToGlobalContexts[fieldId][contextId].isNeedToProduceError = false
+        }
+      })
+    } else {
+      // which means there is a second global context
+      fieldToGlobalContexts[fieldId][contextId] = {
+        isNeedToProduceError: true,
+        elemId: context.elemID,
+      }
+      Object.keys(fieldToGlobalContexts[fieldId])
+        .filter(currentContextId => fieldToGlobalContexts[fieldId][currentContextId].isNeedToProduceError)
+        .forEach(currentContextId => {
+          resultErrors.push(createErrorMessage(fieldToGlobalContexts[fieldId][currentContextId].elemId, fieldName))
+          // mark it with false so we won't raise another error because of it
+          fieldToGlobalContexts[fieldId][currentContextId].isNeedToProduceError = false
+        })
+    }
+  }
+
   await awu(changes).filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
     .map(instance => ({ context: instance, field: getParent(instance) }))
-    .forEach(instanceAndField => {
-      const key = instanceAndField.field.elemID.getFullName()
-      if (fieldToGlobalContextsCount[key] === undefined) {
-        fieldToGlobalContextsCount[key] = 1
-      } else {
-        fieldToGlobalContextsCount[instanceAndField.field.elemID.getFullName()] += 1
-      }
-    })
-
-  return awu(changes)
-    .filter(isInstanceChange)
-    .filter(isAdditionOrModificationChange)
-    .map(getChangeData)
-    .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-    .map(instance => ({ context: instance, field: getParent(instance) }))
-    .filter(async contextAndField => {
-      const globalContexts = (await getFieldContexts(contextAndField.field, elementSource))
-        .filter(context => context.value.isGlobalContext)
-      const isNewContextIncluded = globalContexts
-        .filter(instance => instance.elemID === contextAndField.context.elemID)
-        .length === 0
-      const isTwoGlobalContextAdditions = fieldToGlobalContextsCount[contextAndField.field.elemID.getFullName()] > 1
-      return isTwoGlobalContextAdditions
-        || globalContexts.length > 1
-        || (globalContexts.length === 1 && isNewContextIncluded)
-    })
-    .map(async contextAndField => ({
-      elemID: contextAndField.context.elemID,
-      severity: 'Error' as SeverityLevel,
-      message: 'Can\'t deploy global field context that will be the second global context',
-      detailedMessage: `Can't deploy global field context ${contextAndField.context.elemID.getFullName()} because the field ${contextAndField.field.elemID.getFullName()} already has a global context.`,
-    }))
-    .toArray()
+    .forEach(validateSecondGlobalContest)
+  return resultErrors
 }

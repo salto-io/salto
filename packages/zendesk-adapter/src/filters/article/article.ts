@@ -250,8 +250,6 @@ const getName = (instanceOrRef: InstanceElement | ReferenceExpression): string =
 const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
 const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
 const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
-const shouldRemoveAttachment = (attachment: Element | undefined, removedAttachmentsIds: Set<number>): boolean =>
-  isInstanceElement(attachment) && removedAttachmentsIds.has(attachment.value.id)
 
 const isRemovedAttachment = (
   attachment: unknown,
@@ -260,7 +258,7 @@ const isRemovedAttachment = (
 ): boolean => {
   const name = isReferenceExpression(attachment) ? getName(attachment) : undefined
   const attachmentInstance = name ? attachmentByName[name] : undefined
-  return shouldRemoveAttachment(attachmentInstance, articleRemovedAttachmentsIds)
+  return isInstanceElement(attachmentInstance) && articleRemovedAttachmentsIds.has(attachmentInstance.value.id)
 }
 
 const getAttachmentData = (
@@ -271,7 +269,7 @@ const getAttachmentData = (
   inlineAttachmentsNameById: Record<number, string>
   attachmentIdsFromArticleBody: Set<number | undefined>
 } => {
-  const attachmentsNames: string[] = article.value.attachments?.filter(isReferenceExpression).map(getName)
+  const attachmentsNames: string[] = article.value.attachments?.filter(isReferenceExpression).map(getName) ?? []
   const inlineAttachmentInstances = attachmentsNames
     .map(name => attachmentByName[name])
     .filter(isInstanceElement)
@@ -300,7 +298,7 @@ const calculateAndRemoveDeletedAttachments = (
   articleInstances: InstanceElement[],
   attachmentByName: Record<string, InstanceElement>,
   translationByName: Record<string, InstanceElement>
-): Set<number> => {
+): Set<string> => {
   const allRemovedAttachmentsNames = new Set<string>()
   articleInstances.forEach(article => {
     const articleRemovedAttachmentsIds = new Set<number>()
@@ -317,7 +315,7 @@ const calculateAndRemoveDeletedAttachments = (
     )
   })
   log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
-  return new Set(Array.from(allRemovedAttachmentsNames).map(name => getId(attachmentByName[name])))
+  return allRemovedAttachmentsNames
 }
 
 /**
@@ -361,14 +359,15 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       )
       _.remove(
         attachments,
-        (attachment => shouldRemoveAttachment(attachment, allRemovedAttachmentsIds))
+        (attachment => allRemovedAttachmentsIds.has(attachment.elemID.name))
       )
       // If in the future articles could share attachments this would have to be changed! We delete attachments that
       // do not appear in one article, we currently do not check across all articles.
       _.remove(
         elements,
         (element => element.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
-          && shouldRemoveAttachment(element, allRemovedAttachmentsIds))
+          && isInstanceElement(element)
+          && allRemovedAttachmentsIds.has(element.elemID.name))
       )
       await getArticleAttachments({
         brandIdToClient,

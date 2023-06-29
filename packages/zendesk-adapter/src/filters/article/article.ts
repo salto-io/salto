@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import {
   AdditionChange,
   Change,
@@ -63,6 +63,8 @@ import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
+const { matchAll } = strings
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
@@ -269,18 +271,18 @@ const getAttachmentData = (
   inlineAttachmentsNameById: Record<number, string>
   attachmentIdsFromArticleBody: Set<number | undefined>
 } => {
-  const attachmentsNames: string[] = article.value.attachments?.filter(isReferenceExpression).map(getName) ?? []
+  const attachmentsNames = makeArray(article.value.attachments).filter(isReferenceExpression).map(getName)
   const inlineAttachmentInstances = attachmentsNames
     .map(name => attachmentByName[name])
     .filter(isInstanceElement)
     .filter(attachment => attachment.value.inline)
     .filter(attachment => getId(attachment) !== undefined)
   const inlineAttachmentsNameById = _.mapValues(_.keyBy(inlineAttachmentInstances, getId), getName)
-  const articleBodies = article.value.translations?.filter(isReferenceExpression)
+  const articleBodies = makeArray(article.value.translations).filter(isReferenceExpression)
     .map((ref: ReferenceExpression) => translationByName[ref.elemID.name]?.value.body).join('\n')
   const attachmentIdsFromArticleBody = new Set(
     Array.from(
-      articleBodies.matchAll(ATTACHMENTS_IDS_REGEX),
+      matchAll(articleBodies, ATTACHMENTS_IDS_REGEX),
       (match: RegExpMatchArray | undefined) => match?.groups?.id
     ).filter(id => id !== undefined).map(Number)
   )
@@ -310,7 +312,7 @@ const calculateAndRemoveDeletedAttachments = (
         allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
       }
     })
-    article.value.attachments = article.value.attachments?.filter(
+    article.value.attachments = makeArray(article.value.attachments).filter(
       (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds, attachmentByName)
     )
   })

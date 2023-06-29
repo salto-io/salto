@@ -13,21 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { isDefined } from '@salto-io/lowerdash/src/values'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
-import { getFieldContexts } from './field_contexts'
 
 
 const { awu } = collections.asynciterable
 const log = logger(module)
-
-type ContextData = {
-  isNeedToProduceError: boolean
-  elemId: ElemID
-}
 
 const createErrorMessage = (elemID: ElemID, fieldName: string): ChangeError => ({
   elemID,
@@ -36,67 +31,54 @@ const createErrorMessage = (elemID: ElemID, fieldName: string): ChangeError => (
   detailedMessage: `Can't deploy this global context because the deployment will result in more than a single global context for field ${fieldName}.`,
 })
 
+const getParenWithElementSource = async (instance: InstanceElement, elementSource: ReadOnlyElementsSource)
+: Promise<InstanceElement> => {
+  const parent = instance.annotations[CORE_ANNOTATIONS.PARENT][0]
+  if (!isReferenceExpression(parent)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be a reference expression`)
+  }
+  const field = await parent.getResolvedValue(elementSource)
+  if (!isInstanceElement(field)) {
+    throw new Error(`Expected ${instance.elemID.getFullName()} parent to be an instance`)
+  }
+  return field
+}
+
 export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes, elementSource) => {
   if (elementSource === undefined) {
     log.error('Failed to run fieldSecondGlobalContextValidator because element source is undefined')
     return []
   }
-  const resultErrors: ChangeError[] = []
-  const fieldToGlobalContexts: Record<string, Record<string, ContextData>> = {}
-  const validateSecondGlobalContest = async (
-    {
-      field,
-      context,
-    } :
-    {
-      field: InstanceElement
-      context: InstanceElement
-    }
-  ): Promise<void> => {
-    const fieldId = field.elemID.getFullName()
-    const fieldName = field.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
-      ? field.annotations[CORE_ANNOTATIONS.ALIAS]
-      : field.elemID.getFullName()
-    const contextId = context.elemID.getFullName()
-    if (fieldToGlobalContexts[fieldId] === undefined) {
-      const contextData: Record<string, ContextData> = {}
-      contextData[contextId] = {
-        isNeedToProduceError: true,
-        elemId: context.elemID,
+  const fieldToGlobalContextCount: Record<string, number> = {}
+  await awu(await elementSource.getAll())
+    .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+    .filter(isInstanceElement)
+    .filter(instance => instance.value.isGlobalContext)
+    .forEach(async instance => {
+      const field = await getParenWithElementSource(instance, elementSource)
+      const fieldName = field.elemID.getFullName()
+      if (fieldToGlobalContextCount[fieldName] === undefined) {
+        fieldToGlobalContextCount[fieldName] = 1
+      } else {
+        fieldToGlobalContextCount[fieldName] += 1
       }
-      fieldToGlobalContexts[fieldId] = contextData
-      const globalContexts = (await getFieldContexts(field, elementSource))
-        .filter(fieldContext => fieldContext.value.isGlobalContext)
-      globalContexts.forEach(contextOnField => {
-        const currentContextId = contextOnField.elemID.getFullName()
-        if (fieldToGlobalContexts[fieldId][currentContextId] === undefined) {
-          // which means there is a second global context
-          resultErrors.push(createErrorMessage(fieldToGlobalContexts[fieldId][contextId].elemId, fieldName))
-          fieldToGlobalContexts[fieldId][contextId].isNeedToProduceError = false
-        }
-      })
-    } else {
-      // which means there is a second global context
-      fieldToGlobalContexts[fieldId][contextId] = {
-        isNeedToProduceError: true,
-        elemId: context.elemID,
-      }
-      Object.keys(fieldToGlobalContexts[fieldId])
-        .filter(currentContextId => fieldToGlobalContexts[fieldId][currentContextId].isNeedToProduceError)
-        .forEach(currentContextId => {
-          resultErrors.push(createErrorMessage(fieldToGlobalContexts[fieldId][currentContextId].elemId, fieldName))
-          // mark it with false so we won't raise another error because of it
-          fieldToGlobalContexts[fieldId][currentContextId].isNeedToProduceError = false
-        })
-    }
-  }
+    })
 
-  await awu(changes).filter(isInstanceChange)
+  return awu(changes).filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
     .map(instance => ({ context: instance, field: getParent(instance) }))
-    .forEach(validateSecondGlobalContest)
-  return resultErrors
+    .map(contextAndField => {
+      if (fieldToGlobalContextCount[contextAndField.field.elemID.getFullName()] > 1) {
+        const fieldName = contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+          ? contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS]
+          : contextAndField.field.elemID.getFullName()
+        return createErrorMessage(contextAndField.context.elemID, fieldName)
+      }
+      return undefined
+    })
+    .filter(isDefined)
+    .toArray()
 }

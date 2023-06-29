@@ -14,27 +14,35 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { deployment } from '@salto-io/adapter-components'
-import createSalesforceChangeValidator, { changeValidators } from '../src/change_validator'
+import createSalesforceChangeValidator, { changeValidators, defaultChangeValidatorConfig } from '../src/change_validator'
 import mockAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 
-jest.mock('@salto-io/adapter-utils', () => {
-  const actual = jest.requireActual('@salto-io/adapter-utils')
+const { createChangeValidatorV2 } = deployment.changeValidators
+
+jest.mock('@salto-io/adapter-components', () => {
+  const actual = jest.requireActual('@salto-io/adapter-components')
   return {
     ...actual,
-    createChangeValidator: jest.fn().mockImplementation(actual.createChangeValidator),
+    deployment: {
+      ...actual.deployment,
+      changeValidators: {
+        ...actual.deployment.changeValidators,
+        createChangeValidatorV2:
+          jest.fn().mockImplementation(actual.deployment.changeValidators.createChangeValidatorV2),
+      },
+    },
   }
 })
 
 describe('createSalesforceChangeValidator', () => {
-  let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidator>
+  let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidatorV2>
   let validator: ChangeValidator
   let client: SalesforceClient
 
   beforeEach(() => {
-    createChangeValidatorMock = createChangeValidator as typeof createChangeValidatorMock
+    createChangeValidatorMock = createChangeValidatorV2 as typeof createChangeValidatorMock
     createChangeValidatorMock.mockClear()
     const adapter = mockAdapter({})
     client = adapter.client
@@ -52,17 +60,13 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should create a validator with all internal validators enabled', () => {
-        expect(createChangeValidator).toHaveBeenCalledTimes(
-          1
-        )
-        expect(
-          createChangeValidatorMock.mock.calls[0][0]
-        ).toHaveLength(
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
-          + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
-        )
+        const enabledValidatorsCount = Object.entries(changeValidators)
+          .filter(([name]) => defaultChangeValidatorConfig.deploy[name] !== false).length
+          + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+        expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+        expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
+          .toMatchObject(defaultChangeValidatorConfig.deploy)
       })
     })
     describe('with a disabled validator config', () => {
@@ -84,62 +88,10 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should customFieldType in the disabled validator list', () => {
-        const disabledValidators = [changeValidators.customFieldType({}, false, client)]
-        expect(createChangeValidator).toHaveBeenCalledWith(
-          expect.toBeArrayOfSize(
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length - 1
-            + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
-          ),
-          disabledValidators
-        )
-      })
-    })
-    // Remove as part of SALTO-2700
-    describe('with checkOnly defined in the client deploy config', () => {
-      const createValidatorWithConfig = (checkOnly: boolean): ChangeValidator => (
-        createSalesforceChangeValidator({
-          config: {
-            client: {
-              deploy: {
-                checkOnly,
-              },
-            },
-          },
-          isSandbox: false,
-          checkOnly: false,
-          client,
-        })
-      )
-      describe('when checkOnly is true in the deploy config', () => {
-        it('should create validator according to the defaultInValidate field', () => {
-          validator = createValidatorWithConfig(true)
-          expect(validator).toBeDefined()
-          expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
-              + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
-            ),
-            []
-          )
-        })
-      })
-      describe('when checkOnly is false in the deploy config', () => {
-        it('should create validator according to the defaultInDeploy field', () => {
-          validator = createValidatorWithConfig(false)
-          expect(validator).toBeDefined()
-          expect(createChangeValidator).toHaveBeenCalledWith(
-            expect.toBeArrayOfSize(
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-ignore
-              Object.values(changeValidators).filter(cv => cv.defaultInDeploy).length
-              + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
-            ),
-            []
-          )
+        expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig).toMatchObject({
+          customFieldType: false,
+          ...defaultChangeValidatorConfig.deploy,
         })
       })
     })
@@ -154,16 +106,13 @@ describe('createSalesforceChangeValidator', () => {
       })
     })
     it('should create validator according to the defaultInValidate field', () => {
-      expect(validator).toBeDefined()
-      expect(createChangeValidator).toHaveBeenCalledWith(
-        expect.toBeArrayOfSize(
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          Object.values(changeValidators).filter(cv => cv.defaultInValidate).length
-          + Object.values(deployment.changeValidators.getDefaultChangeValidators()).length
-        ),
-        []
-      )
+      const enabledValidatorsCount = Object.entries(changeValidators)
+        .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
+        + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+      expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+      expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
+      expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
+        .toMatchObject(defaultChangeValidatorConfig.validate)
     })
   })
 })

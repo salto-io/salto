@@ -16,7 +16,7 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-export type validatorConfig = Record<string, boolean>
+export type validatorConfig = Record<string, boolean | undefined>
 export type ChangeValidatorConfig = {
   changeValidators?: {
     deploy?: validatorConfig

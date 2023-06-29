@@ -15,7 +15,6 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
-
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
 import { issueTypeSchemeValidator } from './issue_type_scheme'

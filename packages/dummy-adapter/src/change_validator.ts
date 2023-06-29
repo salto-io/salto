@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidatorV2 } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import { GeneratorParams } from './generator'
 import fromAdapterConfig from './change_validators/from_adapter_config'
 
+const { createChangeValidatorV2 } = deployment.changeValidators
 
 export const changeValidator = (
   config: GeneratorParams,

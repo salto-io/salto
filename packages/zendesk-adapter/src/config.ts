@@ -15,8 +15,8 @@
 */
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, BuiltinTypes, ListType } from '@salto-io/adapter-api'
-import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { client as clientUtils, config as configUtils, elements, deployment } from '@salto-io/adapter-components'
 import {
   ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_ORDER_TYPE_NAME,
@@ -26,6 +26,7 @@ import {
   ZENDESK,
 } from './constants'
 
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,

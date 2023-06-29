@@ -15,7 +15,7 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
-import { createChangeValidatorV2 } from '@salto-io/adapter-utils'
+
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
 import { issueTypeSchemeValidator } from './issue_type_scheme'
@@ -57,6 +57,7 @@ import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_c
 
 const {
   deployTypesNotSupportedValidator,
+  createChangeValidatorV2,
 } = deployment.changeValidators
 
 

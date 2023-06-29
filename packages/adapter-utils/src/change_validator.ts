@@ -19,34 +19,6 @@ import { ChangeValidator } from '@salto-io/adapter-api'
 
 const log = logger(module)
 
-export type validatorConfig = Record<string, boolean>
-export type ChangeValidatorConfig = {
-  changeValidators?: {
-    deploy: validatorConfig
-    validate?: validatorConfig
-  }
-}
-
-export const createChangeValidatorV2 = ({
-  validators,
-  mustRunValidators = {},
-  validatorsConfig = {},
-}: {
-  validators: Record<string, ChangeValidator>
-  mustRunValidators?: Record<string, ChangeValidator>
-  validatorsConfig?: validatorConfig
-}): ChangeValidator => async (changes, elementSource) => {
-  const disabledValidatorNames = new Set<string>(
-    Object.entries(validatorsConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
-  )
-  const activeValidators = Object.entries(validators)
-    .filter(([name]) => !disabledValidatorNames.has(name))
-    .map(([, validator]) => validator)
-  return _.flatten(await Promise.all(
-    Object.values(mustRunValidators).concat(activeValidators).map(validator => validator(changes, elementSource))
-  ))
-}
-
 export const createChangeValidator = (
   changeValidators: ReadonlyArray<ChangeValidator>,
   disabledValidators?: ReadonlyArray<ChangeValidator>,

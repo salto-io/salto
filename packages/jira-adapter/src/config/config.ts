@@ -14,11 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements, deployment } from '@salto-io/adapter-components'
 import { JIRA } from '../constants'
 import { getProductSettings } from '../product_settings'
+
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
 

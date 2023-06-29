@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidatorConfig, createMatchingObjectType } from '@salto-io/adapter-utils'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
@@ -25,9 +25,12 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
+
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -581,42 +584,6 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
-const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorNamesConfig>({
-  elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
-  fields: {
-    managedPackage: { refType: BuiltinTypes.BOOLEAN },
-    picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
-    customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
-    unknownField: { refType: BuiltinTypes.BOOLEAN },
-    customFieldType: { refType: BuiltinTypes.BOOLEAN },
-    standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
-    mapKeys: { refType: BuiltinTypes.BOOLEAN },
-    multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
-    picklistPromote: { refType: BuiltinTypes.BOOLEAN },
-    cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
-    recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
-    flowsValidator: { refType: BuiltinTypes.BOOLEAN },
-    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
-    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
-    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
-    omitData: { refType: BuiltinTypes.BOOLEAN },
-    dataChange: { refType: BuiltinTypes.BOOLEAN },
-    unknownUser: { refType: BuiltinTypes.BOOLEAN },
-    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
-    currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
-    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
-    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
-    accountSettings: { refType: BuiltinTypes.BOOLEAN },
-    unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
-    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
-    installedPackages: { refType: BuiltinTypes.BOOLEAN },
-  },
-  annotations: {
-    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-  },
-})
-
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
@@ -639,6 +606,21 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const validatorConfigType = createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
+  elemID: new ElemID(constants.SALESFORCE, 'validatorConfig'),
+  fields: {
+    validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+    deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+  },
+})
+
+const deployConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'deployConfig'),
+  fields: {
+    changeValidators: { refType: validatorConfigType },
   },
 })
 
@@ -713,9 +695,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
-    // TODO seroussi - this is wrong
     [DEPLOY_CONFIG]: {
-      refType: changeValidatorConfigType,
+      refType: deployConfigType,
     },
   },
   annotations: {

@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidatorV2 } from '@salto-io/adapter-utils'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
@@ -38,6 +37,7 @@ import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactiv
 const {
   createCheckDeploymentBasedOnConfigValidator,
   getDefaultChangeValidators,
+  createChangeValidatorV2,
 } = deployment.changeValidators
 
 export default ({

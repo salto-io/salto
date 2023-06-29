@@ -15,18 +15,20 @@
 */
 
 import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { errors as wsErrors } from '@salto-io/workspace'
 import _ from 'lodash'
+import { deployment } from '@salto-io/adapter-components'
 import { getAdapterChangeValidators } from '../../adapters'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
 import { incomingUnresolvedReferencesValidator } from './incoming_unresolved_references'
 
+const { createChangeValidatorV2 } = deployment.changeValidators
 
-const defaultChangeValidators = (errors: wsErrors.Errors): ChangeValidator[] => [
-  checkDeploymentAnnotationsValidator,
-  incomingUnresolvedReferencesValidator(errors.validation),
-]
+
+const defaultChangeValidators = (errors: wsErrors.Errors): Record<string, ChangeValidator> => ({
+  checkDeploymentAnnotations: checkDeploymentAnnotationsValidator,
+  incomingUnresolvedReference: incomingUnresolvedReferencesValidator(errors.validation),
+})
 
 const getChangeValidators = (
   adapters: Record<string, AdapterOperations>,
@@ -35,10 +37,12 @@ const getChangeValidators = (
 ): Record<string, ChangeValidator> =>
   _.mapValues(
     getAdapterChangeValidators(adapters, checkOnly),
-    adapterValidator => createChangeValidator([
-      ...defaultChangeValidators(errors),
-      adapterValidator,
-    ])
+    adapterValidator => createChangeValidatorV2({
+      validators: {
+        ...defaultChangeValidators(errors),
+        adapterValidator,
+      },
+    })
   )
 
 export default getChangeValidators

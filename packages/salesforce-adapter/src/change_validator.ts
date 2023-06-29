@@ -16,9 +16,9 @@
 import { ChangeValidator } from '@salto-io/adapter-api'
 import {
   buildLazyShallowTypeResolverElementsSource,
-  createChangeValidatorV2,
 } from '@salto-io/adapter-utils'
 import _ from 'lodash'
+import { deployment } from '@salto-io/adapter-components'
 import packageValidator from './change_validators/package'
 import picklistStandardFieldValidator from './change_validators/picklist_standard_field'
 import customObjectInstancesValidator from './change_validators/custom_object_instances'
@@ -48,6 +48,8 @@ import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
+
+const { createChangeValidatorV2 } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,

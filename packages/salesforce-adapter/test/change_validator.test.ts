@@ -29,8 +29,8 @@ jest.mock('@salto-io/adapter-components', () => {
       ...actual.deployment,
       changeValidators: {
         ...actual.deployment.changeValidators,
-        createChangeValidatorV2:
-          jest.fn().mockImplementation(actual.deployment.changeValidators.createChangeValidatorV2),
+        createChangeValidator:
+          jest.fn().mockImplementation(actual.deployment.changeValidators.createChangeValidator),
       },
     },
   }

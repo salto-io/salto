@@ -24,23 +24,46 @@ import { MockInterface } from '@salto-io/test-utils'
 import { FileProperties } from 'jsforce-types'
 import SalesforceAdapter from '../src/adapter'
 import Connection from '../src/client/jsforce'
-import { apiName, Types } from '../src/transformers/transformer'
+import {
+  apiName,
+  MetadataObjectType,
+  Types,
+} from '../src/transformers/transformer'
 import { findElements, ZipFile } from './utils'
 import mockAdapter from './adapter'
 import * as constants from '../src/constants'
 import { LAYOUT_TYPE_ID } from '../src/filters/layouts'
 import {
-  MockFilePropertiesInput, MockDescribeResultInput, MockDescribeValueResultInput,
-  mockDescribeResult, mockDescribeValueResult, mockFileProperties, mockRetrieveLocator,
+  MockFilePropertiesInput,
+  MockDescribeResultInput,
+  MockDescribeValueResultInput,
+  mockDescribeResult,
+  mockDescribeValueResult,
+  mockFileProperties,
+  mockRetrieveLocator,
+  mockRetrieveResult,
 } from './connection'
 import { FetchElements, MAX_ITEMS_IN_RETRIEVE_REQUEST } from '../src/types'
-import { fetchMetadataInstances } from '../src/fetch'
+import {
+  fetchMetadataInstances,
+  retrieveMetadataInstances,
+} from '../src/fetch'
 import * as fetchModule from '../src/fetch'
 import * as xmlTransformerModule from '../src/transformers/xml_transformer'
 import * as metadataQueryModule from '../src/fetch_profile/metadata_query'
-import { SALESFORCE_ERRORS, SOCKET_TIMEOUT } from '../src/constants'
+import {
+  CUSTOM_OBJECT,
+  DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+  SALESFORCE,
+  SALESFORCE_ERRORS,
+  SOCKET_TIMEOUT,
+} from '../src/constants'
 import { isInstanceOfType } from '../src/filters/utils'
 import { NON_TRANSIENT_SALESFORCE_ERRORS } from '../src/config_change'
+import SalesforceClient from '../src/client/client'
+import createMockClient from './client'
+import { mockTypes } from './mock_elements'
+import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -828,7 +851,51 @@ public class MyClass${index} {
       expect((await first.value.content.getContent()).toString().includes('Instance0')).toBeTruthy()
       expect((await second.value.content.getContent()).toString().includes('Instance1')).toBeTruthy()
     })
-
+    it('should fetch Profile metadata instances', async () => {
+      mockMetadataTypes(
+        [
+          { xmlName: 'Profile', metaFile: false },
+          { xmlName: 'PermissionSet', metaFile: false },
+        ],
+        { valueTypeFields: [{ name: 'fullName', soapType: 'string', valueRequired: true }] },
+        {
+          Profile: [
+            {
+              props: { fullName: 'SomeProfile', fileName: 'SomeProfile' },
+              values: { fullName: 'SomeProfile' },
+              zipFiles: [
+                {
+                  path: 'unpackaged/SomeProfile',
+                  content: `<?xml version="1.0" encoding="UTF-8"?>
+                          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>57.0</apiVersion>
+                          </Profile>`,
+                },
+              ],
+            },
+          ],
+          PermissionSet: [
+            {
+              props: { fullName: 'PermissionSet' },
+              values: { fullName: 'PermissionSet' },
+              zipFiles: [
+                {
+                  path: 'unpackaged/PermissionSet',
+                  content: `<?xml version="1.0" encoding="UTF-8"?>
+                          <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+                              <apiVersion>57.0</apiVersion>
+                          </PermissionSet>`,
+                },
+              ],
+            },
+          ],
+        },
+      )
+      const { elements: result } = await adapter.fetch(mockFetchOpts)
+      expect(connection.metadata.retrieve).toHaveBeenCalledTimes(1)
+      const [instance] = findElements(result, 'Profile', 'SomeProfile') as InstanceElement[]
+      expect(instance.value[constants.INSTANCE_FULL_NAME_FIELD]).toEqual('SomeProfile')
+    })
     it('should fetch metadata instances folders using retrieve', async () => {
       mockMetadataType(
         { xmlName: 'EmailTemplate', inFolder: true, metaFile: true },
@@ -959,7 +1026,6 @@ public class MyClass${index} {
           constants.RECORDS_PATH, 'Test', 'asd__Test']
       )
     })
-
     describe('when there are duplicate fullNames in the response from listMetadataObjects', () => {
       it('should fetch only the element once', async () => {
         mockMetadataType(
@@ -1554,6 +1620,230 @@ public class LargeClass${index} {
             .toArray()
           expect(fetchedInstancesNames).toEqual(ROLE_INSTANCE_NAMES)
         })
+      })
+    })
+  })
+})
+
+
+describe('Fetch via retrieve API', () => {
+  let connection: MockInterface<Connection>
+  let client: SalesforceClient
+
+  type MockInstanceDef = {
+    type: MetadataObjectType
+    instanceName: string
+  }
+
+  const updateProfileZipFileContents = (zipFile: ZipFile, fileProps: FileProperties[]): void => {
+    const customObjectTypes = [...new Set(fileProps
+      .filter(fileProp => fileProp.type === CUSTOM_OBJECT)
+      .map(fileProp => fileProp.fullName))]
+    zipFile.content = `<?xml version="1.0" encoding="UTF-8"?>
+          <Profile xmlns="http://soap.sforce.com/2006/04/metadata">
+              <apiVersion>57.0</apiVersion>
+              <custom>false</custom>`
+    customObjectTypes.forEach(type => {
+      zipFile.content += `<fieldPermissions>
+        <editable>true</editable>
+        <field>${type}.SomeField</field>
+        <readable>true</readable>
+    </fieldPermissions>`
+    })
+    zipFile.content += '</Profile>'
+  }
+
+  const createFilePath = (fileName: string, type: MetadataObjectType): string => (
+    `unpackaged/${fileName}${type.annotations.hasMetaFile ? '-meta.xml' : ''}`
+  )
+
+  const generateMockData = (instanceDefs: MockInstanceDef[]): { fileProps: FileProperties[]; zipFiles: ZipFile[] } => {
+    const fileProps = instanceDefs
+      .map(({ type, instanceName }) => mockFileProperties({ type: type.elemID.typeName, fullName: instanceName }))
+
+    const zipFiles = _.zip(fileProps, instanceDefs)
+      .map(([fileProp, instanceDef]) => {
+        if (fileProp === undefined || instanceDef === undefined) {
+          // can't happen
+          return { path: '', content: '' }
+        }
+        return {
+          path: createFilePath(fileProp.fileName, instanceDef.type),
+          content: `<?xml version="1.0" encoding="UTF-8"?>
+          <${fileProp.type} xmlns="http://soap.sforce.com/2006/04/metadata">
+              <apiVersion>57.0</apiVersion>
+          </${fileProp.type}>`,
+        }
+      })
+    return {
+      fileProps,
+      zipFiles,
+    }
+  }
+
+  const setupMocks = async (mockDefs: MockInstanceDef[]): Promise<void> => {
+    const { fileProps, zipFiles } = generateMockData(mockDefs)
+    connection.metadata.list.mockImplementation(async inputQueries => {
+      const queries = Array.isArray(inputQueries) ? inputQueries : [inputQueries]
+      return _(queries)
+        .map(query => fileProps.filter(fileProp => fileProp.type === query.type))
+        .flatten()
+        .value()
+    })
+    zipFiles
+      .filter(zipFile => zipFile.content.includes('</Profile>'))
+      .forEach(zipFile => updateProfileZipFileContents(zipFile, fileProps))
+    connection.metadata.retrieve.mockReturnValue(mockRetrieveLocator(mockRetrieveResult({ zipFiles })))
+  }
+
+  beforeEach(async () => {
+    ({ connection, client } = createMockClient())
+  })
+
+  describe('Single regular instance', () => {
+    let elements: InstanceElement[] = []
+
+    beforeEach(async () => {
+      await setupMocks([{ type: mockTypes.ApexClass, instanceName: 'SomeApexClass' }])
+
+      elements = (await retrieveMetadataInstances(
+        {
+          client,
+          types: [mockTypes.ApexClass],
+          maxItemsInRetrieveRequest: DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+          metadataQuery: buildMetadataQuery({}),
+          addNamespacePrefixToFullName: false,
+          typesToSkip: new Set(),
+        }
+      )
+      ).elements
+    })
+
+    it('should fetch the correct instances', () => {
+      expect(elements).toHaveLength(1)
+      expect(elements[0].elemID).toEqual(new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass'))
+    })
+  })
+
+  describe.each([
+    DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+    1,
+  ])('Chunks of regular instances [chunk size = $chunkSize]', chunkSize => {
+    let elements: InstanceElement[] = []
+
+    beforeEach(async () => {
+      await setupMocks([
+        { type: mockTypes.ApexClass, instanceName: 'SomeApexClass' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+      ])
+
+      elements = (await retrieveMetadataInstances(
+        {
+          client,
+          types: [mockTypes.ApexClass, mockTypes.CustomObject],
+          maxItemsInRetrieveRequest: chunkSize,
+          metadataQuery: buildMetadataQuery({}),
+          addNamespacePrefixToFullName: false,
+          typesToSkip: new Set(),
+        }
+      )
+      ).elements
+    })
+
+    it('should fetch the correct instances', () => {
+      expect(elements).toHaveLength(2)
+      expect(elements).toIncludeAllPartialMembers([
+        { elemID: new ElemID(SALESFORCE, 'ApexClass', 'instance', 'SomeApexClass') },
+        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account') },
+      ])
+    })
+  })
+
+  describe.each([
+    DEFAULT_MAX_ITEMS_IN_RETRIEVE_REQUEST,
+    2,
+  ])('chunks with one profile [chunk size = %d]', chunkSize => {
+    let elements: InstanceElement[] = []
+
+    beforeEach(async () => {
+      await setupMocks([
+        { type: mockTypes.CustomObject, instanceName: 'Case' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+        { type: mockTypes.Profile, instanceName: 'SomeProfile' },
+      ])
+
+      elements = (await retrieveMetadataInstances(
+        {
+          client,
+          types: [mockTypes.CustomObject, mockTypes.Profile],
+          maxItemsInRetrieveRequest: chunkSize,
+          metadataQuery: buildMetadataQuery({}),
+          addNamespacePrefixToFullName: false,
+          typesToSkip: new Set(),
+        }
+      )
+      ).elements
+    })
+
+    it('should fetch the correct instances including a complete profile', () => {
+      expect(elements).toHaveLength(3)
+      expect(elements).toIncludeAllPartialMembers([
+        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case') },
+        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account') },
+        { elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile') },
+      ])
+      const profileInstance = elements[2]
+      expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
+      const referencedTypes = _(profileInstance.value.fieldPermissions)
+        .map(({ field }: { field: string }) => field.split('.')[0])
+        .sortBy()
+        .value()
+
+      expect(referencedTypes).toEqual(['Account', 'Case'])
+    })
+  })
+
+
+  describe('Multiple chunks with multiple profiles', () => {
+    let elements: InstanceElement[] = []
+
+    beforeEach(async () => {
+      await setupMocks([
+        { type: mockTypes.CustomObject, instanceName: 'Case' },
+        { type: mockTypes.CustomObject, instanceName: 'Account' },
+        { type: mockTypes.Profile, instanceName: 'SomeProfile' },
+        { type: mockTypes.Profile, instanceName: 'SomeOtherProfile' },
+      ])
+
+      elements = (await retrieveMetadataInstances(
+        {
+          client,
+          types: [mockTypes.CustomObject, mockTypes.Profile],
+          maxItemsInRetrieveRequest: 3,
+          metadataQuery: buildMetadataQuery({}),
+          addNamespacePrefixToFullName: false,
+          typesToSkip: new Set(),
+        }
+      )
+      ).elements
+    })
+
+    it('should fetch the correct instances including both complete profiles', () => {
+      expect(elements).toHaveLength(4)
+      expect(elements).toIncludeAllPartialMembers([
+        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Case') },
+        { elemID: new ElemID(SALESFORCE, 'CustomObject', 'instance', 'Account') },
+        { elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeProfile') },
+        { elemID: new ElemID(SALESFORCE, 'Profile', 'instance', 'SomeOtherProfile') },
+      ])
+      const profileInstances = elements.slice(2)
+      profileInstances.forEach(profileInstance => {
+        expect(profileInstance.value.fieldPermissions).not.toBeEmpty()
+        const referencedTypes = _(profileInstance.value.fieldPermissions)
+          .map(({ field }: { field: string }) => field.split('.')[0])
+          .sortBy()
+          .value()
+        expect(referencedTypes).toEqual(['Account', 'Case'])
       })
     })
   })

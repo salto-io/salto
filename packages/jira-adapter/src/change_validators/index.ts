@@ -56,7 +56,7 @@ import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_c
 
 const {
   deployTypesNotSupportedValidator,
-  createChangeValidatorV2,
+  createChangeValidator,
 } = deployment.changeValidators
 
 
@@ -105,7 +105,7 @@ export default (
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
   }
 
-  return createChangeValidatorV2({
+  return createChangeValidator({
     validators,
     validatorsConfig: config.deploy.changeValidators?.deploy,
   })

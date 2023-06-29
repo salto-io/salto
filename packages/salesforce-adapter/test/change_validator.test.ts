@@ -19,7 +19,7 @@ import createSalesforceChangeValidator, { changeValidators, defaultChangeValidat
 import mockAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 
-const { createChangeValidatorV2 } = deployment.changeValidators
+const { createChangeValidator } = deployment.changeValidators
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -37,12 +37,12 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('createSalesforceChangeValidator', () => {
-  let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidatorV2>
+  let createChangeValidatorMock: jest.MockedFunction<typeof createChangeValidator>
   let validator: ChangeValidator
   let client: SalesforceClient
 
   beforeEach(() => {
-    createChangeValidatorMock = createChangeValidatorV2 as typeof createChangeValidatorMock
+    createChangeValidatorMock = createChangeValidator as typeof createChangeValidatorMock
     createChangeValidatorMock.mockClear()
     const adapter = mockAdapter({})
     client = adapter.client
@@ -63,7 +63,7 @@ describe('createSalesforceChangeValidator', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
           .filter(([name]) => defaultChangeValidatorConfig.deploy[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
-        expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+        expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
         expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
           .toMatchObject(defaultChangeValidatorConfig.deploy)
@@ -88,7 +88,7 @@ describe('createSalesforceChangeValidator', () => {
         expect(validator).toBeDefined()
       })
       it('should customFieldType in the disabled validator list', () => {
-        expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+        expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig).toMatchObject({
           customFieldType: false,
           ...defaultChangeValidatorConfig.deploy,
@@ -109,7 +109,7 @@ describe('createSalesforceChangeValidator', () => {
       const enabledValidatorsCount = Object.entries(changeValidators)
         .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
         + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
-      expect(createChangeValidatorV2).toHaveBeenCalledTimes(1)
+      expect(createChangeValidator).toHaveBeenCalledTimes(1)
       expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
       expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
         .toMatchObject(defaultChangeValidatorConfig.validate)

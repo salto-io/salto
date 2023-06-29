@@ -18,7 +18,7 @@ import { deployment } from '@salto-io/adapter-components'
 import { GeneratorParams } from './generator'
 import fromAdapterConfig from './change_validators/from_adapter_config'
 
-const { createChangeValidatorV2 } = deployment.changeValidators
+const { createChangeValidator } = deployment.changeValidators
 
 export const changeValidator = (
   config: GeneratorParams,
@@ -27,5 +27,5 @@ export const changeValidator = (
     dummy: fromAdapterConfig(config),
   }
 
-  return createChangeValidatorV2({ validators })
+  return createChangeValidator({ validators })
 }

@@ -15,7 +15,7 @@
 */
 import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
 import { deployNotSupportedValidator } from '../../../src/deployment/change_validators/deploy_not_supported'
-import { createChangeValidatorV2 } from '../../../src/deployment/change_validators'
+import { createChangeValidator } from '../../../src/deployment/change_validators'
 
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {
@@ -23,11 +23,11 @@ describe('change validator creator', () => {
       deployNotSupported: deployNotSupportedValidator,
     }
     it('should not fail if there are no deploy changes', async () => {
-      expect(await createChangeValidatorV2({ validators })([])).toEqual([])
+      expect(await createChangeValidator({ validators })([])).toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(await createChangeValidatorV2({ validators })([
+      expect(await createChangeValidator({ validators })([
         toChange({ after: new ObjectType({ elemID: new ElemID('myAdapter', 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID('myAdapter', 'obj2') }) }),
       ])).toEqual([

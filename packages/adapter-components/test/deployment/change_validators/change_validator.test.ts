@@ -16,7 +16,7 @@
 
 import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
-import { createChangeValidatorV2 } from '../../../src/deployment/change_validators'
+import { createChangeValidator } from '../../../src/deployment/change_validators'
 
 describe('change_validator', () => {
   const testElem = new ObjectType({ elemID: new ElemID('test', 'type') })
@@ -50,7 +50,7 @@ describe('change_validator', () => {
   describe('with active validators', () => {
     let result: ReadonlyArray<ChangeError>
     beforeEach(async () => {
-      const mainValidator = createChangeValidatorV2({ validators: mockValidators })
+      const mainValidator = createChangeValidator({ validators: mockValidators })
       result = await mainValidator(changes)
     })
     it('should call all validators', () => {
@@ -77,7 +77,7 @@ describe('change_validator', () => {
         detailedMessage: 'test3',
       }
       disabledValidator = { disabled: mockFunction<ChangeValidator>().mockResolvedValue([disabledError]) }
-      const mainValidator = createChangeValidatorV2({
+      const mainValidator = createChangeValidator({
         validators: { ...mockValidators, ...disabledValidator },
         validatorsConfig: { disabled: false },
       })

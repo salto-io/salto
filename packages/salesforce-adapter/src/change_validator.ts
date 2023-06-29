@@ -50,7 +50,7 @@ import SalesforceClient from './client/client'
 import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
 type validatorConfig = deployment.changeValidators.validatorConfig
-const { createChangeValidatorV2 } = deployment.changeValidators
+const { createChangeValidator } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
@@ -108,7 +108,7 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const defaultValidatorsConfig = defaultChangeValidatorConfig[isCheckOnly ? 'validate' : 'deploy']
   const validatorsConfig = config[DEPLOY_CONFIG]?.changeValidators?.[isCheckOnly ? 'validate' : 'deploy']
 
-  const changeValidator = createChangeValidatorV2({
+  const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
     validatorsConfig: { ...defaultValidatorsConfig, ...validatorsConfig },
   })

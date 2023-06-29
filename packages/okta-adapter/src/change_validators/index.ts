@@ -37,7 +37,7 @@ import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactiv
 const {
   createCheckDeploymentBasedOnConfigValidator,
   getDefaultChangeValidators,
-  createChangeValidatorV2,
+  createChangeValidator,
 } = deployment.changeValidators
 
 export default ({
@@ -69,7 +69,7 @@ export default ({
     appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
   }
 
-  return createChangeValidatorV2({
+  return createChangeValidator({
     validators,
     validatorsConfig: config[DEPLOY_CONFIG]?.changeValidators?.deploy,
   })

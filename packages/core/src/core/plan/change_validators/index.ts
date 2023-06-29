@@ -22,7 +22,7 @@ import { getAdapterChangeValidators } from '../../adapters'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
 import { incomingUnresolvedReferencesValidator } from './incoming_unresolved_references'
 
-const { createChangeValidatorV2 } = deployment.changeValidators
+const { createChangeValidator } = deployment.changeValidators
 
 
 const defaultChangeValidators = (errors: wsErrors.Errors): Record<string, ChangeValidator> => ({
@@ -37,7 +37,7 @@ const getChangeValidators = (
 ): Record<string, ChangeValidator> =>
   _.mapValues(
     getAdapterChangeValidators(adapters, checkOnly),
-    adapterValidator => createChangeValidatorV2({
+    adapterValidator => createChangeValidator({
       validators: {
         ...defaultChangeValidators(errors),
         adapterValidator,

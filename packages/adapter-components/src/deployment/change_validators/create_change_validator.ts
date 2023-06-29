@@ -23,7 +23,7 @@ export type ChangeValidatorConfig = {
     validate?: validatorConfig
   }
 }
-export const createChangeValidatorV2 = ({
+export const createChangeValidator = ({
   validators,
   validatorsConfig = {},
 }: {

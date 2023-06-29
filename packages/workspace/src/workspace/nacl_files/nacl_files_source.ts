@@ -246,43 +246,15 @@ export const toParsedNaclFile = async (
     sourceMap: () => Promise.resolve(parseResult.sourceMap),
   }
 }
-
+type ParseNaclFileArgs = {
+  naclFile: NaclFile
+  functions: Functions
+  createSourceMap?: boolean
+}
+async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap?: false }): Promise<ParseResult>
+async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap: boolean }): Promise<Required<ParseResult>>
 async function parseNaclFile(
-  {
-    naclFile,
-    functions,
-    createSourceMap,
-  }:
-  {
-    naclFile: NaclFile
-    functions: Functions
-    createSourceMap?: false
-  }
-): Promise<ParseResult>
-async function parseNaclFile(
-  {
-    naclFile,
-    functions,
-    createSourceMap,
-  }:
-  {
-    naclFile: NaclFile
-    functions: Functions
-    createSourceMap: boolean
-  }
-): Promise<Required<ParseResult>>
-
-async function parseNaclFile(
-  {
-    naclFile,
-    functions,
-    createSourceMap = false,
-  }:
-  {
-    naclFile: NaclFile
-    functions: Functions
-    createSourceMap?: boolean
-  }
+  { naclFile, functions, createSourceMap = false }: ParseNaclFileArgs
 ): Promise<ParseResult> {
   return parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap)
 }

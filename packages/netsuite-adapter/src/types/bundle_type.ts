@@ -47,7 +47,7 @@ export const bundleType = (): TypeAndInnerTypes => {
   const innerTypes: Record<string, ObjectType> = {}
 
   const bundleElemID = new ElemID(NETSUITE, BUNDLE)
-  const BundleInstalledByElemID = new ElemID(NETSUITE, 'bundle_ installedby')
+  const BundleInstalledByElemID = new ElemID(NETSUITE, 'bundle_installedby')
   const BundlePublisherElemID = new ElemID(NETSUITE, 'bundle_publisher')
 
   const bundleInstalledBy = createMatchingObjectType<BundleInstalledBy>({

@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator } from '@salto-io/adapter-api'
+import { BuiltinTypes, ChangeValidator, ElemID, MapType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 
 export type validatorConfig = Record<string, boolean | undefined>
 export type ChangeValidatorConfig = {
@@ -40,3 +41,19 @@ export const createChangeValidator = ({
     activeValidators.map(validator => validator(changes, elementSource))
   ))
 }
+
+const validatorConfigType = (adapter: string): ObjectType => createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
+  elemID: new ElemID(adapter, 'validatorConfig'),
+  fields: {
+    validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+    deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+  },
+})
+
+export const createChangeValidatorsType = (adapter: string): ObjectType =>
+  createMatchingObjectType<ChangeValidatorConfig>({
+    elemID: new ElemID(adapter, 'ChangeValidatorConfig'),
+    fields: {
+      changeValidators: { refType: validatorConfigType(adapter) },
+    },
+  })

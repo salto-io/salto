@@ -15,10 +15,12 @@
 */
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, deployment, elements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { STRIPE } from './constants'
+
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+const { createChangeValidatorsType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -32,6 +34,7 @@ export const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
+const DEPLOY_CONFIG = 'deploy'
 
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
@@ -44,6 +47,7 @@ export type StripeConfig = {
   [CLIENT_CONFIG]?: StripeClientConfig
   [FETCH_CONFIG]: StripeFetchConfig
   [API_DEFINITIONS_CONFIG]: StripeApiConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorConfig
 }
 
 export const ALL_SUPPORTED_TYPES = {
@@ -151,6 +155,9 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
       refType: createSwaggerAdapterApiConfigType({
         adapter: STRIPE,
       }),
+    },
+    [DEPLOY_CONFIG]: {
+      refType: createChangeValidatorsType(STRIPE),
     },
   },
   annotations: {

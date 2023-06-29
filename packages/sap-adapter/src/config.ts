@@ -16,8 +16,11 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements, deployment } from '@salto-io/adapter-components'
 import { SAP } from './constants'
+
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+const { createChangeValidatorsType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const {
@@ -27,6 +30,7 @@ const {
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
+const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type SAPClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -39,6 +43,7 @@ export type SAPConfig = {
   [CLIENT_CONFIG]?: SAPClientConfig
   [FETCH_CONFIG]: SAPFetchConfig
   [API_DEFINITIONS_CONFIG]: SAPApiConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -144,6 +149,9 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({ adapter: SAP }),
+    },
+    [DEPLOY_CONFIG]: {
+      refType: createChangeValidatorsType(SAP),
     },
   },
   annotations: {

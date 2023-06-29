@@ -20,3 +20,7 @@ export type NetsuiteChangeValidator = (
     deployReferencedElements?: boolean,
     elementsSource?: ReadOnlyElementsSource,
   ) => Promise<ReadonlyArray<ChangeError>>
+
+export type ChangeValidator = (
+  changes: ReadonlyArray<Change>, elementsSource?: ReadOnlyElementsSource
+) => Promise<ReadonlyArray<ChangeError>>

@@ -14,12 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field, MapType } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ActionName, BuiltinTypes, ObjectType, Field } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements, deployment } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
+const { createChangeValidatorsType } = deployment.changeValidators
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 export const CLIENT_CONFIG = 'client'
@@ -1685,23 +1686,6 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
-const createDeployConfigType = (): ObjectType => {
-  const validatorConfigType = createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
-    elemID: new ElemID(OKTA, 'validatorConfig'),
-    fields: {
-      validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-      deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-    },
-  })
-
-  return createMatchingObjectType<ChangeValidatorConfig>({
-    elemID: new ElemID(OKTA, 'deployConfig'),
-    fields: {
-      changeValidators: { refType: validatorConfigType },
-    },
-  })
-}
-
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
   fields: {
@@ -1718,7 +1702,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createDeployConfigType(),
+      refType: createChangeValidatorsType(OKTA),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

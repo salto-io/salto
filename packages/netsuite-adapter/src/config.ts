@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { deployment } from '@salto-io/adapter-components'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
@@ -30,6 +31,9 @@ import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
+
+const { createChangeValidatorsType } = deployment.changeValidators
+type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 const log = logger(module)
 
@@ -79,13 +83,14 @@ export type DeployParams = {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
-}
+} & ChangeValidatorConfig
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   warnOnStaleWorkspaceData: 'warnOnStaleWorkspaceData',
   validate: 'validate',
   deployReferencedElements: 'deployReferencedElements',
   additionalDependencies: 'additionalDependencies',
+  changeValidators: 'changeValidators',
 }
 
 type MaxInstancesPerType = {
@@ -527,6 +532,7 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
+    changeValidators: { refType: createChangeValidatorsType(NETSUITE) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

@@ -20,6 +20,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
+import { ChangeValidatorConfig, createChangeValidatorsType } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -68,6 +69,7 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 export type UserDeployConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
+  changeValidators?: ChangeValidatorConfig
 }
 
 export const createAdapterApiConfigType = ({
@@ -210,6 +212,7 @@ export const createUserDeployConfigType = (
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
       defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
+      changeValidators: { refType: createChangeValidatorsType(adapter) },
       ...additionalFields,
     },
     annotations: {

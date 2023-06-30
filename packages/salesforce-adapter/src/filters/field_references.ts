@@ -159,7 +159,7 @@ const filter: LocalFilterCreator = ({ config }) => ({
   onFetch: async elements => {
     const refDef = getReferenceMappingDefs({
       enumFieldPermissions: config.enumFieldPermissions ?? false,
-      fetchProfiles: config.fetchProfile.isFeatureEnabled('ignoreRefsInProfiles'),
+      fetchProfiles: !config.fetchProfile.isFeatureEnabled('ignoreRefsInProfiles'),
     })
     await addReferences(
       elements,

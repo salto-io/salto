@@ -174,12 +174,17 @@ const associateAttachments = async (
   client: ZendeskClient,
   articleId: number,
   attachmentsIds: number[]
-): Promise<number> => {
-  const res = await client.post({
-    url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
-    data: { attachment_ids: attachmentsIds },
-  })
-  return res.status
+): Promise<number[]> => {
+  const attachChunk = _.chunk(attachmentsIds, 20)
+  log.debug(`there are ${attachmentsIds?.length ?? 0} attachments to associate, associating in chunks of 20`)
+  return Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
+    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length}`)
+    const res = await client.post({
+      url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+      data: { attachment_ids: chunk },
+    })
+    return res.status
+  }))
 }
 
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
@@ -219,8 +224,9 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
           return
         }
         const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
-        if (res !== 200) {
-          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response status ${res}`)
+        const invalidResStatus = res.filter(status => status !== 200)
+        if (!_.isEmpty(invalidResStatus)) {
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response statuses ${invalidResStatus}`)
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }

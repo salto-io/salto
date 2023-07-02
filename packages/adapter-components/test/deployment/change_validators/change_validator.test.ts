@@ -63,8 +63,6 @@ describe('change_validator', () => {
     })
   })
 
-  // TODO seroussi - more tests
-
   describe('with disabled validators', () => {
     let disabledError: ChangeError
     let disabledValidator: Record<string, jest.MockedFunction<ChangeValidator>>

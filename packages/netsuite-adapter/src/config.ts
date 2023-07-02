@@ -549,6 +549,7 @@ export type NetsuiteValidatorName = (
   | 'undeployableConfigFeatures'
   | 'extraReferenceDependencies'
   | 'rolePermission'
+  | 'translationCollectionReferences'
 )
 
 export type NonSuiteAppValidatorName = (

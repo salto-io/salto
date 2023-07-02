@@ -33,7 +33,7 @@ export const workflowPropertiesValidator: ChangeValidator = async changes =>
     .map(getChangeData)
     .filter(isWorkflowInstance)
     .filter(instance => {
-      const items = [...(instance.value.statuses ?? []), ...(instance.value.transitions ?? [])]
+      const items = [...(instance.value.statuses ?? []), ...(Object.values(instance.value.transitions) ?? [])]
       const countItemsKeys = getPropertiesKeyGroups(items).map(keyGroup => _.countBy(keyGroup))
       const duplicateItemsKeys = countItemsKeys.map(dictionary => _.values(dictionary))
         .flatMap(countList => countList.filter(count => count > 1))

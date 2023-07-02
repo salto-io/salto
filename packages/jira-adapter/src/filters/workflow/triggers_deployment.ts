@@ -20,13 +20,13 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { Transition, Workflow, WorkflowInstance, workflowSchema } from './types'
+import { Transition, WorkflowInstance, WorkflowResponse, workflowSchema } from './types'
 
 const { awu } = collections.asynciterable
 
 const log = logger(module)
 
-const isValidTransitionResponse = (response: unknown): response is { values: [Workflow] } => {
+const isValidTransitionResponse = (response: unknown): response is { values: [WorkflowResponse] } => {
   const { error } = Joi.object({
     values: Joi.array().min(1).max(1).items(workflowSchema),
   }).unknown(true).required().validate(response)
@@ -80,7 +80,7 @@ export const deployTriggers = async (
   const transitions = await getTransitionsFromService(client, workflowName)
   const keyToTransition = _.keyBy(transitions, getTransitionKey)
 
-  await awu(instance.value.transitions ?? []).forEach(async transition => {
+  await awu(Object.values(instance.value.transitions) ?? []).forEach(async transition => {
     const transitionId = keyToTransition[getTransitionKey(transition)]?.id
 
     if (transitionId === undefined) {

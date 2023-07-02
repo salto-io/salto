@@ -15,93 +15,10 @@
 */
 import { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 
-export const WITH_POST_FUNCTIONS = {
-  transitions: [
-    {
-      rules: {
-        postFunctions: [
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-              event: {
-                id: '1',
-                name: 'name',
-              },
-            },
-          },
-          {
-            type: 'FireIssueEventFunction',
-            configuration: {
-            },
-          },
-          {
-            type: 'FireIssueEventFunction',
-          },
-          {
-            type: 'SetIssueSecurityFromRoleFunction',
-            configuration: {
-              projectRole: {
-                id: '1',
-                name: 'name',
-              },
-            },
-          },
-          {
-            type: 'SetIssueSecurityFromRoleFunction',
-            configuration: {
-            },
-          },
-          {
-            type: 'SetIssueSecurityFromRoleFunction',
-          },
-        ],
-      },
-    },
-  ],
-}
-
-export const EXPECTED_POST_FUNCTIONS = {
-  rules: {
-    postFunctions: [
-      {
-        type: 'FireIssueEventFunction',
-        configuration: {
-          event: {
-            id: '1',
-          },
-        },
-      },
-      {
-        type: 'FireIssueEventFunction',
-        configuration: {},
-      },
-      {
-        type: 'FireIssueEventFunction',
-      },
-
-      {
-        type: 'SetIssueSecurityFromRoleFunction',
-        configuration: {
-          projectRole: {
-            id: '1',
-          },
-        },
-      },
-      {
-        type: 'SetIssueSecurityFromRoleFunction',
-        configuration: {
-        },
-      },
-      {
-        type: 'SetIssueSecurityFromRoleFunction',
-      },
-    ],
-  },
-}
-
 export const WITH_UNSUPPORTED_POST_FUNCTIONS = {
   transitions: [
     {
+      name: 'tran1',
       type: 'initial',
       rules: {
         postFunctions: [
@@ -113,6 +30,7 @@ export const WITH_UNSUPPORTED_POST_FUNCTIONS = {
       },
     },
     {
+      name: 'tran2',
       type: 'global',
       rules: {
         postFunctions: [
@@ -129,6 +47,7 @@ export const WITH_UNSUPPORTED_POST_FUNCTIONS = {
 export const WITH_VALIDATORS = {
   transitions: [
     {
+      name: 'tran1',
       rules: {
         validators: [
           {

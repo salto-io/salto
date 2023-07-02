@@ -162,8 +162,8 @@ export const removeWorkflowDiagramFields = (element: WorkflowInstance): void => 
     .forEach(status => {
       delete status.location
     })
-  element.value.transitions
-    ?.filter(transition => transition.from !== undefined)
+  Object.values(element.value.transitions)
+    .filter(transition => transition.from !== undefined)
     .forEach(transition => {
       const { type } = transition
       if (type === INITIAL_TRANSITION_TYPE) {
@@ -202,8 +202,8 @@ const buildStatusDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: 
 const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToStepId: Record<string, string>,
   actionKeyToTransition: Record<string, TransitionDiagramFields>)
   : (TransitionDiagramDeploy | undefined)[] | undefined =>
-  workflow.value.transitions
-    ?.flatMap(transition => {
+  Object.values(workflow.value.transitions)
+    .flatMap(transition => {
       const { name, type } = transition
       return transition.from
         ?.map((from: TransitionFrom | string) => {
@@ -211,11 +211,11 @@ const buildTransitionsDiagramFields = (workflow: WorkflowInstance, statusIdToSte
             // transition type may be 'initial' or 'directed' in here
             const fromId = type === INITIAL_TRANSITION_TYPE ? INITIAL_TRANSITION_TYPE : from.id
             if (fromId === undefined || name === undefined) {
-              throw new Error(`Fail to deploy Workflow ${workflow.value.name} Transition ${transition.name} diagram values`)
+              throw new Error(`Fail to deploy Workflow ${workflow.value.name} Transition ${name} diagram values`)
             }
             const transitionDiagramFields = actionKeyToTransition[getTransitionKey(statusIdToStepId[fromId], name)]
             if (transitionDiagramFields === undefined) {
-              throw new Error(`Fail to deploy Workflow ${workflow.value.name} Transition ${transition.name} diagram values`)
+              throw new Error(`Fail to deploy Workflow ${workflow.value.name} Transition ${name} diagram values`)
             }
             return {
               id: transitionDiagramFields.id,
@@ -233,7 +233,7 @@ export const hasDiagramFields = (instance: WorkflowInstance): boolean => {
   const statusesLocations = instance.value.statuses
     ?.map(status => status.location)
     .filter(location => location !== undefined)
-  const transitionsFrom = instance.value.transitions
+  const transitionsFrom = Object.values(instance.value.transitions)
     .flatMap(transition => transition.from)
     .filter(from => from !== undefined && typeof from !== 'string'
       && (from.targetAngle !== undefined || from.sourceAngle !== undefined))
@@ -301,7 +301,7 @@ const insertWorkflowDiagramFields = (workflow: WorkflowInstance,
     y: statusIdToStatus.initial?.y,
   }
   workflow.value.diagramGlobalLoopedTransition = loopedTransitionContainer
-  workflow.value.transitions.forEach(transition => {
+  Object.values(workflow.value.transitions).forEach(transition => {
     const transitionName = transition.name
     if (transition.type === INITIAL_TRANSITION_TYPE && transitionName !== undefined) {
       transition.from = [getTransitionFrom(

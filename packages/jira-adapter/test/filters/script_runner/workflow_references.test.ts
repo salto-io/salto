@@ -26,8 +26,9 @@ const resolvedInstance = new InstanceElement(
   'instance',
   createEmptyType(WORKFLOW_TYPE_NAME),
   {
-    transitions: [
-      {
+    transitions: {
+      tran1: {
+        name: 'tran1',
         rules: {
           postFunctions: [
             {
@@ -38,7 +39,7 @@ const resolvedInstance = new InstanceElement(
           ],
         },
       },
-    ],
+    },
   }
 )
 
@@ -46,8 +47,9 @@ const restoredInstance = new InstanceElement(
   'instance',
   createEmptyType(WORKFLOW_TYPE_NAME),
   {
-    transitions: [
-      {
+    transitions: {
+      tran1: {
+        name: 'tran1',
         rules: {
           postFunctions: [
             {
@@ -58,7 +60,7 @@ const restoredInstance = new InstanceElement(
           ],
         },
       },
-    ],
+    },
   }
 )
 
@@ -92,8 +94,9 @@ describe('Scriptrunner references', () => {
       'instance',
       workflowType,
       {
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             rules: {
               postFunctions: [
                 {
@@ -104,40 +107,40 @@ describe('Scriptrunner references', () => {
               ],
             },
           },
-        ],
+        },
       }
     )
   })
   describe('pre deploy', () => {
     it('should store reference and replace correctly', async () => {
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(1)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(1)
     })
     it('should store reference and replace correctly in modification', async () => {
       await filter.preDeploy([toChange({ before: instance, after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(1)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(1)
     })
     it('should not change if script runner not supported', async () => {
       await filterOff.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(reference)
     })
     it('should change if cloud', async () => {
       await filterCloud.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(1)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(1)
     })
   })
   describe('on deploy', () => {
     it('should return reference', async () => {
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(2)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(2)
     })
     it('should do nothing if scirptrunner not supported', async () => {
       await filterOff.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(reference)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(reference)
     })
     it('should return if cloud', async () => {
       await filterCloud.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.field).toEqual(2)
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.field).toEqual(2)
     })
   })
 })

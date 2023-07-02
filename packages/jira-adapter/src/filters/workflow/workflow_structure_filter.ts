@@ -13,16 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError, Value } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { walkOnValue, WALK_NEXT_STEP, naclCase, invertNaclCase } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
 import { createConditionConfigurationTypes } from './conditions_types'
-import { Condition, isWorkflowInstance, Rules, Status, Transition, Validator, Workflow } from './types'
+import { Condition, isWorkflowResponseInstance, Rules, WorkflowResponse, Status, Transition, Validator } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
-import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
   'GenerateChangeHistoryFunction',
@@ -35,6 +35,53 @@ const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'CreateCommentFunction',
   'IssueStoreFunction',
 ]
+
+const PARTS_SEPARATOR = '::'
+
+const TYPE_TO_FROM_MAP = new Map([
+  ['Initial', 'none'],
+  ['Global', 'any status'],
+  ['Circular', 'any status'],
+])
+
+type TransitionType = 'Directed' | 'Initial' | 'Global' | 'Circular'
+
+const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
+  .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
+  .map((status => [status.id, status.name])))
+
+const getTransitionType = (transition: Transition): TransitionType => {
+  if (transition.type === 'initial') {
+    return 'Initial'
+  }
+  if (transition.from !== undefined
+    && transition.from.length !== 0) {
+    return 'Directed'
+  }
+  if ((transition.to ?? '') === '') {
+    return 'Circular'
+  }
+  return 'Global'
+}
+
+// The key will be in the format of {transition name}::From: {from name}::{transition type}
+// Transitions that were created from any in the UI will have From: any status
+// The initial transition will have From: none
+// In case the user has a status named none or any status there will still be no problem due to the type
+// The types can be Directed, Initial, Global, and Circular (which is global circular)
+export const getTransitionKey = (transition: Transition, statusesMap: Map<string, string>): string => {
+  const type = getTransitionType(transition)
+  const fromSorted = type === 'Directed'
+    ? (transition.from?.map(from => (
+      typeof from === 'string' ? from : from.id ?? ''
+    )) ?? [])
+      .map(from => statusesMap.get(from) ?? from)
+      .sort()
+      .join(',')
+    : TYPE_TO_FROM_MAP.get(type) ?? ''
+
+  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(PARTS_SEPARATOR))
+}
 
 const transformProperties = (item: Status | Transition): void => {
   item.properties = item.properties?.additionalProperties
@@ -139,29 +186,70 @@ const transformRules = (rules: Rules, transitionType?: string): void => {
   rules.validators?.forEach(transformValidator)
 }
 
-const transformWorkflowInstance = (workflowValues: Workflow): void => {
+const transformTransitions = (value: Value): SaltoError[] => {
+  const statusesMap = createStatusMap(value.statuses ?? [])
+  const maxCounts: Record<string, number> = {}
+  value.transitions.forEach((transition: Transition) => {
+    const key = getTransitionKey(transition, statusesMap)
+    maxCounts[key] = (maxCounts[key] ?? 0) + 1
+  })
+
+  const counts: Record<string, number> = {}
+
+  value.transitions = Object.fromEntries(value.transitions
+    // This is Value and not the actual type as we change types
+    .map((transition: Value) => {
+      const key = getTransitionKey(transition, statusesMap)
+      counts[key] = (counts[key] ?? 0) + 1
+      if (maxCounts[key] > 1) {
+        return [naclCase(`${invertNaclCase(key)}${PARTS_SEPARATOR}${counts[key]}`), transition]
+      }
+      return [key, transition]
+    }))
+  const errorKeys = Object.entries(counts)
+    .filter(([, count]) => count > 1)
+    .map(([key]) => key)
+
+  return errorKeys.length === 0
+    ? []
+    : [{
+      message: `The following transitions of workflow ${value.name} have the same key: ${errorKeys.join(', ')}.
+It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
+      severity: 'Warning',
+    }]
+}
+
+const transformWorkflowInstance = (workflowValues: WorkflowResponse): SaltoError[] => {
   workflowValues.entityId = workflowValues.id?.entityId
   workflowValues.name = workflowValues.id?.name
   delete workflowValues.id
 
   workflowValues.statuses?.forEach(transformProperties)
 
-  workflowValues.transitions?.forEach(transformProperties)
+  workflowValues.transitions.forEach(transformProperties)
   workflowValues.transitions
-    ?.filter(transition => transition.rules !== undefined)
+    .filter(transition => transition.rules !== undefined)
     .forEach(transition => {
       transformRules(transition.rules as Rules, transition.type)
     })
+
+  // The type is changed after transform Transitions, so should be last
+  return transformTransitions(workflowValues)
 }
 
 // This filter transforms the workflow values structure so it will fit its deployment endpoint
 const filter: FilterCreator = ({ config }) => ({
   name: 'workflowStructureFilter',
   onFetch: async (elements: Element[]) => {
+    const workflowTransitionType = findObject(elements, WORKFLOW_TRANSITION_TYPE_NAME)
+
     const workflowType = findObject(elements, WORKFLOW_TYPE_NAME)
     if (workflowType !== undefined) {
       delete workflowType.fields.id
       workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
+      if (workflowTransitionType !== undefined) {
+        workflowType.fields.transitions = new Field(workflowType, 'transitions', new MapType(workflowTransitionType))
+      }
     }
 
     const workflowStatusType = findObject(elements, 'WorkflowStatus')
@@ -194,10 +282,12 @@ const filter: FilterCreator = ({ config }) => ({
     elements.push(...validatorTypes)
     elements.push(conditionConfigurationTypes.type, ...conditionConfigurationTypes.subTypes)
 
-    elements
+    const errors = elements
       .filter(isInstanceElement)
-      .filter(isWorkflowInstance)
-      .forEach(instance => transformWorkflowInstance(instance.value))
+      .filter(isWorkflowResponseInstance)
+      .map(instance => transformWorkflowInstance(instance.value)) // also changes the instance
+      .flat()
+    return { errors }
   },
 })
 

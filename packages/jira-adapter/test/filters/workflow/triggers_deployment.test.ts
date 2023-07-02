@@ -35,15 +35,17 @@ describe('triggersDeployment', () => {
       workflowType,
       {
         name: 'workflowName',
-        transitions: [{
-          name: 'name',
-          rules: {
-            triggers: [{
-              key: 'key',
-              configuration: { a: 'b' },
-            }],
+        transitions: {
+          name: {
+            name: 'name',
+            rules: {
+              triggers: [{
+                key: 'key',
+                configuration: { a: 'b' },
+              }],
+            },
           },
-        }],
+        },
       }
     )
 

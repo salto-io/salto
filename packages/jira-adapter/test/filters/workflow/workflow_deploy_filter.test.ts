@@ -83,8 +83,9 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'name',
-              transitions: [
-                {
+              transitions: {
+                tran1: {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     validators: [
@@ -107,7 +108,7 @@ describe('workflowDeployFilter', () => {
                     ],
                   },
                 },
-              ],
+              },
             }
           ),
         }),
@@ -125,8 +126,9 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              tran1: {
+                name: 'tran1',
                 type: 'initial',
                 rules: {
                   conditions: {
@@ -144,7 +146,7 @@ describe('workflowDeployFilter', () => {
                   },
                 },
               },
-            ],
+            },
           },
         ),
       })
@@ -158,8 +160,9 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'name',
-              transitions: [
-                {
+              transitions: {
+                tran1: {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     conditions: {
@@ -177,7 +180,7 @@ describe('workflowDeployFilter', () => {
                     },
                   },
                 },
-              ],
+              },
             },
           ),
         }),
@@ -209,7 +212,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [],
+            transitions: {},
           }
         ),
       })
@@ -241,11 +244,12 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              tran1: {
+                name: 'tran1',
                 type: 'initial',
               },
-            ],
+            },
           }
         ),
       })

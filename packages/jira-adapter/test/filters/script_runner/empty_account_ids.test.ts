@@ -45,8 +45,9 @@ describe('ScriptRunner cloud empty account id', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 postFunctions: [
                   {
@@ -80,7 +81,8 @@ describe('ScriptRunner cloud empty account id', () => {
                 ],
               },
             },
-            {
+            tran2: {
+              name: 'tran2',
               rules: {
                 postFunctions: [
                   {
@@ -104,15 +106,16 @@ describe('ScriptRunner cloud empty account id', () => {
                 ],
               },
             },
-          ],
+          },
         }
       )
       wrongStructureInstance = new InstanceElement(
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               postFunctions: [
                 {
                   type: SCRIPT_RUNNER_POST_FUNCTION_TYPE,
@@ -125,7 +128,8 @@ describe('ScriptRunner cloud empty account id', () => {
                 },
               ],
             },
-            {
+            tran2: {
+              name: 'tran2',
               rules: {
                 postFunctions: [
                   {
@@ -138,33 +142,36 @@ describe('ScriptRunner cloud empty account id', () => {
                 ],
               },
             },
-          ],
+          },
         }
       )
     })
     it('should remove empty account ids', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toBeUndefined()
-      expect(instance.value.transitions[0].rules.postFunctions[2].configuration.scriptRunner.accountIds).toBeUndefined()
-      expect(instance.value.transitions[1].rules.postFunctions[0].configuration.scriptRunner.accountIds).toBeUndefined()
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds)
+        .toBeUndefined()
+      expect(instance.value.transitions.tran1.rules.postFunctions[2].configuration.scriptRunner.accountIds)
+        .toBeUndefined()
+      expect(instance.value.transitions.tran2.rules.postFunctions[0].configuration.scriptRunner.accountIds)
+        .toBeUndefined()
     })
     it('should not remove account ids that are not empty', async () => {
       await filter.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1'])
-      expect(instance.value.transitions[1].rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1', '2'])
+      expect(instance.value.transitions.tran1.rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1'])
+      expect(instance.value.transitions.tran2.rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1', '2'])
     })
     it('should not remove account ids when scriptRunner is not enabled', async () => {
       await filterOff.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
     })
     it('should not remove account ids when on dc', async () => {
       await filterDC.onFetch([instance])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
     })
     it('should not remove account ids when the structure is wrong', async () => {
       await filter.onFetch([wrongStructureInstance])
-      expect(wrongStructureInstance.value.transitions[0].postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
-      expect(wrongStructureInstance.value.transitions[1].rules.postFunctions[0].scriptRunner.accountIds).toEqual([''])
+      expect(wrongStructureInstance.value.transitions.tran1.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
+      expect(wrongStructureInstance.value.transitions.tran2.rules.postFunctions[0].scriptRunner.accountIds).toEqual([''])
     })
   })
   describe('pre deploy', () => {
@@ -173,8 +180,9 @@ describe('ScriptRunner cloud empty account id', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 postFunctions: [
                   {
@@ -197,31 +205,33 @@ describe('ScriptRunner cloud empty account id', () => {
                 ],
               },
             },
-          ],
+          },
         }
       )
     })
     it('should return the accountIds empty field', async () => {
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds).toEqual([''])
     })
     it('should not change accountIds that are not empty', async () => {
       await filter.preDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1'])
+      expect(instance.value.transitions.tran1.rules.postFunctions[1].configuration.scriptRunner.accountIds).toEqual(['1'])
     })
     it('should not return account ids when the structure is wrong', async () => {
-      wrongStructureInstance.value.transitions[0].postFunctions[0].configuration.scriptRunner.accountIds = undefined
-      wrongStructureInstance.value.transitions[1].rules.postFunctions[0].scriptRunner.accountIds = undefined
+      wrongStructureInstance.value.transitions.tran1.postFunctions[0].configuration.scriptRunner.accountIds = undefined
+      wrongStructureInstance.value.transitions.tran2.rules.postFunctions[0].scriptRunner.accountIds = undefined
       await filter.preDeploy([toChange({ after: wrongStructureInstance })])
-      expect(wrongStructureInstance.value.transitions[0].postFunctions[0].configuration.scriptRunner.accountIds)
+      expect(wrongStructureInstance.value.transitions.tran1.postFunctions[0].configuration.scriptRunner.accountIds)
         .toBeUndefined()
-      expect(wrongStructureInstance.value.transitions[1].rules.postFunctions[0].scriptRunner.accountIds).toBeUndefined()
+      expect(wrongStructureInstance.value.transitions.tran2.rules.postFunctions[0].scriptRunner.accountIds)
+        .toBeUndefined()
     })
   })
   describe('on deploy', () => {
     it('should remove empty accountIds', async () => {
       await filter.onDeploy([toChange({ after: instance })])
-      expect(instance.value.transitions[0].rules.postFunctions[0].configuration.scriptRunner.accountIds).toBeUndefined()
+      expect(instance.value.transitions.tran1.rules.postFunctions[0].configuration.scriptRunner.accountIds)
+        .toBeUndefined()
     })
   })
 })

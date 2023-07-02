@@ -45,8 +45,8 @@ export const INITIAL_VALIDATOR = {
  * not create an additional one if one validator like that already appears in the nacl.
  */
 const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
-  instance.value.transitions
-    ?.filter(transition => transition.type === 'initial')
+  Object.values(instance.value.transitions)
+    .filter(transition => transition.type === 'initial')
     .forEach(transition => {
       const createIssuePermissionValidatorIndex = _.findLastIndex(
         transition.rules?.validators ?? [],
@@ -92,7 +92,7 @@ export const deployWorkflow = async (
   }
   const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
-  instance.value.transitions.forEach(transition => {
+  Object.values(instance.value.transitions).forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
 

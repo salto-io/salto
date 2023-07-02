@@ -37,14 +37,24 @@ export const createChangeValidator = ({
   const disabledValidatorNames = new Set<string>(
     Object.entries(validatorsConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
   )
-  const activeValidators = Object.entries(validators)
-    .filter(([name]) => !disabledValidatorNames.has(name))
-    .map(([, validator]) => validator)
 
-  log.info(disabledValidatorNames.size > 0 ? `Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}` : '')
+  const [activeValidators, disabledValidators] = _.partition(
+    Object.entries(validators),
+    ([name]) => !disabledValidatorNames.has(name)
+  )
+
+  if (disabledValidatorNames.size > 0) {
+    if (disabledValidators.length === disabledValidatorNames.size) {
+      log.info(`Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}`)
+    } else {
+      const nonExistentValidators = Array.from(disabledValidatorNames)
+        .filter(name => !disabledValidators.some(([validatorName]) => validatorName === name))
+      log.error(`Some of the disable validator names were not found: ${nonExistentValidators.join(', ')}`)
+    }
+  }
 
   return _.flatten(await Promise.all(
-    activeValidators.map(validator => validator(changes, elementSource))
+    activeValidators.map(([, validator]) => validator(changes, elementSource))
   ))
 }
 

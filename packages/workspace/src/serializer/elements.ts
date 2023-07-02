@@ -23,7 +23,6 @@ import {
   isPrimitiveType, FieldDefinition, Value, TypeRefMap, TypeReference, isTypeReference,
   isVariableExpression, PlaceholderObjectType,
 } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
 import { DuplicateAnnotationError, MergeError, isMergeError } from '../merger/internal/common'
 import { DuplicateInstanceKeyError } from '../merger/internal/instances'
 import { DuplicateAnnotationFieldDefinitionError, ConflictingFieldTypesError,
@@ -52,7 +51,6 @@ import {
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
-const log = logger(module)
 
 // There are two issues with naive json stringification:
 //
@@ -240,9 +238,9 @@ export const serialize = async <T = Element>(
   elements: T[],
   referenceSerializerMode: 'replaceRefWithValue' | 'keepRef' = 'replaceRefWithValue',
   storeStaticFile?: (file: StaticFile) => Promise<void>
-): Promise<string> => log.time(async () => (
+): Promise<string> => (
   (await awu(await serializeStream(elements, referenceSerializerMode, storeStaticFile)).toArray()).join('')
-), 'workspace.serialize')
+)
 
 export type StaticFileReviver =
   (staticFile: StaticFile) => Promise<StaticFile | InvalidStaticFile>
@@ -561,14 +559,14 @@ export const deserializeValidationErrors = async (data: string): Promise<Validat
 export const deserialize = async (
   data: string,
   staticFileReviver?: StaticFileReviver,
-): Promise<Element[]> => log.time(async () => {
+): Promise<Element[]> => {
   const elements = await generalDeserialize<Element>(data, staticFileReviver)
 
   if (elements.some(elem => !isElement(elem))) {
     throw new Error('Deserialization failed. At least one element did not deserialize to an Element')
   }
   return elements
-}, 'workspace.deserialize')
+}
 
 export const deserializeSingleElement = async (
   data: string, staticFileReviver?: StaticFileReviver

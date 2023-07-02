@@ -16,6 +16,9 @@
 import { BuiltinTypes, ChangeValidator, ElemID, MapType, ObjectType } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
+
+const log = logger(module)
 
 export type validatorConfig = Record<string, boolean | undefined>
 export type ChangeValidatorConfig = {
@@ -37,6 +40,9 @@ export const createChangeValidator = ({
   const activeValidators = Object.entries(validators)
     .filter(([name]) => !disabledValidatorNames.has(name))
     .map(([, validator]) => validator)
+
+  log.info(disabledValidatorNames.size > 0 ? `Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}` : '')
+
   return _.flatten(await Promise.all(
     activeValidators.map(validator => validator(changes, elementSource))
   ))

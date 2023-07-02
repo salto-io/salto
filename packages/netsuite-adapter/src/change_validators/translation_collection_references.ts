@@ -25,7 +25,7 @@ const customCollectionRegex = new RegExp('\\[scriptid=custcollection.*', 'gm')
 const toChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
-  message: 'Cannot deploy elements with translation references',
+  message: 'Cannot deploy element with invalid translation reference',
   detailedMessage: 'Cannot deploy this element because it contains a reference to a translation collection that does not exist in the project.'
    + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NS UI.',
 })

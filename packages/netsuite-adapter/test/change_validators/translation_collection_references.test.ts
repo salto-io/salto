@@ -20,14 +20,14 @@ import { addressFormType } from '../../src/autogen/types/standard_types/addressF
 describe('translation collection change validator', () => {
   const addressFormInstance = new InstanceElement('test', addressFormType().type, { field: '[scriptid=custcollection1]' })
   const noReferenceInstance = new InstanceElement('test2', addressFormType().type, {})
-  it('should return changeError in case translation collection is referenced', async () => {
+  it('should return changeError in case there\'s a NS reference to a translation collection', async () => {
     const changes = [{ after: addressFormInstance }, { after: noReferenceInstance }].map(toChange)
     const changeErrors = await translationCollectionValidator(changes)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors[0]).toEqual({
       elemID: addressFormInstance.elemID,
       severity: 'Error',
-      message: 'Cannot deploy elements with translation references',
+      message: 'Cannot deploy element with invalid translation reference',
       detailedMessage: 'Cannot deploy this element because it contains a reference to a translation collection that does not exist in the project.'
   + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NS UI.',
     })

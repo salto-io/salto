@@ -461,7 +461,7 @@ export const calculatePatch = async (
     mergedAfterElements,
     elementSource.createInMemoryElementSource(mergedBeforeElements),
     adapterContext.elementsSource,
-    new Set([accountName]),
+    new Map([[accountName, {}]]),
     new Set([accountName]),
   )
   return {

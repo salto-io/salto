@@ -206,8 +206,8 @@ describe('Adapter', () => {
           failedToFetchAllAtOnce: false,
           failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
-      const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(isPartial).toBeFalsy()
+      const { elements, partialFetchData } = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(partialFetchData?.isPartial).toBeFalsy()
       const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
@@ -288,8 +288,8 @@ describe('Adapter', () => {
         })
       it('should fetch all types and instances when fetch config is undefined', async () => {
         const adapter = createAdapter(configWithoutFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
@@ -302,8 +302,8 @@ describe('Adapter', () => {
           fetch: {},
         }
         const adapter = createAdapter(configWithEmptyDefinedFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
@@ -322,8 +322,8 @@ describe('Adapter', () => {
           },
         }
         const adapter = createAdapter(configWithIncludeButNoExclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someType')).toBeTruthy()
@@ -344,8 +344,8 @@ describe('Adapter', () => {
           },
         }
         const adapter = createAdapter(configWithExcludeButNoInclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip')).toBeFalsy()
@@ -366,8 +366,8 @@ describe('Adapter', () => {
           typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithSkipListAndTypesToSkip)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
@@ -388,8 +388,8 @@ describe('Adapter', () => {
           typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithAllFormats)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
@@ -428,8 +428,8 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
-        expect(isPartial).toBeTruthy()
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
+        expect(partialFetchData?.isPartial).toBeTruthy()
       })
     })
 
@@ -481,8 +481,8 @@ describe('Adapter', () => {
         })
 
         it('isPartial should be true', async () => {
-          const { isPartial } = await adapter.fetch(mockFetchOpts)
-          expect(isPartial).toBeTruthy()
+          const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+          expect(partialFetchData?.isPartial).toBeTruthy()
         })
 
         it('should match the types that match fetchTarget and exclude', async () => {
@@ -1509,9 +1509,9 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
         expect(getDeletedElementsMock).toHaveBeenCalled()
-        expect(deletedElements).toEqual([elemId])
+        expect(partialFetchData?.deletedElements).toEqual([elemId])
         expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
       })
     })
@@ -1526,9 +1526,9 @@ describe('Adapter', () => {
       })
 
       it('check call getDeletedElements and verify return value', async () => {
-        const { deletedElements } = await adapter.fetch({ ...mockFetchOpts })
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
         expect(getDeletedElementsMock).not.toHaveBeenCalled()
-        expect(deletedElements).toEqual(undefined)
+        expect(partialFetchData?.deletedElements).toEqual(undefined)
         expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
       })
     })

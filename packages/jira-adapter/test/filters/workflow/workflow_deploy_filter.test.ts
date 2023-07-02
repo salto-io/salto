@@ -108,7 +108,7 @@ describe('workflowDeployFilter', () => {
                     ],
                   },
                 },
-              ],
+              },
             }
           ),
         }),
@@ -180,7 +180,7 @@ describe('workflowDeployFilter', () => {
                     },
                   },
                 },
-              ],
+              },
             },
           ),
         }),

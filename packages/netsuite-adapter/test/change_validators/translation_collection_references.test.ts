@@ -28,8 +28,8 @@ describe('translation collection change validator', () => {
       elemID: addressFormInstance.elemID,
       severity: 'Error',
       message: 'Cannot deploy elements with translation references',
-      detailedMessage: 'Cannot deploy this element since it contains a translation reference.'
-  + ' To deploy it, replace the reference with any string. After the deployment, reconnect the elements in the NS UI',
+      detailedMessage: 'Cannot deploy this element because it contains a reference to a translation collection that does not exist in the project.'
+  + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NS UI.',
     })
   })
 })

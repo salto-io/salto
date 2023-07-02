@@ -19,7 +19,7 @@ import { client as clientUtils, config as configUtils, deployment, elements } fr
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsType } = deployment.changeValidators
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const {
@@ -248,7 +248,7 @@ export const configType = new ObjectType({
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsType(WORKATO),
+      refType: createChangeValidatorsConfigType(WORKATO),
     },
   },
   annotations: {

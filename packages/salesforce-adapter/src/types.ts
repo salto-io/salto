@@ -28,9 +28,10 @@ import {
 import { deployment } from '@salto-io/adapter-components'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
 
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -579,21 +580,6 @@ const fetchConfigType = createMatchingObjectType<FetchParameters>({
   },
 })
 
-const validatorConfigType = createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
-  elemID: new ElemID(constants.SALESFORCE, 'validatorConfig'),
-  fields: {
-    validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-    deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-  },
-})
-
-const deployConfigType = createMatchingObjectType<ChangeValidatorConfig>({
-  elemID: new ElemID(constants.SALESFORCE, 'deployConfig'),
-  fields: {
-    changeValidators: { refType: validatorConfigType },
-  },
-})
-
 export const configType = createMatchingObjectType<SalesforceConfig>({
   elemID: configID,
   fields: {
@@ -666,7 +652,7 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: deployConfigType,
+      refType: createChangeValidatorsConfigType(SALESFORCE),
     },
   },
   annotations: {

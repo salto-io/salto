@@ -63,6 +63,7 @@ describe('createSalesforceChangeValidator', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
           .filter(([name]) => defaultChangeValidatorConfig.deploy[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
         expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
@@ -109,6 +110,7 @@ describe('createSalesforceChangeValidator', () => {
       const enabledValidatorsCount = Object.entries(changeValidators)
         .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
         + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+
       expect(createChangeValidator).toHaveBeenCalledTimes(1)
       expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
       expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)

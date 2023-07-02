@@ -50,9 +50,9 @@ const validatorConfigType = (adapter: string): ObjectType => createMatchingObjec
   },
 })
 
-export const createChangeValidatorsType = (adapter: string): ObjectType =>
+export const createChangeValidatorsConfigType = (adapter: string): ObjectType =>
   createMatchingObjectType<ChangeValidatorConfig>({
-    elemID: new ElemID(adapter, 'ChangeValidatorConfig'),
+    elemID: new ElemID(adapter, 'ChangeValidatorsConfig'),
     fields: {
       changeValidators: { refType: validatorConfigType(adapter) },
     },

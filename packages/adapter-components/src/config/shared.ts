@@ -20,7 +20,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
-import { ChangeValidatorConfig, createChangeValidatorsType } from '../deployment/change_validators'
+import { ChangeValidatorConfig, createChangeValidatorsConfigType } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -212,7 +212,7 @@ export const createUserDeployConfigType = (
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
       defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
-      changeValidators: { refType: createChangeValidatorsType(adapter) },
+      changeValidators: { refType: createChangeValidatorsConfigType(adapter) },
       ...additionalFields,
     },
     annotations: {

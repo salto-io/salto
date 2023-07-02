@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, deployment, elements } fr
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
 
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsType } = deployment.changeValidators
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const {
@@ -831,7 +831,7 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
       }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsType(ZUORA_BILLING),
+      refType: createChangeValidatorsConfigType(ZUORA_BILLING),
     },
   },
   annotations: {

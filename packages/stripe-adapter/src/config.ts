@@ -20,7 +20,7 @@ import _ from 'lodash'
 import { STRIPE } from './constants'
 
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsType } = deployment.changeValidators
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
@@ -157,7 +157,7 @@ export const configType = createMatchingObjectType<Partial<StripeConfig>>({
       }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsType(STRIPE),
+      refType: createChangeValidatorsConfigType(STRIPE),
     },
   },
   annotations: {

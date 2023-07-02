@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, elements, deployment } fr
 import { SAP } from './constants'
 
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsType } = deployment.changeValidators
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const {
@@ -151,7 +151,7 @@ export const configType = createMatchingObjectType<Partial<SAPConfig>>({
       refType: createSwaggerAdapterApiConfigType({ adapter: SAP }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsType(SAP),
+      refType: createChangeValidatorsConfigType(SAP),
     },
   },
   annotations: {

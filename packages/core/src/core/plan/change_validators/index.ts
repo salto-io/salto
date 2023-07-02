@@ -15,9 +15,9 @@
 */
 
 import { AdapterOperations, ChangeValidator } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import { errors as wsErrors } from '@salto-io/workspace'
 import _ from 'lodash'
-import { deployment } from '@salto-io/adapter-components'
 import { getAdapterChangeValidators } from '../../adapters'
 import { checkDeploymentAnnotationsValidator } from './check_deployment_annotations'
 import { incomingUnresolvedReferencesValidator } from './incoming_unresolved_references'

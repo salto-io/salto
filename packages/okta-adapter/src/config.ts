@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, elements, deployment } fr
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
 const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
-const { createChangeValidatorsType } = deployment.changeValidators
+const { createChangeValidatorsConfigType } = deployment.changeValidators
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 export const CLIENT_CONFIG = 'client'
@@ -1702,7 +1702,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsType(OKTA),
+      refType: createChangeValidatorsConfigType(OKTA),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { ChangeValidator, ChangeError, ObjectType, ElemID, Change, toChange } from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { createChangeValidator } from '../../../src/deployment/change_validators'

@@ -24,6 +24,7 @@ import {
   SaltoElementError,
   SaltoError,
   SeverityLevel,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
@@ -319,6 +320,15 @@ const deployAddInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
+  const instancesToUpdate = instances
+    .filter(instance => Object.values(instance.value).some(isInstanceElement))
+  // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
+  const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
+  await awu(instances).forEach(instance => {
+    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
+      ? instanceByElemId[val.elemID.getFullName()] ?? val
+      : val))
+  })
   const type = await instances[0].getType()
   const typeName = await apiName(type)
   const idFieldsNames = idFields.map(field => field.name)
@@ -362,7 +372,7 @@ const deployAddInstances = async (
     errorInstances: errorUpdateInstances,
   } = await retryFlow(
     updateInstances,
-    { typeName: await apiName(type), instances: existingInstances, client },
+    { typeName: await apiName(type), instances: existingInstances.concat(instancesToUpdate), client },
     client.dataRetry.maxAttempts
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]

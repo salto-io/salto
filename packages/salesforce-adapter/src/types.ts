@@ -83,6 +83,7 @@ export type OptionalFeatures = {
   skipAliases?: boolean
   formulaDeps?: boolean
   fetchCustomObjectUsingRetrieveApi?: boolean
+  ignoreRefsInProfiles?: boolean
 }
 
 type ObjectIdSettings = {
@@ -546,6 +547,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     skipAliases: { refType: BuiltinTypes.BOOLEAN },
     formulaDeps: { refType: BuiltinTypes.BOOLEAN },
     fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
+    ignoreRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

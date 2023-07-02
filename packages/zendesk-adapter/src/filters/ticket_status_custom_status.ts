@@ -50,7 +50,9 @@ const filterCreator: FilterCreator = () => ({
       appliedChanges: ticketStatusCustomStatusChanges,
       errors: [],
     }
-    log.warn(`Elements: ${ticketStatusCustomStatusChanges.map(change => getChangeData(change).elemID.getFullName())} will not be deployed`)
+    if (ticketStatusCustomStatusChanges.length > 0) {
+      log.warn(`Elements: ${ticketStatusCustomStatusChanges.map(change => getChangeData(change).elemID.getFullName())} will not be deployed`)
+    }
     return { deployResult, leftoverChanges }
   },
 })

@@ -96,58 +96,58 @@ describe('createSalesforceChangeValidator', () => {
         })
       })
     })
-    // Remove as part of SALTO-2700
-    describe('with checkOnly defined in the client deploy config', () => {
-      const createValidatorWithConfig = (checkOnly: boolean): ChangeValidator => (
-        createSalesforceChangeValidator({
-          config: {
-            client: {
-              deploy: {
-                checkOnly,
-              },
+  })
+  // Remove as part of SALTO-2700
+  describe('with checkOnly defined in the client deploy config', () => {
+    const createValidatorWithConfig = (checkOnly: boolean): ChangeValidator => (
+      createSalesforceChangeValidator({
+        config: {
+          client: {
+            deploy: {
+              checkOnly,
             },
           },
-          isSandbox: false,
-          checkOnly: false,
-          client,
-        })
-      )
-      describe('when checkOnly is true in the deploy config', () => {
-        it('should create validator according to the validate default config', () => {
-          validator = createValidatorWithConfig(true)
-          expect(validator).toBeDefined()
-          expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-            .toMatchObject(defaultChangeValidatorConfig.validate)
-        })
+        },
+        isSandbox: false,
+        checkOnly: false,
+        client,
       })
-      describe('when checkOnly is false in the deploy config', () => {
-        it('should create validator according to the deploy default config', () => {
-          validator = createValidatorWithConfig(false)
-          expect(validator).toBeDefined()
-          expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-            .toMatchObject(defaultChangeValidatorConfig.deploy)
-        })
-      })
-    })
-    describe('when checkOnly is true', () => {
-      beforeEach(() => {
-        validator = createSalesforceChangeValidator({
-          config: {},
-          isSandbox: false,
-          checkOnly: true,
-          client,
-        })
-      })
-      it('should create validator according to the defaultInValidate field', () => {
-        const enabledValidatorsCount = Object.entries(changeValidators)
-          .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
-        + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
-
-        expect(createChangeValidator).toHaveBeenCalledTimes(1)
-        expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
+    )
+    describe('when checkOnly is true in the deploy config', () => {
+      it('should create validator according to the validate default config', () => {
+        validator = createValidatorWithConfig(true)
+        expect(validator).toBeDefined()
         expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
           .toMatchObject(defaultChangeValidatorConfig.validate)
       })
+    })
+    describe('when checkOnly is false in the deploy config', () => {
+      it('should create validator according to the deploy default config', () => {
+        validator = createValidatorWithConfig(false)
+        expect(validator).toBeDefined()
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
+          .toMatchObject(defaultChangeValidatorConfig.deploy)
+      })
+    })
+  })
+  describe('when checkOnly is true', () => {
+    beforeEach(() => {
+      validator = createSalesforceChangeValidator({
+        config: {},
+        isSandbox: false,
+        checkOnly: true,
+        client,
+      })
+    })
+    it('should create validator according to the validate default config', () => {
+      const enabledValidatorsCount = Object.entries(changeValidators)
+        .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
+        + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+
+      expect(createChangeValidator).toHaveBeenCalledTimes(1)
+      expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
+      expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
+        .toMatchObject(defaultChangeValidatorConfig.validate)
     })
   })
 })

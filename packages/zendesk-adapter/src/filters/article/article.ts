@@ -172,19 +172,24 @@ const getAttachmentArticleRef = (
 
 const associateAttachments = async (
   client: ZendeskClient,
-  articleId: number,
+  article: InstanceElement,
   attachmentsIds: number[]
-): Promise<number[]> => {
+): Promise<boolean> => {
   const attachChunk = _.chunk(attachmentsIds, 20)
-  log.debug(`there are ${attachmentsIds?.length ?? 0} attachments to associate, associating in chunks of 20`)
-  return Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
-    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length}`)
+  const articleId = article.value.id
+  log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
+  const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
+    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
     const res = await client.post({
       url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
       data: { attachment_ids: chunk },
     })
+    if (res.status !== 200) {
+      log.warn(`could not associate chunk number ${index} for article ${article.elemID.name} received status ${res.status}. The unassociated attachment ids are: ${chunk}`)
+    }
     return res.status
   }))
+  return _.isEmpty(allRes.filter(status => status !== 200))
 }
 
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
@@ -223,10 +228,9 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
-        const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
-        const invalidResStatus = res.filter(status => status !== 200)
-        if (!_.isEmpty(invalidResStatus)) {
-          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response statuses ${invalidResStatus}`)
+        const res = await associateAttachments(client, articleInstance, [attachmentInstance.value.id])
+        if (!res) {
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} with id ${attachmentInstance.value.id} has failed `)
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
@@ -429,8 +433,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
             await associateAttachments(
               client,
-              articleInstance.value.id,
-              articleNameToAttachments[articleInstance.elemID.name],
+              articleInstance,
+              articleNameToAttachments[articleInstance.elemID.name] ?? [],
             )
           }
         },

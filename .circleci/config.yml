@@ -127,14 +127,16 @@ jobs:
           name: Run unit tests
           command: yarn test -w 4 --reporters=default --reporters=jest-junit
           environment:
-            JEST_JUNIT_OUTPUT: "reports/unittests/test-results.xml"
+            JEST_JUNIT_OUTPUT_FILE: "reports/unittests/test-results.xml"
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
+
+      - coveralls/upload:
+          when: always
 
       - store_test_results:
           path: reports
 
-      - coveralls/upload
 
   publish_on_version_change:
     docker:

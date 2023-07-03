@@ -99,13 +99,13 @@ SalesforceConfig => {
     }
   }
 
-  const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {
+  const validateValidatorsConfig = (validators: ChangeValidatorConfig['changeValidators'] | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
     if (_.isPlainObject(validators)) {
-      Object.entries(validators?.changeValidators?.validate ?? {})
-        .concat(Object.entries(validators?.changeValidators?.deploy ?? {}))
+      Object.entries(validators?.validate ?? {})
+        .concat(Object.entries(validators?.deploy ?? {}))
         .forEach(([key, value]) => {
           if (!_.isBoolean(value)) {
             throw new ConfigValidationError(['validators', key], 'Value must be true or false')

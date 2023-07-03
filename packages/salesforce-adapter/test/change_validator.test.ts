@@ -131,23 +131,51 @@ describe('createSalesforceChangeValidator', () => {
     })
   })
   describe('when checkOnly is true', () => {
-    beforeEach(() => {
-      validator = createSalesforceChangeValidator({
-        config: {},
-        isSandbox: false,
-        checkOnly: true,
-        client,
+    describe('with no validator config', () => {
+      beforeEach(() => {
+        validator = createSalesforceChangeValidator({
+          config: {},
+          isSandbox: false,
+          checkOnly: true,
+          client,
+        })
+      })
+      it('should create validator according to the validate default config', () => {
+        const enabledValidatorsCount = Object.entries(changeValidators)
+          .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
+          + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
+
+        expect(createChangeValidator).toHaveBeenCalledTimes(1)
+        expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
+          .toMatchObject(defaultChangeValidatorConfig.validate)
       })
     })
-    it('should create validator according to the validate default config', () => {
-      const enabledValidatorsCount = Object.entries(changeValidators)
-        .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
-        + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
-
-      expect(createChangeValidator).toHaveBeenCalledTimes(1)
-      expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
-      expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-        .toMatchObject(defaultChangeValidatorConfig.validate)
+    describe('with a disabled validator config', () => {
+      beforeEach(() => {
+        validator = createSalesforceChangeValidator({
+          config: {
+            deploy: {
+              changeValidators: {
+                validate: { customFieldType: false },
+              },
+            },
+          },
+          isSandbox: false,
+          checkOnly: true,
+          client,
+        })
+      })
+      it('should create a validator', () => {
+        expect(validator).toBeDefined()
+      })
+      it('should customFieldType in the disabled validator list', () => {
+        expect(createChangeValidator).toHaveBeenCalledTimes(1)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig).toMatchObject({
+          customFieldType: false,
+          ...defaultChangeValidatorConfig.validate,
+        })
+      })
     })
   })
 })

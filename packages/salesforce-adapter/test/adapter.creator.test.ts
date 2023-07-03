@@ -570,6 +570,29 @@ describe('SalesforceAdapter creator', () => {
     })
   })
 
+  describe('validateValidatorsConfig', () => {
+    it('should throw when validators config exists and is not an object', () => {
+      const configClone = config.clone()
+      configClone.value.deploy = { changeValidators: 'not an object' }
+
+      expect(() => adapter.operations({
+        credentials,
+        elementsSource: buildElementsSourceFromElements([]),
+        config: configClone,
+      })).toThrow()
+    })
+    it('should throw when validators config includes a value with a non boolean key', () => {
+      const configClone = config.clone()
+      configClone.value.deploy = { changeValidators: { deploy: 'not a boolean' } }
+
+      expect(() => adapter.operations({
+        credentials,
+        elementsSource: buildElementsSourceFromElements([]),
+        config: configClone,
+      })).toThrow()
+    })
+  })
+
   describe('deprecated configuration', () => {
     SalesforceAdapter.prototype.fetch = jest.fn().mockResolvedValue({ elements: [] })
 

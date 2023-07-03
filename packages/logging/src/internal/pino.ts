@@ -23,7 +23,6 @@ import pino, { LevelWithSilent, DestinationStream } from 'pino'
 // @ts-ignore
 import { isoTime } from 'pino/lib/time'
 import chalk from 'chalk'
-import safeStringify from 'fast-safe-stringify'
 import { streams, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
@@ -34,7 +33,7 @@ import {
 import { BaseLoggerRepo, BaseLoggerMaker } from './logger'
 import { LogLevel, toHexColor as levelToHexColor } from './level'
 import { Config } from './config'
-import { LogTags, formatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, PrimitiveType, normalizeLogTags } from './log-tags'
+import { LogTags, formatTextFormatLogTags, LOG_TAGS_COLOR, mergeLogTags, isPrimitiveType, PrimitiveType, normalizeLogTags } from './log-tags'
 
 const toPinoLogLevel = (level: LogLevel | 'none'): LevelWithSilent => (
   level === 'none' ? 'silent' : level
@@ -49,6 +48,7 @@ type FormatterBaseInput = {
   name: string
   stack?: string
   excessArgs: unknown[]
+  logTags?: LogTags
   type?: 'Error'
 }
 
@@ -57,6 +57,8 @@ type FormatterInput = FormatterBaseInput & Record<string, unknown>
 const formatterBaseKeys: (keyof FormatterBaseInput)[] = [
   'level', MESSAGE_KEY, 'time', 'name', 'stack', 'type', 'excessArgs',
 ]
+// Removing 2 for 'stack' which in most cases isn't part of the tags and excessArgs
+const COUNT_DEFAULT_TAGS = formatterBaseKeys.length - 2
 const excessDefaultPinoKeys = ['hostname', 'pid']
 
 type Formatter = (input: FormatterInput) => string
@@ -79,7 +81,26 @@ const formatPrimitiveExcessArg = (
   [formatArgumentKey(i)]: value,
 })
 
-const formatExcessArgs = (excessArgs?: FormatterBaseInput['excessArgs']): LogTags => {
+const formatExcessTagsPerMessage = (
+  maxTagsPerLogMessage: number,
+  logTags?: LogTags,
+  excessArgs?: LogTags,
+): LogTags => {
+  // We slice first the excess args and then the logTags
+  const entriesObject = Object.entries(excessArgs ?? {}).concat(Object.entries(logTags ?? {}))
+  const countCurrentTags = entriesObject.length + COUNT_DEFAULT_TAGS
+  const countRemovedTags = countCurrentTags - maxTagsPerLogMessage
+  if (countCurrentTags > maxTagsPerLogMessage) {
+    return {
+      ...Object.fromEntries(entriesObject.slice(countRemovedTags)),
+      countRemovedTags,
+    }
+  }
+  return { ...logTags, ...excessArgs }
+}
+
+
+const formatExcessArgs = (excessArgs?: unknown[]): LogTags => {
   const baseExcessArgs = (excessArgs || [])
   const formattedExcessArgs = {}
   baseExcessArgs.forEach((excessArg, i) => {
@@ -99,12 +120,8 @@ const textPrettifier = (
 ): Formatter => input => {
   const { level: levelNumber, name, message, time } = input
   const level = pino.levels.labels[levelNumber] as LogLevel
-  const inputWithExcessArgs = { ...input,
-    ...formatExcessArgs(
-    input.excessArgs as unknown as unknown[]
-    ) }
-  const formattedLogTags = formatLogTags(
-    inputWithExcessArgs,
+  const formattedLogTags = formatTextFormatLogTags(
+    input,
     [...formatterBaseKeys, ...excessDefaultPinoKeys]
   )
   return [
@@ -153,19 +170,12 @@ const toStream = (
     : consoleToStream(consoleStream)
 )
 
-const formatJsonStringValue = (s: string): string => (
-  s.match(/^.*(\n|\t|").*$/) ? safeStringify(s) : s
-)
-
-const formatJsonLog = (object: FormatterBaseInput): Record<string, unknown> => {
-  const {
-    excessArgs, ...logJson
-  } = object
-  const formattedExcessArgs = {}
+const formatTags = (config: Config, excessArgs: unknown[], logTags: LogTags): LogTags => {
+  const formattedExcessArgs: LogTags = {}
   Object.entries(formatExcessArgs(excessArgs))
     .forEach(([key, value]) => {
       if (typeof value === 'string') {
-        Object.assign(formattedExcessArgs, { [key]: formatJsonStringValue(value) })
+        Object.assign(formattedExcessArgs, { [key]: value })
         return
       }
       if (value instanceof Error) {
@@ -177,7 +187,11 @@ const formatJsonLog = (object: FormatterBaseInput): Record<string, unknown> => {
       }
       Object.assign(formattedExcessArgs, { [key]: value })
     })
-  return { ...logJson, ...formattedExcessArgs }
+  return formatExcessTagsPerMessage(
+    config.maxTagsPerLogMessage,
+    logTags,
+    formattedExcessArgs,
+  )
 }
 
 export const loggerRepo = (
@@ -188,6 +202,9 @@ export const loggerRepo = (
 ): BaseLoggerRepo => {
   const { stream, end: endStream } = toStream(consoleStream, config)
   global.globalLogTags = mergeLogTags(global.globalLogTags || {}, config.globalTags)
+  const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(
+    () => global.globalLogTags
+  )
 
   const colorize = config.colorize ?? (stream && streams.hasColors(stream as streams.MaybeTty))
 
@@ -200,24 +217,19 @@ export const loggerRepo = (
     } : false,
     formatters: {
       level: (level: string) => ({ level: level.toLowerCase() }),
-      log: (obj: object) => {
-        // When config is text leave the formatting for prettifier.
-        if (config.format === 'json') return formatJsonLog(obj as FormatterBaseInput)
-        return obj
-      },
       bindings: (bindings: pino.Bindings) => _.omit(bindings, [...excessDefaultPinoKeys]),
     },
     messageKey: MESSAGE_KEY,
   }, stream)
 
-  const tagsByNamespace = new collections.map.DefaultMap<string, LogTags>(
-    () => global.globalLogTags
-  )
   const childrenByNamespace = new collections.map.DefaultMap<string, pino.Logger>(
     (namespace: string) => rootPinoLogger.child({ name: namespace })
   )
 
-  const getLogMessageChunks = (message: string, chunkSize: number): string[] => {
+  const getLogMessageChunks = (message: string | Error, chunkSize: number): (string | Error)[] => {
+    if (message instanceof Error) {
+      return [message]
+    }
     // Handle empty string message
     if (message.length === 0) {
       return [message]
@@ -230,53 +242,46 @@ export const loggerRepo = (
     return chunks
   }
 
-  const createLogArgs = (unconsumedArgs: unknown[], message: string | Error): unknown[] => (
-    unconsumedArgs.length
-      ? [
-        // mark excessArgs for optional formatting later
-        { excessArgs: unconsumedArgs },
-        message,
-      ]
-      : [message]
-  )
-
-  const logMessage = (
+  const logConciseMessage = (
     pinoLogger: pino.Logger,
     level: LogLevel,
-    unconsumedArgs: unknown[],
-    message: string | Error
+    message: string | Error,
   ): void => (
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
-    pinoLogger[level](...createLogArgs(unconsumedArgs, message))
+    pinoLogger[level](message)
   )
 
   const logChunks = (
     pinoLogger: pino.Logger,
     level: LogLevel,
     unconsumedArgs: unknown[],
-    chunks: string[]
+    logTags: LogTags,
+    chunks: (string | Error)[],
   ): void => {
+    const formattedTags = formatTags(config, unconsumedArgs, logTags)
+    const pinoLoggerWithFormattedTags = pinoLogger.child(formattedTags)
     if (chunks.length === 1) {
-      logMessage(pinoLogger, level, unconsumedArgs, chunks[0])
+      logConciseMessage(pinoLoggerWithFormattedTags, level, chunks[0])
       return
     }
     const logUuid = uuidv4()
     for (let i = 0; i < chunks.length; i += 1) {
       const chunkTags = { chunkIndex: i, logId: logUuid }
-      const loggerWithChunkTags = pinoLogger.child(normalizeLogTags(chunkTags))
-      logMessage(loggerWithChunkTags, level, unconsumedArgs, chunks[i])
+      const loggerWithChunkTags = pinoLoggerWithFormattedTags.child(normalizeLogTags(chunkTags))
+      logConciseMessage(loggerWithChunkTags, level, chunks[i])
     }
   }
 
-  const logJson = (
+  const logMessage = (
     pinoLogger: pino.Logger,
     level: LogLevel,
     unconsumedArgs: unknown[],
-    message: string
+    logTags: LogTags,
+    message: string | Error,
   ): void => {
     const chunks = getLogMessageChunks(message, config.maxJsonLogChunkSize)
-    logChunks(pinoLogger, level, unconsumedArgs, chunks)
+    logChunks(pinoLogger, level, unconsumedArgs, logTags, chunks)
   }
 
 
@@ -289,18 +294,18 @@ export const loggerRepo = (
          We must "normalize" logTags because there are types of tags that pino doesn't support
          for example - Functions.
          */
-        const pinoLogger = pinoLoggerWithoutTags.child(
-          normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
-        )
+        const normalizedLogTags = normalizeLogTags({ ...namespaceTags, ...global.globalLogTags })
         const [formattedOrError, unconsumedArgs] = typeof message === 'string'
           ? formatMessage(message, ...args)
           : [message, args]
 
-        if (_.isError(formattedOrError) || config.format === 'text') {
-          logMessage(pinoLogger, level, unconsumedArgs, formattedOrError)
-        } else {
-          logJson(pinoLogger, level, unconsumedArgs, formattedOrError)
-        }
+        logMessage(
+          pinoLoggerWithoutTags,
+          level,
+          unconsumedArgs,
+          normalizedLogTags,
+          formattedOrError,
+        )
       },
       assignGlobalTags(logTags?: LogTags): void {
         if (!logTags) global.globalLogTags = {}

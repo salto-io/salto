@@ -45,10 +45,10 @@ const formatKeyValue = (key: string, value: string): string =>
 
 const formatObjectLogTag = (obj: Record<string, unknown>): string =>
   Object.entries(obj)
-    .map(([key, value]) => formatKeyValue(key, safeStringify(value)))
+    .map(([key, value]) => formatKeyValue(key, typeof value === 'string' ? value : safeStringify(value)))
     .join(' ')
 
-export const formatLogTags = (logTags: Record<string, unknown>, baseKeys: string[]): string => {
+export const formatTextFormatLogTags = (logTags: Record<string, unknown>, baseKeys: string[]): string => {
   const tagsWithoutBaseKeys = _.omit(logTags, ...baseKeys)
   return Object.entries(tagsWithoutBaseKeys)
     .map(([logTagKey, logTagValue]) => {

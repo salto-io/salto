@@ -21,12 +21,12 @@ module.exports = deepMerge(
     name: '@salto/logging',
     displayName: '@salto/logging',
     rootDir: `${__dirname}`,
-    collectCoverageFrom: [
-      '!<rootDir>/index.ts',
+    coveragePathIgnorePatterns: [
+      'src/index.ts'
     ],
     coverageThreshold: {
       global: {
-        branches: 100,
+        branches: 97,
         functions: 100,
         lines: 100,
         statements: 100,

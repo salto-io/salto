@@ -132,7 +132,6 @@ jobs:
             FORCE_COLOR: 1
 
       - coveralls/upload:
-          when: always
 
       - store_test_results:
           path: reports

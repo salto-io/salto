@@ -131,7 +131,7 @@ jobs:
             # https://github.com/pinojs/koa-pino-logger/issues/16
             FORCE_COLOR: 1
 
-      - coveralls/upload:
+      - coveralls/upload
 
       - store_test_results:
           path: reports

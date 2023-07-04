@@ -167,6 +167,46 @@ export const getWithPageOffsetAndLastPagination = (firstPage: number): Paginatio
   return nextPageFullPages
 }
 
+export const getWithOffsetAndLimit = (): PaginationFunc => {
+  // Hard coded "isLast" and "values" in order to fit the configuration scheme which only allows
+  // "paginationField" to be configured
+  type PageResponse = {
+    isLast: boolean
+    values: unknown[]
+    [k: string]: unknown
+  }
+  const isPageResponse = (
+    responseData: unknown,
+    paginationField: string
+  ): responseData is PageResponse => (
+    _.isObject(responseData)
+    && _.isBoolean(_.get(responseData, 'isLast'))
+    && Array.isArray(_.get(responseData, 'values'))
+    && _.isNumber(_.get(responseData, paginationField))
+  )
+
+  const getNextPage: PaginationFunc = (
+    { responseData, getParams, currentParams }
+  ) => {
+    const { paginationField } = getParams
+    if (paginationField === undefined) {
+      return []
+    }
+    if (!isPageResponse(responseData, paginationField)) {
+      throw new Error(`Response from ${getParams.url} expected page with pagination field ${paginationField}, got ${safeJsonStringify(responseData)}`)
+    }
+    if (responseData.isLast) {
+      return []
+    }
+    const currentPageStart = _.get(responseData, paginationField) as number
+    const nextPageStart = currentPageStart + responseData.values.length
+    const nextPage = { ...currentParams, [paginationField]: nextPageStart.toString() }
+    return [nextPage]
+  }
+
+  return getNextPage
+}
+
 /**
  * Path checker for ensuring the next url's path is under the same endpoint as the one configured.
  * Can be customized when the next url returned has different formatting, e.g. has a longer prefix

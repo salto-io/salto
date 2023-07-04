@@ -17,14 +17,14 @@ import _ from 'lodash'
 import { ChangeError, ChangeValidator, getChangeData, isInstanceElement,
   isReferenceExpression } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
-import { createChangeValidator, validatorConfig } from './create_change_validator'
+import { createChangeValidator, ValidatorConfig } from './create_change_validator'
 
 export const createSkipParentsOfSkippedInstancesValidator = ({
   validators,
   validatorsConfig = {},
 }: {
   validators: Record<string, ChangeValidator>
-  validatorsConfig?: validatorConfig
+  validatorsConfig?: ValidatorConfig
 }): ChangeValidator => async (changes, elementSource) => {
   const changeValidator = createChangeValidator({ validators, validatorsConfig })
   const changeErrors = await changeValidator(changes, elementSource)

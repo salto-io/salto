@@ -32,7 +32,7 @@ import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
 
-const { createChangeValidatorsConfigType } = deployment.changeValidators
+const { createValidatorConfigType } = deployment.changeValidators
 type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
 
 const log = logger(module)
@@ -532,7 +532,7 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
-    changeValidators: { refType: createChangeValidatorsConfigType(NETSUITE) },
+    changeValidators: { refType: createValidatorConfigType(NETSUITE) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

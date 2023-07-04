@@ -20,11 +20,11 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export type validatorConfig = Record<string, boolean | undefined>
+export type ValidatorConfig = Record<string, boolean | undefined>
 export type ChangeValidatorConfig = {
   changeValidators?: {
-    deploy?: validatorConfig
-    validate?: validatorConfig
+    deploy?: ValidatorConfig
+    validate?: ValidatorConfig
   }
 }
 export const createChangeValidator = ({
@@ -32,7 +32,7 @@ export const createChangeValidator = ({
   validatorsConfig = {},
 }: {
   validators: Record<string, ChangeValidator>
-  validatorsConfig?: validatorConfig
+  validatorsConfig?: ValidatorConfig
 }): ChangeValidator => async (changes, elementSource) => {
   const disabledValidatorNames = new Set<string>(
     Object.entries(validatorsConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
@@ -44,13 +44,12 @@ export const createChangeValidator = ({
   )
 
   if (disabledValidatorNames.size > 0) {
-    if (disabledValidators.length === disabledValidatorNames.size) {
-      log.info(`Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}`)
-    } else {
+    if (disabledValidators.length !== disabledValidatorNames.size) {
       const nonExistentValidators = Array.from(disabledValidatorNames)
         .filter(name => !disabledValidators.some(([validatorName]) => validatorName === name))
       log.error(`Some of the disable validator names were not found: ${nonExistentValidators.join(', ')}`)
     }
+    log.info(`Running change validators with the following disabled: ${Array.from(disabledValidatorNames.keys()).join(', ')}`)
   }
 
   return _.flatten(await Promise.all(
@@ -58,8 +57,8 @@ export const createChangeValidator = ({
   ))
 }
 
-const validatorConfigType = (adapter: string): ObjectType => createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
-  elemID: new ElemID(adapter, 'validatorConfig'),
+export const createValidatorConfigType = (adapter: string): ObjectType => createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
+  elemID: new ElemID(adapter, 'ValidatorConfig'),
   fields: {
     validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
     deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
@@ -70,6 +69,6 @@ export const createChangeValidatorsConfigType = (adapter: string): ObjectType =>
   createMatchingObjectType<ChangeValidatorConfig>({
     elemID: new ElemID(adapter, 'ChangeValidatorsConfig'),
     fields: {
-      changeValidators: { refType: validatorConfigType(adapter) },
+      changeValidators: { refType: createValidatorConfigType(adapter) },
     },
   })

@@ -70,8 +70,7 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 export type UserDeployConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
-  changeValidators?: ChangeValidatorConfig
-}
+} & ChangeValidatorConfig
 
 export const createAdapterApiConfigType = ({
   adapter,

@@ -366,7 +366,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
       _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
     }
-    if (!this.fetchProfile.isFeatureEnabled('fetchProfilesUsingRetrieveApi')) {
+    if (this.fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
       _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
     }
     this.createFiltersRunner = () => filter.filtersRunner(

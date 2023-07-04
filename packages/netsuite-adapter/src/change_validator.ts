@@ -50,7 +50,7 @@ import { AdditionalDependencies } from './config'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 
-type validatorConfig = deployment.changeValidators.validatorConfig
+type ValidatorConfig = deployment.changeValidators.ValidatorConfig
 const { createChangeValidator } = deployment.changeValidators
 
 const defaultChangeValidators = deployment.changeValidators.getDefaultChangeValidators()
@@ -138,7 +138,7 @@ const getChangeValidator: ({
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
-  validatorsConfig?: validatorConfig
+  validatorsConfig?: ValidatorConfig
   }) => ChangeValidator = (
     {
       client,

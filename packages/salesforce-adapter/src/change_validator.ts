@@ -49,7 +49,7 @@ import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
 import { DEPLOY_CONFIG, SalesforceConfig } from './types'
 
-type validatorConfig = deployment.changeValidators.validatorConfig
+type ValidatorConfig = deployment.changeValidators.ValidatorConfig
 const { createChangeValidator } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
@@ -57,8 +57,8 @@ type ChangeValidatorCreator = (config: SalesforceConfig,
                                client: SalesforceClient) => ChangeValidator
 
 export const defaultChangeValidatorConfig: {
-  validate: validatorConfig
-  deploy: validatorConfig
+  validate: ValidatorConfig
+  deploy: ValidatorConfig
 } = {
   validate: {
     dataChange: false,

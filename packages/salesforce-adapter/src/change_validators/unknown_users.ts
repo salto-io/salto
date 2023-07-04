@@ -149,13 +149,12 @@ const USER_GETTERS: TypesWithUserFields = {
   ],
 }
 
-const userFieldGettersForType = async (defMapping: TypesWithUserFields, type: string)
-  : Promise<UserFieldGetter[]> => {
-  const instanceTypeAsTypeWithUserFields = async (): Promise<TypeWithUserFields | undefined> => (
+const userFieldGettersForType = (defMapping: TypesWithUserFields, type: string): UserFieldGetter[] => {
+  const instanceTypeAsTypeWithUserFields = (): TypeWithUserFields | undefined => (
     TYPES_WITH_USER_FIELDS.find(t => t === type)
   )
 
-  const instanceType = await instanceTypeAsTypeWithUserFields()
+  const instanceType = instanceTypeAsTypeWithUserFields()
   return instanceType ? defMapping[instanceType] : []
 }
 
@@ -165,7 +164,7 @@ const getUsersFromInstance = async (instance: InstanceElement, getterDefs: Types
   const extractUsers = async ({ value, path, field }: TransformFuncArgs): Promise<Value> => {
     const type = (field === undefined) ? instance.elemID.typeName : (await field.getType()).elemID.typeName
     if (path && value && Object.keys(getterDefs).includes(type)) {
-      const getters = await userFieldGettersForType(getterDefs, type)
+      const getters = userFieldGettersForType(getterDefs, type)
       const userRefs: UserRef[] = getters
         .flatMap(getterDef => (
           getterDef.getter(value)

@@ -488,7 +488,7 @@ describe('FieldReferences filter', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      const modifiedDefs = getReferenceMappingDefs({ enumFieldPermissions: false, fetchProfiles: false }).map(def => _.omit(def, 'serializationStrategy'))
+      const modifiedDefs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: false }).map(def => _.omit(def, 'serializationStrategy'))
       await addReferences(elements, buildElementsSourceFromElements(elements), modifiedDefs)
     })
     afterAll(() => {
@@ -750,7 +750,7 @@ describe('getReferenceMappingDefs', () => {
 
   describe('Without any optional defs', () => {
     beforeEach(() => {
-      defs = getReferenceMappingDefs({ enumFieldPermissions: false, fetchProfiles: false })
+      defs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: false })
     })
     it('should not have any profile-related references', () => {
       defs
@@ -760,7 +760,7 @@ describe('getReferenceMappingDefs', () => {
   })
   describe('With profile-related optional defs', () => {
     beforeEach(() => {
-      defs = getReferenceMappingDefs({ enumFieldPermissions: false, fetchProfiles: true })
+      defs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: true })
     })
     it('should have profile-related references, but not FLS', () => {
       const profileRelatedDefs = defs
@@ -774,7 +774,7 @@ describe('getReferenceMappingDefs', () => {
   })
   describe('With FLS-related optional defs', () => {
     beforeEach(() => {
-      defs = getReferenceMappingDefs({ enumFieldPermissions: true, fetchProfiles: false })
+      defs = getReferenceMappingDefs({ enumFieldPermissions: true, otherProfileRefs: false })
     })
     it('should have only FLS-related profile references', () => {
       const profileRelatedDefs = defs
@@ -788,7 +788,7 @@ describe('getReferenceMappingDefs', () => {
   })
   describe('With all optional defs', () => {
     beforeEach(() => {
-      defs = getReferenceMappingDefs({ enumFieldPermissions: true, fetchProfiles: true })
+      defs = getReferenceMappingDefs({ enumFieldPermissions: true, otherProfileRefs: true })
     })
     it('should have only all profile references', () => {
       const profileRelatedDefs = defs

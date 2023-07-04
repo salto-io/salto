@@ -711,13 +711,13 @@ const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
 ]
 
 export const getReferenceMappingDefs = (
-  args: {enumFieldPermissions: boolean; fetchProfiles: boolean }
+  args: {enumFieldPermissions: boolean; otherProfileRefs: boolean }
 ): FieldReferenceDefinition[] => {
   let refDefs = defaultFieldNameToTypeMappingDefs
   if (args.enumFieldPermissions) {
     refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
   }
-  if (args.fetchProfiles) {
+  if (args.otherProfileRefs) {
     refDefs = refDefs.concat(referencesFromProfile)
   }
   return refDefs

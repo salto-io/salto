@@ -20,13 +20,7 @@ import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import {
-  generateReferenceResolverFinder,
-  ReferenceContextStrategyName,
-  FieldReferenceDefinition,
-  getLookUpName,
-  getReferenceMappingDefs,
-} from '../transformers/reference_mapping'
+import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName, fieldNameToTypeMappingDefs, defaultFieldNameToTypeMappingDefs } from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
@@ -111,7 +105,7 @@ const contextStrategyLookup: Record<
 export const addReferences = async (
   elements: Element[],
   referenceElements: ReadOnlyElementsSource,
-  defs: FieldReferenceDefinition[]
+  defs?: FieldReferenceDefinition[]
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
@@ -157,10 +151,9 @@ export const addReferences = async (
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
-    const refDef = getReferenceMappingDefs({
-      enumFieldPermissions: config.enumFieldPermissions ?? false,
-      fetchProfiles: !config.fetchProfile.isFeatureEnabled('ignoreRefsInProfiles'),
-    })
+    const refDef = config.enumFieldPermissions
+      ? defaultFieldNameToTypeMappingDefs
+      : fieldNameToTypeMappingDefs
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),

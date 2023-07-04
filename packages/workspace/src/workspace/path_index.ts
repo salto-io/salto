@@ -14,12 +14,20 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { collections, values, serialize as lowerdashSerialize } from '@salto-io/lowerdash'
-import { ElemID, Element, Value, Field, isObjectType, isInstanceElement,
-  ObjectType, InstanceElement } from '@salto-io/adapter-api'
-import { filterByID } from '@salto-io/adapter-utils'
+import { collections, serialize as lowerdashSerialize, values } from '@salto-io/lowerdash'
+import {
+  Element,
+  ElemID,
+  Field,
+  InstanceElement,
+  isInstanceElement,
+  isObjectType,
+  ObjectType,
+  Value,
+} from '@salto-io/adapter-api'
+import { FILTER_FUNC_NEXT_STEP, filterByID } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { RemoteMapEntry, RemoteMap } from './remote_map'
+import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
@@ -273,9 +281,16 @@ export const splitElementByPath = async (
     return [clonedElement]
   }
   return (await Promise.all(pathHints.map(async hint => {
-    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHints = await getFromPathIndex(id, index)
-      return idHints.some(idHint => _.isEqual(idHint, hint))
+    const filterByPathHint = async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
+      const idHints = await index.get(id.getFullName()) ?? []
+      const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
+      if (!isHintMatch) {
+        return FILTER_FUNC_NEXT_STEP.EXIT
+      }
+      if (idHints.length === 1) {
+        return FILTER_FUNC_NEXT_STEP.MATCH
+      }
+      return FILTER_FUNC_NEXT_STEP.RECURSE
     }
     const filteredElement = await filterByID(
       element.elemID,

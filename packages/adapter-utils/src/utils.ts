@@ -790,9 +790,15 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
   return false
 }
 
+export enum FILTER_FUNC_NEXT_STEP {
+  RECURSE, // Continue with the recursion
+  EXIT, // Don't go deeper in the recursion (on that branch)
+  MATCH, // Stop the entire walk, no matter where you are
+}
+
 export const filterByID = async <T extends Element | Values>(
   id: ElemID, value: T,
-  filterFunc: (id: ElemID) => Promise<boolean>
+  filterFunc: (id: ElemID) => Promise<FILTER_FUNC_NEXT_STEP>
 ): Promise<T | undefined> => {
   const filterInstanceAnnotations = async (annotations: Value): Promise<Value> => (
     filterByID(id, annotations, filterFunc)
@@ -814,9 +820,12 @@ export const filterByID = async <T extends Element | Values>(
       )),
       isDefined,
     )
-
-  if (!(await filterFunc(id))) {
+  const filterResult = await filterFunc(id)
+  if (filterResult === FILTER_FUNC_NEXT_STEP.EXIT) {
     return undefined
+  }
+  if (filterResult === FILTER_FUNC_NEXT_STEP.MATCH) {
+    return value
   }
   if (isObjectType(value)) {
     const filteredFields = await Promise.all(Object.values(value.fields)

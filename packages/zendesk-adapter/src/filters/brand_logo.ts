@@ -24,8 +24,7 @@ import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
-import { collections } from '@salto-io/lowerdash'
-import { isDefined } from '@salto-io/lowerdash/dist/src/values'
+import { collections, values } from '@salto-io/lowerdash'
 import ZendeskClient from '../client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
@@ -239,7 +238,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
         }
         return change
       })
-      .filter(isDefined)
+      .filter(values.isDefined)
       .toArray()
 
     return {

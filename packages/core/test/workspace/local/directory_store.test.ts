@@ -119,6 +119,21 @@ describe('localDirectoryStore', () => {
       expect(mockReadFile).not.toHaveBeenCalled()
     })
 
+    it('does not return the file if it was deleted from the dir store', async () => {
+      const baseDir = 'exists'
+      const naclFileName = 'blabla/exist.nacl'
+      const content = 'content'
+      mockFileExists.mockResolvedValue(true)
+      mockReadFile.mockResolvedValue(content)
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
+      await dirStore.delete(naclFileName)
+      const naclFile = await dirStore.get(naclFileName)
+      expect(naclFile).toBeUndefined()
+      expect(mockFileExists).not.toHaveBeenCalled()
+      expect(mockReadFile).not.toHaveBeenCalled()
+    })
+
     it('returns the file if it exist for string dir store', async () => {
       const baseDir = 'exists'
       const naclFileName = 'blabla/exist.nacl'
@@ -146,6 +161,21 @@ describe('localDirectoryStore', () => {
       expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
       expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(baseDir, bufferFileName))
       expect(mockReadFile.mock.calls[0][1]).toEqual({ encoding: undefined })
+    })
+  })
+
+  describe('mtimestamp', () => {
+    it('does not return the timestamp if it the file was deleted from the dir store', async () => {
+      const baseDir = 'exists'
+      const naclFileName = 'blabla/exist.nacl'
+      mockFileExists.mockResolvedValue(true)
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
+      await dirStore.delete(naclFileName)
+      const timestamp = await dirStore.mtimestamp(naclFileName)
+      expect(timestamp).toBeUndefined()
+      expect(mockFileExists).not.toHaveBeenCalled()
+      expect(mockStat).not.toHaveBeenCalled()
     })
   })
 

@@ -50,7 +50,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 ): dirStore.DirectoryStore<T> => {
   let currentBaseDir = path.join(..._.compact([baseDir, storeName, nameSuffix]))
   let updated: FileMap<T> = initUpdated || {}
-  let deleted: string[] = initDeleted || []
+  let deleted: Set<string> = new Set(initDeleted || [])
 
   const getAbsFileName = (filename: string, dir?: string): string =>
     path.resolve(dir ?? currentBaseDir, filename)
@@ -131,9 +131,15 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     return Promise.resolve()
   }
 
-  const mtimestampFile = async (filename: string): Promise<number | undefined> => (updated[filename]
-    ? updated[filename].timestamp
-    : (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs)
+  const mtimestampFile = async (filename: string): Promise<number | undefined> => {
+    if (deleted.has(filename)) {
+      return undefined
+    }
+
+    return updated[filename]
+      ? updated[filename].timestamp
+      : (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
+  }
 
   const get = async (filename: string): Promise<dirStore.File<T> | undefined> => {
     let relFilename: string
@@ -142,13 +148,18 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     } catch (err) {
       return Promise.reject(err)
     }
+
+    if (deleted.has(relFilename)) {
+      return undefined
+    }
+
     return (updated[relFilename] ? updated[relFilename] : readFile(relFilename))
   }
 
   const list = async (): Promise<string[]> =>
     _(await listDirFiles())
       .concat(Object.keys(updated))
-      .filter(file => !deleted.includes(file))
+      .filter(file => !deleted.has(file))
       .uniq()
       .value()
 
@@ -160,9 +171,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
     await withLimitedConcurrency(
       Object.values(updated).map(f => () => writeFile(f)), WRITE_CONCURRENCY
     )
-    await withLimitedConcurrency(deleted.map(f => () => deleteFile(f, true)), DELETE_CONCURRENCY)
+    await withLimitedConcurrency(Array.from(deleted).map(f => () => deleteFile(f, true)), DELETE_CONCURRENCY)
     updated = {}
-    deleted = []
+    deleted = new Set()
   }
 
   const deleteAllEmptyDirectories = async (): Promise<void> => {
@@ -198,7 +209,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       }
       file.timestamp = Date.now()
       updated[relFilename] = file
-      deleted = deleted.filter(filename => filename !== relFilename)
+      deleted.delete(relFilename)
       return Promise.resolve()
     },
 
@@ -209,7 +220,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       } catch (err) {
         return Promise.reject(err)
       }
-      deleted.push(relFilename)
+      deleted.add(relFilename)
       return Promise.resolve()
     },
 
@@ -217,7 +228,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       const allFiles = await listDirFiles()
       await withLimitedConcurrency(allFiles.map(f => () => deleteFile(f)), DELETE_CONCURRENCY)
       updated = {}
-      deleted = []
+      deleted = new Set()
       await deleteAllEmptyDirectories()
     },
 
@@ -249,9 +260,8 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       } catch (err) {
         return Promise.reject(err)
       }
-      return (updated[relFilename]
-        ? Promise.resolve(updated[relFilename].timestamp)
-        : mtimestampFile(relFilename))
+
+      return mtimestampFile(relFilename)
     },
 
     flush,
@@ -276,7 +286,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       fileFilter,
       directoryFilter,
       _.cloneDeep(updated),
-      _.cloneDeep(deleted)
+      Array.from(deleted),
     ),
     getFullPath: filename => getAbsFileName(filename),
     isPathIncluded,

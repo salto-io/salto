@@ -26,6 +26,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 import {
+  createSaltoElementError,
   InstanceElement,
   isReferenceExpression,
   isStaticFile,
@@ -240,6 +241,11 @@ export const updateArticleTranslationBody = async ({
         )
       } catch (e) {
         log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
+        throw createSaltoElementError({
+          message: `Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
       }
       await client.put({
         url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,

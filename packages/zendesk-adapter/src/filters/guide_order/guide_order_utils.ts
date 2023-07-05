@@ -26,7 +26,7 @@ import {
   ElemID,
   ListType,
   BuiltinTypes,
-  SaltoElementError,
+  SaltoElementError, createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
@@ -134,12 +134,11 @@ const updateElementPositions = async (
       const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
 
       if (childUpdateApi === undefined) {
-        const saltoError: SaltoElementError = {
+        return createSaltoElementError({
           message: `No endpoint of type modify for ${child.elemID.typeName}`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
-        }
-        return saltoError
+        })
       }
 
       // Send an api request to update the positions of the elements in the order list

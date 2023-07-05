@@ -32,6 +32,26 @@ export type SaltoElementError = SaltoError & {
 export const isSaltoElementError = (error: SaltoError | SaltoElementError):
     error is SaltoElementError => 'elemID' in error
 
+export const createSaltoElementErrorFromError = ({
+  error,
+  severity,
+  elemID,
+}: {
+    error: Error
+    severity: SeverityLevel
+    elemID: ElemID
+}): SaltoElementError => ({ message: error.message, severity, elemID })
+
+export const createSaltoElementError = ({
+  message,
+  severity,
+  elemID,
+}: {
+    message: string
+    severity: SeverityLevel
+    elemID: ElemID
+}): SaltoElementError => ({ message, severity, elemID })
+
 export class CredentialError extends Error {}
 
 export const isCredentialError = (error: unknown): error is CredentialError =>

@@ -29,7 +29,7 @@ import {
   isModificationChange,
   isInstanceChange,
   SaltoElementError,
-  SaltoError, isSaltoElementError,
+  SaltoError, isSaltoElementError, createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -160,12 +160,11 @@ export const createReorderFilterCreator = (
       }
       const [change] = relevantChanges
       if (!isModificationChange(change)) {
-        const saltoError: SaltoElementError = {
+        throw createSaltoElementError({
           message: `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
-        }
-        throw saltoError
+        })
       }
       await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
     } catch (err) {
@@ -198,12 +197,11 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
-      const saltoError: SaltoElementError = {
+      throw createSaltoElementError({
         message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids, elementExpressionStringifyReplacer)}`,
         severity: 'Error',
         elemID: getChangeData(change).elemID,
-      }
-      throw saltoError
+      })
     }
     const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
     instance.value[fieldName] = idsWithPositions

@@ -14,7 +14,13 @@
 * limitations under the License.
 */
 
-import { CredentialError, isCredentialError } from '../src/error'
+import {
+  createSaltoElementError,
+  createSaltoElementErrorFromError,
+  CredentialError,
+  isCredentialError,
+} from '../src/error'
+import { ElemID } from '../src/element_id'
 
 describe('is credential error', () => {
   it('should return false', () => {
@@ -22,5 +28,30 @@ describe('is credential error', () => {
   })
   it('should return true', () => {
     expect(isCredentialError(new CredentialError('test'))).toBeTruthy()
+  })
+})
+describe('create saltoElementError', () => {
+  const elemId = new ElemID('adapter', 'test')
+  it('should create correctly from error', () => {
+    expect(createSaltoElementErrorFromError({
+      error: new Error('test'),
+      severity: 'Error',
+      elemID: elemId,
+    })).toEqual({
+      message: 'test',
+      severity: 'Error',
+      elemID: elemId,
+    })
+  })
+  it('should create correctly from message', () => {
+    expect(createSaltoElementError({
+      message: 'test',
+      severity: 'Error',
+      elemID: elemId,
+    })).toEqual({
+      message: 'test',
+      severity: 'Error',
+      elemID: elemId,
+    })
   })
 })

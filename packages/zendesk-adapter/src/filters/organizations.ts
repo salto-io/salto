@@ -105,17 +105,12 @@ export const getOrganizationsByIds = async (
     _.chunk(organizationIds, 100) // The api limits to 100 ids in each request
       .map(async organizationChunk => {
         const url = `/api/v2/organizations/show_many?ids=${organizationChunk.join(',')}`
-        try {
-          const result = await client.getSinglePage({ url })
-          if (!isOrganizationsResponse(result.data)) {
-            log.error('Invalid organizations response')
-            return undefined
-          }
-          return result.data
-        } catch (e) {
-          log.error(`Invalid organizations response, with error: ${e}`)
+        const result = await client.getSinglePage({ url })
+        if (!isOrganizationsResponse(result.data)) {
+          log.error('Invalid organizations response')
           return undefined
         }
+        return result.data
       })
   )).filter(isDefined)
 

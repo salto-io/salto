@@ -15,12 +15,12 @@
 */
 import {
   BuiltinTypes,
-  Change, DeployResult,
+  Change, createSaltoElementErrorFromError, DeployResult,
   Element, ElemID,
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement, ObjectType, SaltoElementError,
+  isInstanceElement, ObjectType,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -132,12 +132,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           data: { ids: defaults },
         })
       } catch (e) {
-        const saltoError: SaltoElementError = {
-          ...e,
+        error.push(createSaltoElementErrorFromError({
+          error: e,
           severity: 'Error',
           elemID: defaultCustomStatusChange.elemID,
-        }
-        error.push(saltoError)
+        }))
       }
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []

@@ -158,18 +158,24 @@ const getChangeValidator: ({
         ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
         : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
+
       // Converts NetsuiteChangeValidator to ChangeValidator
       const validators: Record<string, ChangeValidator> = _.mapValues(netsuiteValidators, validator =>
         (innerChanges: ReadonlyArray<Change>) => validator(innerChanges, deployReferencedElements, elementsSource))
 
+      const safeDeploy = warnStaleData
+        ? {
+          safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
+            safeDeployValidator(innerChanges, fetchByQuery, deployReferencedElements),
+        }
+        : undefined
+
       const mergedValidator = createChangeValidator({
-        validators: { ...defaultChangeValidators, ...validators },
+        validators: { ...defaultChangeValidators, ...validators, ...safeDeploy },
         validatorsActivationConfig,
       })
-      const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
-        mergedValidator(changes, elementSource),
-        warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
-      ]))
+      const validatorChangeErrors = await mergedValidator(changes, elementSource)
+
       const dependedChangeErrors = await validateDependsOnInvalidElement(
         changeErrorsToElementIDs(validatorChangeErrors),
         changes

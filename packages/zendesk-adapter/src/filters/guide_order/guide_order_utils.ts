@@ -13,7 +13,21 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, CORE_ANNOTATIONS, DeployResult, getChangeData, InstanceElement, isReferenceExpression, isRemovalChange, ObjectType, ReferenceExpression, ElemID, ListType, BuiltinTypes } from '@salto-io/adapter-api'
+import {
+  Change,
+  CORE_ANNOTATIONS,
+  DeployResult,
+  getChangeData,
+  InstanceElement,
+  isReferenceExpression,
+  isRemovalChange,
+  ObjectType,
+  ReferenceExpression,
+  ElemID,
+  ListType,
+  BuiltinTypes,
+  SaltoElementError,
+} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -103,7 +117,7 @@ const updateElementPositions = async (
   orderField: string,
   config: FilterContext,
   client: ZendeskClient
-): Promise<Error[]> => {
+): Promise<SaltoElementError[]> => {
   // Removal means nothing because the element is internal
   // We have order_deletion_validator that made sure the parent was also deleted
   if (isRemovalChange(change)) {
@@ -114,13 +128,18 @@ const updateElementPositions = async (
   const elements = newOrderElement.value[orderField] ?? []
 
   return awu(elements).filter(isReferenceExpression).map(
-    async (child, i): Promise<Error | undefined> => {
+    async (child, i): Promise<SaltoElementError | undefined> => {
       const resolvedChild = child.value
       const childType = resolvedChild.elemID.typeName
       const childUpdateApi = config[API_DEFINITIONS_CONFIG].types[childType].deployRequests?.modify
 
       if (childUpdateApi === undefined) {
-        return new Error(`No endpoint of type modify for ${child.elemID.typeName}`)
+        const saltoError: SaltoElementError = {
+          message: `No endpoint of type modify for ${child.elemID.typeName}`,
+          severity: 'Error',
+          elemID: getChangeData(change).elemID,
+        }
+        return saltoError
       }
 
       // Send an api request to update the positions of the elements in the order list
@@ -154,7 +173,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
   config: FilterContext
   orderField: string
 }) : Promise<DeployResult> => {
-  const orderChangeErrors: Error[] = []
+  const orderChangeErrors: (Error | SaltoElementError)[] = []
   const appliedChanges: Change[] = []
 
   await awu(changes).forEach(async change => {

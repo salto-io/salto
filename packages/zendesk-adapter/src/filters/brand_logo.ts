@@ -18,13 +18,14 @@ import Joi from 'joi'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceElement, isStaticFile, ObjectType,
-  ReferenceExpression, StaticFile,
+  ReferenceExpression, SaltoElementError, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
 import { collections } from '@salto-io/lowerdash'
+import { isDefined } from '@salto-io/lowerdash/dist/src/values'
 import ZendeskClient from '../client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
@@ -159,7 +160,7 @@ const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
-): Promise<Error | void> => {
+): Promise<SaltoElementError | void> => {
   try {
     const brandId = getParent(logoInstance).value.id
     // Zendesk's bug (ticket number 9800) might manipulate uploaded files - verification is needed
@@ -221,6 +222,7 @@ const filterCreator: FilterCreator = ({ client }) => ({
       brandLogoChanges,
       change => change.action === 'remove',
     )
+    const errors: SaltoElementError[] = []
     const deployLogoResults = await awu(
       brandLogoRemovals.concat(brandLogoAddistionsAndModifications)
     )
@@ -231,19 +233,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
           ? await logoInstance.value.content.getContent()
           : undefined
         const deployResult = await deployBrandLogo(client, logoInstance, fileContent)
-        return deployResult === undefined ? change : deployResult
+        if (deployResult !== undefined) { //  deployment was not successful
+          errors.push(deployResult)
+          return undefined
+        }
+        return change
       })
+      .filter(isDefined)
       .toArray()
-
-    const [deployLogoErrors, successfulChanges] = _.partition(
-      deployLogoResults,
-      _.isError,
-    )
 
     return {
       deployResult: {
-        appliedChanges: successfulChanges,
-        errors: deployLogoErrors,
+        appliedChanges: deployLogoResults,
+        errors,
       },
       leftoverChanges,
     }

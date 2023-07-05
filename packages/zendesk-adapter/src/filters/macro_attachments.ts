@@ -18,7 +18,7 @@ import Joi from 'joi'
 import FormData from 'form-data'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, SaltoElementError, StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
   resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
@@ -79,7 +79,12 @@ const replaceAttachmentId = (
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
       safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
-    throw new Error('Failed to deploy macro because its attachment field has an invalid format')
+    const saltoError: SaltoElementError = {
+      message: 'Failed to deploy macro because its attachment field has an invalid format',
+      severity: 'Error',
+      elemID: parentInstance.elemID,
+    }
+    throw saltoError
   }
   parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments
     .map(ref => {
@@ -235,9 +240,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           appliedChanges: [],
           errors: childrenChanges
             .map(getChangeData)
-            .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
-            )),
+            .map(e => {
+              const saltoError: SaltoElementError = {
+                message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+                severity: 'Error',
+                elemID: e.elemID,
+              }
+              return saltoError
+            }),
         },
         leftoverChanges,
       }
@@ -271,9 +281,14 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           appliedChanges: [],
           errors: [...parentChanges
             .map(getChangeData)
-            .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`
-            )),
+            .map(e => {
+              const saltoError: SaltoElementError = {
+                message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
+                severity: 'Error',
+                elemID: e.elemID,
+              }
+              return saltoError
+            }),
           ...attachmentDeployResult.errors],
         },
         leftoverChanges,

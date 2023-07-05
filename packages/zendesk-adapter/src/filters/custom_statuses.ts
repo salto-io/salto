@@ -20,7 +20,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement, ObjectType,
+  isInstanceElement, ObjectType, SaltoElementError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -132,7 +132,12 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           data: { ids: defaults },
         })
       } catch (e) {
-        error.push(new Error(e))
+        const saltoError: SaltoElementError = {
+          ...e,
+          severity: 'Error',
+          elemID: defaultCustomStatusChange.elemID,
+        }
+        error.push(saltoError)
       }
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []

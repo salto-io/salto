@@ -226,17 +226,21 @@ export const updateArticleTranslationBody = async ({
     .filter(isReferenceExpression)
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
-      replaceTemplatesWithValues(
-        { values: [translationInstance.value.value], fieldName: 'body' },
-        {},
-        (part: ReferenceExpression) => {
-          const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
-          if (attachmentIndex !== -1) {
-            return attachmentInstances[attachmentIndex].value.id.toString()
+      try {
+        replaceTemplatesWithValues(
+          { values: [translationInstance.value.value], fieldName: 'body' },
+          {},
+          (part: ReferenceExpression) => {
+            const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
+            if (attachmentIndex !== -1) {
+              return attachmentInstances[attachmentIndex].value.id.toString()
+            }
+            return prepRef(part)
           }
-          return prepRef(part)
-        }
-      )
+        )
+      } catch (e) {
+        log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
+      }
       await client.put({
         url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,
         data: { translation: { body: translationInstance.value.value.body } },

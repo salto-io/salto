@@ -15,8 +15,21 @@
 */
 import _ from 'lodash'
 import {
-  Element, isInstanceElement, InstanceElement, ObjectType, ElemID, ListType, isObjectType,
-  BuiltinTypes, ReferenceExpression, Change, getChangeData, isModificationChange, isInstanceChange,
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  ListType,
+  isObjectType,
+  BuiltinTypes,
+  ReferenceExpression,
+  Change,
+  getChangeData,
+  isModificationChange,
+  isInstanceChange,
+  SaltoElementError,
+  SaltoError, isSaltoElementError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -147,17 +160,24 @@ export const createReorderFilterCreator = (
       }
       const [change] = relevantChanges
       if (!isModificationChange(change)) {
-        throw new Error(
-          `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
-        )
+        const saltoError: SaltoElementError = {
+          message: `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
+          severity: 'Error',
+          elemID: getChangeData(change).elemID,
+        }
+        throw saltoError
       }
       await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
     } catch (err) {
-      if (!_.isError(err)) {
+      if (!(_.isError(err) || isSaltoElementError(err))) {
         throw err
       }
+      const saltoError: SaltoElementError | SaltoError = {
+        ...err,
+        severity: 'Error',
+      }
       return {
-        deployResult: { appliedChanges: [], errors: [err] },
+        deployResult: { appliedChanges: [], errors: [saltoError] },
         leftoverChanges,
       }
     }
@@ -178,7 +198,12 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
-      throw new Error(`Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids, elementExpressionStringifyReplacer)}`)
+      const saltoError: SaltoElementError = {
+        message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids, elementExpressionStringifyReplacer)}`,
+        severity: 'Error',
+        elemID: getChangeData(change).elemID,
+      }
+      throw saltoError
     }
     const idsWithPositions = ids.map((id, position) => ({ id, position: position + 1 }))
     instance.value[fieldName] = idsWithPositions

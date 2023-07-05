@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   getChangeData, InstanceElement, isInstanceElement, isObjectType, Element, ReferenceExpression,
-  ObjectType, ElemID, ListType, BuiltinTypes,
+  ObjectType, ElemID, ListType, BuiltinTypes, SaltoElementError,
 } from '@salto-io/adapter-api'
 import { applyFunctionToChangeData, pathNaclCase } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -59,7 +59,12 @@ const deployFunc: DeployFuncType = async (change, client, apiDefinitions) => {
   const instance = getChangeData(clonedChange)
   const { order } = instance.value
   if (!areTriggerOrderEntries(order)) {
-    throw new Error('trigger_order\' order field has an invalid format')
+    const saltoError: SaltoElementError = {
+      message: 'trigger_order\' order field has an invalid format',
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    }
+    throw saltoError
   }
   const triggerCategories = order
     .map(entry => entry.category)

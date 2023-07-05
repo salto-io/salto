@@ -18,7 +18,7 @@ import { EOL } from 'os'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { ElemID } from '@salto-io/adapter-api'
+import { ElemID, SaltoElementError } from '@salto-io/adapter-api'
 
 const log = logger(module)
 
@@ -81,21 +81,37 @@ const generateErrorMessage = (errorData: Record<string, unknown>): string[] => {
   return []
 }
 
-export const getZendeskError = (elemID: ElemID, error: Error): Error => {
+export const getZendeskError = (elemID: ElemID, error: Error): SaltoElementError => {
   if (!(error instanceof clientUtils.HTTPError)) {
-    return error
+    return {
+      ...error,
+      severity: 'Error',
+      elemID,
+    }
   }
   const baseErrorMessage = `Deployment of ${elemID.typeName} instance ${elemID.name} failed:`
   const logBaseErrorMessage = `Deployment of ${elemID.getFullName()} failed:`
   const errorData = error.response.data
   if (!_.isPlainObject(errorData)) {
-    return new Error(`${baseErrorMessage} ${error}`)
+    return {
+      message: `${baseErrorMessage} ${error}`,
+      severity: 'Error',
+      elemID,
+    }
   }
   log.error([logBaseErrorMessage, safeJsonStringify(error.response.data, undefined, 2)].join(' '))
   const errorGenerated = generateErrorMessage(errorData)
   if (!_.isEmpty(errorGenerated)) {
-    return new Error([baseErrorMessage, ...errorGenerated].join(EOL))
+    return {
+      message: [baseErrorMessage, ...errorGenerated].join(EOL),
+      severity: 'Error',
+      elemID,
+    }
   }
   const errorMessage = [`${error}`, safeJsonStringify(error.response.data, undefined, 2)].join(EOL)
-  return new Error([baseErrorMessage, errorMessage].join(EOL))
+  return {
+    message: [baseErrorMessage, errorMessage].join(EOL),
+    severity: 'Error',
+    elemID,
+  }
 }

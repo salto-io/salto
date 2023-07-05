@@ -1329,7 +1329,7 @@ describe('transformer', () => {
     describe('instancesToUpdateRecords', () => {
       let recordResult: SalesforceRecord[]
       beforeEach(async () => {
-        recordResult = await instancesToUpdateRecords([instance])
+        recordResult = await instancesToUpdateRecords([instance], 'test_group_id')
         expect(recordResult).toBeDefined()
         expect(recordResult.length).toEqual(1)
       })

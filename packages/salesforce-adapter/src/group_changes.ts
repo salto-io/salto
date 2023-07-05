@@ -22,37 +22,65 @@ import {
   ChangeId,
   isInstanceChange,
   isAdditionChange,
+  isReferenceExpression,
+  InstanceElement,
+  AdditionChange,
 } from '@salto-io/adapter-api'
+import wu from 'wu'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
-import { safeApiName } from './filters/utils'
-import { ADD_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION, SBAA_APPROVAL_RULE } from './constants'
+import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from './constants'
 
 const { awu } = collections.asynciterable
 
-const getGroupId = async (change: Change, hasApprovalRuleAndConditionAdditions: boolean): Promise<string> => {
+const getGroupId = async (change: Change): Promise<string> => {
   if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
     return 'salesforce_metadata'
   }
   const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
-  if (hasApprovalRuleAndConditionAdditions && change.action === 'add' && (typeName === SBAA_APPROVAL_RULE || typeName === SBAA_APPROVAL_CONDITION)) {
-    return ADD_APPROVAL_RULE_AND_CONDITION_GROUP
-  }
   return `${change.action}_${typeName}_instances`
+}
+
+const getCustomRuleAndConditionChangeIds = async (
+  changes: Map<ChangeId, Change>
+): Promise<Set<ChangeId>> => {
+  const addedInstancesChanges = wu(changes.entries())
+    .filter(([_changeId, change]) => isAdditionChange(change))
+    .filter(([_changeId, change]) => isInstanceChange(change))
+    .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
+  const customApprovalRuleAdditions = addedInstancesChanges
+    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_RULE)(change))
+    .filter(([_changeId, change]) => getChangeData(change).value[SBAA_CONDITIONS_MET] === 'Custom')
+  const customApprovalRuleElemIds = new Set(customApprovalRuleAdditions
+    .map(([_changeId, change]) => getChangeData(change).elemID.getFullName()))
+  const customApprovalConditionAdditions = await awu(addedInstancesChanges)
+    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION)(change))
+    .filter(([_changeId, change]) => {
+      const approvalRule = getChangeData(change).value[SBAA_APPROVAL_RULE]
+      return isReferenceExpression(approvalRule) && customApprovalRuleElemIds.has(approvalRule.elemID.getFullName())
+    })
+    .toArray()
+  return new Set(customApprovalRuleAdditions
+    .concat(customApprovalConditionAdditions)
+    .map(([changeId]) => changeId))
 }
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const additionTypeNames = new Set(await awu(changes.values())
-    .filter(isInstanceChange)
-    .filter(isAdditionChange)
-    .map(async change => safeApiName(await getChangeData(change).getType()))
-    .toArray())
-  const hasApprovalRuleAndConditionAdditions = additionTypeNames.has(SBAA_APPROVAL_RULE)
-    && additionTypeNames.has(SBAA_APPROVAL_CONDITION)
-
-  await awu(changes.entries()).forEach(async ([changeId, change]) => {
-    changeGroupIdMap.set(changeId, await getGroupId(change, hasApprovalRuleAndConditionAdditions))
-  })
+  const customApprovalRuleAndConditionChangeIds = await getCustomRuleAndConditionChangeIds(changes)
+  await awu(changes.entries())
+    .filter(async ([changeId]) => !customApprovalRuleAndConditionChangeIds.has(changeId))
+    .forEach(async ([changeId, change]) => {
+      changeGroupIdMap.set(changeId, await getGroupId(change))
+    })
+  customApprovalRuleAndConditionChangeIds
+    .forEach(changeId => {
+      changeGroupIdMap.set(changeId, ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+    })
 
   return { changeGroupIdMap }
 }

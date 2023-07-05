@@ -98,12 +98,12 @@ import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
-  ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   CUSTOM_OBJECT,
 } from './constants'
-import { deployAddApprovalRuleAndCondition } from './sbaa_approval_rules_and_conditions_deploy'
+import { deployAddCustomApprovalRuleAndCondition } from './sbaa_approval_rules_and_conditions_deploy'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -456,8 +456,8 @@ export default class SalesforceAdapter implements AdapterOperations {
           errors: [{ message: 'Cannot deploy CustomObject Records as part of check-only deployment', severity: 'Error' }],
         }
       }
-      if (changeGroup.groupID === ADD_APPROVAL_RULE_AND_CONDITION_GROUP) {
-        return deployAddApprovalRuleAndCondition(
+      if (changeGroup.groupID === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP) {
+        deployResult = await deployAddCustomApprovalRuleAndCondition(
           resolvedChanges as Change<InstanceElement>[],
           this.client,
           this.fetchProfile.dataManagement

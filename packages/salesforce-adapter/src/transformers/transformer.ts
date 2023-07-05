@@ -35,7 +35,7 @@ import {
   COMPOUND_FIELDS_SOAP_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD, FOREIGN_KEY_DOMAIN,
   XML_ATTRIBUTE_PREFIX, INTERNAL_ID_FIELD, INTERNAL_FIELD_TYPE_NAMES, CUSTOM_SETTINGS_TYPE,
   LOCATION_INTERNAL_COMPOUND_FIELD_TYPE_NAME, INTERNAL_ID_ANNOTATION, KEY_PREFIX,
-  SALESFORCE_DATE_PLACEHOLDER,
+  SALESFORCE_DATE_PLACEHOLDER, ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
 } from '../constants'
 import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
@@ -969,9 +969,13 @@ const toRecord = async (
 }
 
 export const instancesToUpdateRecords = async (
-  instances: InstanceElement[]
+  instances: InstanceElement[],
+  groupId: string
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, true)))
+  Promise.all(instances.map(instance => toRecord(
+    instance, FIELD_ANNOTATIONS.UPDATEABLE,
+    groupId !== ADD_APPROVAL_RULE_AND_CONDITION_GROUP
+  )))
 
 export const instancesToCreateRecords = (
   instances: InstanceElement[]

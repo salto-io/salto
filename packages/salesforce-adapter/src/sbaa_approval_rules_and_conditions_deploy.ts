@@ -13,14 +13,20 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, DeployResult, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  Change,
+  DeployResult,
+  getChangeData,
+  InstanceElement,
+  isInstanceElement, toChange,
+} from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import SalesforceClient from './client/client'
 import { DataManagement } from './fetch_profile/data_management'
-import { isInstanceOfTypeChange } from './filters/utils'
+import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
 import { ADD_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_RULE } from './constants'
 import { deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
 
@@ -45,20 +51,28 @@ export const deployAddApprovalRuleAndCondition = async (
   const approvalRulesNoCustomDeployResult = await deployCustomObjectInstancesGroup(
     rulesWithoutCustomCondition.concat(await awu(rulesWithCustomCondition)
       .map(change => applyFunctionToChangeData(change, instance => {
-        instance.value.sbaa__ConditionsMet__c = 'All'
-        return instance
+        const instanceWithAll = instance.clone()
+        instanceWithAll.value.sbaa__ConditionsMet__c = 'All'
+        return instanceWithAll
       })).toArray()),
     client,
     ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
+  const deployedRuleByElemId = _.keyBy(
+    approvalRulesNoCustomDeployResult.appliedChanges.map(getChangeData).filter(isInstanceElement),
+    instance => instance.elemID.getFullName()
+  )
   // Set the ApprovalRule Ids for the ApprovalCondition instances
   await awu(approvalConditionChanges)
-    .forEach(change => applyFunctionToChangeData(change, instance => {
+    .forEach(change => applyFunctionToChangeData(change, async instance => {
       const approvalRule = instance.value[SBAA_APPROVAL_RULE]
       if (isInstanceElement(approvalRule)) {
-        instance.value[SBAA_APPROVAL_RULE] = approvalRulesNoCustomDeployResult.appliedChanges
-          .find(c => getChangeData(c).elemID.getFullName() === approvalRule.elemID.getFullName())
+        const deployedRule = deployedRuleByElemId[approvalRule.elemID.getFullName()]
+        if (deployedRule === undefined) {
+          throw new Error(`ApprovalCondition instance with name ${instance.elemID.name} is referencing an ApprovalRule instance with name ${approvalRule.elemID.name} that was not deployed`)
+        }
+        instance.value[SBAA_APPROVAL_RULE] = await safeApiName(deployedRule)
       }
       return instance
     }))
@@ -71,7 +85,7 @@ export const deployAddApprovalRuleAndCondition = async (
   )
   log.debug('Deploying Approval Rules with Custom ConditionsMet')
   const approvalRulesWithCustomDeployResult = await deployCustomObjectInstancesGroup(
-    rulesWithCustomCondition,
+    rulesWithCustomCondition.map(change => toChange({ before: getChangeData(change), after: getChangeData(change) })),
     client,
     ADD_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,

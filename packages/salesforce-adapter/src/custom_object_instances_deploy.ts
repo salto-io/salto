@@ -185,6 +185,7 @@ type CrudFnArgs = {
   typeName: string
   instances: InstanceElement[]
   client: SalesforceClient
+  groupId: string
 }
 
 export type CrudFn = (fnArgs: CrudFnArgs) => Promise<InstanceAndResult[]>
@@ -200,13 +201,13 @@ export const retryFlow = async (
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
 ): Promise<ActionResult> => {
-  const { typeName, instances, client } = crudFnArgs
+  const { client } = crudFnArgs
   const { retryDelay, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
   let errors: (SaltoElementError | SaltoError)[] = []
 
-  const instanceResults = await crudFn({ typeName, instances, client })
+  const instanceResults = await crudFn(crudFnArgs)
 
   const [succeeded, failed] = _.partition(instanceResults, instanceResult =>
     instanceResult.result.success)
@@ -267,7 +268,8 @@ const insertInstances: CrudFn = async (
 const updateInstances: CrudFn = async (
   { typeName,
     instances,
-    client }
+    client,
+    groupId }
 ): Promise<InstanceAndResult[]> => {
   if (instances.length === 0) {
     return []
@@ -275,7 +277,7 @@ const updateInstances: CrudFn = async (
   const results = await client.bulkLoadOperation(
     typeName,
     'update',
-    await instancesToUpdateRecords(instances)
+    await instancesToUpdateRecords(instances, groupId)
   )
   return groupInstancesAndResultsByIndex(results, instances)
 }
@@ -359,7 +361,7 @@ const deployAddInstances = async (
     errorInstances: insertErrorInstances,
   } = await retryFlow(
     insertInstances,
-    { typeName, instances: newInstances, client },
+    { typeName, instances: newInstances, client, groupId },
     client.dataRetry.maxAttempts
   )
   existingInstances.forEach(instance => {
@@ -372,7 +374,7 @@ const deployAddInstances = async (
     errorInstances: errorUpdateInstances,
   } = await retryFlow(
     updateInstances,
-    { typeName: await apiName(type), instances: existingInstances.concat(instancesToUpdate), client },
+    { typeName: await apiName(type), instances: existingInstances.concat(instancesToUpdate), client, groupId },
     client.dataRetry.maxAttempts
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
@@ -392,7 +394,7 @@ const deployRemoveInstances = async (
 ): Promise<DeployResult> => {
   const { successInstances, errorInstances } = await retryFlow(
     deleteInstances,
-    { typeName: await apiName(await instances[0].getType()), instances, client },
+    { typeName: await apiName(await instances[0].getType()), instances, client, groupId },
     client.dataRetry.maxAttempts
   )
   return {
@@ -419,7 +421,7 @@ const deployModifyChanges = async (
   const afters = validData.map(data => data.after)
   const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
-    { typeName: instancesType, instances: afters, client },
+    { typeName: instancesType, instances: afters, client, groupId },
     client.dataRetry.maxAttempts
   )
   const successData = validData

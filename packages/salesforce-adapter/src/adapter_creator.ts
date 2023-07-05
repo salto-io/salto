@@ -27,7 +27,7 @@ import {
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG,
+  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG, VALIDATE_CONFIG,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
@@ -39,7 +39,7 @@ import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
 
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
 
 const log = logger(module)
 
@@ -99,7 +99,7 @@ SalesforceConfig => {
     }
   }
 
-  const validateValidatorsConfig = (validators: ChangeValidatorConfig['changeValidators'] | undefined): void => {
+  const validateValidatorsConfig = (validators: ChangeValidatorsConfig['changeValidators'] | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
@@ -134,6 +134,7 @@ SalesforceConfig => {
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     deploy: config?.value?.[DEPLOY_CONFIG],
+    validate: config?.value?.[VALIDATE_CONFIG],
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

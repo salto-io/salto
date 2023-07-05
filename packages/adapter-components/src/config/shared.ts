@@ -20,8 +20,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
-import { ChangeValidatorConfig } from '../deployment/change_validators'
-import { createValidatorConfigType } from '../deployment/change_validators/create_change_validator'
+import { ChangeValidatorsConfig } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -70,7 +69,7 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 export type UserDeployConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
-} & ChangeValidatorConfig
+} & ChangeValidatorsConfig
 
 export const createAdapterApiConfigType = ({
   adapter,
@@ -212,8 +211,22 @@ export const createUserDeployConfigType = (
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
       defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
-      changeValidators: { refType: createValidatorConfigType(adapter) },
+      changeValidators: { refType: new MapType(BuiltinTypes.BOOLEAN) },
       ...additionalFields,
+    },
+    annotations: {
+      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+    },
+  })
+)
+
+export const createChangeValidatorsDeployConfigType = (
+  adapter: string,
+): ObjectType => (
+  createMatchingObjectType<ChangeValidatorsConfig>({
+    elemID: new ElemID(adapter, 'userChaneValidatorsDeployConfig'),
+    fields: {
+      changeValidators: { refType: new MapType(BuiltinTypes.BOOLEAN) },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

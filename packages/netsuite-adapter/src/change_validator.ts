@@ -50,7 +50,7 @@ import { AdditionalDependencies } from './config'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 
-type ValidatorConfig = deployment.changeValidators.ValidatorConfig
+type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 const { createChangeValidator } = deployment.changeValidators
 
 const defaultChangeValidators = deployment.changeValidators.getDefaultChangeValidators()
@@ -127,7 +127,7 @@ const getChangeValidator: ({
   deployReferencedElements,
   additionalDependencies,
   filtersRunner,
-  validatorsConfig,
+  validatorsActivationConfig,
 } : {
   client: NetsuiteClient
   withSuiteApp: boolean
@@ -138,7 +138,7 @@ const getChangeValidator: ({
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
-  validatorsConfig?: ValidatorConfig
+  validatorsActivationConfig?: ValidatorsActivationConfig
   }) => ChangeValidator = (
     {
       client,
@@ -150,7 +150,7 @@ const getChangeValidator: ({
       additionalDependencies,
       filtersRunner,
       elementsSource,
-      validatorsConfig,
+      validatorsActivationConfig,
     }
   ) =>
     async (changes, elementSource) => {
@@ -164,7 +164,7 @@ const getChangeValidator: ({
 
       const mergedValidator = createChangeValidator({
         validators: { ...defaultChangeValidators, ...validators },
-        validatorsConfig,
+        validatorsActivationConfig,
       })
       const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
         mergedValidator(changes, elementSource),

@@ -25,13 +25,13 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { deployment, config as configUtils } from '@salto-io/adapter-components'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
 
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsConfigType } = deployment.changeValidators
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+const { createChangeValidatorsDeployConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
@@ -39,6 +39,7 @@ export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
+export const VALIDATE_CONFIG = 'validate'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
@@ -235,7 +236,8 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
-  [DEPLOY_CONFIG]?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorsConfig
+  [VALIDATE_CONFIG]?: ChangeValidatorsConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -652,7 +654,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsConfigType(SALESFORCE),
+      refType: createChangeValidatorsDeployConfigType(SALESFORCE),
+    },
+    [VALIDATE_CONFIG]: {
+      refType: createChangeValidatorsDeployConfigType(SALESFORCE),
     },
   },
   annotations: {

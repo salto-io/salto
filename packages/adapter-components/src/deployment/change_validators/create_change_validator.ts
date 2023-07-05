@@ -13,29 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, ChangeValidator, ElemID, MapType, ObjectType } from '@salto-io/adapter-api'
+import { ChangeValidator } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export type ValidatorConfig = Record<string, boolean | undefined>
-export type ChangeValidatorConfig = {
-  changeValidators?: {
-    deploy?: ValidatorConfig
-    validate?: ValidatorConfig
-  }
+export type ValidatorsActivationConfig = Record<string, boolean | undefined>
+export type ChangeValidatorsConfig = {
+  changeValidators?: ValidatorsActivationConfig
 }
 export const createChangeValidator = ({
   validators,
-  validatorsConfig = {},
+  validatorsActivationConfig = {},
 }: {
   validators: Record<string, ChangeValidator>
-  validatorsConfig?: ValidatorConfig
+  validatorsActivationConfig?: ValidatorsActivationConfig
 }): ChangeValidator => async (changes, elementSource) => {
   const disabledValidatorNames = new Set<string>(
-    Object.entries(validatorsConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
+    Object.entries(validatorsActivationConfig).filter(([, enabled]) => !enabled).map(([name]) => name)
   )
 
   const [activeValidators, disabledValidators] = _.partition(
@@ -56,19 +52,3 @@ export const createChangeValidator = ({
     activeValidators.map(([, validator]) => validator(changes, elementSource))
   ))
 }
-
-export const createValidatorConfigType = (adapter: string): ObjectType => createMatchingObjectType<ChangeValidatorConfig['changeValidators']>({
-  elemID: new ElemID(adapter, 'ValidatorConfig'),
-  fields: {
-    validate: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-    deploy: { refType: new MapType(BuiltinTypes.BOOLEAN) },
-  },
-})
-
-export const createChangeValidatorsConfigType = (adapter: string): ObjectType =>
-  createMatchingObjectType<ChangeValidatorConfig>({
-    elemID: new ElemID(adapter, 'ChangeValidatorsConfig'),
-    fields: {
-      changeValidators: { refType: createValidatorConfigType(adapter) },
-    },
-  })

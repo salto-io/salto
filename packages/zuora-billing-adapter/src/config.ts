@@ -16,11 +16,8 @@
 import _ from 'lodash'
 import { ElemID, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-import { client as clientUtils, config as configUtils, deployment, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
-
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsConfigType } = deployment.changeValidators
 
 const { createClientConfigType } = clientUtils
 const {
@@ -31,7 +28,6 @@ const {
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
-const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type ZuoraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -49,7 +45,6 @@ export type ZuoraConfig = {
   [CLIENT_CONFIG]?: ZuoraClientConfig
   [FETCH_CONFIG]: ZuoraFetchConfig
   [API_DEFINITIONS_CONFIG]: ZuoraApiConfig
-  [DEPLOY_CONFIG]?: ChangeValidatorConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -829,9 +824,6 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
           },
         },
       }),
-    },
-    [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsConfigType(ZUORA_BILLING),
     },
   },
   annotations: {

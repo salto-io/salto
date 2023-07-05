@@ -19,9 +19,13 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements, deployment } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
-const { createChangeValidatorsConfigType } = deployment.changeValidators
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+const {
+  createUserFetchConfigType,
+  createSwaggerAdapterApiConfigType,
+  createDucktypeAdapterApiConfigType,
+  createChangeValidatorsDeployConfigType,
+} = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
@@ -47,7 +51,7 @@ export type OktaConfig = {
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
   [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
-  [DEPLOY_CONFIG]?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorsConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -1685,7 +1689,6 @@ const createClientConfigType = (): ObjectType => {
   )
   return configType
 }
-
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
   fields: {
@@ -1702,7 +1705,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsConfigType(OKTA),
+      refType: createChangeValidatorsDeployConfigType(OKTA),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

@@ -32,8 +32,7 @@ import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
 
-const { createValidatorConfigType } = deployment.changeValidators
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
 
 const log = logger(module)
 
@@ -83,7 +82,7 @@ export type DeployParams = {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
-} & ChangeValidatorConfig
+} & ChangeValidatorsConfig
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   warnOnStaleWorkspaceData: 'warnOnStaleWorkspaceData',
@@ -532,7 +531,7 @@ const deployConfigType = createMatchingObjectType<DeployParams>({
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
-    changeValidators: { refType: createValidatorConfigType(NETSUITE) },
+    changeValidators: { refType: new MapType(BuiltinTypes.BOOLEAN) },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

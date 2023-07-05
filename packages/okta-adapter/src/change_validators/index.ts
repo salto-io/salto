@@ -71,6 +71,6 @@ export default ({
 
   return createChangeValidator({
     validators,
-    validatorsConfig: config[DEPLOY_CONFIG]?.changeValidators?.deploy,
+    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
   })
 }

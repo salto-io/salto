@@ -156,6 +156,6 @@ export default ({
 
   return createSkipParentsOfSkippedInstancesValidator({
     validators,
-    validatorsConfig: deployConfig?.changeValidators?.deploy,
+    validatorsActivationConfig: deployConfig?.changeValidators,
   })
 }

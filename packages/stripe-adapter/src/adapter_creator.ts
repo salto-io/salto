@@ -58,7 +58,6 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     client: config?.value?.client,
     fetch,
     apiDefinitions,
-    deploy: config?.value?.deploy,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

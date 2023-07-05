@@ -76,7 +76,7 @@ describe('change_validator', () => {
       disabledValidator = { disabled: mockFunction<ChangeValidator>().mockResolvedValue([disabledError]) }
       const mainValidator = createChangeValidator({
         validators: { ...mockValidators, ...disabledValidator },
-        validatorsConfig: { disabled: false },
+        validatorsActivationConfig: { disabled: false },
       })
       result = await mainValidator(changes)
     })

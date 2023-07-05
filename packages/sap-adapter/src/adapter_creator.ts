@@ -62,7 +62,6 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     client: config?.value?.client,
     fetch,
     apiDefinitions,
-    deploy: config?.value?.deploy,
   }
 
   return adapterConfig

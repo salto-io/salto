@@ -38,7 +38,7 @@ import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
 
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -82,7 +82,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const deploy = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
     config?.value?.deploy
-  ) as ChangeValidatorConfig
+  ) as ChangeValidatorsConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)

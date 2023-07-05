@@ -15,7 +15,10 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import createSalesforceChangeValidator, { changeValidators, defaultChangeValidatorConfig } from '../src/change_validator'
+import createSalesforceChangeValidator, {
+  changeValidators,
+  defaultChangeValidatorsDeployConfig, defaultChangeValidatorsValidateConfig,
+} from '../src/change_validator'
 import mockAdapter from './adapter'
 import SalesforceClient from '../src/client/client'
 
@@ -61,13 +64,13 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should create a validator with all internal validators enabled', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
-          .filter(([name]) => defaultChangeValidatorConfig.deploy[name] !== false).length
+          .filter(([name]) => defaultChangeValidatorsDeployConfig[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
 
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
-        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-          .toMatchObject(defaultChangeValidatorConfig.deploy)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig)
+          .toMatchObject(defaultChangeValidatorsDeployConfig)
       })
     })
     describe('with a disabled validator config', () => {
@@ -76,7 +79,7 @@ describe('createSalesforceChangeValidator', () => {
           config: {
             deploy: {
               changeValidators: {
-                deploy: { customFieldType: false },
+                customFieldType: false,
               },
             },
           },
@@ -90,9 +93,9 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should customFieldType in the disabled validator list', () => {
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
-        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig).toMatchObject({
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig).toMatchObject({
           customFieldType: false,
-          ...defaultChangeValidatorConfig.deploy,
+          ...defaultChangeValidatorsDeployConfig,
         })
       })
     })
@@ -116,16 +119,16 @@ describe('createSalesforceChangeValidator', () => {
         it('should create validator according to the validate default config', () => {
           validator = createValidatorWithConfig(true)
           expect(validator).toBeDefined()
-          expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-            .toMatchObject(defaultChangeValidatorConfig.validate)
+          expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig)
+            .toMatchObject(defaultChangeValidatorsValidateConfig)
         })
       })
       describe('when checkOnly is false in the deploy config', () => {
         it('should create validator according to the deploy default config', () => {
           validator = createValidatorWithConfig(false)
           expect(validator).toBeDefined()
-          expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-            .toMatchObject(defaultChangeValidatorConfig.deploy)
+          expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig)
+            .toMatchObject(defaultChangeValidatorsDeployConfig)
         })
       })
     })
@@ -142,13 +145,13 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should create validator according to the validate default config', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
-          .filter(([name]) => defaultChangeValidatorConfig.validate[name] !== false).length
+          .filter(([name]) => defaultChangeValidatorsValidateConfig[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
 
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
         expect(Object.keys(createChangeValidatorMock.mock.calls[0][0].validators)).toHaveLength(enabledValidatorsCount)
-        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig)
-          .toMatchObject(defaultChangeValidatorConfig.validate)
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig)
+          .toMatchObject(defaultChangeValidatorsValidateConfig)
       })
     })
     describe('with a disabled validator config', () => {
@@ -157,7 +160,7 @@ describe('createSalesforceChangeValidator', () => {
           config: {
             deploy: {
               changeValidators: {
-                validate: { customFieldType: false },
+                customFieldType: false,
               },
             },
           },
@@ -171,9 +174,9 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should customFieldType in the disabled validator list', () => {
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
-        expect(createChangeValidatorMock.mock.calls[0][0].validatorsConfig).toMatchObject({
+        expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig).toMatchObject({
           customFieldType: false,
-          ...defaultChangeValidatorConfig.validate,
+          ...defaultChangeValidatorsValidateConfig,
         })
       })
     })

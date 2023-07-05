@@ -18,14 +18,14 @@ import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType }
 import { client as clientUtils, config as configUtils, deployment, elements } from '@salto-io/adapter-components'
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
-type ChangeValidatorConfig = deployment.changeValidators.ChangeValidatorConfig
-const { createChangeValidatorsConfigType } = deployment.changeValidators
+type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
 
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
+  createChangeValidatorsDeployConfigType,
 } = configUtils
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
@@ -40,7 +40,7 @@ export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
-const DEPLOY_CONFIG = 'deploy'
+export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -54,7 +54,7 @@ export type WorkatoConfig = {
   [CLIENT_CONFIG]?: WorkatoClientConfig
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
-  [DEPLOY_CONFIG]?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: ChangeValidatorsConfig
 }
 
 export const SUPPORTED_TYPES = {
@@ -248,7 +248,7 @@ export const configType = new ObjectType({
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsConfigType(WORKATO),
+      refType: createChangeValidatorsDeployConfigType(WORKATO),
     },
   },
   annotations: {

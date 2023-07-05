@@ -107,6 +107,6 @@ export default (
 
   return createChangeValidator({
     validators,
-    validatorsConfig: config.deploy.changeValidators?.deploy,
+    validatorsActivationConfig: config.deploy.changeValidators,
   })
 }

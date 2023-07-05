@@ -47,25 +47,21 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
-import { DEPLOY_CONFIG, SalesforceConfig } from './types'
+import { DEPLOY_CONFIG, SalesforceConfig, VALIDATE_CONFIG } from './types'
 
-type ValidatorConfig = deployment.changeValidators.ValidatorConfig
+type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 const { createChangeValidator } = deployment.changeValidators
 
 type ChangeValidatorCreator = (config: SalesforceConfig,
                                isSandbox: boolean,
                                client: SalesforceClient) => ChangeValidator
 
-export const defaultChangeValidatorConfig: {
-  validate: ValidatorConfig
-  deploy: ValidatorConfig
-} = {
-  validate: {
-    dataChange: false,
-  },
-  deploy: {
-    omitData: false,
-  },
+
+export const defaultChangeValidatorsDeployConfig: ValidatorsActivationConfig = {
+  omitData: false,
+}
+export const defaultChangeValidatorsValidateConfig: ValidatorsActivationConfig = {
+  dataChange: false,
 }
 
 export const changeValidators: Record<string, ChangeValidatorCreator> = {
@@ -105,12 +101,14 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   client: SalesforceClient
 }): ChangeValidator => {
   const isCheckOnly = checkOnly || (config.client?.deploy?.checkOnly ?? false)
-  const defaultValidatorsConfig = defaultChangeValidatorConfig[isCheckOnly ? 'validate' : 'deploy']
-  const validatorsConfig = config[DEPLOY_CONFIG]?.changeValidators?.[isCheckOnly ? 'validate' : 'deploy']
+  const defaultValidatorsActivationConfig = isCheckOnly
+    ? defaultChangeValidatorsValidateConfig
+    : defaultChangeValidatorsDeployConfig
+  const validatorsActivationConfig = config[isCheckOnly ? DEPLOY_CONFIG : VALIDATE_CONFIG]?.changeValidators
 
   const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),
-    validatorsConfig: { ...defaultValidatorsConfig, ...validatorsConfig },
+    validatorsActivationConfig: { ...defaultValidatorsActivationConfig, ...validatorsActivationConfig },
   })
 
   // Returns a change validator with elementsSource that lazily resolves types using resolveTypeShallow

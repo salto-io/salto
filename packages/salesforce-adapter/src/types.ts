@@ -80,6 +80,7 @@ export type OptionalFeatures = {
   formulaDeps?: boolean
   fetchCustomObjectUsingRetrieveApi?: boolean
   generateRefsInProfiles?: boolean
+  fetchProfilesUsingReadApi?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -576,6 +577,7 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     formulaDeps: { refType: BuiltinTypes.BOOLEAN },
     fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
     generateRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
+    fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

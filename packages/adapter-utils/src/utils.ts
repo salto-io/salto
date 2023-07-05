@@ -792,8 +792,8 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
 
 export enum FILTER_FUNC_NEXT_STEP {
   RECURSE, // Continue with the recursion
-  EXIT, // Don't go deeper in the recursion (on that branch)
-  MATCH, // Stop the entire walk, no matter where you are
+  EXIT, // Don't go deeper in the recursion
+  MATCH, // Stop the entire walk, exact match found
 }
 
 export const filterByID = async <T extends Element | Values>(
@@ -816,7 +816,7 @@ export const filterByID = async <T extends Element | Values>(
   const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>
     _.pickBy(
       await mapValuesAsync(annoRefTypes, async (anno, annoName) => (
-        await filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
+        (await filterFunc(id.createNestedID('annotation').createNestedID(annoName))) !== FILTER_FUNC_NEXT_STEP.EXIT ? anno : undefined
       )),
       isDefined,
     )

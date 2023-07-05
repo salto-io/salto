@@ -303,8 +303,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await getCustomObjectsResult
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-    const elementsToCreate = this.userConfig?.fetch?.addBundles
-      ? [...customObjects, ...fileCabinetContent, ...bundlesCustomInfo] : [...customObjects, ...fileCabinetContent]
+    const elementsToCreate = [
+      ...customObjects,
+      ...fileCabinetContent,
+      ...(this.userConfig?.fetch?.addBundles ? bundlesCustomInfo : []),
+    ]
     const baseElements = await createElements(
       elementsToCreate,
       this.getElemIdFunc,

@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, isInstanceChange, ReferenceExpression, Element } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceChange, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
+import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isCustomRecordType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
 import { getGroupItemFromRegex } from '../client/utils'
@@ -26,34 +26,34 @@ const log = logger(module)
 const BUNDLE = 'bundle'
 const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
-const getServiceIdsForVersion = (bundleVersions: Record<string, Set<string>>, bundle: InstanceElement): Set<string> => {
+const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bundle: InstanceElement): Set<string> => {
   const serviceIdsInBundle = bundleVersions[bundle.value.version]
   if (serviceIdsInBundle) {
     return serviceIdsInBundle
   }
-  log.debug('Version %s of bundle %s is not supported in the record', bundle.value.version, bundle.value.id)
-  // if the users version isn't in the record, use union of all versions
-  return new Set(..._.union(Object.values(bundleVersions).map(versionElements => Array.from(versionElements))))
+  log.debug('Version %s of bundle %s is not supported in the record, use a union of all existing versions', bundle.value.version, bundle.value.id)
+  return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
 }
 
-
-const addBundleToFileCabinet = (element: Element, bundleIdToInstance: Record<string, InstanceElement>):void => {
+const addBundleToFileCabinet = (element: InstanceElement, bundleIdToInstance: Record<string, InstanceElement>):void => {
   const serviceId = getServiceId(element)
-  if (isFileCabinetInstance(element)) {
-    const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
-    if (bundleId.length > 0) {
-      const bundleToReference = bundleIdToInstance[bundleId[0]]
-      Object.assign(element.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
-    }
+  const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
+  if (bundleId.length > 0) {
+    const bundleToReference = bundleIdToInstance[bundleId[0]]
+    Object.assign(element.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
   }
 }
+
+const isStandardInstanceOrCustomRecord = async (element: Element): Promise<boolean> =>
+  (isStandardInstanceOrCustomRecordType(element)
+  || (isInstanceElement(element) && isCustomRecordType(await element.getType())))
 
 const addBundleToRecords = (
   scriptIdToElem: Record<string, Element>,
   bundleInstance: InstanceElement,
 ): void => {
   const bundleVersions = BUNDLE_ID_TO_COMPONENTS[bundleInstance.value.id]
-  const bundleElementsServiceIds = getServiceIdsForVersion(bundleVersions, bundleInstance)
+  const bundleElementsServiceIds = getServiceIdsOfVersion(bundleVersions, bundleInstance)
   bundleElementsServiceIds.forEach(serviceId => {
     const currentElement = scriptIdToElem[serviceId]
     if (currentElement) {
@@ -61,7 +61,6 @@ const addBundleToRecords = (
     }
   })
 }
-
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'bundleIds',
@@ -77,14 +76,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
       bundle.value.isPrivate = Object.keys(BUNDLE_ID_TO_COMPONENTS[bundle.value.id]).length === 0
     })
 
-    const [fileCabinetInstances, instances] = _.partition(nonBundleElements, isFileCabinetInstance)
+    const fileCabinetInstances = nonBundleElements.filter(isFileCabinetInstance)
     const bundleIdToInstance: Record<string, InstanceElement> = Object.fromEntries(
       bundleInstances.map(bundle => [bundle.value.id, bundle])
     )
     fileCabinetInstances.forEach(fileCabinetInstance => addBundleToFileCabinet(fileCabinetInstance, bundleIdToInstance))
 
     const scriptIdToElem = _.keyBy(
-      instances.filter(element => isStandardInstanceOrCustomRecordType(element) || isFileCabinetInstance(element)),
+      nonBundleElements.filter(isStandardInstanceOrCustomRecord),
       getServiceId
     )
     existingBundles

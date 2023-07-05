@@ -52,7 +52,7 @@ describe('bundle changes', () => {
         message: 'Can\'t deploy bundle',
         severity: 'Error',
         elemID: bundleInstanceAfter.elemID,
-        detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed. \nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account: <guide to install>',
+        detailedMessage: 'This bundle doesn\'t exist in the target account, and cannot be automatically deployed.\nIt may be required by some elements in your deployment.\nYou can manually install this bundle in the target account by following these steps: Customization > SuiteBundler > Search & Install Bundles',
       }
     )
   })

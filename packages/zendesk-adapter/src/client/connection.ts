@@ -97,12 +97,7 @@ export const createResourceConnection:
         headers: APP_MARKETPLACE_HEADERS,
       })
       axiosRetry(httpClient, retryOptions)
-      return {
-        ...httpClient,
-        accountInfo: {
-          accountId: creds.subdomain,
-        },
-      }
+      return Object.assign(httpClient, { accountInfo: { accountId: creds.subdomain } })
     }
     return {
       login,

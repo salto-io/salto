@@ -15,7 +15,7 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import { MockInterface, mockFunction } from '@salto-io/test-utils'
-import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination, getAllPagesWithOffsetAndTotal } from '../../src/client'
+import { getWithCursorPagination, getWithPageOffsetPagination, getWithPageOffsetAndLastPagination, HTTPReadClientInterface, createPaginator, ResponseValue, PageEntriesExtractor, PaginationFuncCreator, PaginationFunc, traverseRequests, getWithItemIndexPagination, getAllPagesWithOffsetAndTotal, getWithOffsetAndLimit } from '../../src/client'
 import * as traverseAsync from '../../src/client/pagination/pagination_async'
 
 const { toArrayAsync } = collections.asynciterable
@@ -1047,6 +1047,52 @@ describe('client_pagination', () => {
         },
         page: [{ p: 'a' }, { p: 'b' }],
       })).toEqual([{ page: 'p1' }])
+    })
+  })
+  describe('getWithOffsetAndLimit', () => {
+    let paginate: PaginationFunc
+    beforeEach(async () => {
+      paginate = getWithOffsetAndLimit()
+    })
+    describe('with paginationField', () => {
+      describe('when response is a valid page', () => {
+        it('should query next page based on pagination field and number of entries in page', () => {
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: {},
+            responseData: { isLast: false, startAt: 0, values: [1, 2] },
+            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
+          })).toEqual([{ startAt: '2' }])
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: { startAt: '2' },
+            responseData: { isLast: false, startAt: 2, values: [3] },
+            page: [{ isLast: false, startAt: 2, values: [3] }],
+          })).toEqual([{ startAt: '3' }])
+        })
+        it('should stop querying when isLast is true', () => {
+          expect(paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'startAt' },
+            currentParams: { startAt: '3' },
+            responseData: { isLast: true, startAt: 3, values: [4, 5] },
+            page: [{ isLast: true, startAt: 3, values: [4, 5] }],
+          })).toEqual([])
+        })
+      })
+      describe('when response is not a valid page', () => {
+        it('should throw error', async () => {
+          expect(() => paginate({
+            pageSize: 2,
+            getParams: { url: '/ep', paginationField: 'wrong' },
+            currentParams: {},
+            responseData: { isLast: false, startAt: 0, values: [1, 2] },
+            page: [{ isLast: false, startAt: 0, values: [1, 2] }],
+          })).toThrow('Response from /ep expected page with pagination field wrong')
+        })
+      })
     })
   })
 

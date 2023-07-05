@@ -199,4 +199,30 @@ describe('env', () => {
       })
     })
   })
+
+  describe('maxTagsPerLogLevel', () => {
+    describe('when the env variable is not defined', () => {
+      it('should return undefined', () => {
+        expect(config({}).maxTagsPerLogMessage).toBeUndefined()
+      })
+    })
+
+    describe('when the env variable is an invalid number', () => {
+      it('should throw validation error', () => {
+        expect(() => config({ SALTO_LOG_MAX_TAGS_PER_LOG_MESSAGE: 'aa' }).maxTagsPerLogMessage).toThrow(
+          new ValidationError('invalid value "aa", expected number')
+        )
+      })
+    })
+
+    describe('when the env variable is defined and a valid number', () => {
+      it('should return the parsed definition for bytes', () => {
+        expect(config({ SALTO_LOG_MAX_TAGS_PER_LOG_MESSAGE: '6' }).maxTagsPerLogMessage).toBe(6)
+      })
+
+      it('should return the parsed definition for large amount of bytes', () => {
+        expect(config({ SALTO_LOG_MAX_TAGS_PER_LOG_MESSAGE: '68921234' }).maxTagsPerLogMessage).toBe(68921234)
+      })
+    })
+  })
 })

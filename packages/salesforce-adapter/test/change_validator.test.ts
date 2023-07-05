@@ -158,7 +158,7 @@ describe('createSalesforceChangeValidator', () => {
       beforeEach(() => {
         validator = createSalesforceChangeValidator({
           config: {
-            deploy: {
+            validate: {
               changeValidators: {
                 customFieldType: false,
               },

@@ -104,7 +104,7 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const defaultValidatorsActivationConfig = isCheckOnly
     ? defaultChangeValidatorsValidateConfig
     : defaultChangeValidatorsDeployConfig
-  const validatorsActivationConfig = config[isCheckOnly ? DEPLOY_CONFIG : VALIDATE_CONFIG]?.changeValidators
+  const validatorsActivationConfig = config[isCheckOnly ? VALIDATE_CONFIG : DEPLOY_CONFIG]?.changeValidators
 
   const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),

@@ -28,7 +28,7 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
       [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentInstance.elemID, parentInstance)],
     },
   )
-  const mockChangeValidator: Record<string, ChangeValidator> = {
+  const mockNameToChangeValidator: Record<string, ChangeValidator> = {
     mockValidator: async () => [
       {
         elemID: skippedInst.elemID,
@@ -40,7 +40,7 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
   }
 
   it('should skip the parent instance as well', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockNameToChangeValidator })([
       toChange({ after: parentInstance }),
       toChange({ after: skippedInst }),
     ])
@@ -49,14 +49,14 @@ describe('createSkipParentsOfSkippedInstsValidator', () => {
       .toEqual([skippedInst.elemID.getFullName(), parentInstance.elemID.getFullName()])
   })
   it('should not skip the parent instance if it did not change', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockNameToChangeValidator })([
       toChange({ after: skippedInst }),
     ])
     expect(errors).toHaveLength(1)
     expect(errors.map(e => e.elemID.getFullName())).toEqual([skippedInst.elemID.getFullName()])
   })
   it('should not skip the parent instance if its child did not change', async () => {
-    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockChangeValidator })([
+    const errors = await createSkipParentsOfSkippedInstancesValidator({ validators: mockNameToChangeValidator })([
       toChange({ after: parentInstance }),
     ])
     expect(errors).toHaveLength(1)

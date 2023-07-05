@@ -46,7 +46,7 @@ describe('client', () => {
     })
     it('should request the correct path with auth headers', () => {
       const request = mockAxios.history.get[1]
-      expect(request.headers.Authorization).toEqual('SSWS token')
+      expect(request.headers?.Authorization).toEqual('SSWS token')
       expect(request.baseURL).toEqual('http://my.okta.net')
       expect(request.url).toEqual('/myPath')
     })

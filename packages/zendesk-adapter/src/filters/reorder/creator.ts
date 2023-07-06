@@ -29,7 +29,7 @@ import {
   isModificationChange,
   isInstanceChange,
   SaltoElementError,
-  SaltoError, isSaltoElementError, createSaltoElementError,
+  SaltoError, createSaltoElementError, isError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -168,7 +168,7 @@ export const createReorderFilterCreator = (
       }
       await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
     } catch (err) {
-      if (!(_.isError(err) || isSaltoElementError(err))) {
+      if (!isError(err)) {
         throw err
       }
       const saltoError: SaltoElementError | SaltoError = {

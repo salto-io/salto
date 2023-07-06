@@ -36,6 +36,10 @@ const splitDetailedChangeByPath = async (
       const idHints = await index.get(id.getFullName()) ?? []
       const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
       if (!isHintMatch) {
+        // This case will be removed, when we fix the .annotation and .field keys in the path index
+        if (idHints.length === 0 && (id.isEqual(new ElemID(id.adapter, id.typeName, 'annotation')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'field')))) {
+          return FILTER_FUNC_NEXT_STEP.RECURSE
+        }
         return FILTER_FUNC_NEXT_STEP.EXIT
       }
       if (idHints.length === 1) {

@@ -13,15 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement } from '@salto-io/adapter-api'
+import { Element, isInstanceElement, ElemID, ReferenceExpression, CORE_ANNOTATIONS, ReadOnlyElementsSource, isObjectType, getChangeData, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, resolveValues, transformElement, TransformFunc } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import osPath from 'path'
+import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
-import { LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
+import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
@@ -30,8 +31,10 @@ import { getContent } from '../client/suiteapp_client/suiteapp_file_cabinet'
 
 const { awu } = collections.asynciterable
 const { isDefined } = values
+const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
+
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
 const semanticReferenceRegex = new RegExp(`("|')(?<${OPTIONAL_REFS}>.*?)\\1`, 'gm')
@@ -127,6 +130,7 @@ const resolveRelativePath = (absolutePath: string, relativePath: string): string
 const getServiceElemIDsFromPaths = (
   foundReferences: string[],
   serviceIdToElemID: ServiceIdRecords,
+  customRecordFieldsToServiceIds: ServiceIdRecords,
   element: InstanceElement,
 ): ElemID[] =>
   foundReferences
@@ -146,6 +150,11 @@ const getServiceElemIDsFromPaths = (
       if (_.isPlainObject(serviceIdRecord)) {
         return serviceIdRecord.elemID
       }
+      // TODO: Should be removed once SALTO-4305 is communicated
+      if (_.isPlainObject(customRecordFieldsToServiceIds[ref])) {
+        log.debug(`The following cutsomRecord field is refernced by its field ID: ${ref}`)
+        // return customRecordFieldsToServiceIds[ref].elemID
+      }
       return undefined
     })
     .filter(isDefined)
@@ -154,6 +163,7 @@ const getServiceElemIDsFromPaths = (
 const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
+  customRecordFieldsToServiceIds: ServiceIdRecords,
 ): Promise<ElemID[]> => {
   const content = (await getContent(element.value.content)).toString()
 
@@ -165,6 +175,7 @@ const getSuiteScriptReferences = async (
   return getServiceElemIDsFromPaths(
     semanticReferences,
     serviceIdToElemID,
+    customRecordFieldsToServiceIds,
     element
   )
 }
@@ -172,6 +183,7 @@ const getSuiteScriptReferences = async (
 const replaceReferenceValues = async (
   element: Element,
   serviceIdToElemID: ServiceIdRecords,
+  customRecordFieldsToServiceIds: ServiceIdRecords,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -219,7 +231,7 @@ const replaceReferenceValues = async (
   })
 
   const suiteScriptReferences = isFileCabinetInstance(element) && isFileInstance(element)
-    ? await getSuiteScriptReferences(element, serviceIdToElemID)
+    ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
     : []
 
   extendGeneratedDependencies(
@@ -254,6 +266,22 @@ const applyValuesAndAnnotationsToElement = (element: Element, newElement: Elemen
   element.annotations = newElement.annotations
 }
 
+const createCustomRecordFieldsToElemID = (
+  elements: Element[],
+): ServiceIdRecords => {
+  const extractCustomRecordFields = (customRecordType: ObjectType): ElemServiceID[] =>
+    Object.values(customRecordType.fields)
+      .map(field => ({ serviceID: field.name, elemID: field.elemID }))
+
+  return _.keyBy(
+    elements
+      .filter(isObjectType)
+      .filter(isCustomRecordType)
+      .flatMap(extractCustomRecordFields),
+    'serviceID'
+  )
+}
+
 const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
   isPartial,
@@ -265,12 +293,15 @@ const filterCreator: LocalFilterCreator = ({
       await generateServiceIdToElemID(elements),
       await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
     )
+    // This should be unified with serviceIdToElemID once SALTO-4305 is communicated.
+    const customRecordFieldsToServiceIds = createCustomRecordFieldsToElemID(elements)
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)
     )).forEach(async element => {
       const newElement = await replaceReferenceValues(
         element,
-        serviceIdToElemID
+        serviceIdToElemID,
+        customRecordFieldsToServiceIds
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

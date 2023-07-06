@@ -88,6 +88,38 @@ export type OptionalFeatures = {
   ignoreRefsInProfiles?: boolean
 }
 
+export type ChangeValidatorName = (
+  'managedPackage'
+  | 'picklistStandardField'
+  | 'customObjectInstances'
+  | 'unknownField'
+  | 'customFieldType'
+  | 'standardFieldLabel'
+  | 'mapKeys'
+  | 'multipleDefaults'
+  | 'picklistPromote'
+  | 'cpqValidator'
+  | 'sbaaApprovalRulesCustomCondition'
+  | 'recordTypeDeletion'
+  | 'flowsValidator'
+  | 'fullNameChangedValidator'
+  | 'invalidListViewFilterScope'
+  | 'caseAssignmentRulesValidator'
+  | 'omitData'
+  | 'unknownUser'
+  | 'animationRuleRecordType'
+  | 'currencyIsoCodes'
+  | 'dataChange'
+  | 'duplicateRulesSortOrder'
+  | 'lastLayoutRemoval'
+  | 'accountSettings'
+  | 'unknownPicklistValues'
+  | 'installedPackages'
+  | 'dataCategoryGroup'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
 type ObjectIdSettings = {
   objectsRegex: string
   idFields: string[]
@@ -557,6 +589,42 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
   },
 })
 
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(constants.SALESFORCE, 'changeValidatorConfig'),
+  fields: {
+    managedPackage: { refType: BuiltinTypes.BOOLEAN },
+    picklistStandardField: { refType: BuiltinTypes.BOOLEAN },
+    customObjectInstances: { refType: BuiltinTypes.BOOLEAN },
+    unknownField: { refType: BuiltinTypes.BOOLEAN },
+    customFieldType: { refType: BuiltinTypes.BOOLEAN },
+    standardFieldLabel: { refType: BuiltinTypes.BOOLEAN },
+    mapKeys: { refType: BuiltinTypes.BOOLEAN },
+    multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
+    picklistPromote: { refType: BuiltinTypes.BOOLEAN },
+    cpqValidator: { refType: BuiltinTypes.BOOLEAN },
+    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
+    recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    flowsValidator: { refType: BuiltinTypes.BOOLEAN },
+    fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
+    invalidListViewFilterScope: { refType: BuiltinTypes.BOOLEAN },
+    caseAssignmentRulesValidator: { refType: BuiltinTypes.BOOLEAN },
+    omitData: { refType: BuiltinTypes.BOOLEAN },
+    dataChange: { refType: BuiltinTypes.BOOLEAN },
+    unknownUser: { refType: BuiltinTypes.BOOLEAN },
+    animationRuleRecordType: { refType: BuiltinTypes.BOOLEAN },
+    currencyIsoCodes: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRulesSortOrder: { refType: BuiltinTypes.BOOLEAN },
+    lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
+    accountSettings: { refType: BuiltinTypes.BOOLEAN },
+    unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
+    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
+    installedPackages: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const fetchConfigType = createMatchingObjectType<FetchParameters>({
   elemID: new ElemID(constants.SALESFORCE, 'fetchConfig'),
   fields: {
@@ -654,10 +722,10 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsDeployConfigType(SALESFORCE),
+      refType: createChangeValidatorsDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
     [VALIDATE_CONFIG]: {
-      refType: createChangeValidatorsDeployConfigType(SALESFORCE),
+      refType: createChangeValidatorsDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
   },
   annotations: {

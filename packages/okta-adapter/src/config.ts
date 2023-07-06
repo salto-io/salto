@@ -1682,6 +1682,52 @@ export const DEFAULT_CONFIG: OktaConfig = {
   },
 }
 
+export type ChangeValidatorName = (
+  | 'createCheckDeploymentBasedOnConfig'
+  | 'application'
+  | 'appGroup'
+  | 'groupRuleStatus'
+  | 'groupRuleActions'
+  | 'defaultPolicies'
+  | 'groupRuleAdministrator'
+  | 'customApplicationStatus'
+  | 'userTypeAndSchema'
+  | 'appIntegrationSetup'
+  | 'assignedAccessPolicies'
+  | 'groupSchemaModifyBase'
+  | 'enabledAuthenticators'
+  | 'roleAssignment'
+  | 'users'
+  | 'appUserSchemaWithInactiveApp'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(OKTA, 'changeValidatorConfig'),
+  fields: {
+    createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    application: { refType: BuiltinTypes.BOOLEAN },
+    appGroup: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleStatus: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleActions: { refType: BuiltinTypes.BOOLEAN },
+    defaultPolicies: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleAdministrator: { refType: BuiltinTypes.BOOLEAN },
+    customApplicationStatus: { refType: BuiltinTypes.BOOLEAN },
+    userTypeAndSchema: { refType: BuiltinTypes.BOOLEAN },
+    appIntegrationSetup: { refType: BuiltinTypes.BOOLEAN },
+    assignedAccessPolicies: { refType: BuiltinTypes.BOOLEAN },
+    groupSchemaModifyBase: { refType: BuiltinTypes.BOOLEAN },
+    enabledAuthenticators: { refType: BuiltinTypes.BOOLEAN },
+    roleAssignment: { refType: BuiltinTypes.BOOLEAN },
+    users: { refType: BuiltinTypes.BOOLEAN },
+    appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const createClientConfigType = (): ObjectType => {
   const configType = clientUtils.createClientConfigType(OKTA)
   configType.fields.usePrivateAPI = new Field(
@@ -1705,7 +1751,7 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsDeployConfigType(OKTA),
+      refType: createChangeValidatorsDeployConfigType(OKTA, changeValidatorConfigType),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

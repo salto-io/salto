@@ -31,7 +31,13 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
 import OktaClient from '../client/client'
-import { API_DEFINITIONS_CONFIG, DEPLOY_CONFIG, OktaConfig, PRIVATE_API_DEFINITIONS_CONFIG } from '../config'
+import {
+  API_DEFINITIONS_CONFIG,
+  ChangeValidatorName,
+  DEPLOY_CONFIG,
+  OktaConfig,
+  PRIVATE_API_DEFINITIONS_CONFIG,
+} from '../config'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 
 const {
@@ -47,7 +53,7 @@ export default ({
   client: OktaClient
   config: OktaConfig
 }): ChangeValidator => {
-  const validators: Record<string, ChangeValidator> = {
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
       typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),

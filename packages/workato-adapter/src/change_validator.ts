@@ -15,10 +15,11 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
+import { ChangeValidatorName } from './config'
 
 const { deployNotSupportedValidator, getDefaultChangeValidators, createChangeValidator } = deployment.changeValidators
 
-const validators: Record<string, ChangeValidator> = {
+const validators: Record<ChangeValidatorName, ChangeValidator> = {
   ...getDefaultChangeValidators(),
   deployNotSupported: deployNotSupportedValidator,
 }

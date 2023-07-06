@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import { ElemID, ObjectType } from '@salto-io/adapter-api'
 import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDeployConfig } from '../../src/config'
 
 describe('config_shared', () => {
@@ -28,7 +29,7 @@ describe('config_shared', () => {
   })
   describe('createUserDeployConfigType', () => {
     it('should return default type when no custom fields were added', () => {
-      const type = createUserDeployConfigType('myAdapter')
+      const type = createUserDeployConfigType('myAdapter', new ObjectType({ elemID: new ElemID('test') }))
       expect(Object.keys(type.fields)).toHaveLength(2)
       expect(type.fields.defaultMissingUserFallback).toBeDefined()
       expect(type.fields.changeValidators).toBeDefined()

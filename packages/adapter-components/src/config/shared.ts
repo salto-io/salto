@@ -205,13 +205,14 @@ export const createUserFetchConfigType = (
 
 export const createUserDeployConfigType = (
   adapter: string,
+  changeValidatorsType: ObjectType,
   additionalFields?: Record<string, FieldDefinition>,
 ): ObjectType => (
   createMatchingObjectType<UserDeployConfig>({
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
       defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
-      changeValidators: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+      changeValidators: { refType: changeValidatorsType },
       ...additionalFields,
     },
     annotations: {
@@ -222,11 +223,12 @@ export const createUserDeployConfigType = (
 
 export const createChangeValidatorsDeployConfigType = (
   adapter: string,
+  changeValidatorsType: ObjectType,
 ): ObjectType => (
   createMatchingObjectType<ChangeValidatorsConfig>({
-    elemID: new ElemID(adapter, 'userChaneValidatorsDeployConfig'),
+    elemID: new ElemID(adapter, 'changeValidatorsDeployConfig'),
     fields: {
-      changeValidators: { refType: new MapType(BuiltinTypes.BOOLEAN) },
+      changeValidators: { refType: changeValidatorsType },
     },
     annotations: {
       [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

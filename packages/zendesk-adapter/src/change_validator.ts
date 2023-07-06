@@ -69,7 +69,7 @@ import {
   deflectionActionValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
-import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
+import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
 
 const {
   deployTypesNotSupportedValidator,
@@ -93,7 +93,7 @@ export default ({
   typesDeployedViaParent: string[]
   typesWithNoDeploy: string[]
 }): ChangeValidator => {
-  const validators: Record<string, ChangeValidator> = {
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
     deployTypesNotSupported: deployTypesNotSupportedValidator,
     createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator(

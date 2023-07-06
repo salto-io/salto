@@ -20,7 +20,7 @@ import { defaultFieldConfigurationValidator } from './default_field_configuratio
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config/config'
+import { ChangeValidatorName, JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
@@ -63,7 +63,7 @@ const {
 export default (
   client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
-  const validators: Record<string, ChangeValidator> = {
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
     unresolvedReference: unresolvedReferenceValidator,
     automationProjectUnresolvedReference: automationProjectUnresolvedReferenceValidator,

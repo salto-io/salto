@@ -104,8 +104,7 @@ SalesforceConfig => {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
     if (_.isPlainObject(validators)) {
-      Object.entries(validators?.validate ?? {})
-        .concat(Object.entries(validators?.deploy ?? {}))
+      Object.entries(validators ?? {})
         .forEach(([key, value]) => {
           if (!_.isBoolean(value)) {
             throw new ConfigValidationError(['validators', key], 'Value must be true or false')
@@ -125,6 +124,7 @@ SalesforceConfig => {
   validateClientConfig(config?.value?.client)
 
   validateValidatorsConfig(config?.value?.deploy?.changeValidators)
+  validateValidatorsConfig(config?.value?.validate?.changeValidators)
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 

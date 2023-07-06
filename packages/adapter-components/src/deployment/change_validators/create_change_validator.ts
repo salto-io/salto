@@ -19,7 +19,7 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
-export type ValidatorsActivationConfig = Record<string, boolean | undefined>
+export type ValidatorsActivationConfig = {}
 export type ChangeValidatorsConfig = {
   changeValidators?: ValidatorsActivationConfig
 }

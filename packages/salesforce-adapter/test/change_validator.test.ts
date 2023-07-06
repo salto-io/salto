@@ -64,7 +64,7 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should create a validator with all internal validators enabled', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
-          .filter(([name]) => defaultChangeValidatorsDeployConfig[name] !== false).length
+          .filter(([name]) => 'name' in defaultChangeValidatorsDeployConfig && defaultChangeValidatorsDeployConfig[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
 
         expect(createChangeValidator).toHaveBeenCalledTimes(1)
@@ -145,7 +145,7 @@ describe('createSalesforceChangeValidator', () => {
       })
       it('should create validator according to the validate default config', () => {
         const enabledValidatorsCount = Object.entries(changeValidators)
-          .filter(([name]) => defaultChangeValidatorsValidateConfig[name] !== false).length
+          .filter(([name]) => 'name' in defaultChangeValidatorsValidateConfig && defaultChangeValidatorsValidateConfig[name] !== false).length
           + Object.entries(deployment.changeValidators.getDefaultChangeValidators()).length
 
         expect(createChangeValidator).toHaveBeenCalledTimes(1)

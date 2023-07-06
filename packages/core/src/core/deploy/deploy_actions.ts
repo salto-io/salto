@@ -73,6 +73,7 @@ const deployOrValidate = async (
       errors: extractErrors(result, failedChanges),
     }
   } catch (error) {
+    log.warn('adapter threw exception during deploy or validate, attaching to all elements in group: %o', error)
     return {
       appliedChanges: [],
       errors: addElemIDsToError(opts.changeGroup.changes, error as Error),

@@ -31,6 +31,7 @@ import { RemoteMap, RemoteMapEntry } from './remote_map'
 
 const { awu } = collections.asynciterable
 const { getSerializedStream } = lowerdashSerialize
+const { makeArray } = collections.array
 
 const log = logger(module)
 
@@ -69,29 +70,37 @@ const getAnnotationTypesPathHints = (
   const fragmentsWithNonEmptyAnnoTypes = fragments.filter(
     f => !_.isEmpty(f.value.annotationRefTypes)
   )
-
+  const annotationsTopLevelKey = [{
+    key: fragmentsWithNonEmptyAnnoTypes[0].value.elemID
+      .createNestedID('annotation').getFullName(),
+    value: makeArray(fragmentsWithNonEmptyAnnoTypes.map(f => f.path)),
+  }]
   if (fragmentsWithNonEmptyAnnoTypes.length === 1) {
-    return [{
-      key: fragmentsWithNonEmptyAnnoTypes[0].value.elemID
-        .createNestedID('annotation').getFullName(),
-      value: [fragmentsWithNonEmptyAnnoTypes[0].path],
-    }]
+    return annotationsTopLevelKey
   }
-  return fragmentsWithNonEmptyAnnoTypes
+  return annotationsTopLevelKey.concat(fragmentsWithNonEmptyAnnoTypes
     .flatMap(f => Object.keys(f.value.annotationRefTypes).map(annoKey => ({
       key: f.value.elemID.createNestedID('annotation', annoKey).getFullName(),
       value: [f.path],
-    })))
+    }))))
 }
 
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
 ): PathHint[] => {
+  const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.annotations))
+  const attrTopLevelKey = [{
+    key: fragmentsWithFields[0].value.elemID.createNestedID('attr').getFullName(),
+    value: makeArray(fragmentsWithFields.map(f => f.path)),
+  }]
+  if (fragmentsWithFields.length === 1) {
+    return attrTopLevelKey
+  }
   const elem = fragments[0].value
-  return getValuePathHints(
+  return attrTopLevelKey.concat(getValuePathHints(
     fragments.map(f => ({ value: f.value.annotations, path: f.path })),
     isInstanceElement(elem) ? elem.elemID : elem.elemID.createNestedID('attr'),
-  )
+  ))
 }
 
 const getFieldPathHints = (
@@ -121,17 +130,18 @@ const getFieldsPathHints = (
   fragments: Fragment<ObjectType>[],
 ): PathHint[] => {
   const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.fields))
+  const fieldTopLevelKey = [{
+    key: fragmentsWithFields[0].value.elemID.createNestedID('field').getFullName(),
+    value: makeArray(fragmentsWithFields.map(f => f.path)),
+  }]
   if (fragmentsWithFields.length === 1) {
-    return [{
-      key: fragmentsWithFields[0].value.elemID.createNestedID('field').getFullName(),
-      value: [fragmentsWithFields[0].path],
-    }]
+    return fieldTopLevelKey
   }
   const fieldNames = _.uniq(fragmentsWithFields.flatMap(f => Object.keys(f.value.fields)))
-  return fieldNames.flatMap(fieldName => getFieldPathHints(
+  return fieldTopLevelKey.concat(fieldNames.flatMap(fieldName => getFieldPathHints(
     fragments.filter(f => values.isDefined(f.value.fields[fieldName]))
       .map(f => ({ value: f.value.fields[fieldName], path: f.path })),
-  ))
+  )))
 }
 
 const getElementPathHints = (

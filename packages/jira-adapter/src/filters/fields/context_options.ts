@@ -22,13 +22,13 @@ import _ from 'lodash'
 import JiraClient from '../../client/client'
 import { getLookUpName } from '../../reference_mapping'
 import { setFieldDeploymentAnnotations } from '../../utils'
+import { JSP_API_HEADERS } from '../../client/headers'
 
 const log = logger(module)
 
 const { awu } = collections.asynciterable
 
 const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
-
 const convertOptionsToList = (options: Values): Values[] => (
   _(options)
     .values()
@@ -108,9 +108,22 @@ const updateContextOptions = async ({
   baseUrl,
   contextChange,
 }: UpdateContextOptionsParams): Promise<void> => {
-  if (addedOptions.length !== 0) {
-    const addedOptionsChunks = _.chunk(addedOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
+  if (removedOptions.length !== 0) {
+    await Promise.all(removedOptions.map(async (option: Value) => {
+      await client.delete({
+        url: `${baseUrl}/${option.id}`,
+      })
+    }))
+  }
 
+  if (addedOptions.length !== 0) {
+    const optionLengthBefore = isModificationChange(contextChange)
+      ? getOptionsFromContext(contextChange.data.before).length : 0
+    const sliceIndex = optionLengthBefore + addedOptions.length > 10000
+      ? 10000 - optionLengthBefore : addedOptions.length
+    const firstOptions = addedOptions.slice(0, sliceIndex)
+    const secondOptions = addedOptions.slice(sliceIndex, addedOptions.length)
+    const addedOptionsChunks = _.chunk(firstOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
     await awu(addedOptionsChunks).forEach(async chunk => {
       const resp = await client.post({
         url: baseUrl,
@@ -118,7 +131,6 @@ const updateContextOptions = async ({
           options: chunk.map(transformOption),
         },
       })
-
       if (Array.isArray(resp.data)) {
         log.error('Received unexpected array response from Jira API: %o', resp.data)
         throw new Error('Received unexpected response from Jira API')
@@ -137,6 +149,15 @@ const updateContextOptions = async ({
         })
       }
     })
+    await awu(secondOptions).forEach(async option => {
+      const body = new URLSearchParams({ addValue: option.value, fieldConfigId: contextChange.data.after.value.id })
+      const basicUrl = '/secure/admin/EditCustomFieldOptions!add.jspa'
+      await client.post({
+        url: basicUrl,
+        data: body,
+        headers: { ...JSP_API_HEADERS },
+      })
+    })
   }
 
   if (modifiedOptions.length !== 0) {
@@ -150,13 +171,6 @@ const updateContextOptions = async ({
         },
       })
     })
-  }
-  if (removedOptions.length !== 0) {
-    await Promise.all(removedOptions.map(async (option: Value) => {
-      await client.delete({
-        url: `${baseUrl}/${option.id}`,
-      })
-    }))
   }
 }
 

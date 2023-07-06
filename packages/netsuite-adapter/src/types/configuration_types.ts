@@ -17,7 +17,7 @@
 import { BuiltinTypes, ElemID, ObjectType, ListType } from '@salto-io/adapter-api'
 import * as constants from '../constants'
 
-type ConfigurationTypeName = typeof constants.CONFIG_FEATURES
+export type ConfigurationTypeName = typeof constants.CONFIG_FEATURES
 
 export const featuresType = (): ObjectType => new ObjectType({
   elemID: new ElemID(constants.NETSUITE, constants.CONFIG_FEATURES),

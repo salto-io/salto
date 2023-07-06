@@ -60,6 +60,7 @@ import customRecordsFilter from './filters/custom_records'
 import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
+import addAliasFilter from './filters/add_alias'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -124,6 +125,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: configFeaturesFilter },
   { creator: customRecordsFilter },
   { creator: addInstancesFetchTime },
+  { creator: addAliasFilter },
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
   // omitFieldsFilter should be the last onFetch filter to run

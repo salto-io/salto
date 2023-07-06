@@ -31,7 +31,7 @@ import { CustomRecordResponse, DeployListResults, GetAllResponse, GetResult, isD
 import { DEPLOY_LIST_SCHEMA, GET_ALL_RESPONSE_SCHEMA, GET_RESULTS_SCHEMA, SEARCH_RESPONSE_SCHEMA, SEARCH_SUCCESS_SCHEMA } from './schemas'
 import { InvalidSuiteAppCredentialsError } from '../../types'
 import { isCustomRecordType } from '../../../types'
-import { INTERNAL_ID_TO_TYPES, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
+import { INTERNAL_ID_TO_TYPES, isItemType, ITEM_TYPE_ID, ITEM_TYPE_TO_SEARCH_STRING, TYPES_TO_INTERNAL_ID } from '../../../data_elements/types'
 import { XSI_TYPE } from '../../constants'
 import { InstanceLimiterFunc } from '../../../config'
 import { toError } from '../../utils'
@@ -404,7 +404,7 @@ export default class SoapClient {
   public async getAllRecords(types: string[]): Promise<RecordResponse> {
     log.debug(`Getting all records of ${types.join(', ')}`)
 
-    const [itemTypes, otherTypes] = _.partition(types, type => type in ITEM_TYPE_TO_SEARCH_STRING)
+    const [itemTypes, otherTypes] = _.partition(types, isItemType)
 
     const typesToSearch: SoapSearchType[] = otherTypes
       .map(type => ({ type }))

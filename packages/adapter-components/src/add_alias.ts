@@ -18,17 +18,18 @@ import { InstanceElement, CORE_ANNOTATIONS, ElemID, INSTANCE_ANNOTATIONS, isRefe
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
-type AliasComponent = {
+export type AliasComponent = {
   fieldName: string
   referenceFieldName?: string
 }
 
-type ConstantComponent = {
+export type ConstantComponent = {
   constant: string
 }
 
-export type AliasData = {
-  aliasComponents: (AliasComponent | ConstantComponent)[]
+type Component = AliasComponent | ConstantComponent
+export type AliasData<T extends Component[] = Component[]> = {
+  aliasComponents: T
   separator?: string
 }
 
@@ -67,9 +68,10 @@ const getAliasFromField = ({ element, component, elementsById }:{
     log.error(`${fieldName} is treated as a reference expression but it is not`)
     return undefined
   }
-  const referencedElement = elementsById[fieldValue.elemID.getFullName()]
+  const topLevelReferenceFullName = fieldValue.elemID.createTopLevelParentID().parent.getFullName()
+  const referencedElement = elementsById[topLevelReferenceFullName]
   if (referencedElement === undefined) {
-    log.error(`could not find ${fieldValue.elemID.getFullName()} in elementById`)
+    log.error(`could not find ${topLevelReferenceFullName} in elementById`)
     return undefined
   }
   const referencedFieldValue = getFieldValue(referencedElement, referenceFieldName)

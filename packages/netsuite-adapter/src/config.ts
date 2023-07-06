@@ -487,6 +487,7 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
+    addAlias: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

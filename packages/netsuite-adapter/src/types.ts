@@ -152,7 +152,9 @@ export const SUITEAPP_CONFIG_RECORD_TYPES = [
 
 export type SuiteAppConfigRecordType = typeof SUITEAPP_CONFIG_RECORD_TYPES[number]
 
-export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, string> = {
+export type SuiteAppConfigTypeName = 'userPreferences' | 'companyInformation' | 'companyPreferences' | 'accountingPreferences'
+
+export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordType, SuiteAppConfigTypeName> = {
   USER_PREFERENCES: 'userPreferences',
   COMPANY_INFORMATION: 'companyInformation',
   COMPANY_PREFERENCES: 'companyPreferences',
@@ -162,10 +164,10 @@ export const SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES: Record<SuiteAppConfigRecordTyp
 export const SUITEAPP_CONFIG_TYPE_NAMES = Object.values(SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES)
 
 export const isSuiteAppConfigType = (type: ObjectType): boolean =>
-  SUITEAPP_CONFIG_TYPE_NAMES.includes(type.elemID.name)
+  SUITEAPP_CONFIG_TYPE_NAMES.includes(type.elemID.name as SuiteAppConfigTypeName)
 
 export const isSuiteAppConfigInstance = (instance: InstanceElement): boolean =>
-  SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName)
+  SUITEAPP_CONFIG_TYPE_NAMES.includes(instance.elemID.typeName as SuiteAppConfigTypeName)
 
 export const isSDFConfigTypeName = (typeName: string): boolean =>
   typeName === CONFIG_FEATURES

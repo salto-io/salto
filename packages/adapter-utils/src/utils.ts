@@ -837,8 +837,18 @@ export const filterByID = async <T extends Element | Values>(
     return value
   }
   if (isObjectType(value)) {
-    const filteredFields = await Promise.all(Object.values(value.fields)
-      .map(field => filterByID(field.elemID, field, filterFunc)))
+    const getFilteredFields = async (): Promise<Field[]> => {
+      const fieldFilterResult = await filterFunc(id.createNestedID('field'))
+      if (fieldFilterResult === FILTER_FUNC_NEXT_STEP.EXIT) {
+        return []
+      }
+      if (fieldFilterResult === FILTER_FUNC_NEXT_STEP.MATCH) {
+        return Object.values(value.fields)
+      }
+      return (await Promise.all(Object.values(value.fields)
+        .map(field => filterByID(field.elemID, field, filterFunc)))).filter(isDefined)
+    }
+    const filteredFields = await getFilteredFields()
     return new ObjectType({
       elemID: value.elemID,
       annotations: await filterAnnotations(value.annotations),

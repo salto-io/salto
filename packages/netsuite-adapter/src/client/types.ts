@@ -34,10 +34,12 @@ export interface TemplateCustomTypeInfo extends CustomTypeInfo {
 export interface FileCustomizationInfo extends CustomizationInfo {
   path: string[]
   fileContent: Buffer
+  hadMissingAttributes?: boolean
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
+  hadMissingAttributes?: boolean
 }
 
 export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomizationInfo

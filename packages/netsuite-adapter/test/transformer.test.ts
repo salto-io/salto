@@ -15,14 +15,15 @@
 */
 import {
   BuiltinTypes,
+  CORE_ANNOTATIONS,
   ElemID, InstanceElement, ObjectType, ReferenceExpression, ServiceIds, StaticFile,
 } from '@salto-io/adapter-api'
-import { naclCase } from '@salto-io/adapter-utils'
+import { buildElementsSourceFromElements, naclCase } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { createInstanceElement, getLookUpName, toCustomizationInfo } from '../src/transformer'
 import {
   ENTITY_CUSTOM_FIELD, SCRIPT_ID, CUSTOM_RECORD_TYPE, METADATA_TYPE,
-  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES,
+  EMAIL_TEMPLATE, NETSUITE, RECORDS_PATH, FILE, FILE_CABINET_PATH, FOLDER, PATH, CONFIG_FEATURES, WORKFLOW,
 } from '../src/constants'
 import { CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from '../src/client/types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../src/client/utils'
@@ -208,11 +209,13 @@ describe('Transformer', () => {
   const companyFeatures = featuresType()
 
   describe('createInstanceElement', () => {
+    const mockElementsSource = buildElementsSourceFromElements([])
     const transformCustomFieldRecord = (custInfo: CustomTypeInfo): Promise<InstanceElement> => {
       const customFieldType = entitycustomfield
       return createInstanceElement(
         custInfo,
         customFieldType,
+        mockElementsSource,
         mockGetElemIdFunc
       )
     }
@@ -237,6 +240,7 @@ describe('Transformer', () => {
       const result = await createInstanceElement(
         customRecordTypeXmlContent,
         customrecordtype,
+        mockElementsSource,
         mockGetElemIdFunc
       )
       expect(result.value[SCRIPT_ID]).toEqual('customrecord_my_script_id')
@@ -347,8 +351,12 @@ describe('Transformer', () => {
         fileContent: emailTemplateContent,
         fileExtension: 'html',
       } as TemplateCustomTypeInfo
-      const result = await createInstanceElement(emailTemplateCustomizationInfo,
-        emailtemplate, mockGetElemIdFunc)
+      const result = await createInstanceElement(
+        emailTemplateCustomizationInfo,
+        emailtemplate,
+        mockElementsSource,
+        mockGetElemIdFunc
+      )
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
@@ -368,8 +376,12 @@ describe('Transformer', () => {
           [SCRIPT_ID]: 'custemailtmpl_my_script_id',
         },
       } as CustomTypeInfo
-      const result = await createInstanceElement(emailTemplateCustomizationInfo,
-        emailtemplate, mockGetElemIdFunc)
+      const result = await createInstanceElement(
+        emailTemplateCustomizationInfo,
+        emailtemplate,
+        mockElementsSource,
+        mockGetElemIdFunc,
+      )
       expect(result.value).toEqual({
         name: 'email template name',
         [SCRIPT_ID]: 'custemailtmpl_my_script_id',
@@ -395,14 +407,22 @@ describe('Transformer', () => {
       }
 
       it('should create instance name correctly for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, file,
-          mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          fileCustomizationInfo,
+          file,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.elemID.name).toEqual(`${NAME_FROM_GET_ELEM_ID}${naclCase(fileCustomizationInfo.path.join('/'))}`)
       })
 
       it('should create instance path correctly for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, file,
-          mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          fileCustomizationInfo,
+          file,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates',
             'Inner EmailTemplates Folder', 'content.html'])
@@ -411,8 +431,12 @@ describe('Transformer', () => {
       it('should create instance path correctly for file instance when it has . prefix', async () => {
         const fileCustomizationInfoWithDotPrefix = _.clone(fileCustomizationInfo)
         fileCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder', '..hiddenFile.xml']
-        const result = await createInstanceElement(fileCustomizationInfoWithDotPrefix,
-          file, mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          fileCustomizationInfoWithDotPrefix,
+          file,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.path).toEqual(
           [NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder', '_hiddenFile.xml']
         )
@@ -422,6 +446,7 @@ describe('Transformer', () => {
         const result = await createInstanceElement(
           folderCustomizationInfo,
           folder,
+          mockElementsSource,
           mockGetElemIdFunc
         )
         expect(result.path)
@@ -432,27 +457,151 @@ describe('Transformer', () => {
       it('should create instance path correctly for folder instance when it has . prefix', async () => {
         const folderCustomizationInfoWithDotPrefix = _.clone(folderCustomizationInfo)
         folderCustomizationInfoWithDotPrefix.path = ['Templates', 'E-mail Templates', '.hiddenFolder']
-        const result = await createInstanceElement(folderCustomizationInfoWithDotPrefix,
-          folder, mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          folderCustomizationInfoWithDotPrefix,
+          folder,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.path)
           .toEqual([NETSUITE, FILE_CABINET_PATH, 'Templates', 'E-mail Templates', '_hiddenFolder',
             '_hiddenFolder'])
       })
 
       it('should transform path field correctly', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, file,
-          mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          fileCustomizationInfo,
+          file,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.value[PATH])
           .toEqual('/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html')
       })
 
       it('should set file content in the content field for file instance', async () => {
-        const result = await createInstanceElement(fileCustomizationInfo, file,
-          mockGetElemIdFunc)
+        const result = await createInstanceElement(
+          fileCustomizationInfo,
+          file,
+          mockElementsSource,
+          mockGetElemIdFunc,
+        )
         expect(result.value.content).toEqual(new StaticFile({
           filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
           content: Buffer.from('dummy file content'),
         }))
+      })
+
+      describe('when missing attributes', () => {
+        const defaultFolder: FolderCustomizationInfo = {
+          typeName: FOLDER,
+          values: {
+            description: '',
+            bundleable: 'F',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder'],
+          hadMissingAttributes: true,
+        }
+        const defaultFile: FileCustomizationInfo = {
+          typeName: FILE,
+          values: {
+            description: '',
+            availablewithoutlogin: 'F',
+            bundleable: 'F',
+            generateurltimestamp: 'F',
+            hideinbundle: 'F',
+            isinactive: 'F',
+          },
+          path: ['Templates', 'E-mail Templates', 'Inner EmailTemplates Folder', 'content.html'],
+          fileContent: Buffer.from('other content'),
+          hadMissingAttributes: true,
+        }
+
+        it('should return folder with default attributes', async () => {
+          const result = await createInstanceElement(
+            defaultFolder,
+            folder,
+            mockElementsSource,
+            mockGetElemIdFunc
+          )
+          expect(result.value).toEqual({
+            bundleable: false,
+            isinactive: false,
+            isprivate: false,
+            path: '/Templates/E-mail Templates/Inner EmailTemplates Folder',
+          })
+        })
+        it('should return file with default attributes', async () => {
+          const result = await createInstanceElement(
+            defaultFile,
+            file,
+            mockElementsSource,
+            mockGetElemIdFunc
+          )
+          expect(result.value).toEqual({
+            availablewithoutlogin: false,
+            bundleable: false,
+            generateurltimestamp: false,
+            hideinbundle: false,
+            isinactive: false,
+            path: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+            content: new StaticFile({
+              filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
+              content: Buffer.from('other content'),
+            }),
+          })
+        })
+        it('should return existing folder instance if exists', async () => {
+          const existingFolderInstance = await createInstanceElement(
+            folderCustomizationInfo,
+            folder,
+            mockElementsSource,
+            mockGetElemIdFunc,
+          )
+          const result = await createInstanceElement(
+            defaultFolder,
+            folder,
+            buildElementsSourceFromElements([existingFolderInstance]),
+            mockGetElemIdFunc
+          )
+          expect(result.value).toEqual({
+            description: 'folder description',
+            path: '/Templates/E-mail Templates/Inner EmailTemplates Folder',
+          })
+        })
+        it('should return existing file instance if exists with new content', async () => {
+          const existingFileInstance = await createInstanceElement(
+            fileCustomizationInfo,
+            file,
+            mockElementsSource,
+            mockGetElemIdFunc,
+          )
+          existingFileInstance.annotate({
+            [CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]: [
+              new ReferenceExpression(
+                new ElemID(NETSUITE, WORKFLOW, 'instance', 'customworkflow1', SCRIPT_ID)
+              ),
+            ],
+          })
+          const result = await createInstanceElement(
+            defaultFile,
+            file,
+            buildElementsSourceFromElements([existingFileInstance]),
+            mockGetElemIdFunc
+          )
+          expect(result.value).toEqual({
+            description: 'file description',
+            path: '/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html',
+            content: new StaticFile({
+              filepath: `${NETSUITE}/${FILE_CABINET_PATH}/Templates/E-mail Templates/Inner EmailTemplates Folder/content.html`,
+              content: Buffer.from('other content'),
+            }),
+          })
+          // should delete generated dependencies
+          expect(result.annotations).toEqual({})
+        })
       })
     })
 
@@ -470,6 +619,7 @@ describe('Transformer', () => {
         const result = await createInstanceElement(
           featuresCustomizationInfo,
           companyFeatures,
+          mockElementsSource,
           mockGetElemIdFunc
         )
         expect(result.elemID.getFullName()).toEqual(`netsuite.${CONFIG_FEATURES}.instance`)

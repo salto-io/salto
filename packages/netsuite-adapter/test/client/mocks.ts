@@ -20,6 +20,7 @@ export const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
 export const MOCK_FOLDER_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder`
 export const MOCK_FILE_PATH = `${MOCK_FOLDER_PATH}${osPath.sep}content.html`
 export const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
+export const MOCK_FILE_WITHOUT_ATTRIBUTES_PATH = `${MOCK_FOLDER_PATH}${osPath.sep}test.js`
 export const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
 export const TIME_DATE_FORMAT = 'YYYY-MM-DD h:mm a'
 
@@ -119,6 +120,9 @@ export const readFileMockFunction = (filePath: string): string | Buffer => {
   }
   if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
     return '<folder><description>folder description</description></folder>'
+  }
+  if (filePath.endsWith(MOCK_FILE_WITHOUT_ATTRIBUTES_PATH)) {
+    return 'console.log("Hello World!")'
   }
 
   if (filePath.endsWith('manifest.xml')) {

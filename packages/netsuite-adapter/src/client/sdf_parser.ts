@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import os from 'os'
 import osPath from 'path'
 import he from 'he'
 import xmlParser from 'fast-xml-parser'
@@ -48,6 +49,22 @@ export const ATTRIBUTES_FOLDER_NAME = '.attributes'
 export const FOLDER_ATTRIBUTES_FILE_SUFFIX = `.folder.attr${XML_FILE_SUFFIX}`
 export const ATTRIBUTES_FILE_SUFFIX = `.attr${XML_FILE_SUFFIX}`
 const FILE_SEPARATOR = '.'
+
+const DEFAULT_FILE_ATTRIBUTES = `<file>${os.EOL}`
++ `  <availablewithoutlogin>F</availablewithoutlogin>${os.EOL}`
++ `  <bundleable>F</bundleable>${os.EOL}`
++ `  <description></description>${os.EOL}`
++ `  <generateurltimestamp>F</generateurltimestamp>${os.EOL}`
++ `  <hideinbundle>F</hideinbundle>${os.EOL}`
++ `  <isinactive>F</isinactive>${os.EOL}`
++ `</file>${os.EOL}`
+
+const DEFAULT_FOLDER_ATTRIBUTES = `<folder>${os.EOL}`
++ `  <bundleable>F</bundleable>${os.EOL}`
++ `  <description></description>${os.EOL}`
++ `  <isinactive>F</isinactive>${os.EOL}`
++ `  <isprivate>F</isprivate>${os.EOL}`
++ `</folder>${os.EOL}`
 
 const XML_PARSE_OPTIONS: xmlParser.J2xOptionsOptional = {
   attributeNamePrefix: ATTRIBUTE_PREFIX,
@@ -84,41 +101,48 @@ const convertToCustomizationInfo = (
 const convertToCustomTypeInfo = (
   xmlContent: string,
   scriptId: string
-): CustomTypeInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { scriptId }
-  )
+): CustomTypeInfo => ({
+  ...convertToCustomizationInfo(xmlContent),
+  scriptId,
+})
 
 const convertToTemplateCustomTypeInfo = (
   xmlContent: string,
   scriptId: string,
   fileExtension: string,
   fileContent: Buffer
-): TemplateCustomTypeInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { fileExtension, fileContent, scriptId }
-  )
+): TemplateCustomTypeInfo => ({
+  ...convertToCustomizationInfo(xmlContent),
+  scriptId,
+  fileContent,
+  fileExtension,
+})
 
-const convertToFileCustomizationInfo = (
-  xmlContent: string,
-  path: string[],
-  fileContent: Buffer
-): FileCustomizationInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { path, fileContent }
-  )
-
-const convertToFolderCustomizationInfo = (
-  xmlContent: string,
+const convertToFileCustomizationInfo = ({
+  xmlContent, path, fileContent, hadMissingAttributes,
+}: {
+  xmlContent: string
   path: string[]
-): FolderCustomizationInfo =>
-  Object.assign(
-    convertToCustomizationInfo(xmlContent),
-    { path }
-  )
+  fileContent: Buffer
+  hadMissingAttributes: boolean
+}): FileCustomizationInfo => ({
+  ...convertToCustomizationInfo(xmlContent),
+  path,
+  fileContent,
+  hadMissingAttributes,
+})
+
+const convertToFolderCustomizationInfo = ({
+  xmlContent, path, hadMissingAttributes,
+}: {
+  xmlContent: string
+  path: string[]
+  hadMissingAttributes: boolean
+}): FolderCustomizationInfo => ({
+  ...convertToCustomizationInfo(xmlContent),
+  path,
+  hadMissingAttributes,
+})
 
 export const convertToXmlContent = (
   customizationInfo: CustomizationInfo
@@ -193,17 +217,27 @@ const transformFiles = (
   )
 
   const transformFile = async (filePath: string): Promise<FileCustomizationInfo> => {
-    const attrsPathParts = filePathToAttrsPath[filePath].split(FILE_CABINET_PATH_SEPARATOR)
+    const attrsPathParts = filePathToAttrsPath[filePath]
+    const fileAttributesContextPromise = attrsPathParts !== undefined
+      ? readFile(osPath.resolve(
+        fileCabinetDirPath,
+        ...attrsPathParts.split(FILE_CABINET_PATH_SEPARATOR)
+      ))
+      : undefined
+
     const filePathParts = filePath.split(FILE_CABINET_PATH_SEPARATOR)
+    const fileContentPromise = readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts))
+
     const [xmlContent, fileContent] = await Promise.all([
-      readFile(osPath.resolve(fileCabinetDirPath, ...attrsPathParts)),
-      readFile(osPath.resolve(fileCabinetDirPath, ...filePathParts)),
+      fileAttributesContextPromise,
+      fileContentPromise,
     ])
-    return convertToFileCustomizationInfo(
-      xmlContent.toString(),
-      filePathParts.slice(1),
-      fileContent
-    )
+    return convertToFileCustomizationInfo({
+      xmlContent: xmlContent?.toString() ?? DEFAULT_FILE_ATTRIBUTES,
+      path: filePathParts.slice(1),
+      fileContent,
+      hadMissingAttributes: xmlContent === undefined,
+    })
   }
 
   return withLimitedConcurrency(
@@ -219,16 +253,42 @@ const transformFolders = (
   const transformFolder = async (folderAttrsPath: string): Promise<FolderCustomizationInfo> => {
     const folderPathParts = folderAttrsPath.split(FILE_CABINET_PATH_SEPARATOR)
     const xmlContent = await readFile(osPath.resolve(fileCabinetDirPath, ...folderPathParts))
-    return convertToFolderCustomizationInfo(
-      xmlContent.toString(),
-      folderPathParts.slice(1, -2)
-    )
+    return convertToFolderCustomizationInfo({
+      xmlContent: xmlContent.toString(),
+      path: folderPathParts.slice(1, -2),
+      hadMissingAttributes: false,
+    })
   }
 
   return withLimitedConcurrency(
     folderAttrsPaths.map(folderAttrsPath => () => transformFolder(folderAttrsPath)),
     READ_CONCURRENCY
   )
+}
+
+const transformFoldersWithoutAttributes = (
+  foldersFromAttributes: FolderCustomizationInfo[],
+  filePaths: string[],
+): FolderCustomizationInfo[] => {
+  const foldersFromAttributesPaths = new Set(
+    foldersFromAttributes
+      .map(folder => folder.path.join(FILE_CABINET_PATH_SEPARATOR))
+  )
+  return _(filePaths)
+    .map(path => path.split(FILE_CABINET_PATH_SEPARATOR))
+    .map(path => path.slice(1, -1))
+    // adding all parent folders
+    .flatMap(path => path.map((_p, i) => path.slice(0, i + 1)))
+    .map(path => path.join(FILE_CABINET_PATH_SEPARATOR))
+    .uniq()
+    .filter(path => !foldersFromAttributesPaths.has(path))
+    .map(path => path.split(FILE_CABINET_PATH_SEPARATOR))
+    .map(path => convertToFolderCustomizationInfo({
+      xmlContent: DEFAULT_FOLDER_ATTRIBUTES,
+      path,
+      hadMissingAttributes: true,
+    }))
+    .value()
 }
 
 const listFilesRecursive = async (dirPath: string): Promise<string[]> =>
@@ -254,7 +314,11 @@ export const parseFileCabinetDir = async (
     transformFiles(filePaths, fileAttrsPaths, fileCabinetDirPath),
     transformFolders(folderAttrsPaths, fileCabinetDirPath),
   ])
-  return [...filesRes, ...foldersRes]
+  return [
+    ...filesRes,
+    ...foldersRes,
+    ...transformFoldersWithoutAttributes(foldersRes, filePaths),
+  ]
 }
 
 export const parseFeaturesXml = async (

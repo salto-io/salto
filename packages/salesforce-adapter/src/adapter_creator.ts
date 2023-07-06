@@ -19,7 +19,7 @@ import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
-import { deployment } from '@salto-io/adapter-components'
+import { config as configUtils } from '@salto-io/adapter-components'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -39,7 +39,7 @@ import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
 
-type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 
@@ -99,7 +99,7 @@ SalesforceConfig => {
     }
   }
 
-  const validateValidatorsConfig = (validators: ChangeValidatorsConfig['changeValidators'] | undefined): void => {
+  const validateValidatorsConfig = (validators: UserDeployConfig['changeValidators'] | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }

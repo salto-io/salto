@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, elements } from '@salto-i
 import { JIRA } from '../constants'
 import { getProductSettings } from '../product_settings'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, defaultMissingUserFallbackField } = configUtils
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
@@ -46,7 +46,7 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = configUtils.UserDeployConfig & {
+type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
 }
 
@@ -264,6 +264,7 @@ const jiraDeployConfigType = configUtils.createUserDeployConfigType(
   JIRA,
   changeValidatorConfigType,
   {
+    ...defaultMissingUserFallbackField,
     forceDelete: { refType: BuiltinTypes.BOOLEAN },
   }
 )

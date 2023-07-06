@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { InstanceElement, Adapter } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, deployment } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils } from '@salto-io/adapter-components'
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
@@ -38,7 +38,7 @@ import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
 
-type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -82,7 +82,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   const deploy = configUtils.mergeWithDefaultConfig(
     DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
     config?.value?.deploy
-  ) as ChangeValidatorsConfig
+  ) as UserDeployConfig
 
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)

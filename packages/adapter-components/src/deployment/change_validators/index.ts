@@ -19,4 +19,4 @@ export { createCheckDeploymentBasedOnConfigValidator } from './check_deployment_
 export { createSkipParentsOfSkippedInstancesValidator } from './skip_parents_of_skipped_instances'
 export { createOutgoingUnresolvedReferencesValidator } from './outgoing_unresolved_references'
 export { getDefaultChangeValidators } from './default_change_validators'
-export { createChangeValidator, ChangeValidatorsConfig, ValidatorsActivationConfig } from './create_change_validator'
+export { createChangeValidator, ValidatorsActivationConfig } from './create_change_validator'

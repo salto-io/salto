@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { deployment } from '@salto-io/adapter-components'
+import { config as configUtils } from '@salto-io/adapter-components'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
@@ -32,7 +32,7 @@ import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
 
-type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 
@@ -74,7 +74,7 @@ export type AdditionalDependencies = {
   exclude: AdditionalSdfDeployDependencies
 }
 
-export type DeployParams = {
+export type DeployParams = UserDeployConfig & {
   warnOnStaleWorkspaceData?: boolean
   validate?: boolean
   deployReferencedElements?: boolean
@@ -82,7 +82,7 @@ export type DeployParams = {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
-} & ChangeValidatorsConfig
+}
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   warnOnStaleWorkspaceData: 'warnOnStaleWorkspaceData',

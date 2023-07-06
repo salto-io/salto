@@ -20,7 +20,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
-import { ChangeValidatorsConfig } from '../deployment/change_validators'
+import { ValidatorsActivationConfig } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -68,8 +68,13 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 
 export type UserDeployConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
+  changeValidators?: ValidatorsActivationConfig
+}
+
+export type DefaultMissingUserFallbackConfig = {
+  // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
-} & ChangeValidatorsConfig
+}
 
 export const createAdapterApiConfigType = ({
   adapter,
@@ -211,7 +216,6 @@ export const createUserDeployConfigType = (
   createMatchingObjectType<UserDeployConfig>({
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
-      defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
       changeValidators: { refType: changeValidatorsType },
       ...additionalFields,
     },
@@ -221,20 +225,7 @@ export const createUserDeployConfigType = (
   })
 )
 
-export const createChangeValidatorsDeployConfigType = (
-  adapter: string,
-  changeValidatorsType: ObjectType,
-): ObjectType => (
-  createMatchingObjectType<ChangeValidatorsConfig>({
-    elemID: new ElemID(adapter, 'changeValidatorsDeployConfig'),
-    fields: {
-      changeValidators: { refType: changeValidatorsType },
-    },
-    annotations: {
-      [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
-    },
-  })
-)
+export const defaultMissingUserFallbackField = { defaultMissingUserFallback: { refType: BuiltinTypes.STRING } }
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,
@@ -271,10 +262,10 @@ export const validateSupportedTypes = (
  */
 export const validateDeployConfig = (
   deployConfigPath: string,
-  userDeployConfig: UserDeployConfig,
+  defaultMissingUserFallbackConfig: DefaultMissingUserFallbackConfig,
   userValidationFunc: (userValue: string) => boolean
 ): void => {
-  const { defaultMissingUserFallback } = userDeployConfig
+  const { defaultMissingUserFallback } = defaultMissingUserFallbackConfig
   if (defaultMissingUserFallback !== undefined && defaultMissingUserFallback !== DEPLOYER_FALLBACK_VALUE) {
     const isValidUserValue = userValidationFunc(defaultMissingUserFallback)
     if (!isValidUserValue) {

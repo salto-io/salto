@@ -15,18 +15,18 @@
 */
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
-import { client as clientUtils, config as configUtils, deployment, elements } from '@salto-io/adapter-components'
+import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
 
-type ChangeValidatorsConfig = deployment.changeValidators.ChangeValidatorsConfig
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
-  createChangeValidatorsDeployConfigType,
+  createUserDeployConfigType,
 } = configUtils
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
@@ -55,7 +55,7 @@ export type WorkatoConfig = {
   [CLIENT_CONFIG]?: WorkatoClientConfig
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
-  [DEPLOY_CONFIG]?: ChangeValidatorsConfig
+  [DEPLOY_CONFIG]?: UserDeployConfig
 }
 
 export const SUPPORTED_TYPES = {
@@ -265,7 +265,7 @@ export const configType = new ObjectType({
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
     },
     [DEPLOY_CONFIG]: {
-      refType: createChangeValidatorsDeployConfigType(WORKATO, changeValidatorConfigType),
+      refType: createUserDeployConfigType(WORKATO, changeValidatorConfigType),
     },
   },
   annotations: {

@@ -26,6 +26,7 @@ import {
   ZENDESK,
 } from './constants'
 
+const { defaultMissingUserFallbackField } = configUtils
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
@@ -83,7 +84,7 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig
+export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
   configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
   >
@@ -2745,7 +2746,11 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(ZENDESK, changeValidatorConfigType),
+      refType: createUserDeployConfigType(
+        ZENDESK,
+        changeValidatorConfigType,
+        defaultMissingUserFallbackField
+      ),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK }),

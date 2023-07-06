@@ -29,6 +29,7 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const OPTIONS_MAXIMUM_BATCH_SIZE = 1000
+const OPTIONS_MAXIMUM_SIZE = 10000
 const convertOptionsToList = (options: Values): Values[] => (
   _(options)
     .values()
@@ -120,8 +121,9 @@ const updateContextOptions = async ({
     const optionLengthBefore = isModificationChange(contextChange)
       ? getOptionsFromContext(contextChange.data.before).length : 0
     // eslint-disable-next-line no-nested-ternary
-    const sliceIndex = optionLengthBefore > 10000 ? 0 : optionLengthBefore + addedOptions.length > 10000
-      ? 10000 - optionLengthBefore : addedOptions.length
+    const sliceIndex = optionLengthBefore > OPTIONS_MAXIMUM_SIZE
+      ? 0 : optionLengthBefore + addedOptions.length > OPTIONS_MAXIMUM_SIZE
+        ? OPTIONS_MAXIMUM_SIZE - optionLengthBefore : addedOptions.length
     const firstOptions = addedOptions.slice(0, sliceIndex)
     const secondOptions = addedOptions.slice(sliceIndex, addedOptions.length)
     const addedOptionsChunks = _.chunk(firstOptions, OPTIONS_MAXIMUM_BATCH_SIZE)
@@ -150,6 +152,8 @@ const updateContextOptions = async ({
         })
       }
     })
+    // Jira API doesn't support adding more than 10000 through the API.
+    // We need to add the rest through the private API.
     await awu(secondOptions).forEach(async option => {
       const body = new URLSearchParams({ addValue: option.value, fieldConfigId: contextChange.data.after.value.id })
       const basicUrl = '/secure/admin/EditCustomFieldOptions!add.jspa'

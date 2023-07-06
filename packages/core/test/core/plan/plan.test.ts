@@ -196,7 +196,7 @@ describe('getPlan', () => {
     })
   })
 
-  it('when instances have inner references and there is no change should create empty plan when compareReferencesByValue is on', async () => {
+  it('when instances have inner references and there is no change should create empty plan when compareByValue is on', async () => {
     const innerType = new ObjectType({
       elemID: new ElemID('adapter', 'inner'),
       fields: {
@@ -316,7 +316,7 @@ describe('getPlan', () => {
     expect(plan.size).toBe(0)
   })
 
-  it('when instances use variables and there is no change should create empty plan when compareReferencesByValue is on', async () => {
+  it('when instances use variables and there is no change should create empty plan when compareByValue is on', async () => {
     const variableObject = new Variable(
       new ElemID('var', 'a'),
       5
@@ -653,6 +653,30 @@ describe('getPlan', () => {
       after: createElementSource([changedInstance, type]),
     })
     expect(plan.size).toBe(1)
+  })
+
+  it('should return empty plan when StaticFiles have the same content and different path and compareByValue is true', async () => {
+    const type = new ObjectType({
+      elemID: new ElemID('adapter', 'type'),
+    })
+
+    const before = new InstanceElement(
+      'instance',
+      type,
+      {
+        file: new StaticFile({ filepath: 'some/path.ext', content: Buffer.from('ZOMG') }),
+      }
+    )
+
+    const after = before.clone()
+    after.value.file.filepath = 'another/path.ext'
+
+    const plan = await getPlan({
+      before: createElementSource([before, type]),
+      after: createElementSource([after, type]),
+      compareOptions: { compareByValue: true },
+    })
+    expect(plan.size).toBe(0)
   })
 
   it('should work for new type with a built-in function name', async () => {

@@ -119,7 +119,8 @@ const updateContextOptions = async ({
   if (addedOptions.length !== 0) {
     const optionLengthBefore = isModificationChange(contextChange)
       ? getOptionsFromContext(contextChange.data.before).length : 0
-    const sliceIndex = optionLengthBefore + addedOptions.length > 10000
+    // eslint-disable-next-line no-nested-ternary
+    const sliceIndex = optionLengthBefore > 10000 ? 0 : optionLengthBefore + addedOptions.length > 10000
       ? 10000 - optionLengthBefore : addedOptions.length
     const firstOptions = addedOptions.slice(0, sliceIndex)
     const secondOptions = addedOptions.slice(sliceIndex, addedOptions.length)
@@ -158,6 +159,28 @@ const updateContextOptions = async ({
         headers: { ...JSP_API_HEADERS },
       })
     })
+    if (secondOptions.length !== 0) {
+      const resp = await client.get({
+        url: baseUrl,
+      })
+      if (Array.isArray(resp.data)) {
+        log.error('Received unexpected array response from Jira API: %o', resp.data)
+        throw new Error('Received unexpected response from Jira API')
+      }
+      if (Array.isArray(resp.data.options)) {
+        const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
+        const optionsMap = _(contextChange.data.after.value.options).values()
+          .keyBy(option => naclCase(option.value)).value()
+        resp.data.options.forEach(newOption => {
+          if (newOption.optionId !== undefined) {
+            idToOption[newOption.optionId]
+              .cascadingOptions[naclCase(newOption.value)].id = newOption.id
+          } else {
+            optionsMap[naclCase(newOption.value)].id = newOption.id
+          }
+        })
+      }
+    }
   }
 
   if (modifiedOptions.length !== 0) {

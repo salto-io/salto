@@ -19,7 +19,7 @@ import {
   getChangeData,
   InstanceElement,
   isInstanceChange,
-  isInstanceElement,
+  isInstanceElement, SaltoElementError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
@@ -32,6 +32,12 @@ import { deployCustomObjectInstancesGroup } from './custom_object_instances_depl
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
+  message: `Cannot deploy ApprovalCondition instance ${getChangeData(change).elemID.getFullName()} since it depends on a non-deployable ApprovalRule instance`,
+  severity: 'Error',
+  elemID: getChangeData(change).elemID,
+})
 
 export const deployAddCustomApprovalRuleAndCondition = async (
   changes: Change<InstanceElement>[],
@@ -58,25 +64,32 @@ export const deployAddCustomApprovalRuleAndCondition = async (
     approvalRulesNoCustomDeployResult.appliedChanges.map(getChangeData).filter(isInstanceElement),
     instance => instance.elemID.getFullName()
   )
+  const deployedRuleElemIds = new Set(Object.keys(deployedRuleByElemId))
   log.debug('Deploying ApprovalCondition instances')
+  const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
+    approvalConditionChanges,
+    change => deployedRuleElemIds.has(getChangeData(change).value[SBAA_APPROVAL_RULE].elemID.getFullName())
+  )
   // Set the ApprovalRule Ids for the ApprovalCondition instances
-  const deployableApprovalConditionChanges = await awu(approvalConditionChanges)
-    .filter(async change => {
+  // Note that the Errors here are unlikely to happen and will cause weird flows in the deploy.
+  // I've added logs for visibility just in case we ever encounter them.
+  await awu(deployableConditionChanges)
+    .forEach(async change => {
       const instance = getChangeData(change)
       const approvalRule = instance.value[SBAA_APPROVAL_RULE]
       if (!isInstanceElement(approvalRule)) {
-        return false
+        log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
+        return
       }
       const deployedRule = deployedRuleByElemId[approvalRule.elemID.getFullName()]
       if (deployedRule === undefined) {
-        log.error('ApprovalCondition instance with name %s is referencing an ApprovalRule instance with name %s that was not deployed', instance.elemID.name, approvalRule.elemID.name)
-        return false
+        log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
+        return
       }
       instance.value[SBAA_APPROVAL_RULE] = await safeApiName(deployedRule)
-      return true
-    }).toArray()
+    })
   const conditionsDeployResult = await deployCustomObjectInstancesGroup(
-    deployableApprovalConditionChanges,
+    deployableConditionChanges,
     client,
     ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
@@ -102,6 +115,7 @@ export const deployAddCustomApprovalRuleAndCondition = async (
     errors: approvalRulesNoCustomDeployResult.errors.concat(
       conditionsDeployResult.errors,
       approvalRulesWithCustomDeployResult.errors,
+      nonDeployableConditionChanges.map(createNonDeployableConditionChangeError)
     ),
   }
 }

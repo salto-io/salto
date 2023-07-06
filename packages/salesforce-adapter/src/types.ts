@@ -116,7 +116,7 @@ export type ChangeValidatorName = (
   | 'unknownPicklistValues'
   | 'installedPackages'
   | 'dataCategoryGroup'
-  )
+)
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 

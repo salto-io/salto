@@ -67,7 +67,6 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 }
 
 export type UserDeployConfig = {
-  // Replace references for missing users during deploy with defaultMissingUserFallback value
   changeValidators?: ValidatorsActivationConfig
 }
 
@@ -260,7 +259,7 @@ export const validateSupportedTypes = (
 /**
  * Verify defaultMissingUserFallback value in deployConfig is valid
  */
-export const validateDeployConfig = (
+export const validateDefaultMissingUserFallbackConfig = (
   deployConfigPath: string,
   defaultMissingUserFallbackConfig: DefaultMissingUserFallbackConfig,
   userValidationFunc: (userValue: string) => boolean

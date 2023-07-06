@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType } from '@salto-io/adapter-api'
-import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDeployConfig } from '../../src/config'
+import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDefaultMissingUserFallbackConfig } from '../../src/config'
 
 describe('config_shared', () => {
   describe('createUserFetchConfigType', () => {
@@ -58,7 +58,7 @@ describe('config_shared', () => {
   })
   describe('validateDeployConfig', () => {
     it('should not throw if defaultMissingUserFallback is ##DEPLOYER##', () => {
-      expect(() => validateDeployConfig(
+      expect(() => validateDefaultMissingUserFallbackConfig(
         'deploy',
         { defaultMissingUserFallback: '##DEPLOYER##' },
         (): boolean => true,
@@ -66,7 +66,7 @@ describe('config_shared', () => {
     })
 
     it('should throw if validateUserFunc returns false', async () => {
-      expect(() => validateDeployConfig(
+      expect(() => validateDefaultMissingUserFallbackConfig(
         'deploy',
         { defaultMissingUserFallback: 'invalid@user.name' },
         (): boolean => false,

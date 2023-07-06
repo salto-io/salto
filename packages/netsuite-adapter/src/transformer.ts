@@ -55,6 +55,13 @@ export const addApplicationIdToType = (type: ObjectType): void => {
   type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
 }
 
+const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
+  awu(Object.values(type.fields))
+    .find(async f => {
+      const fType = await f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
+
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
@@ -162,12 +169,7 @@ export const createInstanceElement = async (
     }
   }
 
-  const fileContentField = await awu(Object.values(type.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-
+  const fileContentField = await getFileContentField(type)
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
     && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
@@ -337,13 +339,8 @@ export const toCustomizationInfo = async (
 
   delete values[APPLICATION_ID]
 
-  const fileContentField = await awu(Object.values(instanceType.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-
   const scriptId = instance.value[SCRIPT_ID]
+  const fileContentField = await getFileContentField(instanceType)
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
     && isStandardType(instance.refType)) {

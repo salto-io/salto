@@ -82,6 +82,22 @@ describe('Field second global contexts', () => {
       elementsSource
     )).toEqual([])
   })
+  it('should not return changes when its not global context change', async () => {
+    const notGlobalContextInstance = new InstanceElement(
+      'notGlobal',
+      contextType,
+      undefined,
+      undefined,
+      { _parent: [new ReferenceExpression(fieldInstance.elemID, fieldInstance)] }
+    )
+    elements = [notGlobalContextInstance]
+    elementsSource = buildElementsSourceFromElements(elements)
+    changes = [toChange({ after: notGlobalContextInstance })]
+    expect(await fieldSecondGlobalContextValidator(
+      changes,
+      elementsSource
+    )).toEqual([])
+  })
   it('should log error if elementSource is undefined', async () => {
     expect(await fieldSecondGlobalContextValidator(
       changes,

@@ -26,7 +26,7 @@ import { getGlobalContextsUsedInProjectErrors } from './referenced_global_contex
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-export const getFieldContexts = async (
+const getFieldContexts = async (
   field: InstanceElement,
   elementSource: ReadOnlyElementsSource,
 ): Promise<InstanceElement[]> =>

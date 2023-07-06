@@ -15,9 +15,8 @@
 */
 import { ChangeError, ChangeValidator, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, SeverityLevel } from '@salto-io/adapter-api'
 import { getParent } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isDefined } from '@salto-io/lowerdash/src/values'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
 
 
@@ -50,35 +49,42 @@ export const fieldSecondGlobalContextValidator: ChangeValidator = async (changes
     return []
   }
   const fieldToGlobalContextCount: Record<string, number> = {}
-  await awu(await elementSource.getAll())
-    .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-    .filter(isInstanceElement)
-    .filter(instance => instance.value.isGlobalContext)
-    .forEach(async instance => {
-      const field = await getParenWithElementSource(instance, elementSource)
-      const fieldName = field.elemID.getFullName()
-      if (fieldToGlobalContextCount[fieldName] === undefined) {
-        fieldToGlobalContextCount[fieldName] = 1
-      } else {
-        fieldToGlobalContextCount[fieldName] += 1
-      }
-    })
-
-  return awu(changes).filter(isInstanceChange)
+  const fillFieldToGlobalContextCount = async (): Promise<void> => (
+    awu(await elementSource.getAll())
+      .filter(elem => elem.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+      .filter(isInstanceElement)
+      .filter(instance => instance.value.isGlobalContext)
+      .forEach(async instance => {
+        const field = await getParenWithElementSource(instance, elementSource)
+        const fieldName = field.elemID.getFullName()
+        if (fieldToGlobalContextCount[fieldName] === undefined) {
+          fieldToGlobalContextCount[fieldName] = 1
+        } else {
+          fieldToGlobalContextCount[fieldName] += 1
+        }
+      })
+  )
+  const globalContextList = await awu(changes).filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
     .filter(instance => instance.value.isGlobalContext)
-    .map(instance => ({ context: instance, field: getParent(instance) }))
-    .map(contextAndField => {
-      if (fieldToGlobalContextCount[contextAndField.field.elemID.getFullName()] > 1) {
-        const fieldName = contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
-          ? contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS]
-          : contextAndField.field.elemID.getFullName()
-        return createErrorMessage(contextAndField.context.elemID, fieldName)
-      }
-      return undefined
-    })
-    .filter(isDefined)
     .toArray()
+
+  if (globalContextList.length > 0) {
+    await fillFieldToGlobalContextCount()
+    return globalContextList
+      .map(instance => ({ context: instance, field: getParent(instance) }))
+      .map(contextAndField => {
+        if (fieldToGlobalContextCount[contextAndField.field.elemID.getFullName()] > 1) {
+          const fieldName = contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+            ? contextAndField.field.annotations[CORE_ANNOTATIONS.ALIAS]
+            : contextAndField.field.elemID.getFullName()
+          return createErrorMessage(contextAndField.context.elemID, fieldName)
+        }
+        return undefined
+      })
+      .filter(values.isDefined)
+  }
+  return []
 }

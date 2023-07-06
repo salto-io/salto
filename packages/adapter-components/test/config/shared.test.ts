@@ -30,8 +30,7 @@ describe('config_shared', () => {
   describe('createUserDeployConfigType', () => {
     it('should return default type when no custom fields were added', () => {
       const type = createUserDeployConfigType('myAdapter', new ObjectType({ elemID: new ElemID('test') }))
-      expect(Object.keys(type.fields)).toHaveLength(2)
-      expect(type.fields.defaultMissingUserFallback).toBeDefined()
+      expect(Object.keys(type.fields)).toHaveLength(1)
       expect(type.fields.changeValidators).toBeDefined()
     })
   })

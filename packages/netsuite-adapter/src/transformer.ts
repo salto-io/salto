@@ -30,10 +30,8 @@ import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  APPLICATION_ID,
-  SETTINGS_PATH,
-  CUSTOM_RECORD_TYPE,
+  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
+  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT,
 } from './constants'
 import { fieldTypes } from './types/field_types'
 import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance } from './types'
@@ -129,18 +127,11 @@ export const createInstanceElement = async (
   const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
     transformAttributeKey)
 
-  const fileContentField = await awu(Object.values(type.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-  const contentFieldName = (fileContentField as Field).name
-
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
       + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
-      valuesWithTransformedAttrs[contentFieldName] = new StaticFile({
+      valuesWithTransformedAttrs[CONTENT] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
         content: customizationInfo.fileContent,
       })
@@ -163,13 +154,19 @@ export const createInstanceElement = async (
       const clonedInstance = existingInstance.clone()
       clonedInstance.refType = new TypeReference(type.elemID, type)
       if (isFileInstance(clonedInstance)) {
-        clonedInstance.value[contentFieldName] = valuesWithTransformedAttrs[contentFieldName]
+        clonedInstance.value[CONTENT] = valuesWithTransformedAttrs[CONTENT]
         // file's generated dependencies are based on the content and calculated in element_references.ts
         delete clonedInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       }
       return clonedInstance
     }
   }
+
+  const fileContentField = await awu(Object.values(type.fields))
+    .find(async f => {
+      const fType = await f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
 
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
     && customizationInfo.fileContent !== undefined) {
@@ -327,25 +324,24 @@ export const toCustomizationInfo = async (
     return { typeName, values }
   }
 
-  const fileContentField = await awu(Object.values(instanceType.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-
   if (isFileCabinetType(instance.refType)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
-    if (instanceType.elemID.isEqual(new ElemID(NETSUITE, FILE))) {
-      const contentFieldName = (fileContentField as Field).name
-      const fileContent = values[contentFieldName]
-      delete values[contentFieldName]
+    if (isFileInstance(instance)) {
+      const fileContent = values[CONTENT]
+      delete values[CONTENT]
       return { typeName, values, fileContent, path } as FileCustomizationInfo
     }
     return { typeName, values, path } as FolderCustomizationInfo
   }
 
   delete values[APPLICATION_ID]
+
+  const fileContentField = await awu(Object.values(instanceType.fields))
+    .find(async f => {
+      const fType = await f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
 
   const scriptId = instance.value[SCRIPT_ID]
   // Template Custom Type

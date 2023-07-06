@@ -235,9 +235,14 @@ export const buildStaticFilesSource = (
       staticFilesDirStore.clone() as DirectoryStore<Buffer>,
       staticFilesCache.clone(),
     ),
-    delete: async (staticFile: StaticFile): Promise<void> => (
-      staticFilesDirStore.delete(staticFile.filepath)
-    ),
+    delete: async (staticFile: StaticFile): Promise<void> => {
+      // If the static file is lazy, and the content was not yet loaded,
+      // we need to load it before deleting the file since after we won't be able to
+      if (staticFile instanceof LazyStaticFile) {
+        await staticFile.getContent()
+      }
+      return staticFilesDirStore.delete(staticFile.filepath)
+    },
     isPathIncluded: filePath => staticFilesSource.isPathIncluded(filePath),
   }
   return staticFilesSource

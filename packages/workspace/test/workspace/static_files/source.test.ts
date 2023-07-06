@@ -15,6 +15,7 @@
 */
 import { StaticFile } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { mockFunction } from '@salto-io/test-utils'
 import { mockStaticFilesCache } from '../../common/static_files_cache'
 import { DirectoryStore } from '../../../src/workspace/dir_store'
 import { buildStaticFilesSource, StaticFilesCache, LazyStaticFile, buildInMemStaticFilesSource } from '../../../src/workspace/static_files'
@@ -273,6 +274,22 @@ describe('Static Files', () => {
       it('should invoke the dir store delete method with the static file file path attribute', async () => {
         await staticFilesSource.delete(exampleStaticFileWithContent)
         expect(mockDirStore.delete).toHaveBeenCalledWith(exampleStaticFileWithContent.filepath)
+      })
+
+      it('should load the file content before deleting if the static if is lazy', async () => {
+        const getContentFunc = mockFunction<() => Promise<Buffer | undefined>>()
+          .mockResolvedValue(Buffer.from('content'))
+
+        const lazyStaticFile = new LazyStaticFile(
+          'path',
+          'hash',
+          'absoluteFilePath',
+          getContentFunc,
+        )
+
+        await staticFilesSource.delete(lazyStaticFile)
+        expect(getContentFunc).toHaveBeenCalled()
+        expect(mockDirStore.delete).toHaveBeenCalledWith(lazyStaticFile.filepath)
       })
     })
     describe('load', () => {

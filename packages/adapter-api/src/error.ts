@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ElemID } from './element_id'
 
 export type SeverityLevel = 'Error' | 'Warning' | 'Info'
@@ -31,6 +32,9 @@ export type SaltoElementError = SaltoError & {
 
 export const isSaltoElementError = (error: SaltoError | SaltoElementError):
     error is SaltoElementError => 'elemID' in error
+
+export const isError = (error: unknown): error is SaltoError | Error =>
+  (_.isObject(error) && ('message' in error) && ('severity' in error)) || _.isError(error)
 
 export const createSaltoElementErrorFromError = ({
   error,

@@ -20,22 +20,21 @@ import {
   DeployResult,
   getChangeData,
   InstanceElement,
-  isAdditionChange, isSaltoElementError,
-  SaltoElementError,
+  isAdditionChange, isError,
+  SaltoError,
   Values,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils, deployment, client as clientUtils,
 } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from './client/client'
 import { getZendeskError } from './errors'
 import { ZendeskApiConfig } from './config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
-const { isDefined } = lowerDashValues
 
 
 export const addId = ({
@@ -153,56 +152,39 @@ export const deployChange = async (
   }
 }
 
+const deployChangesHelper = async <T extends Change<ChangeDataType>>(
+  change: T,
+  deployChangeFunc: (change: T) => Promise<void | T[]>
+): Promise<T[] | T | Error | SaltoError> => {
+  try {
+    const res = await deployChangeFunc(change)
+    return res !== undefined ? res : change
+  } catch (err) {
+    if (!isError(err)) {
+      throw err
+    }
+    return err
+  }
+}
+
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
-  const errors: SaltoElementError[] = []
   const result = await Promise.all(
-    changes.map(async change => {
-      try {
-        const res = await deployChangeFunc(change)
-        return res !== undefined ? res : change
-      } catch (err) {
-        if (!(_.isError(err) || isSaltoElementError(err))) {
-          throw err
-        }
-        errors.push({
-          message: err.message,
-          severity: 'Error',
-          elemID: getChangeData(change).elemID,
-        })
-        return undefined
-      }
-    })
+    changes.map(async change => deployChangesHelper(change, deployChangeFunc))
   )
-
-  return { errors, appliedChanges: result.flat().filter(isDefined) }
+  const [errors, appliedChanges] = _.partition(result.flat(), isError)
+  return { errors, appliedChanges }
 }
 
 export const deployChangesSequentially = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
-  const errors: SaltoElementError[] = []
-  const result = await awu(changes).map(async change => {
-    try {
-      const res = await deployChangeFunc(change)
-      return res !== undefined ? res : change
-    } catch (err) {
-      if (!(_.isError(err) || isSaltoElementError(err))) {
-        throw err
-      }
-      errors.push({
-        message: err.message,
-        severity: 'Error',
-        elemID: getChangeData(change).elemID,
-      })
-      return undefined
-    }
-  }).toArray()
-
-  return { errors, appliedChanges: result.flat().filter(isDefined) }
+  const result = await awu(changes).map(async change => deployChangesHelper(change, deployChangeFunc)).toArray()
+  const [errors, appliedChanges] = _.partition(result.flat(), isError)
+  return { errors, appliedChanges }
 }
 
 export const deployChangesByGroups = async <T extends Change<ChangeDataType>>(

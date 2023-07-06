@@ -17,14 +17,14 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceElement, isStaticFile, ObjectType,
-  ReferenceExpression, SaltoElementError, StaticFile,
+  isAdditionOrModificationChange, isError, isInstanceElement, isStaticFile, ObjectType,
+  ReferenceExpression, SaltoElementError, SaltoError, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import FormData from 'form-data'
-import { collections, values } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import ZendeskClient from '../client/client'
 import { BRAND_LOGO_TYPE_NAME, BRAND_TYPE_NAME, ZENDESK } from '../constants'
 import { getZendeskError } from '../errors'
@@ -221,7 +221,6 @@ const filterCreator: FilterCreator = ({ client }) => ({
       brandLogoChanges,
       change => change.action === 'remove',
     )
-    const errors: SaltoElementError[] = []
     const deployLogoResults = await awu(
       brandLogoRemovals.concat(brandLogoAddistionsAndModifications)
     )
@@ -232,19 +231,19 @@ const filterCreator: FilterCreator = ({ client }) => ({
           ? await logoInstance.value.content.getContent()
           : undefined
         const deployResult = await deployBrandLogo(client, logoInstance, fileContent)
-        if (deployResult !== undefined) { //  deployment was not successful
-          errors.push(deployResult)
-          return undefined
-        }
-        return change
+        return deployResult === undefined ? change : deployResult
       })
-      .filter(values.isDefined)
       .toArray()
+
+    const [deployLogoErrors, successfulChanges] = _.partition(
+      deployLogoResults,
+      isError,
+    ) as [(SaltoError | Error)[], Change[]]
 
     return {
       deployResult: {
-        appliedChanges: deployLogoResults,
-        errors,
+        appliedChanges: successfulChanges,
+        errors: deployLogoErrors,
       },
       leftoverChanges,
     }

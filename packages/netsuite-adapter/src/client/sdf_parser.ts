@@ -278,7 +278,7 @@ const transformFoldersWithoutAttributes = (
     .map(path => path.split(FILE_CABINET_PATH_SEPARATOR))
     .map(path => path.slice(1, -1))
     // adding all parent folders
-    .flatMap(path => path.map((p, i) => [...path.slice(0, i), p]))
+    .flatMap(path => path.map((_p, i) => path.slice(0, i + 1)))
     .map(path => path.join(FILE_CABINET_PATH_SEPARATOR))
     .uniq()
     .filter(path => !foldersFromAttributesPaths.has(path))

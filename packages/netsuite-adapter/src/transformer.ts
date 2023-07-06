@@ -134,12 +134,13 @@ export const createInstanceElement = async (
       const fType = await f.getType()
       return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
     })
+  const contentFieldName = (fileContentField as Field).name
 
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
       + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
-      valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
+      valuesWithTransformedAttrs[contentFieldName] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
         content: customizationInfo.fileContent,
       })
@@ -149,6 +150,11 @@ export const createInstanceElement = async (
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const instanceFileName = pathNaclCase(instanceName)
 
+  // SALTO-4227 - Support loading files & folders without their attributes (in SDF):
+  // SDF projects can have FileCabinet objects (files&folders) without their matching .attribute XML file.
+  // In that case we still want to load the objects:
+  // - if the instance doesn't exists in the environment - we use default attributes.
+  // - if the instance exists in the environment - we use the existing attibutes and the new file content.
   if ((isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo))
     && customizationInfo.hadMissingAttributes) {
     const instanceElemId = new ElemID(NETSUITE, type.elemID.name, 'instance', instanceName)
@@ -157,8 +163,7 @@ export const createInstanceElement = async (
       const clonedInstance = existingInstance.clone()
       clonedInstance.refType = new TypeReference(type.elemID, type)
       if (isFileInstance(clonedInstance)) {
-        const fileContent = valuesWithTransformedAttrs[(fileContentField as Field).name]
-        clonedInstance.value[(fileContentField as Field).name] = fileContent
+        clonedInstance.value[contentFieldName] = valuesWithTransformedAttrs[contentFieldName]
         // file's generated dependencies are based on the content and calculated in element_references.ts
         delete clonedInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
       }

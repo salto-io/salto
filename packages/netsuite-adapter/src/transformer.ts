@@ -21,6 +21,9 @@ import {
   ElemIDType,
   TypeElement,
   BuiltinTypes,
+  ReadOnlyElementsSource,
+  CORE_ANNOTATIONS,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -33,7 +36,7 @@ import {
   CUSTOM_RECORD_TYPE,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
@@ -57,6 +60,7 @@ export const addApplicationIdToType = (type: ObjectType): void => {
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
 ): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
@@ -144,6 +148,24 @@ export const createInstanceElement = async (
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const instanceFileName = pathNaclCase(instanceName)
+
+  if ((isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo))
+    && customizationInfo.hadMissingAttributes) {
+    const instanceElemId = new ElemID(NETSUITE, type.elemID.name, 'instance', instanceName)
+    const existingInstance = await elementsSource.get(instanceElemId)
+    if (isInstanceElement(existingInstance)) {
+      const clonedInstance = existingInstance.clone()
+      clonedInstance.refType = new TypeReference(type.elemID, type)
+      if (isFileInstance(clonedInstance)) {
+        const fileContent = valuesWithTransformedAttrs[(fileContentField as Field).name]
+        clonedInstance.value[(fileContentField as Field).name] = fileContent
+        // file's generated dependencies are based on the content and calculated in element_references.ts
+        delete clonedInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+      }
+      return clonedInstance
+    }
+  }
+
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
     && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
@@ -167,6 +189,7 @@ export const createInstanceElement = async (
 
 export const createElements = async (
   customizationInfos: CustomizationInfo[],
+  elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
 ): Promise<Array<InstanceElement | TypeElement>> => {
   const { standardTypes, additionalTypes } = getMetadataTypes()
@@ -187,6 +210,7 @@ export const createElements = async (
     .map(({ customizationInfo, type }) => createInstanceElement(
       customizationInfo,
       type,
+      elementsSource,
       getElemIdFunc,
     ))
     .toArray()

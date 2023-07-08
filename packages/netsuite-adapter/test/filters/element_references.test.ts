@@ -123,6 +123,7 @@ describe('instance_references filter', () => {
             refType: BuiltinTypes.STRING,
             annotations: {
               parent: '[scriptid=customrecord1]',
+              scriptid: 'custom_field',
             },
           },
         },

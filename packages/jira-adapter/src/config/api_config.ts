@@ -36,6 +36,8 @@ export type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'>
   typesToFallbackToInternalId: string[]
 }
 
+export type JiraDuckTypeConfig = configUtils.AdapterDuckTypeApiConfig
+
 const DEFAULT_ID_FIELDS = ['name']
 const FIELDS_TO_OMIT: configUtils.FieldToOmitType[] = [
   { fieldName: 'expand', fieldType: 'string' },
@@ -1643,6 +1645,32 @@ const DEFAULT_TYPE_CUSTOMIZATIONS: JiraApiConfig['types'] = {
       url: '/rest/agile/1.0/board/{boardId}/configuration',
     },
   },
+}
+
+const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
+  ScripRunnerListeners: {
+    request: {
+      url: '/sr-dispatcher/jira/admin/token/scriptevents',
+    },
+  },
+}
+
+export const DUCKTYPE_SUPPORTED_TYPES = {
+  ScripRunnerListeners: ['ScripRunnerListeners'],
+}
+
+const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {
+  idFields: DEFAULT_ID_FIELDS,
+  fieldsToOmit: FIELDS_TO_OMIT,
+  nestStandaloneInstances: true,
+}
+
+export const DUCKTYPE_API_DEFINITIONS: JiraDuckTypeConfig = {
+  typeDefaults: {
+    transformation: TRANSFORMATION_DEFAULTS,
+  },
+  types: DUCKTYPE_TYPES,
+  supportedTypes: DUCKTYPE_SUPPORTED_TYPES,
 }
 
 const SUPPORTED_TYPES = {

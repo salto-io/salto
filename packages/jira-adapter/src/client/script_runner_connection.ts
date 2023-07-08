@@ -14,13 +14,15 @@
 * limitations under the License.
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
-import { JiraApiConfig, JiraDuckTypeConfig } from '../config/api_config'
+import ScriptRunnerCredentials from '../script_runner_auth'
 
-type ProductSettingsType = 'cloud' | 'dataCenter'
-
-export type ProductSettings = {
-  defaultApiDefinitions: JiraApiConfig
-  wrapConnection: (connection: clientUtils.APIConnection) => clientUtils.APIConnection
-  type: ProductSettingsType
-  defaultScriptRunnerApiDefinitions?: JiraDuckTypeConfig
-}
+export const createScriptRunnerConnection: clientUtils.ConnectionCreator<ScriptRunnerCredentials> = retryOptions => (
+  clientUtils.axiosConnection({
+    retryOptions,
+    authParamsFunc: async _credentials => (
+      {}
+    ),
+    baseURLFunc: async credentials => credentials.getBaseUrl(),
+    credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
+  })
+)

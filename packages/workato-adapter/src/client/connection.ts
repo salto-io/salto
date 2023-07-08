@@ -50,7 +50,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
           'x-user-token': token,
         },
     }),
-    baseURLFunc: () => BASE_URL,
+    baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCredentials,
   })
 )

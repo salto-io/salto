@@ -44,7 +44,7 @@ export const createConnection: ConnectionCreator<Credentials> = retryOptions => 
         password,
       },
     }),
-    baseURLFunc: () => BASE_URL,
+    baseURLFunc: async () => BASE_URL,
     credValidateFunc: validateCreds,
   })
 )

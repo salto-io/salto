@@ -55,7 +55,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
         additionalData: { response_type: 'token' },
       })
     ),
-    baseURLFunc: ({ baseUrl }) => baseUrl + BASE_SERVICE,
+    baseURLFunc: async ({ baseUrl }) => baseUrl + BASE_SERVICE,
     credValidateFunc: validateCredentials,
   })
 )

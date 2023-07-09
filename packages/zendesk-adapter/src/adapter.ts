@@ -655,6 +655,10 @@ export default class ZendeskAdapter implements AdapterOperations {
             config: this.userConfig[API_DEFINITIONS_CONFIG],
           })),
       })) as Change<InstanceElement>[]
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
+    )
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
@@ -726,9 +730,20 @@ export default class ZendeskAdapter implements AdapterOperations {
           await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
         } catch (e) {
           if (isSaltoError(e)) {
+            const appliedChanges = await awu(appliedChangesBeforeRestore)
+              .map(change => restoreChangeElement(
+                change,
+                sourceChanges,
+                lookupFunc,
+              ))
+              .toArray()
+            const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
+              appliedChanges,
+              originalInstanceChanges: instanceChanges,
+            })
             return {
-              appliedChanges: [],
-              errors: [e],
+              appliedChanges: restoredAppliedChanges,
+              errors: deployResult.errors.concat([e]),
             }
           }
           throw e
@@ -751,11 +766,6 @@ export default class ZendeskAdapter implements AdapterOperations {
         }
       })
       .toArray()
-
-    const sourceChanges = _.keyBy(
-      changesToDeploy,
-      change => getChangeData(change).elemID.getFullName(),
-    )
 
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges)

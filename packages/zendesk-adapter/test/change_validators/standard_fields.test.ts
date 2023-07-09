@@ -58,8 +58,12 @@ describe('standardFieldsValidator', () => {
     const errors = await standardFieldsValidator([
       toChange({ before: standardField, after: clonedInstance }),
     ])
-    expect(errors).toHaveLength(1)
-    expect(errors[0].message).toEqual('Cannot edit raw_title, type fields of standard ticket fields')
+    expect(errors).toMatchObject([{
+      elemID: standardField.elemID,
+      severity: 'Error',
+      message: 'Cannot edit [type, raw_title] fields of standard ticket fields',
+      detailedMessage: 'Editing [type, raw_title] fields of standard ticket fields is not supported in Zendesk',
+    }])
   })
 
   it('should not return an error for addition or removal of non-standard field', async () => {

@@ -33,7 +33,7 @@ const STANDARD_FIELDS = [
   'assignee',
   'subject',
 ]
-const NON_EDITABLE_FIELDS = ['raw_title', 'type']
+const NON_EDITABLE_FIELDS = ['type', 'raw_title']
 
 /**
  * Validates that standard ticket fields are not added or removed,
@@ -63,7 +63,7 @@ export const standardFieldsValidator: ChangeValidator = async changes => {
   })).concat(relevantModifications.map(change => ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
-    message: `Cannot edit ${NON_EDITABLE_FIELDS.join(', ')} fields of standard ticket fields`,
-    detailedMessage: `Editing ${NON_EDITABLE_FIELDS.join(', ')} fields of standard ticket fields is not supported in Zendesk`,
+    message: `Cannot edit [${NON_EDITABLE_FIELDS.join(', ')}] fields of standard ticket fields`,
+    detailedMessage: `Editing [${NON_EDITABLE_FIELDS.join(', ')}] fields of standard ticket fields is not supported in Zendesk`,
   })))
 }

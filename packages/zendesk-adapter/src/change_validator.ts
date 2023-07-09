@@ -67,6 +67,7 @@ import {
   defaultDynamicContentItemVariantValidator,
   featureActivationValidator,
   deflectionActionValidator,
+  standardFieldsValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -146,6 +147,7 @@ export default ({
     defaultDynamicContentItemVariantValidator,
     featureActivationValidator,
     deflectionActionValidator,
+    standardFieldsValidator,
     // *** Guide Order Validators ***
     childInOrderValidator,
     childrenReferencesValidator,

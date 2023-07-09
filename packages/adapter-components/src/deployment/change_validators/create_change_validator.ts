@@ -19,6 +19,8 @@ import { logger } from '@salto-io/logging'
 
 const log = logger(module)
 
+// The correct type is Record<string, boolean>, but this creates type issues with createMatchingObjectType
+// Because the type is checked with createUserDeployConfigType, we are ok with this here
 export type ValidatorsActivationConfig = {}
 export const createChangeValidator = ({
   validators,

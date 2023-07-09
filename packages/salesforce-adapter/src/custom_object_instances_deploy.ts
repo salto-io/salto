@@ -24,7 +24,7 @@ import {
   SaltoElementError,
   SaltoError,
   SeverityLevel,
-  isInstanceElement,
+  isInstanceElement, isInstanceChange,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
@@ -34,9 +34,14 @@ import {
   instancesToDeleteRecords, instancesToUpdateRecords, Types,
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
-import { CUSTOM_OBJECT_ID_FIELD } from './constants'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  CUSTOM_OBJECT_ID_FIELD,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { buildSelectQueries, getFieldNamesForQuery } from './filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
@@ -277,7 +282,9 @@ const updateInstances: CrudFn = async (
   const results = await client.bulkLoadOperation(
     typeName,
     'update',
-    await instancesToUpdateRecords(instances, groupId)
+    // For this special group, we know it's safe to update without adding nulls, since the Record
+    // was previously added by us, and no Data could be deleted by the user during this process.
+    await instancesToUpdateRecords(instances, groupId !== ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
   )
   return groupInstancesAndResultsByIndex(results, instances)
 }
@@ -459,7 +466,7 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
-export const deployCustomObjectInstancesGroup = async (
+const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
@@ -500,3 +507,101 @@ export const deployCustomObjectInstancesGroup = async (
     }
   }
 }
+
+const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
+  message: `Cannot deploy ApprovalCondition instance ${getChangeData(change).elemID.getFullName()} since it depends on an ApprovalRule instance that was not deployed successfully`,
+  severity: 'Error',
+  elemID: getChangeData(change).elemID,
+})
+
+const deployAddCustomApprovalRuleAndCondition = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => {
+  const approvalRuleChanges = await awu(changes)
+    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
+    .toArray()
+  const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
+  if (approvalRuleChanges.map(getChangeData).some(instance => instance.value[SBAA_CONDITIONS_MET] !== 'Custom')) {
+    throw new Error('Received ApprovalRule instance without Custom ConditionsMet')
+  }
+  log.debug('Deploying ApprovalRule instances with "All" ConditionsMet instead of "Custom"')
+  approvalRuleChanges
+    .map(getChangeData)
+    .forEach(instance => {
+      instance.value[SBAA_CONDITIONS_MET] = 'All'
+    })
+  const approvalRulesNoCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    approvalRuleChanges,
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  const deployedRuleByElemId = _.keyBy(
+    approvalRulesNoCustomDeployResult.appliedChanges.map(getChangeData).filter(isInstanceElement),
+    instance => instance.elemID.getFullName()
+  )
+  log.debug('Deploying ApprovalCondition instances')
+  const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
+    approvalConditionChanges,
+    change => {
+      const instance = getChangeData(change)
+      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
+      if (!isInstanceElement(approvalRule)) {
+        log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
+        return false
+      }
+      const deployedRule = deployedRuleByElemId[approvalRule.elemID.getFullName()]
+      if (deployedRule === undefined) {
+        log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
+        return false
+      }
+      // Set the ApprovalRule ID on the deployable ApprovalCondition instance
+      instance.value[SBAA_APPROVAL_RULE] = deployedRule.value[CUSTOM_OBJECT_ID_FIELD]
+      return true
+    }
+  )
+  const conditionsDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    deployableConditionChanges,
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+
+  log.debug('Updating the ApprovalRule instances with Custom ConditionsMet')
+  const firstDeployAppliedChanges = approvalRulesNoCustomDeployResult.appliedChanges.filter(isInstanceChange)
+  firstDeployAppliedChanges
+    .map(getChangeData)
+    .forEach(instance => {
+      instance.value[SBAA_CONDITIONS_MET] = 'Custom'
+    })
+  const approvalRulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    firstDeployAppliedChanges,
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+
+  return {
+    appliedChanges: approvalRulesWithCustomDeployResult.appliedChanges
+      .concat(conditionsDeployResult.appliedChanges),
+    errors: approvalRulesNoCustomDeployResult.errors.concat(
+      conditionsDeployResult.errors,
+      approvalRulesWithCustomDeployResult.errors,
+      nonDeployableConditionChanges.map(createNonDeployableConditionChangeError)
+    ),
+  }
+}
+
+
+export const deployCustomObjectInstancesGroup = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  groupId: string,
+  dataManagement?: DataManagement,
+): Promise<DeployResult> => (
+  groupId === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+    ? deployAddCustomApprovalRuleAndCondition(changes, client, dataManagement)
+    : deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
+)

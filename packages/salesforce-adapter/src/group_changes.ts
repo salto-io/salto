@@ -45,7 +45,11 @@ const getGroupId = async (change: Change): Promise<string> => {
   return `${change.action}_${typeName}_instances`
 }
 
-const getCustomRuleAndConditionChangeIds = async (
+/**
+ * Returns the changes that should be part of the special deploy group for adding sbaa__ApprovalRule
+ * instances with sbaa__ConditionsMet = 'Custom' and their corresponding sbaa__ApprovalCondition instances.
+ */
+const getAddCustomRuleAndConditionGroupChangeIds = async (
   changes: Map<ChangeId, Change>
 ): Promise<Set<ChangeId>> => {
   const addedInstancesChanges = wu(changes.entries())
@@ -71,15 +75,13 @@ const getCustomRuleAndConditionChangeIds = async (
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const customApprovalRuleAndConditionChangeIds = await getCustomRuleAndConditionChangeIds(changes)
+  const customApprovalRuleAndConditionChangeIds = await getAddCustomRuleAndConditionGroupChangeIds(changes)
   await awu(changes.entries())
-    .filter(async ([changeId]) => !customApprovalRuleAndConditionChangeIds.has(changeId))
     .forEach(async ([changeId, change]) => {
-      changeGroupIdMap.set(changeId, await getGroupId(change))
-    })
-  customApprovalRuleAndConditionChangeIds
-    .forEach(changeId => {
-      changeGroupIdMap.set(changeId, ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
+      const groupId = customApprovalRuleAndConditionChangeIds.has(changeId)
+        ? ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+        : await getGroupId(change)
+      changeGroupIdMap.set(changeId, groupId)
     })
 
   return { changeGroupIdMap }

@@ -18,12 +18,7 @@ import {
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
 } from '@salto-io/adapter-api'
-import {
-  filter,
-  logDuration,
-  resolveChangeElement,
-  restoreChangeElement,
-} from '@salto-io/adapter-utils'
+import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -98,13 +93,11 @@ import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
-  CUSTOM_OBJECT,
   PROFILE_METADATA_TYPE,
 } from './constants'
-import { deployAddCustomApprovalRuleAndCondition } from './sbaa_approval_rules_and_conditions_deploy'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -466,13 +459,6 @@ export default class SalesforceAdapter implements AdapterOperations {
           appliedChanges: [],
           errors: [{ message: 'Cannot deploy CustomObject Records as part of check-only deployment', severity: 'Error' }],
         }
-      }
-      if (changeGroup.groupID === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP) {
-        deployResult = await deployAddCustomApprovalRuleAndCondition(
-          resolvedChanges as Change<InstanceElement>[],
-          this.client,
-          this.fetchProfile.dataManagement
-        )
       }
       deployResult = await deployCustomObjectInstancesGroup(
         resolvedChanges as Change<InstanceElement>[],

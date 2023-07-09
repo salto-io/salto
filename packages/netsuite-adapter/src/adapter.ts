@@ -287,7 +287,8 @@ export default class NetsuiteAdapter implements AdapterOperations {
     const bundleTypeName = bundleType().type.elemID.typeName
     const bundlesCustomInfo = (await this.client.getInstalledBundles())
       .map(bundle => ({ typeName: bundleTypeName, values: { ...bundle, id: bundle.id.toString() } }))
-
+    // TODO: remove this log when SALTO-2602 is open for all customers
+    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,

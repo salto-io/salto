@@ -63,6 +63,7 @@ export type FetchParams = {
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
   addAlias?: boolean
+  addBundles?: boolean
 }
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -73,6 +74,7 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
   addAlias: 'addAlias',
+  addBundles: 'addBundles',
 }
 
 export const convertToQueryParams = ({

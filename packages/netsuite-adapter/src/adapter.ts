@@ -61,6 +61,7 @@ import currencyUndeployableFieldsFilter from './filters/currency_omit_fields'
 import additionalChanges from './filters/additional_changes'
 import addInstancesFetchTime from './filters/add_instances_fetch_time'
 import addAliasFilter from './filters/add_alias'
+import addBundleReferences from './filters/bundle_ids'
 import { Filter, LocalFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreator, RemoteFilterCreatorDefinition } from './filter'
 import { getConfigFromConfigChanges, NetsuiteConfig, DEFAULT_DEPLOY_REFERENCED_ELEMENTS, DEFAULT_WARN_STALE_DATA, DEFAULT_VALIDATE, AdditionalDependencies, DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from './config'
 import { andQuery, buildNetsuiteQuery, NetsuiteQuery, NetsuiteQueryParameters, notQuery, QueryParams, convertToQueryParams, getFixedTargetFetch } from './query'
@@ -80,7 +81,7 @@ import { getDataElements } from './data_elements/data_elements'
 import { getStandardTypesNames } from './autogen/types'
 import { getConfigTypes, toConfigElements } from './suiteapp_config_elements'
 import { ConfigRecord } from './client/suiteapp_client/types'
-
+import { bundleType } from './types/bundle_type'
 
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -128,6 +129,7 @@ export const allFilters: (LocalFilterCreatorDefinition | RemoteFilterCreatorDefi
   { creator: addAliasFilter },
   // serviceUrls must run after suiteAppInternalIds and SDFInternalIds filter
   { creator: serviceUrls, addsNewInformation: true },
+  { creator: addBundleReferences },
   // omitFieldsFilter should be the last onFetch filter to run
   { creator: omitFieldsFilter },
   // additionalChanges should be the first preDeploy filter to run
@@ -282,6 +284,11 @@ export default class NetsuiteAdapter implements AdapterOperations {
     )
     progressReporter.reportProgress({ message: 'Fetching file cabinet items' })
 
+    const bundleTypeName = bundleType().type.elemID.typeName
+    const bundlesCustomInfo = (await this.client.getInstalledBundles())
+      .map(bundle => ({ typeName: bundleTypeName, values: { ...bundle, id: bundle.id.toString() } }))
+    // TODO: remove this log when SALTO-2602 is open for all customers
+    log.debug('The following bundle ids are missing in the bundle record: %o', bundlesCustomInfo.map(bundle => bundle.values.id))
     const {
       elements: fileCabinetContent,
       failedPaths: failedFilePaths,
@@ -297,9 +304,13 @@ export default class NetsuiteAdapter implements AdapterOperations {
     } = await getCustomObjectsResult
 
     progressReporter.reportProgress({ message: 'Running filters for additional information' })
-
+    const elementsToCreate = [
+      ...customObjects,
+      ...fileCabinetContent,
+      ...(this.userConfig?.fetch?.addBundles ? bundlesCustomInfo : []),
+    ]
     const baseElements = await createElements(
-      [...customObjects, ...fileCabinetContent],
+      elementsToCreate,
       this.elementsSource,
       this.getElemIdFunc,
     )

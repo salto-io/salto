@@ -21,8 +21,9 @@ import { StandardType, getStandardTypes, isStandardTypeName, getStandardTypesNam
 import { TypesMap } from './types/object_types'
 import { fileCabinetTypesNames, getFileCabinetTypes } from './types/file_cabinet_types'
 import { getConfigurationTypes } from './types/configuration_types'
-import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX } from './constants'
+import { CONFIG_FEATURES, CUSTOM_FIELD_PREFIX, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, METADATA_TYPE, SOAP, INTERNAL_ID, SCRIPT_ID, PATH, CUSTOM_RECORD_TYPE_NAME_PREFIX, BUNDLE } from './constants'
 import { SUPPORTED_TYPES } from './data_elements/types'
+import { bundleType } from './types/bundle_type'
 
 const { isDefined } = lowerDashValues
 
@@ -80,7 +81,7 @@ type MetadataTypes = {
 
 export const getMetadataTypes = (): MetadataTypes => ({
   standardTypes: getStandardTypes(),
-  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes() },
+  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes(), bundle: bundleType().type },
 })
 
 export const getTopLevelStandardTypes = (standardTypes: TypesMap<StandardType>): ObjectType[] =>
@@ -183,6 +184,12 @@ export const hasInternalId = (element: Element): boolean =>
 
 export const getServiceId = (element: Element): string =>
   getElementValueOrAnnotations(element)[isFileCabinetInstance(element) ? PATH : SCRIPT_ID]
+
+export const isBundleType = (type: ObjectType | TypeReference): boolean =>
+  type.elemID.typeName === BUNDLE
+
+export const isBundleInstance = (element: Element): element is InstanceElement =>
+  isInstanceElement(element) && isBundleType(element.refType)
 
 export const netsuiteSupportedTypes = [
   ...getStandardTypesNames(),

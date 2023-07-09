@@ -35,6 +35,10 @@ const STANDARD_FIELDS = [
 ]
 const NON_EDITABLE_FIELDS = ['raw_title', 'type']
 
+/**
+ * Validates that standard ticket fields are not added or removed,
+ * or that their non-editable fields are not modified
+ */
 export const standardFieldsValidator: ChangeValidator = async changes => {
   const relevantChanges = changes
     .filter(isInstanceChange)

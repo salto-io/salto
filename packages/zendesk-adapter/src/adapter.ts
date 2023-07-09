@@ -28,7 +28,7 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
-  isReferenceExpression,
+  isReferenceExpression, isSaltoError,
   ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
@@ -671,10 +671,29 @@ export default class ZendeskAdapter implements AdapterOperations {
       resolvedChanges,
       change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName)
     )
-    await runner.preDeploy(supportResolvedChanges)
+    const saltoErrors: SaltoError[] = []
+    try {
+      await runner.preDeploy(supportResolvedChanges)
+    } catch (e) {
+      if (isSaltoError(e)) {
+        return {
+          appliedChanges: [],
+          errors: [e],
+        }
+      }
+      throw e
+    }
     const { deployResult } = await runner.deploy(supportResolvedChanges)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
-    await runner.onDeploy(appliedChangesBeforeRestore)
+    try {
+      await runner.onDeploy(appliedChangesBeforeRestore)
+    } catch (e) {
+      if (isSaltoError(e)) {
+        saltoErrors.push(e)
+      }
+      throw e
+    }
+
 
     const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
@@ -703,13 +722,29 @@ export default class ZendeskAdapter implements AdapterOperations {
             paginationFuncCreator: paginate,
           }),
         })
-        await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+        try {
+          await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+        } catch (e) {
+          if (isSaltoError(e)) {
+            return {
+              appliedChanges: [],
+              errors: [e],
+            }
+          }
+          throw e
+        }
         const { deployResult: brandDeployResults } = await brandRunner.deploy(
           subdomainToGuideChanges[subdomain]
         )
         const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await brandRunner.onDeploy(guideChangesBeforeRestore)
-
+        try {
+          await brandRunner.onDeploy(guideChangesBeforeRestore)
+        } catch (e) {
+          if (isSaltoError(e)) {
+            saltoErrors.push(e)
+          }
+          throw e
+        }
         return {
           appliedChanges: guideChangesBeforeRestore,
           errors: brandDeployResults.errors,
@@ -738,7 +773,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
     return {
       appliedChanges: restoredAppliedChanges,
-      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)),
+      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)).concat(saltoErrors),
     }
   }
 

@@ -28,8 +28,7 @@ import {
   getChangeData,
   isModificationChange,
   isInstanceChange,
-  SaltoElementError,
-  SaltoError, createSaltoElementError, isError,
+  SaltoError, createSaltoElementError, isSaltoError,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils, config as configUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, pathNaclCase, safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -154,13 +153,15 @@ export const createReorderFilterCreator = (
     }
     try {
       if (relevantChanges.length > 1) {
-        throw new Error(
-          `${orderTypeName} element is a singleton and should have only on instance. Found multiple: ${relevantChanges.length}`,
-        )
+        const saltoError: SaltoError = {
+          message: `${orderTypeName} element is a singleton and should have only on instance. Found multiple: ${relevantChanges.length}`,
+          severity: 'Error',
+        }
+        throw saltoError // in try block
       }
       const [change] = relevantChanges
       if (!isModificationChange(change)) {
-        throw createSaltoElementError({
+        throw createSaltoElementError({ // in try block
           message: `only modify change is allowed on ${orderTypeName}. Found ${change.action} action`,
           severity: 'Error',
           elemID: getChangeData(change).elemID,
@@ -168,15 +169,11 @@ export const createReorderFilterCreator = (
       }
       await deployFunc(change, client, config[API_DEFINITIONS_CONFIG])
     } catch (err) {
-      if (!isError(err)) {
+      if (!isSaltoError(err)) {
         throw err
       }
-      const saltoError: SaltoElementError | SaltoError = {
-        ...err,
-        severity: 'Error',
-      }
       return {
-        deployResult: { appliedChanges: [], errors: [saltoError] },
+        deployResult: { appliedChanges: [], errors: [err] },
         leftoverChanges,
       }
     }
@@ -197,7 +194,7 @@ export const deployFuncCreator = (fieldName: string): DeployFuncType =>
     const instance = getChangeData(clonedChange)
     const { ids } = instance.value
     if (!idsAreNumbers(ids)) {
-      throw createSaltoElementError({
+      throw createSaltoElementError({ // caught in try block
         message: `Not all the ids of ${instance.elemID.getFullName()} are numbers: ${safeJsonStringify(ids, elementExpressionStringifyReplacer)}`,
         severity: 'Error',
         elemID: getChangeData(change).elemID,

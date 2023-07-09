@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange,
-  isInstanceElement, Element,
+  isInstanceElement, Element, createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { retry } from '@salto-io/lowerdash'
 import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -55,22 +55,31 @@ const isJobStatus = (value: unknown): value is JobStatus => {
 }
 
 const checkIfJobIsDone = async (
-  client: ZendeskClient, jobId: string, fullName: string
+  client: ZendeskClient, jobId: string, change: Change
 ): Promise<boolean> => {
+  const fullName = getChangeData(change).elemID.getFullName()
   const res = (await client.getSinglePage({ url: `/api/v2/apps/job_statuses/${jobId}` })).data
   if (!isJobStatus(res)) {
-    throw new Error(`Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`)
+    throw createSaltoElementError({ // caught by deployChanges
+      message: `Got an invalid response for job status. Element: ${fullName}. Job ID: ${jobId}`,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    })
   }
   if (['failed', 'killed'].includes(res.status)) {
-    throw new Error(`Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.message}`)
+    throw createSaltoElementError({ // caught by deployChanges
+      message: `Job status is failed. Element: ${fullName}. Job ID: ${jobId}. Error: ${res.message}`,
+      severity: 'Error',
+      elemID: getChangeData(change).elemID,
+    })
   }
   return res.status === 'completed'
 }
 
-const waitTillJobIsDone = async (client: ZendeskClient, jobId: string, fullName: string):
+const waitTillJobIsDone = async (client: ZendeskClient, jobId: string, change: Change):
 Promise<void> => {
   await withRetry(
-    () => checkIfJobIsDone(client, jobId, fullName),
+    () => checkIfJobIsDone(client, jobId, change),
     {
       strategy: intervals({
         maxRetries: MAX_RETRIES,
@@ -104,9 +113,13 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         const response = await deployChange(change, client, config.apiDefinitions, ['app', 'settings.title', 'settings_objects'])
         if (isAdditionChange(change)) {
           if (response == null || _.isArray(response) || !_.isString(response.pending_job_id)) {
-            throw new Error(`Got an invalid response when tried to install app ${fullName}`)
+            throw createSaltoElementError({ // caught by deployChanges
+              message: `Got an invalid response when tried to install app ${fullName}`,
+              severity: 'Error',
+              elemID: getChangeData(change).elemID,
+            })
           }
-          await waitTillJobIsDone(client, response.pending_job_id, fullName)
+          await waitTillJobIsDone(client, response.pending_job_id, change)
         }
       }
     )

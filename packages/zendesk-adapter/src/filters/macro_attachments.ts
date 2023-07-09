@@ -18,7 +18,7 @@ import Joi from 'joi'
 import FormData from 'form-data'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, createSaltoElementError, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  isInstanceElement, isRemovalChange, isSaltoError, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
   resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
@@ -79,7 +79,7 @@ const replaceAttachmentId = (
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
       safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
-    throw createSaltoElementError({
+    throw createSaltoElementError({ // caught in try block
       message: 'Failed to deploy macro because its attachment field has an invalid format',
       severity: 'Error',
       elemID: parentInstance.elemID,
@@ -108,7 +108,7 @@ ReturnType<typeof client.post> => {
       headers: { ...form.getHeaders() },
     })
   } catch (err) {
-    throw getZendeskError(instance.elemID, err)
+    throw getZendeskError(instance.elemID, err) // caught in deployChanges
   }
 }
 
@@ -287,30 +287,44 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         leftoverChanges,
       }
     }
-    const additionalParentFullNames = new Set(
-      additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName())
-    )
-    const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
-      .map(change => replaceAttachmentId(change, childFullNameToInstance))
-      .map(change => resolveChangeElement(change, lookupFunc))
-      .toArray()
-    const macroDeployResult = await deployChanges(
-      resolvedParentChanges,
-      async change => {
-        await deployChange(change, client, config.apiDefinitions)
+    try {
+      const additionalParentFullNames = new Set(
+        additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName())
+      )
+      const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
+        .map(change => replaceAttachmentId(change, childFullNameToInstance))
+        .map(change => resolveChangeElement(change, lookupFunc))
+        .toArray()
+      const macroDeployResult = await deployChanges(
+        resolvedParentChanges,
+        async change => {
+          await deployChange(change, client, config.apiDefinitions)
+        }
+      )
+      return {
+        deployResult: {
+          appliedChanges: [
+            ...macroDeployResult.appliedChanges
+              .filter(change =>
+                !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
+            ...attachmentDeployResult.appliedChanges,
+          ],
+          errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
+        },
+        leftoverChanges,
       }
-    )
-    return {
-      deployResult: {
-        appliedChanges: [
-          ...macroDeployResult.appliedChanges
-            .filter(change =>
-              !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
-          ...attachmentDeployResult.appliedChanges,
-        ],
-        errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
-      },
-      leftoverChanges,
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      return {
+        // this is not the correct applied changes, need to be fixed in https://salto-io.atlassian.net/browse/SALTO-4466
+        deployResult: {
+          appliedChanges: [],
+          errors: [e],
+        },
+        leftoverChanges: changes,
+      }
     }
   },
 })

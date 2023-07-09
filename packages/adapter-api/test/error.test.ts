@@ -18,7 +18,7 @@ import {
   createSaltoElementError,
   createSaltoElementErrorFromError,
   CredentialError,
-  isCredentialError, isError,
+  isCredentialError, isSaltoError,
 } from '../src/error'
 import { ElemID } from '../src/element_id'
 import { toChange } from '../src/change'
@@ -58,19 +58,19 @@ describe('create saltoElementError', () => {
   })
 })
 
-describe('isError', () => {
+describe('isSaltoError', () => {
   const elemID = new ElemID('adapter', 'test')
   const instance = new InstanceElement('inst', new ObjectType({ elemID }), {})
   const change = toChange({ after: instance })
   it('should return false for non saltoErrors', () => {
-    expect(isError(elemID)).toBeFalsy()
-    expect(isError(instance)).toBeFalsy()
-    expect(isError(change)).toBeFalsy()
+    expect(isSaltoError(elemID)).toBeFalsy()
+    expect(isSaltoError(instance)).toBeFalsy()
+    expect(isSaltoError(change)).toBeFalsy()
   })
   it('should return true for saltoErrors', () => {
-    expect(isError(createSaltoElementError({ message: 'test', severity: 'Error', elemID }))).toBeTruthy()
+    expect(isSaltoError(createSaltoElementError({ message: 'test', severity: 'Error', elemID }))).toBeTruthy()
   })
-  it('should return true for Errors', () => {
-    expect(isError(new Error('test'))).toBeTruthy()
+  it('should return false for Errors', () => {
+    expect(isSaltoError(new Error('test'))).toBeFalsy()
   })
 })

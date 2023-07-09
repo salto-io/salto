@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isError, isInstanceElement, isStaticFile, ObjectType,
+  isAdditionOrModificationChange, isSaltoError, isInstanceElement, isStaticFile, ObjectType,
   ReferenceExpression, SaltoElementError, SaltoError, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
@@ -237,8 +237,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const [deployLogoErrors, successfulChanges] = _.partition(
       deployLogoResults,
-      isError,
-    ) as [(SaltoError | Error)[], Change[]]
+      isSaltoError,
+    ) as [SaltoError[], Change[]]
 
     return {
       deployResult: {

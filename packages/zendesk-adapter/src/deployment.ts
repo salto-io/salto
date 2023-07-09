@@ -20,7 +20,7 @@ import {
   DeployResult,
   getChangeData,
   InstanceElement,
-  isAdditionChange, isError,
+  isAdditionChange, isSaltoError,
   SaltoError,
   Values,
 } from '@salto-io/adapter-api'
@@ -155,12 +155,12 @@ export const deployChange = async (
 const deployChangesHelper = async <T extends Change<ChangeDataType>>(
   change: T,
   deployChangeFunc: (change: T) => Promise<void | T[]>
-): Promise<T[] | T | Error | SaltoError> => {
+): Promise<T[] | T | SaltoError> => {
   try {
     const res = await deployChangeFunc(change)
     return res !== undefined ? res : change
   } catch (err) {
-    if (!isError(err)) {
+    if (!isSaltoError(err)) {
       throw err
     }
     return err
@@ -174,7 +174,7 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   const result = await Promise.all(
     changes.map(async change => deployChangesHelper(change, deployChangeFunc))
   )
-  const [errors, appliedChanges] = _.partition(result.flat(), isError)
+  const [errors, appliedChanges] = _.partition(result.flat(), isSaltoError)
   return { errors, appliedChanges }
 }
 
@@ -183,7 +183,7 @@ export const deployChangesSequentially = async <T extends Change<ChangeDataType>
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await awu(changes).map(async change => deployChangesHelper(change, deployChangeFunc)).toArray()
-  const [errors, appliedChanges] = _.partition(result.flat(), isError)
+  const [errors, appliedChanges] = _.partition(result.flat(), isSaltoError)
   return { errors, appliedChanges }
 }
 

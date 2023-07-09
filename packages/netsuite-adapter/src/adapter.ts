@@ -310,6 +310,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     ]
     const baseElements = await createElements(
       elementsToCreate,
+      this.elementsSource,
       this.getElemIdFunc,
     )
 

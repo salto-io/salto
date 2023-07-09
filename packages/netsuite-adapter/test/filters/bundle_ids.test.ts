@@ -13,13 +13,13 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/bundle_ids'
 import { customlistType } from '../../src/autogen/types/standard_types/customlist'
 import { bundleType } from '../../src/types/bundle_type'
 import { LocalFilterOpts } from '../../src/filter'
 import { fileType } from '../../src/types/file_cabinet_types'
-import { PATH } from '../../src/constants'
+import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, PATH, SCRIPT_ID } from '../../src/constants'
 
 
 describe('bundle_ids filter', () => {
@@ -74,6 +74,7 @@ describe('bundle_ids filter', () => {
 
   describe('preDeploy', () => {
     let instanceWithBundle: InstanceElement
+    let customRecordType: ObjectType
 
     beforeEach(() => {
       instanceWithBundle = new InstanceElement(
@@ -83,11 +84,26 @@ describe('bundle_ids filter', () => {
           bundle: bundleRef,
         }
       )
+      customRecordType = new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord_my_script_id'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord_my_script_id',
+          bundle: bundleRef,
+        },
+      })
     })
     it('should remove bundle field in preDeploy', async () => {
       expect(instanceWithBundle.value.bundle).toEqual(bundleRef)
-      await filterCreator(filterOpts).preDeploy?.([toChange({ after: instanceWithBundle })])
+      expect(customRecordType.annotations.bundle).toEqual(bundleRef)
+      await filterCreator(filterOpts).preDeploy?.(
+        [
+          toChange({ after: instanceWithBundle }),
+          toChange({ after: customRecordType }),
+        ]
+      )
       expect(instanceWithBundle.value.bundle).toBeUndefined()
+      expect(customRecordType.annotations.bundle).toBeUndefined()
     })
   })
 })

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { getChangeData, InstanceElement, isInstanceChange, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isCustomRecordType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
@@ -35,12 +35,15 @@ const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bun
   return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
 }
 
-const addBundleToFileCabinet = (element: InstanceElement, bundleIdToInstance: Record<string, InstanceElement>):void => {
-  const serviceId = getServiceId(element)
+const addBundleToFileCabinet = (
+  fileCabinetInstance: InstanceElement,
+  bundleIdToInstance: Record<string, InstanceElement>
+):void => {
+  const serviceId = getServiceId(fileCabinetInstance)
   const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
   if (bundleId.length > 0) {
     const bundleToReference = bundleIdToInstance[bundleId[0]]
-    Object.assign(element.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    Object.assign(fileCabinetInstance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
   }
 }
 
@@ -93,9 +96,14 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
 
   preDeploy: async changes => {
     changes
-      .filter(isInstanceChange)
       .map(getChangeData)
-      .forEach(element => { element.value = _.omit(element.value, [BUNDLE]) })
+      .filter(isStandardInstanceOrCustomRecord)
+      .forEach(element => {
+        if (isInstanceElement(element)) {
+          element.value = _.omit(element.value, [BUNDLE])
+        }
+        element.annotations = _.omit(element.annotations, [BUNDLE])
+      })
   },
 })
 

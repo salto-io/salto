@@ -13,8 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { convertToFeaturesXmlContent, convertToXmlContent, parseFeaturesXml, parseFileCabinetDir, parseObjectsDir, parseSdfProjectDir } from '../../src/client/sdf_parser'
-import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECT_XML_WITH_HTML_CHARS, readDirMockFunction, readFileMockFunction } from './mocks'
+import { isFileCustomizationInfo, isFolderCustomizationInfo } from '../../src/client/utils'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FILE_WITHOUT_ATTRIBUTES_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_TEMPLATE_CONTENT, OBJECT_XML_WITH_HTML_CHARS, readDirMockFunction, readFileMockFunction } from './mocks'
 
 const readDirMock = jest.fn()
 const readFileMock = jest.fn()
@@ -40,6 +42,7 @@ describe('sdf parser', () => {
       MOCK_FILE_PATH,
       MOCK_FILE_ATTRS_PATH,
       MOCK_FOLDER_ATTRS_PATH,
+      MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
     ].map(path => ({ path: path.slice(1) })))
   })
   describe('parseObjectsDir', () => {
@@ -84,11 +87,17 @@ describe('sdf parser', () => {
   })
   describe('parseFileCabinetDir', () => {
     it('should parse', async () => {
-      await expect(parseFileCabinetDir('/projectPath', [
+      const objects = await parseFileCabinetDir('/projectPath', [
         MOCK_FILE_PATH,
         MOCK_FILE_ATTRS_PATH,
         MOCK_FOLDER_ATTRS_PATH,
-      ])).resolves.toEqual([
+        MOCK_FILE_WITHOUT_ATTRIBUTES_PATH,
+      ])
+      const [objectsWithoutAttributes, objectsWithAttributes] = _.partition(
+        objects,
+        obj => obj.hadMissingAttributes
+      )
+      expect(objectsWithAttributes).toEqual([
         {
           fileContent: 'dummy file content',
           path: [
@@ -101,6 +110,7 @@ describe('sdf parser', () => {
           values: {
             description: 'file description',
           },
+          hadMissingAttributes: false,
         },
         {
           path: [
@@ -112,12 +122,57 @@ describe('sdf parser', () => {
           values: {
             description: 'folder description',
           },
+          hadMissingAttributes: false,
         },
       ])
-      expect(readFileMock).toHaveBeenCalledTimes(3)
+      expect(objectsWithoutAttributes).toEqual([
+        {
+          fileContent: 'console.log("Hello World!")',
+          hadMissingAttributes: true,
+          path: [
+            'Templates',
+            'E-mail Templates',
+            'InnerFolder',
+            'test.js',
+          ],
+          typeName: 'file',
+          values: {
+            availablewithoutlogin: 'F',
+            bundleable: 'F',
+            description: '',
+            generateurltimestamp: 'F',
+            hideinbundle: 'F',
+            isinactive: 'F',
+          },
+        },
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates'],
+          hadMissingAttributes: true,
+        },
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates', 'E-mail Templates'],
+          hadMissingAttributes: true,
+        },
+      ])
+      expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_PATH}`)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_ATTRS_PATH}`)
       expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FOLDER_ATTRS_PATH}`)
+      expect(readFileMock).toHaveBeenCalledWith(`/projectPath/src/FileCabinet${MOCK_FILE_WITHOUT_ATTRIBUTES_PATH}`)
     })
   })
   describe('parseFeaturesXml', () => {
@@ -142,7 +197,12 @@ describe('sdf parser', () => {
   })
   describe('parseSdfProjectDir', () => {
     it('should parse', async () => {
-      await expect(parseSdfProjectDir('/projectPath')).resolves.toEqual([
+      const [fileCabinetWithoutAttributes, objects] = _.partition(
+        await parseSdfProjectDir('/projectPath'),
+        obj => (isFileCustomizationInfo(obj) || isFolderCustomizationInfo(obj))
+          && obj.hadMissingAttributes
+      )
+      expect(objects).toEqual([
         {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
@@ -171,6 +231,7 @@ describe('sdf parser', () => {
           values: {
             description: 'file description',
           },
+          hadMissingAttributes: false,
         },
         {
           path: [
@@ -182,6 +243,7 @@ describe('sdf parser', () => {
           values: {
             description: 'folder description',
           },
+          hadMissingAttributes: false,
         },
         {
           typeName: 'companyFeatures',
@@ -193,6 +255,49 @@ describe('sdf parser', () => {
               },
             ],
           },
+        },
+      ])
+      expect(fileCabinetWithoutAttributes).toEqual([
+        {
+          fileContent: 'console.log("Hello World!")',
+          hadMissingAttributes: true,
+          path: [
+            'Templates',
+            'E-mail Templates',
+            'InnerFolder',
+            'test.js',
+          ],
+          typeName: 'file',
+          values: {
+            availablewithoutlogin: 'F',
+            bundleable: 'F',
+            description: '',
+            generateurltimestamp: 'F',
+            hideinbundle: 'F',
+            isinactive: 'F',
+          },
+        },
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates'],
+          hadMissingAttributes: true,
+        },
+        {
+          typeName: 'folder',
+          values: {
+            bundleable: 'F',
+            description: '',
+            isinactive: 'F',
+            isprivate: 'F',
+          },
+          path: ['Templates', 'E-mail Templates'],
+          hadMissingAttributes: true,
         },
       ])
     })

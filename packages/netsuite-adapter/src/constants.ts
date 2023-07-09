@@ -84,6 +84,7 @@ export const EXCHANGE_RATE = 'exchangeRate'
 export const PERMISSIONS = 'permissions'
 export const CUSTOM_FIELD = 'customField'
 export const CUSTOM_FIELD_LIST = 'customFieldList'
+export const CONTENT = 'content'
 
 // Field Annotations
 export const SOAP = 'soap'

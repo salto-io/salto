@@ -40,7 +40,7 @@ const loadElementsFromFolder = async (
     filters,
   )
   const customizationInfos = await parseSdfProjectDir(baseDir)
-  const elements = await createElements(customizationInfos, getElemIdFunc)
+  const elements = await createElements(customizationInfos, elementsSource, getElemIdFunc)
   await filtersRunner.onFetch(elements)
 
   return { elements }

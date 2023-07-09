@@ -162,7 +162,7 @@ const compareValuesAndLazyResolveRefs = async (
     )
   }
 
-  const specialCompareRes = compareSpecialValues(first, second)
+  const specialCompareRes = compareSpecialValues(first, second, compareOptions)
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes
   }

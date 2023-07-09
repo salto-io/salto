@@ -18,7 +18,10 @@ import { ElemID, InstanceElement, ObjectType, ReferenceExpression, Element, Buil
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import filterCreator, { addReferences } from '../../src/filters/field_references'
-import { fieldNameToTypeMappingDefs } from '../../src/transformers/reference_mapping'
+import {
+  FieldReferenceDefinition,
+  getReferenceMappingDefs,
+} from '../../src/transformers/reference_mapping'
 import { OBJECTS_PATH, SALESFORCE, CUSTOM_OBJECT, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD, CUSTOM_OBJECT_ID_FIELD, API_NAME, API_NAME_SEPARATOR, WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, WORKFLOW_RULE_METADATA_TYPE, CPQ_QUOTE_LINE_FIELDS, CPQ_CUSTOM_SCRIPT, CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_LOOKUP_QUERY, CPQ_TESTED_OBJECT, CPQ_DISCOUNT_SCHEDULE, CPQ_CONSTRAINT_FIELD } from '../../src/constants'
 import { metadataType, apiName, createInstanceElement } from '../../src/transformers/transformer'
 import { CUSTOM_OBJECT_TYPE_ID } from '../../src/filters/custom_objects_to_object_type'
@@ -485,7 +488,7 @@ describe('FieldReferences filter', () => {
 
     beforeAll(async () => {
       elements = generateElements()
-      const modifiedDefs = fieldNameToTypeMappingDefs.map(def => _.omit(def, 'serializationStrategy'))
+      const modifiedDefs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: false }).map(def => _.omit(def, 'serializationStrategy'))
       await addReferences(elements, buildElementsSourceFromElements(elements), modifiedDefs)
     })
     afterAll(() => {
@@ -738,6 +741,63 @@ describe('FieldReferences filter - neighbor context strategy', () => {
       expect(instanceMissingActionForType.value.actions.name).toEqual('foo')
       expect(instanceInvalidActionType.value.actions.name).toEqual('foo')
       expect(instanceFlowRecordLookup.value.filters[1].field).toEqual('unknown')
+    })
+  })
+})
+
+describe('getReferenceMappingDefs', () => {
+  let defs: FieldReferenceDefinition[]
+
+  describe('Without any optional defs', () => {
+    beforeEach(() => {
+      defs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: false })
+    })
+    it('should not have any profile-related references', () => {
+      defs
+        .flatMap(def => def.src.parentTypes)
+        .forEach(type => expect(type).not.toInclude('Profile'))
+    })
+  })
+  describe('With profile-related optional defs', () => {
+    beforeEach(() => {
+      defs = getReferenceMappingDefs({ enumFieldPermissions: false, otherProfileRefs: true })
+    })
+    it('should have profile-related references, but not FLS', () => {
+      const profileRelatedDefs = defs
+        .flatMap(def => def.src.parentTypes)
+        .filter(type => type.includes('Profile'))
+      expect(profileRelatedDefs).not.toBeEmpty()
+
+      profileRelatedDefs
+        .forEach(type => expect(type).not.toInclude('ProfileFieldLevelSecurity'))
+    })
+  })
+  describe('With FLS-related optional defs', () => {
+    beforeEach(() => {
+      defs = getReferenceMappingDefs({ enumFieldPermissions: true, otherProfileRefs: false })
+    })
+    it('should have only FLS-related profile references', () => {
+      const profileRelatedDefs = defs
+        .flatMap(def => def.src.parentTypes)
+        .filter(type => type.includes('Profile'))
+      expect(profileRelatedDefs).not.toBeEmpty()
+
+      profileRelatedDefs
+        .forEach(type => expect(type).toInclude('ProfileFieldLevelSecurity'))
+    })
+  })
+  describe('With all optional defs', () => {
+    beforeEach(() => {
+      defs = getReferenceMappingDefs({ enumFieldPermissions: true, otherProfileRefs: true })
+    })
+    it('should have only all profile references', () => {
+      const profileRelatedDefs = defs
+        .flatMap(def => def.src.parentTypes)
+        .filter(type => type.includes('Profile'))
+      const flsRelatedDefs = profileRelatedDefs
+        .filter(type => type.includes('ProfileFieldLevelSecurity'))
+      expect(flsRelatedDefs).not.toBeEmpty()
+      expect(profileRelatedDefs.length).toBeGreaterThan(flsRelatedDefs.length)
     })
   })
 })

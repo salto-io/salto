@@ -102,6 +102,7 @@ import {
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
   CUSTOM_OBJECT,
+  PROFILE_METADATA_TYPE,
 } from './constants'
 import { deployAddCustomApprovalRuleAndCondition } from './sbaa_approval_rules_and_conditions_deploy'
 
@@ -240,8 +241,10 @@ const METADATA_TO_RETRIEVE = [
   'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
+  'CustomApplication',
   'CustomMetadata', // For the XML attributes
   'CustomObject',
+  'CustomPermission',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
@@ -249,8 +252,11 @@ const METADATA_TO_RETRIEVE = [
   'EclairGeoData', // contains encoded zip content
   'EmailFolder',
   'EmailTemplate', // contains encoded zip content, is under a folder
+  'ExternalDataSource',
+  'FlowDefinition',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
+  'Profile',
   'PermissionSet',
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',
@@ -363,7 +369,12 @@ export default class SalesforceAdapter implements AdapterOperations {
     const fetchProfile = buildFetchProfile(config.fetch ?? {})
     this.fetchProfile = fetchProfile
     if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
-      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT)
+      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
+      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
+    }
+    if (this.fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
+      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
     }
     this.createFiltersRunner = () => filter.filtersRunner(
       {
@@ -579,6 +590,7 @@ export default class SalesforceAdapter implements AdapterOperations {
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
         addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+        typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
     ])

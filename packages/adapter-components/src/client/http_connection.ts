@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
 import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
@@ -159,7 +159,7 @@ export const validateCredentials = async <TCredentials>(
 
 export type AuthParams = {
   auth?: AxiosBasicCredentials
-  headers?: Record<string, unknown>
+  headers?: AxiosRequestHeaders
 }
 
 type AxiosConnectionParams<TCredentials> = {
@@ -189,10 +189,7 @@ export const axiosConnection = <TCredentials>({
 
     try {
       const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
-      return {
-        ...httpClient,
-        accountInfo,
-      }
+      return Object.assign(httpClient, { accountInfo })
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {

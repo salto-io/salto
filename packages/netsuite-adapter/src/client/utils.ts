@@ -15,11 +15,14 @@
 */
 import _ from 'lodash'
 import { strings, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
+import { Change, ElemID, SaltoElementError, getChangeData } from '@salto-io/adapter-api'
 import { FILE, FOLDER } from '../constants'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './types'
 import { NetsuiteTypesQueryParams } from '../query'
 import { ConfigRecord } from './suiteapp_client/types'
 
+const log = logger(module)
 const { matchAll } = strings
 const { isDefined } = values
 
@@ -61,3 +64,48 @@ export const getConfigRecordsFieldValue = (
   configRecord: ConfigRecord | undefined,
   field: string,
 ): unknown => configRecord?.data?.fields?.[field]
+
+export const toDependencyError = (
+  dependency: { elemId: ElemID; dependOn: ElemID[] }
+): SaltoElementError => ({
+  elemID: dependency.elemId,
+  message: `Element cannot be deployed due to an error in its ${
+    dependency.dependOn.length > 1 ? 'dependencies' : 'dependency'
+  }: ${dependency.dependOn.map(id => id.getFullName()).join(', ')}`,
+  severity: 'Error',
+})
+
+export const getDeployResultFromSuiteAppResult = <T extends Change>(
+  changes: T[],
+  results: (number | Error)[]
+): {
+  appliedChanges: T[]
+  errors: SaltoElementError[]
+  elemIdToInternalId: Record<string, string>
+} => {
+  const errors: SaltoElementError[] = []
+  const appliedChanges: T[] = []
+  const elemIdToInternalId: Record<string, string> = {}
+
+  results
+    .forEach((result, index) => {
+      const change = changes[index]
+      if (change === undefined) {
+        log.warn(
+          'deploy result in index %d is beyond the changes list and will be ignored: %o',
+          index,
+          result,
+        )
+        return
+      }
+      const { elemID } = getChangeData(change)
+      if (typeof result === 'number') {
+        appliedChanges.push(change)
+        elemIdToInternalId[elemID.getFullName()] = result.toString()
+      } else {
+        errors.push({ elemID, message: result.message, severity: 'Error' })
+      }
+    })
+
+  return { appliedChanges, errors, elemIdToInternalId }
+}

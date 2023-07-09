@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployResult, DeployOptions,
+  FetchResult, AdapterOperations, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID,
 } from '@salto-io/adapter-api'
@@ -23,7 +23,7 @@ import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
-import { isCustomRecordType } from './types'
+import { DeployResult, isCustomRecordType } from './types'
 import { INTEGRATION } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
@@ -495,10 +495,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     await filtersRunner.onDeploy(appliedChanges, deployResult)
 
-    return {
-      errors: deployResult.errors,
-      appliedChanges,
-    }
+    const originalChangesElemIds = new Set(changes.map(change =>
+      getChangeData(change).elemID.getFullName()))
+    const errors = deployResult.errors.filter(error => !('elemID' in error)
+      || originalChangesElemIds.has(error.elemID.getFullName()))
+
+    return { errors, appliedChanges }
   }
 
   public get deployModifiers(): DeployModifiers {

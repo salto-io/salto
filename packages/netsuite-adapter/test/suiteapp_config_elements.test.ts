@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isObjectType, ModificationChange, toChange } from '@salto-io/adapter-api'
+import { getChangeData, InstanceElement, isInstanceElement, isObjectType, ModificationChange, toChange } from '@salto-io/adapter-api'
 import { SUITEAPP_CONFIG_RECORD_TYPES, SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../src/types'
 import { NETSUITE, SETTINGS_PATH } from '../src/constants'
 import * as unit from '../src/suiteapp_config_elements'
@@ -96,15 +96,27 @@ describe('config elements', () => {
     describe('getConfigDeployResult', () => {
       it('should return error on error results', () => {
         expect(unit.toConfigDeployResult(changes, { errorMessage: 'error' }))
-          .toEqual({ errors: [new Error('error')], appliedChanges: [] })
+          .toEqual({ errors: [{ message: 'error', severity: 'Error' }], appliedChanges: [] })
       })
       it('should return error on no results', () => {
-        expect(unit.toConfigDeployResult(changes, []))
-          .toEqual({ errors: [new Error('Missing deploy result for some changes')], appliedChanges: [] })
+        expect(unit.toConfigDeployResult(changes, [])).toEqual({
+          errors: [{
+            elemID: getChangeData(changes[0]).elemID,
+            message: 'Missing deploy result for this instance',
+            severity: 'Error',
+          }],
+          appliedChanges: [],
+        })
       })
       it('should return error on fail results', () => {
-        expect(unit.toConfigDeployResult(changes, [{ configType, status: 'fail', errorMessage: 'fail' }]))
-          .toEqual({ errors: [new Error(`${configType}: fail`)], appliedChanges: [] })
+        expect(unit.toConfigDeployResult(changes, [{ configType, status: 'fail', errorMessage: 'fail' }])).toEqual({
+          errors: [{
+            elemID: getChangeData(changes[0]).elemID,
+            message: `${configType}: fail`,
+            severity: 'Error',
+          }],
+          appliedChanges: [],
+        })
       })
       it('should return appliedChanges on success', () => {
         expect(unit.toConfigDeployResult(changes, [{ configType, status: 'success' }]))

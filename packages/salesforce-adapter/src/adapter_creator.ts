@@ -32,7 +32,7 @@ import {
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
 import { updateDeprecatedConfiguration } from './deprecated_config'
-import createChangeValidator from './change_validator'
+import createChangeValidator, { changeValidators } from './change_validator'
 import { getChangeGroupIds } from './group_changes'
 import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
@@ -100,15 +100,12 @@ SalesforceConfig => {
   }
 
   const validateValidatorsConfig = (validators: ValidatorsActivationConfig | undefined): void => {
-    if (validators === undefined) {
-      return
-    }
-    if (!_.isPlainObject(validators)) {
+    if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
-    const validValidatorsNames = Object.keys(validators)
-    Object.entries(validators ?? {})
-      .forEach(([key, value]) => {
+    if (_.isPlainObject(validators)) {
+      const validValidatorsNames = Object.keys(changeValidators)
+      Object.entries(validators as {}).forEach(([key, value]) => {
         if (!validValidatorsNames.includes(key)) {
           throw new ConfigValidationError(['validators', key], `Validator ${key} does not exist, expected one of ${validValidatorsNames.join(',')}`)
         }
@@ -116,6 +113,7 @@ SalesforceConfig => {
           throw new ConfigValidationError(['validators', key], 'Value must be true or false')
         }
       })
+    }
   }
 
   const validateEnumFieldPermissions = (enumFieldPermissions: boolean | undefined): void => {

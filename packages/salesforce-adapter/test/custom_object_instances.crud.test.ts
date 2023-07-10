@@ -25,8 +25,6 @@ import SalesforceAdapter from '../src/adapter'
 import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
-import { createCustomObjectType } from './utils'
-import { FIELD_ANNOTATIONS } from '../src/constants'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter
@@ -236,9 +234,6 @@ describe('Custom Object Instances CRUD', () => {
                 includeObjects: ['Test'],
                 saltoIDSettings: {
                   defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
-                  overrides: [
-                    { objectsRegex: 'TestType__c', idFields: ['Name'] },
-                  ],
                 },
               },
             },
@@ -517,149 +512,56 @@ describe('Custom Object Instances CRUD', () => {
                 records: [],
               }))
             connection.query = mockQuery
-          })
-          describe('when group has no circular dependencies', () => {
-            beforeEach(async () => {
-              result = await adapter.deploy({
-                changeGroup: {
-                  groupID: 'add_Test_instances',
-                  changes: [
-                    { action: 'add', data: { after: newInstanceWithRef } },
-                    { action: 'add', data: { after: anotherNewInstance } },
-                  ],
-                },
-              })
-            })
-
-            it('Should query according to instance values', () => {
-              expect(mockQuery.mock.calls).toHaveLength(1)
-              expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
-            })
-
-            it('Should call load operation once with insert', () => {
-              expect(mockBulkLoad.mock.calls.length).toBe(1)
-              const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
-              expect(insertCall).toBeDefined()
-            })
-
-            it('Should have result with 2 applied changes, add 2 instances with insert Id', async () => {
-              expect(result.errors).toHaveLength(0)
-              expect(result.appliedChanges).toHaveLength(2)
-              // newInstnace appliedChange
-              const newInstanceChangeData = result.appliedChanges
-                .map(getChangeData)
-                .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
-              expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
-              expect(newInstanceChangeData.value.SaltoName).toBeDefined()
-              expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
-              // Should add result Id
-              expect(newInstanceChangeData.value.Id).toBeDefined()
-              expect(newInstanceChangeData.value.Id).toEqual('newId0')
-
-              // Reference should stay a reference
-              expect(newInstanceChangeData.value.AnotherField)
-                .toEqual(new ReferenceExpression(mockElemID, 'Type'))
-
-              // anotherNewInstance appliedChange
-              const anotherNewInstanceChangeData = result.appliedChanges
-                .map(getChangeData)
-                .find(element => element.elemID.isEqual(anotherNewInstance.elemID)) as InstanceElement
-              expect(anotherNewInstanceChangeData).toBeDefined()
-              expect(anotherNewInstanceChangeData.value.SaltoName).toBeDefined()
-              expect(anotherNewInstanceChangeData.value.SaltoName).toBe('anotherNewInstance')
-              // Should add result Id
-              expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
-              expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
+            result = await adapter.deploy({
+              changeGroup: {
+                groupID: 'add_Test_instances',
+                changes: [
+                  { action: 'add', data: { after: newInstanceWithRef } },
+                  { action: 'add', data: { after: anotherNewInstance } },
+                ],
+              },
             })
           })
-          describe('when group has circular dependencies', () => {
-            let firstInstance: InstanceElement
-            let secondInstance: InstanceElement
-            let instanceWithoutRef: InstanceElement
-            beforeEach(async () => {
-              const objectType = createCustomObjectType('TestType__c', {
-                fields: {
-                  Name: {
-                    refType: BuiltinTypes.STRING,
-                    annotations: {
-                      [FIELD_ANNOTATIONS.QUERYABLE]: true,
-                      [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-                      [FIELD_ANNOTATIONS.CREATABLE]: true,
-                    },
-                  },
-                  Number__c: {
-                    refType: BuiltinTypes.NUMBER,
-                    annotations: {
-                      [FIELD_ANNOTATIONS.QUERYABLE]: true,
-                      [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-                      [FIELD_ANNOTATIONS.CREATABLE]: true,
-                    },
-                  },
-                  TestType__c: {
-                    refType: Types.primitiveDataTypes.Lookup,
-                    annotations: {
-                      [FIELD_ANNOTATIONS.QUERYABLE]: true,
-                      [FIELD_ANNOTATIONS.UPDATEABLE]: true,
-                      [FIELD_ANNOTATIONS.CREATABLE]: true,
-                    },
-                  },
-                },
-              })
-              firstInstance = new InstanceElement(
-                'firstInstance',
-                objectType,
-                {
-                  Name: 'firstInstance',
-                  Number__c: 1,
-                }
-              )
-              secondInstance = new InstanceElement(
-                'secondInstance',
-                objectType,
-                {
-                  Name: 'secondInstance',
-                  Number__c: 1,
-                  TestType__c: new ReferenceExpression(firstInstance.elemID, firstInstance),
-                }
-              )
-              firstInstance.value.TestType__c = new ReferenceExpression(secondInstance.elemID, secondInstance)
-              instanceWithoutRef = new InstanceElement(
-                'instanceWithoutRef',
-                objectType,
-                {
-                  Name: 'instanceWithoutRef',
-                  Number__c: 1,
-                }
-              )
 
-              result = await adapter.deploy({
-                changeGroup: {
-                  groupID: 'add_Test_instances',
-                  changes: [
-                    { action: 'add', data: { after: firstInstance } },
-                    { action: 'add', data: { after: secondInstance } },
-                    { action: 'add', data: { after: instanceWithoutRef } },
-                  ],
-                },
-              })
-            })
-            it('should update the partially deployed instances after inserting them', () => {
-              expect(result.errors).toBeEmpty()
-              expect(connection.bulk.load).toHaveBeenCalledTimes(2)
-              expect(connection.bulk.load).toHaveBeenCalledWith(
-                'TestType__c', 'insert', expect.anything(), [
-                  { Id: undefined, Name: 'firstInstance', Number__c: 1, TestType__c: null },
-                  { Id: undefined, Name: 'secondInstance', Number__c: 1, TestType__c: null },
-                  { Id: undefined, Name: 'instanceWithoutRef', Number__c: 1 },
-                ]
-              )
-              expect(connection.bulk.load).toHaveBeenCalledWith(
-                'TestType__c', 'update', expect.anything(), [
-                  { Id: 'newId0', Name: 'firstInstance', Number__c: 1, TestType__c: 'newId1' },
-                  { Id: 'newId1', Name: 'secondInstance', Number__c: 1, TestType__c: 'newId0' },
-                ]
-              )
-            })
+          it('Should query according to instance values', () => {
+            expect(mockQuery.mock.calls).toHaveLength(1)
+            expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,SaltoName,NumField,Address,FirstName,LastName,Salutation,MiddleName,Suffix FROM Type WHERE SaltoName IN (\'newInstanceWithRef\',\'anotherNewInstance\') AND NumField IN (2,3) AND City IN (null,\'Ashkelon\') AND Country IN (null,\'Israel\') AND GeocodeAccuracy IN (null) AND Latitude IN (null) AND Longitude IN (null) AND PostalCode IN (null) AND State IN (null) AND Street IN (null) AND FirstName IN (null) AND LastName IN (null) AND Salutation IN (null) AND MiddleName IN (null) AND Suffix IN (null)')
+          })
+
+          it('Should call load operation once with insert', () => {
+            expect(mockBulkLoad.mock.calls.length).toBe(1)
+            const insertCall = mockBulkLoad.mock.calls.find(call => call[1] === 'insert')
+            expect(insertCall).toBeDefined()
+          })
+
+          it('Should have result with 2 applied changes, add 2 instances with insert Id', async () => {
+            expect(result.errors).toHaveLength(0)
+            expect(result.appliedChanges).toHaveLength(2)
+            // newInstnace appliedChange
+            const newInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
+              .find(element => element.elemID.isEqual(newInstanceWithRef.elemID)) as InstanceElement
+            expect(newInstanceChangeData.elemID).toEqual(newInstanceWithRef.elemID)
+            expect(newInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(newInstanceChangeData.value.SaltoName).toBe('newInstanceWithRef')
+            // Should add result Id
+            expect(newInstanceChangeData.value.Id).toBeDefined()
+            expect(newInstanceChangeData.value.Id).toEqual('newId0')
+
+            // Reference should stay a reference
+            expect(newInstanceChangeData.value.AnotherField)
+              .toEqual(new ReferenceExpression(mockElemID, 'Type'))
+
+            // anotherNewInstance appliedChange
+            const anotherNewInstanceChangeData = result.appliedChanges
+              .map(getChangeData)
+              .find(element => element.elemID.isEqual(anotherNewInstance.elemID)) as InstanceElement
+            expect(anotherNewInstanceChangeData).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.SaltoName).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.SaltoName).toBe('anotherNewInstance')
+            // Should add result Id
+            expect(anotherNewInstanceChangeData.value.Id).toBeDefined()
+            expect(anotherNewInstanceChangeData.value.Id).toEqual('newId1')
           })
         })
         describe('When called with only existing instances', () => {

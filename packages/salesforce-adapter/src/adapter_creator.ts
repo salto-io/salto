@@ -127,7 +127,6 @@ SalesforceConfig => {
   validateClientConfig(config?.value?.client)
 
   validateValidatorsConfig(config?.value?.deploy?.changeValidators)
-  validateValidatorsConfig(config?.value?.validate?.changeValidators)
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 

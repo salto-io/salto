@@ -30,7 +30,7 @@ import {
   DUPLICATE_RULE_METADATA_TYPE,
   INSTALLED_PACKAGE_METADATA,
   PATH_ASSISTANT_METADATA_TYPE,
-  WORKFLOW_TASK_METADATA_TYPE, SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, SBAA_APPROVAL_CONDITION,
+  WORKFLOW_TASK_METADATA_TYPE, SBAA_APPROVAL_RULE, SBAA_CONDITIONS_MET, SBAA_APPROVAL_CONDITION, FIELD_ANNOTATIONS,
 } from '../src/constants'
 import { createInstanceElement, createMetadataObjectType, Types } from '../src/transformers/transformer'
 import { allMissingSubTypes } from '../src/transformers/salesforce_types'
@@ -42,7 +42,14 @@ import { SORT_ORDER } from '../src/change_validators/duplicate_rules_sort_order'
 
 const SBAA_APPROVAL_RULE_TYPE = createCustomObjectType(SBAA_APPROVAL_RULE, {
   fields: {
-    [SBAA_CONDITIONS_MET]: { refType: BuiltinTypes.STRING },
+    [SBAA_CONDITIONS_MET]: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
   },
 })
 
@@ -312,7 +319,14 @@ export const mockTypes = {
   ApprovalRule: SBAA_APPROVAL_RULE_TYPE,
   ApprovalCondition: createCustomObjectType(SBAA_APPROVAL_CONDITION, {
     fields: {
-      [SBAA_APPROVAL_RULE]: { refType: SBAA_APPROVAL_RULE_TYPE },
+      [SBAA_APPROVAL_RULE]: {
+        refType: SBAA_APPROVAL_RULE_TYPE,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+        },
+      },
     },
   }),
   Account: new ObjectType({

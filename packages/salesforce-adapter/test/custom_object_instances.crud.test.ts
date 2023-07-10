@@ -14,9 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
+import {
+  ElemID, InstanceElement, ObjectType, BuiltinTypes, DeployResult, ReferenceExpression,
   isRemovalChange, getChangeData, isInstanceElement, ChangeGroup, isModificationChange,
-  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change } from '@salto-io/adapter-api'
+  isAdditionChange, CORE_ANNOTATIONS, PrimitiveType, PrimitiveTypes, Change, toChange,
+} from '@salto-io/adapter-api'
 import { MockInterface } from '@salto-io/test-utils'
 import { BulkLoadOperation, BulkOptions, Record as SfRecord, Batch } from 'jsforce'
 import { EventEmitter } from 'events'
@@ -26,7 +28,13 @@ import * as constants from '../src/constants'
 import Connection from '../src/client/jsforce'
 import mockAdapter from './adapter'
 import { createCustomObjectType } from './utils'
-import { FIELD_ANNOTATIONS } from '../src/constants'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, CUSTOM_OBJECT_ID_FIELD,
+  FIELD_ANNOTATIONS, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from '../src/constants'
+import { mockTypes } from './mock_elements'
 
 describe('Custom Object Instances CRUD', () => {
   let adapter: SalesforceAdapter
@@ -238,6 +246,7 @@ describe('Custom Object Instances CRUD', () => {
                   defaultIdFields: ['SaltoName', 'NumField', 'Address', 'Name'],
                   overrides: [
                     { objectsRegex: 'TestType__c', idFields: ['Name'] },
+                    { objectsRegex: 'sbaa__ApprovalRule__c|sbaa__ApprovalCondition__c', idFields: ['Id'] },
                   ],
                 },
               },
@@ -1153,6 +1162,173 @@ describe('Custom Object Instances CRUD', () => {
               message: expect.stringContaining('Custom Object Instances change group must have one action'),
             }),
           ]))
+        })
+      })
+    })
+
+    describe('when group is ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP', () => {
+      describe('when no Errors occur during the deploy', () => {
+        beforeEach(async () => {
+          const approvalRule = new InstanceElement(
+            'customApprovalRule',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          const approvalCondition = new InstanceElement(
+            'customApprovalCondition',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
+          }
+          result = await adapter.deploy({
+            changeGroup,
+          })
+        })
+        it('should deploy successfully', () => {
+          expect(result.errors).toBeEmpty()
+          expect(result.appliedChanges).toHaveLength(2)
+          const [approvalRule, approvalCondition] = result.appliedChanges.map(getChangeData).filter(isInstanceElement)
+          expect(approvalRule.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [SBAA_CONDITIONS_MET]: 'Custom',
+          })
+          expect(approvalCondition.value).toEqual({
+            [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
+            [SBAA_APPROVAL_RULE]: approvalRule.value[CUSTOM_OBJECT_ID_FIELD],
+          })
+
+          expect(connection.bulk.load).toHaveBeenCalledTimes(3)
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_RULE, 'insert', expect.anything(), [
+              { Id: undefined, [SBAA_CONDITIONS_MET]: 'All' },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_CONDITION, 'insert', expect.anything(), [
+              { Id: undefined, [SBAA_APPROVAL_RULE]: approvalRule.value[CUSTOM_OBJECT_ID_FIELD] },
+            ]
+          )
+          expect(connection.bulk.load).toHaveBeenCalledWith(
+            SBAA_APPROVAL_RULE, 'update', expect.anything(), [
+              { Id: 'newId0', [SBAA_CONDITIONS_MET]: 'Custom' },
+            ]
+          )
+        })
+      })
+      describe('when some ApprovalRule instances fail to deploy', () => {
+        let approvalRule: InstanceElement
+        let approvalCondition: InstanceElement
+        let failApprovalRule: InstanceElement
+        let failApprovalCondition: InstanceElement
+        beforeEach(async () => {
+          approvalRule = new InstanceElement(
+            '1',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+            },
+          )
+          approvalCondition = new InstanceElement(
+            '1',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          failApprovalRule = new InstanceElement(
+            '2',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'Custom',
+              Name: 'Fail', // Used to indicate which Record should fail in SF
+            },
+          )
+          failApprovalCondition = new InstanceElement(
+            '2',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(failApprovalRule.elemID, failApprovalRule),
+            }
+          )
+          const changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [
+              approvalRule,
+              failApprovalRule,
+              approvalCondition,
+              failApprovalCondition,
+            ].map(instance => toChange({ after: instance })),
+          }
+
+          connection.bulk.load = jest.fn().mockImplementation(
+            (_type: string, _operation: BulkLoadOperation, _opt?: BulkOptions, input?: SfRecord[]) => {
+              const loadEmitter = new EventEmitter()
+              loadEmitter.on('newListener', (_event, _listener) => {
+                // This is a workaround to call emit('close')
+                // that is really called as a side effect to load() inside
+                // jsforce *after* our code listens on.('close')
+                setTimeout(() => loadEmitter.emit('close'), 0)
+              })
+              return {
+                then: () => (Promise.resolve(input?.map((res, index) => ({
+                  id: res.Id || `newId${index}`,
+                  success: res.Name !== 'Fail',
+                  errors: res.Name === 'Fail' ? ['Failed to deploy ApprovalRule with Name Fail'] : [],
+                })))),
+                job: loadEmitter,
+              }
+            }
+          )
+
+          result = await adapter.deploy({
+            changeGroup,
+          })
+        })
+
+        it('should deploy partially', () => {
+          expect(result.errors).toEqual([
+            expect.objectContaining({ elemID: failApprovalRule.elemID }),
+            expect.objectContaining({ elemID: failApprovalCondition.elemID }),
+          ])
+          expect(result.appliedChanges).toHaveLength(2)
+          const [appliedApprovalRule, appliedApprovalCondition] = result.appliedChanges
+            .map(getChangeData)
+            .filter(isInstanceElement)
+          expect(appliedApprovalRule.elemID).toEqual(approvalRule.elemID)
+          expect(appliedApprovalCondition.elemID).toEqual(approvalCondition.elemID)
+        })
+      })
+      describe('when an ApprovalRule instance does not have sbaa__ConditionsMet__c = Custom', () => {
+        let changeGroup: ChangeGroup
+        beforeEach(() => {
+          const approvalRule = new InstanceElement(
+            '1',
+            mockTypes.ApprovalRule,
+            {
+              [SBAA_CONDITIONS_MET]: 'All',
+            },
+          )
+          const approvalCondition = new InstanceElement(
+            '1',
+            mockTypes.ApprovalCondition,
+            {
+              [SBAA_APPROVAL_RULE]: new ReferenceExpression(approvalRule.elemID, approvalRule),
+            }
+          )
+          changeGroup = {
+            groupID: ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+            changes: [approvalRule, approvalCondition].map(instance => toChange({ after: instance })),
+          }
+        })
+        it('should throw an error', async () => {
+          await expect(adapter.deploy({ changeGroup })).rejects.toThrow()
         })
       })
     })

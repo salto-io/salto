@@ -92,7 +92,7 @@ const filterByFile = async (
     if (result) {
       return FILTER_FUNC_NEXT_STEP.RECURSE
     }
-    return FILTER_FUNC_NEXT_STEP.EXIT
+    return FILTER_FUNC_NEXT_STEP.EXCLUDE
   }
   return filterByID(
     valueID,

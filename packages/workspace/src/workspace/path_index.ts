@@ -269,6 +269,22 @@ export const getFromPathIndex = async (
   return []
 }
 
+export const filterByPathHint = async (index: PathIndex, hint:Path, id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
+  const idHints = await index.get(id.getFullName()) ?? []
+  const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
+  if (!isHintMatch) {
+    // This case will be removed, when we fix the .annotation and .field keys in the path index
+    if (idHints.length === 0 && (id.isEqual(new ElemID(id.adapter, id.typeName, 'annotation')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'field')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'attr')))) {
+      return FILTER_FUNC_NEXT_STEP.RECURSE
+    }
+    return FILTER_FUNC_NEXT_STEP.EXCLUDE
+  }
+  if (idHints.length === 1) {
+    return FILTER_FUNC_NEXT_STEP.INCLUDE
+  }
+  return FILTER_FUNC_NEXT_STEP.RECURSE
+}
+
 export const splitElementByPath = async (
   element: Element,
   index: PathIndex
@@ -281,25 +297,10 @@ export const splitElementByPath = async (
     return [clonedElement]
   }
   return (await Promise.all(pathHints.map(async hint => {
-    const filterByPathHint = async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
-      const idHints = await index.get(id.getFullName()) ?? []
-      const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
-      if (!isHintMatch) {
-        // This case will be removed, when we fix the .annotation and .field keys in the path index
-        if (idHints.length === 0 && (id.isEqual(new ElemID(id.adapter, id.typeName, 'annotation')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'field')))) {
-          return FILTER_FUNC_NEXT_STEP.RECURSE
-        }
-        return FILTER_FUNC_NEXT_STEP.EXIT
-      }
-      if (idHints.length === 1) {
-        return FILTER_FUNC_NEXT_STEP.MATCH
-      }
-      return FILTER_FUNC_NEXT_STEP.RECURSE
-    }
     const filteredElement = await filterByID(
       element.elemID,
       element,
-      filterByPathHint
+      id => filterByPathHint(index, hint, id)
     )
 
     if (filteredElement) {

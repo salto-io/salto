@@ -14,11 +14,11 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement,
+  ObjectType, ElemID, InstanceElement, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
-import { ZENDESK } from '../../src/constants'
+import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator, { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
 import { createFilterCreatorParams } from '../utils'
 
@@ -48,6 +48,13 @@ describe('app installation filter', () => {
       settings_objects: [{ name: 'name', value: 'My App' }, { name: 'title', value: 'My App' }],
     }
   )
+  const appOwned = new InstanceElement(
+    'appOwned',
+    new ObjectType({ elemID: new ElemID(ZENDESK, APP_OWNED_TYPE_NAME) }),
+    {
+      id: 1,
+    }
+  )
 
   beforeEach(async () => {
     jest.clearAllMocks()
@@ -57,142 +64,159 @@ describe('app installation filter', () => {
     filter = filterCreator(createFilterCreatorParams({ client })) as FilterType
   })
 
-  it('should remove settings object on fetch', async () => {
-    const appClone = app.clone()
-    await filter.onFetch([appClone])
-    const appCloneWithoutSettingsObject = app.clone()
-    appCloneWithoutSettingsObject.value.settings_objects = undefined
-    expect(appClone).toEqual(appCloneWithoutSettingsObject)
+  describe('onFetch', () => {
+    it('should remove settings object on fetch', async () => {
+      const appInstallation = app.clone()
+      await filter.onFetch([appInstallation])
+      const appCloneWithoutSettingsObject = app.clone()
+      appCloneWithoutSettingsObject.value.settings_objects = undefined
+      expect(appInstallation).toEqual(appCloneWithoutSettingsObject)
+    })
+
+    it('should replace app_id of app_installation with a ReferenceExpression to the corresponding app_owned', async () => {
+      const appInstallation = app.clone()
+      await filter.onFetch([appInstallation, appOwned])
+      expect(appInstallation.value.app_id).toEqual(new ReferenceExpression(appOwned.elemID, appOwned))
+    })
+
+    it('should not modify app_id of app_installation if corresponding app_owned is not found', async () => {
+      const appInstallation = app.clone()
+      appInstallation.value.app_id = 2
+      await filter.onFetch([appInstallation, appOwned])
+      expect(appInstallation.value.app_id).toEqual(2)
+    })
   })
 
-  it('should pass the correct params to deployChange and client on create and wait until the job is done', async () => {
-    const id = 2
-    const clonedApp = app.clone()
-    mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    mockGet.mockResolvedValue({ status: 200, data: { status: 'completed' } })
-    const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'add', data: { after: clonedApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+  describe('deploy', () => {
+    it('should pass the correct params to deployChange and client on create and wait until the job is done', async () => {
+      const id = 2
+      const clonedApp = app.clone()
+      mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockResolvedValue({ status: 200, data: { status: 'completed' } })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledWith({
+        url: '/api/v2/apps/job_statuses/123',
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([{ action: 'add', data: { after: clonedApp } }])
     })
-    expect(mockGet).toHaveBeenCalledTimes(1)
-    expect(mockGet).toHaveBeenCalledWith({
-      url: '/api/v2/apps/job_statuses/123',
+    it('should pass the correct params to deployChange and client on modify', async () => {
+      const id = 2
+      const clonedBeforeApp = app.clone()
+      const clonedAfterApp = app.clone()
+      clonedAfterApp.value.settings = { name: 'My App - Updated', title: 'My App - Updated' }
+      clonedBeforeApp.value.id = id
+      clonedAfterApp.value.id = id
+      mockDeployChange.mockImplementation(async () => ({ id }))
+      const res = await filter.deploy(
+        [{ action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } }]
+      )
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([
+          { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
+        ])
     })
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([{ action: 'add', data: { after: clonedApp } }])
-  })
-  it('should pass the correct params to deployChange and client on modify', async () => {
-    const id = 2
-    const clonedBeforeApp = app.clone()
-    const clonedAfterApp = app.clone()
-    clonedAfterApp.value.settings = { name: 'My App - Updated', title: 'My App - Updated' }
-    clonedBeforeApp.value.id = id
-    clonedAfterApp.value.id = id
-    mockDeployChange.mockImplementation(async () => ({ id }))
-    const res = await filter.deploy(
-      [{ action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } }]
-    )
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+    it('should return error if deployChange failed', async () => {
+      const clonedApp = app.clone()
+      mockDeployChange.mockImplementation(async () => { throw new Error('err') })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
-    expect(mockGet).toHaveBeenCalledTimes(0)
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(0)
-    expect(res.deployResult.appliedChanges).toHaveLength(1)
-    expect(res.deployResult.appliedChanges)
-      .toEqual([
-        { action: 'modify', data: { before: clonedBeforeApp, after: clonedAfterApp } },
-      ])
-  })
-  it('should return error if deployChange failed', async () => {
-    const clonedApp = app.clone()
-    mockDeployChange.mockImplementation(async () => { throw new Error('err') })
-    const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'add', data: { after: clonedApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+    it('should return error if client request failed', async () => {
+      const id = 2
+      const clonedApp = app.clone()
+      mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockImplementation(async () => { throw new Error('err') })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledWith({
+        url: '/api/v2/apps/job_statuses/123',
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
-    expect(mockGet).toHaveBeenCalledTimes(0)
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.appliedChanges).toHaveLength(0)
-  })
-  it('should return error if client request failed', async () => {
-    const id = 2
-    const clonedApp = app.clone()
-    mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    mockGet.mockImplementation(async () => { throw new Error('err') })
-    const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'add', data: { after: clonedApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+    it('should return error if job status is failed', async () => {
+      const id = 2
+      const clonedApp = app.clone()
+      mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(1)
+      expect(mockGet).toHaveBeenCalledWith({
+        url: '/api/v2/apps/job_statuses/123',
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
-    expect(mockGet).toHaveBeenCalledTimes(1)
-    expect(mockGet).toHaveBeenCalledWith({
-      url: '/api/v2/apps/job_statuses/123',
+    it('should return error if create did not return job id', async () => {
+      const id = 2
+      const clonedApp = app.clone()
+      mockDeployChange.mockImplementation(async () => ({ id }))
+      mockGet = jest.spyOn(client, 'getSinglePage')
+      mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: clonedApp } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
+      })
+      expect(mockGet).toHaveBeenCalledTimes(0)
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(1)
+      expect(res.deployResult.appliedChanges).toHaveLength(0)
     })
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.appliedChanges).toHaveLength(0)
-  })
-  it('should return error if job status is failed', async () => {
-    const id = 2
-    const clonedApp = app.clone()
-    mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
-    const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'add', data: { after: clonedApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
-    })
-    expect(mockGet).toHaveBeenCalledTimes(1)
-    expect(mockGet).toHaveBeenCalledWith({
-      url: '/api/v2/apps/job_statuses/123',
-    })
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.appliedChanges).toHaveLength(0)
-  })
-  it('should return error if create did not return job id', async () => {
-    const id = 2
-    const clonedApp = app.clone()
-    mockDeployChange.mockImplementation(async () => ({ id }))
-    mockGet = jest.spyOn(client, 'getSinglePage')
-    mockGet.mockResolvedValue({ status: 200, data: { status: 'failed' } })
-    const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
-    expect(mockDeployChange).toHaveBeenCalledTimes(1)
-    expect(mockDeployChange).toHaveBeenCalledWith({
-      change: { action: 'add', data: { after: clonedApp } },
-      client: expect.anything(),
-      endpointDetails: expect.anything(),
-      fieldsToIgnore: ['app', 'settings.title', 'settings_objects'],
-    })
-    expect(mockGet).toHaveBeenCalledTimes(0)
-    expect(res.leftoverChanges).toHaveLength(0)
-    expect(res.deployResult.errors).toHaveLength(1)
-    expect(res.deployResult.appliedChanges).toHaveLength(0)
   })
 })

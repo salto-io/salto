@@ -17,7 +17,7 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   Change, getChangeData, InstanceElement, isAdditionChange, isAdditionOrModificationChange,
-  isInstanceElement, Element,
+  isInstanceElement, Element, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { retry } from '@salto-io/lowerdash'
 import { safeJsonStringify, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -25,6 +25,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import ZendeskClient from '../client/client'
+import { APP_OWNED_TYPE_NAME } from '../constants'
 
 export const APP_INSTALLATION_TYPE_NAME = 'app_installation'
 
@@ -80,17 +81,37 @@ Promise<void> => {
   )
 }
 
+const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
+  const appOwnedById = _.keyBy<InstanceElement>(
+    instances
+      .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME),
+    e => e.value.id
+  )
+
+  instances
+    .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
+    .forEach(async appInstallation => {
+      const appOwnedElement = appOwnedById[appInstallation.value.app_id]
+      if (appOwnedElement) {
+        appInstallation.value.app_id = new ReferenceExpression(appOwnedElement.elemID, appOwnedElement)
+      }
+    })
+}
+
 /**
- * Deploys app installation
+ * Edits app_installation value on fetch, Deploys app_installation on deploy
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'appsFilter',
-  onFetch: async (elements: Element[]) =>
+  onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)
       .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME).forEach(e => {
         delete e.value.settings_objects
-      }),
+      })
+
+    connectAppOwnedToInstallation(elements.filter(isInstanceElement))
+  },
   deploy: async (changes: Change<InstanceElement>[]) => {
     const [relevantChanges, leftoverChanges] = _.partition(
       changes,

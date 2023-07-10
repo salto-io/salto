@@ -312,7 +312,7 @@ describe('expression language filter', () => {
             }),
           } } }
         )
-        it('should return error for changes with tmeplate expression we could not resolve', async () => {
+        it('should return error for changes with template expression we could not resolve', async () => {
           const changes = [
             toChange({ after: groupRuleWithTemplate.clone() }), toChange({ after: groupRuleInvalidTemplate.clone() }),
           ]
@@ -321,9 +321,9 @@ describe('expression language filter', () => {
           const res = await filter.deploy(changes)
           expect(res.leftoverChanges.length).toEqual(1)
           expect(res.deployResult.errors.length).toEqual(1)
-          expect(res.deployResult.errors[0]).toEqual(
-            new Error('Error parsing Okta expression language expression for instance groupRuleTest2 of type GroupRule')
-          )
+          expect(res.deployResult.errors[0]).toEqual({
+            severity: 'Error', message: 'Error parsing Okta expression language expression', elemID: groupRuleInvalidTemplate.elemID,
+          })
         })
       })
 

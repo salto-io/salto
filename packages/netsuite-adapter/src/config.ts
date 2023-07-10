@@ -524,7 +524,7 @@ DeployParams['additionalDependencies']
   },
 })
 
-export type ChangeValidatorName = (
+export type NetsuiteValidatorName = (
   | 'exchangeRate'
   | 'currencyUndeployableFields'
   | 'workflowAccountSpecificValues'
@@ -547,12 +547,21 @@ export type ChangeValidatorName = (
   | 'undeployableConfigFeatures'
   | 'extraReferenceDependencies'
   | 'rolePermission'
+)
+
+export type NonSuiteAppValidatorName = (
   | 'removeFileCabinet'
   | 'removeStandardTypes'
-  | 'fileCabinetInternalIds'
-  )
+)
 
-type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+export type OnlySuiteAppValidatorName = (
+  | 'fileCabinetInternalIds'
+)
+
+type ChangeValidatorConfig = Record<
+  NetsuiteValidatorName & NonSuiteAppValidatorName & OnlySuiteAppValidatorName,
+  boolean
+>
 
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
   elemID: new ElemID(NETSUITE, 'changeValidatorConfig'),

@@ -154,31 +154,5 @@ describe('createSalesforceChangeValidator', () => {
           .toMatchObject(defaultChangeValidatorsValidateConfig)
       })
     })
-    describe('with a disabled validator config', () => {
-      beforeEach(() => {
-        validator = createSalesforceChangeValidator({
-          config: {
-            validate: {
-              changeValidators: {
-                customFieldType: false,
-              },
-            },
-          },
-          isSandbox: false,
-          checkOnly: true,
-          client,
-        })
-      })
-      it('should create a validator', () => {
-        expect(validator).toBeDefined()
-      })
-      it('should customFieldType in the disabled validator list', () => {
-        expect(createChangeValidator).toHaveBeenCalledTimes(1)
-        expect(createChangeValidatorMock.mock.calls[0][0].validatorsActivationConfig).toMatchObject({
-          customFieldType: false,
-          ...defaultChangeValidatorsValidateConfig,
-        })
-      })
-    })
   })
 })

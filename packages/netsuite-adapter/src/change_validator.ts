@@ -46,7 +46,12 @@ import currencyUndeployableFieldsValidator from './change_validators/currency_un
 import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_internal_ids'
 import rolePermissionValidator from './change_validators/role_permission_ids'
 import NetsuiteClient from './client/client'
-import { AdditionalDependencies, ChangeValidatorName } from './config'
+import {
+  AdditionalDependencies,
+  NetsuiteValidatorName,
+  NonSuiteAppValidatorName,
+  OnlySuiteAppValidatorName,
+} from './config'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 
@@ -55,7 +60,7 @@ const { createChangeValidator } = deployment.changeValidators
 
 const defaultChangeValidators = deployment.changeValidators.getDefaultChangeValidators()
 
-const netsuiteChangeValidators: Partial<Record<ChangeValidatorName, NetsuiteChangeValidator>> = {
+const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeValidator> = {
   exchangeRate: exchangeRateValidator,
   currencyUndeployableFields: currencyUndeployableFieldsValidator,
   workflowAccountSpecificValues: workflowAccountSpecificValuesValidator,
@@ -80,12 +85,12 @@ const netsuiteChangeValidators: Partial<Record<ChangeValidatorName, NetsuiteChan
   rolePermission: rolePermissionValidator,
 }
 
-const nonSuiteAppValidators: Partial<Record<ChangeValidatorName, NetsuiteChangeValidator>> = {
+const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {
   removeFileCabinet: removeFileCabinetValidator,
   removeStandardTypes: removeStandardTypesValidator,
 }
 
-const onlySuiteAppValidators: Partial<Record<ChangeValidatorName, NetsuiteChangeValidator>> = {
+const onlySuiteAppValidators: Record<OnlySuiteAppValidatorName, NetsuiteChangeValidator> = {
   fileCabinetInternalIds: fileCabinetInternalIdsValidator,
 }
 
@@ -155,9 +160,8 @@ const getChangeValidator: ({
   ) =>
     async (changes, elementSource) => {
       const netsuiteValidators = withSuiteApp
-        // Partial<> converts to Record<string, NetsuiteChangeValidator | undefined>, we need to convert back
-        ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators } as Record<string, NetsuiteChangeValidator>
-        : { ...netsuiteChangeValidators, ...nonSuiteAppValidators } as Record<string, NetsuiteChangeValidator>
+        ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
+        : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
       // Converts NetsuiteChangeValidator to ChangeValidator
       const validators: Record<string, ChangeValidator> = _.mapValues(

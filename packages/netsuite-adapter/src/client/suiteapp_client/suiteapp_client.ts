@@ -246,10 +246,10 @@ export default class SuiteAppClient {
       const results = await this.sendRestletRequest('sysInfo')
       return this.parseSystemInformation(results)
     } catch (error) {
-      log.error('error was thrown in getSystemInformation', { error })
       if (error instanceof InvalidSuiteAppCredentialsError) {
         throw error
       }
+      log.error('error was thrown in getSystemInformation', { error })
       return undefined
     }
   }

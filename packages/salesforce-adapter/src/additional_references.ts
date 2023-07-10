@@ -42,7 +42,6 @@ import {
 } from './constants'
 
 const { awu } = collections.asynciterable
-const { makeArray } = collections.array
 
 const CUSTOM_APPLICATION_TYPE = 'CustomApplication'
 const APEX_CLASS_TYPE = 'ApexClass'
@@ -59,7 +58,6 @@ const generateRefsFromProfileOrPermissionSet = async (
   profilesAndPermissionSets: InstanceElement[],
   potentialTarget: Readonly<Element>,
   profileSection: string,
-  profileSectionField?: string,
 ): Promise<ReferenceMapping[]> => {
   const apiName = await safeApiName(potentialTarget)
   if (apiName === undefined) {
@@ -67,23 +65,12 @@ const generateRefsFromProfileOrPermissionSet = async (
   }
   return profilesAndPermissionSets
     .filter(profileOrPermissionSet => _.get(profileOrPermissionSet.value[profileSection], apiName))
-    .flatMap(profileOrPermissionSet => {
-      const sectionEntry = _.get(profileOrPermissionSet.value[profileSection], apiName)
-      // For layoutAssignments, every entry is an array
-      const shouldAddArrayIndex = Array.isArray(sectionEntry)
-      return makeArray(sectionEntry)
-        .map((_unused, index) => {
-          const refSourceField = [
-            ...apiName.split(API_NAME_SEPARATOR),
-            ...shouldAddArrayIndex ? [`[${index}]`] : [],
-            ...makeArray(profileSectionField),
-          ]
-          return {
-            source: profileOrPermissionSet.elemID.createNestedID(profileSection, ...refSourceField),
-            target: potentialTarget.elemID,
-          }
-        })
-    })
+    .flatMap(profileOrPermissionSet => (
+      {
+        source: profileOrPermissionSet.elemID.createNestedID(profileSection, ...apiName.split(API_NAME_SEPARATOR)),
+        target: potentialTarget.elemID,
+      }
+    ))
 }
 
 export const getAdditionalReferences: GetAdditionalReferencesFunc = async changes => {
@@ -119,25 +106,25 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .flatMap(async field => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, field, FIELD_PERMISSIONS))
 
   const customAppsRefs = awu(addedInstancesByType[CUSTOM_APPLICATION_TYPE] ?? [])
-    .flatMap(async customApp => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, customApp, CUSTOM_APP_SECTION, 'application'))
+    .flatMap(async customApp => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, customApp, CUSTOM_APP_SECTION))
 
   const apexClassRefs = awu(addedInstancesByType[APEX_CLASS_TYPE] ?? [])
-    .flatMap(async apexClass => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, apexClass, APEX_CLASS_SECTION, 'apexClass'))
+    .flatMap(async apexClass => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, apexClass, APEX_CLASS_SECTION))
 
   const flowRefs = awu(addedInstancesByType[FLOW_METADATA_TYPE] ?? [])
-    .flatMap(async flow => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, flow, FLOW_SECTION, 'flow'))
+    .flatMap(async flow => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, flow, FLOW_SECTION))
 
   const layoutRefs = awu(addedInstancesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
-    .flatMap(async layout => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, layout, LAYOUTS_SECTION, 'layout'))
+    .flatMap(async layout => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, layout, LAYOUTS_SECTION))
 
   const apexPageRefs = awu(addedInstancesByType[APEX_PAGE_TYPE] ?? [])
-    .flatMap(async apexPage => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, apexPage, APEX_PAGE_SECTION, 'apexPage'))
+    .flatMap(async apexPage => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, apexPage, APEX_PAGE_SECTION))
 
   const recordTypeRefs = awu(addedInstancesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
-    .flatMap(async recordType => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, recordType, RECORD_TYPE_SECTION, 'recordType'))
+    .flatMap(async recordType => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, recordType, RECORD_TYPE_SECTION))
 
   const objectRefs = awu(customObjects)
-    .flatMap(async object => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, object, OBJECT_SECTION, 'object'))
+    .flatMap(async object => generateRefsFromProfileOrPermissionSet(profilesAndPermissionSets, object, OBJECT_SECTION))
 
   return fieldPermissionsRefs
     .concat(customAppsRefs)

@@ -150,8 +150,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication', 'application'), target: customApp.elemID },
-        { source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication', 'application'), target: customApp.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
+        { source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
       ])
     })
   })
@@ -185,8 +185,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('classAccesses', 'SomeApexClass', 'apexClass'), target: apexClass.elemID },
-        { source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass', 'apexClass'), target: apexClass.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID },
+        { source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID },
       ])
     })
   })
@@ -220,8 +220,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('flowAccesses', 'SomeFlow', 'flow'), target: flow.elemID },
-        { source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow', 'flow'), target: flow.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID },
+        { source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID },
       ])
     })
   })
@@ -256,8 +256,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout', '[0]', 'layout'), target: layout.elemID },
-        { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout', '[0]', 'layout'), target: layout.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
+        { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
       ])
     })
   })
@@ -293,8 +293,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('objectPermissions', 'Account', 'object'), target: customObject.elemID },
-        { source: profileInstance.elemID.createNestedID('objectPermissions', 'Account', 'object'), target: customObject.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID },
+        { source: profileInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID },
       ])
     })
   })
@@ -329,8 +329,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage', 'apexPage'), target: apexPage.elemID },
-        { source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage', 'apexPage'), target: apexPage.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
+        { source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
       ])
     })
   })
@@ -368,8 +368,8 @@ describe('getAdditionalReferences', () => {
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType', 'recordType'), target: recordType.elemID },
-        { source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType', 'recordType'), target: recordType.elemID },
+        { source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
+        { source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
       ])
     })
   })

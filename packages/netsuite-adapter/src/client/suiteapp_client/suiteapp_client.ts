@@ -406,13 +406,18 @@ export default class SuiteAppClient {
     }
   }
 
-  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
+  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<SystemInformation> {
     const client = new SuiteAppClient({
       credentials,
       globalLimiter: new Bottleneck(),
       instanceLimiter: () => false,
     })
-    await client.sendRestletRequest('sysInfo')
+    const sysInfo = await client.getSystemInformation()
+
+    if (sysInfo === undefined) {
+      throw new Error('Failed getting SuiteApp system information')
+    }
+    return sysInfo
   }
 
   private async safeAxiosPost(

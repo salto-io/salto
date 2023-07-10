@@ -27,7 +27,7 @@ import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credential
 import SdfClient from './sdf_client'
 import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
   getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
@@ -97,19 +97,30 @@ export default class NetsuiteClient {
 
   @NetsuiteClient.logDecorator
   static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
-    if (isSuiteAppCredentials(credentials)) {
-      try {
-        await SuiteAppClient.validateCredentials(credentials)
-      } catch (e) {
-        e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-        throw new CredentialError(e.message)
+    const systemInformation = await (async () => {
+      if (isSuiteAppCredentials(credentials)) {
+        try {
+          return await SuiteAppClient.validateCredentials(credentials)
+        } catch (e) {
+          e.message = `Salto SuiteApp Authentication failed. ${e.message}`
+          throw new CredentialError(e.message)
+        }
+      } else {
+        log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
+        return undefined
       }
-    } else {
-      log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
-    }
+    })()
 
     try {
-      return await SdfClient.validateCredentials(credentials)
+      const { accountId } = await SdfClient.validateCredentials(credentials)
+      if (systemInformation?.envType === undefined) {
+        return { accountId }
+      }
+      return {
+        accountId,
+        isProduction: systemInformation.envType === EnvType.PRODUCTION,
+        accountType: EnvType[systemInformation.envType],
+      }
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
       throw new CredentialError(e)

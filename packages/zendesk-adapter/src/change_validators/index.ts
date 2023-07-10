@@ -65,3 +65,4 @@ export { additionOfTicketStatusForTicketFormValidator } from './ticket_status_in
 export { defaultDynamicContentItemVariantValidator } from './default_dynamic_content_item_variant'
 export { featureActivationValidator } from './feature_activation'
 export { deflectionActionValidator } from './deflection_action'
+export { standardFieldsValidator } from './standard_fields'

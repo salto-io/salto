@@ -514,6 +514,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
         additionalDependencies: this.additionalDependencies,
         filtersRunner: changesGroupId => this.createFiltersRunner({ changesGroupId }),
         elementsSource: this.elementsSource,
+        validatorsActivationConfig: this.userConfig.deploy?.changeValidators,
       }),
       getChangeGroupIds: getChangeGroupIdsFunc(this.client.isSuiteAppConfigured()),
       dependencyChanger,

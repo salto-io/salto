@@ -16,13 +16,17 @@
 import _ from 'lodash'
 import { ElemID, ObjectType, CORE_ANNOTATIONS, BuiltinTypes, ListType, MapType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
+import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { WORKATO, PROPERTY_TYPE, ROLE_TYPE, API_COLLECTION_TYPE, FOLDER_TYPE, RECIPE_TYPE, CONNECTION_TYPE, API_ENDPOINT_TYPE, API_CLIENT_TYPE, API_ACCESS_PROFILE_TYPE, RECIPE_CODE_TYPE } from './constants'
+
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
   createDucktypeAdapterApiConfigType,
   validateDuckTypeFetchConfig,
+  createUserDeployConfigType,
 } = configUtils
 
 export const DEFAULT_SERVICE_ID_FIELD = 'id'
@@ -37,7 +41,7 @@ export const FIELDS_TO_HIDE: configUtils.FieldToHideType[] = []
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
-
+export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 
 export type WorkatoClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
@@ -51,6 +55,7 @@ export type WorkatoConfig = {
   [CLIENT_CONFIG]?: WorkatoClientConfig
   [FETCH_CONFIG]: WorkatoFetchConfig
   [API_DEFINITIONS_CONFIG]: WorkatoApiConfig
+  [DEPLOY_CONFIG]?: UserDeployConfig
 }
 
 export const SUPPORTED_TYPES = {
@@ -224,6 +229,22 @@ export const DEFAULT_CONFIG: WorkatoConfig = {
   },
 }
 
+export type ChangeValidatorName = (
+  | 'deployNotSupported'
+)
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(WORKATO, 'changeValidatorConfig'),
+  fields: {
+    deployNotSupported: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = new ObjectType({
   elemID: new ElemID(WORKATO),
   fields: {
@@ -242,6 +263,9 @@ export const configType = new ObjectType({
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createDucktypeAdapterApiConfigType({ adapter: WORKATO }),
+    },
+    [DEPLOY_CONFIG]: {
+      refType: createUserDeployConfigType(WORKATO, changeValidatorConfigType),
     },
   },
   annotations: {

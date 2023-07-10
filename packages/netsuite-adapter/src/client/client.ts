@@ -95,35 +95,44 @@ export default class NetsuiteClient {
     this.url = new URL(`https://${toUrlAccountId(this.sdfClient.getCredentials().accountId)}.app.netsuite.com`)
   }
 
-  @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
-    const systemInformation = await (async () => {
-      if (isSuiteAppCredentials(credentials)) {
-        try {
-          return await SuiteAppClient.validateCredentials(credentials)
-        } catch (e) {
-          e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-          throw new CredentialError(e.message)
-        }
-      } else {
-        log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
-        return undefined
+  private static async suiteAppValidateCredentials(
+    credentials: Credentials,
+  ): Promise<SystemInformation | undefined> {
+    if (isSuiteAppCredentials(credentials)) {
+      try {
+        return await SuiteAppClient.validateCredentials(credentials)
+      } catch (e) {
+        e.message = `Salto SuiteApp Authentication failed. ${e.message}`
+        throw new CredentialError(e.message)
       }
-    })()
+    } else {
+      log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
+      return undefined
+    }
+  }
 
+  private static async sdfValidateCredentials(
+    credentials: Credentials,
+  ): Promise<AccountInfo> {
     try {
-      const { accountId } = await SdfClient.validateCredentials(credentials)
-      if (systemInformation?.envType === undefined) {
-        return { accountId }
-      }
-      return {
-        accountId,
-        isProduction: systemInformation.envType === EnvType.PRODUCTION,
-        accountType: EnvType[systemInformation.envType],
-      }
+      return await SdfClient.validateCredentials(credentials)
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
       throw new CredentialError(e)
+    }
+  }
+
+  @NetsuiteClient.logDecorator
+  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
+    const systemInformation = await NetsuiteClient.suiteAppValidateCredentials(credentials)
+    const { accountId } = await NetsuiteClient.sdfValidateCredentials(credentials)
+    if (systemInformation?.envType === undefined) {
+      return { accountId }
+    }
+    return {
+      accountId,
+      isProduction: systemInformation.envType === EnvType.PRODUCTION,
+      accountType: EnvType[systemInformation.envType],
     }
   }
 

@@ -490,7 +490,12 @@ export default class NetsuiteClient {
   }
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
-    return this.suiteAppClient?.getSystemInformation()
+    try {
+      return await this.suiteAppClient?.getSystemInformation()
+    } catch (error) {
+      log.error('The following error was thrown in getSystemInformation', { error })
+      return undefined
+    }
   }
 
   public isSuiteAppConfigured(): boolean {

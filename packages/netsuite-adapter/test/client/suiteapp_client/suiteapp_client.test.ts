@@ -310,9 +310,13 @@ describe('SuiteAppClient', () => {
       })
 
       describe('request failure', () => {
-        it('exception thrown', async () => {
+        it('general exception thrown', async () => {
           mockAxiosAdapter.onPost().reply(() => [])
           expect(await client.getSystemInformation()).toBeUndefined()
+        })
+        test.each([401, 403])('Post request fails with error code %d - should throw InvalidSuiteAppCredentialsError', async errorCode => {
+          mockAxiosAdapter.onPost().replyOnce(errorCode)
+          await expect(client.getSystemInformation()).rejects.toThrow(InvalidSuiteAppCredentialsError)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, { status: 'success', results: {} })

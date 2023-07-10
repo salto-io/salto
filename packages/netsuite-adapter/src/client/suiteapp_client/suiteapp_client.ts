@@ -247,6 +247,9 @@ export default class SuiteAppClient {
       return this.parseSystemInformation(results)
     } catch (error) {
       log.error('error was thrown in getSystemInformation', { error })
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
       return undefined
     }
   }

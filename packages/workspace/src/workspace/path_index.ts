@@ -44,20 +44,21 @@ export type PathIndex = RemoteMap<Path[]>
 const getValuePathHints = (fragments: Fragment<Value>[], elemID: ElemID): PathHint[] => {
   // We only have 3 cases to handle: Object type (which can be split among files)
   // or a single list/primitive value.
+  const valueTopLevelKey = [{
+    key: elemID.getFullName(),
+    value: makeArray(fragments.map(f => f.path)),
+  }]
   if (fragments.length === 1) {
-    return [{
-      key: elemID.getFullName(),
-      value: [fragments[0].path],
-    }]
+    return valueTopLevelKey
   }
   if (_.every(fragments, f => _.isPlainObject(f.value))) {
     const allKeys = _.uniq(fragments.flatMap(f => Object.keys(f.value)))
-    return allKeys.flatMap(key => getValuePathHints(
+    return valueTopLevelKey.concat(allKeys.flatMap(key => getValuePathHints(
       fragments
         .filter(f => values.isDefined(f.value[key]))
         .map(f => ({ value: f.value[key], path: f.path })),
       elemID.createNestedID(key)
-    ))
+    )))
   }
   // This will only be called if we have problematic input - different value types, or a list which
   // is split between different fragments. In each case, a path hint makes no sense.
@@ -70,6 +71,9 @@ const getAnnotationTypesPathHints = (
   const fragmentsWithNonEmptyAnnoTypes = fragments.filter(
     f => !_.isEmpty(f.value.annotationRefTypes)
   )
+  if (_.isEmpty(fragmentsWithNonEmptyAnnoTypes)) {
+    return []
+  }
   const annotationsTopLevelKey = [{
     key: fragmentsWithNonEmptyAnnoTypes[0].value.elemID
       .createNestedID('annotation').getFullName(),
@@ -89,6 +93,9 @@ const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
 ): PathHint[] => {
   const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.annotations))
+  if (_.isEmpty(fragmentsWithFields)) {
+    return []
+  }
   const attrTopLevelKey = [{
     key: fragmentsWithFields[0].value.elemID.createNestedID('attr').getFullName(),
     value: makeArray(fragmentsWithFields.map(f => f.path)),
@@ -130,6 +137,9 @@ const getFieldsPathHints = (
   fragments: Fragment<ObjectType>[],
 ): PathHint[] => {
   const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.fields))
+  if (_.isEmpty(fragmentsWithFields)) {
+    return []
+  }
   const fieldTopLevelKey = [{
     key: fragmentsWithFields[0].value.elemID.createNestedID('field').getFullName(),
     value: makeArray(fragmentsWithFields.map(f => f.path)),

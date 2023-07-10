@@ -31,10 +31,10 @@ import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
   SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT,
+  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT, ID_FIELD,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance, isBundleType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
@@ -61,6 +61,12 @@ const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
       const fType = await f.getType()
       return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
     })
+const getServiceIdFieldName = (type: ObjectType): string => {
+  if (isBundleType(type)) {
+    return ID_FIELD
+  }
+  return isStandardType(type) ? SCRIPT_ID : PATH
+}
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
@@ -72,10 +78,10 @@ export const createInstanceElement = async (
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
     }
-    if (!isStandardType(type) && !isFileCabinetType(type)) {
+    if (!isStandardType(type) && !isFileCabinetType(type) && !isBundleType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isStandardType(type) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = getServiceIdFieldName(type)
     const serviceIds: ServiceIds = {
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
@@ -106,7 +112,7 @@ export const createInstanceElement = async (
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
-    if (value === '') {
+    if (value === '' || value === null) {
       // We sometimes get empty strings that we want to filter out
       return undefined
     }

@@ -2,15 +2,14 @@
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 import os
-import pyotp
 import re
 import sys
 import time
 import logging
 from pathlib import Path
-sys.path.append(scripts_path)
-from scripts.role_permission_generation.permissions_generator import main as generate_permissions
+from role_permission_generation.permissions_generator import main as generate_permissions
 
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
@@ -374,18 +373,17 @@ def generate_type_name_to_script_id_prefix():
     return type_name_to_script_id_prefix
 
 
-def login(username, password, secret_key_2fa):
+def login(username, password, secret_key_2fa, webpage):
     logging.info('Trying to login to NetSuite documentation')
     # submit username & password
-    time.sleep(1)
+    time.sleep(2)
     webpage.find_element(By.XPATH, '//*[@id="email"]').send_keys(username)
     webpage.find_element(By.XPATH, '//*[@id="password"]').send_keys(password)
     webpage.find_element(By.XPATH, '//*[@id="login-submit"]').click()
-    time.sleep(2)
 
     # generate 2FA token and submit
-    webpage.find_element(By.XPATH, '//*[@id="uif42"]').send_keys(secret_key_2fa)
-    webpage.find_element(By.XPATH, '//*[@id="uif111"]').click()
+    WebDriverWait(webpage, timeout=3).until(lambda w: w.find_element(By.XPATH, '//*[@id="uif49"]')).send_keys(secret_key_2fa)
+    webpage.find_element(By.XPATH, '//*[@id="uif70"]').click()
     time.sleep(1)
 
 
@@ -448,11 +446,11 @@ def add_types_defs(type_name_to_types_defs):
         type_name_to_types_defs[target_top_level][INNER_TYPE_NAME_TO_DEF][target] = type_def
 
 
-def parse_netsuite_types(account_id, username, password, secret_key_2fa):
+def parse_netsuite_types(account_id, username, password, secret_key_2fa, webpage):
     try:
         logging.info('Starting to parse Netsuite types')
         webpage.get(script_ids_prefix_link_template.format(account_id = account_id))
-        login(username, password, secret_key_2fa)
+        login(username, password, secret_key_2fa, webpage)
         logging.info('Logged in')
 
         type_name_to_script_id_prefix = generate_type_name_to_script_id_prefix()
@@ -768,10 +766,9 @@ types_to_copy = [
     ('publisheddashboard_dashboards_dashboard_centercolumn', 'publisheddashboard_dashboards_dashboard_rightcolumn'),
 ]
 
-webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
-def main():
+def main(webpage):
     account_id, username, password, secret_key_2fa = (sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
-    type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa)
+    type_name_to_types_defs, enum_to_possible_values = parse_netsuite_types(account_id, username, password, secret_key_2fa, webpage)
     generate_enums_file(enum_to_possible_values)
     logging.info('Generated enums file')
     generate_file_per_type(type_name_to_types_defs)
@@ -782,9 +779,10 @@ def main():
     logging.info('VALIDATE file & folder TYPES THEY WERE NOT GENERATED USING THE SCRIPT!')
     logging.info('After you generated the types fetch saved search from our development account and make sure that it parses correctly, if not, please edit its type definition at parsed_saved_search.ts')
 
-
-main()
-generate_permissions()
+if __name__=='__main__':
+  webpage = webdriver.Chrome() # the web page is defined here to avoid passing it to all inner methods
+  main(webpage)
+  generate_permissions()
 
 
 

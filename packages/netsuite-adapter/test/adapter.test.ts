@@ -1227,6 +1227,7 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        getInstalledBundles: () => [],
         getCustomRecords: getCustomRecordsMock,
       } as unknown as SuiteAppClient
 
@@ -1288,6 +1289,7 @@ describe('Adapter', () => {
                 fieldsDef: [],
                 data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]
           ),
+          getInstalledBundles: () => [],
           getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 

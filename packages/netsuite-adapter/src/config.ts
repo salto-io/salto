@@ -21,6 +21,7 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType, safeJsonStringify, formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
+import { config as configUtils } from '@salto-io/adapter-components'
 import {
   CURRENCY, CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_NAME_PREFIX, DATASET, EXCHANGE_RATE,
   NETSUITE, PERMISSIONS, SAVED_SEARCH, WORKBOOK,
@@ -30,6 +31,8 @@ import { ITEM_TYPE_TO_SEARCH_STRING } from './data_elements/types'
 import { isCustomRecordTypeName, netsuiteSupportedTypes } from './types'
 import { FetchByQueryFailures } from './change_validators/safe_deploy'
 import { FailedFiles } from './client/types'
+
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 
@@ -71,7 +74,7 @@ export type AdditionalDependencies = {
   exclude: AdditionalSdfDeployDependencies
 }
 
-export type DeployParams = {
+export type DeployParams = UserDeployConfig & {
   warnOnStaleWorkspaceData?: boolean
   validate?: boolean
   deployReferencedElements?: boolean
@@ -86,6 +89,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   validate: 'validate',
   deployReferencedElements: 'deployReferencedElements',
   additionalDependencies: 'additionalDependencies',
+  changeValidators: 'changeValidators',
 }
 
 type MaxInstancesPerType = {
@@ -487,6 +491,8 @@ const fetchConfigType = createMatchingObjectType<FetchParams>({
     authorInformation: { refType: authorInfoConfig },
     strictInstanceStructure: { refType: BuiltinTypes.BOOLEAN },
     fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
+    addAlias: { refType: BuiltinTypes.BOOLEAN },
+    addBundles: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -520,18 +526,89 @@ DeployParams['additionalDependencies']
   },
 })
 
-const deployConfigType = createMatchingObjectType<DeployParams>({
-  elemID: new ElemID(NETSUITE, 'deployConfig'),
+export type NetsuiteValidatorName = (
+  | 'exchangeRate'
+  | 'currencyUndeployableFields'
+  | 'workflowAccountSpecificValues'
+  | 'accountSpecificValues'
+  | 'dataAccountSpecificValues'
+  | 'removeSdfElements'
+  | 'instanceChanges'
+  | 'reportTypesMove'
+  | 'immutableChanges'
+  | 'inactive'
+  | 'removeListItem'
+  | 'file'
+  | 'uniqueFields'
+  | 'subInstances'
+  | 'standardTypesInvalidValues'
+  | 'mappedListsIndexes'
+  | 'notYetSupportedValues'
+  | 'configChanges'
+  | 'suiteAppConfigElements'
+  | 'undeployableConfigFeatures'
+  | 'extraReferenceDependencies'
+  | 'rolePermission'
+)
+
+export type NonSuiteAppValidatorName = (
+  | 'removeFileCabinet'
+  | 'removeStandardTypes'
+)
+
+export type OnlySuiteAppValidatorName = (
+  | 'fileCabinetInternalIds'
+)
+
+type ChangeValidatorConfig = Record<
+  NetsuiteValidatorName & NonSuiteAppValidatorName & OnlySuiteAppValidatorName,
+  boolean
+>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(NETSUITE, 'changeValidatorConfig'),
   fields: {
-    warnOnStaleWorkspaceData: { refType: BuiltinTypes.BOOLEAN },
-    validate: { refType: BuiltinTypes.BOOLEAN },
-    deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
-    additionalDependencies: { refType: additionalDependenciesType },
+    exchangeRate: { refType: BuiltinTypes.BOOLEAN },
+    currencyUndeployableFields: { refType: BuiltinTypes.BOOLEAN },
+    workflowAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
+    accountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
+    dataAccountSpecificValues: { refType: BuiltinTypes.BOOLEAN },
+    removeSdfElements: { refType: BuiltinTypes.BOOLEAN },
+    instanceChanges: { refType: BuiltinTypes.BOOLEAN },
+    reportTypesMove: { refType: BuiltinTypes.BOOLEAN },
+    immutableChanges: { refType: BuiltinTypes.BOOLEAN },
+    inactive: { refType: BuiltinTypes.BOOLEAN },
+    removeListItem: { refType: BuiltinTypes.BOOLEAN },
+    file: { refType: BuiltinTypes.BOOLEAN },
+    uniqueFields: { refType: BuiltinTypes.BOOLEAN },
+    subInstances: { refType: BuiltinTypes.BOOLEAN },
+    standardTypesInvalidValues: { refType: BuiltinTypes.BOOLEAN },
+    mappedListsIndexes: { refType: BuiltinTypes.BOOLEAN },
+    notYetSupportedValues: { refType: BuiltinTypes.BOOLEAN },
+    configChanges: { refType: BuiltinTypes.BOOLEAN },
+    suiteAppConfigElements: { refType: BuiltinTypes.BOOLEAN },
+    undeployableConfigFeatures: { refType: BuiltinTypes.BOOLEAN },
+    extraReferenceDependencies: { refType: BuiltinTypes.BOOLEAN },
+    rolePermission: { refType: BuiltinTypes.BOOLEAN },
+    removeFileCabinet: { refType: BuiltinTypes.BOOLEAN },
+    removeStandardTypes: { refType: BuiltinTypes.BOOLEAN },
+    fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
+
+const deployConfigType = configUtils.createUserDeployConfigType(
+  NETSUITE,
+  changeValidatorConfigType,
+  {
+    warnOnStaleWorkspaceData: { refType: BuiltinTypes.BOOLEAN },
+    validate: { refType: BuiltinTypes.BOOLEAN },
+    deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
+    additionalDependencies: { refType: additionalDependenciesType },
+  }
+)
 
 const additionalDependenciesConfigPath: string[] = [
   CONFIG.deploy,

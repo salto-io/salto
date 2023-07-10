@@ -17,6 +17,7 @@ import axios from 'axios'
 import Bottleneck from 'bottleneck'
 import MockAdapter from 'axios-mock-adapter'
 import _ from 'lodash'
+import { EnvType } from '../../../src/client/suiteapp_client/types'
 import SoapClient from '../../../src/client/suiteapp_client/soap_client/soap_client'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError } from '../../../src/client/suiteapp_client/errors'
 import SuiteAppClient, { PAGE_SIZE } from '../../../src/client/suiteapp_client/suiteapp_client'
@@ -53,8 +54,9 @@ describe('SuiteAppClient', () => {
       mockAxiosAdapter.onPost().replyOnce(200, {
         status: 'success',
         results: {
-          appVersion: [0, 1, 4],
+          appVersion: [0, 1, 7],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       await client.getSystemInformation()
@@ -291,12 +293,13 @@ describe('SuiteAppClient', () => {
           results: {
             appVersion: [0, 1, 3],
             time: 1000,
+            envType: EnvType.PRODUCTION,
           },
         })
 
         const results = await client.getSystemInformation()
 
-        expect(results).toEqual({ appVersion: [0, 1, 3], time: new Date(1000) })
+        expect(results).toEqual({ appVersion: [0, 1, 3], time: new Date(1000), envType: EnvType.PRODUCTION })
         expect(mockAxiosAdapter.history.post.length).toBe(1)
         const req = mockAxiosAdapter.history.post[0]
         expect(JSON.parse(req.data)).toEqual({
@@ -555,6 +558,66 @@ describe('SuiteAppClient', () => {
         expect(await client.setConfigRecordsValues([])).toEqual(results)
       })
     })
+    describe('getInstalledBundlesOrSuiteApps', () => {
+      it('should return empty array when getInstalledBundles feature is not supported', async () => {
+        const unsupportedClient = new SuiteAppClient({
+          credentials: {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+          globalLimiter: new Bottleneck(),
+          instanceLimiter: (_t: string, _c: number) => false,
+        })
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            appVersion: [0, 1, 3],
+            time: 1000,
+          },
+        })
+        expect(await unsupportedClient.getInstalledBundles()).toEqual([])
+      })
+      it('should throw on error', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'error', message: '', error: new Error('error'),
+        })
+        await expect(() => client.getInstalledBundles()).rejects.toThrow()
+      })
+      it('should throw on invalid result', async () => {
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results: {
+            results: ['wrong', 'value'],
+            errors: [],
+          },
+        })
+        await expect(() => client.getInstalledBundles()).rejects.toThrow()
+      })
+      it('should return an array of bundles', async () => {
+        const results = [
+          { id: 47492, name: 'Tax Audit Files', version: '1.86.2', isManaged: true, description: 'Description', publisher: { id: '3838953', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
+          { id: 53195, name: 'Last SalesActivity', version: '1.11.2', isManaged: false, description: 'Description', publisher: { id: '3912261', name: 'NetSuite Platform Solutions Group - Tax Audit Files' } },
+        ]
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results,
+        })
+        expect(await client.getInstalledBundles()).toEqual(results)
+      })
+      it('should return an array of suiteApps', async () => {
+        const results = [
+          { appId: 'appId', name: 'suiteApp name', version: '1.23.5', dateInstalled: Date() },
+          { appId: 'appId.other', name: 'suiteApp name2', version: '1.65.4', dateInstalled: Date() },
+        ]
+        mockAxiosAdapter.onPost().replyOnce(200, {
+          status: 'success',
+          results,
+        })
+        expect(await client.getInstalledSuiteApps()).toEqual(results)
+      })
+    })
   })
 
   describe('validateCredentials', () => {
@@ -637,6 +700,7 @@ describe('SuiteAppClient', () => {
         results: {
           appVersion: [0, 1, 3],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       expect(await client.isFeatureSupported('activationKey')).toBeTruthy()
@@ -647,6 +711,7 @@ describe('SuiteAppClient', () => {
         results: {
           appVersion: [0, 1, 3],
           time: 1000,
+          envType: EnvType.PRODUCTION,
         },
       })
       await Promise.all([

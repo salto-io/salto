@@ -17,7 +17,7 @@ import { BuiltinTypes, Field, ObjectType, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { getDataInstanceId } from '../elements_source_index/elements_source_index'
-import { IDENTIFIER_FIELD, TYPE_TO_IDENTIFIER, TYPE_TO_ID_FIELD_PATHS } from './types'
+import { IDENTIFIER_FIELD, TYPE_TO_IDENTIFIER, TYPE_TO_ID_FIELD_PATHS, isTypeWithMultiFieldsIdentifier } from './types'
 
 const log = logger(module)
 
@@ -34,7 +34,7 @@ const getIdentifierWithoutParent = (
   values: Values,
   type: ObjectType
 ): string => {
-  if (!(type.elemID.name in TYPE_TO_ID_FIELD_PATHS)) {
+  if (!isTypeWithMultiFieldsIdentifier(type.elemID.name)) {
     return values[TYPE_TO_IDENTIFIER[type.elemID.name]]
   }
 

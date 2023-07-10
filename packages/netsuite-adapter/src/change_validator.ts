@@ -46,46 +46,53 @@ import currencyUndeployableFieldsValidator from './change_validators/currency_un
 import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_internal_ids'
 import rolePermissionValidator from './change_validators/role_permission_ids'
 import NetsuiteClient from './client/client'
-import { AdditionalDependencies } from './config'
+import {
+  AdditionalDependencies,
+  NetsuiteValidatorName,
+  NonSuiteAppValidatorName,
+  OnlySuiteAppValidatorName,
+} from './config'
 import { Filter } from './filter'
 import { NetsuiteChangeValidator } from './change_validators/types'
 
+type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
+const { createChangeValidator } = deployment.changeValidators
 
-const changeValidators = deployment.changeValidators.getDefaultChangeValidators()
+const defaultChangeValidators = deployment.changeValidators.getDefaultChangeValidators()
 
-const netsuiteChangeValidators: NetsuiteChangeValidator[] = [
-  exchangeRateValidator,
-  currencyUndeployableFieldsValidator,
-  workflowAccountSpecificValuesValidator,
-  accountSpecificValuesValidator,
-  dataAccountSpecificValuesValidator,
-  removeSdfElementsValidator,
-  instanceChangesValidator,
-  reportTypesMoveEnvironment,
-  immutableChangesValidator,
-  inactiveParent,
-  removeListItemValidator,
-  fileValidator,
-  uniqueFieldsValidator,
-  subInstancesValidator,
-  standardTypesInvalidValuesValidator,
-  mappedListsIndexesValidator,
-  notYetSupportedValuesValidator,
-  configChangesValidator,
-  suiteAppConfigElementsValidator,
-  undeployableConfigFeaturesValidator,
-  extraReferenceDependenciesValidator,
-  rolePermissionValidator,
-]
+const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeValidator> = {
+  exchangeRate: exchangeRateValidator,
+  currencyUndeployableFields: currencyUndeployableFieldsValidator,
+  workflowAccountSpecificValues: workflowAccountSpecificValuesValidator,
+  accountSpecificValues: accountSpecificValuesValidator,
+  dataAccountSpecificValues: dataAccountSpecificValuesValidator,
+  removeSdfElements: removeSdfElementsValidator,
+  instanceChanges: instanceChangesValidator,
+  reportTypesMove: reportTypesMoveEnvironment,
+  immutableChanges: immutableChangesValidator,
+  inactive: inactiveParent,
+  removeListItem: removeListItemValidator,
+  file: fileValidator,
+  uniqueFields: uniqueFieldsValidator,
+  subInstances: subInstancesValidator,
+  standardTypesInvalidValues: standardTypesInvalidValuesValidator,
+  mappedListsIndexes: mappedListsIndexesValidator,
+  notYetSupportedValues: notYetSupportedValuesValidator,
+  configChanges: configChangesValidator,
+  suiteAppConfigElements: suiteAppConfigElementsValidator,
+  undeployableConfigFeatures: undeployableConfigFeaturesValidator,
+  extraReferenceDependencies: extraReferenceDependenciesValidator,
+  rolePermission: rolePermissionValidator,
+}
 
-const nonSuiteAppValidators: NetsuiteChangeValidator[] = [
-  removeFileCabinetValidator,
-  removeStandardTypesValidator,
-]
+const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {
+  removeFileCabinet: removeFileCabinetValidator,
+  removeStandardTypes: removeStandardTypesValidator,
+}
 
-const onlySuiteAppValidators: NetsuiteChangeValidator[] = [
-  fileCabinetInternalIdsValidator,
-]
+const onlySuiteAppValidators: Record<OnlySuiteAppValidatorName, NetsuiteChangeValidator> = {
+  fileCabinetInternalIds: fileCabinetInternalIdsValidator,
+}
 
 const changeErrorsToElementIDs = (changeErrors: readonly ChangeError[]): readonly string[] =>
   changeErrors
@@ -125,6 +132,7 @@ const getChangeValidator: ({
   deployReferencedElements,
   additionalDependencies,
   filtersRunner,
+  validatorsActivationConfig,
 } : {
   client: NetsuiteClient
   withSuiteApp: boolean
@@ -135,6 +143,7 @@ const getChangeValidator: ({
   additionalDependencies: AdditionalDependencies
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
+  validatorsActivationConfig?: ValidatorsActivationConfig
   }) => ChangeValidator = (
     {
       client,
@@ -146,18 +155,34 @@ const getChangeValidator: ({
       additionalDependencies,
       filtersRunner,
       elementsSource,
+      validatorsActivationConfig,
     }
   ) =>
     async (changes, elementSource) => {
-      const validators = withSuiteApp
-        ? [...netsuiteChangeValidators, ...onlySuiteAppValidators]
-        : [...netsuiteChangeValidators, ...nonSuiteAppValidators]
+      const netsuiteValidators = withSuiteApp
+        ? { ...netsuiteChangeValidators, ...onlySuiteAppValidators }
+        : { ...netsuiteChangeValidators, ...nonSuiteAppValidators }
 
-      const validatorChangeErrors: ChangeError[] = _.flatten(await Promise.all([
-        ...changeValidators.map(validator => validator(changes, elementSource)),
-        ...validators.map(validator => validator(changes, deployReferencedElements, elementsSource)),
-        warnStaleData ? safeDeployValidator(changes, fetchByQuery, deployReferencedElements) : [],
-      ]))
+      // Converts NetsuiteChangeValidator to ChangeValidator
+      const validators: Record<string, ChangeValidator> = _.mapValues(
+        netsuiteValidators,
+        validator =>
+          (innerChanges: ReadonlyArray<Change>) => validator(innerChanges, deployReferencedElements, elementsSource)
+      )
+
+      const safeDeploy = warnStaleData
+        ? {
+          safeDeploy: (innerChanges: ReadonlyArray<Change>) =>
+            safeDeployValidator(innerChanges, fetchByQuery, deployReferencedElements),
+        }
+        : undefined
+
+      const mergedValidator = createChangeValidator({
+        validators: { ...defaultChangeValidators, ...validators, ...safeDeploy },
+        validatorsActivationConfig,
+      })
+      const validatorChangeErrors = await mergedValidator(changes, elementSource)
+
       const dependedChangeErrors = await validateDependsOnInvalidElement(
         changeErrorsToElementIDs(validatorChangeErrors),
         changes

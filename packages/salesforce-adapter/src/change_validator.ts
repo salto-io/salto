@@ -47,7 +47,7 @@ import accountSettings from './change_validators/account_settings'
 import installedPackages from './change_validators/installed_packages'
 import dataCategoryGroupValidator from './change_validators/data_category_group'
 import SalesforceClient from './client/client'
-import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig, VALIDATE_CONFIG } from './types'
+import { ChangeValidatorName, DEPLOY_CONFIG, SalesforceConfig } from './types'
 
 const { createChangeValidator } = deployment.changeValidators
 
@@ -103,7 +103,7 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const defaultValidatorsActivationConfig = isCheckOnly
     ? defaultChangeValidatorsValidateConfig
     : defaultChangeValidatorsDeployConfig
-  const validatorsActivationConfig = config[isCheckOnly ? VALIDATE_CONFIG : DEPLOY_CONFIG]?.changeValidators
+  const validatorsActivationConfig = config[DEPLOY_CONFIG]?.changeValidators
 
   const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),

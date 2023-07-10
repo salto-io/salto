@@ -215,6 +215,9 @@ export const createUserDeployConfigType = (
   createMatchingObjectType<UserDeployConfig>({
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
+      // Record<string, boolean> type check doesn't pass for refType of ObjectType
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       changeValidators: { refType: changeValidatorsType },
       ...additionalFields,
     },

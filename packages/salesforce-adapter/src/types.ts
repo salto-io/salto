@@ -39,7 +39,6 @@ export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
 export const DEPLOY_CONFIG = 'deploy'
-export const VALIDATE_CONFIG = 'validate'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
@@ -269,7 +268,6 @@ export type SalesforceConfig = {
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
   [DEPLOY_CONFIG]?: UserDeployConfig
-  [VALIDATE_CONFIG]?: UserDeployConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -722,9 +720,6 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
       refType: clientConfigType,
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
-    },
-    [VALIDATE_CONFIG]: {
       refType: createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
   },

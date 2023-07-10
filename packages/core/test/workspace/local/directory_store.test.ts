@@ -278,6 +278,20 @@ describe('localDirectoryStore', () => {
     it('fails to get an absolute path', () =>
       localDirectoryStore({ baseDir: 'dir', name: '', encoding }).getFiles(['/aaaa'])
         .catch(err => expect(err.message).toEqual('Filepath not contained in dir store base dir: /aaaa')))
+
+    it('Should return deleted file when requested to ignore cache', async () => {
+      mockFileExists.mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(true)
+      mockReadFile.mockResolvedValueOnce('bla1').mockResolvedValueOnce('bla2')
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      const dirStore = localDirectoryStore({ baseDir: '', name: '', encoding })
+      await dirStore.delete('b')
+      const files = await dirStore.getFiles(['a', 'b', 'c'], { ignoreDeletionsCache: true })
+      expect(files[0]).toBeUndefined()
+      expect(files[1]?.buffer).toEqual('bla1')
+      expect(files[2]?.buffer).toEqual('bla2')
+    })
   })
 
   describe('rm Nacl file', () => {

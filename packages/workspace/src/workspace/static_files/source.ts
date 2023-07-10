@@ -178,6 +178,8 @@ export const buildStaticFilesSource = (
           filepath,
           staticFileData.hash,
           staticFilesDirStore.getFullPath(filepath),
+          // We use ignoreDeletionsCache to make sure that if the file was requested and then the content
+          // was deleted, we will still lbe able to access the content
           async () => (await staticFilesDirStore.get(filepath, { ignoreDeletionsCache: true }))?.buffer,
           encoding,
         )

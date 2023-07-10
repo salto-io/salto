@@ -92,12 +92,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
     this.isDataCenter = clientOpts.isDataCenter
   }
 
-  // public get baseUrl(): string {
-  //   return this.credentials.baseUrl
-  // }
-
-
-  public async getJwtFromService(): Promise<string> {
+  private async getJwtFromService(): Promise<string> {
     const url = await this.credentials.getUrl()
     const baseUrl = await this.credentials.getBaseUrl()
     const srResponse = await super.getSinglePage({
@@ -111,7 +106,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
     return getSrTokenFromHtml(srResponse.data)
   }
 
-  public async getJwt(): Promise<string> {
+  private async getJwt(): Promise<string> {
     if (!this.jwTokenPromise) {
       this.jwTokenPromise = this.getJwtFromService()
     }

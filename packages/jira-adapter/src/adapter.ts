@@ -407,7 +407,7 @@ export default class JiraAdapter implements AdapterOperations {
   private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
     const { scriptRunnerApiDefinitions } = this.userConfig
     if (this.scriptRunnerClient === undefined
-      || this.userConfig.fetch.enableScriptRunnerAddon !== true
+      || !this.userConfig.fetch.enableScriptRunnerAddon
       || scriptRunnerApiDefinitions === undefined) {
       return { elements: [] }
     }
@@ -440,15 +440,17 @@ export default class JiraAdapter implements AdapterOperations {
     progressReporter.reportProgress({ message: 'Fetching types' })
     const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
-    const { errors, elements: instances } = await this.getSwaggerInstances(allTypes, parsedConfigs)
-    const scriptRunnerElements = await this.getScriptRunnerElements()
+    const [swaggerResponse, scriptRunnerElements] = await Promise.all([
+      this.getSwaggerInstances(allTypes, parsedConfigs),
+      this.getScriptRunnerElements(),
+    ])
 
     const elements: Element[] = [
       ...Object.values(allTypes),
-      ...instances,
+      ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
     ]
-    return { elements, errors: (errors ?? []).concat(scriptRunnerElements.errors ?? []) }
+    return { elements, errors: (swaggerResponse.errors ?? []).concat(scriptRunnerElements.errors ?? []) }
   }
 
   @logDuration('fetching account configuration')

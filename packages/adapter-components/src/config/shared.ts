@@ -20,6 +20,7 @@ import {
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
 import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
+import { ValidatorsActivationConfig } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
 
@@ -66,6 +67,10 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
 }
 
 export type UserDeployConfig = {
+  changeValidators?: ValidatorsActivationConfig
+}
+
+export type DefaultMissingUserFallbackConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
 }
@@ -204,12 +209,16 @@ export const createUserFetchConfigType = (
 
 export const createUserDeployConfigType = (
   adapter: string,
+  changeValidatorsType: ObjectType,
   additionalFields?: Record<string, FieldDefinition>,
 ): ObjectType => (
   createMatchingObjectType<UserDeployConfig>({
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
-      defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
+      // Record<string, boolean> type check doesn't pass for refType of ObjectType
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      changeValidators: { refType: changeValidatorsType },
       ...additionalFields,
     },
     annotations: {
@@ -217,6 +226,8 @@ export const createUserDeployConfigType = (
     },
   })
 )
+
+export const defaultMissingUserFallbackField = { defaultMissingUserFallback: { refType: BuiltinTypes.STRING } }
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,
@@ -251,12 +262,12 @@ export const validateSupportedTypes = (
 /**
  * Verify defaultMissingUserFallback value in deployConfig is valid
  */
-export const validateDeployConfig = (
+export const validateDefaultMissingUserFallbackConfig = (
   deployConfigPath: string,
-  userDeployConfig: UserDeployConfig,
+  defaultMissingUserFallbackConfig: DefaultMissingUserFallbackConfig,
   userValidationFunc: (userValue: string) => boolean
 ): void => {
-  const { defaultMissingUserFallback } = userDeployConfig
+  const { defaultMissingUserFallback } = defaultMissingUserFallbackConfig
   if (defaultMissingUserFallback !== undefined && defaultMissingUserFallback !== DEPLOYER_FALLBACK_VALUE) {
     const isValidUserValue = userValidationFunc(defaultMissingUserFallback)
     if (!isValidUserValue) {

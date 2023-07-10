@@ -20,10 +20,25 @@ import { client as clientUtils, config as configUtils } from '@salto-io/adapter-
 import OktaClient from './client/client'
 import OktaAdapter from './adapter'
 import { Credentials, accessTokenCredentialsType } from './auth'
-import { configType, OktaConfig, API_DEFINITIONS_CONFIG, FETCH_CONFIG, DEFAULT_CONFIG, CLIENT_CONFIG, OktaClientConfig, OktaSwaggerApiConfig, PRIVATE_API_DEFINITIONS_CONFIG, OktaDuckTypeApiConfig, validateOktaFetchConfig } from './config'
+import {
+  configType,
+  OktaConfig,
+  API_DEFINITIONS_CONFIG,
+  FETCH_CONFIG,
+  DEFAULT_CONFIG,
+  CLIENT_CONFIG,
+  OktaClientConfig,
+  OktaSwaggerApiConfig,
+  PRIVATE_API_DEFINITIONS_CONFIG,
+  OktaDuckTypeApiConfig,
+  validateOktaFetchConfig,
+  DEPLOY_CONFIG,
+} from './config'
 import { createConnection } from './client/connection'
 import { OKTA } from './constants'
 import { getAdminUrl } from './client/admin'
+
+type UserDeployConfig = configUtils.UserDeployConfig
 
 const log = logger(module)
 const { validateClientConfig, validateCredentials } = clientUtils
@@ -64,6 +79,11 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     config?.value?.client
   ) as OktaClientConfig
 
+  const deploy = configUtils.mergeWithDefaultConfig(
+    DEFAULT_CONFIG[DEPLOY_CONFIG] ?? {},
+    config?.value?.deploy
+  ) as UserDeployConfig
+
   validateClientConfig(CLIENT_CONFIG, client)
   validateSwaggerApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateOktaFetchConfig({
@@ -79,6 +99,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     fetch,
     apiDefinitions,
     privateApiDefinitions,
+    deploy,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

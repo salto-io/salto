@@ -37,7 +37,7 @@ import { configCreator } from './config_creator'
 
 const log = logger(module)
 const { validateCredentials, validateClientConfig } = clientUtils
-const { validateDuckTypeApiDefinitionConfig, validateDeployConfig } = configUtils
+const { validateDuckTypeApiDefinitionConfig, validateDefaultMissingUserFallbackConfig } = configUtils
 
 /*
 
@@ -120,7 +120,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
   validateDuckTypeApiDefinitionConfig(API_DEFINITIONS_CONFIG, apiDefinitions)
   validateGuideTypesConfig(apiDefinitions)
   if (adapterConfig.deploy !== undefined) {
-    validateDeployConfig(DEPLOY_CONFIG, adapterConfig.deploy, isValidUser)
+    validateDefaultMissingUserFallbackConfig(DEPLOY_CONFIG, adapterConfig.deploy, isValidUser)
   }
 
   Object.keys(configValue)

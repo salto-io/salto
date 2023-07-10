@@ -19,6 +19,7 @@ import {
   InstanceElement, Adapter, OAuthRequestParameters, OauthAccessTokenResponse,
   Values,
 } from '@salto-io/adapter-api'
+import { deployment } from '@salto-io/adapter-components'
 import SalesforceClient, { validateCredentials } from './client/client'
 import SalesforceAdapter from './adapter'
 import {
@@ -26,7 +27,7 @@ import {
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ChangeValidatorConfig, ENUM_FIELD_PERMISSIONS,
+  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG, ChangeValidatorConfig,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
@@ -37,6 +38,8 @@ import { ConfigChange } from './config_change'
 import { configCreator } from './config_creator'
 import { loadElementsFromFolder } from './sfdx_parser/sfdx_parser'
 import { getAdditionalReferences } from './additional_references'
+
+type ValidatorsActivationConfig = deployment.changeValidators.ValidatorsActivationConfig
 
 const log = logger(module)
 
@@ -96,7 +99,7 @@ SalesforceConfig => {
     }
   }
 
-  const validateValidatorsConfig = (validators: ChangeValidatorConfig | undefined): void => {
+  const validateValidatorsConfig = (validators: ValidatorsActivationConfig | undefined): void => {
     if (validators !== undefined && !_.isPlainObject(validators)) {
       throw new ConfigValidationError(['validators'], 'Enabled validators configuration must be an object if it is defined')
     }
@@ -123,15 +126,20 @@ SalesforceConfig => {
 
   validateClientConfig(config?.value?.client)
 
-  validateValidatorsConfig(config?.value?.validators)
+  validateValidatorsConfig(config?.value?.deploy?.changeValidators)
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 
-  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
+  // Deprecated and used for backwards compatibility (SALTO-4468)
+  type adapterConfigType = SalesforceConfig & { validators?: ChangeValidatorConfig }
+
+  const adapterConfig: { [K in keyof Required<adapterConfigType>]: adapterConfigType[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
+    deploy: config?.value?.[DEPLOY_CONFIG],
+    // Deprecated and used for backwards compatibility (SALTO-4468)
     validators: config?.value?.validators,
   }
   Object.keys(config?.value ?? {})

@@ -20,7 +20,7 @@ import { client as clientUtils, config as configUtils, elements } from '@salto-i
 import { JIRA } from '../constants'
 import { getProductSettings } from '../product_settings'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, defaultMissingUserFallbackField } = configUtils
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
@@ -46,7 +46,7 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = configUtils.UserDeployConfig & {
+type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
 }
 
@@ -173,9 +173,100 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
+export type ChangeValidatorName = (
+  | 'unresolvedReference'
+  | 'automationProjectUnresolvedReference'
+  | 'deployTypesNotSupported'
+  | 'readOnlyProjectRoleChange'
+  | 'defaultFieldConfiguration'
+  | 'screen'
+  | 'issueTypeScheme'
+  | 'issueTypeSchemeDefaultType'
+  | 'projectDeletion'
+  | 'status'
+  | 'privateApi'
+  | 'emptyValidatorWorkflowChange'
+  | 'readOnlyWorkflow'
+  | 'dashboardGadgets'
+  | 'dashboardLayout'
+  | 'permissionType'
+  | 'automations'
+  | 'activeSchemeDeletion'
+  | 'sameIssueTypeNameChange'
+  | 'statusMigrationChange'
+  | 'workflowSchemeMigration'
+  | 'issueTypeSchemeMigration'
+  | 'activeSchemeChange'
+  | 'masking'
+  | 'issueTypeDeletion'
+  | 'lockedFields'
+  | 'fieldContext'
+  | 'fieldSecondGlobalContext'
+  | 'systemFields'
+  | 'workflowProperties'
+  | 'permissionScheme'
+  | 'screenSchemeDefault'
+  | 'wrongUserPermissionScheme'
+  | 'accountId'
+  | 'workflowSchemeDups'
+  | 'permissionSchemeDeployment'
+  | 'projectCategory'
+  | 'unresolvedFieldConfigurationItems'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(JIRA, 'changeValidatorConfig'),
+  fields: {
+    unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    automationProjectUnresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
+    defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    screen: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
+    projectDeletion: { refType: BuiltinTypes.BOOLEAN },
+    status: { refType: BuiltinTypes.BOOLEAN },
+    privateApi: { refType: BuiltinTypes.BOOLEAN },
+    emptyValidatorWorkflowChange: { refType: BuiltinTypes.BOOLEAN },
+    readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
+    dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
+    dashboardLayout: { refType: BuiltinTypes.BOOLEAN },
+    permissionType: { refType: BuiltinTypes.BOOLEAN },
+    automations: { refType: BuiltinTypes.BOOLEAN },
+    activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
+    statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
+    workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
+    masking: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    lockedFields: { refType: BuiltinTypes.BOOLEAN },
+    fieldContext: { refType: BuiltinTypes.BOOLEAN },
+    fieldSecondGlobalContext: { refType: BuiltinTypes.BOOLEAN },
+    systemFields: { refType: BuiltinTypes.BOOLEAN },
+    workflowProperties: { refType: BuiltinTypes.BOOLEAN },
+    permissionScheme: { refType: BuiltinTypes.BOOLEAN },
+    screenSchemeDefault: { refType: BuiltinTypes.BOOLEAN },
+    wrongUserPermissionScheme: { refType: BuiltinTypes.BOOLEAN },
+    accountId: { refType: BuiltinTypes.BOOLEAN },
+    workflowSchemeDups: { refType: BuiltinTypes.BOOLEAN },
+    permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
+    projectCategory: { refType: BuiltinTypes.BOOLEAN },
+    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
 const jiraDeployConfigType = configUtils.createUserDeployConfigType(
   JIRA,
+  changeValidatorConfigType,
   {
+    ...defaultMissingUserFallbackField,
     forceDelete: { refType: BuiltinTypes.BOOLEAN },
   }
 )

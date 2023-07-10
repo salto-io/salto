@@ -18,8 +18,8 @@ import {
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
-import { APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
-import filterCreator, { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
+import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME, ZENDESK } from '../../src/constants'
+import filterCreator from '../../src/filters/app_installations'
 import { createFilterCreatorParams } from '../utils'
 
 const mockDeployChange = jest.fn()

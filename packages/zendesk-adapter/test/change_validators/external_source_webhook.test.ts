@@ -15,9 +15,8 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { APP_INSTALLATION_TYPE_NAME, WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { externalSourceWebhook } from '../../src/change_validators'
-import { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
 
 describe('Webhooks with external_source', () => {
   const appInstallation = new InstanceElement(

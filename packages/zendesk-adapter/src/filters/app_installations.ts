@@ -25,9 +25,7 @@ import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
 import ZendeskClient from '../client/client'
-import { APP_OWNED_TYPE_NAME } from '../constants'
-
-export const APP_INSTALLATION_TYPE_NAME = 'app_installation'
+import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME } from '../constants'
 
 const { withRetry } = retry
 const { intervals } = retry.retryStrategies

@@ -2654,6 +2654,7 @@ export type ChangeValidatorName = (
   | 'additionOfTicketStatusForTicketForm'
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
+  | 'standardFields'
   | 'deflectionAction'
   | 'childInOrder'
   | 'childrenReferences'
@@ -2714,6 +2715,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
+    standardFields: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },

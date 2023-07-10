@@ -37,7 +37,7 @@ describe('adapter creator', () => {
 
   it('should have all config sections', () => {
     expect(adapter.configType).toBeInstanceOf(ObjectType)
-    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual(['client', 'fetch', 'apiDefinitions', 'privateApiDefinitions'])
+    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual(['client', 'fetch', 'deploy', 'apiDefinitions', 'privateApiDefinitions'])
   })
 
   it('should support basic auth', () => {

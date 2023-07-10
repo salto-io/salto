@@ -50,6 +50,7 @@ const adapterConfigFromConfig = (config: Readonly<InstanceElement> | undefined):
     client: configValue.client,
     fetch,
     apiDefinitions,
+    deploy: configValue.deploy,
   }
 
   validateClientConfig(CLIENT_CONFIG, adapterConfig.client)

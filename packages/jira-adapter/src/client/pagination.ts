@@ -59,8 +59,5 @@ export const paginate: clientUtils.PaginationFuncCreator = args => {
       }
     )
   }
-  if (args.getParams?.url === '/rest/api/3/statuses/search') {
-    return clientUtils.getWithOffsetAndLimit()
-  }
   return clientUtils.getAllPagesWithOffsetAndTotal()
 }

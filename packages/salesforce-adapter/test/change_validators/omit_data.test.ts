@@ -51,7 +51,7 @@ describe('checkOnly deploy validator', () => {
 
   let validator: ChangeValidator
   beforeEach(() => {
-    validator = createCheckOnlyDeployValidator()
+    validator = createCheckOnlyDeployValidator
   })
   describe('with custom object instance change', () => {
     let changeErrors: ReadonlyArray<ChangeError>

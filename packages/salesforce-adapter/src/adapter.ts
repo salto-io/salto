@@ -245,7 +245,10 @@ const METADATA_TO_RETRIEVE = [
   'EclairGeoData', // contains encoded zip content
   'EmailFolder',
   'EmailTemplate', // contains encoded zip content, is under a folder
+  'EmbeddedServiceConfig',
+  'ExperienceBundle',
   'ExternalDataSource',
+  'FlexiPage',
   'FlowDefinition',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
@@ -255,6 +258,7 @@ const METADATA_TO_RETRIEVE = [
   'ReportFolder',
   'ReportType',
   'Scontrol', // contains encoded zip content
+  'SharingRules',
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
   // Other types that need retrieve / deploy to work
@@ -263,7 +267,9 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'TopicsForObjects',
   'Layout', // retrieve returns more information about relatedLists
+  'Workflow',
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm

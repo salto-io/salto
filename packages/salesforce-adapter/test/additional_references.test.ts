@@ -255,10 +255,31 @@ describe('getAdditionalReferences', () => {
 
     it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
+      expect(refs).toHaveLength(2)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
         { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
       ])
+    })
+
+    describe('with recordType reference', () => {
+      let recordType: InstanceElement
+      beforeEach(() => {
+        recordType = new InstanceElement(
+          'SomeRecordType',
+          mockTypes.RecordType,
+          { [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType' },
+        )
+        profileInstance.value.layoutAssignments.Account_Account_Layout[0].recordType = 'SomeRecordType'
+        changes.push(toChange({ after: recordType }))
+      })
+
+      it('should create a recordType reference', async () => {
+        const refs = await getAdditionalReferences(changes)
+        expect(refs).toIncludeAllPartialMembers([
+          { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: recordType.elemID },
+        ])
+      })
     })
   })
 

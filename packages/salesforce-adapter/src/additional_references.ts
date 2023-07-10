@@ -23,9 +23,11 @@ import {
   isInstanceChange,
   isRemovalOrModificationChange,
   ReferenceMapping,
+  Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import {
   isCustomObject,
   isFieldOfCustomObject,
@@ -46,6 +48,8 @@ import {
 
 const { awu } = collections.asynciterable
 
+const log = logger(module)
+
 const CUSTOM_APP_SECTION = 'applicationVisibilities'
 const APEX_CLASS_SECTION = 'classAccesses'
 const FLOW_SECTION = 'flowAccesses'
@@ -59,6 +63,11 @@ const refsFromProfileOrPermissionSet = async (
   potentialTarget: Readonly<Element>,
   profileSection: string,
 ): Promise<ReferenceMapping[]> => {
+  /**
+   * Note: if the adapter config `generateRefsInProfiles` is set then these fields will already contain the correct
+   * references, in which case we will create duplicate references and drop them. We won't crash because we don't
+   * actually look at the content of any field/annotation, only on the keys in the provided profile section.
+   */
   const apiName = await safeApiName(potentialTarget)
   if (apiName === undefined) {
     return []
@@ -69,6 +78,35 @@ const refsFromProfileOrPermissionSet = async (
       {
         source: profileOrPermissionSet.elemID.createNestedID(profileSection, ...apiName.split(API_NAME_SEPARATOR)),
         target: potentialTarget.elemID,
+      }
+    ))
+}
+
+const recordTypeRefsFromLayoutAssignments = (
+  layoutAssignments: Value,
+  recordTypesByApiName: Record<string, InstanceElement>,
+  profileOrPermissionSet: InstanceElement,
+  LayoutApiName: string
+): ReferenceMapping[] => {
+  /*
+  * Every key in the layoutAssignments section contains an array. Each element in the array contains (among other
+  * things) a 'recordType' key that references a record type.
+  * If the adapter config `generateRefsInProfiles` is set and the `recordType` field already contains a reference,
+  * we will filter it out when we check if `isString(layoutAssignment.recordType)`. If the reference is resolved and
+  * it's already a string, we won't find it in recordTypesByApiName and still skip it.
+  * */
+  if (!Array.isArray(layoutAssignments)) {
+    log.warn('Profile layoutAssignment not an array: %o', layoutAssignments)
+    return []
+  }
+  const layoutApiNameParts = LayoutApiName.split(API_NAME_SEPARATOR)
+  return layoutAssignments
+    .filter(layoutAssignment => _.isString(layoutAssignment.recordType))
+    .filter(layoutAssignment => layoutAssignment.recordType in recordTypesByApiName)
+    .map(layoutAssignment => (
+      {
+        source: profileOrPermissionSet.elemID.createNestedID(LAYOUTS_SECTION, ...layoutApiNameParts),
+        target: recordTypesByApiName[layoutAssignment.recordType].elemID,
       }
     ))
 }
@@ -114,6 +152,8 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const flowRefs = awu(addedInstancesByType[FLOW_METADATA_TYPE] ?? [])
     .flatMap(async flow => refsFromProfileOrPermissionSet(profilesAndPermSets, flow, FLOW_SECTION))
 
+  // note that permission sets don't contain layout assignments, but it simplifies our code to pretend like they might
+  // ref: https://ideas.salesforce.com/s/idea/a0B8W00000GdlSPUAZ/permission-sets-with-page-layout-assignment
   const layoutRefs = awu(addedInstancesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
     .flatMap(async layout => refsFromProfileOrPermissionSet(profilesAndPermSets, layout, LAYOUTS_SECTION))
 
@@ -126,6 +166,28 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const objectRefs = awu(customObjects)
     .flatMap(async object => refsFromProfileOrPermissionSet(profilesAndPermSets, object, OBJECT_SECTION))
 
+  const recordTypesByApiName = await awu(addedInstancesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
+    .keyBy(async recordType => (await safeApiName(recordType)) ?? '')
+
+  const recordTypeRefsFromLayouts = awu(addedInstancesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
+    .flatMap(async layout => {
+      const apiName = await safeApiName(layout)
+      if (apiName === undefined) {
+        return []
+      }
+      return profilesAndPermSets
+        .filter(profileOrPermissionSet => _.get(profileOrPermissionSet.value[LAYOUTS_SECTION], apiName))
+        .flatMap(profileOrPermissionSet => (
+          Object.values(profileOrPermissionSet.value[LAYOUTS_SECTION])
+            .flatMap(layoutAssignments => recordTypeRefsFromLayoutAssignments(
+              layoutAssignments,
+              recordTypesByApiName,
+              profileOrPermissionSet,
+              apiName
+            ))
+        ))
+    })
+
   return fieldPermissionsRefs
     .concat(customAppsRefs)
     .concat(apexClassRefs)
@@ -134,5 +196,6 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .concat(objectRefs)
     .concat(apexPageRefs)
     .concat(recordTypeRefs)
+    .concat(recordTypeRefsFromLayouts)
     .toArray()
 }

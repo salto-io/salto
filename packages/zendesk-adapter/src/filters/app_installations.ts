@@ -102,7 +102,7 @@ const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
  * Edits app_installation value on fetch, Deploys app_installation on deploy
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
-  name: 'appsFilter',
+  name: 'appInstallationsFilter',
   onFetch: async (elements: Element[]) => {
     elements
       .filter(isInstanceElement)

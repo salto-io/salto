@@ -16,7 +16,7 @@
 import {
   BuiltinTypes,
   CORE_ANNOTATIONS,
-  ElemID, InstanceElement, isReferenceExpression, ObjectType, ReferenceExpression, StaticFile, toChange,
+  ElemID, Field, InstanceElement, isReferenceExpression, ObjectType, ReferenceExpression, StaticFile, toChange,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import filterCreator from '../../src/filters/element_references'
@@ -540,35 +540,52 @@ describe('instance_references filter', () => {
         }
       )
     })
-    // TODO: should be uncommented when SALTO-4305 is communicated and opened to all
-    // it('should add generated dependency for custom record fields referenced by field ID', async () => {
-    //   const fileContent = `
-    //   define(['N/record', function(record) {
-    //     return{
-    //       post: function(requestBody){
-    //       var semanticRef = 'custom_field'
-    //       log.debug('salesRep', requestBody.salesRep);
-    //       // Load employee record
-    //     }
-    //   });`
-    //   fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
-    //   const customRecordField = new Field(customRecordType, 'custom_field', BuiltinTypes.STRING)
-    //   await filterCreator({
-    //     elementsSourceIndex,
-    //     elementsSource: buildElementsSourceFromElements([]),
-    //     isPartial: false,
-    //     config: await getDefaultAdapterConfig(),
-    //   }).onFetch?.([fileInstance, customRecordType])
-    //   expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(1)
-    //   expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toContainEqual(
-    //     {
-    //       reference: new ReferenceExpression(
-    //         customRecordField.elemID
-    //       ),
-    //       occurrences: undefined,
-    //     }
-    //   )
-    // })
+    // TODO: should be updated when SALTO-4305 is communicated and opened to all
+    it('should add generated dependency for custom record fields referenced by field ID', async () => {
+      const fileContent = `
+      define(['N/record', function(record) {
+        return{
+          post: function(requestBody){
+          var semanticRef = 'custom_field'
+          log.debug('salesRep', requestBody.salesRep);
+          // Load employee record
+        }
+      });`
+      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: false,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([fileInstance, customRecordType])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
+
+    it('should add customrecord field as generated dependency from elementsSource in partial fetch', async () => {
+      const customRecordField = new Field(customRecordType, 'custom_field', BuiltinTypes.STRING)
+      getIndexesMock.mockResolvedValue({
+        customRecordTypeFieldsIndex: {
+          custom_field: { elemID: customRecordField.elemID },
+        },
+      })
+      const fileContent = `
+      define(['N/record', function(record) {
+        return{
+          post: function(requestBody){
+          var semanticRef = 'custom_field'
+          log.debug('salesRep', requestBody.salesRep);
+          // Load employee record
+        }
+      });`
+      fileInstance.value.content = new StaticFile({ filepath: 'somePath', content: Buffer.from(fileContent) })
+      await filterCreator({
+        elementsSourceIndex,
+        elementsSource: buildElementsSourceFromElements([]),
+        isPartial: true,
+        config: await getDefaultAdapterConfig(),
+      }).onFetch?.([fileInstance])
+      expect(fileInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
   })
   describe('preDeploy', () => {
     let instanceWithReferences: InstanceElement

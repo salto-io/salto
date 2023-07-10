@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance, getServiceId } from '../types'
-import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
+import { ElementsSourceIndexes, ElemServiceID, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
@@ -34,6 +34,7 @@ const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
+const CUSTOM_FIELD_SERVICEID_PREFIX = 'custrecord'
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -243,12 +244,12 @@ const replaceReferenceValues = async (
   return newElement
 }
 
-const createElementsSourceServiceIdToElemID = async (
-  elementsSourceIndex: LazyElementsSourceIndexes,
+const createElementsSourceServiceIdToElemID = (
+  elementsSourceIndex: ElementsSourceIndexes,
   isPartial: boolean,
-): Promise<ServiceIdRecords> => (
+): ServiceIdRecords => (
   isPartial
-    ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
+    ? elementsSourceIndex.serviceIdRecordsIndex
     : {}
 )
 
@@ -282,6 +283,17 @@ const createCustomRecordFieldsToElemID = (
   )
 }
 
+const getCustomRecordFieldsServiceId = (
+  elementsSourceIndexes: ElementsSourceIndexes,
+  isPartial: boolean
+): ServiceIdRecords =>
+  (isPartial
+    ? _.pickBy(
+      elementsSourceIndexes.serviceIdRecordsIndex,
+      serviceRecord => serviceRecord.serviceID?.startsWith(CUSTOM_FIELD_SERVICEID_PREFIX)
+    )
+    : {})
+
 const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
   isPartial,
@@ -289,12 +301,15 @@ const filterCreator: LocalFilterCreator = ({
 }) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
+    const elementsSourceIndexes = await elementsSourceIndex.getIndexes()
     const serviceIdToElemID = Object.assign(
       await generateServiceIdToElemID(elements),
-      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
+      createElementsSourceServiceIdToElemID(elementsSourceIndexes, isPartial)
     )
-    // This should be unified with serviceIdToElemID once SALTO-4305 is communicated.
-    const customRecordFieldsToServiceIds = createCustomRecordFieldsToElemID(elements)
+    const customRecordFieldsToServiceIds = Object.assign(
+      createCustomRecordFieldsToElemID(elements),
+      getCustomRecordFieldsServiceId(elementsSourceIndexes, isPartial)
+    )
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)
     )).forEach(async element => {

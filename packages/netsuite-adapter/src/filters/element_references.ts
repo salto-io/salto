@@ -22,7 +22,7 @@ import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
 import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance, getServiceId } from '../types'
-import { ElementsSourceIndexes, ElemServiceID, ServiceIdRecords } from '../elements_source_index/types'
+import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
 import { getLookUpName } from '../transformer'
@@ -34,7 +34,6 @@ const { isDefined } = values
 const log = logger(module)
 const NETSUITE_MODULE_PREFIX = 'N/'
 const OPTIONAL_REFS = 'optionalReferences'
-const CUSTOM_FIELD_SERVICEID_PREFIX = 'custrecord'
 
 // matches strings in single/double quotes (paths and scriptids) where the apostrophes aren't a part of a word
 // e.g: 'custrecord1' "./someFolder/someScript.js"
@@ -244,12 +243,12 @@ const replaceReferenceValues = async (
   return newElement
 }
 
-const createElementsSourceServiceIdToElemID = (
-  elementsSourceIndex: ElementsSourceIndexes,
+const createElementsSourceServiceIdToElemID = async (
+  elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean,
-): ServiceIdRecords => (
+): Promise<ServiceIdRecords> => (
   isPartial
-    ? elementsSourceIndex.serviceIdRecordsIndex
+    ? (await elementsSourceIndex.getIndexes()).serviceIdRecordsIndex
     : {}
 )
 
@@ -267,32 +266,29 @@ const applyValuesAndAnnotationsToElement = (element: Element, newElement: Elemen
   element.annotations = newElement.annotations
 }
 
+export const extractCustomRecordFields = (customRecordType: ObjectType): ElemServiceID[] =>
+  Object.values(customRecordType.fields)
+    .map(field => ({ serviceID: getServiceId(field), elemID: field.elemID }))
+
 const createCustomRecordFieldsToElemID = (
   elements: Element[],
-): ServiceIdRecords => {
-  const extractCustomRecordFields = (customRecordType: ObjectType): ElemServiceID[] =>
-    Object.values(customRecordType.fields)
-      .map(field => ({ serviceID: getServiceId(field), elemID: field.elemID }))
-
-  return _.keyBy(
+): ServiceIdRecords =>
+  _.keyBy(
     elements
       .filter(isObjectType)
       .filter(isCustomRecordType)
       .flatMap(extractCustomRecordFields),
     'serviceID'
   )
-}
 
-const getCustomRecordFieldsServiceId = (
-  elementsSourceIndexes: ElementsSourceIndexes,
+const createElementsSourceCustomRecordFieldsToElemID = async (
+  elementsSourceIndex: LazyElementsSourceIndexes,
   isPartial: boolean
-): ServiceIdRecords =>
-  (isPartial
-    ? _.pickBy(
-      elementsSourceIndexes.serviceIdRecordsIndex,
-      serviceRecord => serviceRecord.serviceID?.startsWith(CUSTOM_FIELD_SERVICEID_PREFIX)
-    )
-    : {})
+): Promise<ServiceIdRecords> => (
+  isPartial
+    ? (await elementsSourceIndex.getIndexes()).customRecordFieldsServiceIdRecordsIndex
+    : {}
+)
 
 const filterCreator: LocalFilterCreator = ({
   elementsSourceIndex,
@@ -301,14 +297,13 @@ const filterCreator: LocalFilterCreator = ({
 }) => ({
   name: 'replaceElementReferences',
   onFetch: async elements => {
-    const elementsSourceIndexes = await elementsSourceIndex.getIndexes()
     const serviceIdToElemID = Object.assign(
       await generateServiceIdToElemID(elements),
-      createElementsSourceServiceIdToElemID(elementsSourceIndexes, isPartial)
+      await createElementsSourceServiceIdToElemID(elementsSourceIndex, isPartial)
     )
     const customRecordFieldsToServiceIds = Object.assign(
       createCustomRecordFieldsToElemID(elements),
-      getCustomRecordFieldsServiceId(elementsSourceIndexes, isPartial)
+      await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial)
     )
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)

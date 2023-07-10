@@ -564,7 +564,7 @@ describe('instance_references filter', () => {
     it('should add customrecord field as generated dependency from elementsSource in partial fetch', async () => {
       const customRecordField = new Field(customRecordType, 'custom_field', BuiltinTypes.STRING)
       getIndexesMock.mockResolvedValue({
-        customRecordTypeFieldsIndex: {
+        customRecordFieldsServiceIdRecordsIndex: {
           custom_field: { elemID: customRecordField.elemID },
         },
       })

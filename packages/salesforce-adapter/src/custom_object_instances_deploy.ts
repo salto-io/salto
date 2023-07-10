@@ -578,6 +578,7 @@ const deployAddCustomApprovalRulesAndConditions = async (
       instance.value[SBAA_CONDITIONS_MET] = 'Custom'
     })
   const approvalRulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    // Transforming to modification changes to trigger "update" instead of "insert"
     firstDeployAppliedChanges.map(change => toChange({ before: getChangeData(change), after: getChangeData(change) })),
     client,
     ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
@@ -586,6 +587,7 @@ const deployAddCustomApprovalRulesAndConditions = async (
 
   return {
     appliedChanges: approvalRulesWithCustomDeployResult.appliedChanges
+      // Transforming back to addition changes
       .map(change => toChange({ after: getChangeData(change) }))
       .concat(conditionsDeployResult.appliedChanges),
     errors: approvalRulesWithAllConditionsMetDeployResult.errors.concat(

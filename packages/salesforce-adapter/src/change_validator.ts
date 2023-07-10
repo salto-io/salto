@@ -103,7 +103,11 @@ const createSalesforceChangeValidator = ({ config, isSandbox, checkOnly, client 
   const defaultValidatorsActivationConfig = isCheckOnly
     ? defaultChangeValidatorsValidateConfig
     : defaultChangeValidatorsDeployConfig
-  const validatorsActivationConfig = config[DEPLOY_CONFIG]?.changeValidators
+
+  // Used for backward compatibility of the old config for disabling validators (SALTO-4468)
+  const oldValidatorsActivationConfig = (config as { validators?: Record<string, boolean> }).validators
+
+  const validatorsActivationConfig = { ...config[DEPLOY_CONFIG]?.changeValidators, ...oldValidatorsActivationConfig }
 
   const changeValidator = createChangeValidator({
     validators: _.mapValues(changeValidators, validator => validator(config, isSandbox, client)),

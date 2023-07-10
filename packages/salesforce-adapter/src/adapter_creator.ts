@@ -27,7 +27,7 @@ import {
   isAccessTokenConfig, SalesforceConfig, accessTokenCredentialsType,
   UsernamePasswordCredentials, Credentials, OauthAccessTokenCredentials, CLIENT_CONFIG,
   SalesforceClientConfig, RetryStrategyName, FETCH_CONFIG, MAX_ITEMS_IN_RETRIEVE_REQUEST,
-  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG,
+  ENUM_FIELD_PERMISSIONS, DEPLOY_CONFIG, ChangeValidatorConfig,
 } from './types'
 import { validateFetchParameters } from './fetch_profile/fetch_profile'
 import { ConfigValidationError } from './config_validation'
@@ -130,12 +130,17 @@ SalesforceConfig => {
 
   validateEnumFieldPermissions(config?.value?.enumFieldPermissions)
 
-  const adapterConfig: { [K in keyof Required<SalesforceConfig>]: SalesforceConfig[K] } = {
+  // Deprecated and used for backwards compatibility (SALTO-4468)
+  type adapterConfigType = SalesforceConfig & { validators?: ChangeValidatorConfig }
+
+  const adapterConfig: { [K in keyof Required<adapterConfigType>]: adapterConfigType[K] } = {
     fetch: config?.value?.[FETCH_CONFIG],
     maxItemsInRetrieveRequest: config?.value?.[MAX_ITEMS_IN_RETRIEVE_REQUEST],
     enumFieldPermissions: config?.value?.[ENUM_FIELD_PERMISSIONS],
     client: config?.value?.[CLIENT_CONFIG],
     deploy: config?.value?.[DEPLOY_CONFIG],
+    // Deprecated and used for backwards compatibility (SALTO-4468)
+    validators: config?.value?.validators,
   }
   Object.keys(config?.value ?? {})
     .filter(k => !Object.keys(adapterConfig).includes(k))

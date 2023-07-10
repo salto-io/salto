@@ -1814,6 +1814,31 @@ describe('Test utils.ts', () => {
       },
       primitive: PrimitiveTypes.STRING,
     })
+    const objToFilter = new ObjectType({
+      elemID: new ElemID('salto', 'obj2'),
+      fields: {
+        a: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            a: 'a',
+          },
+        },
+        b: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            a: 'b',
+          },
+        },
+        c: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            a: 'c',
+          },
+        },
+      },
+      path: ['salto', 'obj2', 'field'],
+    })
+
     it('should filter object type', async () => {
       const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {
         expect(actual).toBeDefined()
@@ -1958,6 +1983,26 @@ describe('Test utils.ts', () => {
         async id => (!id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
+    })
+
+    it('should filter values base on the FILTER_FUNC_NEXT_STEP', async () => {
+      const filteredObj = await filterByID(
+        objToFilter.elemID,
+        objToFilter,
+        async id => {
+          if (id.getFullNameParts().includes('b')) {
+            return FILTER_FUNC_NEXT_STEP.EXCLUDE
+          }
+          if (id.getFullNameParts().includes('a')) {
+            return FILTER_FUNC_NEXT_STEP.INCLUDE
+          }
+          return FILTER_FUNC_NEXT_STEP.RECURSE
+        }
+      )
+      const filteredFields = filteredObj?.fields
+      expect(filteredFields?.a).toBeDefined()
+      expect(filteredFields?.b).toBeUndefined()
+      expect(filteredFields?.c).toBeDefined()
     })
 
     // it('should not call filter function with invalid attr ID', async () => {

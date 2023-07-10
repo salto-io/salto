@@ -216,7 +216,9 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean)
 }
 
 const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
-  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
+  const correctFullName = obj.manageableState === 'unmanaged'
+    ? obj.fullName
+    : getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
     fullName: correctFullName,

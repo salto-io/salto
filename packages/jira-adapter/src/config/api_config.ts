@@ -1656,7 +1656,7 @@ const DUCKTYPE_TYPES: JiraDuckTypeConfig['types'] = {
 }
 
 export const DUCKTYPE_SUPPORTED_TYPES = {
-  ScripRunnerListeners: ['ScripRunnerListeners'],
+  // ScripRunnerListeners: ['ScripRunnerListeners'],
 }
 
 const TRANSFORMATION_DEFAULTS: configUtils.TransformationDefaultConfig = {

@@ -141,7 +141,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       : (await fileUtils.stat.notFoundAsUndefined(getAbsFileName(filename)))?.mtimeMs
   }
 
-  const get = async (filename: string): Promise<dirStore.File<T> | undefined> => {
+  const get = async (filename: string, options?: dirStore.GetFileOptions): Promise<dirStore.File<T> | undefined> => {
     let relFilename: string
     try {
       relFilename = getRelativeFileName(filename)
@@ -149,7 +149,7 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
       return Promise.reject(err)
     }
 
-    if (deleted.has(relFilename)) {
+    if (!options?.ignoreDeletionsCache && deleted.has(relFilename)) {
       return undefined
     }
 
@@ -266,8 +266,9 @@ const buildLocalDirectoryStore = <T extends dirStore.ContentType>(
 
     flush,
 
-    getFiles: async (filenames: string[]): Promise<(dirStore.File<T> | undefined) []> => log.time(
-      () => (withLimitedConcurrency(filenames.map(f => () => get(f)), READ_CONCURRENCY)),
+    getFiles: async (filenames: string[], options: dirStore.GetFileOptions)
+      : Promise<(dirStore.File<T> | undefined) []> => log.time(
+      () => (withLimitedConcurrency(filenames.map(f => () => get(f, options)), READ_CONCURRENCY)),
       'getFiles for %d files with read concurrency %d', filenames.length, READ_CONCURRENCY,
     ),
 

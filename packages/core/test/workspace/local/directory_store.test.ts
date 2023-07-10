@@ -134,6 +134,22 @@ describe('localDirectoryStore', () => {
       expect(mockReadFile).not.toHaveBeenCalled()
     })
 
+    it('does return deleted files if was requested to ignore cache', async () => {
+      const baseDir = 'exists'
+      const naclFileName = 'blabla/exist.nacl'
+      const content = 'content'
+      mockFileExists.mockResolvedValue(true)
+      mockReadFile.mockResolvedValue(content)
+      mockStat.mockResolvedValue({ mtimeMs: 7 })
+      const dirStore = localDirectoryStore({ baseDir, name: '', encoding })
+      await dirStore.delete(naclFileName)
+      const naclFile = await dirStore.get(naclFileName, { ignoreDeletionsCache: true })
+      expect(naclFile?.buffer).toBe(content)
+      expect(mockFileExists.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
+      expect(mockReadFile.mock.calls[0][0]).toMatch(path.join(baseDir, naclFileName))
+      expect(mockReadFile.mock.calls[0][1]).toEqual({ encoding })
+    })
+
     it('returns the file if it exist for string dir store', async () => {
       const baseDir = 'exists'
       const naclFileName = 'blabla/exist.nacl'

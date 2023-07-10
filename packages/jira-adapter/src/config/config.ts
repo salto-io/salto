@@ -201,6 +201,7 @@ export type ChangeValidatorName = (
   | 'issueTypeDeletion'
   | 'lockedFields'
   | 'fieldContext'
+  | 'fieldSecondGlobalContext'
   | 'systemFields'
   | 'workflowProperties'
   | 'permissionScheme'
@@ -245,6 +246,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     lockedFields: { refType: BuiltinTypes.BOOLEAN },
     fieldContext: { refType: BuiltinTypes.BOOLEAN },
+    fieldSecondGlobalContext: { refType: BuiltinTypes.BOOLEAN },
     systemFields: { refType: BuiltinTypes.BOOLEAN },
     workflowProperties: { refType: BuiltinTypes.BOOLEAN },
     permissionScheme: { refType: BuiltinTypes.BOOLEAN },

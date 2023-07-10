@@ -50,7 +50,7 @@ export const standardFieldsValidator: ChangeValidator = async changes => {
     isModificationChange
   )
 
-  const relevantModifications = modifications.filter(change => {
+  const invalidModifications = modifications.filter(change => {
     const detailedChanges = detailedCompare(change.data.before, change.data.after)
     return detailedChanges.some(detailedChange => NON_EDITABLE_FIELDS.includes(detailedChange.id.name))
   })
@@ -60,7 +60,7 @@ export const standardFieldsValidator: ChangeValidator = async changes => {
     severity: 'Error',
     message: 'Cannot add or remove standard ticket fields',
     detailedMessage: 'Standard ticket fields cannot be added or removed in Zendesk',
-  })).concat(relevantModifications.map(change => ({
+  })).concat(invalidModifications.map(change => ({
     elemID: getChangeData(change).elemID,
     severity: 'Error',
     message: `Cannot edit [${NON_EDITABLE_FIELDS.join(', ')}] fields of standard ticket fields`,

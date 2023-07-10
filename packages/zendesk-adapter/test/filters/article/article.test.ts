@@ -593,6 +593,8 @@ describe('article filter', () => {
     })
 
     it('should associate attachments to articles on creation', async () => {
+      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
+        .mockImplementation(jest.fn())
       const clonedArticle = articleWithAttachmentInstance.clone()
       const clonedAttachment = notInlineArticleAttachmentInstance.clone()
       clonedArticle.value.attachments = [
@@ -600,6 +602,11 @@ describe('article filter', () => {
       ]
       const id = 2
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      await filter.preDeploy([
+        { action: 'add', data: { after: clonedArticle } },
+        { action: 'add', data: { after: clonedAttachment } },
+      ])
+      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedArticle } },
         { action: 'add', data: { after: clonedAttachment } },

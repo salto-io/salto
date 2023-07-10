@@ -210,6 +210,20 @@ Default: 200 * 1024 - 200K
 
 Supported formatting: Receives only number which signifies the allowed bytes amount
 
+### `maxTagsPerLogMessage: number | null`
+
+Environment variable:
+
+```bash
+SALTO_LOG_MAX_TAGS_PER_LOG_MESSAGE=100
+```
+
+Configure the max amount of tags per message.
+
+Default: 100
+
+Supported formatting: Receives only number which signifies the allowed amount of tags per log line
+
 ## <a name="configure_API"></a>setting the logging from the programmatic API
 
 ```typescript

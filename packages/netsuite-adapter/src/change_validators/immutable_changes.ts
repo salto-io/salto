@@ -18,7 +18,7 @@ import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { APPLICATION_ID, SCRIPT_ID } from '../constants'
-import { TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
+import { isTypeWithMultiFieldsIdentifier, TYPE_TO_ID_FIELD_PATHS } from '../data_elements/types'
 import { getElementValueOrAnnotations, isCustomFieldName, isCustomRecordType, isDataObjectType, isFileCabinetType } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
@@ -111,8 +111,7 @@ const toModificationInstanceErrors = async (
   const { before, after } = change.data
   const modifiedImmutableFields = await instanceServiceIdConditions(change, modificationServiceIdCondition)
 
-  if (isDataObjectType(await after.getType())
-    && after.elemID.typeName in TYPE_TO_ID_FIELD_PATHS) {
+  if (isDataObjectType(await after.getType()) && isTypeWithMultiFieldsIdentifier(after.elemID.typeName)) {
     modifiedImmutableFields.push(
       ...TYPE_TO_ID_FIELD_PATHS[after.elemID.typeName]
         .filter(path => _.get(before.value, path) !== _.get(after.value, path))

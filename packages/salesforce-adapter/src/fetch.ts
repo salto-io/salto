@@ -32,6 +32,7 @@ import {
   FOLDER_CONTENT_TYPE,
   INSTALLED_PACKAGE_METADATA,
   API_NAME_SEPARATOR,
+  PROFILE_METADATA_TYPE,
 } from './constants'
 import SalesforceClient, { ErrorFilter } from './client/client'
 import {
@@ -331,6 +332,12 @@ type RetrieveMetadataInstancesArgs = {
   maxItemsInRetrieveRequest: number
   metadataQuery: MetadataQuery
   addNamespacePrefixToFullName: boolean
+
+  // Some types are retrieved via filters and should not be fetched in the normal fetch flow. However, we need these
+  // types as context for profiles - when fetching profiles using retrieve we only get information about the types that
+  // are included in the same retrieve request as the profile. Thus typesToSkip - a list of types that will be retrieved
+  // along with the profiles, but discarded.
+  typesToSkip: ReadonlySet<string>
 }
 
 export const retrieveMetadataInstances = async ({
@@ -339,6 +346,7 @@ export const retrieveMetadataInstances = async ({
   maxItemsInRetrieveRequest,
   metadataQuery,
   addNamespacePrefixToFullName,
+  typesToSkip,
 }: RetrieveMetadataInstancesArgs): Promise<FetchElements<InstanceElement[]>> => {
   const configChanges: ConfigChangeSuggestion[] = []
 
@@ -359,11 +367,19 @@ export const retrieveMetadataInstances = async ({
   const typesWithMetaFile = await getTypesWithMetaFile(types)
   const typesWithContent = await getTypesWithContent(types)
 
+  const mergeProfileInstances = (instances: ReadonlyArray<InstanceElement>): InstanceElement => {
+    const result = instances[0].clone()
+    result.value = _.merge({}, ...instances.map(instance => instance.value))
+    return result
+  }
+
   const retrieveInstances = async (
     fileProps: ReadonlyArray<FileProperties>,
+    filePropsToSendWithEveryChunk: ReadonlyArray<FileProperties> = [],
   ): Promise<InstanceElement[]> => {
+    const allFileProps = fileProps.concat(filePropsToSendWithEveryChunk)
     // Salesforce quirk - folder instances are listed under their content's type in the manifest
-    const filesToRetrieve = fileProps.map(inst => (
+    const filesToRetrieve = allFileProps.map(inst => (
       { ...inst, type: getManifestTypeName(typesByName[inst.type]) }
     ))
     const typesToRetrieve = [...new Set(filesToRetrieve.map(prop => prop.type))].join(',')
@@ -378,6 +394,11 @@ export const retrieveMetadataInstances = async ({
 
     if (result.errorStatusCode === RETRIEVE_SIZE_LIMIT_ERROR) {
       if (fileProps.length <= 1) {
+        if (filePropsToSendWithEveryChunk.length > 0) {
+          log.warn('retrieve request for %s failed with %d elements that can`t be removed from the request', typesToRetrieve, filePropsToSendWithEveryChunk.length)
+          throw new Error('Retrieve size limit exceeded')
+        }
+
         configChanges.push(...fileProps.map(fileProp =>
           createSkippedListConfigChange({ type: fileProp.type, instance: fileProp.fullName })))
         log.warn(`retrieve request for ${typesToRetrieve} failed: ${result.errorStatusCode} ${result.errorMessage}, adding to skip list`)
@@ -387,7 +408,13 @@ export const retrieveMetadataInstances = async ({
       const chunkSize = Math.ceil(fileProps.length / 2)
       log.debug('reducing retrieve item count %d -> %d', fileProps.length, chunkSize)
       configChanges.push({ type: MAX_ITEMS_IN_RETRIEVE_REQUEST, value: chunkSize })
-      return (await Promise.all(_.chunk(fileProps, chunkSize).map(retrieveInstances))).flat()
+      return (
+        await Promise.all(
+          _.chunk(fileProps, chunkSize - filePropsToSendWithEveryChunk.length)
+            .map(chunk => retrieveInstances(chunk, filePropsToSendWithEveryChunk))
+        )
+      )
+        .flat()
     }
 
     configChanges.push(...createRetrieveConfigChange(result))
@@ -400,9 +427,10 @@ export const retrieveMetadataInstances = async ({
       )
       throw new Error(`Retrieve request for ${typesToRetrieve} failed. messages: ${makeArray(safeJsonStringify(result.messages)).concat(result.errorMessage ?? [])}`)
     }
+
     const allValues = await fromRetrieveResult(
       result,
-      fileProps,
+      allFileProps,
       typesWithMetaFile,
       typesWithContent,
     )
@@ -411,6 +439,31 @@ export const retrieveMetadataInstances = async ({
         getAuthorAnnotations(file))
     ))
   }
+
+  const retrieveProfilesWithContextTypes = async (
+    profileFileProps: ReadonlyArray<FileProperties>,
+    contextFileProps: ReadonlyArray<FileProperties>,
+  ): Promise<Array<InstanceElement>> => {
+    const allInstances = await Promise.all(
+      _.chunk(contextFileProps, maxItemsInRetrieveRequest - profileFileProps.length)
+        .filter(filesChunk => filesChunk.length > 0)
+        .map(filesChunk => retrieveInstances(filesChunk, profileFileProps)),
+    )
+
+    const [partialProfileInstances, contextInstances] = _(allInstances)
+      .flatten()
+      .partition(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .value()
+
+    const profileInstances = _(partialProfileInstances)
+      .filter(instance => instance.elemID.typeName === PROFILE_METADATA_TYPE)
+      .groupBy(instance => instance.value.fullName)
+      .mapValues(mergeProfileInstances)
+      .value()
+
+    return contextInstances.concat(Object.values(profileInstances))
+  }
+
   const filesToRetrieve = _.flatten(await Promise.all(
     types
       // We get folders as part of getting the records inside them
@@ -420,14 +473,12 @@ export const retrieveMetadataInstances = async ({
 
   log.info('going to retrieve %d files', filesToRetrieve.length)
 
-  const instances = await Promise.all(
-    _.chunk(filesToRetrieve, maxItemsInRetrieveRequest)
-      .filter(filesChunk => filesChunk.length > 0)
-      .map(filesChunk => retrieveInstances(filesChunk))
-  )
+  const [profileFiles, nonProfileFiles] = _.partition(filesToRetrieve, file => file.type === PROFILE_METADATA_TYPE)
+
+  const instances = await retrieveProfilesWithContextTypes(profileFiles, nonProfileFiles)
 
   return {
-    elements: _.flatten(instances),
+    elements: instances.filter(instance => !typesToSkip.has(instance.elemID.typeName)),
     configChanges,
   }
 }

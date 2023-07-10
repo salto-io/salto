@@ -17,13 +17,13 @@ import _ from 'lodash'
 import os from 'os'
 import osPath from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { rm } from '@salto-io/file'
+import { mkdirp, rm, writeFile } from '@salto-io/file'
 import Bottleneck from 'bottleneck'
 import { SdfCredentials, toCredentialsAccountId } from '../src/client/credentials'
 import SdfClient, { ALL_FEATURES, COMMANDS, safeQuoteArgument } from '../src/client/sdf_client'
 import { DEFAULT_MAX_ITEMS_IN_IMPORT_OBJECTS_REQUEST } from '../src/config'
 import { FILE_CABINET_PATH_SEPARATOR } from '../src/constants'
-import { OBJECTS_DIR } from '../src/client/sdf_parser'
+import { FILE_CABINET_DIR, OBJECTS_DIR, SRC_DIR } from '../src/client/sdf_parser'
 
 export type ProjectInfo = {
   projectPath: string
@@ -117,4 +117,17 @@ export const createSdfExecutor = (): SDFExecutor => {
       })
     },
   }
+}
+
+export const createAdditionalFiles = async (
+  projectPath: string,
+  files: Array<{ path: string[]; content: string }>
+): Promise<void> => {
+  await Promise.all(files.map(async ({ path, content }) => {
+    await mkdirp(osPath.join(projectPath, SRC_DIR, FILE_CABINET_DIR, ...path.slice(0, -1)))
+    await writeFile(
+      osPath.join(projectPath, SRC_DIR, FILE_CABINET_DIR, ...path),
+      content
+    )
+  }))
 }

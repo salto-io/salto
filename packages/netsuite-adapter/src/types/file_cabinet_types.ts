@@ -26,7 +26,7 @@ export const fileType = (): ObjectType => new ObjectType({
   annotations: {
   },
   fields: {
-    path: {
+    [constants.PATH]: {
       refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
@@ -35,7 +35,7 @@ export const fileType = (): ObjectType => new ObjectType({
         }),
       },
     },
-    content: {
+    [constants.CONTENT]: {
       refType: fieldTypes.fileContent,
       annotations: {
       },
@@ -92,7 +92,7 @@ export const folderType = (): ObjectType => new ObjectType({
   annotations: {
   },
   fields: {
-    path: {
+    [constants.PATH]: {
       refType: BuiltinTypes.SERVICE_ID,
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,

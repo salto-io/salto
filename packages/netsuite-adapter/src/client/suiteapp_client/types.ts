@@ -101,23 +101,50 @@ export type SavedSearchQuery = {
   filters: Array<string[] | string>
 }
 
-export const SYSTEM_INFORMATION_SCHEME = {
-  type: 'object',
-  properties: {
-    time: { type: 'number' },
-    appVersion: {
-      type: 'array',
-      items: { type: 'number' },
-    },
-  },
-  required: ['time', 'appVersion'],
-  additionalProperties: true,
+export enum EnvType {
+  PRODUCTION,
+  SANDBOX,
+  BETA,
+  INTERNAL
 }
 
+const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
+  time: { type: 'number' },
+  appVersion: {
+    type: 'array',
+    items: { type: 'number' },
+  },
+}
+
+export const SYSTEM_INFORMATION_SCHEME = {
+  anyOf: [
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+        envType: {
+          type: 'number',
+          enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
+        },
+      },
+      required: ['time', 'appVersion', 'envType'],
+    },
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+      },
+      required: ['time', 'appVersion'],
+    },
+  ],
+  additionalProperties: true,
+}
 
 export type SystemInformation = {
   time: Date
   appVersion: number[]
+  // TODO: make this field not optional once SALTO-2602 is merged and users are upgraded to SuiteApp version 0.1.7
+  envType?: EnvType
 }
 
 export const FILES_READ_SCHEMA = {
@@ -181,7 +208,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles' | 'listSuiteApps'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -346,6 +373,32 @@ export const SET_CONFIG_RESULT_SCHEMA = {
       },
       required: ['configType', 'status', 'errorMessage'],
     }],
+  },
+}
+
+export const GET_BUNDLES_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+    },
+    required: ['id', 'name', 'version'],
+  },
+}
+
+export const GET_SUITEAPPS_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      appId: { type: 'string' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+    },
+    required: ['appId', 'name', 'version'],
   },
 }
 

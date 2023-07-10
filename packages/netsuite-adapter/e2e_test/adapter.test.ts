@@ -21,20 +21,21 @@ import {
   toChange, FetchResult, InstanceElement, ReferenceExpression, isReferenceExpression,
   Element, DeployResult, Values, isStaticFile, StaticFile, FetchOptions, Change,
   ChangeId, ChangeGroupId, ElemID, ChangeError, getChangeData, ObjectType, BuiltinTypes,
-  isInstanceElement, CORE_ANNOTATIONS,
+  isInstanceElement, CORE_ANNOTATIONS, Field, isObjectType,
 } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements, findElement, naclCase } from '@salto-io/adapter-utils'
 import { MockInterface } from '@salto-io/test-utils'
 import _ from 'lodash'
 import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
+import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
-import { getElementValueOrAnnotations, getMetadataTypes, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { SUITEAPP_CONFIG_TYPE_NAMES, getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
   FILE, FILE_CABINET_PATH_SEPARATOR, FOLDER, PATH, ROLE, SCRIPT_ID,
-  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE,
+  CONFIG_FEATURES, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW, NETSUITE, APPLICATION_ID, IS_SUB_INSTANCE,
 } from '../src/constants'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
 import { mockDefaultValues } from './mock_elements'
@@ -44,7 +45,8 @@ import { createCustomRecordTypes } from '../src/custom_records/custom_record_typ
 import { savedsearchType } from '../src/type_parsers/saved_search_parsing/parsed_saved_search'
 import { reportdefinitionType } from '../src/type_parsers/report_definition_parsing/parsed_report_definition'
 import { financiallayoutType } from '../src/type_parsers/financial_layout_parsing/parsed_financial_layout'
-import { ProjectInfo, createSdfExecutor } from './sdf_executor'
+import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
+import { ProjectInfo, createAdditionalFiles, createSdfExecutor } from './sdf_executor'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -63,21 +65,25 @@ describe('Netsuite adapter E2E with real account', () => {
   const { standardTypes, additionalTypes } = getMetadataTypes()
   const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
 
-  const createInstanceElement = (type: string, valuesOverride: Values): InstanceElement => {
+  const createInstanceElement = (typeName: string, valuesOverride: Values, annotations?: Values): InstanceElement => {
     const instValues = {
-      ...mockDefaultValues[type],
+      ...mockDefaultValues[typeName],
       ...valuesOverride,
     }
 
-    const instanceName = isSDFConfigTypeName(type)
+    const instanceName = isSDFConfigTypeName(typeName)
       ? ElemID.CONFIG_NAME
-      : naclCase(instValues[isStandardTypeName(type) ? SCRIPT_ID : PATH]
+      : naclCase(instValues[isStandardTypeName(typeName) ? SCRIPT_ID : PATH]
         .replace(new RegExp(`^${FILE_CABINET_PATH_SEPARATOR}`), ''))
 
+    const type = isStandardTypeName(typeName) ? standardTypes[typeName].type : additionalTypes[typeName]
+    type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
     return new InstanceElement(
       instanceName,
-      isStandardTypeName(type) ? standardTypes[type].type : additionalTypes[type],
-      instValues
+      type,
+      instValues,
+      undefined,
+      annotations
     )
   }
 
@@ -602,6 +608,7 @@ describe('Netsuite adapter E2E with real account', () => {
       beforeAll(async () => {
         const adapterAttr = realAdapter(
           { credentials: credentialsLease.value, withSuiteApp },
+          { fetch: { addAlias: true } }
         )
         adapter = adapterAttr.adapter
 
@@ -616,6 +623,26 @@ describe('Netsuite adapter E2E with real account', () => {
       it('should fetch account successfully', async () => {
         expect(fetchResult.elements.length).toBeGreaterThan(metadataTypes.length)
         validateConfigSuggestions(fetchResult.updatedConfig?.config[0])
+      })
+
+      it('should add alias to elements', async () => {
+        const relevantElements = fetchResult.elements
+          .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
+
+        const elementsWithoutAlias = relevantElements
+          .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
+          // some sub-instances don't have alias
+          .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
+          .map(element => element.elemID.getFullName())
+          .sort()
+
+        const settingsTypeNames = new Set([...SUITEAPP_CONFIG_TYPE_NAMES, CONFIG_FEATURES, SERVER_TIME_TYPE_NAME])
+        const settingsElements = relevantElements
+          .filter(element => settingsTypeNames.has(element.elemID.typeName))
+          .map(element => element.elemID.getFullName())
+          .sort()
+
+        expect(elementsWithoutAlias).toEqual(settingsElements)
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {
@@ -830,6 +857,59 @@ describe('Netsuite adapter E2E with real account', () => {
         },
       ]
 
+      const NEW_FOLDER_PATH = ['SuiteScripts', 'b', 'c']
+      const NEW_FILE_PATH = [...NEW_FOLDER_PATH, 'new.js']
+      const ADDITINAL_NEW_FILE = { path: NEW_FILE_PATH, content: 'console.log("Hello World!")' }
+      const ADDITINAL_EXISTING_FILE = { path: ['SuiteScripts', 'b', 'existing.js'], content: 'console.log("Hello Back!")' }
+
+      const newFolderElemId = new ElemID(NETSUITE, FOLDER, 'instance', naclCase(NEW_FOLDER_PATH.join('/')))
+      const newFileElemId = new ElemID(NETSUITE, FILE, 'instance', naclCase(NEW_FILE_PATH.join('/')))
+      const newFileCabinetInstancesElemIds = [
+        { elemID: newFolderElemId },
+        { elemID: newFileElemId },
+      ]
+
+      const topLevelFolder = createInstanceElement(
+        FOLDER,
+        {
+          description: randomString,
+          [PATH]: '/SuiteScripts',
+        },
+        {
+          [CORE_ANNOTATIONS.ALIAS]: 'SuiteScripts',
+        }
+      )
+
+      const innerFolder = createInstanceElement(
+        FOLDER,
+        {
+          description: randomString,
+          [PATH]: '/SuiteScripts/b',
+        },
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(topLevelFolder.elemID)],
+          [CORE_ANNOTATIONS.ALIAS]: 'b',
+        }
+      )
+
+      const existingFileInstance = createInstanceElement(
+        FILE,
+        {
+          description: randomString,
+          [PATH]: '/SuiteScripts/b/existing.js',
+        },
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
+          [CORE_ANNOTATIONS.ALIAS]: 'existing.js',
+        }
+      )
+
+      const existingFileCabinetInstances = [
+        topLevelFolder,
+        innerFolder,
+        existingFileInstance,
+      ]
+
       beforeAll(async () => {
         logMessage('creating an SDF project to load')
         projectInfo = await sdfExecutor.createProject(credentialsLease.value)
@@ -839,10 +919,15 @@ describe('Netsuite adapter E2E with real account', () => {
           sdfExecutor.importFiles(projectPath, filesToImport.map(f => f.path)),
           sdfExecutor.importFeatures(projectPath),
         ])
+        await createAdditionalFiles(projectPath, [
+          ADDITINAL_NEW_FILE,
+          ADDITINAL_EXISTING_FILE,
+        ])
         logMessage('loading elements from SDF project')
         const res = await adapterCreator.loadElementsFromFolder?.({
           baseDir: projectPath,
-          elementsSource: buildElementsSourceFromElements([]),
+          elementsSource: buildElementsSourceFromElements(existingFileCabinetInstances),
+          config: new InstanceElement(ElemID.CONFIG_NAME, configType, { fetch: { addAlias: true } }),
         })
         loadedElements = res?.elements as Element[]
       })
@@ -860,6 +945,8 @@ describe('Netsuite adapter E2E with real account', () => {
             .concat([featuresInstance])
             .concat(objectsToImport)
             .concat(filesToImport)
+            .concat(existingFileCabinetInstances)
+            .concat(newFileCabinetInstancesElemIds)
             .map(type => type.elemID.getFullName())
         ).sort()
 
@@ -981,6 +1068,65 @@ describe('Netsuite adapter E2E with real account', () => {
         )
         expect(loadedFeaturesInstance).toBeDefined()
         expect(loadedFeaturesInstance).toEqual(fetchedFeaturesInstance)
+      })
+
+      it('should load existing folders correctly', async () => {
+        expect(findElement(loadedElements, topLevelFolder.elemID)).toEqual(topLevelFolder)
+        expect(findElement(loadedElements, innerFolder.elemID)).toEqual(innerFolder)
+      })
+
+      it('should load existing file with new content', async () => {
+        const loadedExistingFile = findElement(loadedElements, existingFileInstance.elemID) as InstanceElement
+        const loadedContent = loadedExistingFile.value.content
+        delete loadedExistingFile.value.content
+        delete existingFileInstance.value.content
+        expect(loadedExistingFile).toEqual(existingFileInstance)
+        expect(loadedContent).toEqual(new StaticFile({
+          filepath: 'netsuite/FileCabinet/SuiteScripts/b/existing.js',
+          content: Buffer.from('console.log("Hello Back!")'),
+        }))
+      })
+
+      it('should load new folder with default values', async () => {
+        expect(findElement(loadedElements, newFolderElemId)).toEqual(new InstanceElement(
+          newFolderElemId.name,
+          additionalTypes[FOLDER],
+          {
+            bundleable: false,
+            isinactive: false,
+            isprivate: false,
+            path: '/SuiteScripts/b/c',
+          },
+          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'c'],
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(innerFolder.elemID)],
+            [CORE_ANNOTATIONS.ALIAS]: 'c',
+          }
+        ))
+      })
+
+      it('should load new file with default values', async () => {
+        expect(findElement(loadedElements, newFileElemId)).toEqual(new InstanceElement(
+          newFileElemId.name,
+          additionalTypes[FILE],
+          {
+            availablewithoutlogin: false,
+            bundleable: false,
+            generateurltimestamp: false,
+            hideinbundle: false,
+            isinactive: false,
+            path: '/SuiteScripts/b/c/new.js',
+            content: new StaticFile({
+              filepath: 'netsuite/FileCabinet/SuiteScripts/b/c/new.js',
+              content: Buffer.from('console.log("Hello World!")'),
+            }),
+          },
+          ['netsuite', 'FileCabinet', 'SuiteScripts', 'b', 'c', 'new.js'],
+          {
+            [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(newFolderElemId)],
+            [CORE_ANNOTATIONS.ALIAS]: 'new.js',
+          }
+        ))
       })
     })
 

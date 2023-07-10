@@ -159,6 +159,7 @@ describe('Adapter', () => {
 
   describe('fetch', () => {
     it('should fetch all types and instances that are not in fetch.exclude', async () => {
+      const mockElementsSource = buildElementsSourceFromElements([])
       const folderCustomizationInfo: FolderCustomizationInfo = {
         typeName: FOLDER,
         values: {
@@ -229,6 +230,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           customTypeInfo,
           customFieldType as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -240,6 +242,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           fileCustomizationInfo,
           file as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -251,6 +254,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           folderCustomizationInfo,
           folder as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -262,6 +266,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           featuresCustomTypeInfo,
           featuresType as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -1222,6 +1227,7 @@ describe('Adapter', () => {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
+        getInstalledBundles: () => [],
         getCustomRecords: getCustomRecordsMock,
       } as unknown as SuiteAppClient
 
@@ -1283,6 +1289,7 @@ describe('Adapter', () => {
                 fieldsDef: [],
                 data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]
           ),
+          getInstalledBundles: () => [],
           getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 

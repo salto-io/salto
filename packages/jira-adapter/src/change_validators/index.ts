@@ -53,6 +53,7 @@ import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
 import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
+import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 
 const {
   deployTypesNotSupportedValidator,
@@ -93,6 +94,7 @@ export default (
     issueTypeDeletion: issueTypeDeletionValidator(client),
     lockedFields: lockedFieldsValidator,
     fieldContext: fieldContextValidator,
+    fieldSecondGlobalContext: fieldSecondGlobalContextValidator,
     systemFields: systemFieldsValidator,
     workflowProperties: workflowPropertiesValidator,
     permissionScheme: permissionSchemeValidator,

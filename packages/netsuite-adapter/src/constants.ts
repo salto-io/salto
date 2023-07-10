@@ -62,6 +62,7 @@ export const RECORD_REF = 'recordRef'
 export const EMPLOYEE = 'employee'
 export const REPORT_DEFINITION = 'reportdefinition'
 export const FINANCIAL_LAYOUT = 'financiallayout'
+export const BUNDLE = 'bundle'
 
 // Type Annotations
 export const SOURCE = 'source'
@@ -84,6 +85,7 @@ export const EXCHANGE_RATE = 'exchangeRate'
 export const PERMISSIONS = 'permissions'
 export const CUSTOM_FIELD = 'customField'
 export const CUSTOM_FIELD_LIST = 'customFieldList'
+export const CONTENT = 'content'
 
 // Field Annotations
 export const SOAP = 'soap'

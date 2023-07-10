@@ -18,7 +18,7 @@ import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
-import Ajv from 'ajv'
+import Ajv, { Schema } from 'ajv'
 import AsyncLock from 'async-lock'
 import compareVersions from 'compare-versions'
 import os from 'os'
@@ -33,7 +33,7 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc, GET_BUNDLES_RESULT_SCHEMA, GET_SUITEAPPS_RESULT_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
@@ -42,6 +42,7 @@ import SoapClient from './soap_client/soap_client'
 import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
+import { BundleType } from '../../types/bundle_type'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
@@ -75,11 +76,31 @@ const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
+const LIST_BUNDLES_APP_VERSION = '0.1.7'
+const LIST_SUITEAPPS_APP_VERSION = '0.1.7'
 
 type VersionFeatures = {
   activationKey: boolean
   configTypes: boolean
+  listBundles: boolean
+  listSuiteApps: boolean
 }
+
+export type SuiteAppType = {
+  appId: string
+  name: string
+  version: string
+  description: string
+  dateInstalled: Date
+  dateLastUpdated: Date
+  publisherId: string
+  installedBy: {
+    id: number
+    name: string
+  }
+}
+
+type SuiteAppInfoOperation = 'listBundles' | 'listSuiteApps'
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
   const errorDetails = error.response?.data?.['o:errorDetails']
@@ -204,7 +225,7 @@ export default class SuiteAppClient {
   }
 
   private parseSystemInformation(results: unknown): SystemInformation | undefined {
-    if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
+    if (!this.ajv.validate<SystemInformation>(
       SYSTEM_INFORMATION_SCHEME,
       results
     )) {
@@ -272,7 +293,6 @@ export default class SuiteAppClient {
         action: 'get',
         types: SUITEAPP_CONFIG_RECORD_TYPES,
       })
-
       if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
         log.error(
           'getConfigRecords failed. Got invalid results - %s: %o',
@@ -349,6 +369,40 @@ export default class SuiteAppClient {
     } catch (e) {
       log.error('setConfigRecordsValues failed. received error: %s', e.message)
       return { errorMessage: e.message }
+    }
+  }
+
+  public async getInstalledBundles(): Promise<BundleType[]> {
+    return this.getInstalledBundlesOrSuiteApps<BundleType>('listBundles', GET_BUNDLES_RESULT_SCHEMA)
+  }
+
+  public async getInstalledSuiteApps(): Promise<SuiteAppType[]> {
+    return this.getInstalledBundlesOrSuiteApps<SuiteAppType>('listSuiteApps', GET_SUITEAPPS_RESULT_SCHEMA)
+  }
+
+  public async getInstalledBundlesOrSuiteApps<T>(
+    operation: SuiteAppInfoOperation,
+    schema: Schema
+  ): Promise<T[]> {
+    try {
+      if (!(await this.isFeatureSupported(operation))) {
+        log.warn(`SuiteApp version doesn't support ${operation}`)
+        return []
+      }
+      const result = await this.sendRestletRequest(operation)
+      if (!this.ajv.validate<T[]>(schema, result)) {
+        log.error(
+          `${operation} failed. Got invalid results - %s: %o`,
+          this.ajv.errorsText(),
+          result
+        )
+        throw Error(this.ajv.errorsText())
+      }
+      return result
+    } catch (e) {
+      const errorMessage = `${operation} operation failed. Recieved the following error: ${e.message}`
+      log.error(errorMessage)
+      throw Error(errorMessage)
     }
   }
 
@@ -444,6 +498,8 @@ export default class SuiteAppClient {
       this.versionFeatures = {
         activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
         configTypes: compareVersions(currentVersion, CONFIG_TYPES_APP_VERSION) !== -1,
+        listBundles: compareVersions(currentVersion, LIST_BUNDLES_APP_VERSION) !== -1,
+        listSuiteApps: compareVersions(currentVersion, LIST_SUITEAPPS_APP_VERSION) !== -1,
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })

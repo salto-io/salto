@@ -106,7 +106,7 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
  * Build a global list of available currency code, and a replace all the explicit ValueSets
  * with ValueSetName which points to it
  */
-const filterCreator: LocalFilterCreator = (/* { config } */) => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'currencyIsoCodeFilter',
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
@@ -132,6 +132,17 @@ const filterCreator: LocalFilterCreator = (/* { config } */) => ({
       .forEach(objType => {
         delete objType.fields.CurrencyIsoCode?.annotations.valueSetName
       })
+  },
+  onDeploy: async changes => {
+    const currencyCodeInstance = await config.elementsSource.get(currencyCodeType.elemID.createNestedID('instance', ElemID.CONFIG_NAME))
+    const objectTypesWithIsoCodeFields = changes
+      .filter(isAdditionChange)
+      .filter(isObjectTypeChange)
+      .map(getChangeData)
+      .filter(objType => objType.fields[CURRENCY_ISO_CODE] !== undefined)
+
+    objectTypesWithIsoCodeFields
+      .forEach(objType => transformCurrencyIsoCodes(objType as CurrencyIsoCodeType, currencyCodeInstance))
   },
 })
 

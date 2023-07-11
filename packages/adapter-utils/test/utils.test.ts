@@ -1841,6 +1841,25 @@ describe('Test utils.ts', () => {
       path: ['salto', 'obj2', 'field'],
     })
 
+    const mockedFilterFunc = jest.fn((id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
+      if (id.getFullNameParts().includes('num')) {
+        return Promise.resolve(FILTER_FUNC_NEXT_STEP.EXCLUDE)
+      }
+      if (id.getFullNameParts().includes('str')) {
+        return Promise.resolve(FILTER_FUNC_NEXT_STEP.INCLUDE)
+      }
+      return Promise.resolve(FILTER_FUNC_NEXT_STEP.RECURSE)
+    })
+    let filteredObj: ObjectType | undefined
+    beforeAll(async () => {
+      filteredObj = await filterByID(
+        objToFilter.elemID,
+        objToFilter,
+        mockedFilterFunc
+      )
+    })
+
+
     it('should filter object type', async () => {
       const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {
         expect(actual).toBeDefined()
@@ -1987,24 +2006,19 @@ describe('Test utils.ts', () => {
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
 
-    it('should filter values base on the FILTER_FUNC_NEXT_STEP', async () => {
-      const filteredObj = await filterByID(
-        objToFilter.elemID,
-        objToFilter,
-        async id => {
-          if (id.getFullNameParts().includes('num')) {
-            return FILTER_FUNC_NEXT_STEP.EXCLUDE
-          }
-          if (id.getFullNameParts().includes('str')) {
-            return FILTER_FUNC_NEXT_STEP.INCLUDE
-          }
-          return FILTER_FUNC_NEXT_STEP.RECURSE
-        }
-      )
-      const filteredFields = filteredObj?.fields
-      expect(filteredFields?.str.annotations).toEqual(objToFilter.fields.str.annotations)
-      expect(filteredFields?.num).toBeUndefined()
-      expect(filteredFields?.other.annotations).toEqual({ str: 'c' })
+    it('should not reach the inner value after FILTER_FUNC_NEXT_STEP.INCLUDE', async () => {
+      expect(filteredObj?.fields?.str.annotations).toEqual(objToFilter.fields.str.annotations)
+      expect(mockedFilterFunc).not.toHaveBeenCalledWith(new ElemID('salto', 'obj2', 'field', 'str', 'str'))
+      expect(mockedFilterFunc).not.toHaveBeenCalledWith(new ElemID('salto', 'obj2', 'field', 'str', 'num'))
+    })
+    it('should omit all inner value immediately after FILTER_FUNC_NEXT_STEP.EXCLUDE', async () => {
+      expect(filteredObj?.fields?.num).toBeUndefined()
+      expect(mockedFilterFunc).not.toHaveBeenCalledWith(new ElemID('salto', 'obj2', 'field', 'num', 'str'))
+    })
+    it('should recurse into the value after FILTER_FUNC_NEXT_STEP.RECURSE', async () => {
+      expect(filteredObj?.fields?.other.annotations).toEqual({ str: 'c' })
+      expect(mockedFilterFunc).toHaveBeenCalledWith(new ElemID('salto', 'obj2', 'field', 'other', 'str'))
+      expect(mockedFilterFunc).toHaveBeenCalledWith(new ElemID('salto', 'obj2', 'field', 'other', 'num'))
     })
   })
   describe('Flat Values', () => {

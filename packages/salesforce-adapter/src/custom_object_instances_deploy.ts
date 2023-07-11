@@ -329,7 +329,9 @@ const deployAddInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
-  const instancesWithReferenceToNonDeployedInstance = instances
+  // Instances with internalIds have been already deployed previously, unless they are in the current
+  // deployed group of instances This is relevant to the ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP group for example.
+  const instancesReferencingToBeDeployedInstances = instances
     .filter(instance => (
       Object.values(instance.value)
         // Only successfully deployed Instances have Id
@@ -337,7 +339,7 @@ const deployAddInstances = async (
     ))
   // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
   const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
-  await awu(instancesWithReferenceToNonDeployedInstance).forEach(instance => {
+  await awu(instancesReferencingToBeDeployedInstances).forEach(instance => {
     instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
       ? instanceByElemId[val.elemID.getFullName()] ?? val
       : val))
@@ -387,7 +389,7 @@ const deployAddInstances = async (
     updateInstances,
     {
       typeName: await apiName(type),
-      instances: existingInstances.concat(instancesWithReferenceToNonDeployedInstance),
+      instances: existingInstances.concat(instancesReferencingToBeDeployedInstances),
       client,
       groupId,
     },

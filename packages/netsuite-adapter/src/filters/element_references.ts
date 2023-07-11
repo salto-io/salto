@@ -21,7 +21,7 @@ import osPath from 'path'
 import { logger } from '@salto-io/logging'
 import { SCRIPT_ID, PATH, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { LocalFilterCreator } from '../filter'
-import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance, getServiceId } from '../types'
+import { isCustomRecordType, isStandardType, isFileCabinetType, isFileInstance, isFileCabinetInstance } from '../types'
 import { ElemServiceID, LazyElementsSourceIndexes, ServiceIdRecords } from '../elements_source_index/types'
 import { captureServiceIdInfo, ServiceIdInfo } from '../service_id_info'
 import { isSdfCreateOrUpdateGroupId } from '../group_changes'
@@ -268,7 +268,7 @@ const applyValuesAndAnnotationsToElement = (element: Element, newElement: Elemen
 
 export const extractCustomRecordFields = (customRecordType: ObjectType): ElemServiceID[] =>
   Object.values(customRecordType.fields)
-    .map(field => ({ serviceID: getServiceId(field), elemID: field.elemID }))
+    .map(field => ({ serviceID: field.annotations[SCRIPT_ID], elemID: field.elemID.createNestedID(SCRIPT_ID) }))
 
 const createCustomRecordFieldsToElemID = (
   elements: Element[],

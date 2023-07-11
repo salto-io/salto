@@ -125,8 +125,8 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
   }
 
   const updateCustomRecordFieldsIndex = (customObjectType: ObjectType): void => {
-    const serviceIdRecords = extractCustomRecordFields(customObjectType)
-    _.assign(serviceIdRecordsIndex, serviceIdRecords)
+    const serviceIdRecords = _.keyBy(extractCustomRecordFields(customObjectType), 'serviceID')
+    _.assign(customRecordFieldsServiceIdRecordsIndex, serviceIdRecords)
   }
 
   const deletedElementSet = new Set(deletedElements.map(elemId => elemId.getFullName()))

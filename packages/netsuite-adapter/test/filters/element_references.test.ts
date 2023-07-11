@@ -565,7 +565,7 @@ describe('instance_references filter', () => {
       const customRecordField = new Field(customRecordType, 'custom_field', BuiltinTypes.STRING)
       getIndexesMock.mockResolvedValue({
         customRecordFieldsServiceIdRecordsIndex: {
-          custom_field: { elemID: customRecordField.elemID },
+          custom_field: { elemID: customRecordField.elemID.createNestedID(SCRIPT_ID) },
         },
       })
       const fileContent = `

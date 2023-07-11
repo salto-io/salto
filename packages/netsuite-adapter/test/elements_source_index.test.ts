@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
@@ -229,6 +229,28 @@ describe('createElementsSourceIndex', () => {
       .toEqual({
         'netsuite.someType.instance.inst': '03/23/2022',
         'netsuite.customrecord1': '05/26/2022',
+      })
+  })
+  it('should create the correct customRecordField index', async () => {
+    const custRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        custom_field: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [SCRIPT_ID]: 'custom_field',
+          },
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
+    const custRecordField = new Field(custRecordType, 'custom_field', BuiltinTypes.STRING, { scriptid: 'custom_field' })
+    getAllMock.mockImplementation(buildElementsSourceFromElements([custRecordType]).getAll)
+    expect((await createElementsSourceIndex(elementsSource, true).getIndexes()).customRecordFieldsServiceIdRecordsIndex)
+      .toEqual({
+        custom_field: { elemID: custRecordField.elemID.createNestedID(SCRIPT_ID), serviceID: 'custom_field' },
       })
   })
 })

@@ -109,6 +109,9 @@ export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value 
 
 export type TransformFuncSync = (args: TransformFuncArgs) => lowerDashTypes.NonPromise<Value> | undefined
 
+// NOTE: Any changes that are made to this function need to take into account whether
+//  they're also needed over at transformValuesSync. The two functions are separated
+//  only because of the way async is intertwined with the logic.
 export const transformValues = async (
   {
     values,
@@ -256,7 +259,11 @@ export const transformValues = async (
   return newVal
 }
 
-// TODOADI call this function only from transformValues if elementSource doesn't exist
+// IMPORTANT: this function will only work if transformFunc is synchronous.
+//  It is up to the caller to ensure that this is the case.
+// NOTE: Any changes that are made to this function need to take into account whether
+//  they're also needed over at transformValues. The two functions are separated
+//  only because of the way async is intertwined with the logic.
 export const transformValuesSync = (
   {
     values,

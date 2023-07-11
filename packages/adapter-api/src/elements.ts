@@ -303,11 +303,7 @@ export class Field extends Element {
   }
 
   getTypeSync(): TypeElement {
-    const type = this.refType.getResolvedValueSync()
-    if (!isType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
-    }
-    return type
+    return this.refType.getResolvedValueSync()
   }
 
   /**

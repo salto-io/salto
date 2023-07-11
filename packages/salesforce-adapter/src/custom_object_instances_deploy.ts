@@ -329,27 +329,18 @@ const deployAddInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
-  const instancesToUpdate: InstanceElement[] = []
+  const instancesWithReferenceToNonDeployedInstance = instances
+    .filter(instance => (
+      Object.values(instance.value)
+        // Only successfully deployed Instances have Id
+        .some(v => isInstanceElement(v) && v.value[CUSTOM_OBJECT_ID_FIELD] === undefined)
+    ))
   // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
   const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
-  await awu(instances).forEach(instance => {
-    let markedToUpdate = false
-    instance.value = _.mapValues(instance.value, value => {
-      if (isInstanceElement(value)) {
-        const referencedInstance = instanceByElemId[value.elemID.getFullName()]
-        // If the referenced instance is not in the group, no update needed.
-        // This case is relevant to ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
-        if (referencedInstance !== undefined) {
-          if (!markedToUpdate) {
-            instancesToUpdate.push(instance)
-            markedToUpdate = true
-          }
-          return referencedInstance
-        }
-        return value
-      }
-      return value
-    })
+  await awu(instancesWithReferenceToNonDeployedInstance).forEach(instance => {
+    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
+      ? instanceByElemId[val.elemID.getFullName()] ?? val
+      : val))
   })
   const type = await instances[0].getType()
   const typeName = await apiName(type)
@@ -394,7 +385,12 @@ const deployAddInstances = async (
     errorInstances: errorUpdateInstances,
   } = await retryFlow(
     updateInstances,
-    { typeName: await apiName(type), instances: existingInstances.concat(instancesToUpdate), client, groupId },
+    {
+      typeName: await apiName(type),
+      instances: existingInstances.concat(instancesWithReferenceToNonDeployedInstance),
+      client,
+      groupId,
+    },
     client.dataRetry.maxAttempts
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
@@ -532,7 +528,6 @@ const deployAddCustomApprovalRulesAndConditions = async (
   client: SalesforceClient,
   dataManagement: DataManagement | undefined
 ): Promise<DeployResult> => {
-  // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
   const approvalRuleChanges = await awu(changes)
     .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
     .toArray()
@@ -574,6 +569,7 @@ const deployAddCustomApprovalRulesAndConditions = async (
         log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
         return false
       }
+      // Only successfully deployed Instances have Id
       if (approvalRule.value[CUSTOM_OBJECT_ID_FIELD] === undefined) {
         log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
         return false

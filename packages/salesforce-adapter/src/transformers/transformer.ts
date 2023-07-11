@@ -1195,6 +1195,45 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
   }
 }
 
+export const transformPrimitiveSync: TransformFunc = ({ value, path, field }) => {
+  if (isNull(value)) {
+    // We transform null to undefined as currently we don't support null in Salto language
+    // and the undefined values are omitted later in the code
+    return undefined
+  }
+
+  // (Salto-394) Salesforce returns objects like:
+  // { "_": "fieldValue", "$": { "xsi:type": "xsd:string" } }
+  if (_.isObject(value) && Object.keys(value).includes('_')) {
+    const convertFunc = getXsdConvertFunc(_.get(value, ['$', 'xsi:type']))
+    return transformPrimitiveSync({ value: convertFunc(_.get(value, '_')), path, field })
+  }
+  const fieldType = field?.getTypeSync()
+
+  if (isContainerType(fieldType) && _.isEmpty(value)) {
+    return undefined
+  }
+  if (isObjectType(fieldType) && value === '') {
+    // Salesforce returns empty objects in XML as <quickAction></quickAction> for example
+    // We treat them as "" (empty string), and we don't want to delete them
+    // We should replace them with {} (empty object)
+    return {}
+  }
+  if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+    return value
+  }
+  switch (fieldType.primitive) {
+    case PrimitiveTypes.NUMBER:
+      return Number(value)
+    case PrimitiveTypes.BOOLEAN:
+      return value.toString().toLowerCase() === 'true'
+    case PrimitiveTypes.STRING:
+      return value.toString()
+    default:
+      return value
+  }
+}
+
 const isDefaultWithType = (val: PrimitiveValue | DefaultValueWithType):
   val is DefaultValueWithType => new Set(_.keys(val)).has('_')
 

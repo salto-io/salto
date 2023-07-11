@@ -302,6 +302,14 @@ export class Field extends Element {
     return type
   }
 
+  getTypeSync(): TypeElement {
+    const type = this.refType.getResolvedValueSync()
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
+  }
+
   /**
    * Clones a field
    * Note that the cloned field still has the same element ID so it cannot be used in a different
@@ -476,6 +484,21 @@ export class InstanceElement extends Element {
     }
     return type
   }
+
+  getTypeSync(): ObjectType {
+    const type = this.refType.getResolvedValueSync()
+    if (!isObjectType(type)) {
+      log.warn(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
+      if (type === undefined) {
+        throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is undefined`)
+      }
+      return new PlaceholderObjectType({
+        elemID: this.elemID,
+      })
+    }
+    return type
+  }
+
 
   isEqual(
     other: InstanceElement,

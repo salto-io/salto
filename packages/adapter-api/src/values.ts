@@ -84,6 +84,16 @@ type StaticFileMetadata = Pick<StaticFile, 'filepath' | 'hash'>
 export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata): string =>
   `${filepath}-${hash}`
 
+const getResolvedValueSync = (
+  elemID: ElemID,
+  resolvedValue?: Value
+): Value => {
+  if (resolvedValue === undefined) {
+    return new PlaceholderObjectType({ elemID })
+  }
+  return resolvedValue
+}
+
 const getResolvedValue = async (
   elemID: ElemID,
   elementsSource?: ReadOnlyElementsSource,
@@ -150,6 +160,10 @@ export class ReferenceExpression {
     return getResolvedValue(this.elemID, elementsSource, this.value)
   }
 
+  getResolvedValueSync(): Value {
+    return getResolvedValueSync(this.elemID, this.value)
+  }
+
   [inspect.custom](): string {
     return `ReferenceExpression(${this.elemID.getFullName()}, ${this.value ? '<omitted>' : '<no value>'})`
   }
@@ -194,6 +208,13 @@ export class TypeReference {
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
     return getResolvedValue(this.elemID, elementsSource, this.type)
+  }
+
+  getResolvedValueSync(): TypeElement {
+    if (this.type === undefined) {
+      throw new Error(`Cannot resolve type reference ${this.elemID.getFullName()} without type`)
+    }
+    return this.type
   }
 
   [inspect.custom](): string {

@@ -17,11 +17,11 @@ import {
   Element, isObjectType, isInstanceElement,
 } from '@salto-io/adapter-api'
 import {
-  transformValues,
+  transformValuesSync,
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { transformPrimitive } from '../transformers/transformer'
+import { transformPrimitiveSync } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
@@ -43,11 +43,11 @@ const filterCreator: LocalFilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(async instance => isObjectType(await instance.getType()))
       .forEach(async instance => {
-        instance.value = await transformValues(
+        instance.value = transformValuesSync(
           {
             values: instance.value,
-            type: await instance.getType(),
-            transformFunc: transformPrimitive,
+            type: instance.getTypeSync(),
+            transformFunc: transformPrimitiveSync,
             strict: false,
             allowEmpty: true,
           }

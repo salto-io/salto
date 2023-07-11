@@ -819,7 +819,7 @@ export const filterByID = async <T extends Element | Values>(
   if (filterResult === FILTER_FUNC_NEXT_STEP.INCLUDE) {
     return value
   }
-  // partial match
+  // Only part of the value should be included, continue with the recursion
   if (isObjectType(value)) {
     return new ObjectType({
       elemID: value.elemID,

@@ -1817,22 +1817,24 @@ describe('Test utils.ts', () => {
     const objToFilter = new ObjectType({
       elemID: new ElemID('salto', 'obj2'),
       fields: {
-        a: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        str: {
+          refType: annoType,
           annotations: {
-            a: 'a',
+            str: 'a',
+            num: 1,
           },
         },
-        b: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        num: {
+          refType: BuiltinTypes.STRING,
           annotations: {
-            a: 'b',
+            str: 'b',
           },
         },
-        c: {
-          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        other: {
+          refType: annoType,
           annotations: {
-            a: 'c',
+            str: 'c',
+            num: 3,
           },
         },
       },
@@ -1990,31 +1992,20 @@ describe('Test utils.ts', () => {
         objToFilter.elemID,
         objToFilter,
         async id => {
-          if (id.getFullNameParts().includes('b')) {
+          if (id.getFullNameParts().includes('num')) {
             return FILTER_FUNC_NEXT_STEP.EXCLUDE
           }
-          if (id.getFullNameParts().includes('a')) {
+          if (id.getFullNameParts().includes('str')) {
             return FILTER_FUNC_NEXT_STEP.INCLUDE
           }
           return FILTER_FUNC_NEXT_STEP.RECURSE
         }
       )
       const filteredFields = filteredObj?.fields
-      expect(filteredFields?.a).toBeDefined()
-      expect(filteredFields?.b).toBeUndefined()
-      expect(filteredFields?.c).toBeDefined()
+      expect(filteredFields?.str.annotations).toEqual(objToFilter.fields.str.annotations)
+      expect(filteredFields?.num).toBeUndefined()
+      expect(filteredFields?.other.annotations).toEqual({ str: 'c' })
     })
-
-    // it('should not call filter function with invalid attr ID', async () => {
-    //   const filterFunc = jest.fn().mockResolvedValue(true)
-    //   await filterByID(
-    //     obj.elemID,
-    //     obj,
-    //     filterFunc
-    //   )
-    //
-    //   expect(filterFunc).not.toHaveBeenCalledWith(obj.elemID.createNestedID('attr'))
-    // })
   })
   describe('Flat Values', () => {
     it('should not transform static files', () => {

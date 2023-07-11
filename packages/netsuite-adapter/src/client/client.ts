@@ -27,7 +27,7 @@ import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credential
 import SdfClient from './sdf_client'
 import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
 import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
-import { ConfigRecord, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
 import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
 import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
   getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
@@ -95,24 +95,44 @@ export default class NetsuiteClient {
     this.url = new URL(`https://${toUrlAccountId(this.sdfClient.getCredentials().accountId)}.app.netsuite.com`)
   }
 
-  @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
+  private static async suiteAppValidateCredentials(
+    credentials: Credentials,
+  ): Promise<SystemInformation | undefined> {
     if (isSuiteAppCredentials(credentials)) {
       try {
-        await SuiteAppClient.validateCredentials(credentials)
+        return await SuiteAppClient.validateCredentials(credentials)
       } catch (e) {
         e.message = `Salto SuiteApp Authentication failed. ${e.message}`
         throw new CredentialError(e.message)
       }
     } else {
       log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
+      return undefined
     }
+  }
 
+  private static async sdfValidateCredentials(
+    credentials: Credentials,
+  ): Promise<AccountInfo> {
     try {
       return await SdfClient.validateCredentials(credentials)
     } catch (e) {
       e.message = `SDF Authentication failed. ${e.message}`
       throw new CredentialError(e)
+    }
+  }
+
+  @NetsuiteClient.logDecorator
+  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
+    const systemInformation = await NetsuiteClient.suiteAppValidateCredentials(credentials)
+    const { accountId } = await NetsuiteClient.sdfValidateCredentials(credentials)
+    if (systemInformation?.envType === undefined) {
+      return { accountId }
+    }
+    return {
+      accountId,
+      isProduction: systemInformation.envType === EnvType.PRODUCTION,
+      accountType: EnvType[systemInformation.envType],
     }
   }
 
@@ -479,7 +499,12 @@ export default class NetsuiteClient {
   }
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
-    return this.suiteAppClient?.getSystemInformation()
+    try {
+      return await this.suiteAppClient?.getSystemInformation()
+    } catch (error) {
+      log.error('The following error was thrown in getSystemInformation', { error })
+      return undefined
+    }
   }
 
   public isSuiteAppConfigured(): boolean {

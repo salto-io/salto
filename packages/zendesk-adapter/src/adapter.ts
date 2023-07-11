@@ -636,6 +636,51 @@ export default class ZendeskAdapter implements AdapterOperations {
     return { elements, errors: fetchErrors, updatedConfig }
   }
 
+  private async getGuideDeployResults(
+    subdomainToClient: Record<string, ZendeskClient>,
+    subdomainToGuideChanges: Record<string, Change<InstanceElement>[]>,
+    saltoErrors: SaltoError[]
+  ): Promise<DeployResult[]> {
+    try {
+      return await awu(Object.entries(subdomainToClient))
+        .map(async ([subdomain, client]) => {
+          const brandRunner = await this.createFiltersRunner({
+            filterRunnerClient: client,
+            paginator: createPaginator({
+              client,
+              paginationFuncCreator: paginate,
+            }),
+          })
+          await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(
+            subdomainToGuideChanges[subdomain]
+          )
+          const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
+          try {
+            await brandRunner.onDeploy(guideChangesBeforeRestore)
+          } catch (e) {
+            if (!isSaltoError(e)) {
+              throw e
+            }
+            saltoErrors.push(e)
+          }
+          return {
+            appliedChanges: guideChangesBeforeRestore,
+            errors: brandDeployResults.errors,
+          }
+        })
+        .toArray()
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      return [{
+        appliedChanges: [],
+        errors: [e],
+      }]
+    }
+  }
+
   /**
    * Deploy configuration elements to the given account.
    */
@@ -679,23 +724,23 @@ export default class ZendeskAdapter implements AdapterOperations {
     try {
       await runner.preDeploy(supportResolvedChanges)
     } catch (e) {
-      if (isSaltoError(e)) {
-        return {
-          appliedChanges: [],
-          errors: [e],
-        }
+      if (!isSaltoError(e)) {
+        throw e
       }
-      throw e
+      return {
+        appliedChanges: [],
+        errors: [e],
+      }
     }
     const { deployResult } = await runner.deploy(supportResolvedChanges)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     try {
       await runner.onDeploy(appliedChangesBeforeRestore)
     } catch (e) {
-      if (isSaltoError(e)) {
-        saltoErrors.push(e)
+      if (!isSaltoError(e)) {
+        throw e
       }
-      throw e
+      saltoErrors.push(e)
     }
 
 
@@ -717,56 +762,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
       .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
-    const guideDeployResults = await awu(Object.entries(subdomainToClient))
-      .map(async ([subdomain, client]) => {
-        const brandRunner = await this.createFiltersRunner({
-          filterRunnerClient: client,
-          paginator: createPaginator({
-            client,
-            paginationFuncCreator: paginate,
-          }),
-        })
-        try {
-          await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-        } catch (e) {
-          if (isSaltoError(e)) {
-            const appliedChanges = await awu(appliedChangesBeforeRestore)
-              .map(change => restoreChangeElement(
-                change,
-                sourceChanges,
-                lookupFunc,
-              ))
-              .toArray()
-            const restoredAppliedChanges = restoreInstanceTypeFromDeploy({
-              appliedChanges,
-              originalInstanceChanges: instanceChanges,
-            })
-            return {
-              appliedChanges: restoredAppliedChanges,
-              errors: deployResult.errors.concat([e]),
-            }
-          }
-          throw e
-        }
-        const { deployResult: brandDeployResults } = await brandRunner.deploy(
-          subdomainToGuideChanges[subdomain]
-        )
-        const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        try {
-          await brandRunner.onDeploy(guideChangesBeforeRestore)
-        } catch (e) {
-          if (isSaltoError(e)) {
-            saltoErrors.push(e)
-          }
-          throw e
-        }
-        return {
-          appliedChanges: guideChangesBeforeRestore,
-          errors: brandDeployResults.errors,
-        }
-      })
-      .toArray()
-
+    const guideDeployResults = await this.getGuideDeployResults(subdomainToClient, subdomainToGuideChanges, saltoErrors)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges)
     )

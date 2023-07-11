@@ -15,7 +15,16 @@
 */
 import _ from 'lodash'
 import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray, NonPromise,
+  AtLeastOne,
+  RequiredMember,
+  hasMember,
+  filterHasMember,
+  ValueOf,
+  Bean,
+  isArrayOfType,
+  TypeGuard,
+  isNonEmptyArray,
+  NonPromise,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
@@ -137,9 +146,7 @@ describe('types', () => {
   })
   describe('NonPromise', () => {
     it('should run the function if is not a promise', () => {
-      const myFunc = <T>(arg: () => NonPromise<T>): T => {
-        return arg()
-      }
+      const myFunc = <T>(arg: () => NonPromise<T>): T => arg()
 
       const syncFunc = (): number => 1
 

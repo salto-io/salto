@@ -639,7 +639,6 @@ export default class ZendeskAdapter implements AdapterOperations {
   private async getGuideDeployResults(
     subdomainToClient: Record<string, ZendeskClient>,
     subdomainToGuideChanges: Record<string, Change<InstanceElement>[]>,
-    saltoErrors: SaltoError[]
   ): Promise<DeployResult[]> {
     try {
       return await awu(Object.entries(subdomainToClient))
@@ -662,7 +661,7 @@ export default class ZendeskAdapter implements AdapterOperations {
             if (!isSaltoError(e)) {
               throw e
             }
-            saltoErrors.push(e)
+            brandDeployResults.errors = brandDeployResults.errors.concat([e])
           }
           return {
             appliedChanges: guideChangesBeforeRestore,
@@ -762,7 +761,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
       .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
-    const guideDeployResults = await this.getGuideDeployResults(subdomainToClient, subdomainToGuideChanges, saltoErrors)
+    const guideDeployResults = await this.getGuideDeployResults(subdomainToClient, subdomainToGuideChanges)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges)
     )

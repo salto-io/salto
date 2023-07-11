@@ -55,7 +55,6 @@ export interface HTTPReadClientInterface {
 }
 
 export interface HTTPWriteClientInterface {
-  get(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
   post(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
   put(params: ClientDataParams): Promise<Response<ResponseValue | ResponseValue[]>>
   delete(params: ClientBaseParams): Promise<Response<ResponseValue | ResponseValue[]>>
@@ -156,14 +155,6 @@ export abstract class AdapterHTTPClient<
   @logDecorator(['url', 'queryParams'])
   @requiresLogin()
   public async getSinglePage(params: ClientBaseParams):
-    Promise<Response<ResponseValue | ResponseValue[]>> {
-    return this.sendRequest('get', params)
-  }
-
-  @throttle<TRateLimitConfig>({ bucketName: 'deploy', keys: ['url', 'queryParams'] })
-  @logDecorator(['url', 'queryParams'])
-  @requiresLogin()
-  public async get(params: ClientDataParams):
     Promise<Response<ResponseValue | ResponseValue[]>> {
     return this.sendRequest('get', params)
   }

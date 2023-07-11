@@ -27,7 +27,6 @@ describe('issues and projects', () => {
 
     beforeEach(() => {
       client = {
-        get: mockFunction<clientUtils.HTTPWriteClientInterface['get']>(),
         post: mockFunction<clientUtils.HTTPWriteClientInterface['post']>(),
         put: mockFunction<clientUtils.HTTPWriteClientInterface['put']>(),
         delete: mockFunction<clientUtils.HTTPWriteClientInterface['delete']>(),

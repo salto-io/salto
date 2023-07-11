@@ -97,7 +97,7 @@ export const toConfigDeployResult = (
     .filter(instance => !resultsConfigTypes.has(instance.value.configType))
     .map(instance => ({
       elemID: instance.elemID,
-      message: 'Missing deploy result for this instance',
+      message: 'Failed to deploy instance due to internal server error',
       severity: 'Error' as const,
     }))
 

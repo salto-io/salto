@@ -102,7 +102,7 @@ describe('config elements', () => {
         expect(unit.toConfigDeployResult(changes, [])).toEqual({
           errors: [{
             elemID: getChangeData(changes[0]).elemID,
-            message: 'Missing deploy result for this instance',
+            message: 'Failed to deploy instance due to internal server error',
             severity: 'Error',
           }],
           appliedChanges: [],

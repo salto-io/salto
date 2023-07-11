@@ -36,7 +36,7 @@ import {
 import SalesforceClient from './client/client'
 import {
   ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
-  CUSTOM_OBJECT_ID_FIELD,
+  CUSTOM_OBJECT_ID_FIELD, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -329,14 +329,27 @@ const deployAddInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
-  const instancesToUpdate = instances
-    .filter(instance => Object.values(instance.value).some(isInstanceElement))
+  const instancesToUpdate: InstanceElement[] = []
   // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
   const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
   await awu(instances).forEach(instance => {
-    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
-      ? instanceByElemId[val.elemID.getFullName()] ?? val
-      : val))
+    let markedToUpdate = false
+    instance.value = _.mapValues(instance.value, value => {
+      if (isInstanceElement(value)) {
+        const referencedInstance = instanceByElemId[value.elemID.getFullName()]
+        // If the referenced instance is not in the group, no update needed.
+        // This case is relevant to ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+        if (referencedInstance !== undefined) {
+          if (!markedToUpdate) {
+            instancesToUpdate.push(instance)
+            markedToUpdate = true
+          }
+          return referencedInstance
+        }
+        return value
+      }
+      return value
+    })
   })
   const type = await instances[0].getType()
   const typeName = await apiName(type)
@@ -519,13 +532,26 @@ const deployAddCustomApprovalRulesAndConditions = async (
   client: SalesforceClient,
   dataManagement: DataManagement | undefined
 ): Promise<DeployResult> => {
+  // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
   const approvalRuleChanges = await awu(changes)
     .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
     .toArray()
-  const approvalConditionChanges = _.pullAll(changes, approvalRuleChanges)
+  const approvalConditionChanges = await awu(changes)
+    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION))
+    .toArray()
   if (approvalRuleChanges.map(getChangeData).some(instance => instance.value[SBAA_CONDITIONS_MET] !== 'Custom')) {
     throw new Error('Received ApprovalRule instance without Custom ConditionsMet')
   }
+  // On each ApprovalCondition instance, Replacing sbaa__ApprovalRule__c to point to the resolved instance
+  const approvalRuleByElemID = _.keyBy(
+    approvalRuleChanges.map(getChangeData),
+    instance => instance.elemID.getFullName()
+  )
+  await awu(approvalConditionChanges.map(getChangeData)).forEach(instance => {
+    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
+      ? approvalRuleByElemID[val.elemID.getFullName()] ?? val
+      : val))
+  })
   log.debug('Deploying ApprovalRule instances with "All" ConditionsMet instead of "Custom"')
   approvalRuleChanges
     .map(getChangeData)
@@ -538,10 +564,6 @@ const deployAddCustomApprovalRulesAndConditions = async (
     ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
-  const deployedRuleByElemId = _.keyBy(
-    approvalRulesWithAllConditionsMetDeployResult.appliedChanges.map(getChangeData).filter(isInstanceElement),
-    instance => instance.elemID.getFullName()
-  )
   log.debug('Deploying ApprovalCondition instances')
   const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
     approvalConditionChanges,
@@ -552,13 +574,10 @@ const deployAddCustomApprovalRulesAndConditions = async (
         log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
         return false
       }
-      const deployedRule = deployedRuleByElemId[approvalRule.elemID.getFullName()]
-      if (deployedRule === undefined) {
+      if (approvalRule.value[CUSTOM_OBJECT_ID_FIELD] === undefined) {
         log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
         return false
       }
-      // Set the ApprovalRule ID on the deployable ApprovalCondition instance
-      instance.value[SBAA_APPROVAL_RULE] = deployedRule.value[CUSTOM_OBJECT_ID_FIELD]
       return true
     }
   )
@@ -584,7 +603,6 @@ const deployAddCustomApprovalRulesAndConditions = async (
     ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
     dataManagement,
   )
-
   return {
     appliedChanges: approvalRulesWithCustomDeployResult.appliedChanges
       // Transforming back to addition changes

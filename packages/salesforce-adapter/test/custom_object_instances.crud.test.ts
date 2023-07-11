@@ -1201,7 +1201,7 @@ describe('Custom Object Instances CRUD', () => {
           })
           expect(approvalCondition.value).toEqual({
             [CUSTOM_OBJECT_ID_FIELD]: 'newId0',
-            [SBAA_APPROVAL_RULE]: approvalRule.value[CUSTOM_OBJECT_ID_FIELD],
+            [SBAA_APPROVAL_RULE]: expect.objectContaining({ elemID: approvalRule.elemID }),
           })
 
           expect(connection.bulk.load).toHaveBeenCalledTimes(3)

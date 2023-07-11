@@ -16,7 +16,7 @@
 import {
   FetchResult, AdapterOperations, DeployOptions,
   ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
-  FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID,
+  FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -472,6 +472,34 @@ export default class NetsuiteAdapter implements AdapterOperations {
     return { changedObjectsQuery, serverTime: sysInfo.time, timeZoneAndFormat }
   }
 
+  private static getDeployErrors(
+    originalChanges: DeployOptions['changeGroup']['changes'],
+    deployResult: DeployResult
+  ): DeployResult['errors'] {
+    const originalChangesElemIds = new Set(originalChanges.map(change =>
+      getChangeData(change).elemID.getFullName()))
+
+    const [saltoElementErrors, saltoErrors] = _.partition(deployResult.errors, isSaltoElementError)
+    const [originalChangesErrors, additionalChangesErrors] = _.partition(
+      saltoElementErrors,
+      error => originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName())
+    )
+
+    const errorsOnCustomFieldsByParents = _(originalChangesErrors)
+      .filter(error => error.elemID.idType === 'field')
+      .groupBy(error => error.elemID.createTopLevelParentID().parent.getFullName())
+      .mapValues(errors => new Set(errors.map(error => error.message)))
+      .value()
+
+    additionalChangesErrors.forEach(error => {
+      const errorsOnFields = errorsOnCustomFieldsByParents[error.elemID.createBaseID().parent.getFullName()]
+      if (!errorsOnFields?.has(error.message)) {
+        saltoErrors.push({ message: error.message, severity: error.severity })
+      }
+    })
+
+    return [...originalChangesErrors, ...saltoErrors]
+  }
 
   public async deploy({ changeGroup: { changes, groupID } }: DeployOptions): Promise<DeployResult> {
     const changesToDeploy = changes.map(cloneChange)
@@ -495,12 +523,10 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     await filtersRunner.onDeploy(appliedChanges, deployResult)
 
-    const originalChangesElemIds = new Set(changes.map(change =>
-      getChangeData(change).elemID.getFullName()))
-    const errors = deployResult.errors.filter(error => !('elemID' in error)
-      || originalChangesElemIds.has(error.elemID.getFullName()))
-
-    return { errors, appliedChanges }
+    return {
+      errors: NetsuiteAdapter.getDeployErrors(changes, deployResult),
+      appliedChanges,
+    }
   }
 
   public get deployModifiers(): DeployModifiers {

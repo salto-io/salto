@@ -15,14 +15,14 @@
 */
 
 import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
-  getChangeData, FetchOptions, ObjectType, Change, isObjectType, toChange } from '@salto-io/adapter-api'
+  getChangeData, FetchOptions, ObjectType, Change, isObjectType, toChange, BuiltinTypes, SaltoError, SaltoElementError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT, ROLE } from '../src/constants'
+import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT, ROLE, METADATA_TYPE, CUSTOM_RECORD_TYPE } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
 import { LocalFilterCreator } from '../src/filter'
 import SdfClient from '../src/client/sdf_client'
@@ -1169,6 +1169,81 @@ describe('Adapter', () => {
           validate: expect.anything(),
           additionalDependencies: expect.anything(),
           elementsSource,
+        })
+      })
+    })
+
+    describe('deploy errors', () => {
+      let adapter: NetsuiteAdapter
+      const mockClientDeploy = jest.fn()
+      beforeEach(() => {
+        adapter = new NetsuiteAdapter({
+          client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [],
+          config: {},
+        })
+      })
+      it('should return correct deploy errors', async () => {
+        const customSegment = new InstanceElement('cseg1', standardTypes.customsegment.type)
+        const customRecordType = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord_cseg1'),
+          fields: {
+            custom_field: { refType: BuiltinTypes.STRING },
+          },
+          annotations: {
+            [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          },
+        })
+        const errors: (SaltoError | SaltoElementError)[] = [
+          // general SaltoError
+          {
+            message: 'General error',
+            severity: 'Error',
+          },
+          // field SaltoElementError
+          {
+            elemID: customRecordType.fields.custom_field.elemID,
+            message: 'Custom Field Error',
+            severity: 'Error',
+          },
+          // should be ignored (duplicates the field error)
+          {
+            elemID: customRecordType.elemID,
+            message: 'Custom Field Error',
+            severity: 'Error',
+          },
+          // should be transformed to a SaltoError
+          {
+            elemID: customSegment.elemID,
+            message: 'Custom Segment Error',
+            severity: 'Error',
+          },
+        ]
+        mockClientDeploy.mockResolvedValue({ appliedChanges: [], errors })
+        const deployRes = await adapter.deploy({
+          changeGroup: {
+            changes: [toChange({ after: customRecordType.fields.custom_field })],
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
+          },
+        })
+        expect(deployRes).toEqual({
+          appliedChanges: [],
+          errors: [
+            {
+              elemID: customRecordType.fields.custom_field.elemID,
+              message: 'Custom Field Error',
+              severity: 'Error',
+            },
+            {
+              message: 'General error',
+              severity: 'Error',
+            },
+            {
+              message: 'Custom Segment Error',
+              severity: 'Error',
+            },
+          ],
         })
       })
     })

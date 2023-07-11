@@ -15,7 +15,7 @@
 */
 
 import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError,
-  isAdditionChange, isAdditionOrModificationChange, ElemID, ChangeData,
+  isAdditionChange, isAdditionOrModificationChange, ElemID,
   SaltoError, AccountInfo } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
@@ -35,8 +35,8 @@ import { toCustomizationInfo } from '../transformer'
 import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId,
   isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
   SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
-import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
-import { APPLICATION_ID, CONFIG_FEATURES, PATH, SCRIPT_ID } from '../constants'
+import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
+import { APPLICATION_ID, CONFIG_FEATURES } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
 import { Graph, GraphNode } from './graph_utils'
@@ -53,13 +53,6 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_CREATING_FILES_GROUP_ID]: 'add',
   [SUITEAPP_UPDATING_FILES_GROUP_ID]: 'update',
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
-}
-
-const getServiceIdFromElement = (changeData: ChangeData<DeployableChange>): string => {
-  if (isFileCabinetInstance(changeData)) {
-    return getElementValueOrAnnotations(changeData)[PATH]
-  }
-  return getElementValueOrAnnotations(changeData)[SCRIPT_ID]
 }
 
 const getChangeType = (change: Change): 'addition' | 'modification' =>
@@ -200,7 +193,7 @@ export default class NetsuiteClient {
         getChangeNodeId(change),
         {
           change,
-          serviceid: getServiceIdFromElement(getChangeData(change)),
+          serviceid: getServiceId(getChangeData(change)),
           changeType: getChangeType(change),
           customizationInfo: await toCustomizationInfo(
             getOrTransformCustomRecordTypeToInstance(getChangeData(change))

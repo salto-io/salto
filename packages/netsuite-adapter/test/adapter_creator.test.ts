@@ -25,6 +25,7 @@ import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
+import { EnvType } from '../src/client/suiteapp_client/types'
 import { SdfCredentials } from '../src/client/credentials'
 
 jest.mock('../src/client/sdf_client')
@@ -75,9 +76,10 @@ describe('NetsuiteAdapter creator', () => {
   )
 
   describe('validateCredentials', () => {
+    const accountId = 'testAccountId'
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
     const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
-      .mockResolvedValue({ accountId: '' })
+      .mockResolvedValue({ accountId })
 
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
@@ -85,7 +87,7 @@ describe('NetsuiteAdapter creator', () => {
       netsuiteValidateMock.mockClear()
     })
 
-    it('should call validateCredentials with the correct credentials', async () => {
+    it('Should call validateCredentials with the correct credentials', async () => {
       await adapter.validateCredentials(credentials)
       expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
         accountId: 'FOO_A',
@@ -95,9 +97,12 @@ describe('NetsuiteAdapter creator', () => {
       expect(suiteAppClientValidateMock).not.toHaveBeenCalledWith()
     })
 
-    it('should call validateCredentials of SuiteAppClient when SuiteApp credentials were passed', async () => {
-      suiteAppClientValidateMock.mockResolvedValue(undefined)
+    it('Should return accountInfo that only contains accountId', async () => {
+      const accountInfo = await adapter.validateCredentials(credentials)
+      expect(accountInfo).toEqual({ accountId })
+    })
 
+    describe('When SuiteApp credentials were passed', () => {
       const cred = credentials.clone()
       cred.value = {
         ...cred.value,
@@ -106,13 +111,68 @@ describe('NetsuiteAdapter creator', () => {
         suiteAppActivationKey: 'ccc',
       }
 
-      await adapter.validateCredentials(cred)
-      expect(netsuiteValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
-      expect(suiteAppClientValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+      it('Should call validateCredentials of SuiteAppClient when SuiteApp credentials were passed', async () => {
+        suiteAppClientValidateMock.mockResolvedValueOnce({
+          time: new Date(),
+          appVersion: [1, 2, 3],
+        })
+
+        await adapter.validateCredentials(cred)
+        expect(netsuiteValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+        expect(suiteAppClientValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+      })
+
+      describe('AccountInfo values', () => {
+        describe('When systemInformation does not contain envType', () => {
+          it('Should return accountInfo that only contains accountId', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId })
+          })
+        })
+
+        describe('When systemInformation contains envType === PRODUCTION', () => {
+          it('Should return accountInfo with accountType = PRODUCTION and isProduction = true', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType: EnvType.PRODUCTION,
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId, accountType: 'PRODUCTION', isProduction: true })
+          })
+        })
+
+        describe('When systemInformation contains envType !== PRODUCTION', () => {
+          const envTypes = [
+            { accountType: 'BETA', envType: EnvType.BETA },
+            { accountType: 'INTERNAL', envType: EnvType.INTERNAL },
+            { accountType: 'SANDBOX', envType: EnvType.SANDBOX },
+          ]
+          test.each(envTypes)('Should return accountInfo with accountType = $accountType and isProduction = false', async ({ accountType, envType }) => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType,
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId, accountType, isProduction: false })
+          })
+        })
+      })
     })
 
     it('SDF validation failure should throw SDF error', async () => {
-      suiteAppClientValidateMock.mockResolvedValue(undefined)
+      suiteAppClientValidateMock.mockResolvedValue({
+        time: new Date(),
+        appVersion: [1, 2, 3],
+      })
       netsuiteValidateMock.mockRejectedValue(new Error(''))
 
       const cred = credentials.clone()

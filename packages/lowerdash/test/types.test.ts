@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray,
+  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray, NonPromise,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.
@@ -134,5 +134,24 @@ describe('types', () => {
     it('should return false for empty array', () => {
       expect(isNonEmptyArray([])).toEqual(false)
     })
+  })
+  describe('NonPromise', () => {
+    it('should run the function if is not a promise', () => {
+      const myFunc = <T>(arg: () => NonPromise<T>): T => {
+        return arg()
+      }
+
+      const syncFunc = (): number => 1
+
+      expect(myFunc(syncFunc)).toEqual(1)
+    })
+
+    // TODOADI check how to compile code inside test
+    // it('Should fail to compile code with an async function', () => {
+    //   const code = `
+    //     const asyncFunc = async (): Promise<number> => 1
+    //     myFunc(asyncFunc)
+    //   `
+    //   expect(() => compile(code)).toThrow();
   })
 })

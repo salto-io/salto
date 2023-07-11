@@ -21,7 +21,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
-import { transformPrimitiveSync } from '../transformers/transformer'
+import { transformPrimitive } from '../transformers/transformer'
 
 const { awu } = collections.asynciterable
 
@@ -47,7 +47,7 @@ const filterCreator: LocalFilterCreator = () => ({
           {
             values: instance.value,
             type: instance.getTypeSync(),
-            transformFunc: transformPrimitiveSync,
+            transformFunc: transformPrimitive,
             strict: false,
             allowEmpty: true,
           }

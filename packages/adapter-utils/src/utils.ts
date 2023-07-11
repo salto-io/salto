@@ -15,7 +15,7 @@
 */
 import os from 'os'
 import wu from 'wu'
-import _, { mapValues } from 'lodash'
+import _ from 'lodash'
 import safeStringify from 'fast-safe-stringify'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
@@ -29,6 +29,7 @@ import {
   compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType, UnresolvedReference, FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
+import { types } from '@salto-io/lowerdash'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
 
 const { mapValuesAsync } = promises.object
@@ -107,7 +108,7 @@ export type TransformFuncArgs = {
 }
 export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value | undefined
 
-export type TransformFuncSync = (args: TransformFuncArgs) => Value | undefined
+export type TransformFuncSync = (args: TransformFuncArgs) => types.NonPromise<Value> | undefined
 
 export const transformValues = async (
   {
@@ -256,7 +257,7 @@ export const transformValues = async (
   return newVal
 }
 
-
+// TODOADI call this function only from transformValues if elementSource doesn't exist
 export const transformValuesSync = (
   {
     values,
@@ -369,7 +370,7 @@ export const transformValuesSync = (
     }
     if (_.isPlainObject(newVal) && !strict) {
       const transformed = _.omitBy(
-        mapValues(
+        _.mapValues(
           newVal ?? {},
           (val, key) => transformValueSync(val, keyPathID?.createNestedID(key)),
         ),
@@ -385,7 +386,7 @@ export const transformValuesSync = (
   const newVal = isTopLevel ? transformFunc({ value: values, path: pathID }) : values
   if (_.isPlainObject(newVal)) {
     const result = _.omitBy(
-      mapValues(
+      _.mapValues(
         newVal ?? {},
         (value, key) => transformValueSync(value, pathID?.createNestedID(key), fieldMapper(key))
       ),

@@ -14,6 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+// eslint-disable-next-line import/no-extraneous-dependencies
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
+
 
 export type RefListItem = {
   label: string
@@ -22,9 +26,21 @@ export type RefListItem = {
 
 export type BlockBase = {
   keyword: string
+  provider: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const isListItem = (value: any): value is RefListItem => (
   _.isObjectLike(value) && _.isString(value.label) && _.isString(value.value)
 )
+
+export const createBlockChecker = <T extends BlockBase>(scheme: Joi.AnySchema, supportedApps: string[])
+  : (value: unknown, application: string) => value is T => (
+    value: unknown, application: string
+  ): value is T => {
+    const isAdapterBlock = createSchemeGuard<T>(scheme)
+
+    return isAdapterBlock(value)
+      && supportedApps.includes(application)
+      && value.provider === application
+  }

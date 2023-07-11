@@ -406,6 +406,7 @@ export default class JiraAdapter implements AdapterOperations {
   @logDuration('generating scriptRunner instances and types from service')
   private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
     const { scriptRunnerApiDefinitions } = this.userConfig
+    // scriptRunnerApiDefinitions is currently undefined for DC
     if (this.scriptRunnerClient === undefined
       || !this.userConfig.fetch.enableScriptRunnerAddon
       || scriptRunnerApiDefinitions === undefined) {

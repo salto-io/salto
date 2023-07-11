@@ -365,9 +365,9 @@ export const validateJiraFetchConfig = ({
   apiDefinitions: JiraApiConfig
   scriptRunnerApiDefinitions: JiraDuckTypeConfig
 }): void => {
-  const supportedTypes = fetchConfig.enableScriptRunnerAddon === false
-    ? Object.keys(apiDefinitions.supportedTypes)
-    : Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
+  const supportedTypes = fetchConfig.enableScriptRunnerAddon
+    ? Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
+    : Object.keys(apiDefinitions.supportedTypes)
   configUtils.validateSupportedTypes(
     FETCH_CONFIG,
     fetchConfig,

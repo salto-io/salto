@@ -59,6 +59,7 @@ const getSrTokenFromHtml = (html: string): string => {
   const srTokenElement = root.querySelector('meta[name="sr-token"]')
   if (srTokenElement === null) {
     log.error('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
+    // we do not want to throw an error here to allow fetch to succeed without ScriptRunner
     return ''
   }
 
@@ -101,6 +102,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
 
     if (!isTokenResponse(srResponse)) {
       log.error('Failed to get script runner token from scriptRunner service', srResponse)
+      // we do not want to throw an error here to allow fetch to succeed without ScriptRunner
       return ''
     }
     return getSrTokenFromHtml(srResponse.data)

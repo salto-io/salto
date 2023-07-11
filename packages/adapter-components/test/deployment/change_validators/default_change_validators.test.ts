@@ -18,9 +18,9 @@ import { getDefaultChangeValidators } from '../../../src/deployment/change_valid
 
 describe('default_change_validators', () => {
   it('should omit validators in validatorsToOmit', () => {
-    const allValidators = getDefaultChangeValidators()
+    const allValidators = Object.values(getDefaultChangeValidators())
     expect(allValidators).toContain(DEFAULT_CHANGE_VALIDATORS.outgoingUnresolvedReferencesValidator)
-    const validators = getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator'])
+    const validators = Object.values(getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']))
     expect(validators).toHaveLength(allValidators.length - 1)
     expect(validators).not.toContain(DEFAULT_CHANGE_VALIDATORS.outgoingUnresolvedReferencesValidator)
   })

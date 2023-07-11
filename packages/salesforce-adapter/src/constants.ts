@@ -382,8 +382,11 @@ export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
 export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
+export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
+export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
+export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
 
-// Artifitial Types
+// Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 
 // Standard Object Types

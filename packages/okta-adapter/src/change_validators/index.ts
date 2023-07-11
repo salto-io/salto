@@ -16,7 +16,6 @@
 import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
@@ -32,12 +31,19 @@ import { enabledAuthenticatorsValidator } from './enabled_authenticators'
 import { roleAssignmentValidator } from './role_assignment'
 import { usersValidator } from './user'
 import OktaClient from '../client/client'
-import { API_DEFINITIONS_CONFIG, OktaConfig, PRIVATE_API_DEFINITIONS_CONFIG } from '../config'
+import {
+  API_DEFINITIONS_CONFIG,
+  ChangeValidatorName,
+  DEPLOY_CONFIG,
+  OktaConfig,
+  PRIVATE_API_DEFINITIONS_CONFIG,
+} from '../config'
 import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 
 const {
   createCheckDeploymentBasedOnConfigValidator,
   getDefaultChangeValidators,
+  createChangeValidator,
 } = deployment.changeValidators
 
 export default ({
@@ -47,27 +53,30 @@ export default ({
   client: OktaClient
   config: OktaConfig
 }): ChangeValidator => {
-  const validators: ChangeValidator[] = [
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
     ...getDefaultChangeValidators(),
-    createCheckDeploymentBasedOnConfigValidator({
+    createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
       typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
     }),
-    applicationValidator,
-    appGroupValidator,
-    groupRuleStatusValidator,
-    groupRuleActionsValidator,
-    defaultPoliciesValidator,
-    groupRuleAdministratorValidator,
-    customApplicationStatusValidator,
-    userTypeAndSchemaValidator,
-    appIntegrationSetupValidator(client),
-    assignedAccessPoliciesValidator,
-    groupSchemaModifyBaseValidator,
-    enabledAuthenticatorsValidator,
-    roleAssignmentValidator,
-    usersValidator(client, config),
-    appUserSchemaWithInactiveAppValidator,
-  ]
+    application: applicationValidator,
+    appGroup: appGroupValidator,
+    groupRuleStatus: groupRuleStatusValidator,
+    groupRuleActions: groupRuleActionsValidator,
+    defaultPolicies: defaultPoliciesValidator,
+    groupRuleAdministrator: groupRuleAdministratorValidator,
+    customApplicationStatus: customApplicationStatusValidator,
+    userTypeAndSchema: userTypeAndSchemaValidator,
+    appIntegrationSetup: appIntegrationSetupValidator(client),
+    assignedAccessPolicies: assignedAccessPoliciesValidator,
+    groupSchemaModifyBase: groupSchemaModifyBaseValidator,
+    enabledAuthenticators: enabledAuthenticatorsValidator,
+    roleAssignment: roleAssignmentValidator,
+    users: usersValidator(client, config),
+    appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+  }
 
-  return createChangeValidator(validators)
+  return createChangeValidator({
+    validators,
+    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+  })
 }

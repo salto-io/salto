@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/change_validator'
 export * from './src/change'
 export * from './src/compare'
 export * from './src/decorators'

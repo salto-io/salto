@@ -41,7 +41,7 @@ See https://help.salesforce.com/s/articleView?id=sf.admin_sharing.htm for instru
   }
 )
 
-const changeValidator = (): ChangeValidator => async (changes, elementsSource) => {
+const changeValidator: ChangeValidator = async (changes, elementsSource) => {
   if (elementsSource === undefined) {
     log.error('Change validator did not receive an element source.')
     return []

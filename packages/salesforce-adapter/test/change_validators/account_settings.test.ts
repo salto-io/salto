@@ -23,7 +23,7 @@ import { SALESFORCE, TYPES_PATH } from '../../src/constants'
 
 describe('Account settings validator', () => {
   const instanceBefore = createInstanceElement({ fullName: 'whatever' }, mockTypes.AccountSettings)
-  const changeValidator = changeValidatorCreator()
+  const changeValidator = changeValidatorCreator
 
   const ORGANIZATION_OBJECT_TYPE = new ObjectType({
     elemID: new ElemID(SALESFORCE, 'Organization'),

@@ -276,8 +276,9 @@ const replaceFormulasWithTemplates = async (
               ? formulaToTemplate(innerValue, instancesByType, enableMissingReferences)
               : innerValue))
         } else if (value[fieldName]) {
-          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType,
-            enableMissingReferences)
+          value[fieldName] = _.isString(value[fieldName])
+            ? formulaToTemplate(value[fieldName], instancesByType, enableMissingReferences)
+            : value[fieldName]
         }
       })
     })

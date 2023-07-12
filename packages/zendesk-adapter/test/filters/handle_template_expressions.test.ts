@@ -144,6 +144,7 @@ describe('handle templates filter', () => {
   const macro1 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 'non template', field: 'comment_value_html' }] })
   const macro2 = new InstanceElement('macro2', testType, { id: 1002, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'comment_value' }] })
   const macro3 = new InstanceElement('macro3', testType, { id: 1003, actions: [{ value: 'multiple refs {{ticket.ticket_field_1452}} and {{ticket.ticket_field_option_title_1453}}', field: 'comment_value_html' }] })
+  const macro4 = new InstanceElement('macro1', testType, { id: 1001, actions: [{ value: 123, field: 'comment_value_html' }] }) // non string value
   const macroOrganization = new InstanceElement('macroOrg', testType, { id: 1004, actions: [{ value: 'multiple refs {{ticket.organization.custom_fields.org_123}} and {{ticket.organization.custom_fields.org}} and {{ticket.organization.custom_fields.org_123.title}}', field: 'comment_value_html' }] })
   const macroUser = new InstanceElement('macroUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user_123}} and {{ticket.requester.custom_fields.user}} and {{ticket.requester.custom_fields.user_123.title}}', field: 'comment_value_html' }] })
   const macroMissingUserAndOrganization = new InstanceElement('macroMissingOrgAndUser', testType, { id: 1005, actions: [{ value: 'multiple refs {{ticket.requester.custom_fields.user1}} and {{ticket.requester.custom_fields.user1.title}} and {{ticket.organization.custom_fields.org1}} and {{ticket.organization.custom_fields.org1.title}}', field: 'comment_value_html' }] })
@@ -212,7 +213,7 @@ describe('handle templates filter', () => {
 
 
   const generateElements = (): (InstanceElement | ObjectType)[] => ([testType, placeholder1Type,
-    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macroAlmostTemplate,
+    placeholder2Type, placeholder1, placeholder2, macro1, macro2, macro3, macro4, macroAlmostTemplate,
     macroAlmostTemplate2, target, trigger, webhook, targetType, triggerType, webhookType,
     automation, automationType, dynamicContent, dynamicContentItemType, appInstallation,
     appInstallationType, macroWithDC, macroWithHyphenDC, dynamicContentRecord,

@@ -92,7 +92,14 @@ const getAnnotationTypesPathHints = (
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
 ): PathHint[] => {
+  const elem = fragments[0].value
   const fragmentsWithFields = fragments.filter(f => !_.isEmpty(f.value.annotations))
+  if (isInstanceElement(elem)) {
+    return getValuePathHints(
+      fragments.map(f => ({ value: f.value.annotations, path: f.path })),
+      elem.elemID,
+    )
+  }
   if (_.isEmpty(fragmentsWithFields)) {
     return []
   }
@@ -103,10 +110,9 @@ const getAnnotationPathHints = (
   if (fragmentsWithFields.length === 1) {
     return attrTopLevelKey
   }
-  const elem = fragments[0].value
   return attrTopLevelKey.concat(getValuePathHints(
     fragments.map(f => ({ value: f.value.annotations, path: f.path })),
-    isInstanceElement(elem) ? elem.elemID : elem.elemID.createNestedID('attr'),
+    elem.elemID.createNestedID('attr'),
   ))
 }
 
@@ -309,6 +315,10 @@ export const splitElementByPath = async (
   element: Element,
   index: PathIndex
 ): Promise<Element[]> => {
+  const indexEntries = await awu(index.entries()).toArray()
+  if (!indexEntries) {
+    return [element]
+  }
   const pathHints = await getFromPathIndex(element.elemID, index)
   if (pathHints.length <= 1) {
     const clonedElement = element.clone()

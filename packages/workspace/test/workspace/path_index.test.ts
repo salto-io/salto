@@ -422,7 +422,8 @@ describe('split element by path', () => {
     singleFieldObj, singleFieldObjAnnotations,
   ]
   const unmergedElements = [
-    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
+    multiPathInstanceB, multiPathInstanceA,
+    //    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 

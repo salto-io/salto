@@ -216,7 +216,7 @@ export type FileDetails = {
   type: 'file'
   path: string
   id?: number
-  folder: number | undefined
+  folder: string | undefined
   bundleable: boolean
   isInactive: boolean
   isOnline: boolean
@@ -232,7 +232,7 @@ export type FolderDetails = {
   type: 'folder'
   path: string
   id?: number
-  parent: number | undefined
+  parent: string | undefined
   bundleable: boolean
   isInactive: boolean
   isPrivate: boolean

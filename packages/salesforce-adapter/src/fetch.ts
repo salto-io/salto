@@ -418,8 +418,9 @@ export const retrieveMetadataInstances = async ({
     }
 
     configChanges.push(...createRetrieveConfigChange(result))
-    // Unclear when / why this can happen, but it seems like sometimes zipFile is not a string
-    // TODO: investigate further why this happens and find a better solution than just failing
+    // if we get an error then result.zipFile will be a single 'nil' XML element, which will be parsed as an object by
+    // our XML->json parser. Since we only deal with RETRIEVE_SIZE_LIMIT_ERROR above, here is where we handle all other
+    // errors.
     if (!_.isString(result.zipFile)) {
       log.warn(
         'retrieve request for types %s failed, zipFile is %o, Result is %o',

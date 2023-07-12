@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { DeployResult as AdapterApiDeployResult, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, TypeElement, TypeReference, Value, Values } from '@salto-io/adapter-api'
+import { Change, Element, InstanceElement, isField, isInstanceElement, isObjectType, ObjectType, SaltoElementError, SaltoError, TypeElement, TypeReference, Value, Values } from '@salto-io/adapter-api'
 import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { fieldTypes } from './types/field_types'
 import { enums } from './autogen/types/enums'
@@ -140,7 +140,10 @@ export const FIELD_TYPES = [
   'customfield',
 ]
 
-export type DeployResult = AdapterApiDeployResult & {
+export type DeployResult = {
+  appliedChanges: Change[]
+  errors: (SaltoElementError | SaltoError)[]
+  sdfErrors?: Error[]
   elemIdToInternalId?: Record<string, string>
 }
 

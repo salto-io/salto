@@ -194,7 +194,7 @@ export default class SoapClient {
       ...file.folder ? {
         'q1:folder': {
           attributes: {
-            internalId: file.folder.toString(),
+            internalId: file.folder,
           },
         },
       } : {},
@@ -214,7 +214,7 @@ export default class SoapClient {
       ? {
         'q1:parent': {
           attributes: {
-            internalId: folder.parent.toString(),
+            internalId: folder.parent,
           },
         },
       }

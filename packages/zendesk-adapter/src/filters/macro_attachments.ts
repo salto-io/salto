@@ -17,8 +17,8 @@ import _ from 'lodash'
 import Joi from 'joi'
 import FormData from 'form-data'
 import {
-  BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isInstanceElement, isRemovalChange, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
+  BuiltinTypes, Change, CORE_ANNOTATIONS, createSaltoElementError, ElemID, getChangeData, InstanceElement,
+  isInstanceElement, isRemovalChange, isSaltoError, isStaticFile, ObjectType, ReferenceExpression, StaticFile,
 } from '@salto-io/adapter-api'
 import { normalizeFilePathPart, naclCase, elementExpressionStringifyReplacer,
   resolveChangeElement, safeJsonStringify, pathNaclCase, references } from '@salto-io/adapter-utils'
@@ -79,7 +79,11 @@ const replaceAttachmentId = (
   if (!isArrayOfRefExprToInstances(attachments)) {
     log.error(`Failed to deploy macro because its attachment field has an invalid format: ${
       safeJsonStringify(attachments, elementExpressionStringifyReplacer)}`)
-    throw new Error('Failed to deploy macro because its attachment field has an invalid format')
+    throw createSaltoElementError({ // caught in try block
+      message: 'Failed to deploy macro because its attachment field has an invalid format',
+      severity: 'Error',
+      elemID: parentInstance.elemID,
+    })
   }
   parentInstance.value[ATTACHMENTS_FIELD_NAME] = attachments
     .map(ref => {
@@ -104,7 +108,7 @@ ReturnType<typeof client.post> => {
       headers: { ...form.getHeaders() },
     })
   } catch (err) {
-    throw getZendeskError(instance.elemID, err)
+    throw getZendeskError(instance.elemID, err) // caught in deployChanges
   }
 }
 
@@ -235,9 +239,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           appliedChanges: [],
           errors: childrenChanges
             .map(getChangeData)
-            .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
-            )),
+            .map(e => createSaltoElementError({
+              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+              severity: 'Error',
+              elemID: e.elemID,
+            })),
         },
         leftoverChanges,
       }
@@ -271,38 +277,54 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           appliedChanges: [],
           errors: [...parentChanges
             .map(getChangeData)
-            .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`
-            )),
+            .map(e => createSaltoElementError({
+              message: `Failed to update ${e.elemID.getFullName()} since the deployment of its attachments failed`,
+              severity: 'Error',
+              elemID: e.elemID,
+            })),
           ...attachmentDeployResult.errors],
         },
         leftoverChanges,
       }
     }
-    const additionalParentFullNames = new Set(
-      additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName())
-    )
-    const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
-      .map(change => replaceAttachmentId(change, childFullNameToInstance))
-      .map(change => resolveChangeElement(change, lookupFunc))
-      .toArray()
-    const macroDeployResult = await deployChanges(
-      resolvedParentChanges,
-      async change => {
-        await deployChange(change, client, config.apiDefinitions)
+    try {
+      const additionalParentFullNames = new Set(
+        additionalParentChanges.map(getChangeData).map(inst => inst.elemID.getFullName())
+      )
+      const resolvedParentChanges = await awu([...parentChanges, ...additionalParentChanges])
+        .map(change => replaceAttachmentId(change, childFullNameToInstance))
+        .map(change => resolveChangeElement(change, lookupFunc))
+        .toArray()
+      const macroDeployResult = await deployChanges(
+        resolvedParentChanges,
+        async change => {
+          await deployChange(change, client, config.apiDefinitions)
+        }
+      )
+      return {
+        deployResult: {
+          appliedChanges: [
+            ...macroDeployResult.appliedChanges
+              .filter(change =>
+                !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
+            ...attachmentDeployResult.appliedChanges,
+          ],
+          errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
+        },
+        leftoverChanges,
       }
-    )
-    return {
-      deployResult: {
-        appliedChanges: [
-          ...macroDeployResult.appliedChanges
-            .filter(change =>
-              !additionalParentFullNames.has(getChangeData(change).elemID.getFullName())),
-          ...attachmentDeployResult.appliedChanges,
-        ],
-        errors: [...macroDeployResult.errors, ...attachmentDeployResult.errors],
-      },
-      leftoverChanges,
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      return {
+        // this is not the correct applied changes, need to be fixed in https://salto-io.atlassian.net/browse/SALTO-4466
+        deployResult: {
+          appliedChanges: [],
+          errors: [e],
+        },
+        leftoverChanges: changes,
+      }
     }
   },
 })

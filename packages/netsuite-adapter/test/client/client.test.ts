@@ -78,7 +78,6 @@ describe('NetsuiteClient', () => {
             message: objectsDeployError.message,
             severity: 'Error',
           }],
-          sdfErrors: [objectsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -101,7 +100,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: objectsDeployError.message, severity: 'Error' }],
-          sdfErrors: [objectsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -129,7 +127,6 @@ describe('NetsuiteClient', () => {
             message: settingsDeployError.message,
             severity: 'Error',
           }],
-          sdfErrors: [settingsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -149,7 +146,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: settingsDeployError.message, severity: 'Error' }],
-          sdfErrors: [settingsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -180,7 +176,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -211,7 +206,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -238,7 +232,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: manifestValidationError.message, severity: 'Error' }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -276,7 +269,6 @@ describe('NetsuiteClient', () => {
             message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -311,7 +303,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange, failedChangeDependency],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -415,7 +406,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             { message: missingManifestFeaturesError.message, severity: 'Error' },
             { message: 'The following features are required but they are excluded: SUBSCRIPTIONBILLING.', severity: 'Error' },
           ],
-          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -479,7 +469,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )).toEqual({
           errors: [{ message: missingManifestFeaturesError.message, severity: 'Error' }],
-          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
@@ -564,7 +553,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             async () => true,
           )).toEqual({
             errors: [],
-            sdfErrors: [],
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
@@ -622,7 +610,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: objectsDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [objectsDeployError],
             appliedChanges: [successTypeChange, successFieldChange],
           })
         })
@@ -667,8 +654,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: featuresDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [featuresDeployError],
             appliedChanges: [],
+            failedFeaturesIds: ['ABC'],
           })
         })
         it('should return change and error when some features deployed and some failed', async () => {
@@ -704,8 +691,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: featuresDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [featuresDeployError],
             appliedChanges: [change],
+            failedFeaturesIds: ['ABC'],
           })
         })
       })

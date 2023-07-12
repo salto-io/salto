@@ -144,8 +144,8 @@ type DeployError = SaltoElementError | SaltoError
 export type DeployResult = {
   appliedChanges: Change[]
   errors: DeployError[]
-  sdfErrors?: Error[]
   elemIdToInternalId?: Record<string, string>
+  failedFeaturesIds?: string[]
 }
 
 export const SUITEAPP_CONFIG_RECORD_TYPES = [

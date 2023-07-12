@@ -336,7 +336,7 @@ export default class NetsuiteClient {
     changes: ReadonlyArray<Change>
     additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
-  }): Promise<DeployResult & { sdfErrors: Error[] }> {
+  }): Promise<DeployResult> {
     const changesByTopLevel = _.groupBy(changes, change => getChangeData(change)
       .elemID.createTopLevelParentID().parent.getFullName())
 
@@ -345,7 +345,6 @@ export default class NetsuiteClient {
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
     const errors: DeployResult['errors'] = []
-    const sdfErrors: Error[] = []
     const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(deployableChanges)
     const featuresMap = NetsuiteClient.createFeaturesMap(additionalDependencies)
 
@@ -366,10 +365,8 @@ export default class NetsuiteClient {
           ),
           'sdfDeploy'
         )
-        return { errors, sdfErrors, appliedChanges: changesToApply }
+        return { errors, appliedChanges: changesToApply }
       } catch (error) {
-        sdfErrors.push(toError(error))
-
         if (error instanceof FeaturesDeployError) {
           const { message } = error
           const featuresError = changesToDeploy
@@ -381,7 +378,7 @@ export default class NetsuiteClient {
           return {
             errors: errors.concat(featuresError),
             appliedChanges: toFeaturesDeployPartialSuccessResult(error, changesToApply),
-            sdfErrors,
+            failedFeaturesIds: error.ids,
           }
         }
         if (error instanceof MissingManifestFeaturesError) {
@@ -392,11 +389,8 @@ export default class NetsuiteClient {
                 .concat({ message: error.message, severity: 'Error' })
                 .concat(res.error ?? []),
               appliedChanges: [],
-              sdfErrors,
             }
           }
-          // remove error because if the deploy succeeds there shouldn't be a change error
-          sdfErrors.pop()
           // eslint-disable-next-line no-continue
           continue
         }
@@ -427,7 +421,7 @@ export default class NetsuiteClient {
         if (numOfRemovedNodes === 0) {
           log.error('no changes were removed from error: %o', error)
           errors.push({ message: toError(error).message, severity: 'Error' })
-          return { errors, appliedChanges: [], sdfErrors }
+          return { errors, appliedChanges: [] }
         }
         log.debug(
           'removed %d changes (%o) from error: %o',
@@ -439,7 +433,7 @@ export default class NetsuiteClient {
         )
       }
     }
-    return { errors, appliedChanges: [], sdfErrors }
+    return { errors, appliedChanges: [] }
   }
 
   @NetsuiteClient.logDecorator

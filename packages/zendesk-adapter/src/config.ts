@@ -1156,7 +1156,6 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
-      // name + product is unique
       idFields: ['settings.name', 'product'],
       fileNameFields: ['settings.name', 'product'],
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],

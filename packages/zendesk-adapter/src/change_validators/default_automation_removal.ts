@@ -26,6 +26,9 @@ const defaultAutomationRemovalError = (automation: InstanceElement): ChangeError
   detailedMessage: `The automation '${automation.elemID.name}' is a default automation in Zendesk, and cannot be removed`,
 })
 
+/**
+ * Prevent the user from removing an automation that is default in Zendesk
+ */
 export const defaultAutomationRemovalValidator: ChangeValidator = async changes => {
   const automationChanges = changes.filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE_NAME)

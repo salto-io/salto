@@ -1814,32 +1814,6 @@ describe('Test utils.ts', () => {
       },
       primitive: PrimitiveTypes.STRING,
     })
-    const objToFilter = new ObjectType({
-      elemID: new ElemID('salto', 'obj2'),
-      fields: {
-        str: {
-          refType: annoType,
-          annotations: {
-            str: 'a',
-            num: 1,
-          },
-        },
-        num: {
-          refType: BuiltinTypes.STRING,
-          annotations: {
-            str: 'b',
-          },
-        },
-        other: {
-          refType: annoType,
-          annotations: {
-            str: 'c',
-            num: 3,
-          },
-        },
-      },
-      path: ['salto', 'obj2', 'field'],
-    })
 
     it('should filter object type', async () => {
       const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {

@@ -42,7 +42,7 @@ import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToR
 import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
 import { BundleType } from '../types/bundle_type'
-import { getDeployResultFromSuiteAppResult, toDependencyError, toError } from './utils'
+import { getDeployResultFromSuiteAppResult, toDependencyError, toElementError, toError } from './utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -368,16 +368,15 @@ export default class NetsuiteClient {
         )
         return { errors, sdfErrors, appliedChanges: changesToApply }
       } catch (error) {
-        const sdfError = toError(error)
-        const { message } = sdfError
-        sdfErrors.push(sdfError)
+        sdfErrors.push(toError(error))
 
         if (error instanceof FeaturesDeployError) {
+          const { message } = error
           const featuresError = changesToDeploy
             .filter(isInstanceChange)
             .map(getChangeData)
             .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
-            .map(({ elemID }) => ({ elemID, message, severity: 'Error' as const }))
+            .map(({ elemID }) => toElementError(elemID, message))
 
           return {
             errors: errors.concat(featuresError),
@@ -390,7 +389,7 @@ export default class NetsuiteClient {
           if (res.failedToUpdate) {
             return {
               errors: errors
-                .concat({ message, severity: 'Error' })
+                .concat({ message: error.message, severity: 'Error' })
                 .concat(res.error ?? []),
               appliedChanges: [],
               sdfErrors,
@@ -403,13 +402,14 @@ export default class NetsuiteClient {
         }
         const elemIdsWithError = getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy)
         const elementErrors = elemIdsWithError
-          .flatMap(elemId => changesByTopLevel[elemId.getFullName()])
-          .map(getChangeData)
-          .map(({ elemID }) => ({ elemID, message, severity: 'Error' as const }))
+          .flatMap(({ message, elemID }) =>
+            changesByTopLevel[elemID.getFullName()]
+              .map(getChangeData)
+              .map(elem => toElementError(elem.elemID, message)))
         errors.push(...elementErrors)
 
         const nodesWithError = elemIdsWithError
-          .map(id => dependencyGraph.getNode(getNodeId(id)))
+          .map(({ elemID }) => dependencyGraph.getNode(getNodeId(elemID)))
           .filter(values.isDefined)
 
         const dependentNodes = NetsuiteClient.getDependenciesFromGraph(nodesWithError, dependencyGraph)
@@ -426,7 +426,7 @@ export default class NetsuiteClient {
         const numOfRemovedNodes = numOfAttemptedNodesToDeploy - dependencyGraph.nodes.size
         if (numOfRemovedNodes === 0) {
           log.error('no changes were removed from error: %o', error)
-          errors.push({ message, severity: 'Error' })
+          errors.push({ message: toError(error).message, severity: 'Error' })
           return { errors, appliedChanges: [], sdfErrors }
         }
         log.debug(
@@ -447,13 +447,13 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<Error[]> {
+  ): Promise<DeployResult['errors']> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return (await this.sdfDeploy({
         changes,
         additionalDependencies: additionalSdfDependencies,
         validateOnly: true,
-      })).sdfErrors
+      })).errors
     }
     return []
   }

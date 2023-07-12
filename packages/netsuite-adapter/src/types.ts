@@ -140,9 +140,10 @@ export const FIELD_TYPES = [
   'customfield',
 ]
 
+type DeployError = SaltoElementError | SaltoError
 export type DeployResult = {
   appliedChanges: Change[]
-  errors: (SaltoElementError | SaltoError)[]
+  errors: DeployError[]
   sdfErrors?: Error[]
   elemIdToInternalId?: Record<string, string>
 }

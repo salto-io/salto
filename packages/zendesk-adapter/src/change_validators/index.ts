@@ -66,3 +66,4 @@ export { defaultDynamicContentItemVariantValidator } from './default_dynamic_con
 export { featureActivationValidator } from './feature_activation'
 export { deflectionActionValidator } from './deflection_action'
 export { standardFieldsValidator } from './standard_fields'
+export { defaultAutomationRemovalValidator } from './default_automation_removal'

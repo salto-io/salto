@@ -2655,6 +2655,7 @@ export type ChangeValidatorName = (
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
   | 'standardFields'
+  | 'defaultAutomationRemoval'
   | 'deflectionAction'
   | 'childInOrder'
   | 'childrenReferences'
@@ -2716,6 +2717,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
+    defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },

@@ -193,6 +193,14 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
     return refInnerTypeVal
   }
 
+  getInnerTypeSync(): TypeElement {
+    const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously`)
+    }
+    return refInnerTypeVal
+  }
+
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {
       this.refInnerType = getRefType(innerTypeOrRefInnerType)
@@ -252,6 +260,15 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
     }
     return refInnerTypeVal
   }
+
+  getInnerTypeSync(): TypeElement {
+    const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
+    if (!isType(refInnerTypeVal)) {
+      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously`)
+    }
+    return refInnerTypeVal
+  }
+
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
     if (innerTypeOrRefInnerType.elemID.isEqual(this.refInnerType.elemID)) {

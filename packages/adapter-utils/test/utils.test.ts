@@ -836,6 +836,21 @@ describe('Test utils.ts', () => {
           })
         })
 
+        it('should call transform on non-list types even for list types', () => {
+          expect(isListType(mockType.fields.strArray.getTypeSync())).toBeTruthy()
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: mockInstance.value.strArray,
+            path: undefined,
+            field: new Field(
+              mockType.fields.strArray.parent,
+              mockType.fields.strArray.name,
+              (mockType.fields.strArray.getTypeSync() as ListType).getInnerTypeSync(),
+              mockType.fields.strArray.annotations,
+            ),
+          })
+        })
+
+
         it('should call transform on map types', () => {
           expect(isMapType(mockType.fields.strMap.getTypeSync())).toBeTruthy()
           expect(transformFunc).toHaveBeenCalledWith({

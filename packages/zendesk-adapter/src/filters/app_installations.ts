@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import Joi from 'joi'
 import {
-  Change,
+  Change, Element,
   createSaltoElementError,
   getChangeData, InstanceElement, isAdditionChange,
   isAdditionOrModificationChange, isInstanceElement, ReferenceExpression,

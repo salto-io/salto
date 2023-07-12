@@ -13,11 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Joi from 'joi'
 import { BlockBase, createBlockChecker } from '../../src/filters/cross_service/recipe_block_types'
 
-/* eslint-disable camelcase */
 
 describe('Recipe references filter', () => {
   type BlockType = BlockBase & {
@@ -34,7 +32,7 @@ describe('Recipe references filter', () => {
 
   describe('Cross service - recipe block type - create block checker', () => {
     beforeAll(() => {
-      const BLOCK_SCHEMA = Joi.object({
+      const blockSchema = Joi.object({
         keyword: Joi.string().required(),
         provider: Joi.string().valid('app', 'app_secondary').required(),
         stringItem: Joi.string().required(),
@@ -44,7 +42,7 @@ describe('Recipe references filter', () => {
           could: Joi.number(),
         }).unknown(true).required(),
       }).unknown(true).required()
-      blockChecker = createBlockChecker<BlockType>(BLOCK_SCHEMA, ['app', 'more_app'])
+      blockChecker = createBlockChecker<BlockType>(blockSchema, ['app', 'more_app'])
     })
     it('should accept valid block', () => {
       const block = {

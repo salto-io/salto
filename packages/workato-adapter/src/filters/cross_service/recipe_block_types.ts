@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-// eslint-disable-next-line import/no-extraneous-dependencies
 import Joi from 'joi'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 
@@ -26,7 +25,7 @@ export type RefListItem = {
 
 export type BlockBase = {
   keyword: string
-  provider: string
+  provider?: string
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

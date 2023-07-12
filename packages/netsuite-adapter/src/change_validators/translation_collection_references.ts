@@ -13,40 +13,48 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeError, getChangeData, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
+import { ChangeError, getChangeData, isAdditionOrModificationChange, Element } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { captureServiceIdInfo } from '../service_id_info'
+import { isStandardInstanceOrCustomRecordType } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
 const { isDefined } = values
-const customCollectionRegex = new RegExp('\\[scriptid=custcollection.*', 'gm')
+const CUSTOM_COLLECTION = 'custcollection'
 
-const toChangeError = (instance: InstanceElement): ChangeError => ({
-  elemID: instance.elemID,
+const toChangeError = (element: Element, referenceName: string): ChangeError => ({
+  elemID: element.elemID,
   severity: 'Error',
   message: 'Cannot deploy element with invalid translation reference',
-  detailedMessage: 'Cannot deploy this element because it contains a reference to a translation collection that does not exist in the project.'
-   + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NS UI.',
+  detailedMessage: `Cannot deploy this element because it contains a reference to the '${referenceName}' translation collection that does not exist in the environment.`
+   + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
 })
 
 const changeValidator: NetsuiteChangeValidator = async changes => (
   changes
+    .filter(isAdditionOrModificationChange)
     .map(getChangeData)
-    .filter(isInstanceElement)
-    .map(instance => {
-      let changeError: ChangeError | undefined
+    .filter(isStandardInstanceOrCustomRecordType)
+    .flatMap(element => {
+      const changeErrors: ChangeError[] = []
       walkOnElement({
-        element: instance,
+        element,
         func: ({ value }) => {
-          if (_.isString(value) && customCollectionRegex.test(value)) {
-            changeError = toChangeError(instance)
+          if (_.isString(value)) {
+            changeErrors.push(
+              ...captureServiceIdInfo(value)
+                .map(serviceIdInfo => serviceIdInfo.serviceId)
+                .filter(serviceId => serviceId.includes(CUSTOM_COLLECTION))
+                .map(serviceId => toChangeError(element, serviceId))
+            )
             return WALK_NEXT_STEP.EXIT
           }
           return WALK_NEXT_STEP.RECURSE
         },
       })
-      return changeError
+      return changeErrors
     })
     .filter(isDefined)
 )

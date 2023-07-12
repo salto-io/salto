@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
@@ -246,7 +246,7 @@ describe('createElementsSourceIndex', () => {
         [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       },
     })
-    const custRecordField = new Field(custRecordType, 'custom_field', BuiltinTypes.STRING, { scriptid: 'custom_field' })
+    const custRecordField = custRecordType.fields.custom_field
     getAllMock.mockImplementation(buildElementsSourceFromElements([custRecordType]).getAll)
     expect((await createElementsSourceIndex(elementsSource, true).getIndexes()).customRecordFieldsServiceIdRecordsIndex)
       .toEqual({

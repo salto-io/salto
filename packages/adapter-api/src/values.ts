@@ -87,12 +87,7 @@ export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata):
 const getResolvedValueSync = (
   elemID: ElemID,
   resolvedValue?: Value
-): Value => {
-  if (resolvedValue === undefined) {
-    return new PlaceholderObjectType({ elemID })
-  }
-  return resolvedValue
-}
+): Value => (resolvedValue ?? new PlaceholderObjectType({ elemID }))
 
 const getResolvedValue = async (
   elemID: ElemID,
@@ -212,7 +207,7 @@ export class TypeReference {
 
   getResolvedValueSync(): TypeElement {
     if (this.type === undefined) {
-      throw new Error(`Cannot resolve type reference ${this.elemID.getFullName()} without type`)
+      throw new Error(`Type ${this.elemID.getFullName()} cannot be resolved synchronously`)
     }
     return this.type
   }

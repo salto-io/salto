@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import {
-  ObjectType, ElemID, InstanceElement, ReferenceExpression,
+  ObjectType, ElemID, InstanceElement, ReferenceExpression, createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import ZendeskClient from '../../src/client/client'
@@ -160,7 +160,13 @@ describe('app installation filter', () => {
       const clonedApp = app.clone()
       mockDeployChange.mockImplementation(async () => ({ id, pending_job_id: '123' }))
       mockGet = jest.spyOn(client, 'getSinglePage')
-      mockGet.mockImplementation(async () => { throw new Error('err') })
+      mockGet.mockImplementation(async () => {
+        throw createSaltoElementError({
+          message: 'err',
+          severity: 'Error',
+          elemID: clonedApp.elemID,
+        })
+      })
       const res = await filter.deploy([{ action: 'add', data: { after: clonedApp } }])
       expect(mockDeployChange).toHaveBeenCalledTimes(1)
       expect(mockDeployChange).toHaveBeenCalledWith({

@@ -24,9 +24,15 @@ import filterCreator from '../../src/filters/cross_service/jira/project_issuetyp
 
 describe('projectIssuetype filter', () => {
   let client: WorkatoClient
-  let elements: Element[]
   type FilterType = filterUtils.FilterWith<'onFetch'>
   let filter: FilterType
+  let elements: Element[]
+
+  let codeType: ObjectType
+  let notCodeType: ObjectType
+  let recipeCode: InstanceElement
+  let notRecipeCode: InstanceElement
+  let notJiraCode: InstanceElement
 
   beforeAll(() => {
     client = new WorkatoClient({
@@ -43,11 +49,11 @@ describe('projectIssuetype filter', () => {
     }) as FilterType
   })
 
-  const generateElements = (): Element[] => {
-    const notCodeType = new ObjectType({ elemID: new ElemID(WORKATO, 'not_recipe__code') })
-    const codeType = new ObjectType({ elemID: new ElemID(WORKATO, 'recipe__code') })
+  beforeEach(async () => {
+    notCodeType = new ObjectType({ elemID: new ElemID(WORKATO, 'not_recipe__code') })
+    codeType = new ObjectType({ elemID: new ElemID(WORKATO, 'recipe__code') })
 
-    const notRecipeCode = new InstanceElement('notRecipeCode', notCodeType, {
+    notRecipeCode = new InstanceElement('notRecipeCode', notCodeType, {
       as: 'notRecipeCode',
       provider: 'jira',
       name: 'create_issue',
@@ -59,7 +65,8 @@ describe('projectIssuetype filter', () => {
         project_issuetype: 'PNM : IssueType',
       },
     })
-    const notJiraCode = new InstanceElement('notJiraCode', codeType, {
+
+    notJiraCode = new InstanceElement('notJiraCode', codeType, {
       as: 'notJiraCode',
       provider: 'notJira',
       name: 'create_issue',
@@ -71,7 +78,8 @@ describe('projectIssuetype filter', () => {
         project_issuetype: 'PNM : IssueType',
       },
     })
-    const recipeCode = new InstanceElement('recipeCode', codeType, {
+
+    recipeCode = new InstanceElement('recipeCode', codeType, {
       as: 'recipeCode',
       provider: 'jira',
       name: 'new_issue',
@@ -141,57 +149,77 @@ describe('projectIssuetype filter', () => {
         },
       ],
     })
-
-    return [
-      codeType, notJiraCode, recipeCode, notRecipeCode,
-    ]
-  }
-
-  beforeEach(async () => {
-    elements = generateElements()
+    elements = [recipeCode, notRecipeCode, notJiraCode, codeType, notCodeType]
   })
   describe('onFetch', () => {
     it('should keep all elements which have non-jira provider or non recipe__code type', async () => {
-      const beforeElements = _.cloneDeep(elements)
+      const notCodeTypeBefore = _.cloneDeep(notCodeType)
+      const codeTypeBefore = _.cloneDeep(codeType)
+      const notJiraCodeBefore = _.cloneDeep(notJiraCode)
+      const notRecipeCodeBefore = _.cloneDeep(notRecipeCode)
+
       await filter.onFetch(elements)
-      expect(elements.filter(e => e.elemID.name !== 'recipeCode'))
-        .toEqual(beforeElements.filter(e => e.elemID.name !== 'recipeCode'))
+
+      expect(codeType).toEqual(codeTypeBefore)
+      expect(notCodeType).toEqual(notCodeTypeBefore)
+      expect(notJiraCode).toEqual(notJiraCodeBefore)
+      expect(notRecipeCode).toEqual(notRecipeCodeBefore)
     })
 
-    it('should remove all \'project_issuetype\' and \'sample_project_issuetype\' from dynamicPickListSelection and split them in input', async () => {
-      const beforeRecipe = elements.find(e => e.elemID.name === 'recipeCode') as InstanceElement
-      expect(beforeRecipe.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeDefined()
-      expect(beforeRecipe.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeDefined()
-      expect(beforeRecipe.value.block[1].dynamicPickListSelection.project_issuetype).toBeDefined()
-
-      expect(beforeRecipe.value.block[0].block[0].input.project_issuetype).toBeDefined()
-      expect(beforeRecipe.value.block[0].block[0].input.sample_project_issuetype).toBeDefined()
-      expect(beforeRecipe.value.block[1].input.project_issuetype).toBeDefined()
+    it('should remove \'project_issuetype\' from dynamicPickListSelection', async () => {
+      expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[1].dynamicPickListSelection.project_issuetype).toBeDefined()
 
       await filter.onFetch(elements)
-      const recipe = elements.find(e => e.elemID.name === 'recipeCode') as InstanceElement
-      expect(recipe.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeUndefined()
-      expect(recipe.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeUndefined()
-      expect(recipe.value.block[1].dynamicPickListSelection.project_issuetype).toBeUndefined()
 
-      expect(recipe.value.block[0].block[0].input.project_issuetype).toBeUndefined()
-      expect(recipe.value.block[0].block[0].input.sample_project_issuetype).toBeUndefined()
-      expect(recipe.value.block[1].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[1].dynamicPickListSelection.project_issuetype).toBeUndefined()
+    })
 
-      expect(recipe.value.block[0].block[0].input.projectKey).toBeDefined()
-      expect(recipe.value.block[0].block[0].input.projectKey).toEqual('PRN')
-      expect(recipe.value.block[0].block[0].input.issueType).toBeDefined()
-      expect(recipe.value.block[0].block[0].input.issueType).toEqual('Issue Type Name with \' : \' sign and \'--\' sign ')
+    it('should remove \'sample_project_issuetype\' from dynamicPickListSelection', async () => {
+      expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeDefined()
 
-      expect(recipe.value.block[0].block[0].input.sampleProjectKey).toBeDefined()
-      expect(recipe.value.block[0].block[0].input.sampleProjectKey).toEqual('SPN')
-      expect(recipe.value.block[0].block[0].input.sampleIssueType).toBeDefined()
-      expect(recipe.value.block[0].block[0].input.sampleIssueType).toEqual('SampleIssueTypeName')
+      await filter.onFetch(elements)
 
-      expect(recipe.value.block[1].input.projectKey).toBeDefined()
-      expect(recipe.value.block[1].input.projectKey).toEqual('PISB')
-      expect(recipe.value.block[1].input.issueType).toBeDefined()
-      expect(recipe.value.block[1].input.issueType).toEqual('IssueType')
+      expect(recipeCode.value.block[0].block[0].dynamicPickListSelection.sample_project_issuetype).toBeUndefined()
+    })
+
+    it('should replace \'project_issuetype\' to projectKey and issueType at input', async () => {
+      expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.issueType).toBeUndefined()
+
+      expect(recipeCode.value.block[1].input.project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[1].input.projectKey).toBeUndefined()
+      expect(recipeCode.value.block[1].input.issueType).toBeUndefined()
+
+      await filter.onFetch(elements)
+
+      expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.projectKey).toEqual('PRN')
+      expect(recipeCode.value.block[0].block[0].input.issueType).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.issueType).toEqual('Issue Type Name with \' : \' sign and \'--\' sign ')
+
+      expect(recipeCode.value.block[1].input.project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[1].input.projectKey).toBeDefined()
+      expect(recipeCode.value.block[1].input.projectKey).toEqual('PISB')
+      expect(recipeCode.value.block[1].input.issueType).toBeDefined()
+      expect(recipeCode.value.block[1].input.issueType).toEqual('IssueType')
+    })
+
+    it('should replace \'sample_project_issuetype\' to sampleProjectKey and sampleIssueType at input', async () => {
+      expect(recipeCode.value.block[0].block[0].input.sample_project_issuetype).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toBeUndefined()
+
+      await filter.onFetch(elements)
+
+      expect(recipeCode.value.block[0].block[0].input.sample_project_issuetype).toBeUndefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleProjectKey).toEqual('SPN')
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toBeDefined()
+      expect(recipeCode.value.block[0].block[0].input.sampleIssueType).toEqual('SampleIssueTypeName')
     })
   })
 })

@@ -13,34 +13,67 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, Value } from '@salto-io/adapter-api'
-import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import _ from 'lodash'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
+import { createSchemeGuard, walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import Joi from 'joi'
 import { CROSS_SERVICE_SUPPORTED_APPS, JIRA, RECIPE_CODE_TYPE } from '../../../constants'
 import { FilterCreator } from '../../../filter'
+import { BlockBase } from '../recipe_block_types'
 
 const INPUT_SEPERATOR = '--'
 
+/* eslint-disable camelcase */
+
+type JiraExportedBlock = BlockBase & {
+  as: string
+  provider: 'jira' | 'jira_secondary'
+  dynamicPickListSelection: {
+    project_issuetype: string
+    sample_project_issuetype?: string
+  }
+  input: {
+    project_issuetype: string
+    sample_project_issuetype?: string
+    projectKey?: string
+    issueType?: string
+    sampleProjectKey?: string
+    sampleIssueType?: string
+  }
+}
+
+const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
+  keyword: Joi.string().required(),
+  as: Joi.string().required(),
+  provider: Joi.string().valid('jira', 'jira_secondary').required(),
+  dynamicPickListSelection: Joi.object({
+    project_issuetype: Joi.string().required(),
+    sample_project_issuetype: Joi.string(),
+  }).unknown(true).required(),
+  input: Joi.object({
+    project_issuetype: Joi.string().required(),
+    sample_project_issuetype: Joi.string(),
+  }).unknown(true).required(),
+}).unknown(true).required()
+
 const splitProjectAndIssueType = (
-  value: Value, argName: 'project_issuetype' | 'sample_project_issuetype', firstKey: string, secondKey: string
+  value: JiraExportedBlock,
+  argName: 'project_issuetype' | 'sample_project_issuetype',
+  firstKey: 'projectKey' | 'sampleProjectKey',
+  secondKey: 'issueType' | 'sampleIssueType',
 ): void => {
-  const objValues = isInstanceElement(value) ? value.value : value
-  if (_.isPlainObject(objValues)
-    && _.isObjectLike(objValues.input)
-    && CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)
-    && objValues.input[argName] !== undefined
-    && objValues.input[argName].includes(INPUT_SEPERATOR)
-    && _.isObjectLike(objValues.dynamicPickListSelection)
-    && objValues.dynamicPickListSelection[argName] !== undefined) {
+  const projectKeyAndIssueType = value.input[argName]
+  if (projectKeyAndIssueType !== undefined
+    && projectKeyAndIssueType.includes(INPUT_SEPERATOR)
+    && value.dynamicPickListSelection[argName] !== undefined) {
     // The project key can't contain '-' sign while issueTypeName and projectName could.
     // So we split by first '-' in input args.
-    const firstValue = objValues.input[argName].split(INPUT_SEPERATOR, 1)[0]
-    const secondValue = objValues.input[argName]
+    const firstValue = projectKeyAndIssueType.split(INPUT_SEPERATOR, 1)[0]
+    const secondValue = projectKeyAndIssueType
       .substring(firstValue.length + INPUT_SEPERATOR.length)
-    objValues.input[firstKey] = firstValue
-    objValues.input[secondKey] = secondValue
-    delete objValues.input[argName]
-    delete objValues.dynamicPickListSelection[argName]
+    value.input[firstKey] = firstValue
+    value.input[secondKey] = secondValue
+    delete value.input[argName]
+    delete value.dynamicPickListSelection[argName]
   }
 }
 
@@ -71,8 +104,12 @@ const filter: FilterCreator = () => ({
       .forEach(inst => walkOnElement({
         element: inst,
         func: ({ value }) => {
-          splitProjectAndIssueType(value, 'project_issuetype', 'projectKey', 'issueType')
-          splitProjectAndIssueType(value, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
+          const objValues = isInstanceElement(value) ? value.value : value
+          if (createSchemeGuard<JiraExportedBlock>(JIRA_EXPORTED_BLOCK_SCHEMA)(objValues)
+            && CROSS_SERVICE_SUPPORTED_APPS[JIRA].includes(value.provider)) {
+            splitProjectAndIssueType(objValues, 'project_issuetype', 'projectKey', 'issueType')
+            splitProjectAndIssueType(objValues, 'sample_project_issuetype', 'sampleProjectKey', 'sampleIssueType')
+          }
           return WALK_NEXT_STEP.RECURSE
         },
       }))

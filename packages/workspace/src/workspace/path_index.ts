@@ -309,10 +309,6 @@ export const splitElementByPath = async (
   element: Element,
   index: PathIndex
 ): Promise<Element[]> => {
-  const indexEntries = await awu(index.entries()).toArray()
-  if (!indexEntries) {
-    return [element]
-  }
   const pathHints = await getFromPathIndex(element.elemID, index)
   if (pathHints.length <= 1) {
     const clonedElement = element.clone()

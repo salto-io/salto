@@ -422,8 +422,7 @@ describe('split element by path', () => {
     singleFieldObj, singleFieldObjAnnotations,
   ]
   const unmergedElements = [
-    multiPathInstanceB, multiPathInstanceA,
-    //    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
+    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 
@@ -535,5 +534,147 @@ describe('updatePathIndex', () => {
         ]),
       ]
     ))
+  })
+})
+
+describe('getElementsPathHints', () => {
+  const elemId = new ElemID('salto', 'obj')
+  it('should return one path hint for singlePathObject with no annotations and fields', async () => {
+    const singlePath = new ObjectType({
+      elemID: elemId,
+      path: ['salto', 'obj', 'simple'],
+    })
+    const pathHints = getElementsPathHints([singlePath])
+    expect(pathHints.length).toEqual(1)
+  })
+
+  it('should return one path hint for annotations and one for fields', async () => {
+    const singleFieldObj = new ObjectType({
+      elemID: elemId,
+      fields: {
+        uriField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'field'],
+    })
+
+    const singleFieldObjAnnotations = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Bye',
+      },
+      path: ['salto', 'obj', 'annotations'],
+    })
+    const pathHints = getElementsPathHints([singleFieldObj, singleFieldObjAnnotations])
+    expect(pathHints.length).toEqual(4)
+    const fieldHints = pathHints.filter(p => p.key.includes('field'))
+    expect(fieldHints.length).toEqual(1)
+    expect(fieldHints[0].value.length).toEqual(1)
+    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
+    expect(annoHints.length).toEqual(1)
+    expect(annoHints[0].value.length).toEqual(1)
+  })
+
+  it('should return path hints for divided annotations and divided fields', async () => {
+    const objFragStdFields = new ObjectType({
+      elemID: elemId,
+      fields: {
+        stdField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'standardFields'],
+    })
+    const objFragCustomFields = new ObjectType({
+      elemID: elemId,
+      fields: {
+        customField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'customFields'],
+    })
+    const objFragAnnotationsOne = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        anno: 'Hey',
+      },
+      path: ['salto', 'obj', 'annotationsOne'],
+    })
+    const objFragAnnotationsTwo = new ObjectType({
+      elemID: elemId,
+      annotationRefsOrTypes: {
+        ping: createRefToElmWithValue(BuiltinTypes.STRING),
+      },
+      annotations: {
+        ping: 'pong',
+      },
+      path: ['salto', 'obj', 'annotationsTwo'],
+    })
+    const pathHints = getElementsPathHints([
+      objFragAnnotationsOne, objFragAnnotationsTwo, objFragStdFields, objFragCustomFields,
+    ])
+    expect(pathHints.length).toEqual(10)
+    const fieldHints = pathHints.filter(p => p.key.includes('field'))
+    expect(fieldHints.length).toEqual(3)
+    expect(fieldHints[0].value.length).toEqual(2)
+    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
+    expect(annoHints.length).toEqual(3)
+    expect(annoHints[0].value.length).toEqual(2)
+    const attrHints = pathHints.filter(p => p.key.includes('attr'))
+    expect(attrHints.length).toEqual(3)
+    expect(attrHints[0].value.length).toEqual(2)
+  })
+
+  it('should return path hints for nested fields', async () => {
+    const objFragFieldOne = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.STRING),
+          annotations: {
+            test: 'test',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'one'],
+    })
+    const objFragFieldTwo = new ObjectType({
+      elemID: elemId,
+      fields: {
+        myField: {
+          refType: createRefToElmWithValue(BuiltinTypes.NUMBER),
+          annotations: {
+            yo: 'yo',
+          },
+        },
+      },
+      path: ['salto', 'obj', 'two'],
+    })
+    const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
+    const fieldHints = pathHints.filter(p => p.key.includes('field'))
+    expect(fieldHints.length).toEqual(4)
+    expect(fieldHints[0].value.length).toEqual(2)
+  })
+
+  it('should return path hints for instances', async () => {
+    const pathHints = getElementsPathHints([multiPathInstanceA, multiPathInstanceB])
+    expect(pathHints.length).toEqual(4)
   })
 })

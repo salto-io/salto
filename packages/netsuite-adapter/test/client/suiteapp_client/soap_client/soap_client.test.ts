@@ -17,6 +17,8 @@ import _ from 'lodash'
 import { ElemID, InstanceElement, ListType, ObjectType, ReferenceExpression } from '@salto-io/adapter-api'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
+import { promises } from '@salto-io/lowerdash'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES } from '../../../../src/config'
 import { ExistingFileCabinetInstanceDetails } from '../../../../src/client/suiteapp_client/types'
 import { ReadFileError } from '../../../../src/client/suiteapp_client/errors'
 import SoapClient, * as soapClientUtils from '../../../../src/client/suiteapp_client/soap_client/soap_client'
@@ -30,6 +32,8 @@ jest.mock('uuid', () => ({
   v4: jest.fn().mockReturnValue(''),
 }))
 
+jest.spyOn(promises.timeout, 'withTimeout').mockImplementation(promise => promise)
+
 describe('soap_client', () => {
   const addListAsyncMock = jest.fn()
   const updateListAsyncMock = jest.fn()
@@ -40,6 +44,7 @@ describe('soap_client', () => {
   const getAsyncMock = jest.fn()
   let wsdl: Record<string, unknown>
   const createClientAsyncMock = jest.spyOn(soapClientUtils, 'createClientAsync')
+  const defaultSoapTimeOut = DEFAULT_AXIOS_TIMEOUT_IN_MINUTES * 60 * 1000
   let client: SoapClient
 
   beforeEach(() => {
@@ -77,9 +82,9 @@ describe('soap_client', () => {
       },
       fn => fn(),
       (_t: string, _c: number) => false,
+      defaultSoapTimeOut
     )
   })
-
 
   describe('retries', () => {
     it('when succeeds within the permitted retries should return the results', async () => {
@@ -220,7 +225,7 @@ describe('soap_client', () => {
           type: 'file',
           path: 'somePath',
           id: 6233,
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -259,7 +264,7 @@ describe('soap_client', () => {
           type: 'file',
           path: 'somePath',
           id: 6233,
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -287,7 +292,7 @@ describe('soap_client', () => {
           type: 'file',
           path: 'somePath',
           id: 6233,
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -314,7 +319,7 @@ describe('soap_client', () => {
           type: 'file',
           path: 'somePath',
           id: 6233,
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -363,7 +368,7 @@ describe('soap_client', () => {
         {
           type: 'file',
           path: 'addedFile',
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -374,7 +379,7 @@ describe('soap_client', () => {
         {
           type: 'folder',
           path: 'addedFile2',
-          parent: -600,
+          parent: '-600',
           bundleable: true,
           isInactive: false,
           isPrivate: false,
@@ -399,7 +404,7 @@ describe('soap_client', () => {
         {
           type: 'file',
           path: 'addedFile',
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -410,7 +415,7 @@ describe('soap_client', () => {
         {
           type: 'folder',
           path: 'addedFile2',
-          parent: -600,
+          parent: '-600',
           bundleable: true,
           isInactive: false,
           isPrivate: false,
@@ -425,7 +430,7 @@ describe('soap_client', () => {
         {
           type: 'file',
           path: 'addedFile',
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -436,7 +441,7 @@ describe('soap_client', () => {
         {
           type: 'folder',
           path: 'addedFile2',
-          parent: -600,
+          parent: '-600',
           bundleable: true,
           isInactive: false,
           isPrivate: false,
@@ -451,7 +456,7 @@ describe('soap_client', () => {
         {
           type: 'file',
           path: 'addedFile',
-          folder: -6,
+          folder: '-6',
           bundleable: true,
           isInactive: false,
           isOnline: false,
@@ -462,7 +467,7 @@ describe('soap_client', () => {
         {
           type: 'folder',
           path: 'addedFile2',
-          parent: -600,
+          parent: '-600',
           bundleable: true,
           isInactive: false,
           isPrivate: false,
@@ -628,6 +633,7 @@ describe('soap_client', () => {
         },
         fn => fn(),
         (_type: string, count: number) => count > 1,
+        defaultSoapTimeOut
       )
       await expect(client.getAllRecords(['subsidiary'])).resolves.toMatchObject({
         records: [],
@@ -953,6 +959,7 @@ describe('soap_client', () => {
         },
         fn => fn(),
         (_type: string, count: number) => count > 1,
+        defaultSoapTimeOut
       )
       await expect(client.getCustomRecords(['custrecord'])).resolves.toMatchObject({
         largeTypesError: ['custrecord'], customRecords: [],
@@ -1495,6 +1502,28 @@ describe('soap_client', () => {
         .toEqual([new Error(`SOAP api call updateList for instance ${instance.elemID.getFullName()} failed.`
         + ` error code: ${INSUFFICIENT_PERMISSION_ERROR}, error message: ${errorMessage1}`)])
       expect(updateListAsyncMock).toHaveBeenCalledTimes(6)
+    })
+  })
+
+  describe('soap timeout', () => {
+    it('should throw PromiseTimedOutError when the operation exceeds the timeout', async () => {
+      (promises.timeout.withTimeout as jest.Mock).mockRestore()
+      updateListAsyncMock.mockImplementation(async () => {
+        await promises.timeout.sleep(30)
+        return []
+      })
+      const timeout = 20
+      client = new SoapClient(
+        {
+          accountId: 'ACCOUNT_ID',
+          suiteAppTokenId: 'tokenId',
+          suiteAppTokenSecret: 'tokenSecret',
+        },
+        fn => fn(),
+        (_type: string, count: number) => count > 1,
+        timeout
+      )
+      await expect(client.updateFileCabinetInstances([])).rejects.toThrow(`Promise timed out after ${timeout} ms`)
     })
   })
 })

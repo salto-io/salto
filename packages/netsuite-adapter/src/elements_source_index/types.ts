@@ -28,6 +28,7 @@ export type ElementsSourceIndexes = {
   customFieldsIndex: Record<string, InstanceElement[]>
   elemIdToChangeByIndex: Record<string, string>
   elemIdToChangeAtIndex: Record<string, string>
+  customRecordFieldsServiceIdRecordsIndex: ServiceIdRecords
 }
 
 export type LazyElementsSourceIndexes = {

@@ -102,6 +102,8 @@ export const mockDefaultValues: Record<string, Values> = {
           enabled: false,
         },
       },
+      manualProvisioning: false,
+      implicitAssignment: false,
     },
   },
   [GROUP_TYPE_NAME]: {

@@ -969,9 +969,12 @@ const toRecord = async (
 }
 
 export const instancesToUpdateRecords = async (
-  instances: InstanceElement[]
+  instances: InstanceElement[],
+  withNulls: boolean,
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE, true)))
+  Promise.all(instances.map(instance => toRecord(
+    instance, FIELD_ANNOTATIONS.UPDATEABLE, withNulls,
+  )))
 
 export const instancesToCreateRecords = (
   instances: InstanceElement[]

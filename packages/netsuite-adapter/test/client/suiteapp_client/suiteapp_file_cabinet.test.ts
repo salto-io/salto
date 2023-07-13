@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, StaticFile, getChangeData, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -667,7 +667,11 @@ describe('suiteapp_file_cabinet', () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockRejectedValue(new Error('someError'))
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
           .deploy([changes[0]], 'update')
-        expect(errors).toEqual([new Error('someError')])
+        expect(errors).toEqual([{
+          elemID: getChangeData(changes[0]).elemID,
+          message: 'someError',
+          severity: 'Error',
+        }])
         expect(appliedChanges).toHaveLength(0)
       })
 
@@ -675,7 +679,11 @@ describe('suiteapp_file_cabinet', () => {
         mockSuiteAppClient.updateFileCabinetInstances.mockResolvedValue([0, new Error('someError')])
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
           .deploy(changes.slice(0, 2), 'update')
-        expect(errors).toEqual([new Error('someError')])
+        expect(errors).toEqual([{
+          elemID: getChangeData(changes[1]).elemID,
+          message: 'someError',
+          severity: 'Error',
+        }])
         expect(appliedChanges).toHaveLength(1)
       })
 
@@ -683,7 +691,7 @@ describe('suiteapp_file_cabinet', () => {
         const { appliedChanges, errors } = await createSuiteAppFileCabinetOperations(suiteAppClient)
           .deploy(changes, 'update')
         expect(errors).toHaveLength(0)
-        expect(appliedChanges).toEqual(changes.map((change, id) => ({ ...change, id })))
+        expect(appliedChanges).toEqual(changes)
         expect(mockSuiteAppClient.updateFileCabinetInstances.mock.calls[0][0]
           .map((details: ExistingFileCabinetInstanceDetails) => details.id))
           .toEqual(Array.from(Array(50).keys()))
@@ -781,13 +789,13 @@ describe('suiteapp_file_cabinet', () => {
           .deploy(changes, 'add')
         expect(errors).toHaveLength(0)
         expect(appliedChanges).toHaveLength(2)
-        expect(Object.keys(elemIdToInternalId ?? {})).toEqual([
+        expect(Object.keys(elemIdToInternalId)).toEqual([
           'netsuite.folder.instance.newInstance2',
           'netsuite.file.instance.newInstance3',
         ])
         expect(mockSuiteAppClient.addFileCabinetInstances).toHaveBeenNthCalledWith(2, [
           expect.objectContaining({
-            folder: parseInt(elemIdToInternalId?.['netsuite.folder.instance.newInstance2'] ?? '0', 10),
+            folder: elemIdToInternalId['netsuite.folder.instance.newInstance2'],
           }),
         ])
       })
@@ -827,9 +835,15 @@ describe('suiteapp_file_cabinet', () => {
         expect(appliedChanges).toHaveLength(0)
         expect(mockSuiteAppClient.addFileCabinetInstances).toHaveBeenCalledTimes(1)
         expect(errors).toHaveLength(2)
-        expect(errors[0]).toEqual(new Error('some error'))
-        expect(errors[1].message).toEqual(expect.stringContaining('Can\'t deploy the following'))
-        expect(errors[1].message).toEqual(expect.stringContaining('/instance1/newInstance2/newInstance3'))
+        expect(errors).toEqual([{
+          elemID: getChangeData(changes[0]).elemID,
+          message: 'some error',
+          severity: 'Error',
+        }, {
+          elemID: getChangeData(changes[1]).elemID,
+          message: 'Cannot deploy this file because its parent folder deploy failed',
+          severity: 'Error',
+        }])
       })
     })
 

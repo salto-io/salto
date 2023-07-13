@@ -347,7 +347,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: '5a4f3c951aeb38445b20edd27747b028',
+                        hash: 'bd17f95fb82eb6eac93a764cf0910054',
                       },
                     },
                   },
@@ -367,6 +367,7 @@ describe('SalesforceAdapter CRUD', () => {
             })
           })
           it('should deploy', () => {
+            expect(result.errors).toBeEmpty()
             expect(result.appliedChanges).toHaveLength(1)
           })
         })
@@ -408,7 +409,7 @@ describe('SalesforceAdapter CRUD', () => {
                     deploy: {
                       quickDeployParams: {
                         requestId: '1',
-                        hash: '5a4f3c951aeb38445b20edd27747b028',
+                        hash: 'bd17f95fb82eb6eac93a764cf0910054',
                       },
                     },
                   },
@@ -416,12 +417,13 @@ describe('SalesforceAdapter CRUD', () => {
               },
             }))
             connection.metadata.deployRecentValidation.mockImplementation(() => { throw new Error('INVALID_TOKEN') })
-            await adapter.deploy({
+            const { errors } = await adapter.deploy({
               changeGroup: {
                 groupID: instance.elemID.getFullName(),
                 changes: [{ action: 'add', data: { after: instance } }],
               },
             })
+            expect(errors).toBeEmpty()
           })
           it('should fallback to the regular deploy', () => {
             expect(connection.metadata.deploy).toHaveBeenCalledTimes(1)

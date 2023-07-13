@@ -15,6 +15,7 @@
 */
 import _ from 'lodash'
 import { ListMetadataQuery, RetrieveResult } from 'jsforce-types'
+import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
 import { Values, InstanceElement, ElemID } from '@salto-io/adapter-api'
 import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
@@ -38,6 +39,8 @@ import {
 
 const { isDefined } = values
 const { makeArray } = collections.array
+
+const log = logger(module)
 
 const {
   DUPLICATE_VALUE,
@@ -205,14 +208,18 @@ export const createSkippedListConfigChangeFromError = ({ creatorInput, error }
 export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
   ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })
 
-export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] =>
-  makeArray(result.messages)
+export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] => {
+  log.debug('Creating config changes for failed retrieve result %o', result)
+  const configChanges = makeArray(result.messages)
     .map((msg: Values) => constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''))
     .filter(regexRes => !_.isUndefined(regexRes?.groups))
     .map(regexRes => createSkippedListConfigChange({
       type: regexRes?.groups?.type as string,
       instance: regexRes?.groups?.instance as string,
     }))
+  log.debug('Created the config changes %o', configChanges)
+  return configChanges
+}
 
 export type ConfigChange = {
   config: InstanceElement[]

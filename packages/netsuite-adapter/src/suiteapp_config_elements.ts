@@ -13,7 +13,6 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import os from 'os'
 import _ from 'lodash'
 import { BuiltinTypes, ElemID, getChangeData, InstanceElement, isInstanceElement, ModificationChange, ObjectType } from '@salto-io/adapter-api'
 import { NETSUITE, SELECT_OPTION, SETTINGS_PATH, TYPES_PATH } from './constants'
@@ -77,26 +76,36 @@ export const toConfigDeployResult = (
   results: SetConfigRecordsValuesResult,
 ): DeployResult => {
   if (!_.isArray(results)) {
-    return { appliedChanges: [], errors: [new Error(results.errorMessage)] }
+    return {
+      appliedChanges: [],
+      errors: [{
+        message: results.errorMessage,
+        severity: 'Error',
+      }],
+    }
   }
 
+  const resultsConfigTypes = new Set(results.map(res => res.configType))
   const [success, fail] = _.partition(results, isSuccessSetConfig)
   const configTypeToChange = _(changes)
     .keyBy(change => getChangeData(change).value.configType).value()
 
   const appliedChanges = success.map(item => configTypeToChange[item.configType])
 
-  if (changes.length === results.length && fail.length === 0) {
-    return { appliedChanges, errors: [] }
-  }
+  const missingResultsError = changes
+    .map(getChangeData)
+    .filter(instance => !resultsConfigTypes.has(instance.value.configType))
+    .map(instance => ({
+      elemID: instance.elemID,
+      message: 'Failed to deploy instance due to internal server error',
+      severity: 'Error' as const,
+    }))
 
-  const missingResultsError = changes.length !== results.length
-    ? [new Error('Missing deploy result for some changes')]
-    : []
-
-  const failResultsErrors = fail.length > 0
-    ? [new Error(fail.map(item => `${item.configType}: ${item.errorMessage}`).join(os.EOL))]
-    : []
+  const failResultsErrors = fail.map(item => ({
+    elemID: getChangeData(configTypeToChange[item.configType]).elemID,
+    message: `${item.configType}: ${item.errorMessage}`,
+    severity: 'Error' as const,
+  }))
 
   return { appliedChanges, errors: missingResultsError.concat(failResultsErrors) }
 }

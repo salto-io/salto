@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change,
+  Change, createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -67,10 +67,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             instance.value.authentication.type
           ]
           if (placeholder === undefined) {
-            throw new Error(
-              `Unknown auth type was found for webhook ${instance.elemID.getFullName()}: ${
+            throw createSaltoElementError({ // caught by deployChanges
+              message: `Unknown auth type was found for webhook ${instance.elemID.getFullName()}: ${
                 instance.value.authentication.type}`,
-            )
+              severity: 'Error',
+              elemID: getChangeData(change).elemID,
+            })
           }
           instance.value.authentication.data = placeholder
         }

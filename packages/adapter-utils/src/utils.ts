@@ -26,7 +26,7 @@ import {
   CORE_ANNOTATIONS, TypeElement, Change, isRemovalChange, isModificationChange, isListType,
   ChangeData, ListType, CoreAnnotationTypes, isMapType, MapType, isContainerType, isTypeReference,
   ReadOnlyElementsSource, ReferenceMap, TypeReference, createRefToElmWithValue, isElement,
-  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType, UnresolvedReference,
+  compareSpecialValues, getChangeData, isTemplateExpression, PlaceholderObjectType, UnresolvedReference, FieldMap,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
 import { walkOnElement, WalkOnFunc, WALK_NEXT_STEP } from './walk_element'
@@ -790,42 +790,42 @@ export const valuesDeepSome = (value: Value, predicate: (val: Value) => boolean)
   return false
 }
 
+export enum FILTER_FUNC_NEXT_STEP {
+  EXCLUDE, // Exclude this value from the element
+  INCLUDE, // include this value
+  RECURSE, // Only partial include, continue with the recursion
+}
+
 export const filterByID = async <T extends Element | Values>(
   id: ElemID, value: T,
-  filterFunc: (id: ElemID) => Promise<boolean>
+  filterFunc: (id: ElemID) => Promise<FILTER_FUNC_NEXT_STEP>
 ): Promise<T | undefined> => {
-  const filterInstanceAnnotations = async (annotations: Value): Promise<Value> => (
-    filterByID(id, annotations, filterFunc)
-  )
-
   const filterAnnotations = async (annotations: Values): Promise<Value> => (
-    _.pickBy(
-      await mapValuesAsync(annotations, async (anno, annoName) => (
-        filterByID(id.createNestedID('attr').createNestedID(annoName), anno, filterFunc)
-      )),
-      isDefined,
-    )
+    filterByID(id.createNestedID('attr'), annotations, filterFunc)
   )
 
-  const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap> =>
-    _.pickBy(
-      await mapValuesAsync(annoRefTypes, async (anno, annoName) => (
-        await filterFunc(id.createNestedID('annotation').createNestedID(annoName)) ? anno : undefined
-      )),
-      isDefined,
-    )
+  const filterAnnotationType = async (annoRefTypes: ReferenceMap): Promise<ReferenceMap | undefined> => (
+    filterByID(id.createNestedID('annotation'), annoRefTypes, filterFunc)
+  )
 
-  if (!(await filterFunc(id))) {
+  const filterFields = async (fields: FieldMap): Promise<FieldMap | undefined> => (
+    filterByID(id.createNestedID('field'), fields, filterFunc)
+  )
+
+  const filterResult = await filterFunc(id)
+  if (filterResult === FILTER_FUNC_NEXT_STEP.EXCLUDE) {
     return undefined
   }
+  if (filterResult === FILTER_FUNC_NEXT_STEP.INCLUDE) {
+    return value
+  }
+  // Only part of the value should be included, continue with the recursion
   if (isObjectType(value)) {
-    const filteredFields = await Promise.all(Object.values(value.fields)
-      .map(field => filterByID(field.elemID, field, filterFunc)))
     return new ObjectType({
       elemID: value.elemID,
       annotations: await filterAnnotations(value.annotations),
       annotationRefsOrTypes: await filterAnnotationType(value.annotationRefTypes),
-      fields: _.keyBy(filteredFields.filter(isDefined), field => field.name),
+      fields: await filterFields(value.fields),
       path: value.path,
       isSettings: value.isSettings,
     }) as Value as T
@@ -853,7 +853,7 @@ export const filterByID = async <T extends Element | Values>(
       value.refType,
       await filterByID(value.elemID, value.value, filterFunc),
       value.path,
-      await filterInstanceAnnotations(value.annotations)
+      await filterByID(id, value.annotations, filterFunc)
     ) as Value as T
   }
 

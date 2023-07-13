@@ -106,21 +106,21 @@ const addSObjectInformationToInstance = async (
       .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
   )
 
-  const addedFields: string[] = []
-  const modifiedFields: string[] = []
+  const addedFieldNames: string[] = []
+  const modifiedFieldNames: string[] = []
   sobjectFields.forEach(sobjectField => {
     const existingField = fieldsFromMetadataApi[sobjectField.fullName]
     if (existingField !== undefined) {
-      modifiedFields.push(sobjectField.fullName)
+      modifiedFieldNames.push(sobjectField.fullName)
       _.defaults(existingField, sobjectField)
     } else {
-      addedFields.push(sobjectField.fullName)
+      addedFieldNames.push(sobjectField.fullName)
       instance.value.fields.push(sobjectField)
     }
   })
   const instanceFullName = instance.elemID.getFullName()
-  log.debug('added %d fields from soap API to %s, the first 10 fields are - %o', addedFields.length, instanceFullName, addedFields.slice(10))
-  log.debug('modified %d fields from soap API to %s, the first 10 fields are - %o', modifiedFields.length, instanceFullName, modifiedFields.slice(10))
+  log.debug('added %d fields from soap API to %s, the fields are - %o', addedFieldNames.length, instanceFullName, addedFieldNames)
+  log.debug('modified %d fields from soap API to %s, the fields are - %o', modifiedFieldNames.length, instanceFullName, modifiedFieldNames)
 }
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional information about Custom Objects'

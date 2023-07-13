@@ -177,9 +177,13 @@ const updateContextOptions = async ({
     const optionLengthBefore = isModificationChange(contextChange)
       ? getOptionsFromContext(contextChange.data.before).length + numberOfAlreadyAddedOptions
       : numberOfAlreadyAddedOptions
-    const numberOfPublicApiOptions = Math.min(Math.max(
-      PUBLIC_API_OPTIONS_LIMIT - optionLengthBefore - addedOptions.length, 0
-    ), addedOptions.length)
+    // const numberOfPublicApiOptions = Math.min(Math.max(
+    //   PUBLIC_API_OPTIONS_LIMIT - optionLengthBefore - addedOptions.length, 0
+    // ), addedOptions.length)
+    const numberOfPublicApiOptions = addedOptions.length - Math.min(
+      Math.max(optionLengthBefore + addedOptions.length - PUBLIC_API_OPTIONS_LIMIT, 0),
+      addedOptions.length
+    )
     const publicApiOptions = addedOptions.slice(0, numberOfPublicApiOptions)
     const privateApiOptions = addedOptions.slice(numberOfPublicApiOptions, addedOptions.length)
     const addedOptionsChunks = _.chunk(publicApiOptions, OPTIONS_MAXIMUM_BATCH_SIZE)

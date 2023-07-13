@@ -50,21 +50,6 @@ describe('context options', () => {
       },
     })).reduce((acc, option) => ({ ...acc, ...option }), {})
 
-  const generateMoreOptions = (start: number, end: number): Values => {
-    const count = end - start + 1
-
-    return Array.from({ length: count }, (_, i) => {
-      const value = `p${i + start}`
-      return {
-        [value]: {
-          value,
-          disabled: false,
-          position: i + start,
-        },
-      }
-    }).reduce((acc, option) => ({ ...acc, ...option }), {})
-  }
-
   describe('data center', () => {
     describe('setContextOptions', () => {
       beforeEach(() => {

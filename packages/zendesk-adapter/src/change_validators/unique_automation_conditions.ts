@@ -20,6 +20,7 @@ import {
   ChangeError,
   getChangeData,
   InstanceElement,
+  isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -28,6 +29,15 @@ import { AUTOMATION_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 const log = logger(module)
+
+const areConditionsEqual = (conditions1: unknown, conditions2: unknown): boolean =>
+  _.isEqualWith(conditions1, conditions2, (val1, val2) => {
+    // Elements in elementSource have unresolved references, we want to make sure we handle that
+    if (isReferenceExpression(val1) && isReferenceExpression(val2)) {
+      return val1.elemID.isEqual(val2.elemID)
+    }
+    return undefined
+  })
 
 /**
  * Prevent deployment of an automation with the same conditions as another automation
@@ -65,7 +75,7 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
         return
       }
       // If the conditions are deep equal, we return an error
-      if (_.isEqual(changedAutomation.value.conditions, automation.value.conditions)) {
+      if (areConditionsEqual(changedAutomation.value.conditions, automation.value.conditions)) {
         errors.push({
           elemID: changedAutomation.elemID,
           severity: 'Error',

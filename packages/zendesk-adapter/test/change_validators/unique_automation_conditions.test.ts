@@ -19,6 +19,7 @@ import {
   ElemID,
   toChange,
   Value,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
@@ -35,13 +36,20 @@ const conditions = {
       value: 'val',
     },
   ],
+  any: [
+    {
+      field: 'via_id',
+      operator: 'is',
+      value: 'val',
+    },
+  ],
 }
 
 const createAutomationInstance = (name: string, conds: Value): InstanceElement =>
   new InstanceElement(
     name,
     new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_TYPE_NAME) }),
-    { conditions: conds },
+    { conditions: _.cloneDeep(conds) },
   )
 
 
@@ -90,10 +98,17 @@ describe('duplicateAutomationConditionValidator', () => {
   })
 
   it('should return an error for automations with the same conditions as an automation from elementSource', async () => {
+    const refElemId = new ElemID(ZENDESK, 'ref')
+
+    const elementSourceAutomation = createAutomationInstance('automation', conditions)
     const notUniqueAutomation = createAutomationInstance('notUnique', conditions)
 
+    // Elements in elementSource have unresolved references, we want to make sure we handle that
+    elementSourceAutomation.value.conditions.all[0].value = new ReferenceExpression(refElemId)
+    notUniqueAutomation.value.conditions.all[0].value = new ReferenceExpression(refElemId, refElemId)
+
     const changes = [toChange({ after: notUniqueAutomation })]
-    const elementSource = createInMemoryElementSource([automationInstance, notUniqueAutomation])
+    const elementSource = createInMemoryElementSource([elementSourceAutomation, notUniqueAutomation])
     const errors = await uniqueAutomationConditionsValidator(changes, elementSource)
     expect(errors).toMatchObject([
       {

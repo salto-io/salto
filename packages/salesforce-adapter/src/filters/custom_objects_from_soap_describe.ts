@@ -119,8 +119,8 @@ const addSObjectInformationToInstance = async (
     }
   })
   const instanceFullName = instance.elemID.getFullName()
-  log.debug('added %d fields from soap API to %s, the fields are - %o', addedFieldNames.length, instanceFullName, addedFieldNames)
-  log.debug('modified %d fields from soap API to %s, the fields are - %o', modifiedFieldNames.length, instanceFullName, modifiedFieldNames)
+  log.debug('added %d fields from soap API to %s, the fields are - %s', addedFieldNames.length, instanceFullName, addedFieldNames.join(', '))
+  log.debug('modified %d fields from soap API to %s, the fields are - %s', modifiedFieldNames.length, instanceFullName, modifiedFieldNames.join(', '))
 }
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional information about Custom Objects'

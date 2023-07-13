@@ -58,6 +58,7 @@ describe('add alias filter', () => {
   let elements: Element[]
 
   let defaultOpts: LocalFilterOpts
+  let optsWithoutAlias: LocalFilterOpts
   let optsWithAlias: LocalFilterOpts
   let optsWithAliasAndIsPartial: LocalFilterOpts
   beforeEach(async () => {
@@ -184,6 +185,14 @@ describe('add alias filter', () => {
       isPartial: false,
       config: await getDefaultAdapterConfig(),
     }
+    optsWithoutAlias = {
+      ...defaultOpts,
+      config: {
+        fetch: {
+          addAlias: false,
+        },
+      },
+    }
     optsWithAlias = {
       ...defaultOpts,
       config: {
@@ -199,8 +208,12 @@ describe('add alias filter', () => {
     }
   })
   it('should not add aliases when addAlias=false', async () => {
-    await filterCreator(defaultOpts).onFetch?.(elements)
+    await filterCreator(optsWithoutAlias).onFetch?.(elements)
     expect(elements.some(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeFalsy()
+  })
+  it('should add aliases by default', async () => {
+    await filterCreator(defaultOpts).onFetch?.(elements)
+    expect(elements.every(elem => elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined)).toBeTruthy()
   })
   it('should add aliases', async () => {
     await filterCreator(optsWithAlias).onFetch?.(elements)

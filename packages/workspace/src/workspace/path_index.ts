@@ -274,7 +274,7 @@ export const filterByPathHint = async (index: PathIndex, hint:Path, id: ElemID):
   const isHintMatch = idHints.some(idHint => _.isEqual(idHint, hint))
   if (!isHintMatch) {
     // This case will be removed, when we fix the .annotation and .field keys in the path index
-    if (idHints.length === 0 && (id.isEqual(new ElemID(id.adapter, id.typeName, 'annotation')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'field')) || id.isEqual(new ElemID(id.adapter, id.typeName, 'attr')))) {
+    if (idHints.length === 0 && id.isIDNestedInType() && id.nestingLevel === 0) {
       return FILTER_FUNC_NEXT_STEP.RECURSE
     }
     return FILTER_FUNC_NEXT_STEP.EXCLUDE

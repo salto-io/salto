@@ -71,7 +71,14 @@ export const createCustomObjectType = (
   ...params,
   fields: {
     Id: { refType: BuiltinTypes.SERVICE_ID, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true } },
-    Name: { refType: BuiltinTypes.STRING, annotations: { [FIELD_ANNOTATIONS.QUERYABLE]: true } },
+    Name: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        [FIELD_ANNOTATIONS.CREATABLE]: true,
+        [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+      },
+    },
     ...params.fields,
   },
   annotations: {

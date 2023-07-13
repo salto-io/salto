@@ -13,33 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import {
-  ChangeDataType,
-  DetailedChange,
-  Element,
-  ElemID,
-  getChangeData,
-  isAdditionChange,
-  isField,
-  isIndexPathPart,
-  isInstanceElement,
-  isObjectType,
-  isPrimitiveType,
-  Value,
-} from '@salto-io/adapter-api'
+import { getChangeData, ElemID, Value, DetailedChange, ChangeDataType, Element, isObjectType, isPrimitiveType, isInstanceElement, isField, isAdditionChange, isIndexPathPart } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections, promises, values } from '@salto-io/lowerdash'
-import {
-  applyDetailedChanges,
-  applyFunctionToChangeData,
-  detailedCompare,
-  FILTER_FUNC_NEXT_STEP,
-  filterByID,
-  resolvePath,
-} from '@salto-io/adapter-utils'
+import { promises, values, collections } from '@salto-io/lowerdash'
+import { resolvePath, filterByID, detailedCompare, applyFunctionToChangeData, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAddChange, createRemoveChange, projectChange, projectElementOrValueToEnv } from './projections'
-import { DetailedAddition, wrapAdditions, wrapNestedValues } from '../addition_wrapper'
+import {
+  projectChange, projectElementOrValueToEnv, createAddChange, createRemoveChange,
+} from './projections'
+import { wrapAdditions, DetailedAddition, wrapNestedValues } from '../addition_wrapper'
 import { NaclFilesSource, RoutingMode, toPathHint } from '../nacl_files_source'
 import { mergeElements } from '../../../merger'
 
@@ -84,22 +66,16 @@ const filterByFile = async (
   valueID: ElemID,
   value: Value,
   fileElements: Element[],
-): Promise<Value> => {
-  const filterByMergeable = async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
-    const result = !_.isEmpty((fileElements).filter(
-      e => resolvePath(e, getMergeableParentID(id, fileElements).mergeableID) !== undefined
-    ))
-    if (result) {
-      return FILTER_FUNC_NEXT_STEP.RECURSE
-    }
-    return FILTER_FUNC_NEXT_STEP.EXCLUDE
-  }
-  return filterByID(
-    valueID,
-    value,
-    filterByMergeable
-  )
-}
+): Promise<Value> => filterByID(
+  valueID,
+  value,
+  async id => !_.isEmpty((fileElements).filter(
+    e => resolvePath(
+      e,
+      getMergeableParentID(id, fileElements).mergeableID
+    ) !== undefined
+  ))
+)
 
 const isEmptyAnnoAndAnnoTypes = (element: Element): boolean =>
   (_.isEmpty(element.annotations) && _.isEmpty(element.annotationRefTypes))

@@ -99,7 +99,6 @@ export type ChangeValidatorName = (
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
-  | 'sbaaApprovalRulesCustomCondition'
   | 'recordTypeDeletion'
   | 'flowsValidator'
   | 'fullNameChangedValidator'
@@ -603,7 +602,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },

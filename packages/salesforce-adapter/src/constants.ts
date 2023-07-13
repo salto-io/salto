@@ -403,6 +403,9 @@ export const KEY_PREFIX_LENGTH = 3
 // Magics
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
 
+// Change Groups
+export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_Custom_ApprovalRule_and_ApprovalCondition_instances'
+
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
 export const CPQ_PRODUCT_RULE = 'SBQQ__ProductRule__c'
@@ -474,6 +477,9 @@ export const SBAA_NAMESPACE = 'sbaa'
 // sbaa Objects
 export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
+
+// sbaa Fields
+export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
 

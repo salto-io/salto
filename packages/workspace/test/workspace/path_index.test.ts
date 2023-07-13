@@ -546,6 +546,8 @@ describe('getElementsPathHints', () => {
     })
     const pathHints = getElementsPathHints([singlePath])
     expect(pathHints.length).toEqual(1)
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.obj')
   })
 
   it('should return one path hint for annotations and one for fields', async () => {
@@ -574,12 +576,17 @@ describe('getElementsPathHints', () => {
     })
     const pathHints = getElementsPathHints([singleFieldObj, singleFieldObjAnnotations])
     expect(pathHints.length).toEqual(4)
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.obj')
     const fieldHints = pathHints.filter(p => p.key.includes('field'))
+    expect(hintsKeys).toContain('salto.obj.field')
     expect(fieldHints.length).toEqual(1)
     expect(fieldHints[0].value.length).toEqual(1)
     const annoHints = pathHints.filter(p => p.key.includes('annotation'))
+    expect(hintsKeys).toContain('salto.obj.annotation')
     expect(annoHints.length).toEqual(1)
     expect(annoHints[0].value.length).toEqual(1)
+    expect(hintsKeys).toContain('salto.obj.attr')
   })
 
   it('should return path hints for divided annotations and divided fields', async () => {
@@ -631,15 +638,24 @@ describe('getElementsPathHints', () => {
       objFragAnnotationsOne, objFragAnnotationsTwo, objFragStdFields, objFragCustomFields,
     ])
     expect(pathHints.length).toEqual(10)
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.obj')
     const fieldHints = pathHints.filter(p => p.key.includes('field'))
     expect(fieldHints.length).toEqual(3)
     expect(fieldHints[0].value.length).toEqual(2)
+    expect(hintsKeys).toContain('salto.obj.field')
+    expect(hintsKeys).toContain('salto.obj.field.stdField')
+    expect(hintsKeys).toContain('salto.obj.field.customField')
     const annoHints = pathHints.filter(p => p.key.includes('annotation'))
     expect(annoHints.length).toEqual(3)
     expect(annoHints[0].value.length).toEqual(2)
+    expect(hintsKeys).toContain('salto.obj.annotation')
+    expect(hintsKeys).toContain('salto.obj.annotation.anno')
+    expect(hintsKeys).toContain('salto.obj.annotation.ping')
     const attrHints = pathHints.filter(p => p.key.includes('attr'))
     expect(attrHints.length).toEqual(3)
     expect(attrHints[0].value.length).toEqual(2)
+    expect(hintsKeys).toContain('salto.obj.attr')
   })
 
   it('should return path hints for nested fields', async () => {
@@ -668,13 +684,52 @@ describe('getElementsPathHints', () => {
       path: ['salto', 'obj', 'two'],
     })
     const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.obj')
     const fieldHints = pathHints.filter(p => p.key.includes('field'))
     expect(fieldHints.length).toEqual(4)
     expect(fieldHints[0].value.length).toEqual(2)
+    expect(hintsKeys).toContain('salto.obj.field')
+    expect(hintsKeys).toContain('salto.obj.field.myField')
+    expect(hintsKeys).toContain('salto.obj.field.myField.test')
+    expect(hintsKeys).toContain('salto.obj.field.myField.yo')
   })
 
-  it('should return path hints for instances', async () => {
-    const pathHints = getElementsPathHints([multiPathInstanceA, multiPathInstanceB])
-    expect(pathHints.length).toEqual(4)
+  it('should return path hints for nested values in an instances', async () => {
+    const instFragOne = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {
+        a: {
+          b: 'd',
+        },
+      },
+      ['salto', 'inst', 'A', 'B']
+    )
+    const instFragTwo = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {
+        a: {
+          c: 'd',
+        },
+      },
+      ['salto', 'inst', 'A', 'C']
+    )
+    const instAnnotations = new InstanceElement(
+      'inst',
+      new TypeReference(multiPathInstanceTypeID),
+      {},
+      ['salto', 'inst', 'annotations'],
+      { anno: 'hey' }
+    )
+    const pathHints = getElementsPathHints([instFragOne, instFragTwo, instAnnotations])
+    expect(pathHints.length).toEqual(5)
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.obj.instance.inst')
+    expect(hintsKeys).toContain('salto.obj.instance.inst.anno')
+    expect(hintsKeys).toContain('salto.obj.instance.inst.a')
+    expect(hintsKeys).toContain('salto.obj.instance.inst.a.b')
+    expect(hintsKeys).toContain('salto.obj.instance.inst.a.c')
   })
 })

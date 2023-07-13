@@ -54,6 +54,7 @@ import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
 import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
 import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
+import { customFieldsWith10KOptionValidator } from './field_contexts/more_than_10K_options'
 
 const {
   deployTypesNotSupportedValidator,
@@ -105,6 +106,7 @@ export default (
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
+    customFieldsWith10KOption: customFieldsWith10KOptionValidator,
   }
 
   return createChangeValidator({

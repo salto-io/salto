@@ -78,6 +78,10 @@ const changeIdsToString = (
   })
 }
 
+const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
+  workflowInstance.value.transitions = Object.values(workflowInstance.value.transitions)
+}
+
 export const deployWorkflow = async (
   change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
@@ -97,13 +101,14 @@ export const deployWorkflow = async (
   })
 
   fixGroupNames(instance)
-  const resolvedChangeWithoutDiagram = _.cloneDeep(resolvedChange)
-  const instanceWithoutDiagram = getChangeData(resolvedChangeWithoutDiagram)
+  const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
+  const deployInstance = getChangeData(resolvedChangeForDeployment)
   if (!isRemovalChange(resolvedChange)) {
-    removeWorkflowDiagramFields(instanceWithoutDiagram)
+    removeWorkflowDiagramFields(deployInstance)
+    workflowTransitionsToList(deployInstance)
   }
   await defaultDeployChange({
-    change: resolvedChangeWithoutDiagram,
+    change: resolvedChangeForDeployment,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
@@ -111,7 +116,7 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-  instance.value.entityId = instanceWithoutDiagram.value.entityId
+  instance.value.entityId = deployInstance.value.entityId
   if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
     try {
       await deployWorkflowDiagram({ instance, client })

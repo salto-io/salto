@@ -79,8 +79,9 @@ export const WITH_VALIDATORS = {
 
 export const WITH_PERMISSION_VALIDATORS = {
   name: 'name',
-  transitions: [
-    {
+  transitions: {
+    'tran1__From__none__Initial@fffsff': {
+      name: 'tran1',
       type: 'initial',
       rules: {
         validators: [
@@ -104,5 +105,5 @@ export const WITH_PERMISSION_VALIDATORS = {
         ],
       },
     },
-  ],
+  },
 }

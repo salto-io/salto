@@ -46,7 +46,7 @@ const TYPE_TO_FROM_MAP = new Map([
 
 type TransitionType = 'Directed' | 'Initial' | 'Global' | 'Circular'
 
-const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
+export const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
   .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
   .map((status => [status.id, status.name])))
 
@@ -249,6 +249,7 @@ const filter: FilterCreator = ({ config }) => ({
       workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
       if (workflowTransitionType !== undefined) {
         workflowType.fields.transitions = new Field(workflowType, 'transitions', new MapType(workflowTransitionType))
+        delete workflowTransitionType.fields.id
       }
     }
 

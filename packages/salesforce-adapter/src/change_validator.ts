@@ -31,7 +31,6 @@ import picklistPromoteValidator from './change_validators/picklist_promote'
 import omitDataValidator from './change_validators/omit_data'
 import dataChangeValidator from './change_validators/data_change'
 import cpqValidator from './change_validators/cpq_trigger'
-import sbaaApprovalRulesCustomCondition from './change_validators/sbaa_approval_rules_custom_condition'
 import recordTypeDeletionValidator from './change_validators/record_type_deletion'
 import flowsValidator from './change_validators/flows'
 import fullNameChangedValidator from './change_validators/fullname_changed'
@@ -74,7 +73,6 @@ export const changeValidators: Record<ChangeValidatorName, ChangeValidatorCreato
   multipleDefaults: () => multipleDefaultsValidator,
   picklistPromote: () => picklistPromoteValidator,
   cpqValidator: () => cpqValidator,
-  sbaaApprovalRulesCustomCondition: () => sbaaApprovalRulesCustomCondition,
   recordTypeDeletion: () => recordTypeDeletionValidator,
   flowsValidator: (config, isSandbox, client) => flowsValidator(config, isSandbox, client),
   fullNameChangedValidator: () => fullNameChangedValidator,

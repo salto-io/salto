@@ -76,14 +76,19 @@ describe('getAdditionalReferences', () => {
       ])
     })
 
-    it('should add references only for addition fields', async () => {
+    it('should add references only for each detailed change in a modification', async () => {
+      const fieldAfter = field.clone()
+      fieldAfter.annotations.someAnn = 'val'
       const refs = await getAdditionalReferences([
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ before: profileInstance, after: profileInstance }),
-        toChange({ before: field, after: field }),
+        toChange({ before: field, after: fieldAfter }),
       ])
 
-      expect(refs).toEqual([])
+      expect(refs).toEqual([
+        { source: permissionSetInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'), target: field.elemID.createNestedID('someAnn') },
+        { source: profileInstance.elemID.createNestedID('fieldPermissions', 'Account', 'testField__c'), target: field.elemID.createNestedID('someAnn') },
+      ])
     })
 
     it('should not add references for addition profiles and permission sets', async () => {
@@ -140,18 +145,34 @@ describe('getAdditionalReferences', () => {
         createMetadataTypeElement('CustomApplication', {}),
         { [INSTANCE_FULL_NAME_FIELD]: 'SomeApplication' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: customApp }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
         { source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const customAppAfter = customApp.clone()
+      customApp.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: customApp, after: customAppAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+
+      expect(refs).toEqual([
+        { source: profileInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID.createNestedID('someAnn') },
+        { source: permissionSetInstance.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID.createNestedID('someAnn') },
       ])
     })
   })
@@ -175,18 +196,34 @@ describe('getAdditionalReferences', () => {
         mockTypes.ApexClass,
         { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexClass' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: apexClass }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID },
         { source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const apexClassAfter = apexClass.clone()
+      apexClass.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: apexClass, after: apexClassAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+
+      expect(refs).toEqual([
+        { source: profileInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID.createNestedID('someAnn') },
+        { source: permissionSetInstance.elemID.createNestedID('classAccesses', 'SomeApexClass'), target: apexClass.elemID.createNestedID('someAnn') },
       ])
     })
   })
@@ -210,18 +247,34 @@ describe('getAdditionalReferences', () => {
         mockTypes.Flow,
         { [INSTANCE_FULL_NAME_FIELD]: 'SomeFlow' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: flow }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID },
         { source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const flowAfter = flow.clone()
+      flow.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: flow, after: flowAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+
+      expect(refs).toEqual([
+        { source: profileInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID.createNestedID('someAnn') },
+        { source: permissionSetInstance.elemID.createNestedID('flowAccesses', 'SomeFlow'), target: flow.elemID.createNestedID('someAnn') },
       ])
     })
   })
@@ -246,19 +299,35 @@ describe('getAdditionalReferences', () => {
         mockTypes.Layout,
         { [INSTANCE_FULL_NAME_FIELD]: 'Account_Account_Layout' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: layout }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toHaveLength(2)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
         { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const layoutAfter = layout.clone()
+      layout.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: layout, after: layoutAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+
+      expect(refs).toEqual([
+        { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID.createNestedID('someAnn') },
+        { source: permissionSetInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID.createNestedID('someAnn') },
       ])
     })
 
@@ -271,13 +340,37 @@ describe('getAdditionalReferences', () => {
           { [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType' },
         )
         profileInstance.value.layoutAssignments.Account_Account_Layout[0].recordType = 'SomeRecordType'
-        changes.push(toChange({ after: recordType }))
       })
 
-      it('should create a recordType reference', async () => {
+      it('should create a recordType reference on addition', async () => {
+        changes = [
+          toChange({ before: profileInstance, after: profileInstance }),
+          toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+          toChange({ after: layout }),
+          toChange({ after: recordType }),
+        ]
+
         const refs = await getAdditionalReferences(changes)
         expect(refs).toIncludeAllPartialMembers([
           { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: recordType.elemID },
+        ])
+      })
+
+      it('should create a recordType reference on modification', async () => {
+        const recordTypeAfter = recordType.clone()
+        recordTypeAfter.annotations.someAnn = 'val'
+        const layoutAfter = layout.clone()
+        layout.annotations.someAnn = 'val'
+        changes = [
+          toChange({ before: profileInstance, after: profileInstance }),
+          toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+          toChange({ before: layout, after: layoutAfter }),
+          toChange({ before: recordType, after: recordTypeAfter }),
+        ]
+        const refs = await getAdditionalReferences(changes)
+
+        expect(refs).toIncludeAllPartialMembers([
+          { source: profileInstance.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: recordType.elemID.createNestedID('someAnn') },
         ])
       })
     })
@@ -304,18 +397,33 @@ describe('getAdditionalReferences', () => {
         },
       })
       customObject = createCustomObjectType('Account', {})
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: customObject }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID },
         { source: profileInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const customObjectAfter = customObject.clone()
+      customObjectAfter.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: customObject, after: customObjectAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toEqual([
+        { source: profileInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID.createNestedID('attr', 'someAnn') },
+        { source: permissionSetInstance.elemID.createNestedID('objectPermissions', 'Account'), target: customObject.elemID.createNestedID('attr', 'someAnn') },
       ])
     })
   })
@@ -340,18 +448,33 @@ describe('getAdditionalReferences', () => {
         mockTypes.ApexPage,
         { [INSTANCE_FULL_NAME_FIELD]: 'SomeApexPage' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: apexPage }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
         { source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const apexPageAfter = apexPage.clone()
+      apexPageAfter.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: apexPage, after: apexPageAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toIncludeAllPartialMembers([
+        { source: permissionSetInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID.createNestedID('someAnn') },
+        { source: profileInstance.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID.createNestedID('someAnn') },
       ])
     })
   })
@@ -379,18 +502,33 @@ describe('getAdditionalReferences', () => {
         mockTypes.RecordType,
         { [INSTANCE_FULL_NAME_FIELD]: 'Case.SomeCaseRecordType' },
       )
+    })
+
+    it('should create a reference to addition', async () => {
       changes = [
         toChange({ before: profileInstance, after: profileInstance }),
         toChange({ before: permissionSetInstance, after: permissionSetInstance }),
         toChange({ after: recordType }),
       ]
-    })
-
-    it('should create a reference', async () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
         { source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
+      ])
+    })
+
+    it('should create a reference to modification', async () => {
+      const recordTypeAfter = recordType.clone()
+      recordTypeAfter.annotations.someAnn = 'val'
+      changes = [
+        toChange({ before: profileInstance, after: profileInstance }),
+        toChange({ before: permissionSetInstance, after: permissionSetInstance }),
+        toChange({ before: recordType, after: recordTypeAfter }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toIncludeAllPartialMembers([
+        { source: permissionSetInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID.createNestedID('someAnn') },
+        { source: profileInstance.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID.createNestedID('someAnn') },
       ])
     })
   })

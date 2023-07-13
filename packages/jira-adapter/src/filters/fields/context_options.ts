@@ -125,7 +125,9 @@ const proccessContextOptionsPrivateApiResponse = (
   const idToOption = _.keyBy(contextChange.data.after.value.options, option => option.id)
   const optionsMap = _(contextChange.data.after.value.options).values()
     .keyBy(option => naclCase(option.value)).value()
-  resp.forEach(newOption => {
+  const optionIds = new Set(Object.keys(idToOption))
+  const respToProccess = resp.filter(newOption => !optionIds.has(newOption.id))
+  respToProccess.forEach(newOption => {
     if (newOption.optionId !== undefined) {
       idToOption[newOption.optionId]
         .cascadingOptions[naclCase(newOption.value)].id = newOption.id
@@ -177,9 +179,6 @@ const updateContextOptions = async ({
     const optionLengthBefore = isModificationChange(contextChange)
       ? getOptionsFromContext(contextChange.data.before).length + numberOfAlreadyAddedOptions
       : numberOfAlreadyAddedOptions
-    // const numberOfPublicApiOptions = Math.min(Math.max(
-    //   PUBLIC_API_OPTIONS_LIMIT - optionLengthBefore - addedOptions.length, 0
-    // ), addedOptions.length)
     const numberOfPublicApiOptions = addedOptions.length - Math.min(
       Math.max(optionLengthBefore + addedOptions.length - PUBLIC_API_OPTIONS_LIMIT, 0),
       addedOptions.length

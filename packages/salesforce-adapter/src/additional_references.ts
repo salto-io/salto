@@ -23,7 +23,7 @@ import {
   isAdditionOrModificationChange,
   isFieldChange,
   isInstanceChange,
-  isRemovalOrModificationChange,
+  isModificationChange,
   ModificationChange,
   ReferenceMapping,
   Value,
@@ -135,60 +135,60 @@ const recordTypeRefsFromLayoutAssignments = (
 }
 
 export const getAdditionalReferences: GetAdditionalReferencesFunc = async changes => {
-  const relevantFields = await awu(changes)
+  const relevantFieldChanges = await awu(changes)
     .filter(isFieldChange)
     .filter(isAdditionOrModificationChange)
     .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .toArray()
 
-  const customObjects = changes
+  const customObjectChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => isCustomObject(getChangeData(change)))
 
-  const addedInstancesChanges = changes
+  const addedOrModifiedInstancesChanges = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
 
-  const addedInstancesChangesByType = await awu(addedInstancesChanges)
+  const addedOrModifiedInstancesChangesByType = await awu(addedOrModifiedInstancesChanges)
     .groupBy(async change => (await getChangeData(change).getType()).elemID.typeName)
 
   const profilesAndPermSets = await awu(changes)
-    .filter(isRemovalOrModificationChange)
+    .filter(isModificationChange)
     .filter(isInstanceChange)
     .map(getChangeData)
     .filter(instance => isInstanceOfType(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE)(instance))
     .toArray()
 
-  const fieldPermissionsRefs = awu(relevantFields)
+  const fieldPermissionsRefs = awu(relevantFieldChanges)
     .flatMap(async fieldChange => refsFromProfileOrPermissionSet(profilesAndPermSets, fieldChange, FIELD_PERMISSIONS))
 
-  const customAppsRefs = awu(addedInstancesChangesByType[CUSTOM_APPLICATION_METADATA_TYPE] ?? [])
+  const customAppsRefs = awu(addedOrModifiedInstancesChangesByType[CUSTOM_APPLICATION_METADATA_TYPE] ?? [])
     .flatMap(async customApp => refsFromProfileOrPermissionSet(profilesAndPermSets, customApp, CUSTOM_APP_SECTION))
 
-  const apexClassRefs = awu(addedInstancesChangesByType[APEX_CLASS_METADATA_TYPE] ?? [])
+  const apexClassRefs = awu(addedOrModifiedInstancesChangesByType[APEX_CLASS_METADATA_TYPE] ?? [])
     .flatMap(async apexClass => refsFromProfileOrPermissionSet(profilesAndPermSets, apexClass, APEX_CLASS_SECTION))
 
-  const flowRefs = awu(addedInstancesChangesByType[FLOW_METADATA_TYPE] ?? [])
+  const flowRefs = awu(addedOrModifiedInstancesChangesByType[FLOW_METADATA_TYPE] ?? [])
     .flatMap(async flow => refsFromProfileOrPermissionSet(profilesAndPermSets, flow, FLOW_SECTION))
 
   // note that permission sets don't contain layout assignments, but it simplifies our code to pretend like they might
   // ref: https://ideas.salesforce.com/s/idea/a0B8W00000GdlSPUAZ/permission-sets-with-page-layout-assignment
-  const layoutRefs = awu(addedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
+  const layoutRefs = awu(addedOrModifiedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
     .flatMap(async layout => refsFromProfileOrPermissionSet(profilesAndPermSets, layout, LAYOUTS_SECTION))
 
-  const apexPageRefs = awu(addedInstancesChangesByType[APEX_PAGE_METADATA_TYPE] ?? [])
+  const apexPageRefs = awu(addedOrModifiedInstancesChangesByType[APEX_PAGE_METADATA_TYPE] ?? [])
     .flatMap(async apexPage => refsFromProfileOrPermissionSet(profilesAndPermSets, apexPage, APEX_PAGE_SECTION))
 
-  const recordTypeRefs = awu(addedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
+  const recordTypeRefs = awu(addedOrModifiedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
     .flatMap(async recordType => refsFromProfileOrPermissionSet(profilesAndPermSets, recordType, RECORD_TYPE_SECTION))
 
-  const objectRefs = awu(customObjects)
+  const objectRefs = awu(customObjectChanges)
     .flatMap(async object => refsFromProfileOrPermissionSet(profilesAndPermSets, object, OBJECT_SECTION))
 
-  const recordTypesByApiName = await awu(addedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
+  const recordTypesByApiName = await awu(addedOrModifiedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
     .keyBy(async recordType => (await safeApiName(getChangeData(recordType))) ?? '')
 
-  const recordTypeRefsFromLayouts = awu(addedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
+  const recordTypeRefsFromLayouts = awu(addedOrModifiedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
     .map(getChangeData)
     .flatMap(async layout => {
       const apiName = await safeApiName(layout)

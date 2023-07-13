@@ -758,7 +758,7 @@ describe('context options', () => {
             },
           })
         })
-        it('should use publice API for first 10K options, and than use private API for all other options.', async () => {
+        it('should use public API for first 10K options, and than use private API for all other options.', async () => {
           const optionsAfter = generateOptions(10010)
           contextInstanceAfter = contextInstance.clone()
           contextInstanceAfter.value.options = optionsAfter

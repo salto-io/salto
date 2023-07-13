@@ -49,7 +49,10 @@ const createAutomationInstance = (name: string, conds: Value): InstanceElement =
   new InstanceElement(
     name,
     new ObjectType({ elemID: new ElemID(ZENDESK, AUTOMATION_TYPE_NAME) }),
-    { conditions: _.cloneDeep(conds) },
+    {
+      active: true,
+      conditions: _.cloneDeep(conds),
+    },
   )
 
 
@@ -65,6 +68,27 @@ describe('duplicateAutomationConditionValidator', () => {
       toChange({ after: uniqueAutomation2, before: automationInstance }),
     ]
     const elementSource = createInMemoryElementSource([automationInstance, uniqueAutomation1, uniqueAutomation2])
+    const errors = await uniqueAutomationConditionsValidator(changes, elementSource)
+    expect(errors).toEqual([])
+  })
+
+  it('should not return errors for automations with equal conditions to an inactive automation', async () => {
+    const notUniqueAutomation1 = createAutomationInstance('notUnique1', 'notUnique')
+    const notUniqueAutomation2 = createAutomationInstance('notUnique2', 'notUnique')
+    const notUniqueAutomation3 = createAutomationInstance('notUnique3', 'notUnique')
+    notUniqueAutomation1.value.active = false
+    notUniqueAutomation2.value.active = false
+
+
+    const changes = [
+      toChange({ after: notUniqueAutomation1 }),
+      toChange({ after: notUniqueAutomation2 }),
+    ]
+    const elementSource = createInMemoryElementSource([
+      notUniqueAutomation1,
+      notUniqueAutomation2,
+      notUniqueAutomation3,
+    ])
     const errors = await uniqueAutomationConditionsValidator(changes, elementSource)
     expect(errors).toEqual([])
   })

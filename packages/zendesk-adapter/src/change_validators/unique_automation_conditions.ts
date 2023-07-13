@@ -21,26 +21,27 @@ import {
   getChangeData,
   InstanceElement,
   isReferenceExpression,
+  isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE_NAME } from '../constants'
 
+const { isDefined } = lowerDashValues
 const { awu } = collections.asynciterable
 const log = logger(module)
 
-const areConditionsEqual = (conditions1: unknown, conditions2: unknown): boolean =>
-  _.isEqualWith(conditions1, conditions2, (val1, val2) => {
+const stringifyAutomationConditions = (automation: InstanceElement): string =>
+  safeJsonStringify(
+    automation.value.conditions,
     // Elements in elementSource have unresolved references, we want to make sure we handle that
-    if (isReferenceExpression(val1) && isReferenceExpression(val2)) {
-      return val1.elemID.isEqual(val2.elemID)
-    }
-    return undefined
-  })
+    (_key, value) => (isReferenceExpression(value) ? value.elemID.getFullName() : value),
+  )
 
 /**
- * Prevent deployment of an automation with the same conditions as another automation
+ * Prevent deployment and activation of an automation with the same conditions as another active automation
  */
 export const uniqueAutomationConditionsValidator: ChangeValidator = async (changes, elementSource) => {
   const changedAutomations = changes
@@ -48,43 +49,46 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
+    .filter(instance => instance.value.active === true)
 
-  const elementSourceAutomations: InstanceElement[] = []
   if (elementSource === undefined) {
-    log.error('duplicateAutomationConditionValidator might not run correctly because element source is undefined')
-  } else {
-    const idsIterator = awu(await elementSource.list())
-    const automations: InstanceElement[] = await awu(idsIterator)
-      .filter(id => id.typeName === AUTOMATION_TYPE_NAME)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .toArray()
-    elementSourceAutomations.push(...automations)
+    log.error('Failed to run duplicateAutomationConditionValidator because element source is undefined')
+    return []
   }
 
-  const allAutomations = _.uniqBy(
-    [...changedAutomations, ...elementSourceAutomations],
-    automation => automation.elemID.getFullName(),
+  const idsIterator = awu(await elementSource.list())
+  const elementSourceAutomations = await awu(idsIterator)
+    .filter(id => id.typeName === AUTOMATION_TYPE_NAME)
+    .filter(id => id.idType === 'instance')
+    .map(id => elementSource.get(id))
+    .filter(isInstanceElement)
+    .filter(automation => automation.value.active === true)
+    .toArray()
+
+  // We map all automations to their conditions in advance, to avoid running on the whole list every time
+  const conditionsToAutomations = _.groupBy(
+    _.uniqBy([...changedAutomations, ...elementSourceAutomations], automation => automation.elemID.getFullName()),
+    stringifyAutomationConditions,
   )
 
-  const errors: ChangeError[] = []
+  const errors = changedAutomations.map((automation): ChangeError | undefined => {
+    const automationConditions = stringifyAutomationConditions(automation)
 
-  changedAutomations.forEach(changedAutomation => {
-    allAutomations.forEach(automation => {
-      if (changedAutomation.elemID.isEqual(automation.elemID)) {
-        return
+    if (conditionsToAutomations[automationConditions].length > 1) {
+      const equalAutomations = conditionsToAutomations[automationConditions]
+        .filter(otherAutomation => !otherAutomation.elemID.isEqual(automation.elemID))
+        .map(equalAutomation => equalAutomation.elemID.getFullName())
+        .join(', ')
+
+      return {
+        elemID: automation.elemID,
+        severity: 'Error',
+        message: 'Automation\'s conditions is are unique',
+        detailedMessage: `Automation '${automation.elemID.getFullName()}' has the same conditions as '${equalAutomations}', make sure the conditions are unique before deploying.`,
       }
-      // If the conditions are deep equal, we return an error
-      if (areConditionsEqual(changedAutomation.value.conditions, automation.value.conditions)) {
-        errors.push({
-          elemID: changedAutomation.elemID,
-          severity: 'Error',
-          message: 'Automation\'s conditions is are unique',
-          detailedMessage: `Automation '${changedAutomation.elemID.getFullName()}' has the same conditions as '${automation.elemID.getFullName()}', make sure the conditions are unique before deploying.`,
-        })
-      }
-    })
-  })
+    }
+    return undefined
+  }).filter(isDefined)
 
   return errors
 }

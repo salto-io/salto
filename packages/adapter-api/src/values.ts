@@ -84,11 +84,6 @@ type StaticFileMetadata = Pick<StaticFile, 'filepath' | 'hash'>
 export const getStaticFileUniqueName = ({ filepath, hash }: StaticFileMetadata): string =>
   `${filepath}-${hash}`
 
-const getResolvedValueSync = (
-  elemID: ElemID,
-  resolvedValue?: Value
-): Value => (resolvedValue ?? new PlaceholderObjectType({ elemID }))
-
 const getResolvedValue = async (
   elemID: ElemID,
   elementsSource?: ReadOnlyElementsSource,
@@ -153,10 +148,6 @@ export class ReferenceExpression {
 
   async getResolvedValue(elementsSource?: ReadOnlyElementsSource): Promise<Value> {
     return getResolvedValue(this.elemID, elementsSource, this.value)
-  }
-
-  getResolvedValueSync(): Value {
-    return getResolvedValueSync(this.elemID, this.value)
   }
 
   [inspect.custom](): string {

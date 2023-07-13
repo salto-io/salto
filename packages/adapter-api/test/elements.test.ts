@@ -279,13 +279,15 @@ describe('Test elements.ts', () => {
 
   describe('ElemID', () => {
     const typeId = new ElemID('adapter', 'example')
-    const fieldId = typeId.createNestedID('field', 'test')
+    const typeFieldsId = typeId.createNestedID('field')
+    const fieldId = typeFieldsId.createNestedID('test')
     const fieldIdWithPath = fieldId.createNestedID('nested', 'annotation')
-    const annotationTypeId = typeId.createNestedID('annotation', 'anno')
     const annotationTypesId = typeId.createNestedID('annotation')
+    const annotationTypeId = annotationTypesId.createNestedID('anno')
     const typeInstId = typeId.createNestedID('instance', 'test')
     const valueId = typeInstId.createNestedID('nested', 'value')
-    const typeAttrId = typeId.createNestedID('attr', 'anno')
+    const typeAttrsId = typeId.createNestedID('attr')
+    const typeAttrId = typeAttrsId.createNestedID('anno')
     const configTypeId = new ElemID('adapter')
     const configInstId = configTypeId.createNestedID('instance', ElemID.CONFIG_NAME)
     const configInstIdNormalType = typeId.createNestedID('instance', ElemID.CONFIG_NAME)
@@ -439,51 +441,6 @@ describe('Test elements.ts', () => {
         })
       })
     })
-    describe('getRelativePath', () => {
-      it('should return the correct relative path - top level and nested', () => {
-        const nested = ['a', 'b']
-        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
-        const nestedID = elemID.createNestedID(...nested)
-        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
-      })
-      it('should return the correct relative path - both nested', () => {
-        const nested = ['b', 'c']
-        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test', 'a')
-        const nestedID = elemID.createNestedID(...nested)
-        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
-      })
-      it('should return the correct relative path - both nested in field', () => {
-        const nested = ['b', 'c']
-        const elemID = new ElemID('adapter', 'typeName', 'field', 'test', 'a')
-        const nestedID = elemID.createNestedID(...nested)
-        expect(elemID.getRelativePath(nestedID)).toEqual(nested)
-      })
-      it('should return the correct relative path - field', () => {
-        const elemID = new ElemID('adapter', 'typeName')
-        const nestedID = new ElemID('adapter', 'typeName', 'field', 'f1')
-        expect(elemID.getRelativePath(nestedID)).toEqual(['field', 'f1'])
-      })
-      it('should return the correct relative path - annotation', () => {
-        const elemID = new ElemID('adapter', 'typeName')
-        const nestedID = new ElemID('adapter', 'typeName', 'annotation', 'f1')
-        expect(elemID.getRelativePath(nestedID)).toEqual(['annotation', 'f1'])
-      })
-      it('should return the correct relative path - attr', () => {
-        const elemID = new ElemID('adapter', 'typeName')
-        const nestedID = new ElemID('adapter', 'typeName', 'attr', 'f1')
-        expect(elemID.getRelativePath(nestedID)).toEqual(['attr', 'f1'])
-      })
-      it('should return the empty result if they are the same elemIDs', () => {
-        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
-        const nestedID = new ElemID('adapter', 'typeName', 'instance', 'test')
-        expect(elemID.getRelativePath(nestedID)).toEqual([])
-      })
-      it('should throw exception if the other elemID is not a child of the elemID', () => {
-        const elemID = new ElemID('adapter', 'typeName', 'instance', 'test')
-        const nestedID = new ElemID('adapter', 'typeName', 'instance', 'tes1')
-        expect(() => elemID.getRelativePath(nestedID)).toThrow()
-      })
-    })
 
     describe('nestingLevel', () => {
       describe('for config, types, instances and variables', () => {
@@ -497,8 +454,8 @@ describe('Test elements.ts', () => {
       })
       describe('for nested ids', () => {
         it('should match the number of name parts', () => {
-          expect(fieldId.nestingLevel).toEqual(1)
-          expect(fieldId.createNestedID('a', 'b').nestingLevel).toEqual(3)
+          expect(fieldId.nestingLevel).toEqual(2)
+          expect(fieldId.createNestedID('a', 'b').nestingLevel).toEqual(4)
           expect(annotationTypesId.nestingLevel).toEqual(1)
           expect(annotationTypeId.nestingLevel).toEqual(2)
         })
@@ -627,8 +584,13 @@ describe('Test elements.ts', () => {
         })
       })
       describe('from field ID', () => {
+        it('should return the ID of "fields" in the type', () => {
+          expect(fieldId.createParentID()).toEqual(typeFieldsId)
+        })
+      })
+      describe('from fields ID', () => {
         it('should return the type ID', () => {
-          expect(fieldId.createParentID()).toEqual(new ElemID(fieldId.adapter, fieldId.typeName))
+          expect(typeFieldsId.createParentID()).toEqual(typeId)
         })
       })
       describe('from annotation types ID', () => {
@@ -637,8 +599,18 @@ describe('Test elements.ts', () => {
         })
       })
       describe('from annotation type ID', () => {
-        it('should return the type ID', () => {
+        it('should return the annotation types ID', () => {
           expect(annotationTypeId.createParentID()).toEqual(annotationTypesId)
+        })
+      })
+      describe('from attribute ID', () => {
+        it('should return the types attributes ID', () => {
+          expect(typeAttrId.createParentID()).toEqual(typeAttrsId)
+        })
+      })
+      describe('from type attributes ID', () => {
+        it('should return the type ID', () => {
+          expect(typeAttrsId.createParentID()).toEqual(typeId)
         })
       })
       describe('from variable ID', () => {
@@ -662,8 +634,11 @@ describe('Test elements.ts', () => {
           [fieldId, typeInstId, configInstId].forEach(
             parent => expect(parent.createNestedID('test', 'foo').createParentID(2)).toEqual(parent)
           )
-          expect(fieldId.createNestedID('asd').createParentID(2)).toEqual(typeId)
-          expect(typeAttrId.createNestedID('asd').createParentID(2)).toEqual(typeId)
+          expect(fieldId.createNestedID('asd').createParentID(2)).toEqual(typeFieldsId)
+          expect(fieldId.createNestedID('asd').createParentID(3)).toEqual(typeId)
+          expect(typeAttrId.createNestedID('asd').createParentID(2)).toEqual(typeAttrsId)
+          expect(typeAttrId.createNestedID('asd').createParentID(3)).toEqual(typeId)
+          expect(annotationTypeId.createParentID(1)).toEqual(annotationTypesId)
           expect(annotationTypeId.createParentID(2)).toEqual(typeId)
         })
       })

@@ -155,11 +155,17 @@ export class ElemID {
       // First name part is the instance name which is top level
       return this.nameParts.length - 1
     }
-    if (this.isAnnotationTypeID()) {
-      // annotation is already 1 level nested
+    if (this.isIDNestedInType()) {
+      // ID type is a nesting level on its own
       return this.nameParts.length + 1
     }
     return this.nameParts.length
+  }
+
+  private isIDNestedInType(): boolean {
+    // These id types represent "logical groups" of IDs that count towards the nesting level
+    // e.g - adapter.type.field.bla is nested under adapter.type.field
+    return this.idType === 'annotation' || this.idType === 'attr' || this.idType === 'field'
   }
 
   private fullNameParts(): string[] {
@@ -251,8 +257,8 @@ export class ElemID {
       // The parent of top level elements is the adapter
       return new ElemID(this.adapter)
     }
-    if (this.isAnnotationTypeID() && this.nameParts.length === numLevels) {
-      // The parent of an annotationType is annotationTypes
+    if (this.isIDNestedInType() && this.nameParts.length === numLevels) {
+      // The ID is nested in its ID type, so we return here the ID that represents this ID type in the typeName
       return new ElemID(this.adapter, this.typeName, this.idType)
     }
     // The parent of all other id types is the type
@@ -291,17 +297,6 @@ export class ElemID {
       }
     }
     return { parent, path }
-  }
-
-  getRelativePath(other: ElemID): ReadonlyArray<string> {
-    if (!this.isEqual(other) && !this.isParentOf(other)) {
-      throw new Error(`Cannot get relative path of ${this.getFullName()} and ${other.getFullName()
-      } - ${this.getFullName()} is not parent of ${other.getFullName()}`)
-    }
-    const relPath = other.createTopLevelParentID().path.slice(this.nestingLevel)
-    return this.idType === 'type' && ['attr', 'annotation', 'field'].includes(other.idType)
-      ? [other.idType as string].concat(relPath)
-      : relPath
   }
 
   replaceParentId(newParent: ElemID): ElemID {

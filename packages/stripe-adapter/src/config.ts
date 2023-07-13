@@ -15,7 +15,6 @@
 */
 import { ElemID, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
-
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { STRIPE } from './constants'

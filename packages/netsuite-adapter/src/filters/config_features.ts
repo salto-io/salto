@@ -85,12 +85,12 @@ const filterCreator: LocalFilterCreator = () => ({
     type.fields = featuresType().fields
   },
   onDeploy: async (changes, deployInfo) => {
-    const errorIds = deployInfo.errors.flatMap(error => {
+    const errorIds = deployInfo.sdfErrors?.flatMap(error => {
       if (error instanceof FeaturesDeployError) {
         return error.ids
       }
       return []
-    })
+    }) ?? []
 
     if (errorIds.length === 0) return
 

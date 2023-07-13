@@ -1214,7 +1214,11 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('some error'),
+        {
+          message: 'some error',
+          severity: 'Error',
+          elemID: new InstanceElement('inst2', groupType).elemID,
+        },
       ])
     })
     it('should have change validator', () => {

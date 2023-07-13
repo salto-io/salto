@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { EOL } from 'os'
-import { ElemID } from '@salto-io/adapter-api'
+import { createSaltoElementError, ElemID } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { ZENDESK } from '../src/constants'
 import { getZendeskError } from '../src/errors'
@@ -29,21 +29,33 @@ describe('errors', () => {
           'err',
           { data: 'err' as unknown as clientUtils.ResponseValue, status: 400 }
         )
-      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed: Error: err`))
+      )).toEqual(createSaltoElementError({
+        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed: Error: err`,
+        severity: 'Error',
+        elemID: elemId,
+      }))
     })
     it('should return the correct error message', async () => {
       const data = { error: 'err' }
       expect(getZendeskError(
         elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
-      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}Error: err${EOL}{${EOL}  "error": "err"${EOL}}`))
+      )).toEqual(createSaltoElementError({
+        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}Error: err${EOL}{${EOL}  "error": "err"${EOL}}`,
+        severity: 'Error',
+        elemID: elemId,
+      }))
     })
     it('should return the correct error message for 403 error', async () => {
       const data = { errors: [{ title: 'one', detail: 'one detail' }, { title: 'two', detail: 'two detail' }] }
       expect(getZendeskError(
         elemId,
         new clientUtils.HTTPError('err', { data, status: 403 })
-      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`))
+      )).toEqual(createSaltoElementError({
+        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: one${EOL}  Detail: one detail${EOL}${EOL}* Title: two${EOL}  Detail: two detail${EOL}`,
+        severity: 'Error',
+        elemID: elemId,
+      }))
     })
     it('should return the correct error message for 422 error', async () => {
       const data = {
@@ -56,14 +68,22 @@ describe('errors', () => {
       expect(getZendeskError(
         elemId,
         new clientUtils.HTTPError('err', { data, status: 422 })
-      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`))
+      )).toEqual(createSaltoElementError({
+        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}${data.description}${EOL}${EOL}Error details:${EOL}* a-one des${EOL}* a-two des${EOL}* b-one des${EOL}* b-two des`,
+        severity: 'Error',
+        elemID: elemId,
+      }))
     })
     it('should return the correct error message for 400 error', async () => {
       const data = { error: { title: 'a', message: 'b' } }
       expect(getZendeskError(
         elemId,
         new clientUtils.HTTPError('err', { data, status: 400 })
-      )).toEqual(new Error(`Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`))
+      )).toEqual(createSaltoElementError({
+        message: `Deployment of ${elemId.typeName} instance ${elemId.name} failed:${EOL}${EOL}Error details:${EOL}* Title: a${EOL}  Detail: b${EOL}`,
+        severity: 'Error',
+        elemID: elemId,
+      }))
     })
   })
 })

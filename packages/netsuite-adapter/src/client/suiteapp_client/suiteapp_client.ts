@@ -142,10 +142,10 @@ export default class SuiteAppClient {
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
-    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter)
+    const timeout = (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000
+    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter, timeout)
 
-    this.axiosClient = axios.create({ timeout:
-      (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000 })
+    this.axiosClient = axios.create({ timeout })
     const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
     axiosRetry(
       this.axiosClient,
@@ -246,6 +246,9 @@ export default class SuiteAppClient {
       const results = await this.sendRestletRequest('sysInfo')
       return this.parseSystemInformation(results)
     } catch (error) {
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
       log.error('error was thrown in getSystemInformation', { error })
       return undefined
     }
@@ -406,13 +409,18 @@ export default class SuiteAppClient {
     }
   }
 
-  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
+  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<SystemInformation> {
     const client = new SuiteAppClient({
       credentials,
       globalLimiter: new Bottleneck(),
       instanceLimiter: () => false,
     })
-    await client.sendRestletRequest('sysInfo')
+    const sysInfo = await client.getSystemInformation()
+
+    if (sysInfo === undefined) {
+      throw new Error('Failed getting SuiteApp system information')
+    }
+    return sysInfo
   }
 
   private async safeAxiosPost(

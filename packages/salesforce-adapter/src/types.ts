@@ -25,15 +25,20 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { config as configUtils } from '@salto-io/adapter-components'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
+
+type UserDeployConfig = configUtils.UserDeployConfig
+const { createUserDeployConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
@@ -94,7 +99,6 @@ export type ChangeValidatorName = (
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
-  | 'sbaaApprovalRulesCustomCondition'
   | 'recordTypeDeletion'
   | 'flowsValidator'
   | 'fullNameChangedValidator'
@@ -113,6 +117,7 @@ export type ChangeValidatorName = (
   | 'dataCategoryGroup'
 )
 
+// Can stop being exported with (SALTO-4468)
 export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
@@ -263,7 +268,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
-  validators?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: UserDeployConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -597,7 +602,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
@@ -716,8 +720,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
-    validators: {
-      refType: changeValidatorConfigType,
+    [DEPLOY_CONFIG]: {
+      refType: createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
   },
   annotations: {

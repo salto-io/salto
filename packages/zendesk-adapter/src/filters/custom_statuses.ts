@@ -15,7 +15,7 @@
 */
 import {
   BuiltinTypes,
-  Change, DeployResult,
+  Change, createSaltoElementErrorFromError, DeployResult,
   Element, ElemID,
   getChangeData,
   InstanceElement,
@@ -132,7 +132,11 @@ const filterCreator: FilterCreator = ({ client, config }) => ({
           data: { ids: defaults },
         })
       } catch (e) {
-        error.push(new Error(e))
+        error.push(createSaltoElementErrorFromError({
+          error: e,
+          severity: 'Error',
+          elemID: defaultCustomStatusChange.elemID,
+        }))
       }
     }
     const appliedChanges = _.isEmpty(error) ? defaultCustomStatusChanges : []

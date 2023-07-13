@@ -16,7 +16,7 @@
 import FormData from 'form-data'
 import {
   ObjectType, ElemID, InstanceElement, isInstanceElement, StaticFile, ReferenceExpression,
-  CORE_ANNOTATIONS, getChangeData,
+  CORE_ANNOTATIONS, getChangeData, createSaltoElementError,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import filterCreator, { BRAND_LOGO_TYPE, LOGO_FIELD } from '../../src/filters/brand_logo'
@@ -289,7 +289,14 @@ describe('brand logo filter', () => {
       expect(mockBrandGet).toHaveBeenCalledTimes(5)
 
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+      expect(res.deployResult.errors[0]).toEqual(
+        createSaltoElementError({
+          message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          severity: 'Error',
+          elemID: clonedLogo.elemID,
+        })
+      )
+
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
       expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
@@ -319,7 +326,13 @@ describe('brand logo filter', () => {
       expect(mockBrandGet).toHaveBeenCalledTimes(5)
 
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0]).toEqual(Error(`Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`))
+      expect(res.deployResult.errors[0]).toEqual(
+        createSaltoElementError({
+          message: `Can't deploy ${logoInstance.elemID.name} of the type brand_logo, due to Zendesk's API limitations. Please upload it manually in Zendesk Admin Center`,
+          severity: 'Error',
+          elemID: clonedLogo.elemID,
+        })
+      )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
       expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)
@@ -335,7 +348,13 @@ describe('brand logo filter', () => {
       ])
 
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0]).toEqual(Error(`Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`))
+      expect(res.deployResult.errors[0]).toEqual(
+        createSaltoElementError({
+          message: `Expected ${clonedLogo.elemID.getFullName()} to have exactly one parent, found 0`,
+          severity: 'Error',
+          elemID: clonedLogo.elemID,
+        })
+      )
       expect(res.deployResult.appliedChanges).toHaveLength(0)
       expect(res.leftoverChanges).toHaveLength(1)
       expect((getChangeData(res.leftoverChanges[0]) as InstanceElement).value)

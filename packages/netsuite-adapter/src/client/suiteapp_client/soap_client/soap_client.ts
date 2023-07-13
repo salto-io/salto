@@ -20,7 +20,7 @@ import path from 'path'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { InstanceElement, isListType, isObjectType, ObjectType, Value, Values } from '@salto-io/adapter-api'
-import { collections, decorators, strings } from '@salto-io/lowerdash'
+import { collections, decorators, promises, strings } from '@salto-io/lowerdash'
 import { v4 as uuidv4 } from 'uuid'
 import { RECORD_REF } from '../../../constants'
 import { SuiteAppSoapCredentials, toUrlAccountId } from '../../credentials'
@@ -125,15 +125,18 @@ export default class SoapClient {
   private ajv: Ajv
   private client: elementUtils.soap.Client | undefined
   private instanceLimiter: InstanceLimiterFunc
+  private timeout: number
 
   constructor(
     credentials: SuiteAppSoapCredentials,
     callsLimiter: CallsLimiter,
-    instanceLimiter: InstanceLimiterFunc
+    instanceLimiter: InstanceLimiterFunc,
+    timeout: number
   ) {
     this.credentials = credentials
     this.callsLimiter = callsLimiter
     this.instanceLimiter = instanceLimiter
+    this.timeout = timeout
     this.ajv = new Ajv({ allErrors: true, strict: false })
   }
 
@@ -194,7 +197,7 @@ export default class SoapClient {
       ...file.folder ? {
         'q1:folder': {
           attributes: {
-            internalId: file.folder.toString(),
+            internalId: file.folder,
           },
         },
       } : {},
@@ -214,7 +217,7 @@ export default class SoapClient {
       ? {
         'q1:parent': {
           attributes: {
-            internalId: folder.parent.toString(),
+            internalId: folder.parent,
           },
         },
       }
@@ -374,9 +377,12 @@ export default class SoapClient {
     REQUEST_RETRY_DELAY
   )
   private static async soapRequestWithRetries(
-    client: elementUtils.soap.Client, operation: string, body: object
+    client: elementUtils.soap.Client, operation: string, body: object, timeout: number
   ): Promise<unknown> {
-    return (await client[`${operation}Async`](body))[0]
+    const result = await promises.timeout.withTimeout<unknown[]>(
+      client[`${operation}Async`](body), timeout
+    )
+    return result[0]
   }
 
   private async sendSoapRequest(operation: string, body: object): Promise<unknown> {
@@ -384,7 +390,7 @@ export default class SoapClient {
     try {
       return await this.callsLimiter(
         async () => log.time(
-          () => SoapClient.soapRequestWithRetries(client, operation, body),
+          () => SoapClient.soapRequestWithRetries(client, operation, body, this.timeout),
           `${operation}-soap-request`
         )
       )

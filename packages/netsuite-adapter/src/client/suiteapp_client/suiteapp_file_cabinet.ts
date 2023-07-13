@@ -24,6 +24,8 @@ import {
   StaticFile,
   isAdditionChange,
   isModificationChange,
+  ElemID,
+  SaltoElementError,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -38,8 +40,9 @@ import { ImportFileCabinetResult } from '../types'
 import { FILE_CABINET_PATH_SEPARATOR, INTERNAL_ID, PARENT, PATH } from '../../constants'
 import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
 import { NetsuiteQuery } from '../../query'
-import { DeployResult, isFileCabinetType, isFileInstance } from '../../types'
+import { isFileCabinetType, isFileInstance } from '../../types'
 import { filterFilePathsInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../file_cabinet_utils'
+import { getDeployResultFromSuiteAppResult, toError } from '../utils'
 
 const log = logger(module)
 
@@ -47,7 +50,7 @@ export type DeployType = 'add' | 'update' | 'delete'
 
 type WithPath = Record<typeof PATH, string>
 type WithInternalId = Record<typeof INTERNAL_ID, string>
-type WithParent = Partial<Record<typeof PARENT, number>>
+type WithParent = Partial<Record<typeof PARENT, string>>
 type FileCabinetInstance = Element & Omit<InstanceElement, 'value'> & {
   value: WithPath & WithInternalId & WithParent & {
     bundleable?: boolean
@@ -61,16 +64,14 @@ type FileCabinetInstance = Element & Omit<InstanceElement, 'value'> & {
   }
 }
 
-type ChangeWithId = Change<FileCabinetInstance> & { id: number }
 type FileCabinetDeployResult = {
-  appliedChanges: ChangeWithId[]
-  failedChanges: Change<FileCabinetInstance>[]
-  errors: Error[]
+  appliedChanges: Change<FileCabinetInstance>[]
+  errors: SaltoElementError[]
+  elemIdToInternalId: Record<string, string>
 }
-
 type DeployFunction = (
   changes: ReadonlyArray<Change<FileCabinetInstance>>
-) => Promise<DeployResult>
+) => Promise<FileCabinetDeployResult>
 
 const FOLDERS_SCHEMA = {
   type: 'array',
@@ -175,7 +176,7 @@ export type SuiteAppFileCabinetOperations = {
   deploy: (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
-  ) => Promise<DeployResult>
+  ) => Promise<FileCabinetDeployResult>
 }
 
 export const getContent = async (content: unknown): Promise<Buffer> => {
@@ -265,7 +266,7 @@ SuiteAppFileCabinetOperations => {
       const foldersResults = await suiteAppClient.runSuiteQL(foldersQuery, THROW_ON_MISSING_FEATURE_ERROR)
       return { folderResults: validateFoldersResults(foldersResults), isSuiteBundlesEnabled: true }
     } catch (e) {
-      if (e.message === SUITEBUNDLES_DISABLED_ERROR && isSuiteBundlesEnabled) {
+      if (toError(e).message === SUITEBUNDLES_DISABLED_ERROR && isSuiteBundlesEnabled) {
         log.debug('SuiteBundles not enabled in the account, removing \'bundleable\' from query')
         const noBundleableQuery = foldersQuery.replace(BUNDLEABLE, '')
         const queryResult = await suiteAppClient.runSuiteQL(noBundleableQuery, THROW_ON_MISSING_FEATURE_ERROR)
@@ -593,41 +594,22 @@ SuiteAppFileCabinetOperations => {
   }
 
   const deployChunk = async (
-    chunk: ReadonlyArray<Change<FileCabinetInstance>>,
+    changes: Change<FileCabinetInstance>[],
     type: DeployType,
   ): Promise<FileCabinetDeployResult> => {
-    log.debug(`Deploying chunk of ${chunk.length} file changes`)
-
-    const changes = await Promise.all(chunk.map(
-      async change => ({
-        details: await convertToFileCabinetDetails(change, type),
-        change,
-      })
-    ))
+    log.debug(`Deploying chunk of ${changes.length} file changes`)
+    const fileCabinetDetails = await Promise.all(changes.map(change => convertToFileCabinetDetails(change, type)))
 
     try {
-      const deployResults = await deployInstances(
-        changes.map(({ details }) => details),
-        type
-      )
-
-      log.debug(`Deployed chunk of ${chunk.length} file changes`)
-
-      const [deployErrors, deployChanges] = _.partition(
-        deployResults.map((res, index) => ({ res, ...changes[index].change })),
-        ({ res }) => res instanceof Error
-      )
-
-      return {
-        appliedChanges: deployChanges.map(({ res, ...change }) => ({ ...change, id: res as number })),
-        failedChanges: deployErrors,
-        errors: deployErrors.map(({ res }) => res as Error),
-      }
+      const deployResults = await deployInstances(fileCabinetDetails, type)
+      log.debug(`Deployed chunk of ${changes.length} file changes`)
+      return getDeployResultFromSuiteAppResult(changes, deployResults)
     } catch (e) {
+      const { message } = toError(e)
       return {
-        errors: [e as Error],
+        errors: changes.map(change => ({ elemID: getChangeData(change).elemID, message, severity: 'Error' })),
         appliedChanges: [],
-        failedChanges: [...chunk],
+        elemIdToInternalId: {},
       }
     }
   }
@@ -642,8 +624,9 @@ SuiteAppFileCabinetOperations => {
     )
     return {
       appliedChanges: deployChunkResults.flatMap(res => res.appliedChanges),
-      failedChanges: deployChunkResults.flatMap(res => res.failedChanges),
       errors: deployChunkResults.flatMap(res => res.errors),
+      elemIdToInternalId: deployChunkResults.reduce((acc, { elemIdToInternalId }) =>
+        Object.assign(acc, elemIdToInternalId), {}),
     }
   }
 
@@ -652,39 +635,46 @@ SuiteAppFileCabinetOperations => {
       allChanges,
       change => path.dirname(getChangeData(change).value.path)
     )
-    const pathsToSkip = new Set<string>()
-    const elemIdToInternalId: Record<string, string> = {}
+    const elemIdToPath = Object.fromEntries(
+      allChanges.map(change => {
+        const instance = getChangeData(change)
+        return [instance.elemID.getFullName(), instance.value.path]
+      })
+    )
+    const changesToSkip = new Set<string>()
 
-    const deployGroup = async (changes: Change<FileCabinetInstance>[]): Promise<DeployResult> => {
-      const { appliedChanges, failedChanges, errors } = await deployChanges(
-        changes.filter(change => !pathsToSkip.has(getChangeData(change).value.path)),
-        'add'
-      )
-      appliedChanges.forEach(({ id, ...appliedChange }) => {
+    const deployGroup = async (changes: Change<FileCabinetInstance>[]): Promise<FileCabinetDeployResult> => {
+      const changesToDeploy = changes.filter(change =>
+        !changesToSkip.has(getChangeData(change).elemID.getFullName()))
+      const deployResult = await deployChanges(changesToDeploy, 'add')
+
+      deployResult.appliedChanges.forEach(appliedChange => {
         const appliedInstance = getChangeData(appliedChange)
-        elemIdToInternalId[appliedInstance.elemID.getFullName()] = id.toString()
         const children = changesByParentDirectory[appliedInstance.value.path] ?? []
         if (children.length > 0) {
-          log.debug('adding %s internal id as parent for %d childern files/folders', appliedInstance.value.path, children.length)
+          log.debug(
+            'adding %s internal id as parent for %d childern files/folders',
+            appliedInstance.value.path,
+            children.length,
+          )
         }
         children.forEach(change => {
-          getChangeData(change).value.parent = id
+          getChangeData(change).value.parent = deployResult.elemIdToInternalId[appliedInstance.elemID.getFullName()]
         })
       })
-      failedChanges.forEach(failedChange => {
-        const failedInstance = getChangeData(failedChange)
-        const children = changesByParentDirectory[failedInstance.value.path] ?? []
+
+      deployResult.errors.forEach(error => {
+        const failedPath = elemIdToPath[error.elemID.getFullName()]
+        const children = changesByParentDirectory[failedPath] ?? []
         if (children.length > 0) {
-          log.debug('skipping %d childern files/folders of %s that failed the deploy', children.length, failedInstance.value.path)
+          log.debug('skipping %d childern files/folders of %s that failed the deploy', children.length, failedPath)
         }
         children.forEach(change => {
-          pathsToSkip.add(getChangeData(change).value.path)
+          changesToSkip.add(getChangeData(change).elemID.getFullName())
         })
       })
-      return {
-        appliedChanges,
-        errors,
-      }
+
+      return deployResult
     }
 
     const orderedChangesGroups = groupChangesByDepth(allChanges)
@@ -694,15 +684,20 @@ SuiteAppFileCabinetOperations => {
         return deployGroup(group)
       }))
 
-    const dependenciesError = pathsToSkip.size > 0
-      ? new Error(`Can't deploy the following files/folders because their parent folders deploy failed:\n${
-        Array.from(pathsToSkip).map(failedPath => `- ${failedPath}`).join('\n')}`)
-      : []
+    const dependencyErrors = [...changesToSkip].map(id => {
+      const elemID = ElemID.fromFullName(id)
+      return {
+        elemID,
+        message: `Cannot deploy this ${elemID.typeName} because its parent folder deploy failed`,
+        severity: 'Error' as const,
+      }
+    })
 
     return {
       appliedChanges: deployResults.flatMap(res => res.appliedChanges),
-      errors: deployResults.flatMap(res => res.errors).concat(dependenciesError),
-      elemIdToInternalId,
+      errors: deployResults.flatMap(res => res.errors).concat(dependencyErrors),
+      elemIdToInternalId: deployResults.reduce((acc, { elemIdToInternalId }) =>
+        Object.assign(acc, elemIdToInternalId), {}),
     }
   }
 
@@ -717,6 +712,7 @@ SuiteAppFileCabinetOperations => {
     return {
       appliedChanges: deployResults.flatMap(res => res.appliedChanges),
       errors: deployResults.flatMap(res => res.errors),
+      elemIdToInternalId: {},
     }
   }
 
@@ -731,7 +727,8 @@ SuiteAppFileCabinetOperations => {
   const deploy = async (
     changes: ReadonlyArray<Change<InstanceElement>>,
     type: DeployType,
-  ): Promise<DeployResult> => typeToDeployFunction[type](changes as ReadonlyArray<Change<FileCabinetInstance>>)
+  ): Promise<FileCabinetDeployResult> =>
+    typeToDeployFunction[type](changes as ReadonlyArray<Change<FileCabinetInstance>>)
 
   return {
     importFileCabinet,

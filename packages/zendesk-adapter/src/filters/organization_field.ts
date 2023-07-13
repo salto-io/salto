@@ -45,9 +45,11 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
           appliedChanges: [],
           errors: childrenChanges
             .map(getChangeData)
-            .map(e => new Error(
-              `Failed to update ${e.elemID.getFullName()} since it has no valid parent`
-            )),
+            .map(e => ({
+              message: `Failed to update ${e.elemID.getFullName()} since it has no valid parent`,
+              severity: 'Error',
+              elemID: e.elemID,
+            })),
         },
         leftoverChanges,
       }

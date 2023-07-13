@@ -310,9 +310,13 @@ describe('SuiteAppClient', () => {
       })
 
       describe('request failure', () => {
-        it('exception thrown', async () => {
+        it('general exception thrown', async () => {
           mockAxiosAdapter.onPost().reply(() => [])
           expect(await client.getSystemInformation()).toBeUndefined()
+        })
+        test.each([401, 403])('Post request fails with error code %d - should throw InvalidSuiteAppCredentialsError', async errorCode => {
+          mockAxiosAdapter.onPost().replyOnce(errorCode)
+          await expect(client.getSystemInformation()).rejects.toThrow(InvalidSuiteAppCredentialsError)
         })
         it('invalid results', async () => {
           mockAxiosAdapter.onPost().reply(200, { status: 'success', results: {} })
@@ -633,40 +637,55 @@ describe('SuiteAppClient', () => {
       )).rejects.toThrow()
     })
 
-    it('should succeed with activationKey', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          appVersion: [0, 1, 3],
-          time: 1000,
-        },
+    describe('With activationKey', () => {
+      const systemInformation = {
+        appVersion: [0, 1, 3],
+        time: 1000,
+        envType: EnvType.BETA,
+      }
+
+      beforeEach(() => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: systemInformation,
+        })
       })
 
-      await expect(SuiteAppClient.validateCredentials(
-        {
-          accountId: 'ACCOUNT_ID',
-          suiteAppTokenId: 'tokenId',
-          suiteAppTokenSecret: 'tokenSecret',
-          suiteAppActivationKey: 'activationKey',
-        },
-      )).resolves.toBeUndefined()
+      it('should succeed and return systemInformation', async () => {
+        await expect(SuiteAppClient.validateCredentials(
+          {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+            suiteAppActivationKey: 'activationKey',
+          },
+        )).resolves.toEqual({ ...systemInformation, time: new Date(systemInformation.time) })
+      })
     })
-    it('should succeed without activationKey', async () => {
-      mockAxiosAdapter.onPost().reply(200, {
-        status: 'success',
-        results: {
-          appVersion: [0, 1, 3],
-          time: 1000,
-        },
+
+    describe('Without activationKey', () => {
+      const systemInformation = {
+        appVersion: [0, 1, 3],
+        time: 1000,
+        envType: EnvType.PRODUCTION,
+      }
+
+      beforeEach(() => {
+        mockAxiosAdapter.onPost().reply(200, {
+          status: 'success',
+          results: systemInformation,
+        })
       })
 
-      await expect(SuiteAppClient.validateCredentials(
-        {
-          accountId: 'ACCOUNT_ID',
-          suiteAppTokenId: 'tokenId',
-          suiteAppTokenSecret: 'tokenSecret',
-        },
-      )).resolves.toBeUndefined()
+      it('should succeed and return systemInformation', async () => {
+        await expect(SuiteAppClient.validateCredentials(
+          {
+            accountId: 'ACCOUNT_ID',
+            suiteAppTokenId: 'tokenId',
+            suiteAppTokenSecret: 'tokenSecret',
+          },
+        )).resolves.toEqual({ ...systemInformation, time: new Date(systemInformation.time) })
+      })
     })
   })
 

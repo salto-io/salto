@@ -17,8 +17,8 @@ import _ from 'lodash'
 import Joi from 'joi'
 import {
   BuiltinTypes, Change, CORE_ANNOTATIONS, ElemID, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceElement, isStaticFile, ObjectType,
-  ReferenceExpression, StaticFile,
+  isAdditionOrModificationChange, isSaltoError, isInstanceElement, isStaticFile, ObjectType,
+  ReferenceExpression, SaltoElementError, SaltoError, StaticFile,
 } from '@salto-io/adapter-api'
 import { elements as elementsUtils } from '@salto-io/adapter-components'
 import { naclCase, safeJsonStringify, getParent, normalizeFilePathPart, pathNaclCase, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
@@ -159,7 +159,7 @@ const deployBrandLogo = async (
   client: ZendeskClient,
   logoInstance: InstanceElement,
   logoContent: Buffer | undefined,
-): Promise<Error | void> => {
+): Promise<SaltoElementError | void> => {
   try {
     const brandId = getParent(logoInstance).value.id
     // Zendesk's bug (ticket number 9800) might manipulate uploaded files - verification is needed
@@ -237,8 +237,8 @@ const filterCreator: FilterCreator = ({ client }) => ({
 
     const [deployLogoErrors, successfulChanges] = _.partition(
       deployLogoResults,
-      _.isError,
-    )
+      isSaltoError,
+    ) as [SaltoError[], Change[]]
 
     return {
       deployResult: {

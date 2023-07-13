@@ -19,10 +19,17 @@ import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ACCESS_POLICY_TYPE_NAME, CUSTOM_NAME_FIELD, IDP_POLICY_TYPE_NAME, MFA_POLICY_TYPE_NAME, OKTA, PASSWORD_POLICY_TYPE_NAME, PROFILE_ENROLLMENT_POLICY_TYPE_NAME, SIGN_ON_POLICY_TYPE_NAME } from './constants'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
+type UserDeployConfig = configUtils.UserDeployConfig
+const {
+  createUserFetchConfigType,
+  createSwaggerAdapterApiConfigType,
+  createDucktypeAdapterApiConfigType,
+  createUserDeployConfigType,
+} = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 export const API_DEFINITIONS_CONFIG = 'apiDefinitions'
 export const PRIVATE_API_DEFINITIONS_CONFIG = 'privateApiDefinitions'
 
@@ -44,6 +51,7 @@ export type OktaConfig = {
   [FETCH_CONFIG]: OktaFetchConfig
   [API_DEFINITIONS_CONFIG]: OktaSwaggerApiConfig
   [PRIVATE_API_DEFINITIONS_CONFIG]: OktaDuckTypeApiConfig
+  [DEPLOY_CONFIG]?: UserDeployConfig
 }
 
 const DEFAULT_ID_FIELDS = ['name']
@@ -1674,6 +1682,52 @@ export const DEFAULT_CONFIG: OktaConfig = {
   },
 }
 
+export type ChangeValidatorName = (
+  | 'createCheckDeploymentBasedOnConfig'
+  | 'application'
+  | 'appGroup'
+  | 'groupRuleStatus'
+  | 'groupRuleActions'
+  | 'defaultPolicies'
+  | 'groupRuleAdministrator'
+  | 'customApplicationStatus'
+  | 'userTypeAndSchema'
+  | 'appIntegrationSetup'
+  | 'assignedAccessPolicies'
+  | 'groupSchemaModifyBase'
+  | 'enabledAuthenticators'
+  | 'roleAssignment'
+  | 'users'
+  | 'appUserSchemaWithInactiveApp'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(OKTA, 'changeValidatorConfig'),
+  fields: {
+    createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    application: { refType: BuiltinTypes.BOOLEAN },
+    appGroup: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleStatus: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleActions: { refType: BuiltinTypes.BOOLEAN },
+    defaultPolicies: { refType: BuiltinTypes.BOOLEAN },
+    groupRuleAdministrator: { refType: BuiltinTypes.BOOLEAN },
+    customApplicationStatus: { refType: BuiltinTypes.BOOLEAN },
+    userTypeAndSchema: { refType: BuiltinTypes.BOOLEAN },
+    appIntegrationSetup: { refType: BuiltinTypes.BOOLEAN },
+    assignedAccessPolicies: { refType: BuiltinTypes.BOOLEAN },
+    groupSchemaModifyBase: { refType: BuiltinTypes.BOOLEAN },
+    enabledAuthenticators: { refType: BuiltinTypes.BOOLEAN },
+    roleAssignment: { refType: BuiltinTypes.BOOLEAN },
+    users: { refType: BuiltinTypes.BOOLEAN },
+    appUserSchemaWithInactiveApp: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 const createClientConfigType = (): ObjectType => {
   const configType = clientUtils.createClientConfigType(OKTA)
   configType.fields.usePrivateAPI = new Field(
@@ -1681,7 +1735,6 @@ const createClientConfigType = (): ObjectType => {
   )
   return configType
 }
-
 export const configType = createMatchingObjectType<Partial<OktaConfig>>({
   elemID: new ElemID(OKTA),
   fields: {
@@ -1696,6 +1749,9 @@ export const configType = createMatchingObjectType<Partial<OktaConfig>>({
           enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
         }
       ),
+    },
+    [DEPLOY_CONFIG]: {
+      refType: createUserDeployConfigType(OKTA, changeValidatorConfigType),
     },
     [API_DEFINITIONS_CONFIG]: {
       refType: createSwaggerAdapterApiConfigType({

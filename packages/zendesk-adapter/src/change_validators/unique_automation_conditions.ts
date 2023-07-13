@@ -51,7 +51,7 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
 
   const elementSourceAutomations: InstanceElement[] = []
   if (elementSource === undefined) {
-    log.error('Failed to run duplicateAutomationConditionValidator because element source is undefined')
+    log.error('duplicateAutomationConditionValidator might not run correctly because element source is undefined')
   } else {
     const idsIterator = awu(await elementSource.list())
     const automations: InstanceElement[] = await awu(idsIterator)

@@ -4885,4 +4885,78 @@ describe('nacl sources reuse', () => {
     await ws.elements(true, 'inactive')
     expect(mockMuiltiEnv).toHaveBeenCalledTimes(1)
   })
+  describe('author information index', () => {
+    const TYPE_WITH_BOTH = 'salesforce.Lead'
+    const TYPE_WITH_CHANGED_BY = 'salesforce.Account'
+    const TYPE_WITH_CHANGED_AT = 'salesforce.Opportunity'
+    const CHANGED_BY_VALUE = 'Test User'
+    const CHANGED_AT_VALUE = '2023-03-16T08:57:08.000Z'
+    let workspace: Workspace
+    const firstFile = `
+      type salesforce.text is string {}
+      type ${TYPE_WITH_BOTH} {
+        annotations {
+          string _changed_by {}
+          string _changed_at {}
+        }
+        _changed_by = "${CHANGED_BY_VALUE}"
+        _changed_at = "${CHANGED_AT_VALUE}"
+      }
+      type ${TYPE_WITH_CHANGED_AT} {
+        annotations {
+          string _changed_by {}
+          string _changed_at {}
+        }
+        _changed_at = "${CHANGED_AT_VALUE}"
+      }
+      type ${TYPE_WITH_CHANGED_BY} {
+        annotations {
+          string _changed_by {}
+          string _changed_at {}
+        }
+        _changed_by = "${CHANGED_BY_VALUE}"
+      }
+    `
+    const naclFileStore = mockDirStore(undefined, undefined, {
+      'firstFile.nacl': firstFile,
+    })
+    beforeEach(async () => {
+      workspace = await createWorkspace(
+        naclFileStore,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        {
+          '': {
+            naclFiles: createMockNaclFileSource([]),
+          },
+          default: {
+            naclFiles: await naclFilesSource(
+              'default',
+              naclFileStore,
+              mockStaticFilesSource(),
+              persistentMockCreateRemoteMap(),
+              true
+            ),
+            state: createState([]),
+          },
+        },
+      )
+    })
+    it('should return map with correct AuthorInformation', async () => {
+      const map = await workspace.getAuthorInformationMap()
+      const authorInformationById = Object.fromEntries(
+        await awu(map.entries())
+          .map(entry => [entry.key, entry.value])
+          .toArray()
+      )
+      expect(authorInformationById).toEqual({
+        [TYPE_WITH_BOTH]: { changedBy: CHANGED_BY_VALUE, changedAt: CHANGED_AT_VALUE },
+        [TYPE_WITH_CHANGED_AT]: { changedAt: CHANGED_AT_VALUE },
+        [TYPE_WITH_CHANGED_BY]: { changedBy: CHANGED_BY_VALUE },
+      })
+    })
+  })
 })

@@ -267,6 +267,7 @@ export type Workspace = {
   getAliases(envName?: string): Promise<ReadOnlyRemoteMap<string>>
   getChangedElementsBetween(dateRange: DateRange, envName?: string): Promise<ElemID[]>
   isChangedAtIndexEmpty(envName?: string): Promise<boolean>
+  getAuthorInformationMap(envName?: string): Promise<ReadOnlyRemoteMap<AuthorInformation>>
 }
 
 type SingleState = {
@@ -1084,6 +1085,14 @@ export const loadWorkspace = async (
     return currentWorkspaceState.states[env].changedBy.isEmpty()
   }
 
+  const getAuthorInformationMap = async (
+    envName: string = currentEnv()
+  ): Promise<ReadOnlyRemoteMap<AuthorInformation>> => {
+    const currentWorkspaceState = await getWorkspaceState()
+    return currentWorkspaceState.states[envName].authorInformation
+  }
+
+
   return {
     uid: workspaceConfig.uid,
     name: workspaceConfig.name,
@@ -1517,6 +1526,7 @@ export const loadWorkspace = async (
     getElemIdsByStaticFilePaths,
     getAliases,
     isChangedAtIndexEmpty,
+    getAuthorInformationMap,
   }
 }
 

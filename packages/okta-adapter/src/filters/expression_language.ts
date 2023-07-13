@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isTemplateExpression, ReferenceExpression, SaltoElementError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { Change, createSaltoElementError, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isTemplateExpression, ReferenceExpression, SaltoElementError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -229,11 +229,11 @@ const filter: FilterCreator = ({ config }) => {
                 )
               } catch (error) {
                 log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`)
-                ErrorByChangeId[instance.elemID.getFullName()] = {
+                ErrorByChangeId[instance.elemID.getFullName()] = createSaltoElementError({
                   severity: 'Error',
                   message: 'Error parsing Okta expression language expression',
                   elemID: instance.elemID,
-                }
+                })
               }
             }
           }

@@ -73,7 +73,11 @@ describe('privateApiDeploymentFilter', () => {
       ) as typeof filter
       const res = await filter.deploy([change])
       expect(res.deployResult.errors).toHaveLength(1)
-      expect(res.deployResult.errors[0].message).toEqual('The following changes were not deployed, because usePrivateApi config option is disabled: okta.ThirdPartyAdmin.instance')
+      expect(res.deployResult.errors[0]).toEqual({
+        message: 'usePrivateApi config option must be enabled in order to deploy this change',
+        severity: 'Error',
+        elemID: thirdPartyAdminAfter.elemID
+      })
     })
   })
 })

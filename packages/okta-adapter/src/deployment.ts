@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, SaltoElementError } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, createSaltoElementError, isSaltoError, isSaltoElementError, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
 import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -297,21 +297,18 @@ export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T>
 ): Promise<DeployResult> => {
-  const errors: SaltoElementError[] = []
-  const appliedChanges = (await Promise.all(
-    changes.map(async change => {
-      try {
-        const res = await deployChangeFunc(change)
-        return res !== undefined ? res : change
-      } catch (err) {
-        errors.push({
-          message: err.message,
-          severity: 'Error',
-          elemID: getChangeData(change).elemID,
-        })
-        return undefined
-      }
-    })
-  )).filter(isDefined)
+  const result = await Promise.all(changes.map(async (change): Promise<T | SaltoError> => {
+    try {
+      const res = await deployChangeFunc(change)
+      return res !== undefined ? res : change
+    } catch (err) {
+      return createSaltoElementError({
+        message: err.message,
+        severity: 'Error',
+        elemID: getChangeData(change).elemID,
+      })
+    }
+  }))
+  const [errors, appliedChanges] = _.partition(result, isSaltoError)
   return { errors, appliedChanges }
 }

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Change, getChangeData, InstanceElement, isInstanceChange, SaltoError } from '@salto-io/adapter-api'
+import { Change, createSaltoElementError, getChangeData, InstanceElement, isInstanceChange, SaltoError } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { CLIENT_CONFIG } from '../config'
@@ -43,13 +43,14 @@ const filterCreator: FilterCreator = ({ adminClient, config }) => ({
     }
     if (config[CLIENT_CONFIG]?.usePrivateAPI !== true) {
       log.debug('Skip deployment of private API types because private API is not enabled')
-      const error: SaltoError = {
-        message: `The following changes were not deployed, because usePrivateApi config option is disabled: ${relevantChanges.map(c => getChangeData(c).elemID.getFullName()).join(', ')}`,
+      const errors = relevantChanges.map(change => createSaltoElementError({
+        message: 'usePrivateApi config option must be enabled in order to deploy this change',
         severity: 'Error',
-      }
+        elemID: getChangeData(change).elemID,
+      }))
       return {
         leftoverChanges,
-        deployResult: { appliedChanges: [], errors: [error] },
+        deployResult: { appliedChanges: [], errors },
       }
     }
     if (adminClient === undefined) {

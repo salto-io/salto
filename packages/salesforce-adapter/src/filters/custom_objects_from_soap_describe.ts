@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { DescribeSObjectResult, Field as SObjField } from 'jsforce'
 import { collections, values } from '@salto-io/lowerdash'
+import { logger } from '@salto-io/logging'
 import { ObjectType, isInstanceElement, ElemID, InstanceElement, Element } from '@salto-io/adapter-api'
 import { CUSTOM_OBJECT, COMPOUND_FIELD_TYPE_NAMES, NAME_FIELDS } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
@@ -24,6 +25,7 @@ import { isInstanceOfType, ensureSafeFilterFetch } from './utils'
 import { CustomField } from '../client/types'
 import { createSkippedListConfigChangeFromError } from '../config_change'
 
+const log = logger(module)
 const { awu, keyByAsync } = collections.asynciterable
 const { makeArray } = collections.array
 
@@ -104,14 +106,21 @@ const addSObjectInformationToInstance = async (
       .map(field => createFieldValue(field, sobject.name, objCompoundFieldNames, systemFields))
   )
 
+  const addedFields: string[] = []
+  const modifiedFields: string[] = []
   sobjectFields.forEach(sobjectField => {
     const existingField = fieldsFromMetadataApi[sobjectField.fullName]
     if (existingField !== undefined) {
+      modifiedFields.push(sobjectField.fullName)
       _.defaults(existingField, sobjectField)
     } else {
+      addedFields.push(sobjectField.fullName)
       instance.value.fields.push(sobjectField)
     }
   })
+  const instanceFullName = instance.elemID.getFullName()
+  log.debug('added %d fields from soap API to %s, the first 10 fields are - %o', addedFields.length, instanceFullName, addedFields.slice(10))
+  log.debug('modified %d fields from soap API to %s, the first 10 fields are - %o', modifiedFields.length, instanceFullName, modifiedFields.slice(10))
 }
 
 const WARNING_MESSAGE = 'Encountered an error while trying to fetch additional information about Custom Objects'

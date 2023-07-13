@@ -93,13 +93,14 @@ Promise<void> => {
 const connectAppOwnedToInstallation = (instances: InstanceElement[]): void => {
   const appOwnedById = _.keyBy<InstanceElement>(
     instances
-      .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME),
+      .filter(e => e.elemID.typeName === APP_OWNED_TYPE_NAME)
+      .filter(e => e.value.id !== undefined),
     e => e.value.id
   )
 
   instances
     .filter(e => e.elemID.typeName === APP_INSTALLATION_TYPE_NAME)
-    .forEach(async appInstallation => {
+    .forEach(appInstallation => {
       const appOwnedElement = appOwnedById[appInstallation.value.app_id]
       if (appOwnedElement) {
         appInstallation.value.app_id = new ReferenceExpression(appOwnedElement.elemID, appOwnedElement)

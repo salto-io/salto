@@ -36,7 +36,7 @@ describe('triggersDeployment', () => {
       {
         name: 'workflowName',
         transitions: {
-          name: {
+          'name__From__any_status__Circular@fffssff': {
             name: 'name',
             rules: {
               triggers: [{

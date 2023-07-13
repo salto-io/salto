@@ -193,7 +193,7 @@ export type WorkflowResponse = Omit<Workflow, 'transitions'> & {
   transitions: Transition[]
 }
 
-const WORKFLOW_RESPONSE_SCHEMA = Joi.object({
+export const WORKFLOW_RESPONSE_SCHEMA = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),

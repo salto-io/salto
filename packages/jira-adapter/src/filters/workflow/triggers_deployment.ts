@@ -20,7 +20,9 @@ import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import _ from 'lodash'
 import JiraClient from '../../client/client'
-import { Transition, WorkflowInstance, WorkflowResponse, workflowSchema } from './types'
+import { Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowInstance, WorkflowResponse } from './types'
+import { createStatusMap, getTransitionKey } from './workflow_structure_filter'
+
 
 const { awu } = collections.asynciterable
 
@@ -28,7 +30,7 @@ const log = logger(module)
 
 const isValidTransitionResponse = (response: unknown): response is { values: [WorkflowResponse] } => {
   const { error } = Joi.object({
-    values: Joi.array().min(1).max(1).items(workflowSchema),
+    values: Joi.array().min(1).max(1).items(WORKFLOW_RESPONSE_SCHEMA),
   }).unknown(true).required().validate(response)
 
   if (error !== undefined) {
@@ -58,18 +60,12 @@ const getTransitionsFromService = async (
   return workflowValues.transitions ?? []
 }
 
-export const getTransitionKey = (transition: Transition): string => {
-  const fromIds = _.sortBy(transition.from?.map(from => (
-    typeof from === 'string' ? from : from.id
-  )) ?? [])
-  return [fromIds, transition.name ?? ''].join('-')
-}
-
 export const deployTriggers = async (
   change: AdditionChange<WorkflowInstance>,
   client: JiraClient
 ): Promise<void> => {
   const instance = getChangeData(change)
+  const statusesMap = createStatusMap(instance.value.statuses ?? [])
 
   const workflowName = instance.value.name
   // We never supposed to get here
@@ -78,10 +74,10 @@ export const deployTriggers = async (
   }
 
   const transitions = await getTransitionsFromService(client, workflowName)
-  const keyToTransition = _.keyBy(transitions, getTransitionKey)
+  const keyToTransition = _.keyBy(transitions, transition => getTransitionKey(transition, statusesMap))
 
-  await awu(Object.values(instance.value.transitions) ?? []).forEach(async transition => {
-    const transitionId = keyToTransition[getTransitionKey(transition)]?.id
+  await awu(Object.entries(instance.value.transitions) ?? []).forEach(async ([key, transition]) => {
+    const transitionId = keyToTransition[key]?.id
 
     if (transitionId === undefined) {
       log.error(`Could not find the id of the transition ${transition.name} to deploy: ${safeJsonStringify(instance.value)}`)

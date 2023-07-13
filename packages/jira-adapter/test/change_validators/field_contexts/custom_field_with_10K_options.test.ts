@@ -16,7 +16,7 @@
 
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpression, Values, toChange } from '@salto-io/adapter-api'
 import { JIRA } from '../../../src/constants'
-import { customFieldsWith10KOptionValidator } from '../../../src/change_validators/field_contexts/more_than_10K_options'
+import { customFieldsWith10KOptionValidator } from '../../../src/change_validators/field_contexts/custom_field_with_10K_options'
 
 const generateOptions = (count: number): Values =>
   Array.from({ length: count }, (_, i) => ({

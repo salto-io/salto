@@ -149,7 +149,7 @@ export default ({
     featureActivation: featureActivationValidator,
     deflectionAction: deflectionActionValidator,
     standardFields: standardFieldsValidator,
-    uniqueAutomationCondition: uniqueAutomationConditionsValidator,
+    uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

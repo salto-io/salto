@@ -2656,7 +2656,7 @@ export type ChangeValidatorName = (
   | 'featureActivation'
   | 'standardFields'
   | 'deflectionAction'
-  | 'uniqueAutomationCondition'
+  | 'uniqueAutomationConditions'
   | 'childInOrder'
   | 'childrenReferences'
   | 'orderChildrenParent'
@@ -2718,7 +2718,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
-    uniqueAutomationCondition: { refType: BuiltinTypes.BOOLEAN },
+    uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },

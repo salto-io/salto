@@ -54,7 +54,30 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create references from field to profile and permission sets', async () => {
+    it('should not create references for new field with no access', async () => {
+      const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+          },
+        },
+      })
+      const [permissionSetInstanceAfter, profileInstanceAfter] = createTestInstances({
+        fieldPermissions: {
+          Account: {
+            testField__c: 'NoAccess',
+          },
+        },
+      })
+      const refs = await getAdditionalReferences([
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ after: field }),
+      ])
+
+      expect(refs).toBeEmpty()
+    })
+
+    it('should create references for new field with access enabled', async () => {
       const [permissionSetInstanceBefore, profileInstanceBefore] = createTestInstances({
         fieldPermissions: {
           Account: {
@@ -186,7 +209,7 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create a reference to addition', async () => {
+    it('should not create a reference to addition if neither default or visible', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         applicationVisibilities: {
         },
@@ -206,12 +229,60 @@ describe('getAdditionalReferences', () => {
         toChange({ after: customApp }),
       ]
       const refs = await getAdditionalReferences(changes)
+      expect(refs).toBeEmpty()
+    })
+
+    it('should create a reference to addition if default', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: true,
+            visible: false,
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: customApp }),
+      ]
+      const refs = await getAdditionalReferences(changes)
       expect(refs).toIncludeAllPartialMembers([
         { source: permissionSetInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
         { source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
       ])
     })
 
+    it('should create a reference to addition if visisble', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        applicationVisibilities: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        applicationVisibilities: {
+          SomeApplication: {
+            application: 'SomeApplication',
+            default: false,
+            visible: true,
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: customApp }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toIncludeAllPartialMembers([
+        { source: permissionSetInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
+        { source: profileInstanceAfter.elemID.createNestedID('applicationVisibilities', 'SomeApplication'), target: customApp.elemID },
+      ])
+    })
     it('should create a reference to modification', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         applicationVisibilities: {
@@ -260,7 +331,7 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create a reference to addition', async () => {
+    it('should not create a reference to addition if disabled', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         classAccesses: {
         },
@@ -270,6 +341,28 @@ describe('getAdditionalReferences', () => {
           SomeApexClass: {
             apexClass: 'SomeApexClass',
             enabled: false,
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: apexClass }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toBeEmpty()
+    })
+
+    it('should create a reference to addition if enabled', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        classAccesses: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        classAccesses: {
+          SomeApexClass: {
+            apexClass: 'SomeApexClass',
+            enabled: true,
           },
         },
       })
@@ -331,7 +424,7 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create a reference to addition', async () => {
+    it('should not create a reference to addition if disabled', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         flowAccesses: {
         },
@@ -340,6 +433,28 @@ describe('getAdditionalReferences', () => {
         flowAccesses: {
           SomeFlow: {
             enabled: false,
+            flow: 'SomeFlow',
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: flow }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toBeEmpty()
+    })
+
+    it('should create a reference to addition if enabled', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        flowAccesses: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        flowAccesses: {
+          SomeFlow: {
+            enabled: true,
             flow: 'SomeFlow',
           },
         },

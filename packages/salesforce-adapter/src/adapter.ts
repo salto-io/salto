@@ -17,6 +17,7 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
+  setPartialFetchData,
 } from '@salto-io/adapter-api'
 import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
@@ -442,7 +443,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      isPartial: this.userConfig.fetch?.target !== undefined,
+      partialFetchData: setPartialFetchData(this.userConfig.fetch?.target !== undefined),
     }
   }
 

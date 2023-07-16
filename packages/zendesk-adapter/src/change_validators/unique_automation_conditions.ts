@@ -36,7 +36,9 @@ const log = logger(module)
 const stringifyAutomationConditions = (automation: InstanceElement): string =>
   safeJsonStringify(
     automation.value.conditions,
-    // Elements in elementSource have unresolved references, we want to make sure we handle that
+    // ReferenceExpressions of elements from the elementSource are unresolved (meaning their values are undefined)
+    // ReferenceExpressions of elements from the changes are resolved (meaning their values are not undefined)
+    // Because of that, we need to replace the whole reference expression with the fullName, which is equal
     (_key, value) => (isReferenceExpression(value) ? value.elemID.getFullName() : value),
   )
 

@@ -35,9 +35,9 @@ describe('default automation removal change validator', () => {
       expect(changeErrors).toHaveLength(1)
       expect(changeErrors).toMatchObject([{
         elemID: defaultAutomation.elemID,
-        severity: 'Error',
+        severity: 'Warning',
         message: 'Cannot delete a default automation',
-        detailedMessage: 'The automation \'default\' is a default automation in Zendesk, and cannot be removed',
+        detailedMessage: 'The automation \'default\' is a default automation in Zendesk, and cannot be removed on a production environment',
       }])
     })
 

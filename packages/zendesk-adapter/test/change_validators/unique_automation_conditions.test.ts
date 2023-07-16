@@ -107,14 +107,14 @@ describe('duplicateAutomationConditionValidator', () => {
       {
         elemID: notUniqueAutomation1.elemID,
         severity: 'Error',
-        message: 'Automation\'s conditions is are unique',
-        detailedMessage: 'Automation \'zendesk.automation.instance.notUnique1\' has the same conditions as \'zendesk.automation.instance.notUnique2\', make sure the conditions are unique before deploying.',
+        message: 'Automation conditions are not unique',
+        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.notUnique2\', make sure the conditions are unique before deploying.',
       },
       {
         elemID: notUniqueAutomation2.elemID,
         severity: 'Error',
-        message: 'Automation\'s conditions is are unique',
-        detailedMessage: 'Automation \'zendesk.automation.instance.notUnique2\' has the same conditions as \'zendesk.automation.instance.notUnique1\', make sure the conditions are unique before deploying.',
+        message: 'Automation conditions are not unique',
+        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.notUnique1\', make sure the conditions are unique before deploying.',
       },
     ])
   })
@@ -136,8 +136,8 @@ describe('duplicateAutomationConditionValidator', () => {
       {
         elemID: notUniqueAutomation.elemID,
         severity: 'Error',
-        message: 'Automation\'s conditions is are unique',
-        detailedMessage: 'Automation \'zendesk.automation.instance.notUnique\' has the same conditions as \'zendesk.automation.instance.automation\', make sure the conditions are unique before deploying.',
+        message: 'Automation conditions are not unique',
+        detailedMessage: 'Automation has the same conditions as \'zendesk.automation.instance.automation\', make sure the conditions are unique before deploying.',
       },
     ])
   })

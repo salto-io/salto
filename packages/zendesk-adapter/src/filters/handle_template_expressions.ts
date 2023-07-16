@@ -229,6 +229,15 @@ const formulaToTemplate = (
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
     }
+    if (!_.isEmpty(dcPlaceholder) && enableMissingReferences) {
+      const missingInstance = createMissingInstance(
+        ZENDESK,
+        DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+        dcPlaceholder.slice(3) // slice dc. from the placeholder
+      )
+      missingInstance.value.placeholder = `{{${dcPlaceholder}}}`
+      return new ReferenceExpression(missingInstance.elemID, missingInstance)
+    }
     return expression
   }
   // The second part is a split that separates the now-marked ids, so they could be replaced
@@ -265,20 +274,25 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
 const replaceFormulasWithTemplates = async (
   instances: InstanceElement[], enableMissingReferences?: boolean
 ): Promise<void> => {
+  const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+
+  // Recursively replace formulas with templates
+  const formulaToTemplateValue = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      const newValues = value.map(innerValue =>
+        formulaToTemplateValue(innerValue))
+      return newValues
+    } if (_.isString(value)) {
+      return formulaToTemplate(value, instancesByType, enableMissingReferences)
+    }
+    return value
+  }
+
   try {
     (await getContainers(instances)).forEach(container => {
       const { fieldName } = container
-      const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
       container.values.forEach(value => {
-        if (Array.isArray(value[fieldName])) {
-          value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-            (_.isString(innerValue)
-              ? formulaToTemplate(innerValue, instancesByType, enableMissingReferences)
-              : innerValue))
-        } else if (value[fieldName]) {
-          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType,
-            enableMissingReferences)
-        }
+        value[fieldName] = formulaToTemplateValue(value[fieldName])
       })
     })
   } catch (e) {

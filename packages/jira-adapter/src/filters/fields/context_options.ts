@@ -147,11 +147,11 @@ const getAllOptionPaginator = async (paginator: clientUtils.Paginator, baseUrl: 
     pageSizeArgName: 'maxResults',
   }
 
-  const optionsPromise = toArrayAsync(paginator(
+  const options = await toArrayAsync(paginator(
     paginationArgs,
-    page => makeArray(page) as clientUtils.ResponseValue[]
+    page => makeArray(page.values) as clientUtils.ResponseValue[]
   ))
-  const values = (await optionsPromise).flatMap(lst => lst[0].values).filter(isOption)
+  const values = options.flat().filter(isOption)
   return values
 }
 
@@ -282,16 +282,13 @@ const reorderContextOptions = async (
       },
     }]
   ) : optionsGroups.map(group =>
-    _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => {
-      const ans = ({
-        url: `${baseUrl}/move`,
-        data: {
-          customFieldOptionIds: chunk.map(option => option.id),
-          position: index === 0 ? 'First' : 'Last',
-        },
-      })
-      return ans
-    }))
+    _.chunk(group, OPTIONS_MAXIMUM_BATCH_SIZE).map((chunk, index) => ({
+      url: `${baseUrl}/move`,
+      data: {
+        customFieldOptionIds: chunk.map(option => option.id),
+        position: index === 0 ? 'First' : 'Last',
+      },
+    })))
   await awu(requestBodies).flat().forEach(async body => client.put(body))
 }
 

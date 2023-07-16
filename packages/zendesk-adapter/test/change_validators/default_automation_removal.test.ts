@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
-import { defaultAutomationRemovalValidator } from '../../src/change_validators/default_automation_removal'
+import { defaultAutomationRemovalValidator } from '../../src/change_validators'
 import { AUTOMATION_TYPE_NAME, ZENDESK } from '../../src/constants'
 
 describe('default automation removal change validator', () => {
@@ -37,7 +37,7 @@ describe('default automation removal change validator', () => {
         elemID: defaultAutomation.elemID,
         severity: 'Warning',
         message: 'Cannot delete a default automation',
-        detailedMessage: 'The automation \'default\' is a default automation in Zendesk, and cannot be removed on a production environment',
+        detailedMessage: 'The automation is a default automation in Zendesk, and cannot be removed on a production environment',
       }])
     })
 

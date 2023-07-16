@@ -25,10 +25,10 @@ const defaultAutomationRemovalError = (automation: InstanceElement): ChangeError
   elemID: automation.elemID,
   severity: 'Warning',
   message: 'Cannot delete a default automation',
-  detailedMessage: `The automation '${automation.elemID.name}' is a default automation in Zendesk, and cannot be removed on a production environment`,
+  detailedMessage: 'The automation is a default automation in Zendesk, and cannot be removed on a production environment',
 })
 /**
- * Prevent the user from removing an automation that is default in Zendesk
+ * Warns the user if he is trying to remove a default automation, as it cannot be removed on a production environment
  */
 export const defaultAutomationRemovalValidator: ChangeValidator = async changes => {
   const defaultAutomationRemoval = changes.filter(isInstanceChange)

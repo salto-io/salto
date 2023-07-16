@@ -48,6 +48,7 @@ export const deployContextChange = async (
   change: Change<InstanceElement>,
   client: JiraClient,
   apiDefinitions: config.AdapterApiConfig,
+  paginator?: clientUtils.Paginator,
   elementsSource?: ReadOnlyElementsSource,
 ): Promise<void> => {
   const fieldsToIgnore = isAdditionChange(change) ? FIELDS_TO_IGNORE : [...FIELDS_TO_IGNORE, 'issueTypeIds', 'projectIds']
@@ -74,7 +75,7 @@ export const deployContextChange = async (
 
   await setContextField({ contextChange: change, fieldName: 'issueTypeIds', endpoint: 'issuetype', client, elementsSource })
   await setContextField({ contextChange: change, fieldName: 'projectIds', endpoint: 'project', client, elementsSource })
-  await setContextOptions(change, client, elementsSource)
+  await setContextOptions(change, client, elementsSource, paginator)
   await updateDefaultValues(change, client, elementsSource)
 }
 

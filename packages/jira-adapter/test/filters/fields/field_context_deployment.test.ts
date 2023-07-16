@@ -159,6 +159,7 @@ describe('fieldContextDeployment', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
         expect.anything(),
       )
     })
@@ -174,6 +175,7 @@ describe('fieldContextDeployment', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
         expect.anything(),
       )
     })
@@ -204,6 +206,7 @@ describe('fieldContextDeployment', () => {
         change,
         client,
         getDefaultConfig({ isDataCenter: false }).apiDefinitions,
+        paginator,
         expect.anything(),
       )
     })

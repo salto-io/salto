@@ -216,10 +216,7 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean)
 }
 
 const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
-  // In retrieve, the fullName of unmanaged Instances should not contain the namespace prefix.
-  const correctFullName = obj.manageableState === 'unmanaged'
-    ? obj.fullName
-    : getFullName(obj, addNamespacePrefixToFullName)
+  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
   return {
     ...obj,
     fullName: correctFullName,

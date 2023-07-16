@@ -215,11 +215,15 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean)
   return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
-const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
-  // In retrieve, the fullName of unmanaged Instances should not contain the namespace prefix.
-  const correctFullName = obj.manageableState === 'unmanaged'
-    ? obj.fullName
-    : getFullName(obj, addNamespacePrefixToFullName)
+const getPropsWithFullName = (
+  obj: FileProperties,
+  addNamespacePrefixToFullName: boolean,
+  orgNamespace?: string
+): FileProperties => {
+  // Do not add the namespace to the fullName if the Instance is of the current org namespace.
+  const correctFullName = obj.namespacePrefix !== orgNamespace
+    ? getFullName(obj, addNamespacePrefixToFullName)
+    : obj.fullName
   return {
     ...obj,
     fullName: correctFullName,
@@ -362,7 +366,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
+      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))
       .value()
   }
 

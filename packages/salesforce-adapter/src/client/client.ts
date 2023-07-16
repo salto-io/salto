@@ -461,6 +461,7 @@ export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
+  orgNamespace = ''
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
   private readonly setFetchPollingTimeout: () => void
@@ -542,6 +543,8 @@ export default class SalesforceClient {
   @requiresLogin()
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
+    this.orgNamespace = describeResult.organizationNamespace
+    log.debug('describeResult: %o', _.omit(describeResult, 'metadataObjects'))
     return flatValues((describeResult).metadataObjects)
   }
 

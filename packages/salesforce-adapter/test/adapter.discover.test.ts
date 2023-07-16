@@ -557,20 +557,14 @@ describe('SalesforceAdapter fetch', () => {
     describe('with complicated metadata instance', () => {
       const LAYOUT_NAME = 'Order-Order Layout'
       const INSTALLED_PACKAGE_NAMESPACE_PREFIX = 'SBQQ'
-      const CURRENT_ORG_NAMESPACE = 'mynamespace'
       const INSTALLED_PACKAGE_LAYOUT_NAME = 'SBQQ__SearchFilter__c-SearchFilter Layout'
 
       let fromRetrieveResultSpy: jest.SpyInstance
 
-      const createLayoutInstance = (
-        layoutName: string,
-        manageableState: string,
-        namespacePrefix: string = CURRENT_ORG_NAMESPACE
-      ): MockInstanceParams => ({
+      const createLayoutInstance = (layoutName: string, namespacePrefix?: string): MockInstanceParams => ({
         props: {
           fullName: layoutName,
           fileName: `layouts/${layoutName}.layout`,
-          manageableState,
           namespacePrefix,
         },
         values: {
@@ -649,8 +643,8 @@ describe('SalesforceAdapter fetch', () => {
             ],
           },
           [
-            createLayoutInstance(LAYOUT_NAME, 'unmanaged', CURRENT_ORG_NAMESPACE),
-            createLayoutInstance(INSTALLED_PACKAGE_LAYOUT_NAME, 'installed', INSTALLED_PACKAGE_NAMESPACE_PREFIX),
+            createLayoutInstance(LAYOUT_NAME),
+            createLayoutInstance(INSTALLED_PACKAGE_LAYOUT_NAME, INSTALLED_PACKAGE_NAMESPACE_PREFIX),
           ],
         )
         fromRetrieveResultSpy = jest.spyOn(xmlTransformerModule, 'fromRetrieveResult')

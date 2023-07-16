@@ -411,7 +411,7 @@ export const mockJsforce: () => MockInterface<Connection> = () => ({
   metadata: {
     pollInterval: 1000,
     pollTimeout: 10000,
-    describe: mockFunction<Metadata['describe']>().mockResolvedValue({ metadataObjects: [] }),
+    describe: mockFunction<Metadata['describe']>().mockResolvedValue({ metadataObjects: [], organizationNamespace: '' }),
     describeValueType: mockFunction<Metadata['describeValueType']>().mockResolvedValue(
       mockDescribeValueResult({ valueTypeFields: [] })
     ),

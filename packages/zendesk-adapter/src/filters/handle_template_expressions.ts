@@ -276,16 +276,11 @@ const replaceFormulasWithTemplates = async (
 ): Promise<void> => {
   const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
 
-  // Recursively replace formulas with templates
   const formulaToTemplateValue = (value: unknown): unknown => {
     if (Array.isArray(value)) {
-      const newValues = value.map(innerValue =>
-        formulaToTemplateValue(innerValue))
-      return newValues
-    } if (_.isString(value)) {
-      return formulaToTemplate(value, instancesByType, enableMissingReferences)
+      return value.map(innerValue => formulaToTemplateValue(innerValue))
     }
-    return value
+    return _.isString(value) ? formulaToTemplate(value, instancesByType, enableMissingReferences) : value
   }
 
   try {

@@ -38,7 +38,7 @@ const stringifyAutomationConditions = (automation: InstanceElement): string =>
     automation.value.conditions,
     // ReferenceExpressions of elements from the elementSource are unresolved (meaning their values are undefined)
     // ReferenceExpressions of elements from the changes are resolved (meaning their values are not undefined)
-    // Because of that, we need to replace the whole reference expression with the fullName, which is equal
+    // Because of that we stringify manually (and unable to use elementExpressionStringifyReplacer)
     (_key, value) => (isReferenceExpression(value) ? value.elemID.getFullName() : value),
   )
 
@@ -46,6 +46,11 @@ const stringifyAutomationConditions = (automation: InstanceElement): string =>
  * Prevent deployment and activation of an automation with the same conditions as another active automation
  */
 export const uniqueAutomationConditionsValidator: ChangeValidator = async (changes, elementSource) => {
+  if (elementSource === undefined) {
+    log.error('Failed to run duplicateAutomationConditionValidator because element source is undefined')
+    return []
+  }
+
   const changedAutomations = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
@@ -53,13 +58,7 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
     .filter(instance => instance.value.active === true)
 
-  if (elementSource === undefined) {
-    log.error('Failed to run duplicateAutomationConditionValidator because element source is undefined')
-    return []
-  }
-
-  const idsIterator = awu(await elementSource.list())
-  const elementSourceAutomations = await awu(idsIterator)
+  const elementSourceActiveAutomations = await awu(await elementSource.list())
     .filter(id => id.typeName === AUTOMATION_TYPE_NAME)
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
@@ -69,7 +68,7 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
 
   // We map all automations to their conditions in advance, to avoid running on the whole list every time
   const conditionsToAutomations = _.groupBy(
-    _.uniqBy([...changedAutomations, ...elementSourceAutomations], automation => automation.elemID.getFullName()),
+    _.uniqBy([...changedAutomations, ...elementSourceActiveAutomations], automation => automation.elemID.getFullName()),
     stringifyAutomationConditions,
   )
 
@@ -85,8 +84,8 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
       return {
         elemID: automation.elemID,
         severity: 'Error',
-        message: 'Automation\'s conditions is are unique',
-        detailedMessage: `Automation '${automation.elemID.getFullName()}' has the same conditions as '${equalAutomations}', make sure the conditions are unique before deploying.`,
+        message: 'Automation conditions are not unique',
+        detailedMessage: `Automation has the same conditions as '${equalAutomations}', make sure the conditions are unique before deploying.`,
       }
     }
     return undefined

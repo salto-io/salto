@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, createSaltoElementError, isSaltoError, isSaltoElementError, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, isModificationChange, isEqualValues, ModificationChange, AdditionChange, ElemID, createSaltoElementError, isSaltoError, SaltoError } from '@salto-io/adapter-api'
 import { config as configUtils, deployment, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'

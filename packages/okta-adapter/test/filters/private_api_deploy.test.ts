@@ -76,7 +76,7 @@ describe('privateApiDeploymentFilter', () => {
       expect(res.deployResult.errors[0]).toEqual({
         message: 'usePrivateApi config option must be enabled in order to deploy this change',
         severity: 'Error',
-        elemID: thirdPartyAdminAfter.elemID
+        elemID: thirdPartyAdminAfter.elemID,
       })
     })
   })

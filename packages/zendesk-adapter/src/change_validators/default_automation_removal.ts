@@ -19,7 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE_NAME } from '../constants'
 
-// Currently we don't have a way of knowing if the environment is production or not (SALTO-???)
+// Currently we don't have a way of knowing if the environment is production or not (SALTO-4375)
 // So we will just warn the user about the deletion, and he will have to decide if he wants to continue
 const defaultAutomationRemovalError = (automation: InstanceElement): ChangeError => ({
   elemID: automation.elemID,

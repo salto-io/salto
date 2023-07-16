@@ -19,21 +19,22 @@ import {
 } from '@salto-io/adapter-api'
 import { AUTOMATION_TYPE_NAME } from '../constants'
 
+// Currently we don't have a way of knowing if the environment is production or not (SALTO-???)
+// So we will just warn the user about the deletion, and he will have to decide if he wants to continue
 const defaultAutomationRemovalError = (automation: InstanceElement): ChangeError => ({
   elemID: automation.elemID,
-  severity: 'Error',
+  severity: 'Warning',
   message: 'Cannot delete a default automation',
-  detailedMessage: `The automation '${automation.elemID.name}' is a default automation in Zendesk, and cannot be removed`,
+  detailedMessage: `The automation '${automation.elemID.name}' is a default automation in Zendesk, and cannot be removed on a production environment`,
 })
-
 /**
  * Prevent the user from removing an automation that is default in Zendesk
  */
 export const defaultAutomationRemovalValidator: ChangeValidator = async changes => {
-  const automationChanges = changes.filter(isInstanceChange)
-    .filter(change => getChangeData(change).elemID.typeName === AUTOMATION_TYPE_NAME)
-
-  const defaultAutomationRemoval = automationChanges.filter(isRemovalChange).map(getChangeData)
+  const defaultAutomationRemoval = changes.filter(isInstanceChange)
+    .filter(isRemovalChange)
+    .map(getChangeData)
+    .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
     .filter(automation => automation.value.default === true)
 
   return defaultAutomationRemoval.map(defaultAutomationRemovalError)

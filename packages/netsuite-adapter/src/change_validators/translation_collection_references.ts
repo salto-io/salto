@@ -24,11 +24,11 @@ import { NetsuiteChangeValidator } from './types'
 const { isDefined } = values
 const CUSTOM_COLLECTION = 'custcollection'
 
-const toChangeError = (element: Element, referenceName: string): ChangeError => ({
+const toChangeError = (element: Element, references: string[]): ChangeError => ({
   elemID: element.elemID,
   severity: 'Error',
   message: 'Cannot deploy element with invalid translation reference',
-  detailedMessage: `Cannot deploy this element because it contains a reference to the '${referenceName}' translation collection that does not exist in the environment.`
+  detailedMessage: `Cannot deploy this element because it contains references to the following translation collections that do not exist in your environment: ${references.map(reference => `'${reference}'`).join(', ')}.`
    + ' To proceed with the deployment, please replace the reference with a valid string. After the deployment, you can reconnect the elements in the NetSuite UI.',
 })
 
@@ -37,24 +37,26 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
     .filter(isAdditionOrModificationChange)
     .map(getChangeData)
     .filter(isStandardInstanceOrCustomRecordType)
-    .flatMap(element => {
-      const changeErrors: ChangeError[] = []
+    .map(element => {
+      const customCollectionReferences: string[] = []
       walkOnElement({
         element,
         func: ({ value }) => {
           if (_.isString(value)) {
-            changeErrors.push(
+            customCollectionReferences.push(
               ...captureServiceIdInfo(value)
                 .map(serviceIdInfo => serviceIdInfo.serviceId)
                 .filter(serviceId => serviceId.includes(CUSTOM_COLLECTION))
-                .map(serviceId => toChangeError(element, serviceId))
+                .map(serviceId => serviceId.split('.')[0])
             )
-            return WALK_NEXT_STEP.EXIT
+            return WALK_NEXT_STEP.SKIP
           }
           return WALK_NEXT_STEP.RECURSE
         },
       })
-      return changeErrors
+      return customCollectionReferences.length > 0
+        ? toChangeError(element, customCollectionReferences)
+        : undefined
     })
     .filter(isDefined)
 )

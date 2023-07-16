@@ -89,7 +89,7 @@ import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
 import appOwnedConvertListToMapFilter from './filters/app_owned_convert_list_to_map'
-import appsFilter from './filters/app'
+import appInstallationsFilter from './filters/app_installations'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
@@ -217,7 +217,7 @@ export const DEFAULT_FILTERS = [
   addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
-  appsFilter,
+  appInstallationsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,

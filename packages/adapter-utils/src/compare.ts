@@ -107,7 +107,7 @@ const compareListWithOrderMatching = ({
 /**
  * Create detailed changes from change data (before and after values)
  */
-const getValuesChanges = ({
+export const getValuesChanges = ({
   id, before, after, options, beforeId, afterId,
 }: {
   id: ElemID

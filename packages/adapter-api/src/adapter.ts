@@ -23,12 +23,20 @@ import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
+export type PartialFetchData = {
+  isPartial: true
+  deletedElements?: ElemID[]
+}
+
+export const setPartialFetchData = (isPartial: boolean, deletedElements?: ElemID[]): PartialFetchData | undefined => (
+  isPartial ? { isPartial, deletedElements } : undefined
+)
+
 export interface FetchResult {
   elements: Element[]
-  deletedElements?: ElemID[]
   errors?: SaltoError[]
   updatedConfig?: { config: InstanceElement[]; message: string }
-  isPartial?: boolean
+  partialFetchData?: PartialFetchData
 }
 
 export type Group = {

@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import {
-  FetchResult, AdapterOperations, DeployOptions,
-  ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
+  FetchResult, AdapterOperations, DeployOptions, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter,
   FetchOptions, DeployModifiers, getChangeData, isObjectType, isInstanceElement, ElemID, isSaltoElementError,
+  setPartialFetchData,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
@@ -337,7 +337,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     // we calculate deleted elements only in partial-fetch mode
     const { deletedElements, errors: deletedElementErrors }: FetchDeletionResult = (
-      isPartial && this.withPartialDeletion === true) ? await getDeletedElements({
+      isPartial && this.withPartialDeletion !== false) ? await getDeletedElements({
         client: this.client,
         elementsSource: this.elementsSource,
         fetchQuery,
@@ -424,10 +424,12 @@ export default class NetsuiteAdapter implements AdapterOperations {
 
     const updatedConfig = getConfigFromConfigChanges(failures, this.userConfig)
 
+    const partialFetchData = setPartialFetchData(isPartial, deletedElements)
+
     if (_.isUndefined(updatedConfig)) {
-      return { elements, deletedElements, isPartial, errors: deletedElementErrors }
+      return { elements, errors: deletedElementErrors, partialFetchData }
     }
-    return { elements, deletedElements, updatedConfig, isPartial, errors: deletedElementErrors }
+    return { elements, updatedConfig, errors: deletedElementErrors, partialFetchData }
   }
 
   private async runSuiteAppOperations(

@@ -220,8 +220,9 @@ const getPropsWithFullName = (
   addNamespacePrefixToFullName: boolean,
   orgNamespace?: string
 ): FileProperties => {
-  // Do not add the namespace to the fullName if the Instance is of the current org namespace.
-  const correctFullName = obj.namespacePrefix !== orgNamespace
+  // Do not run getFullName logic if the namespace of the instance is the current org namespace.
+  // If we couldn't determine the namespace of the org, we will run the logic for all the instances.
+  const correctFullName = orgNamespace === undefined || obj.namespacePrefix !== orgNamespace
     ? getFullName(obj, addNamespacePrefixToFullName)
     : obj.fullName
   return {
@@ -364,6 +365,9 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
+    if (client.orgNamespace === undefined) {
+      log.warn('Expected orgNamespace to be defined when listing metadata instances')
+    }
     return _(res)
       .uniqBy(file => file.fullName)
       .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))

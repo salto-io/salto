@@ -461,7 +461,7 @@ export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions
   private readonly conn: Connection
   private isLoggedIn = false
-  orgNamespace = ''
+  orgNamespace?: string
   private readonly credentials: Credentials
   private readonly config?: SalesforceClientConfig
   private readonly setFetchPollingTimeout: () => void

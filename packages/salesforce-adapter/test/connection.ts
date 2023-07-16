@@ -26,7 +26,8 @@ export const MOCK_INSTANCE_URL = 'https://url.com/'
 
 export type MockDescribeResultInput = Pick<MetadataObject, 'xmlName'> & Partial<MetadataObject>
 export const mockDescribeResult = (
-  ...objects: MockDescribeResultInput[]
+  objects: MockDescribeResultInput[],
+  organizationNamespace = '',
 ): DescribeMetadataResult => ({
   metadataObjects: objects.map(props => ({
     childXmlNames: [],
@@ -36,7 +37,7 @@ export const mockDescribeResult = (
     suffix: '.file',
     ...props,
   })),
-  organizationNamespace: '',
+  organizationNamespace,
   testRequired: false,
   partialSaveAllowed: true,
 })

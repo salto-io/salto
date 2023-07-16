@@ -196,7 +196,7 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   getInnerTypeSync(): TypeElement {
     const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
     if (!isType(refInnerTypeVal)) {
-      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously`)
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
     }
     return refInnerTypeVal
   }
@@ -264,7 +264,7 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   getInnerTypeSync(): TypeElement {
     const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
     if (!isType(refInnerTypeVal)) {
-      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously`)
+      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously as non-TypeElement`)
     }
     return refInnerTypeVal
   }
@@ -320,7 +320,11 @@ export class Field extends Element {
   }
 
   getTypeSync(): TypeElement {
-    return this.refType.getResolvedValueSync()
+    const type = this.refType.getResolvedValueSync()
+    if (!isType(type)) {
+      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
+    }
+    return type
   }
 
   /**

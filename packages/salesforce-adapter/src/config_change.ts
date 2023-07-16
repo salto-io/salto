@@ -209,7 +209,6 @@ export const createListMetadataObjectsConfigChange = (res: ListMetadataQuery):
   ConfigChangeSuggestion => createSkippedListConfigChange({ type: res.type, instance: res.folder })
 
 export const createRetrieveConfigChange = (result: RetrieveResult): ConfigChangeSuggestion[] => {
-  log.debug('Creating config changes for failed retrieve result %o', result)
   const configChanges = makeArray(result.messages)
     .map((msg: Values) => constants.RETRIEVE_LOAD_OF_METADATA_ERROR_REGEX.exec(msg.problem ?? ''))
     .filter(regexRes => !_.isUndefined(regexRes?.groups))

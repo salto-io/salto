@@ -21,8 +21,7 @@ import { extractTemplate, replaceTemplatesWithValues, resolveTemplates } from '@
 import _ from 'lodash'
 import { FilterCreator } from '../filter'
 import { FETCH_CONFIG, IdLocator } from '../config'
-import { APP_INSTALLATION_TYPE_NAME } from './app'
-import { TICKET_FIELD_TYPE_NAME } from '../constants'
+import { APP_INSTALLATION_TYPE_NAME, TICKET_FIELD_TYPE_NAME } from '../constants'
 
 const DELIMITERS = /(\\n | ,)/g
 const CUSTOM_OPTION_TYPE = 'ticket_field__custom_field_options'

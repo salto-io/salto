@@ -131,7 +131,7 @@ const getFieldsPathHints = (
 }
 
 
-const getTypePathHints = (
+const getObjectTypePathHints = (
   elementFragments: Fragment<Element>[]
 ): PathHint[] => {
   const annoTypesHints = getAnnotationTypesPathHints(elementFragments)
@@ -174,7 +174,7 @@ const getElementPathHints = (
   if (isInstanceElement(elementFragments[0].value)) {
     return getInstancePathHints(elementFragments)
   }
-  return getTypePathHints(elementFragments)
+  return getObjectTypePathHints(elementFragments)
 }
 
 export const getElementsPathHints = (unmergedElements: Element[]):

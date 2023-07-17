@@ -54,9 +54,13 @@ const createAutomationInstance = (name: string, conds: Value): InstanceElement =
       conditions: _.cloneDeep(conds),
     },
   )
-const automationInstance = createAutomationInstance('automation', conditions)
 
 describe('duplicateAutomationConditionValidator', () => {
+  let automationInstance: InstanceElement
+  beforeEach(() => {
+    automationInstance = createAutomationInstance('automation', conditions)
+  })
+
   it('should not return errors for automations with unique conditions', async () => {
     const uniqueAutomation1 = createAutomationInstance('unique1', 'unique1')
     const uniqueAutomation2 = createAutomationInstance('unique2', 'unique2')

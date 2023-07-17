@@ -16,6 +16,7 @@
 import _ from 'lodash'
 import { isInstanceElement, Element } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { config as configUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../filter'
 import { API_DEFINITIONS_CONFIG } from '../config'
 
@@ -36,8 +37,10 @@ const filterCreator: FilterCreator = ({ config }) => ({
     const shouldRemoveElement = (element: Element): boolean =>
       (isInstanceElement(element)
         && !CAN_NOT_OMIT_INACTIVE_TYPE_NAMES.includes(element.elemID.typeName)
-        && config[API_DEFINITIONS_CONFIG]
-          .types[element.elemID.typeName]?.transformation?.omitInactive === true
+        && configUtils.getConfigWithDefault(
+          config[API_DEFINITIONS_CONFIG].types?.[element.elemID.typeName]?.transformation,
+          config[API_DEFINITIONS_CONFIG].typeDefaults.transformation
+        ).omitInactive === true
         && (element.elemID.typeName === 'webhook'
           ? element.value.status === 'inactive'
           : element.value.active === false))

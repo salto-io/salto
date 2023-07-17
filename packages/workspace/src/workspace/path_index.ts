@@ -90,17 +90,10 @@ const getAnnotationTypesPathHints = (
 
 const getAnnotationPathHints = (
   fragments: Fragment<Element>[],
-): PathHint[] => {
-  const elem = fragments[0].value
-  // I need a comment
-  if (isInstanceElement(elem)) {
-    return []
-  }
-  return getValuePathHints(
-    fragments.filter(f => !_.isEmpty(f.value.annotations)).map(f => ({ value: f.value.annotations, path: f.path })),
-    elem.elemID.createNestedID('attr'),
-  )
-}
+): PathHint[] => getValuePathHints(
+  fragments.filter(f => !_.isEmpty(f.value.annotations)).map(f => ({ value: f.value.annotations, path: f.path })),
+  fragments[0].value.elemID.createNestedID('attr'),
+)
 
 const getFieldPathHints = (
   fragments: Fragment<Field>[],
@@ -170,7 +163,6 @@ const getElementPathHints = (
       value: [elementFragments[0].path],
     }]
   }
-  // In instances the elemIds of values and attributes are not seperated
   if (isInstanceElement(elementFragments[0].value)) {
     return getInstancePathHints(elementFragments)
   }

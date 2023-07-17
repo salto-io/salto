@@ -403,7 +403,7 @@ export default class SuiteAppClient {
       }
       return result
     } catch (e) {
-      const errorMessage = `${operation} operation failed. Recieved the following error: ${e.message}`
+      const errorMessage = `${operation} operation failed. Received the following error: ${e.message}`
       log.error(errorMessage)
       throw Error(errorMessage)
     }

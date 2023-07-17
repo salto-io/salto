@@ -15,6 +15,7 @@
 */
 import { ObjectType, ElemID, InstanceElement } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
+import _ from 'lodash'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../../src/config'
 import { ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_inactive'
@@ -72,13 +73,27 @@ describe('omit inactive', () => {
   })
 
   describe('onFetch', () => {
-    it('should omit inactive instances if the omitInactive is true', async () => {
+    it('should omit inactive instances if the omitInactive is true in their type config', async () => {
       const elements = [inst1, inst2, inst3, inst4, inst5, webhook1, webhook2, webhook3]
       await filter.onFetch(elements)
       expect(elements.map(elem => elem.elemID.getFullName()))
         .toEqual([
           inst1.elemID.getFullName(),
           inst3.elemID.getFullName(),
+          inst5.elemID.getFullName(),
+          webhook1.elemID.getFullName(),
+          webhook3.elemID.getFullName(),
+        ])
+    })
+    it('should omit inactive instances if omitInactive in typeDefaults is true', async () => {
+      const config = _.cloneDeep(DEFAULT_CONFIG)
+      config[API_DEFINITIONS_CONFIG].typeDefaults.transformation.omitInactive = true
+      const omitFilter = filterCreator(createFilterCreatorParams({ config })) as FilterType
+      const elements = [inst1, inst2, inst3, inst4, inst5, webhook1, webhook2, webhook3]
+      await omitFilter.onFetch(elements)
+      expect(elements.map(elem => elem.elemID.getFullName()))
+        .toEqual([
+          inst1.elemID.getFullName(),
           inst5.elemID.getFullName(),
           webhook1.elemID.getFullName(),
           webhook3.elemID.getFullName(),

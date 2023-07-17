@@ -19,7 +19,13 @@ import {
   ReadOnlyElementsSource,
   setPartialFetchData,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  filter,
+  logDuration,
+  resolveChangeElement,
+  restoreChangeElement,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -451,6 +457,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
+    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope ${safeJsonStringify(changeGroup.changes.map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()
@@ -458,6 +465,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
+    log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 
     let deployResult: DeployResult
     if (await isCustomObjectInstanceChanges(resolvedChanges)) {
@@ -478,9 +486,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
           this.userConfig.client?.deploy?.quickDeployParams)
     }
+    log.debug(`received deployResult for group ${changeGroup.groupID}`)
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    log.debug(`onDeploy of group ${changeGroup.groupID} finished`)
 
     const sourceChanges = _.keyBy(
       changeGroup.changes,

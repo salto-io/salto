@@ -101,6 +101,14 @@ describe('handle templates filter', () => {
     placeholder: '{{dc.dynamic-content-test}}',
   })
 
+  const missingDynamicContentRecord = new InstanceElement(
+    'missing_not_exists',
+    dynamicContentType,
+    { placeholder: '{{dc.not_exists}}' },
+    undefined,
+    { salto_missing_ref: true }
+  )
+
   const webhookType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'webhook'),
     fields: {
@@ -200,7 +208,14 @@ describe('handle templates filter', () => {
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1455}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
-  const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
+  const trigger = new InstanceElement('trigger', triggerType, { id: 1005,
+    actions: [{
+      field: 'notification_webhook',
+      value: [
+        ['my test', '{{dc.dynamic_content_test}}'],
+        ['dcno', '{{dc.not_exists}}'],
+      ],
+    }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
   const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
@@ -263,9 +278,16 @@ describe('handle templates filter', () => {
         `endpoint: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
-      expect(fetchedTrigger?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
-        `ticket: {{${TICKET_TICKET_FIELD}_`,
-        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      expect(fetchedTrigger?.value.actions[0].value).toEqual([
+        [
+          'my test',
+          new TemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord), '}}'] }),
+        ],
+        [
+          'dcno',
+          new TemplateExpression({ parts: ['{{', new ReferenceExpression(missingDynamicContentRecord.elemID, missingDynamicContentRecord), '}}'] }),
+        ],
+      ])
       const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
       expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         `ticket: {{${TICKET_TICKET_FIELD}_`,

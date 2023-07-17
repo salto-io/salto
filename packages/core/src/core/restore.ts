@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { ElemID, DetailedChange, isRemovalChange } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
+import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 import { ChangeWithDetails } from './plan/plan_item'
 
@@ -32,13 +32,9 @@ const splitDetailedChangeByPath = async (
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {
-    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHints = await pathIndex.getFromPathIndex(id, index)
-      return idHints.some(idHint => _.isEqual(idHint, hint))
-    }
     const filteredChange = await applyFunctionToChangeData(
       change,
-      async changeData => filterByID(change.id, changeData, filterByPathHint),
+      async changeData => filterByID(change.id, changeData, id => filterByPathHint(index, hint, id)),
     )
     return {
       ...filteredChange,

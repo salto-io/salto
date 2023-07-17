@@ -14,13 +14,14 @@
 * limitations under the License.
 */
 
-import { Change, InstanceElement, ObjectType, isInstanceElement, DeployResult, getChangeData, SaltoError } from '@salto-io/adapter-api'
+import { Change, InstanceElement, ObjectType, isInstanceElement, getChangeData, SaltoError } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { BRAND_LOGO_TYPE_NAME, BRAND_THEME_TYPE_NAME, FAV_ICON_TYPE_NAME } from '../constants'
 import { FilterCreator } from '../filter'
 import { LOGO_TYPES_TO_VALUES, createFileType, deployLogo, getLogo } from '../logo'
 import OktaClient from '../client/client'
+import { deployChanges } from '../deployment'
 
 const logoTypeNames = [BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME]
 
@@ -43,34 +44,6 @@ const getBrandThemeFile = async (
   })
 }
 
-const deployBrandThemeFiles = async (
-  changes: Change<InstanceElement>[],
-  client: OktaClient,
-): Promise<{
-  deployResult: DeployResult
-  leftoverChanges: Change[]
-}> => {
-  const [brandLogoChanges, leftoverChanges] = _.partition(
-    changes,
-    change => logoTypeNames.includes(getChangeData(change).elemID.typeName),
-  )
-  const deployLogoResults = await Promise.all(brandLogoChanges.map(async change => {
-    const deployResult = await deployLogo(change, client)
-    return deployResult === undefined ? change : deployResult
-  }))
-
-  const [deployLogoErrors, successfulChanges] = _.partition(
-    deployLogoResults,
-    _.isError,
-  )
-  return {
-    deployResult: {
-      appliedChanges: successfulChanges,
-      errors: deployLogoErrors,
-    },
-    leftoverChanges,
-  }
-}
 const toSaltoError = (err: Error): SaltoError => ({
   message: `Failed to fetch brandTheme file. ${err.message}`,
   severity: 'Warning',
@@ -100,7 +73,22 @@ const brandThemeFilesFilter: FilterCreator = ({ client }) => ({
     const err = fetchErrors.map(toSaltoError)
     return { errors: err }
   },
-  deploy: async (changes: Change<InstanceElement>[]) => deployBrandThemeFiles(changes, client),
+  deploy: async (changes: Change<InstanceElement>[]) => {
+    const [brandLogoChanges, leftoverChanges] = _.partition(
+      changes,
+      change => logoTypeNames.includes(getChangeData(change).elemID.typeName),
+    )
+
+    const deployResult = await deployChanges(
+      brandLogoChanges,
+      async change => deployLogo(change, client)
+    )
+
+    return {
+      leftoverChanges,
+      deployResult,
+    }
+  },
 })
 
 export default brandThemeFilesFilter

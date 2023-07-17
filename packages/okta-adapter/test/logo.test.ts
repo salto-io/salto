@@ -15,6 +15,8 @@
 */
 
 import { ElemID, BuiltinTypes, CORE_ANNOTATIONS, ObjectType, InstanceElement, ReferenceExpression, StaticFile, toChange } from '@salto-io/adapter-api'
+import { client as clientUtils } from '@salto-io/adapter-components'
+import { MockInterface } from '@salto-io/test-utils'
 import { TYPES_PATH, SUBTYPES_PATH } from '@salto-io/adapter-components/src/elements'
 import OktaClient from '../src/client/client'
 import { APPLICATION_TYPE_NAME, APP_LOGO_TYPE_NAME, LINKS_FIELD, OKTA } from '../src/constants'
@@ -114,36 +116,55 @@ describe('logo filter', () => {
     })
   })
   describe('deploy logo', () => {
+    let mockConnection: MockInterface<clientUtils.APIConnection>
+    const appLogoInstance = new InstanceElement(
+      'app1',
+      appLogoType,
+      {
+        id: '111',
+        fileName: `${fileName}.${contentType}`,
+        contentType,
+        content: new StaticFile({
+          filepath: 'okta/AppLogo/app1.png', encoding: 'binary', content,
+        }),
+      },
+      undefined,
+      {
+        [CORE_ANNOTATIONS.PARENT]: [
+          new ReferenceExpression(appInstance.elemID, appInstance),
+        ],
+      }
+    )
+    beforeEach(() => {
+      jest.clearAllMocks()
+      const { client: cli, connection } = mockClient()
+      mockConnection = connection
+      client = cli
+    })
     it('should call send Logo Request', async () => {
-      const mockCli = mockClient()
-      client = mockCli.client
-      const mockPost = jest.spyOn(client, 'post')
-      const appLogoInstance = new InstanceElement(
-        'app1',
-        appLogoType,
-        {
-          id: '111',
-          fileName: `${fileName}.${contentType}`,
-          contentType,
-          content: new StaticFile({
-            filepath: 'okta/AppLogo/app1.png', encoding: 'binary', content,
-          }),
-        },
-        undefined,
-        {
-          [CORE_ANNOTATIONS.PARENT]: [
-            new ReferenceExpression(appInstance.elemID, appInstance),
-          ],
-        }
-      )
+      const mockPost = mockConnection.post
       const appLogoChange = toChange({ after: appLogoInstance })
       await deployLogo(appLogoChange, client)
       expect(mockPost).toHaveBeenCalledTimes(1)
-      expect(mockPost).toHaveBeenCalledWith({
-        url: '/api/v1/apps/11/logo',
-        data: expect.anything(),
-        headers: expect.anything(),
-      })
+      expect(mockPost).toHaveBeenCalledWith(
+        '/api/v1/apps/11/logo',
+        expect.anything(),
+        expect.anything(),
+      )
+    })
+    it('should throw in case of error', async () => {
+      const mockPost = mockConnection.post
+      mockPost.mockRejectedValue(new clientUtils.HTTPError('message', {
+        status: 400,
+        data: {
+          errorSummary: 'some okta error',
+          errorCauses: [{ errorSummary: 'cause1' }, { errorSummary: 'cause2' }],
+        },
+      }))
+      const appLogoChange = toChange({ after: appLogoInstance })
+      await expect(() => deployLogo(appLogoChange, client)).rejects.toThrow(
+        new Error('Deployment of AppLogo instance app1 failed with status code 400: some okta error. More info: cause1,cause2')
+      )
     })
   })
 })

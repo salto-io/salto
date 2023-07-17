@@ -68,6 +68,7 @@ import {
   featureActivationValidator,
   deflectionActionValidator,
   standardFieldsValidator,
+  uniqueAutomationConditionsValidator,
   defaultAutomationRemovalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -149,6 +150,7 @@ export default ({
     featureActivation: featureActivationValidator,
     deflectionAction: deflectionActionValidator,
     standardFields: standardFieldsValidator,
+    uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,

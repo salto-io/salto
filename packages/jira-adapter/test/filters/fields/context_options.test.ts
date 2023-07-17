@@ -21,6 +21,7 @@ import { setContextOptions, setOptionTypeDeploymentAnnotations } from '../../../
 import { JIRA } from '../../../src/constants'
 import JiraClient from '../../../src/client/client'
 import { mockClient } from '../../utils'
+import { JSP_API_HEADERS } from '../../../src/client/headers'
 
 describe('context options', () => {
   let client: JiraClient
@@ -28,6 +29,7 @@ describe('context options', () => {
   let parentField: InstanceElement
   let contextInstance: InstanceElement
   let elementSource: ReadOnlyElementsSource
+  let paginator: clientUtils.Paginator
 
   const generateOptions = (count: number): Values =>
     Array.from({ length: count }, (_, i) => ({
@@ -35,6 +37,16 @@ describe('context options', () => {
         value: `p${i}`,
         disabled: false,
         position: i,
+      },
+    })).reduce((acc, option) => ({ ...acc, ...option }), {})
+
+  const generateOptionsWithId = (count: number): Values =>
+    Array.from({ length: count }, (_, i) => ({
+      [`p${i}`]: {
+        value: `p${i}`,
+        disabled: false,
+        position: i,
+        id: `100${i}`,
       },
     })).reduce((acc, option) => ({ ...acc, ...option }), {})
 
@@ -633,6 +645,188 @@ describe('context options', () => {
       })
 
       await setOptionTypeDeploymentAnnotations(contextType)
+    })
+  })
+  describe('more than 10K', () => {
+    describe('setContextOptions', () => {
+      beforeEach(() => {
+        const { client: cli, connection: conn, paginator: pgi } = mockClient(true)
+        connection = conn
+        client = cli
+        paginator = pgi
+        parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
+        contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
+          id: 3,
+          options: [
+            {
+              id: '10047',
+              value: 'p1',
+              disabled: false,
+              position: 0,
+            },
+            {
+              id: '10048',
+              value: 'p2',
+              disabled: false,
+              position: 1,
+            },
+          ],
+        },
+        undefined,
+        {
+          [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+        })
+        const sourceParentField = parentField.clone()
+        delete sourceParentField.value.id
+        elementSource = buildElementsSourceFromElements([
+          sourceParentField,
+        ])
+      })
+      describe('change has over 10K options', () => {
+        // Set long timeout as we create instance with more than 10K options
+        jest.setTimeout(1000 * 60 * 5)
+        let contextInstanceAfter: InstanceElement
+        let contextInstanceBefore: InstanceElement
+
+        beforeEach(async () => {
+          connection.post.mockImplementation(async (url, data) => {
+            if (url === '/secure/admin/EditCustomFieldOptions!add.jspa') {
+              return {
+                data: {},
+                status: 200,
+              }
+            }
+
+            const { options } = data as { options: unknown[] }
+            if (options.length > 1000) {
+              throw Error('bad')
+            }
+            return {
+              data: {
+                options: [],
+              },
+              status: 200,
+            }
+          })
+          connection.get.mockResolvedValueOnce({
+            status: 200,
+            data: {
+              startAt: 0,
+              total: 1,
+              values: [
+                {
+                  id: '10010000',
+                  value: 'p10000',
+                  disabled: false,
+                },
+              ],
+            },
+          })
+          connection.get.mockResolvedValueOnce({
+            status: 200,
+            data: {
+              startAt: 0,
+              total: 1,
+              values: [
+                {
+                  id: '10010000',
+                  value: 'p10000',
+                  disabled: false,
+                },
+                {
+                  id: '1001000011',
+                  value: 'c11',
+                  disabled: false,
+                  optionId: '10010000',
+                },
+              ],
+            },
+          })
+        })
+        it('should use public API for first 10K options, and than use private API for all other options.', async () => {
+          const optionsAfter = generateOptions(10010)
+          contextInstanceAfter = contextInstance.clone()
+          contextInstanceAfter.value.options = optionsAfter
+          await setContextOptions(
+            toChange({ after: contextInstanceAfter }),
+            client,
+            elementSource
+          )
+          expect(connection.post).toHaveBeenCalledTimes(20)
+          expect(connection.post).toHaveBeenNthCalledWith(
+            11,
+            '/secure/admin/EditCustomFieldOptions!add.jspa',
+            new URLSearchParams({ addValue: 'p10000', fieldConfigId: contextInstanceAfter.value.id }),
+            {
+              headers: JSP_API_HEADERS,
+              params: undefined,
+              responseType: undefined,
+            }
+          )
+        })
+        it('should use only private API if all added options are over 10K', async () => {
+          const optionsBefore = generateOptionsWithId(10010)
+          contextInstanceBefore = contextInstance.clone()
+          contextInstanceBefore.value.options = optionsBefore
+          contextInstanceAfter = contextInstanceBefore.clone()
+          contextInstanceAfter.value.options.p10010 = {
+            value: 'p10010',
+            disabled: false,
+            position: 10010,
+          }
+          await setContextOptions(
+            toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
+            client,
+            elementSource
+          )
+          expect(connection.post).toHaveBeenCalledTimes(1)
+          expect(connection.post).toHaveBeenNthCalledWith(
+            1,
+            '/secure/admin/EditCustomFieldOptions!add.jspa',
+            new URLSearchParams({ addValue: 'p10010', fieldConfigId: contextInstanceAfter.value.id }),
+            {
+              headers: JSP_API_HEADERS,
+              params: undefined,
+              responseType: undefined,
+            }
+          )
+        })
+        it('should add cascading options through private API', async () => {
+          const optionsBefore = generateOptionsWithId(10000)
+          contextInstanceBefore = contextInstance.clone()
+          contextInstanceBefore.value.options = optionsBefore
+          contextInstanceAfter = contextInstanceBefore.clone()
+          contextInstanceAfter.value.options.p10000 = {
+            value: 'p10000',
+            disabled: false,
+            cascadingOptions: {
+              c11: {
+                value: 'c11',
+                disabled: false,
+                position: 0,
+              },
+            },
+            position: 10000,
+          }
+          await setContextOptions(
+            toChange({ before: contextInstanceBefore, after: contextInstanceAfter }),
+            client,
+            elementSource,
+            paginator,
+          )
+          expect(connection.post).toHaveBeenCalledTimes(2)
+          expect(connection.post).toHaveBeenNthCalledWith(
+            2,
+            '/secure/admin/EditCustomFieldOptions!add.jspa',
+            new URLSearchParams({ addValue: 'c11', fieldConfigId: contextInstanceAfter.value.id, selectedParentOptionId: '10010000' }),
+            {
+              headers: JSP_API_HEADERS,
+              params: undefined,
+              responseType: undefined,
+            }
+          )
+        })
+      })
     })
   })
 })

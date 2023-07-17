@@ -22,7 +22,7 @@ import {
   TypeReference,
   createRefToElmWithValue,
   CORE_ANNOTATIONS,
-  Element,
+  Element, PrimitiveType, PrimitiveTypes,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import {
@@ -539,7 +539,7 @@ describe('updatePathIndex', () => {
 
 describe('getElementsPathHints', () => {
   const elemId = new ElemID('salto', 'obj')
-  it('should return one path hint for singlePathObject with no annotations and fields', async () => {
+  it('should return one path hint for single path ObjectType with no annotations and fields', async () => {
     const singlePath = new ObjectType({
       elemID: elemId,
       path: ['salto', 'obj', 'simple'],
@@ -550,7 +550,7 @@ describe('getElementsPathHints', () => {
     expect(hintsKeys).toContain('salto.obj')
   })
 
-  it('should return one path hint for annotations and one for fields', async () => {
+  it('should return one path hint for annotations and one for fields in ObjectType', async () => {
     const singleFieldObj = new ObjectType({
       elemID: elemId,
       fields: {
@@ -589,7 +589,7 @@ describe('getElementsPathHints', () => {
     expect(hintsKeys).toContain('salto.obj.attr')
   })
 
-  it('should return path hints for divided annotations and divided fields', async () => {
+  it('should return path hints for divided annotations and divided fields in ObjectType', async () => {
     const objFragStdFields = new ObjectType({
       elemID: elemId,
       fields: {
@@ -658,7 +658,7 @@ describe('getElementsPathHints', () => {
     expect(hintsKeys).toContain('salto.obj.attr')
   })
 
-  it('should return path hints for nested fields', async () => {
+  it('should return path hints for nested fields in ObjectType', async () => {
     const objFragFieldOne = new ObjectType({
       elemID: elemId,
       fields: {
@@ -731,5 +731,43 @@ describe('getElementsPathHints', () => {
     expect(hintsKeys).toContain('salto.obj.instance.inst.a')
     expect(hintsKeys).toContain('salto.obj.instance.inst.a.b')
     expect(hintsKeys).toContain('salto.obj.instance.inst.a.c')
+  })
+
+  it('should return path hints for divided annotations in PrimitiveType', async () => {
+    const primitiveAnnotaionsA = new PrimitiveType({
+      elemID: new ElemID('salto', 'primitive'),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        a: BuiltinTypes.STRING,
+      },
+      annotations: {
+        a: 'a',
+      },
+      path: ['salto', 'primitive', 'a'],
+    })
+    const primitiveAnnotaionsB = new PrimitiveType({
+      elemID: new ElemID('salto', 'primitive'),
+      primitive: PrimitiveTypes.STRING,
+      annotationRefsOrTypes: {
+        b: BuiltinTypes.STRING,
+      },
+      annotations: {
+        b: 'b',
+      },
+      path: ['salto', 'primitive', 'b'],
+    })
+    const pathHints = getElementsPathHints([primitiveAnnotaionsA, primitiveAnnotaionsB])
+    expect(pathHints.length).toEqual(7)
+    const hintsKeys = pathHints.map(p => p.key)
+    expect(hintsKeys).toContain('salto.primitive')
+    expect(hintsKeys).not.toContain('salto.primitive.field')
+    expect(hintsKeys).toContain('salto.primitive.annotation')
+    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
+    expect(annoHints.length).toEqual(3)
+    expect(annoHints[0].value.length).toEqual(2)
+    expect(hintsKeys).toContain('salto.primitive.attr')
+    const attrHints = pathHints.filter(p => p.key.includes('attr'))
+    expect(attrHints.length).toEqual(3)
+    expect(attrHints[0].value.length).toEqual(2)
   })
 })

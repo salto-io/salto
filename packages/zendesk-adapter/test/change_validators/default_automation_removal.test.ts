@@ -42,7 +42,6 @@ describe('default automation removal change validator', () => {
     })
 
     it('should not have change error when non-default automation is removed', async () => {
-      notDefaultAutomation.value.default = false
       const changeErrors = await defaultAutomationRemovalValidator([toChange({ before: notDefaultAutomation })])
       expect(changeErrors).toHaveLength(0)
     })

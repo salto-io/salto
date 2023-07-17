@@ -329,10 +329,4 @@ export class ElemID {
     }
     return undefined
   }
-
-  isIDNestedInType(): boolean {
-    // These id types represent "logical groups" of IDs that count towards the nesting level
-    // e.g - adapter.type.field.bla is nested under adapter.type.field
-    return this.idType === 'annotation' || this.idType === 'attr' || this.idType === 'field'
-  }
 }

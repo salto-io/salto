@@ -215,8 +215,16 @@ const getFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean)
   return [...parentNames, `${namePrefix}${name}`].join(API_NAME_SEPARATOR)
 }
 
-const getPropsWithFullName = (obj: FileProperties, addNamespacePrefixToFullName: boolean): FileProperties => {
-  const correctFullName = getFullName(obj, addNamespacePrefixToFullName)
+const getPropsWithFullName = (
+  obj: FileProperties,
+  addNamespacePrefixToFullName: boolean,
+  orgNamespace?: string
+): FileProperties => {
+  // Do not run getFullName logic if the namespace of the instance is the current org namespace.
+  // If we couldn't determine the namespace of the org, we will run the logic for all the instances.
+  const correctFullName = orgNamespace === undefined || obj.namespacePrefix !== orgNamespace
+    ? getFullName(obj, addNamespacePrefixToFullName)
+    : obj.fullName
   return {
     ...obj,
     fullName: correctFullName,
@@ -359,7 +367,7 @@ export const retrieveMetadataInstances = async ({
     configChanges.push(...listObjectsConfigChanges)
     return _(res)
       .uniqBy(file => file.fullName)
-      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName))
+      .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))
       .value()
   }
 

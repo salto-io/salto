@@ -544,7 +544,7 @@ export default class SalesforceClient {
   public async listMetadataTypes(): Promise<MetadataObject[]> {
     const describeResult = await this.retryOnBadResponse(() => this.conn.metadata.describe())
     this.orgNamespace = describeResult.organizationNamespace
-    log.debug('describeResult: %o', _.omit(describeResult, 'metadataObjects'))
+    log.debug('org namespace: %s', this.orgNamespace)
     return flatValues((describeResult).metadataObjects)
   }
 

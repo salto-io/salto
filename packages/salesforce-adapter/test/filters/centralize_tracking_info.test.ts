@@ -87,6 +87,24 @@ describe('historyTracking', () => {
           .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
       })
     })
+    describe('When fetching an object where history tracking is implicitly enabled', () => {
+      beforeEach(async () => {
+        inputType = createCustomObjectType('Case', {})
+        Object.values(inputType.fields)
+          .forEach(fieldDef => { fieldDef.annotations[FIELD_ANNOTATIONS.TRACK_HISTORY] = false })
+        await filter.onFetch([inputType])
+      })
+      it('Should not add a trackHistory annotation', () => {
+        expect(inputType.annotations).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED, false)
+      })
+      it('Should add object-level trackedFields annotation', () => {
+        expect(inputType.annotations).toHaveProperty(HISTORY_TRACKED_FIELDS, {})
+      })
+      it('Should remove field-level annotation', () => {
+        Object.values(inputType.fields)
+          .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+      })
+    })
     describe('When fetching an object with history tracking enabled', () => {
       const typeWithHistoryTrackedFields = createCustomObjectType('TypeWithHistoryTracking', {
         annotations: {
@@ -134,12 +152,11 @@ describe('historyTracking', () => {
   })
   describe('preDeploy', () => {
     let inputType: ObjectType
+    const refExprForField = (typeName: string, fieldName: string): ReferenceExpression => (
+      new ReferenceExpression(new ElemID(SALESFORCE, typeName, 'field', fieldName))
+    )
     const typeForPreDeploy = (trackedFields?: string[], fields: string[] = []): ObjectType => {
       const fieldApiName = (typeName: string, fieldName: string): string => `${typeName}.${fieldName}`
-      const refExprForField = (typeName: string, fieldName: string): ReferenceExpression => (
-        new ReferenceExpression(new ElemID(SALESFORCE, typeName, 'field', fieldName))
-      )
-
       const typeName = 'SomeType__c'
       const objectType = createCustomObjectType(typeName, {
         annotations: {
@@ -177,8 +194,6 @@ describe('historyTracking', () => {
 
         inputType = getChangeData(change)
       })
-
-
       it('Should not add a trackHistory annotation', () => {
         expect(inputType).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
       })
@@ -188,6 +203,41 @@ describe('historyTracking', () => {
       it('Should not add field-level annotation', () => {
         Object.values(inputType.fields)
           .forEach(field => expect(field.annotations).not.toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY))
+      })
+    })
+
+    describe('when an object implicitly supports history tracking', () => {
+      beforeEach(async () => {
+        const type = createCustomObjectType('Case', {
+          annotations: {
+            [HISTORY_TRACKED_FIELDS]: {
+              SomeField: refExprForField('Case', 'SomeField'),
+            },
+          },
+          fields: {
+            SomeField: {
+              refType: Types.primitiveDataTypes.Text,
+              annotations: {
+                apiName: 'SomeObject.SomeField',
+              },
+            },
+          },
+        })
+        const change = toChange({ after: type })
+
+        await filter.preDeploy([change])
+
+        inputType = getChangeData(change)
+      })
+      it('Should not add a trackHistory annotation', () => {
+        expect(inputType).not.toHaveProperty(OBJECT_HISTORY_TRACKING_ENABLED)
+      })
+      it('Should not add object-level trackedFields annotation', () => {
+        expect(inputType.annotations).not.toHaveProperty(HISTORY_TRACKED_FIELDS)
+      })
+      it('Should add field-level annotation', () => {
+        Object.values(inputType.fields)
+          .forEach(field => expect(field.annotations).toHaveProperty(FIELD_ANNOTATIONS.TRACK_HISTORY, field.name === 'SomeField'))
       })
     })
 

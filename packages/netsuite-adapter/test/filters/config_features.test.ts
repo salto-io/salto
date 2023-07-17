@@ -96,12 +96,12 @@ describe('config features filter', () => {
   describe('onDeploy', () => {
     it('should succeed', async () => {
       const change = getChange()
-      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { errors: [new Error('error')], appliedChanges: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { sdfErrors: [new Error('error')], appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: true, DEF: true })
     })
     it('should restore failed to deploy features', async () => {
       const change = getChange()
-      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { errors: [new FeaturesDeployError('error', ['ABC'])], appliedChanges: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { sdfErrors: [new FeaturesDeployError('error', ['ABC'])], appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: false, DEF: true })
     })
   })

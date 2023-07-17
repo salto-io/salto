@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, Change, BuiltinTypes, getChangeData } from '@salto-io/adapter-api'
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
 import SdfClient from '../../src/client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
@@ -72,7 +72,12 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [objectsDeployError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: objectsDeployError.message,
+            severity: 'Error',
+          }],
+          sdfErrors: [objectsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -93,7 +98,8 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [objectsDeployError],
+          errors: [{ message: objectsDeployError.message, severity: 'Error' }],
+          sdfErrors: [objectsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -115,7 +121,12 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [settingsDeployError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: settingsDeployError.message,
+            severity: 'Error',
+          }],
+          sdfErrors: [settingsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -133,7 +144,8 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [settingsDeployError],
+          errors: [{ message: settingsDeployError.message, severity: 'Error' }],
+          sdfErrors: [settingsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -156,7 +168,12 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [manifestValidationError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }],
+          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -179,7 +196,12 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [manifestValidationError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }],
+          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -202,7 +224,8 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [manifestValidationError],
+          errors: [{ message: manifestValidationError.message, severity: 'Error' }],
+          sdfErrors: [manifestValidationError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -228,7 +251,16 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [manifestValidationError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }, {
+            elemID: getChangeData(failedChangeDependency).elemID,
+            message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
+            severity: 'Error',
+          }],
+          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -255,7 +287,12 @@ describe('NetsuiteClient', () => {
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [manifestValidationError],
+          errors: [{
+            elemID: getChangeData(failedChange).elemID,
+            message: manifestValidationError.message,
+            severity: 'Error',
+          }],
+          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange, failedChangeDependency],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -356,9 +393,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )).toEqual({
           errors: [
-            missingManifestFeaturesError,
-            new Error('The following features are required but they are excluded: SUBSCRIPTIONBILLING.'),
+            { message: missingManifestFeaturesError.message, severity: 'Error' },
+            { message: 'The following features are required but they are excluded: SUBSCRIPTIONBILLING.', severity: 'Error' },
           ],
+          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -421,7 +459,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [missingManifestFeaturesError],
+          errors: [{ message: missingManifestFeaturesError.message, severity: 'Error' }],
+          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
@@ -506,6 +545,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             async () => true,
           )).toEqual({
             errors: [],
+            sdfErrors: [],
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
@@ -557,7 +597,12 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             ...deployParams,
             async () => true,
           )).toEqual({
-            errors: [objectsDeployError],
+            errors: [{
+              elemID: getChangeData(failedChange).elemID,
+              message: objectsDeployError.message,
+              severity: 'Error',
+            }],
+            sdfErrors: [objectsDeployError],
             appliedChanges: [successTypeChange, successFieldChange],
           })
         })
@@ -597,7 +642,12 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             ...deployParams,
             async () => true,
           )).toEqual({
-            errors: [featuresDeployError],
+            errors: [{
+              elemID: after.elemID,
+              message: featuresDeployError.message,
+              severity: 'Error',
+            }],
+            sdfErrors: [featuresDeployError],
             appliedChanges: [],
           })
         })
@@ -629,7 +679,12 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             ...deployParams,
             async () => true,
           )).toEqual({
-            errors: [featuresDeployError],
+            errors: [{
+              elemID: after.elemID,
+              message: featuresDeployError.message,
+              severity: 'Error',
+            }],
+            sdfErrors: [featuresDeployError],
             appliedChanges: [change],
           })
         })
@@ -745,8 +800,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`)],
-          elemIdToInternalId: {},
+          errors: [{
+            message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_RECORDS_GROUP_ID}" cannot be deployed`,
+            severity: 'Error',
+          }],
           appliedChanges: [],
         })
         expect(await clientWithoutSuiteApp.deploy(
@@ -755,7 +812,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)],
+          errors: [{
+            message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`,
+            severity: 'Error',
+          }],
           appliedChanges: [],
         })
         expect(await clientWithoutSuiteApp.deploy(
@@ -764,8 +824,10 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           ...deployParams,
           async () => true,
         )).toEqual({
-          errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`)],
-          elemIdToInternalId: {},
+          errors: [{
+            message: `Salto SuiteApp is not configured and therefore changes group "${SDF_DELETE_GROUP_ID}" cannot be deployed`,
+            severity: 'Error',
+          }],
           appliedChanges: [],
         })
       })
@@ -778,7 +840,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([change1])
-        expect(results.errors).toEqual([new Error('error')])
+        expect(results.errors).toEqual([{ elemID: getChangeData(change2).elemID, message: 'error', severity: 'Error' }])
         expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
       })
 
@@ -794,7 +856,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ after: instance1 })])
-        expect(results.errors).toEqual([new Error('error')])
+        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
         expect(results.elemIdToInternalId).toEqual({ [instance1.elemID.getFullName()]: '1' })
       })
 
@@ -810,7 +872,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
-        expect(results.errors).toEqual([new Error('error')])
+        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
       })
 
       it('should use deployConfigChanges for config instances', async () => {
@@ -857,7 +919,7 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )
         expect(results.appliedChanges).toEqual([toChange({ before: instance1 })])
-        expect(results.errors).toEqual([new Error('error')])
+        expect(results.errors).toEqual([{ elemID: instance2.elemID, message: 'error', severity: 'Error' }])
       })
     })
   })

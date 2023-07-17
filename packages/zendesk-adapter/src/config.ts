@@ -1156,8 +1156,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
-      idFields: ['settings.name', 'app_id'],
-      fileNameFields: ['settings.name', 'app_id'],
+      idFields: ['settings.name', 'product'],
+      fileNameFields: ['settings.name', 'product'],
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/apps-integrations/apps/support-apps',
     },
@@ -2655,7 +2655,9 @@ export type ChangeValidatorName = (
   | 'defaultDynamicContentItemVariant'
   | 'featureActivation'
   | 'standardFields'
+  | 'defaultAutomationRemoval'
   | 'deflectionAction'
+  | 'uniqueAutomationConditions'
   | 'childInOrder'
   | 'childrenReferences'
   | 'orderChildrenParent'
@@ -2716,7 +2718,9 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
+    defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
+    uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },

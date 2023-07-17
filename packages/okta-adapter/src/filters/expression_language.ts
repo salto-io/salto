@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isTemplateExpression, ReferenceExpression, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
+import { Change, createSaltoElementError, Element, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceElement, isTemplateExpression, ReferenceExpression, SaltoElementError, TemplateExpression, TemplatePart } from '@salto-io/adapter-api'
 import { extractTemplate, replaceTemplatesWithValues, resolvePath, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
@@ -181,7 +181,7 @@ const stringToTemplate = (
  */
 const filter: FilterCreator = ({ config }) => {
   const changeToTemplateMapping: Record<string, TemplateExpression> = {}
-  const ErrorByChangeId: Record<string, Error> = {}
+  const ErrorByChangeId: Record<string, SaltoElementError> = {}
   return ({
     name: 'oktaExpressionLanguageFilter',
     onFetch: async (elements: Element[]) => {
@@ -228,10 +228,12 @@ const filter: FilterCreator = ({ config }) => {
                   createPrepRefFunc(isIdentityEngine),
                 )
               } catch (error) {
-                if (_.isError(error)) {
-                  log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`)
-                  ErrorByChangeId[instance.elemID.getFullName()] = new Error(`Error parsing Okta expression language expression for instance ${instance.elemID.name} of type ${instance.elemID.typeName}`)
-                }
+                log.error(`Error parsing templates in instance ${instance.elemID.getFullName()} before deployment: ${error.message}`)
+                ErrorByChangeId[instance.elemID.getFullName()] = createSaltoElementError({
+                  severity: 'Error',
+                  message: 'Error parsing Okta expression language expression',
+                  elemID: instance.elemID,
+                })
               }
             }
           }

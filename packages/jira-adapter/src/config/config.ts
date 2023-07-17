@@ -143,6 +143,8 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
     enableMissingReferences: true,
+    removeDuplicateProjectRoles: true,
+
   },
   deploy: {
     forceDelete: false,

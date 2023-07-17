@@ -176,8 +176,8 @@ describe('adapter', () => {
           'zendesk.api_token',
           'zendesk.api_tokens',
           'zendesk.app_installation',
-          'zendesk.app_installation.instance.Salesforce_10',
-          'zendesk.app_installation.instance.Slack_156097',
+          'zendesk.app_installation.instance.Salesforce_support',
+          'zendesk.app_installation.instance.Slack_support',
           'zendesk.app_installation__plan_information',
           'zendesk.app_installation__settings',
           'zendesk.app_installation__settings_objects',
@@ -1214,7 +1214,11 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('some error'),
+        {
+          message: 'some error',
+          severity: 'Error',
+          elemID: new InstanceElement('inst2', groupType).elemID,
+        },
       ])
     })
     it('should have change validator', () => {

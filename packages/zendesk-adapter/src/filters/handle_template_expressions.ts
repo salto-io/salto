@@ -233,7 +233,7 @@ const formulaToTemplate = (
       const missingInstance = createMissingInstance(
         ZENDESK,
         DYNAMIC_CONTENT_ITEM_TYPE_NAME,
-        dcPlaceholder.slice(3) // slice dc. from the placeholder
+        dcPlaceholder.startsWith('dc.') ? dcPlaceholder.slice(3) : dcPlaceholder
       )
       missingInstance.value.placeholder = `{{${dcPlaceholder}}}`
       return new ReferenceExpression(missingInstance.elemID, missingInstance)

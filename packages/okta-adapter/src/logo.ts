@@ -91,7 +91,7 @@ const sendLogoRequest = async ({
 export const deployLogo = async (
   change: Change<InstanceElement>,
   client: OktaClient,
-): Promise<Error | void> => {
+): Promise<void> => {
   const logoInstance = getChangeData(change)
   const { typeName } = logoInstance.elemID
   let logoUrl: string
@@ -105,9 +105,9 @@ export const deployLogo = async (
       const suffix = LOGO_TYPES_TO_VALUES[logoInstance.elemID.typeName].urlSuffix
       logoUrl = `/api/v1/brands/${brand.value.id}/themes/${brandTheme.value.id}/${suffix}`
     }
-    return await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: isRemovalChange(change) })
+    await sendLogoRequest({ client, change, logoInstance, url: logoUrl, isRemoval: isRemovalChange(change) })
   } catch (e) {
-    return getOktaError(logoInstance.elemID, e)
+    throw getOktaError(logoInstance.elemID, e)
   }
 }
 

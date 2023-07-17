@@ -69,6 +69,7 @@ import {
   deflectionActionValidator,
   standardFieldsValidator,
   uniqueAutomationConditionsValidator,
+  defaultAutomationRemovalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -150,6 +151,7 @@ export default ({
     deflectionAction: deflectionActionValidator,
     standardFields: standardFieldsValidator,
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
+    defaultAutomationRemoval: defaultAutomationRemovalValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

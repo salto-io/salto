@@ -365,9 +365,6 @@ export const retrieveMetadataInstances = async ({
       ? await listMetadataObjectsWithinFolders(client, metadataQuery, typeName, folderType)
       : await listMetadataObjects(client, typeName)
     configChanges.push(...listObjectsConfigChanges)
-    if (client.orgNamespace === undefined) {
-      log.warn('Expected orgNamespace to be defined when listing metadata instances')
-    }
     return _(res)
       .uniqBy(file => file.fullName)
       .map(file => getPropsWithFullName(file, addNamespacePrefixToFullName, client.orgNamespace))

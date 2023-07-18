@@ -98,6 +98,7 @@ export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[]
     ...Object.values(enums),
     ...Object.values(additionalTypes),
     ...Object.values(fieldTypes),
+    ...Object.values(bundleType().innerTypes),
   ]
 }
 

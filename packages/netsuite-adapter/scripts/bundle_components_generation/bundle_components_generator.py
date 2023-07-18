@@ -17,7 +17,7 @@ SCRIPT_DIR = os.path.dirname(__file__)
 SRC_DIR = os.path.join(SCRIPT_DIR, '../../src/autogen/')
 BUNDLE_COMPONENTS_DIR = os.path.join(SRC_DIR, 'bundle_components/')
 FULL_LINE_LENGTH = 4
-BUNDLE_IDS = [39609, 53195, 233251, 47492]
+BUNDLE_IDS = [332172, 39609, 53195, 233251, 47492]
 
 search_bundles_link_template = 'https://{account_id}.app.netsuite.com/app/bundler/installbundle.nl?whence='
 
@@ -41,7 +41,7 @@ def parse_components_table(bundle_id_to_components, bundle_id, components_table,
   driverWait.until(wait_on_element)
   for row in components_table.find_elements(By.TAG_NAME, TABLE_ROW)[3:]:
     cells = row.find_elements(By.TAG_NAME, TABLE_DATA)
-    if len(cells) >= FULL_LINE_LENGTH and cells[3].text.strip()!= '' :
+    if len(cells) >= FULL_LINE_LENGTH and cells[3].text.strip()!= '' and (not cells[3].text.strip().isdigit()):
       bundle_id_to_components[bundle_id][version.text.strip()].append(cells[3].text)
   webpage.back()
 

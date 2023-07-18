@@ -17,14 +17,15 @@
 import { getChangeData, InstanceElement, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { isDefined } from '@salto-io/lowerdash/src/values'
-import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
+import { collections, values } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isCustomRecordType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
 import { getGroupItemFromRegex } from '../client/utils'
 
 const log = logger(module)
+const { isDefined } = values
+const { awu } = collections.asynciterable
 const BUNDLE = 'bundle'
 const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
@@ -33,7 +34,7 @@ const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bun
   if (serviceIdsInBundle) {
     return serviceIdsInBundle
   }
-  log.debug('Version %s of bundle %s is not supported in the record, use a union of all existing versions', bundle.value.version, bundle.value.id)
+  log.debug(`Version ${`${bundle.value.version} ` ?? ''} of bundle %s is missing or not supported in the record, use a union of all existing versions`, bundle.value.id)
   return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
 }
 

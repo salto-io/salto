@@ -25,7 +25,7 @@ type BundleInstalledBy = {
 }
 
 type BundlePublisher = {
-  id?: number
+  id?: string
   name?: string
 }
 
@@ -66,7 +66,7 @@ export const bundleType = (): TypeAndInnerTypes => {
     annotations: {
     },
     fields: {
-      id: { refType: BuiltinTypes.NUMBER },
+      id: { refType: BuiltinTypes.STRING },
       name: { refType: BuiltinTypes.STRING },
     },
     path: [NETSUITE, TYPES_PATH, bundleElemID.name],

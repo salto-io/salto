@@ -2659,6 +2659,7 @@ export type ChangeValidatorName = (
   | 'defaultAutomationRemoval'
   | 'deflectionAction'
   | 'uniqueAutomationConditions'
+  | 'triggerCategoryRemoval'
   | 'childInOrder'
   | 'childrenReferences'
   | 'orderChildrenParent'
@@ -2722,6 +2723,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
+    triggerCategoryRemoval: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },
     childrenReferences: { refType: BuiltinTypes.BOOLEAN },
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },

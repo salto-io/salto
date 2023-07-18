@@ -98,11 +98,11 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     createAutomationValues(randomString, fetchedElements),
   )
 
-  const kanbanBoard = new InstanceElement(
-    `kanban${randomString}`,
-    findType('Board', fetchedElements),
-    createKanbanBoardValues(randomString, fetchedElements),
-  )
+  // const kanbanBoard = new InstanceElement(
+  //   `kanban${randomString}`,
+  //   findType('Board', fetchedElements),
+  //   createKanbanBoardValues(randomString, fetchedElements),
+  // )
 
   const scrumBoard = new InstanceElement(
     `scrum${randomString}`,
@@ -126,7 +126,7 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [securityScheme, securityLevel],
     [notificationScheme],
     [automation],
-    [kanbanBoard],
+    // [kanbanBoard],
     [scrumBoard],
     [filter],
   ]

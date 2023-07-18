@@ -34,7 +34,6 @@ import { addJiraRecipeReferences } from './jira/reference_finder'
 import { indexZendesk } from './zendesk/element_index'
 import { addZendeskRecipeReferences } from './zendesk/reference_finder'
 
-
 const log = logger(module)
 const { makeArray } = collections.array
 const { awu } = collections.asynciterable
@@ -146,7 +145,6 @@ const addReferencesForConnectionRecipes = async (
     await awu(relevantRecipeCodes).forEach(
       inst => addZendeskRecipeReferences(inst, index, appName)
     )
-    log.debug('a', index.organizationCustomFieldByKey.a)
   }
 }
 

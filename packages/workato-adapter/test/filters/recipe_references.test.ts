@@ -852,7 +852,7 @@ describe('Recipe references filter', () => {
             conditions: [
               {
                 operand: 'greater_than',
-                lhs: "#{_('data.zendesk.zendesk9id.priority')}", // check
+                lhs: "#{_('data.zendesk.zendesk9id.priority')}",
                 rhs: '111111111',
                 uuid: 'condition-uuid',
               },
@@ -941,7 +941,7 @@ describe('Recipe references filter', () => {
         {
           number: 5,
           provider: 'zendesk',
-          name: 'update_organization',
+          name: 'update_user',
           as: 'recipe9id_5',
           description: 'Search <span class="provider">products</span> in <span class="provider">Zuora</span>',
           keyword: 'action',
@@ -963,10 +963,10 @@ describe('Recipe references filter', () => {
                       should referenced #{_('data.zendesk.recipe9id_5.user_fields.field_user1')}
                       should referenced #{_('data.zendesk.recipe9id_5.user_fields.field_field')}
                       should referenced #{_('data.zendesk.recipe9id_3.users.first.user_fields.field_user1')} - user block with user field
-
-                      should not referenced #{_('data.zendesk.non_exist_block.priority')} - non-exist block
-                      should not referenced #{_('data.zendesk.non_exist_block.organization_fields.field_field')} - non-exist block
-                      should not referenced #{_('data.zendesk.recipe9id_4.status')} - not ticket block
+                      `,
+            comment2: `should not referenced #{_('data.zendesk.non_exist_block.priority')} - non-exist block
+                       should not referenced #{_('data.zendesk.non_exist_block.organization_fields.field_field')} - non-exist block
+                       should not referenced #{_('data.zendesk.recipe9id_4.status')} - not ticket block
                       `,
           },
           visible_config_fields: [
@@ -1367,7 +1367,7 @@ describe('Recipe references filter', () => {
         type: { refType: BuiltinTypes.STRING },
         key: { refType: BuiltinTypes.STRING },
         raw_title: { refType: BuiltinTypes.STRING },
-        custom_field_options: { refType: new ListType(ticketOptionType) },
+        custom_field_options: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
     })
 
@@ -1384,7 +1384,7 @@ describe('Recipe references filter', () => {
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         key: { refType: BuiltinTypes.STRING },
-        custom_field_options: { refType: new ListType(organizationOptionType) },
+        custom_field_options: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
     })
 
@@ -1401,7 +1401,7 @@ describe('Recipe references filter', () => {
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         key: { refType: BuiltinTypes.STRING },
-        custom_field_options: { refType: new ListType(userOptionType) },
+        custom_field_options: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
     })
 
@@ -1431,7 +1431,7 @@ describe('Recipe references filter', () => {
       fields: {
         id: { refType: BuiltinTypes.NUMBER },
         default: { refType: BuiltinTypes.BOOLEAN },
-        ticket_field_ids: { refType: new ListType(BuiltinTypes.BOOLEAN) },
+        ticket_field_ids: { refType: new ListType(BuiltinTypes.NUMBER) },
       },
     })
 
@@ -1449,7 +1449,7 @@ describe('Recipe references filter', () => {
 
     const brandInst = new InstanceElement(
       'brandInstName',
-      groupType,
+      brandType,
       { id: 15 }
     )
 
@@ -1475,14 +1475,19 @@ describe('Recipe references filter', () => {
       {
         id: 2,
         type: 'status',
-        raw_title: 'Stauts',
+        raw_title: 'Status',
       }
     )
 
     const defaultTicketFormInst = new InstanceElement(
       'defaultTicketFormInstName',
       ticketFormType,
-      { id: 17, default: true, ticket_field_ids: [ticketFieldStatus.value.id, ticketFieldPriority.value.id] }
+      { id: 17,
+        default: true,
+        ticket_field_ids: [
+          new ReferenceExpression(ticketFieldStatus.elemID, ticketFieldStatus),
+          new ReferenceExpression(ticketFieldPriority.elemID, ticketFieldPriority),
+        ] }
     )
 
     const ticketField12Option1 = new InstanceElement(
@@ -1508,10 +1513,10 @@ describe('Recipe references filter', () => {
       ticketFieldType,
       {
         id: 12,
-        custom_field_options: {
-          ticketField12Option1,
-          ticketField12Option2,
-        },
+        custom_field_options: [
+          new ReferenceExpression(ticketField12Option1.elemID, ticketField12Option1),
+          new ReferenceExpression(ticketField12Option2.elemID, ticketField12Option2),
+        ],
       }
     )
 
@@ -1537,9 +1542,9 @@ describe('Recipe references filter', () => {
       ticketFieldType,
       {
         id: 14,
-        custom_field_options: {
-          ticketField14Option,
-        },
+        custom_field_options: [
+          new ReferenceExpression(ticketField14Option.elemID, ticketField14Option),
+        ],
       }
     )
 
@@ -1567,9 +1572,9 @@ describe('Recipe references filter', () => {
       {
         id: 31,
         key: 'organization_field_1',
-        custom_field_options: {
-          organizationField1Option,
-        },
+        custom_field_options: [
+          new ReferenceExpression(organizationField1Option.elemID, organizationField1Option),
+        ],
       }
     )
 
@@ -1588,9 +1593,9 @@ describe('Recipe references filter', () => {
       {
         id: 32,
         key: 'organization_field_2',
-        custom_field_options: {
-          organizationField2Option,
-        },
+        custom_field_options: [
+          new ReferenceExpression(organizationField2Option.elemID, organizationField2Option),
+        ],
       }
     )
 
@@ -1618,9 +1623,9 @@ describe('Recipe references filter', () => {
       {
         id: 34,
         key: 'same',
-        custom_field_options: {
-          organizationFieldSameOption,
-        },
+        custom_field_options: [
+          new ReferenceExpression(organizationFieldSameOption.elemID, organizationFieldSameOption),
+        ],
       }
     )
 
@@ -1640,9 +1645,9 @@ describe('Recipe references filter', () => {
       {
         id: 41,
         key: 'user_field_1',
-        custom_field_options: {
-          userField1Option,
-        },
+        custom_field_options: [
+          new ReferenceExpression(userField1Option.elemID, userField1Option),
+        ],
       }
     )
 
@@ -1661,9 +1666,9 @@ describe('Recipe references filter', () => {
       {
         id: 42,
         key: 'user_field_2',
-        custom_field_options: {
-          userField2Option,
-        },
+        custom_field_options: [
+          new ReferenceExpression(userField2Option.elemID, userField2Option),
+        ],
       }
     )
 
@@ -1691,9 +1696,9 @@ describe('Recipe references filter', () => {
       {
         id: 44,
         key: 'same',
-        custom_field_options: {
-          userFieldSameOption,
-        },
+        custom_field_options: [
+          new ReferenceExpression(userFieldSameOption.elemID, userFieldSameOption),
+        ],
       }
     )
 
@@ -2085,52 +2090,82 @@ describe('Recipe references filter', () => {
         const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe9_code')
         expect(recipeCode).toBeDefined()
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
-        // expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(7)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(26)
         expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
           dereferenceDep
         )).toEqual([
-          { reference: 'zendesk.group.instance.brandInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
+          { reference: 'zendesk.brand.instance.brandInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
           { reference: 'zendesk.group.instance.groupInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
           { reference: 'zendesk.macro.instance.macroInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
-          { reference: 'zendesk.organization_field.instance.organizationField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.organization_field.instance.organizationField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.organization_field.instance.organizationField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.organization_field.instance.organizationFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_organization_field_2', direction: 'input' }] },
-          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_same', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field.instance.priority', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field.instance.status', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field.instance.ticketField12Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }, { location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field.instance.ticketField13Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field.instance.ticketField14Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field__custom_field_options.instance.organizationField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2.input.field_organization_field_1', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0.input.field_12', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1.input.field_12', direction: 'input' }] },
-          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField14OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0.input.field_14', direction: 'input' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field.instance.organizationField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field.instance.organizationFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.organization_field__custom_field_options.instance.organizationFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.2', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field.instance.priority', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.input.conditions.0.lhs', direction: 'input' }, { location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }, { location: 'workato.recipe__code.instance.recipe9_code.block.3.input.comment', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.status', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }, { location: 'workato.recipe__code.instance.recipe9_code.block.3.input.comment', direction: 'input' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField12Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }, { location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField13Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field.instance.ticketField14Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField12Option2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
+          { reference: 'zendesk.ticket_field__custom_field_options.instance.ticketField14OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.0.block.0', direction: 'output' }] },
           { reference: 'zendesk.ticket_form.instance.ticketFormInstName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.1', direction: 'output' }] },
-          { reference: 'zendesk.user_field.instance.userField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.user_field.instance.userField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.user_field.instance.userField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.user_field.instance.userFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code', direction: 'input' }] },
-          { reference: 'zendesk.user_field__custom_field_options.instance.userField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_user_field_1', direction: 'input' }] },
-          { reference: 'zendesk.user_field__custom_field_options.instance.userField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_user_field_2', direction: 'input' }] },
-          { reference: 'zendesk.user_field__custom_field_options.instance.userFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3.input.field_same', direction: 'input' }] },// TODO check this
+          { reference: 'zendesk.user_field.instance.userField1Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field.instance.userField2Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field.instance.userField3Name', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field.instance.userFieldSameName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userField1OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userField2OptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
+          { reference: 'zendesk.user_field__custom_field_options.instance.userFieldSameOptionName', occurrences: [{ location: 'workato.recipe__code.instance.recipe9_code.block.3', direction: 'output' }] },
         ])
       })
 
-      it('should resolve references in-place where possible', () => { // TODO
+      it('should resolve references in-place where possible', () => {
         const recipeCode = currentAdapterElements.find(
-          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe7_code'
+          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe9_code'
         ) as InstanceElement
         expect(recipeCode).toBeInstanceOf(InstanceElement)
-        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
-        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
-        expect(recipeCode.value.input.object).toBeInstanceOf(ReferenceExpression)
-        expect(recipeCode.value.input.object.elemID.getFullName()).toEqual('zuora_billing.accountingperiod')
-        expect(recipeCode.value.block[0].block[0].input.object).toBeInstanceOf(ReferenceExpression)
-        expect(recipeCode.value.block[0].block[0].input.object.elemID.getFullName()).toEqual('zuora_billing.accountingcode')
-        expect(recipeCode.value.block[1].input.object).toBeInstanceOf(ReferenceExpression)
-        expect(recipeCode.value.block[1].input.object.elemID.getFullName()).toEqual('zuora_billing.product')
+        expect(recipeCode.value.block[0].block[0].input.macro_ids.id).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.macro_ids.id.elemID.getFullName()).toEqual('zendesk.macro.instance.macroInstName')
+
+        expect(recipeCode.value.block[0].block[0].input.group_id).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.group_id.elemID.getFullName()).toEqual('zendesk.group.instance.groupInstName')
+
+        expect(recipeCode.value.block[0].block[0].input.field_12).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.field_12.elemID.getFullName()).toEqual('zendesk.ticket_field__custom_field_options.instance.ticketField12Option1Name')
+
+        expect(recipeCode.value.block[0].block[0].input.field_14).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[0].block[0].input.field_14.elemID.getFullName()).toEqual('zendesk.ticket_field__custom_field_options.instance.ticketField14OptionName')
+
+        expect(recipeCode.value.block[1].input.brand_id).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[1].input.brand_id.elemID.getFullName()).toEqual('zendesk.brand.instance.brandInstName')
+
+        expect(recipeCode.value.block[1].input.ticket_form_id).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[1].input.ticket_form_id.elemID.getFullName()).toEqual('zendesk.ticket_form.instance.ticketFormInstName')
+
+        expect(recipeCode.value.block[1].input.field_12).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[1].input.field_12.elemID.getFullName()).toEqual('zendesk.ticket_field__custom_field_options.instance.ticketField12Option2Name')
+
+        expect(recipeCode.value.block[2].input.field_organization_field_1).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[2].input.field_organization_field_1.elemID.getFullName()).toEqual('zendesk.organization_field__custom_field_options.instance.organizationField1OptionName')
+
+        expect(recipeCode.value.block[2].input.field_organization_field_2).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[2].input.field_organization_field_2.elemID.getFullName()).toEqual('zendesk.organization_field__custom_field_options.instance.organizationField2OptionName')
+
+        expect(recipeCode.value.block[2].input.field_same).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[2].input.field_same.elemID.getFullName()).toEqual('zendesk.organization_field__custom_field_options.instance.organizationFieldSameOptionName')
+
+        expect(recipeCode.value.block[3].input.field_user_field_1).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[3].input.field_user_field_1.elemID.getFullName()).toEqual('zendesk.user_field__custom_field_options.instance.userField1OptionName')
+
+        expect(recipeCode.value.block[3].input.field_user_field_2).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[3].input.field_user_field_2.elemID.getFullName()).toEqual('zendesk.user_field__custom_field_options.instance.userField2OptionName')
+
+        expect(recipeCode.value.block[3].input.field_same).toBeInstanceOf(ReferenceExpression)
+        expect(recipeCode.value.block[3].input.field_same.elemID.getFullName()).toEqual('zendesk.user_field__custom_field_options.instance.userFieldSameOptionName')
       })
     })
 

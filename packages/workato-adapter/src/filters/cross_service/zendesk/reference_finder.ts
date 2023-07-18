@@ -74,7 +74,6 @@ export const addZendeskRecipeReferences = async (
   const referenceFinder: ReferenceFinder<ZendeskBlock> = (blockValue, path) => {
     const { input, name } = blockValue
 
-    const location = new ReferenceExpression(path)
     const direction = getBlockDependencyDirection(blockValue)
     const inputFieldKeys = Object.keys(input)
     actionBlock[blockValue.as] = OTHER
@@ -86,9 +85,9 @@ export const addZendeskRecipeReferences = async (
         references.push(
           {
             pathToOverride: nestedPath,
-            location,
+            location: new ReferenceExpression(path),
             direction,
-            reference: new ReferenceExpression(valueInst.elemID),
+            reference: new ReferenceExpression(valueInst.elemID, valueInst),
           },
         )
         return true
@@ -141,8 +140,7 @@ export const addZendeskRecipeReferences = async (
 
         if (fieldId && !_.isNaN(fieldId) && addPotentialIdReference(
           indexedElements.elementByID[fieldId]
-          // no pathToOverride because we can't override the field keys in the current format
-
+          // no pathToOverride because we can't override the field keys in the current method
         )) {
           const optionsByValue = indexedElements.ticketCustomOptionByFieldIdAndValue[fieldId]
           if (optionsByValue !== undefined && input[field] !== undefined) {
@@ -201,7 +199,6 @@ export const addZendeskRecipeReferences = async (
   const formulaReferenceFinder: FormulaReferenceFinder = (value, path) => {
     const potentialMatchGroups = formulaFieldMatcher(value)
     return potentialMatchGroups.map(({ block, custom, field: fieldName }) => {
-
       if (!Object.keys(actionBlock).includes(block)) {
         // we check that block is defined to make sure this block has the right application
         return undefined

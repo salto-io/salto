@@ -48,14 +48,12 @@ const ELEMENTS_REGEXES = [
   [SECTIONS_FIELD, SECTION_TYPE_NAME],
   [ARTICLES_FIELD, ARTICLE_TYPE_NAME],
   [ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ATTACHMENT_TYPE_NAME],
-].map(
-  ([field, type]) => ({
-    field,
-    type,
-    urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
-    idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
-  })
-)
+].map(([field, type]) => ({
+  field,
+  type,
+  urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
+  idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
+}))
 
 const URL_REGEX = /(https?:[0-9a-zA-Z;,/?:@&=+$-_.!~*'()#]+)/
 const DOMAIN_REGEX = /(https:\/\/[^/]+)/

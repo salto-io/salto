@@ -1410,7 +1410,7 @@ describe('adapter', () => {
       })
       const settings1 = new InstanceElement('guide_language_settings1', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 1 })
       const settings2 = new InstanceElement('guide_language_settings2', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 2 })
-      it('should rate limit guide requests to 20, and not limit support requests', async () => {
+      it('should rate limit guide requests to 1, and not limit support requests', async () => {
         const zendeskAdapter = new ZendeskAdapter({
           config: DEFAULT_CONFIG,
           client,
@@ -1432,7 +1432,7 @@ describe('adapter', () => {
           filterRunnerClient: expect.objectContaining({
             config: {
               rateLimit: {
-                deploy: 20,
+                deploy: 1,
               },
             },
           }),

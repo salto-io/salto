@@ -452,8 +452,7 @@ export default class ZendeskAdapter implements AdapterOperations {
       const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
       if (deployRateLimit) {
         // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
-        // 20-25 seems like a safe number to have a none or small amount of errors, that retry covers
-        Object.assign(clientConfig, { rateLimit: { deploy: 20 } })
+        Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
       }
       return new ZendeskClient({
         credentials: { ...credentials, subdomain },

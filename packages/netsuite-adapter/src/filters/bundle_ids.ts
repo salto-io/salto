@@ -17,6 +17,8 @@
 import { getChangeData, InstanceElement, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { isDefined } from '@salto-io/lowerdash/src/values'
+import { awu } from '@salto-io/lowerdash/src/collections/asynciterable'
 import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isCustomRecordType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
@@ -43,7 +45,11 @@ const addBundleToFileCabinet = (
   const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
   if (bundleId.length > 0) {
     const bundleToReference = bundleIdToInstance[bundleId[0]]
-    Object.assign(fileCabinetInstance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    if (!isDefined(bundleToReference)) {
+      log.debug('Could not find bundle with id: %s.', bundleId[0])
+    } else {
+      Object.assign(fileCabinetInstance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    }
   }
 }
 
@@ -86,7 +92,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     fileCabinetInstances.forEach(fileCabinetInstance => addBundleToFileCabinet(fileCabinetInstance, bundleIdToInstance))
 
     const scriptIdToElem = _.keyBy(
-      nonBundleElements.filter(isStandardInstanceOrCustomRecord),
+      await awu(nonBundleElements)
+        .filter(isStandardInstanceOrCustomRecord)
+        .toArray(),
       getServiceId
     )
     existingBundles
@@ -95,7 +103,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   },
 
   preDeploy: async changes => {
-    changes
+    await awu(changes)
       .map(getChangeData)
       .filter(isStandardInstanceOrCustomRecord)
       .forEach(element => {

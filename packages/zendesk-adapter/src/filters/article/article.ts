@@ -201,8 +201,8 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-  await awu(attachmentChanges)
-    .forEach(async attachmentChange => {
+  const attachmentsPromises = attachmentChanges
+    .map(async attachmentChange => {
       const attachmentInstance = getChangeData(attachmentChange)
       await createUnassociatedAttachment(client, attachmentInstance)
       // Keeping article-attachment relation for deploy stage
@@ -242,6 +242,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         articleNameToAttachments[parentArticleName] || []
       ).concat(attachmentInstance.value.id)
     })
+  await Promise.all(attachmentsPromises)
   // Article bodies needs to be updated when modifying inline attachments
   // There might be another request if the article_translation 'body' fields also changed
   // (To Do: SALTO-3076)

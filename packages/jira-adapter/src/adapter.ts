@@ -258,7 +258,6 @@ export const DEFAULT_FILTERS = [
   permissionSchemeFilter,
   allowedPermissionsSchemeFilter,
   deployPermissionSchemeFilter,
-
   // Must run after user filter
   accountIdFilter,
   // Must run after accountIdFilter

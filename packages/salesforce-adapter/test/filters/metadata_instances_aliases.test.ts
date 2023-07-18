@@ -63,7 +63,7 @@ describe('metadataInstancesAliases filter', () => {
     instanceWithLodash = new InstanceElement(
       'Test_Instance',
       mockTypes.CustomLabel,
-      { fullName: 'Test_Instance' }
+      { fullName: 'Test_Instance_Name' }
     )
     instances = [
       basicInstance,
@@ -108,7 +108,7 @@ describe('metadataInstancesAliases filter', () => {
       expect(instanceWithCustomSuffix.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestValueSet')
       expect(instanceWithParent.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Account: Billing')
       expect(layoutInstanceWithNamespace.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Account: CPQ Account Layout (SBQQ)')
-      expect(instanceWithLodash.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Instance')
+      expect(instanceWithLodash.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Test Instance Name')
     })
   })
 })

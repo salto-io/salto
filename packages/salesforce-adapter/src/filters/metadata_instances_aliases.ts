@@ -68,7 +68,7 @@ const setAliasForInstance = async (
     namespace ? `(${namespace})` : undefined,
   ].filter(isDefined)
     .join(' ')
-    .replace('_', ' ')
+    .replace(/_/g, ' ') // replace all underscores with spaces
   if (alias !== instance.value.fullName) {
     instance.annotations[CORE_ANNOTATIONS.ALIAS] = alias
   }

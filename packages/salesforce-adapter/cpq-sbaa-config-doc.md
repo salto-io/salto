@@ -26,13 +26,14 @@ Paste the following configuration snippet under the include fetch metadata secti
 ```
 
 ### Adding Relevant Data Records to the Salto workspace
-Managing salesforce data records within a Salto workspace is disabled by default and its reuqired to add a `data` configuration section in `/salto.config/adapters/salesforce.nacl`
+Managing salesforce data records within a Salto workspace is disabled by default and its required to add a `data` configuration section in `/salto.config/adapters/salesforce.nacl`
 
 Salesforce data configuration includes the following information:
 * `includeObjects`: A list of object name patterns. Data records of matching salesforce objects will be managed in the salto workspace.
 * `excludeObjects`: A list of objects name patterns. Data records of matching salesforce objects will be excluded from the salto workspace.
 * `allowReferenceTo`: A list of objects name patterns. Data records of matching salesforce objects will be managed in the salto workspace only in case they are referenced from other managed data records.
 * `saltoIDSettings`: Define cross environment id for data records by providing a list of object fields to construct the cross environment id from. Use `##allMasterDetailFields##` in order to include the SaltoID of referenced MasterDetail records.
+* `saltoAliasSettings`: Define the fields to create the alias for data records by providing a list of object fields to construct the alias from. Use `##allMasterDetailFields##` in order to include the Alias of referenced MasterDetail records.
 
 ### Example Salto Salesforce/CPQ Configuration
 ```

@@ -43,14 +43,14 @@ export type PathIndex = RemoteMap<Path[]>
 const getValuePathHints = (fragments: Fragment<Value>[], elemID: ElemID): PathHint[] => {
   // We only have 3 cases to handle: Object type (which can be split among files)
   // or a single list/primitive value.
-  const valueTopLevelKey = [{
-    key: elemID.getFullName(),
-    value: makeArray(fragments.map(f => f.path)),
-  }]
   if (fragments.length === 0) {
     // No fragments with this ID, so no path hints needed
     return []
   }
+  const valueTopLevelKey = [{
+    key: elemID.getFullName(),
+    value: makeArray(fragments.map(f => f.path)),
+  }]
   if (fragments.length === 1) {
     return valueTopLevelKey
   }

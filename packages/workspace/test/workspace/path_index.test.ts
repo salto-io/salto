@@ -546,8 +546,9 @@ describe('getElementsPathHints', () => {
     })
     const pathHints = getElementsPathHints([singlePath])
     expect(pathHints.length).toEqual(1)
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.obj')
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [['salto', 'obj', 'simple']] }),
+    ]))
   })
 
   it('should return one path hint for annotations and one for fields in ObjectType', async () => {
@@ -576,17 +577,12 @@ describe('getElementsPathHints', () => {
     })
     const pathHints = getElementsPathHints([singleFieldObj, singleFieldObjAnnotations])
     expect(pathHints.length).toEqual(4)
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.obj')
-    const fieldHints = pathHints.filter(p => p.key.includes('field'))
-    expect(hintsKeys).toContain('salto.obj.field')
-    expect(fieldHints.length).toEqual(1)
-    expect(fieldHints[0].value.length).toEqual(1)
-    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
-    expect(hintsKeys).toContain('salto.obj.annotation')
-    expect(annoHints.length).toEqual(1)
-    expect(annoHints[0].value.length).toEqual(1)
-    expect(hintsKeys).toContain('salto.obj.attr')
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [['salto', 'obj', 'field'], ['salto', 'obj', 'annotations']] }),
+      expect.objectContaining({ key: 'salto.obj.attr', value: [['salto', 'obj', 'annotations']] }),
+      expect.objectContaining({ key: 'salto.obj.annotation', value: [['salto', 'obj', 'annotations']] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [['salto', 'obj', 'field']] }),
+    ]))
   })
 
   it('should return path hints for divided annotations and divided fields in ObjectType', async () => {
@@ -638,24 +634,19 @@ describe('getElementsPathHints', () => {
       objFragAnnotationsOne, objFragAnnotationsTwo, objFragStdFields, objFragCustomFields,
     ])
     expect(pathHints.length).toEqual(10)
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.obj')
-    const fieldHints = pathHints.filter(p => p.key.includes('field'))
-    expect(fieldHints.length).toEqual(3)
-    expect(fieldHints[0].value.length).toEqual(2)
-    expect(hintsKeys).toContain('salto.obj.field')
-    expect(hintsKeys).toContain('salto.obj.field.stdField')
-    expect(hintsKeys).toContain('salto.obj.field.customField')
-    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
-    expect(annoHints.length).toEqual(3)
-    expect(annoHints[0].value.length).toEqual(2)
-    expect(hintsKeys).toContain('salto.obj.annotation')
-    expect(hintsKeys).toContain('salto.obj.annotation.anno')
-    expect(hintsKeys).toContain('salto.obj.annotation.ping')
-    const attrHints = pathHints.filter(p => p.key.includes('attr'))
-    expect(attrHints.length).toEqual(3)
-    expect(attrHints[0].value.length).toEqual(2)
-    expect(hintsKeys).toContain('salto.obj.attr')
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj.annotation', value: [['salto', 'obj', 'annotationsOne'], ['salto', 'obj', 'annotationsTwo']] }),
+      expect.objectContaining({ key: 'salto.obj.annotation.anno', value: [['salto', 'obj', 'annotationsOne']] }),
+      expect.objectContaining({ key: 'salto.obj.annotation.ping', value: [['salto', 'obj', 'annotationsTwo']] }),
+      expect.objectContaining({ key: 'salto.obj.attr', value: [['salto', 'obj', 'annotationsOne'], ['salto', 'obj', 'annotationsTwo']] }),
+      expect.objectContaining({ key: 'salto.obj.attr.anno', value: [['salto', 'obj', 'annotationsOne']] }),
+      expect.objectContaining({ key: 'salto.obj.attr.ping', value: [['salto', 'obj', 'annotationsTwo']] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [['salto', 'obj', 'standardFields'], ['salto', 'obj', 'customFields']] }),
+      expect.objectContaining({ key: 'salto.obj.field.stdField', value: [['salto', 'obj', 'standardFields']] }),
+      expect.objectContaining({ key: 'salto.obj.field.customField', value: [['salto', 'obj', 'customFields']] }),
+      expect.objectContaining({ key: 'salto.obj', value: [['salto', 'obj', 'annotationsOne'], ['salto', 'obj', 'annotationsTwo'], ['salto', 'obj', 'standardFields'], ['salto', 'obj', 'customFields']] }),
+
+    ]))
   })
 
   it('should return path hints for nested fields in ObjectType', async () => {
@@ -684,15 +675,14 @@ describe('getElementsPathHints', () => {
       path: ['salto', 'obj', 'two'],
     })
     const pathHints = getElementsPathHints([objFragFieldOne, objFragFieldTwo])
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.obj')
-    const fieldHints = pathHints.filter(p => p.key.includes('field'))
-    expect(fieldHints.length).toEqual(4)
-    expect(fieldHints[0].value.length).toEqual(2)
-    expect(hintsKeys).toContain('salto.obj.field')
-    expect(hintsKeys).toContain('salto.obj.field.myField')
-    expect(hintsKeys).toContain('salto.obj.field.myField.test')
-    expect(hintsKeys).toContain('salto.obj.field.myField.yo')
+    expect(pathHints.length).toEqual(5)
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj', value: [['salto', 'obj', 'one'], ['salto', 'obj', 'two']] }),
+      expect.objectContaining({ key: 'salto.obj.field', value: [['salto', 'obj', 'one'], ['salto', 'obj', 'two']] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField', value: [['salto', 'obj', 'one'], ['salto', 'obj', 'two']] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.test', value: [['salto', 'obj', 'one']] }),
+      expect.objectContaining({ key: 'salto.obj.field.myField.yo', value: [['salto', 'obj', 'two']] }),
+    ]))
   })
 
   it('should return path hints for nested values in an instances', async () => {
@@ -725,12 +715,13 @@ describe('getElementsPathHints', () => {
     )
     const pathHints = getElementsPathHints([instFragOne, instFragTwo, instAnnotations])
     expect(pathHints.length).toEqual(5)
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.obj.instance.inst')
-    expect(hintsKeys).toContain('salto.obj.instance.inst.anno')
-    expect(hintsKeys).toContain('salto.obj.instance.inst.a')
-    expect(hintsKeys).toContain('salto.obj.instance.inst.a.b')
-    expect(hintsKeys).toContain('salto.obj.instance.inst.a.c')
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.obj.instance.inst', value: [['salto', 'inst', 'A', 'B'], ['salto', 'inst', 'A', 'C'], ['salto', 'inst', 'annotations']] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a', value: [['salto', 'inst', 'A', 'B'], ['salto', 'inst', 'A', 'C']] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a.b', value: [['salto', 'inst', 'A', 'B']] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.a.c', value: [['salto', 'inst', 'A', 'C']] }),
+      expect.objectContaining({ key: 'salto.obj.instance.inst.anno', value: [['salto', 'inst', 'annotations']] }),
+    ]))
   })
 
   it('should return path hints for divided annotations in PrimitiveType', async () => {
@@ -758,16 +749,14 @@ describe('getElementsPathHints', () => {
     })
     const pathHints = getElementsPathHints([primitiveAnnotaionsA, primitiveAnnotaionsB])
     expect(pathHints.length).toEqual(7)
-    const hintsKeys = pathHints.map(p => p.key)
-    expect(hintsKeys).toContain('salto.primitive')
-    expect(hintsKeys).not.toContain('salto.primitive.field')
-    expect(hintsKeys).toContain('salto.primitive.annotation')
-    const annoHints = pathHints.filter(p => p.key.includes('annotation'))
-    expect(annoHints.length).toEqual(3)
-    expect(annoHints[0].value.length).toEqual(2)
-    expect(hintsKeys).toContain('salto.primitive.attr')
-    const attrHints = pathHints.filter(p => p.key.includes('attr'))
-    expect(attrHints.length).toEqual(3)
-    expect(attrHints[0].value.length).toEqual(2)
+    expect(pathHints).toEqual(expect.arrayContaining([
+      expect.objectContaining({ key: 'salto.primitive.annotation', value: [['salto', 'primitive', 'a'], ['salto', 'primitive', 'b']] }),
+      expect.objectContaining({ key: 'salto.primitive.annotation.a', value: [['salto', 'primitive', 'a']] }),
+      expect.objectContaining({ key: 'salto.primitive.annotation.b', value: [['salto', 'primitive', 'b']] }),
+      expect.objectContaining({ key: 'salto.primitive.attr', value: [['salto', 'primitive', 'a'], ['salto', 'primitive', 'b']] }),
+      expect.objectContaining({ key: 'salto.primitive.attr.a', value: [['salto', 'primitive', 'a']] }),
+      expect.objectContaining({ key: 'salto.primitive.attr.b', value: [['salto', 'primitive', 'b']] }),
+      expect.objectContaining({ key: 'salto.primitive', value: [['salto', 'primitive', 'a'], ['salto', 'primitive', 'b']] }),
+    ]))
   })
 })

@@ -409,6 +409,7 @@ describe('Custom Objects to Object Type filter', () => {
             customObjectType,
             {
               [INSTANCE_FULL_NAME_FIELD]: objectName,
+              [LABEL]: 'Test',
               fields: [
                 {
                   [INSTANCE_FULL_NAME_FIELD]: 'IsDeleted',
@@ -441,6 +442,10 @@ describe('Custom Objects to Object Type filter', () => {
         it('should have standard and packaged fields', () => {
           expect(packagedCustomObject.fields).toHaveProperty(fieldWithNamespaceName)
           expect(packagedCustomObject.fields).toHaveProperty('IsDeleted')
+        })
+        it('should have correct alias', () => {
+          expect(packagedCustomObject.annotations[CORE_ANNOTATIONS.ALIAS])
+            .toEqual(`Test (${namespaceName})`)
         })
       })
 

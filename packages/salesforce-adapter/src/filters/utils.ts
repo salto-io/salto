@@ -206,7 +206,7 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
   }
 }
 
-const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
+export const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
 
 const getNamespaceFromString = (relativeApiName: string): string | undefined => {
   const parts = relativeApiName

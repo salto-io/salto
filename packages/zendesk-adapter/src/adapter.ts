@@ -450,9 +450,9 @@ export default class ZendeskAdapter implements AdapterOperations {
 
     this.createClientBySubdomain = (subdomain: string, deployRateLimit = false): ZendeskClient => {
       const clientConfig = { ...this.userConfig[CLIENT_CONFIG] }
-      if (deployRateLimit) {
+      if (deployRateLimit && clientConfig.rateLimit?.deploy === undefined) {
         // Concurrent requests with Guide elements may cause 409 errors (SALTO-2961)
-        Object.assign(clientConfig, { rateLimit: { deploy: 1 } })
+        Object.assign(clientConfig, { rateLimit: { deploy: 20 } })
       }
       return new ZendeskClient({
         credentials: { ...credentials, subdomain },

@@ -1410,7 +1410,7 @@ describe('adapter', () => {
       })
       const settings1 = new InstanceElement('guide_language_settings1', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 1 })
       const settings2 = new InstanceElement('guide_language_settings2', new ObjectType({ elemID: new ElemID(ZENDESK, GUIDE_LANGUAGE_SETTINGS_TYPE_NAME) }), { brand: 2 })
-      it('should rate limit guide requests to 1, and not limit support requests', async () => {
+      it('should rate limit guide requests to 20, and not limit support requests', async () => {
         const zendeskAdapter = new ZendeskAdapter({
           config: DEFAULT_CONFIG,
           client,
@@ -1432,7 +1432,7 @@ describe('adapter', () => {
           filterRunnerClient: expect.objectContaining({
             config: {
               rateLimit: {
-                deploy: 1,
+                deploy: 20,
               },
             },
           }),
@@ -1441,6 +1441,35 @@ describe('adapter', () => {
         expect(createClientSpy).toHaveBeenCalledTimes(2)
         expect(createFiltersRunnerSpy).toHaveBeenCalledTimes(3)
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(1, {}) // Regular deploy
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
+        expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
+      })
+      it('should rate limit guide requests by config, and not limit support requests', async () => {
+        const zendeskAdapter = new ZendeskAdapter({
+          config: { ...DEFAULT_CONFIG, ...{ client: { rateLimit: { deploy: 10 } } } },
+          client,
+          credentials: { accessToken: '', subdomain: '' },
+          elementsSource: buildElementsSourceFromElements([brand1, brand2, settings1, settings2]),
+        })
+        // any is needed to be able to spy on private method
+        // eslint-disable-next-line
+        const createFiltersRunnerSpy = jest.spyOn(zendeskAdapter as any, 'createFiltersRunner')
+        await zendeskAdapter.deploy({
+          changeGroup: {
+            groupID: '1',
+            changes: [toChange({ after: settings1 }), toChange({ after: settings2 })],
+          },
+        })
+        const guideFilterRunnerCall = expect.objectContaining({
+          filterRunnerClient: expect.objectContaining({
+            config: {
+              rateLimit: {
+                deploy: 10,
+              },
+            },
+          }),
+        })
+
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(2, guideFilterRunnerCall) // guide deploy
         expect(createFiltersRunnerSpy).toHaveBeenNthCalledWith(3, guideFilterRunnerCall) // guide deploy
       })

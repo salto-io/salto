@@ -426,10 +426,25 @@ export const loginFromCredentialsAndReturnOrgId = async (
   return identityInfo.organization_id
 }
 
+const queryAccountType = async (conn: Connection, orgId: string): Promise<string | undefined> => {
+  try {
+    const result = await conn.query(`SELECT OrganizationType FROM Organization WHERE Id = '${orgId}'`)
+    const [organizationRecord] = result.records as SalesforceRecord[]
+    log.debug('organization record: %o', organizationRecord)
+    return _.isString(organizationRecord.OrganizationType)
+      ? organizationRecord.OrganizationType
+      : undefined
+  } catch (e) {
+    log.error('Failed to query accountType from salesforce', e)
+    return undefined
+  }
+}
+
 export const getConnectionDetails = async (
   creds: Credentials, connection? : Connection): Promise<{
   remainingDailyRequests: number
   orgId: string
+  accountType?: string
 }> => {
   const options = {
     maxAttempts: 2,
@@ -441,13 +456,22 @@ export const getConnectionDetails = async (
   return {
     remainingDailyRequests: limits.DailyApiRequests.Remaining,
     orgId,
+    accountType: await queryAccountType(conn, orgId),
   }
 }
+
+const PRODUCTION_ACCOUNT_TYPES = [
+  'Team Edition',
+  'Professional Edition',
+  'Enterprise Edition',
+  'Unlimited Edition',
+  'Contact Manager Edition',
+]
 
 export const validateCredentials = async (
   creds: Credentials, minApiRequestsRemaining = 0, connection?: Connection,
 ): Promise<AccountInfo> => {
-  const { remainingDailyRequests, orgId } = await getConnectionDetails(
+  const { remainingDailyRequests, orgId, accountType } = await getConnectionDetails(
     creds, connection
   )
   if (remainingDailyRequests < minApiRequestsRemaining) {
@@ -455,7 +479,13 @@ export const validateCredentials = async (
       `Remaining limits: ${remainingDailyRequests}, needed: ${minApiRequestsRemaining}`
     )
   }
-  return { accountId: orgId }
+  return {
+    accountId: orgId,
+    accountType,
+    isProduction: creds.isSandbox
+      ? false
+      : PRODUCTION_ACCOUNT_TYPES.includes(accountType ?? ''),
+  }
 }
 export default class SalesforceClient {
   private readonly retryOptions: RequestRetryOptions

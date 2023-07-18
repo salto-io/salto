@@ -43,15 +43,9 @@ const { createMissingInstance } = referencesUtils
 
 const BODY_FIELD = 'body'
 
-const ELEMENTS_REGEXES = [
-  [CATEGORIES_FIELD, CATEGORY_TYPE_NAME],
-  [SECTIONS_FIELD, SECTION_TYPE_NAME],
-  [ARTICLES_FIELD, ARTICLE_TYPE_NAME],
-  [ARTICLE_ATTACHMENTS_FIELD, ARTICLE_ATTACHMENT_TYPE_NAME],
-].map(
-  ([field, type]) => ({
+const ELEMENTS_REGEXES = [CATEGORIES_FIELD, SECTIONS_FIELD, ARTICLES_FIELD, ARTICLE_ATTACHMENTS_FIELD].map(
+  field => ({
     field,
-    type,
     urlRegex: new RegExp(`(\\/${field}\\/\\d+)`),
     idRegex: new RegExp(`(?<url>/${field}/)(?<id>\\d+)`),
   })
@@ -67,12 +61,12 @@ type missingBrandInfo = {
 }
 
 // Attempt to match the regex to an element and create a reference to that element
-const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, type, enableMissingReferences }: {
+const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRegex, field, enableMissingReferences }: {
   urlPart: string
   urlBrandInstance: InstanceElement
   idToInstance: Record<string, InstanceElement>
   idRegex: RegExp
-  type: string
+  field: string
   enableMissingReferences?: boolean
 }): TemplatePart[] | undefined => {
   const { url, id } = urlPart.match(idRegex)?.groups ?? {}
@@ -88,7 +82,7 @@ const createInstanceReference = ({ urlPart, urlBrandInstance, idToInstance, idRe
     }
     // if could not find a valid instance, create a MissingReferences.
     if (enableMissingReferences) {
-      const missingInstance = createMissingInstance(ZENDESK, type, `${urlBrandInstance.value.name}_${id}`)
+      const missingInstance = createMissingInstance(ZENDESK, field, `${urlBrandInstance.value.name}_${id}`)
       missingInstance.value.id = id
       return [url, new ReferenceExpression(missingInstance.elemID, missingInstance)]
     }
@@ -109,13 +103,13 @@ const referenceUrls = ({ urlPart, urlBrandInstance, additionalInstances, enableM
   }
 
   // Attempt to match other instances, stop on the first result
-  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field, type }) =>
+  const result = wu(ELEMENTS_REGEXES).map(({ idRegex, field }) =>
     createInstanceReference({
       urlPart,
       urlBrandInstance,
       idToInstance: additionalInstances[field],
       idRegex,
-      type,
+      field,
       enableMissingReferences,
     })).find(isDefined)
 

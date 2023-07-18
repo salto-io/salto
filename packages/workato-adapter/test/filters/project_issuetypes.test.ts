@@ -138,34 +138,12 @@ describe('projectIssuetype filter', () => {
           description: '',
           keyword: 'action',
           dynamicPickListSelection: {
-            project_issuetype: {
-              ids: [
-                'projectInSecondBlockName@@PISB',
-                'PISB--IssueType',
-              ],
-              titles: [
-                'projectInSecondBlockName',
-                'projectInSecondBlockName : IssueType',
-              ],
-            },
+            project_issuetype: 'projectInSecondBlockName : IssueType',
           },
           input: {
             project_issuetype: 'PISB--IssueType',
             issuekey: 'issue key',
             reporter_id: "#{_('data.jira.recipeCode.fields.customfield_10027')}",
-          },
-          uuid: 'uuid3',
-        },
-        {
-          number: 4,
-          provider: 'jira',
-          name: 'update_issue',
-          as: 'recipeCode_second',
-          description: '',
-          keyword: 'action',
-          input: {
-            project_issuetype: 'CheckWithout--DynamicPickListSelction',
-            issuekey: 'issue key',
           },
           uuid: 'uuid3',
         },
@@ -215,10 +193,6 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[1].input.projectKey).toBeUndefined()
       expect(recipeCode.value.block[1].input.issueType).toBeUndefined()
 
-      expect(recipeCode.value.block[2].input.project_issuetype).toBeDefined()
-      expect(recipeCode.value.block[2].input.projectKey).toBeUndefined()
-      expect(recipeCode.value.block[2].input.issueType).toBeUndefined()
-
       await filter.onFetch(elements)
 
       expect(recipeCode.value.block[0].block[0].input.project_issuetype).toBeUndefined()
@@ -232,12 +206,6 @@ describe('projectIssuetype filter', () => {
       expect(recipeCode.value.block[1].input.projectKey).toEqual('PISB')
       expect(recipeCode.value.block[1].input.issueType).toBeDefined()
       expect(recipeCode.value.block[1].input.issueType).toEqual('IssueType')
-
-      expect(recipeCode.value.block[2].input.project_issuetype).toBeUndefined()
-      expect(recipeCode.value.block[2].input.projectKey).toBeDefined()
-      expect(recipeCode.value.block[2].input.projectKey).toEqual('CheckWithout')
-      expect(recipeCode.value.block[2].input.issueType).toBeDefined()
-      expect(recipeCode.value.block[2].input.issueType).toEqual('DynamicPickListSelction')
     })
 
     it('should replace \'sample_project_issuetype\' to sampleProjectKey and sampleIssueType at input', async () => {

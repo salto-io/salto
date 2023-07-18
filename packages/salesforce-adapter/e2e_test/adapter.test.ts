@@ -15,10 +15,29 @@
 */
 import _ from 'lodash'
 import {
-  ObjectType, ElemID, InstanceElement, Field, Value, Element, Values, BuiltinTypes,
-  isInstanceElement, isReferenceExpression, ReferenceExpression, CORE_ANNOTATIONS,
-  TypeElement, isObjectType, getRestriction, StaticFile, isStaticFile, getChangeData,
-  Change, FetchOptions, ProgressReporter,
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  Field,
+  Value,
+  Element,
+  Values,
+  BuiltinTypes,
+  isInstanceElement,
+  isReferenceExpression,
+  ReferenceExpression,
+  CORE_ANNOTATIONS,
+  TypeElement,
+  isObjectType,
+  getRestriction,
+  StaticFile,
+  isStaticFile,
+  getChangeData,
+  Change,
+  FetchOptions,
+  ProgressReporter,
+  toChange,
+  AdditionChange,
 } from '@salto-io/adapter-api'
 import { findElement, naclCase } from '@salto-io/adapter-utils'
 import { MetadataInfo, RetrieveResult } from 'jsforce'
@@ -64,6 +83,11 @@ import {
   summaryFieldName, verifyElementsExist,
 } from './setup'
 import { testHelpers } from './jest_environment'
+import {
+  CUSTOM_SETTINGS_TYPE,
+  INSTANCE_FULL_NAME_FIELD,
+  LIST_CUSTOM_SETTINGS_TYPE,
+} from '../src/constants'
 
 const { awu } = collections.asynciterable
 
@@ -3808,6 +3832,39 @@ describe('Salesforce adapter E2E with real account', () => {
 
         expect(additionDeploy.errors).toHaveLength(0)
         expect(additionDeploy.appliedChanges).toEqual(changes)
+      })
+    })
+    describe('Deploy instance with ownerId (SALTO-4397)', () => {
+      let instance: InstanceElement
+      let settings: InstanceElement
+      beforeEach(() => {
+        settings = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'Settings',
+          },
+          mockTypes.Account,
+          undefined,
+          {
+            [CUSTOM_SETTINGS_TYPE]: LIST_CUSTOM_SETTINGS_TYPE,
+          },
+        )
+        instance = createInstanceElement(
+          {
+            [INSTANCE_FULL_NAME_FIELD]: 'SomeInstanceWithOwnerId',
+          },
+          mockTypes.Account,
+        )
+      })
+      it('Should deploy successfully', async () => {
+        const deployResult = await adapter.deploy({
+          changeGroup: {
+            groupID: instance.elemID.getFullName(),
+            changes: [toChange({ after: settings }), toChange({ after: instance })],
+          },
+        })
+        expect(deployResult.errors).toBeEmpty()
+        expect(deployResult.appliedChanges).toHaveLength(1)
+        expect(getChangeData(deployResult.appliedChanges[0] as AdditionChange<InstanceElement>).value).not.toHaveProperty('ownerId')
       })
     })
   })

@@ -56,7 +56,7 @@ const getParentAlias = async (
     : undefined
 }
 
-const setAliasForInstance = async (
+const setInstanceAlias = async (
   instance: MetadataInstanceElement,
   elementsSource: ReadOnlyElementsSource
 ): Promise<void> => {
@@ -84,7 +84,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     const elementsSource = buildElementsSourceForFetch(elements, config)
     await awu(elements)
       .filter(isMetadataInstanceElement)
-      .forEach(metadataInstance => setAliasForInstance(metadataInstance as MetadataInstanceElement, elementsSource))
+      .forEach(metadataInstance => setInstanceAlias(metadataInstance as MetadataInstanceElement, elementsSource))
   },
 })
 

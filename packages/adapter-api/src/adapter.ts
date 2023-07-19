@@ -54,18 +54,12 @@ type SaltoDeployErrors = {
   errors: ReadonlyArray<SaltoError | SaltoElementError>
 }
 
-type AdapterDeployErrors = {
-  errors: ReadonlyArray<SaltoError | SaltoElementError | Error>
-}
-
 type BaseDeployResult = {
   appliedChanges: ReadonlyArray<Change>
   extraProperties?: DeployExtraProperties
 }
 
-export type AdapterDeployResult = SaltoDeployErrors & BaseDeployResult
-
-export type DeployResult = AdapterDeployErrors & BaseDeployResult
+export type DeployResult = SaltoDeployErrors & BaseDeployResult
 
 export type Progress = {
   message: string

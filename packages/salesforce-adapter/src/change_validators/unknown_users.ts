@@ -167,7 +167,7 @@ const USER_GETTERS: TypesWithUserFields = {
     userNestedField('Users', 'user', userFieldValue),
   ],
   EscalationRules: [
-    userNestedField('RuleEntry', 'assignedTo', getUserDependingOnType('assignedToType')),
+    userNestedField('EscalationAction', 'assignedTo', getUserDependingOnType('assignedToType')),
   ],
 }
 

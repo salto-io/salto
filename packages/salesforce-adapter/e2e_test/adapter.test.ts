@@ -120,6 +120,15 @@ describe('Salesforce adapter E2E with real account', () => {
       },
       {
         [FETCH_CONFIG]: {
+          metadata: {
+            include: [
+              {
+                metadataType: '.*',
+                namespace: '',
+                name: '.*',
+              },
+            ],
+          },
           data: {
             includeObjects: [
               '.*',

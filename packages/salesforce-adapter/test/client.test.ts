@@ -512,30 +512,24 @@ describe('salesforce client', () => {
         validateCredentials(credentials, 100000, connection)
       ).rejects.toThrow(ApiLimitsTooLowError)
     })
-    it('should return empty string as accountId', async () => {
-      expect(await validateCredentials(credentials, 3, connection)).toEqual({
-        accountId: '',
-        accountType: undefined,
-        isProduction: false,
-      })
+    it('should return empty string as accountId and no values for accountType and isProduction', async () => {
+      expect(await validateCredentials(credentials, 3, connection)).toEqual({ accountId: '' })
     })
     describe('isProduction and accountType', () => {
       const PRODUCTION_ORGANIZATION_TYPE = 'Professional Edition'
       const NON_PRODUCTION_ORGANIZATION_TYPE = 'Developer Edition'
-      const mockOrganizationType = (organizationType: string): void => {
+      const mockOrganizationQueryResult = ({ orgType, isSandbox }: {orgType: string; isSandbox: boolean}): void => {
         connection.query.mockResolvedValue({
           records: [{
-            OrganizationType: organizationType,
+            OrganizationType: orgType,
+            IsSandbox: isSandbox,
           }],
         } as unknown as QueryResult<{OrganizationType: string}>)
       }
       describe('when organization is a sandbox', () => {
-        beforeEach(() => {
-          credentials.isSandbox = true
-        })
         describe('when OrganizationType is PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationType(PRODUCTION_ORGANIZATION_TYPE)
+            mockOrganizationQueryResult({ orgType: PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(await validateCredentials(credentials, 3, connection)).toEqual({
@@ -547,7 +541,7 @@ describe('salesforce client', () => {
         })
         describe('when OrganizationType is NON_PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationType(NON_PRODUCTION_ORGANIZATION_TYPE)
+            mockOrganizationQueryResult({ orgType: NON_PRODUCTION_ORGANIZATION_TYPE, isSandbox: true })
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(await validateCredentials(credentials, 3, connection)).toEqual({
@@ -559,12 +553,9 @@ describe('salesforce client', () => {
         })
       })
       describe('when organization is not a sandbox', () => {
-        beforeEach(() => {
-          credentials.isSandbox = false
-        })
         describe('when OrganizationType is PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationType(PRODUCTION_ORGANIZATION_TYPE)
+            mockOrganizationQueryResult({ orgType: PRODUCTION_ORGANIZATION_TYPE, isSandbox: false })
           })
           it('should return isProduction true and correct accountType', async () => {
             expect(await validateCredentials(credentials, 3, connection)).toEqual({
@@ -576,7 +567,7 @@ describe('salesforce client', () => {
         })
         describe('when OrganizationType is NON_PRODUCTION_ORGANIZATION_TYPE', () => {
           beforeEach(() => {
-            mockOrganizationType(NON_PRODUCTION_ORGANIZATION_TYPE)
+            mockOrganizationQueryResult({ orgType: NON_PRODUCTION_ORGANIZATION_TYPE, isSandbox: false })
           })
           it('should return isProduction false and correct accountType', async () => {
             expect(await validateCredentials(credentials, 3, connection)).toEqual({

@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/persistent-pool",
-  "version": "0.3.41",
+  "version": "0.3.42",
   "license": "Apache-2.0",
   "description": "Keeps a persistent pool of objects",
   "repository": {
@@ -28,9 +28,9 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "3.198.0",
     "@aws-sdk/lib-dynamodb": "3.198.0",
-    "@salto-io/logging": "0.3.41",
-    "@salto-io/lowerdash": "0.3.41",
-    "@salto-io/test-utils": "0.3.41",
+    "@salto-io/logging": "0.3.42",
+    "@salto-io/lowerdash": "0.3.42",
+    "@salto-io/test-utils": "0.3.42",
     "aws-sdk": "^2.863.0",
     "uuid": "^8.3.0"
   },

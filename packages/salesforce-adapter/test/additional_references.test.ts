@@ -779,7 +779,32 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create a reference to addition', async () => {
+    it('should create a reference to addition if enabled', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        pageAccesses: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        pageAccesses: {
+          SomeApexPage: {
+            apexPage: 'SomeApexPage',
+            enabled: true,
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: apexPage }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toIncludeAllPartialMembers([
+        { source: permissionSetInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
+        { source: profileInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
+      ])
+    })
+
+    it('should not create a reference if not enabled', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         pageAccesses: {
         },
@@ -798,12 +823,8 @@ describe('getAdditionalReferences', () => {
         toChange({ after: apexPage }),
       ]
       const refs = await getAdditionalReferences(changes)
-      expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
-        { source: profileInstanceAfter.elemID.createNestedID('pageAccesses', 'SomeApexPage'), target: apexPage.elemID },
-      ])
+      expect(refs).toBeEmpty()
     })
-
     it('should create a reference to modification', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         pageAccesses: {

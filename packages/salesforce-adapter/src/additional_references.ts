@@ -338,7 +338,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     profilesAndPermSetsChanges,
     APEX_PAGE_SECTION,
     refNameFromField(APEX_PAGE_METADATA_TYPE, 'apexPage'),
-    alwaysCreateRefs,
+    createRefIfExistingOrEnabled,
     instancesIndex.byTypeAndApiName,
     instancesIndex.byTypeAndElemId,
   )

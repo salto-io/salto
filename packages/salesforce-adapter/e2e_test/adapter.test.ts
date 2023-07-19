@@ -56,7 +56,10 @@ import {
   CustomField, CustomObject, FieldPermissions, FilterItem, ObjectPermissions, ProfileInfo,
   TopicsForObjectsInfo,
 } from '../src/client/types'
-import { UsernamePasswordCredentials } from '../src/types'
+import {
+  FETCH_CONFIG,
+  UsernamePasswordCredentials,
+} from '../src/types'
 import {
   Types, metadataType, apiName, formulaTypeName, MetadataInstanceElement, MetadataObjectType,
   createInstanceElement,
@@ -111,8 +114,26 @@ describe('Salesforce adapter E2E with real account', () => {
   let credLease: CredsLease<UsernamePasswordCredentials>
   beforeAll(async () => {
     credLease = await testHelpers().credentials()
-    const adapterAttr = realAdapter({ credentials:
-      new UsernamePasswordCredentials(credLease.value) })
+    const adapterAttr = realAdapter(
+      {
+        credentials: new UsernamePasswordCredentials(credLease.value),
+      },
+      {
+        [FETCH_CONFIG]: {
+          data: {
+            includeObjects: [
+              '.*',
+            ],
+            saltoIDSettings: {
+              defaultIdFields: [
+                '##allMasterDetailFields##',
+                'Name',
+              ],
+            },
+          },
+        },
+      },
+    )
     adapter = adapterAttr.adapter
     client = adapterAttr.client
   })

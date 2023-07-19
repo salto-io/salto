@@ -24,7 +24,6 @@ import {
   isFieldChange,
   isInstanceChange,
   isModificationChange,
-  isObjectTypeChange,
   ModificationChange,
   ReferenceMapping,
   Value,
@@ -35,7 +34,6 @@ import {
   multiIndex,
   values,
 } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import {
   getDetailedChanges,
   getValuesChanges,
@@ -62,11 +60,8 @@ import {
 } from './constants'
 
 const { awu } = collections.asynciterable
-type AwuIterable<T> = collections.asynciterable.AwuIterable<T>
 
 const { isDefined } = values
-
-const log = logger(module)
 
 const CUSTOM_APP_SECTION = 'applicationVisibilities'
 const APEX_CLASS_SECTION = 'classAccesses'
@@ -117,7 +112,6 @@ const fieldRefsFromProfileOrPermissionSet = async (
    */
   const apiName = await safeApiName(getChangeData(potentialTarget))
   if (apiName === undefined) {
-    log.warn('no apiName for %o', potentialTarget)
     return []
   }
   return profilesAndPermissionSetsChanges
@@ -211,12 +205,11 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .toArray()
 
-  const customObjectChanges: AwuIterable<AdditionOrModificationChange> = awu(changes)
+  const customObjectChanges = awu(changes)
     .filter(isAdditionOrModificationChange)
-    .filter(isObjectTypeChange)
-    .filter(async change => isCustomObject(getChangeData(change)))
+    .filter(change => isCustomObject(getChangeData(change)))
 
-  const instanceChanges: AwuIterable<AdditionOrModificationChange> = awu(changes)
+  const instanceChanges: AdditionOrModificationChange[] = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
 
@@ -259,7 +252,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const layoutRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     LAYOUTS_SECTION,
-    layoutAssignment => ({ typeName: LAYOUT_TYPE_ID_METADATA_TYPE, refName: layoutAssignment[0].layout }),
+    layoutAssignment => ({ typeName: LAYOUT_TYPE_ID_METADATA_TYPE, refName: layoutAssignment[0]?.layout }),
     instancesIndex.byTypeAndApiName,
   )
 

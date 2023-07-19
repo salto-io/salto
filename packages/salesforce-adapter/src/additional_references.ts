@@ -124,10 +124,21 @@ const fieldRefsFromProfileOrPermissionSet = async (
     ))
 }
 
+type RefTargetName = {
+  typeName: string
+  refName: string
+}
+
+type RefNameGetter = (element: Value, key: string) => RefTargetName[]
+
+const refNameFromField = (typeName: string, fieldName: string): RefNameGetter => (
+  element => ([{ typeName, refName: element[fieldName] }])
+)
+
 const instanceRefsFromProfileOrPermissionSet = async (
   profilesAndPermissionSets: ModificationChange<InstanceElement>[],
   profileSection: string,
-  instanceNameGetter: (element: Value, key: string) => { typeName: string; refName: string },
+  instanceNameGetter: RefNameGetter,
   instanceIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
 ): Promise<ReferenceMapping[]> => {
   const extractRefFromSectionEntry = async (
@@ -135,17 +146,16 @@ const instanceRefsFromProfileOrPermissionSet = async (
     sectionEntryKey: string,
     sectionEntryContents: Value,
   ): Promise<ReferenceMapping[]> => {
-    const { typeName, refName } = instanceNameGetter(sectionEntryContents, sectionEntryKey)
-    const refTarget = instanceIndex.get(typeName, refName)
-    if (refTarget === undefined) {
-      return []
-    }
-    return createReferenceMapping(
-      profileOrPermissionSetChange,
-      refTarget,
-      sectionEntryKey,
-      profileSection,
-    )
+    const refNames = instanceNameGetter(sectionEntryContents, sectionEntryKey)
+    return refNames
+      .map(({ typeName, refName }) => instanceIndex.get(typeName, refName))
+      .filter(isDefined)
+      .flatMap(refTarget => createReferenceMapping(
+        profileOrPermissionSetChange,
+        refTarget,
+        sectionEntryKey,
+        profileSection,
+      ))
   }
 
   return awu(profilesAndPermissionSets)
@@ -229,22 +239,32 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const customAppsRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     CUSTOM_APP_SECTION,
-    customApp => ({ typeName: CUSTOM_APPLICATION_METADATA_TYPE, refName: customApp.application }),
+    refNameFromField(CUSTOM_APPLICATION_METADATA_TYPE, 'application'),
     instancesIndex.byTypeAndApiName,
   )
 
   const apexClassRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     APEX_CLASS_SECTION,
-    apexClass => ({ typeName: APEX_CLASS_METADATA_TYPE, refName: apexClass.apexClass }),
+    refNameFromField(APEX_CLASS_METADATA_TYPE, 'apexClass'),
     instancesIndex.byTypeAndApiName,
   )
 
   const flowRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     FLOW_SECTION,
-    flow => ({ typeName: FLOW_METADATA_TYPE, refName: flow.flow }),
+    refNameFromField(FLOW_METADATA_TYPE, 'flow'),
     instancesIndex.byTypeAndApiName,
+  )
+
+  const getRefsFromLayoutAssignment = (layoutAssignment: Value): RefTargetName[] => (
+    [
+      { typeName: LAYOUT_TYPE_ID_METADATA_TYPE, refName: layoutAssignment[0]?.layout },
+      ...layoutAssignment
+        .map((layoutAssignmentEntry: Value) => layoutAssignmentEntry.recordType)
+        .filter(isDefined)
+        .map((recordTypeName: string) => ({ typeName: RECORD_TYPE_METADATA_TYPE, refName: recordTypeName })),
+    ]
   )
 
   // note that permission sets don't contain layout assignments, but it simplifies our code to pretend like they might
@@ -252,21 +272,21 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
   const layoutRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     LAYOUTS_SECTION,
-    layoutAssignment => ({ typeName: LAYOUT_TYPE_ID_METADATA_TYPE, refName: layoutAssignment[0]?.layout }),
+    getRefsFromLayoutAssignment,
     instancesIndex.byTypeAndApiName,
   )
 
   const apexPageRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     APEX_PAGE_SECTION,
-    apexPage => ({ typeName: APEX_PAGE_METADATA_TYPE, refName: apexPage.apexPage }),
+    refNameFromField(APEX_PAGE_METADATA_TYPE, 'apexPage'),
     instancesIndex.byTypeAndApiName,
   )
 
   const objectRefs = await instanceRefsFromProfileOrPermissionSet(
     profilesAndPermSetsChanges,
     OBJECT_SECTION,
-    (object, key) => ({ typeName: key, refName: object.object }),
+    (object, key) => ([{ typeName: key, refName: object.object }]),
     instancesIndex.byTypeAndApiName,
   )
 
@@ -291,30 +311,6 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
         ))
     })
 
-  const recordTypeRefsFromLayouts = (
-    profilesAndPermSetsChanges
-      .filter(change => LAYOUTS_SECTION in getChangeData(change).value)
-      .flatMap(change => (
-        Object.entries(getChangeData(change).value[LAYOUTS_SECTION])
-          .flatMap(([key, layoutAssignments]) => {
-            const recordTypeRefNames = getAllRefNamesFromSection(
-              getChangeData(change).elemID,
-              layoutAssignments,
-              'recordType',
-            )
-            return recordTypeRefNames
-              .filter(recordTypeName => instancesIndex.byTypeAndApiName.get(RECORD_TYPE_METADATA_TYPE, recordTypeName))
-              .flatMap(refName => createRecordTypeRef(
-                change,
-                instancesIndex.byTypeAndApiName,
-                LAYOUTS_SECTION,
-                [key],
-                refName
-              ))
-          })
-      ))
-  )
-
   return fieldPermissionsRefs
     .concat(customAppsRefs)
     .concat(apexClassRefs)
@@ -323,6 +319,5 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .concat(objectRefs)
     .concat(apexPageRefs)
     .concat(recordTypeRefs)
-    .concat(recordTypeRefsFromLayouts)
     .toArray()
 }

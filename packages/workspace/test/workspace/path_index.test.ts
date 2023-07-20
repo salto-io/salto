@@ -286,7 +286,7 @@ describe('split element by path', () => {
     },
     path: ['salto', 'obj', 'customFields'],
   })
-  const objFragAnnotations = new ObjectType({
+  const objFragAnnotationsOne = new ObjectType({
     elemID: objElemId,
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -294,7 +294,18 @@ describe('split element by path', () => {
     annotations: {
       anno: 'Hey',
     },
-    path: ['salto', 'obj', 'annotations'],
+    path: ['salto', 'obj', 'annotationsOne'],
+  })
+
+  const objFragAnnotationsTwo = new ObjectType({
+    elemID: objElemId,
+    annotationRefsOrTypes: {
+      num: BuiltinTypes.NUMBER,
+    },
+    annotations: {
+      num: 22,
+    },
+    path: ['salto', 'obj', 'annotationsTwo'],
   })
 
   const objFull = new ObjectType({
@@ -315,9 +326,54 @@ describe('split element by path', () => {
     },
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      num: BuiltinTypes.NUMBER,
     },
     annotations: {
       anno: 'Hey',
+      num: 22,
+    },
+  })
+
+  const singleFieldObjElemId = new ElemID('salto', 'obj2')
+  const singleFieldObj = new ObjectType({
+    elemID: singleFieldObjElemId,
+    fields: {
+      uriField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    path: ['salto', 'obj2', 'field'],
+  })
+
+  const singleFieldObjAnnotations = new ObjectType({
+    elemID: singleFieldObjElemId,
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Bye',
+    },
+    path: ['salto', 'obj2', 'annotations'],
+  })
+
+  const singleFieldObjFull = new ObjectType({
+    elemID: singleFieldObjElemId,
+    fields: {
+      uriField: {
+        refType: createRefToElmWithValue(BuiltinTypes.STRING),
+        annotations: {
+          test: 'test',
+        },
+      },
+    },
+    annotationRefsOrTypes: {
+      anno: createRefToElmWithValue(BuiltinTypes.STRING),
+    },
+    annotations: {
+      anno: 'Bye',
     },
   })
 
@@ -373,10 +429,13 @@ describe('split element by path', () => {
   })
 
   const fullObjFrags = [
-    objFragStdFields, objFragCustomFields, objFragAnnotations,
+    objFragStdFields, objFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
+  ]
+  const singleFieldObjFrags = [
+    singleFieldObj, singleFieldObjAnnotations,
   ]
   const unmergedElements = [
-    ...fullObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
+    ...fullObjFrags, ...singleFieldObjFrags, singlePathObj, noPathObj, multiPathInstanceA, multiPathInstanceB,
   ]
   const pi = new InMemoryRemoteMap<Path[]>()
 
@@ -384,10 +443,17 @@ describe('split element by path', () => {
     await updatePathIndex({ pathIndex: pi, unmergedElements })
   })
 
-  it('should split an element with multiple pathes', async () => {
-    const splitedElements = await splitElementByPath(objFull, pi)
+  it('should split an element with multiple paths', async () => {
+    const splitElements = await splitElementByPath(objFull, pi)
     fullObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+    )
+  })
+
+  it('should split an element with one fields file', async () => {
+    const splitElements = await splitElementByPath(singleFieldObjFull, pi)
+    singleFieldObjFrags.forEach(
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
 
@@ -400,15 +466,15 @@ describe('split element by path', () => {
   })
 
   it('should return a single object for an element with one path', async () => {
-    const splitedElements = await splitElementByPath(singlePathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(singlePathObj)
+    const splitElements = await splitElementByPath(singlePathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(singlePathObj)
   })
 
   it('should return the element for an element with no pathes', async () => {
-    const splitedElements = await splitElementByPath(noPathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(noPathObj)
+    const splitElements = await splitElementByPath(noPathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(noPathObj)
   })
 })
 

@@ -172,7 +172,7 @@ export const deployOrderChanges = async ({ changes, client, config, orderField }
   config: FilterContext
   orderField: string
 }) : Promise<DeployResult> => {
-  const orderChangeErrors: (Error | SaltoElementError)[] = []
+  const orderChangeErrors: (SaltoElementError)[] = []
   const appliedChanges: Change[] = []
 
   await awu(changes).forEach(async change => {

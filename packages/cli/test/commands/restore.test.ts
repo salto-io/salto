@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { restore } from '@salto-io/core'
+import { restore, restorePaths } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { DetailedChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
 import { getUserBooleanInput } from '../../src/callbacks'
@@ -21,6 +21,7 @@ import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
 import * as mocks from '../mocks'
 import { buildEventName } from '../../src/telemetry'
+import Prompts from '../../src/prompts'
 
 const commandName = 'restore'
 const eventsNames = {
@@ -39,6 +40,7 @@ jest.mock('../../src/callbacks', () => ({
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   restore: jest.fn().mockImplementation(() => Promise.resolve([])),
+  restorePaths: jest.fn().mockImplementation(() => Promise.resolve([])),
 }))
 
 describe('restore command', () => {
@@ -538,6 +540,52 @@ describe('restore command', () => {
 
       expect(output.stdout.content).not.toContain('Static resources are not supported')
       expect(result).toBe(CliExitCode.Success)
+    })
+  })
+
+  describe('restore paths', () => {
+    it('should not warn of added static files with content', async () => {
+      const workspace = mocks.mockWorkspace({})
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+          restorePaths: true,
+        },
+        workspace,
+      })
+
+      expect(restorePaths).toHaveBeenCalled()
+      expect(restore).not.toHaveBeenCalled()
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should fail when requesting to restore paths with specific selectors', async () => {
+      const workspace = mocks.mockWorkspace({})
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          elementSelectors: ['salto.*'],
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+          restorePaths: true,
+        },
+        workspace,
+      })
+
+      expect(output.stderr.content).toContain(Prompts.RESTORE_PATHS_WITH_ELEMENT_SELECTORS)
+      expect(result).toBe(CliExitCode.UserInputError)
     })
   })
 })

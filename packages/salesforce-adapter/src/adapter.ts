@@ -457,7 +457,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
-    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope ${safeJsonStringify(changeGroup.changes.map(getChangeData).map(e => e.elemID.getFullName()))}`)
+    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()

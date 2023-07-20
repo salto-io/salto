@@ -156,7 +156,7 @@ export class ElemID {
       return this.nameParts.length - 1
     }
     if (this.isAnnotationTypeID()) {
-      // annotation is already 1 level nested
+      // annotation/attr/field are already 1 level nested
       return this.nameParts.length + 1
     }
     return this.nameParts.length

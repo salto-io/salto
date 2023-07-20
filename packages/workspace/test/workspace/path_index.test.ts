@@ -286,7 +286,7 @@ describe('split element by path', () => {
     },
     path: ['salto', 'obj', 'customFields'],
   })
-  const objFragAnnotations = new ObjectType({
+  const objFragAnnotationsOne = new ObjectType({
     elemID: objElemId,
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
@@ -294,7 +294,18 @@ describe('split element by path', () => {
     annotations: {
       anno: 'Hey',
     },
-    path: ['salto', 'obj', 'annotations'],
+    path: ['salto', 'obj', 'annotationsOne'],
+  })
+
+  const objFragAnnotationsTwo = new ObjectType({
+    elemID: objElemId,
+    annotationRefsOrTypes: {
+      num: BuiltinTypes.NUMBER,
+    },
+    annotations: {
+      num: 22,
+    },
+    path: ['salto', 'obj', 'annotationsTwo'],
   })
 
   const objFull = new ObjectType({
@@ -315,9 +326,11 @@ describe('split element by path', () => {
     },
     annotationRefsOrTypes: {
       anno: createRefToElmWithValue(BuiltinTypes.STRING),
+      num: BuiltinTypes.NUMBER,
     },
     annotations: {
       anno: 'Hey',
+      num: 22,
     },
   })
 
@@ -416,7 +429,7 @@ describe('split element by path', () => {
   })
 
   const fullObjFrags = [
-    objFragStdFields, objFragCustomFields, objFragAnnotations,
+    objFragStdFields, objFragCustomFields, objFragAnnotationsOne, objFragAnnotationsTwo,
   ]
   const singleFieldObjFrags = [
     singleFieldObj, singleFieldObjAnnotations,

@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError, Value } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkOnValue, WALK_NEXT_STEP, naclCase, invertNaclCase } from '@salto-io/adapter-utils'
+import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
@@ -23,6 +23,7 @@ import { createConditionConfigurationTypes } from './conditions_types'
 import { Condition, isWorkflowResponseInstance, Rules, WorkflowResponse, Status, Transition, Validator } from './types'
 import { validatorType, types as validatorTypes } from './validators_types'
 import { JIRA, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
+import { transformTransitions } from './transition_structure'
 
 const NOT_FETCHED_POST_FUNCTION_TYPES = [
   'GenerateChangeHistoryFunction',
@@ -245,7 +246,12 @@ const filter: FilterCreator = ({ config }) => ({
       delete workflowType.fields.id
       workflowType.fields.operations.annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
       if (workflowTransitionType !== undefined) {
-        workflowType.fields.transitions = new Field(workflowType, 'transitions', new MapType(workflowTransitionType))
+        workflowType.fields.transitions = new Field(
+          workflowType,
+          'transitions',
+          new MapType(workflowTransitionType),
+        )
+        workflowType.fields.transitions.annotations[CORE_ANNOTATIONS.CREATABLE] = true
         delete workflowTransitionType.fields.id
       }
     }

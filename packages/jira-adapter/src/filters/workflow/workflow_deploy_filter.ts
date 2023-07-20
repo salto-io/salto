@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
+import Joi from 'joi'
 import { resolveChangeElement, walkOnValue, WALK_NEXT_STEP, inspectValue } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowChange, WorkflowInstance } from './types'
+import { isPostFetchWorkflowChange, PostFetchWorkflowInstance, Transition, WORKFLOW_RESPONSE_SCHEMA, WorkflowInstance, WorkflowResponse } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
@@ -28,6 +29,8 @@ import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
 import { deployWorkflowDiagram, hasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
+import { expectedToActualTransitionIds, createStatusMap, transitionKeysToExpectedIds, walkOverTransitionIds, getTransitionKey } from './transition_structure'
+import { decodeCloudFields, encodeCloudFields } from '../script_runner/workflow/workflow_cloud'
 
 const log = logger(module)
 
@@ -36,6 +39,53 @@ export const INITIAL_VALIDATOR = {
   configuration: {
     permissionKey: 'CREATE_ISSUES',
   },
+}
+
+const isValidTransitionResponse = (response: unknown): response is { values: [WorkflowResponse] } => {
+  const { error } = Joi.object({
+    values: Joi.array().min(1).max(1).items(WORKFLOW_RESPONSE_SCHEMA),
+  }).unknown(true).required().validate(response)
+
+  if (error !== undefined) {
+    log.warn(`Unexpected workflows response from Jira: ${error}. ${safeJsonStringify(response)}`)
+    return false
+  }
+  return true
+}
+
+// needed for transitionIds
+const getTransitionsFromService = async (
+  client: JiraClient,
+  workflowName: string,
+): Promise<Transition[]> => {
+  const response = await client.getSinglePage({
+    url: '/rest/api/3/workflow/search',
+    queryParams: {
+      expand: 'transitions',
+      workflowName,
+    },
+  })
+
+  if (!isValidTransitionResponse(response.data)) {
+    return []
+  }
+
+  const workflowValues = response.data.values[0]
+  return workflowValues.transitions ?? []
+}
+
+const sameTransitionIds = (
+  transitions: Transition[],
+  otherTransitions: Transition[],
+  statusesMap: Map<string, string>
+): boolean => {
+  const transitionIds = Object.fromEntries(transitions.map(
+    transition => [transition.id, getTransitionKey(transition, statusesMap)]
+  ))
+  const otherTransitionIds = Object.fromEntries(otherTransitions.map(
+    transition => [transition.id, getTransitionKey(transition, statusesMap)]
+  ))
+  return _.isEqual(transitionIds, otherTransitionIds)
 }
 
 /**
@@ -82,10 +132,23 @@ const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
   workflowInstance.value.transitions = Object.values(workflowInstance.value.transitions)
 }
 
-export const deployWorkflow = async (
-  change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
+const addTransitionIdsToInstance = (
+  workflowInstance: WorkflowInstance,
+  transitions: Transition[],
+  statusesMap: Map<string, string>
+): void => {
+  const transitionIds = Object.fromEntries(transitions.map(
+    transition => [getTransitionKey(transition, statusesMap), transition.id]
+  ))
+  Object.entries(workflowInstance.value.transitions).forEach(([key, transition]) => {
+    transition.id = transitionIds[key]
+  })
+}
+
+const deployWithClone = async (
+  resolvedChange: Change<PostFetchWorkflowInstance>,
   client: JiraClient,
-  config: JiraConfig,
+  config: JiraConfig
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
 
@@ -116,14 +179,115 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-  instance.value.entityId = deployInstance.value.entityId
-  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
+  getChangeData(resolvedChange).value.entityId = deployInstance.value.entityId
+}
+
+const verifyAndFixTransitionReferences = async ({
+  transitions,
+  expectedTransitionIds,
+  statusesMap,
+  client,
+  config,
+  resolvedChange,
+} : {
+  transitions: Transition[]
+  expectedTransitionIds: Map<string, string>
+  statusesMap: Map<string, string>
+  client: JiraClient
+  config: JiraConfig
+  resolvedChange: Change<PostFetchWorkflowInstance>
+}): Promise<Transition[]> => {
+  const transitionIdsMap = expectedToActualTransitionIds({
+    transitions,
+    expectedTransitionIds,
+    statusesMap,
+  })
+  if (Object.keys(transitionIdsMap).length === 0) {
+    return transitions
+  }
+  const originalInstance = getChangeData(resolvedChange)
+  walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
+    value: originalInstance.value.transitions,
+    func: decodeCloudFields })
+
+  // a function as the transitions changed type to an array
+  const updateTransitionReferenceIds = (
+    transitionsArray: Record<string, Transition>,
+  ): void => {
+    Object.values(transitionsArray).forEach((transition: Transition) => {
+      walkOverTransitionIds(transition, scriptRunner => {
+        scriptRunner.transitionId = transitionIdsMap[scriptRunner.transitionId] ?? scriptRunner.transitionId
+      })
+    })
+  }
+
+  updateTransitionReferenceIds(originalInstance.value.transitions)
+  walkOnValue({ elemId: originalInstance.elemID.createNestedID('transitions'),
+    value: originalInstance.value.transitions,
+    func: encodeCloudFields })
+
+  await deployWithClone(resolvedChange, client, config)
+
+  const newTransitions = await getTransitionsFromService(client, originalInstance.value.name)
+  if (!sameTransitionIds(transitions, newTransitions, statusesMap)) {
+    throw new Error('Failed to deploy workflow, transition ids changed')
+  }
+  return newTransitions
+}
+
+
+export const deployWorkflow = async (
+  change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
+  client: JiraClient,
+  config: JiraConfig,
+): Promise<void> => {
+  const resolvedChange = await resolveChangeElement(change, getLookUpName)
+
+  if (!isPostFetchWorkflowChange(resolvedChange)
+    || !isPostFetchWorkflowChange(change)) {
+    const instance = getChangeData(resolvedChange)
+    log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
+    throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
+  }
+  const instance = getChangeData(resolvedChange)
+  removeCreateIssuePermissionValidator(instance)
+  Object.values(instance.value.transitions).forEach(transition => {
+    changeIdsToString(transition.rules?.conditions ?? {})
+  })
+
+  fixGroupNames(instance)
+  const expectedTransitionIds = transitionKeysToExpectedIds(instance)
+  // todo reduce to relevant only
+  await deployWithClone(resolvedChange, client, config)
+
+  if (isRemovalChange(resolvedChange)) {
+    return
+  }
+  let transitions = await getTransitionsFromService(client, instance.value.name)
+  const statusesMap = createStatusMap(instance.value.statuses ?? [])
+  if (config.fetch.enableScriptRunnerAddon
+    && !client.isDataCenter) {
+    transitions = await verifyAndFixTransitionReferences({
+      transitions,
+      expectedTransitionIds,
+      statusesMap,
+      client,
+      config,
+      resolvedChange,
+    })
+  }
+  // ids are added for trigger deployment and onDeploy filters, will be removed in the ids filter
+  [getChangeData(change), instance].forEach(instanceToChange => {
+    addTransitionIdsToInstance(instanceToChange, transitions, statusesMap)
+  })
+  if (hasDiagramFields(instance)) {
     try {
       await deployWorkflowDiagram({ instance, client })
     } catch (e) {
       log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
     }
   }
+
   if (isAdditionChange(resolvedChange)) {
     getChangeData(change).value.entityId = instance.value.entityId
     // If we created the workflow we can edit it

@@ -451,9 +451,9 @@ describe('workflowDiagramFilter', () => {
       expect(instance.value.statuses[0].location).toBeDefined()
       expect(instance.value.statuses[0].location.x).toEqual(-3)
       expect(instance.value.statuses[0].location.y).toEqual(6)
-      expect(instance.value.transitions[2].from[0].id).toBeDefined()
-      expect(instance.value.transitions[2].from[0].sourceAngle).toEqual(-78.11)
-      expect(instance.value.transitions[2].from[0].targetAngle).toEqual(173.58)
+      expect(instance.value.transitions.tran3.from[0].id).toBeDefined()
+      expect(instance.value.transitions.tran3.from[0].sourceAngle).toEqual(-78.11)
+      expect(instance.value.transitions.tran3.from[0].targetAngle).toEqual(173.58)
     })
 
     it('should log error when response is not valid', async () => {

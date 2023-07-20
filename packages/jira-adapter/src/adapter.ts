@@ -180,12 +180,13 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
   scriptRunnerWorkflowListsFilter,
-  // must run after scriptRunnerWorkflowListsFilter
-  scriptRunnerWorkflowReferencesFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
-  transitionIdsFilter,
+  // resolves references!
   workflowPropertiesFilter,
+  // must run after scriptRunnerWorkflowListsFilter and workflowPropertiesFilter
+  scriptRunnerWorkflowReferencesFilter,
+  transitionIdsFilter,
   workflowDeployFilter,
   workflowModificationFilter,
   emptyValidatorWorkflowFilter,

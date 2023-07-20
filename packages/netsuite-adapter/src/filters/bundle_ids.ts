@@ -17,12 +17,15 @@
 import { getChangeData, InstanceElement, ReferenceExpression, Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
+import { collections, values } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, getServiceId, isBundleInstance, isCustomRecordType, isFileCabinetInstance, isStandardInstanceOrCustomRecordType } from '../types'
 import { LocalFilterCreator } from '../filter'
 import { BUNDLE_ID_TO_COMPONENTS } from '../autogen/bundle_components/bundle_components'
 import { getGroupItemFromRegex } from '../client/utils'
 
 const log = logger(module)
+const { isDefined } = values
+const { awu } = collections.asynciterable
 const BUNDLE = 'bundle'
 const bundleIdRegex = RegExp(`Bundle (?<${BUNDLE}>\\d+)`, 'g')
 
@@ -31,7 +34,7 @@ const getServiceIdsOfVersion = (bundleVersions: Record<string, Set<string>>, bun
   if (serviceIdsInBundle) {
     return serviceIdsInBundle
   }
-  log.debug('Version %s of bundle %s is not supported in the record, use a union of all existing versions', bundle.value.version, bundle.value.id)
+  log.debug(`Version ${`${bundle.value.version} ` ?? ''} of bundle %s is missing or not supported in the record, use a union of all existing versions`, bundle.value.id)
   return new Set(Object.values(bundleVersions).flatMap(versionElements => Array.from(versionElements)))
 }
 
@@ -43,7 +46,11 @@ const addBundleToFileCabinet = (
   const bundleId = getGroupItemFromRegex(serviceId, bundleIdRegex, BUNDLE)
   if (bundleId.length > 0) {
     const bundleToReference = bundleIdToInstance[bundleId[0]]
-    Object.assign(fileCabinetInstance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    if (!isDefined(bundleToReference)) {
+      log.debug('Could not find bundle with id: %s.', bundleId[0])
+    } else {
+      Object.assign(fileCabinetInstance.value, { bundle: new ReferenceExpression(bundleToReference.elemID) })
+    }
   }
 }
 
@@ -86,7 +93,9 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
     fileCabinetInstances.forEach(fileCabinetInstance => addBundleToFileCabinet(fileCabinetInstance, bundleIdToInstance))
 
     const scriptIdToElem = _.keyBy(
-      nonBundleElements.filter(isStandardInstanceOrCustomRecord),
+      await awu(nonBundleElements)
+        .filter(isStandardInstanceOrCustomRecord)
+        .toArray(),
       getServiceId
     )
     existingBundles
@@ -95,7 +104,7 @@ const filterCreator: LocalFilterCreator = ({ config }) => ({
   },
 
   preDeploy: async changes => {
-    changes
+    await awu(changes)
       .map(getChangeData)
       .filter(isStandardInstanceOrCustomRecord)
       .forEach(element => {

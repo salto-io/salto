@@ -120,6 +120,16 @@ describe('Recipe references filter', () => {
       }
     )
 
+    const jiraSandbox = new InstanceElement(
+      'jira_sbx_123',
+      connectionType,
+      {
+        id: 1238,
+        application: 'jira',
+        name: 'jira sbx 123',
+      }
+    )
+
     const secondarySalesforce = new InstanceElement(
       'secondary_sf',
       connectionType,
@@ -163,6 +173,10 @@ describe('Recipe references filter', () => {
       fields: {
         sobject_name: { refType: BuiltinTypes.STRING },
         netsuite_object: { refType: BuiltinTypes.STRING },
+        projectKey: { refType: BuiltinTypes.STRING },
+        issueType: { refType: BuiltinTypes.STRING },
+        sampleProjectKey: { refType: BuiltinTypes.STRING },
+        SampleIssueType: { refType: BuiltinTypes.STRING },
         topic_id: { refType: BuiltinTypes.STRING },
         table_list: { refType: new ListType(labelValueType) },
         field_list: { refType: new ListType(labelValueType) },
@@ -724,12 +738,97 @@ describe('Recipe references filter', () => {
     })
 
 
+    const recipe8JiraCode = new InstanceElement('recipe8_code', codeType, {
+      as: 'recipe8id',
+      provider: 'jira',
+      name: 'new_issue',
+      keyword: 'trigger',
+      input: {
+        since: '2023-01-01T00:00:00-01:00',
+      },
+      block: [
+        {
+          number: 1,
+          keyword: 'if',
+          input: {
+            type: 'compound',
+            operand: 'and',
+            conditions: [
+              {
+                operand: 'contains',
+                lhs: "#{_('data.jira.recipe8id.Key')}",
+                rhs: 'PK1',
+                uuid: 'condition-uuid',
+              },
+            ],
+          },
+          block: [
+            {
+              number: 2,
+              provider: 'jira',
+              name: 'create_issue',
+              description: null,
+              as: 'recipe8id_nested',
+              keyword: 'action',
+              dynamicPickListSelection: {
+                priority: 'High',
+              },
+              input: {
+                projectKey: 'PK2',
+                issueType: 'Firstissuetype',
+                sampleProjectKey: 'PK3',
+                sampleIssueType: 'Subtask',
+                summary: "#{_('data.jira.recipe8id.fields.summary')}",
+              },
+              visible_config_fields: [
+                'project_issuetype',
+                'sample_project_issuetype',
+              ],
+              uuid: 'uuid1',
+            },
+          ],
+          uuid: 'uuid2',
+        },
+        {
+          number: 3,
+          provider: 'jira',
+          name: 'update_issue',
+          as: 'recipe8id_second',
+          description: null,
+          keyword: 'action',
+          dynamicPickListSelection: {
+          },
+          input: {
+            projectKey: 'PK1',
+            issueType: 'Defaultissuetype',
+            issuekey: 'issue key',
+            reporter_id: "#{_('data.jira.recipe8id.fields.customfield_10027')}",
+            description: "#{_('data.jira.recipe8id.fields.labels.first.label')} - #{_('data.jira.recipe8id.issues.first.fields.timespent')} - #{_('data.jira.recipe8id.issues.first.self')} - #{_('data.jira.recipe8id.fields.statuscategorychangedate')}",
+          },
+          uuid: 'uuid3',
+        },
+      ],
+    })
+
+    const recipe8Jira = new InstanceElement('recipe8', recipeType, {
+      config: [
+        {
+          keyword: 'application',
+          name: 'jira',
+          provider: 'jira',
+          account_id: new ReferenceExpression(jiraSandbox.elemID),
+        },
+      ],
+      code: new ReferenceExpression(recipe8JiraCode.elemID),
+    })
+
     return [
       connectionType,
       sfSandbox1,
       anotherSfSandbox,
       netsuiteSandbox123,
       zuoraSandbox,
+      jiraSandbox,
       secondarySalesforce,
       secondaryNetsuite,
       labelValueType,
@@ -755,6 +854,8 @@ describe('Recipe references filter', () => {
       recipe6NetsuiteTypesCode,
       recipe7Zuora,
       recipe7ZuoraCode,
+      recipe8Jira,
+      recipe8JiraCode,
     ]
   }
 
@@ -958,12 +1059,134 @@ describe('Recipe references filter', () => {
 
     return [accountingPeriodType, accountingCodeType, productType]
   }
+  const generateJiraElements = (): Element[] => {
+    const IssueType = new ObjectType({
+      elemID: new ElemID('jira', 'IssueType'),
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+        name: { refType: BuiltinTypes.STRING },
+      },
+    })
 
+    const firstIssueTypeInst = new InstanceElement(
+      'FirstType',
+      IssueType,
+      {
+        id: '10001',
+        name: 'Firstissuetype',
+      }
+    )
+    const subTaskIssueTypeInst = new InstanceElement(
+      'Sub-task',
+      IssueType,
+      {
+        id: '10002',
+        name: 'Sub-task',
+      }
+    )
+    const defaultIssueTypeInst = new InstanceElement(
+      'ThirdType',
+      IssueType,
+      {
+        id: '10003',
+        name: 'Defaultissuetype',
+      }
+    )
+    const projectType = new ObjectType({
+      elemID: new ElemID('jira', 'Project'),
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+        name: { refType: BuiltinTypes.STRING },
+        key: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const project1Inst = new InstanceElement(
+      'project1',
+      projectType,
+      {
+        id: '30001',
+        name: 'Project1Name',
+        key: 'PK1',
+      }
+    )
+    const project2Inst = new InstanceElement(
+      'project2',
+      projectType,
+      {
+        id: '30002',
+        name: 'Project2Name',
+        key: 'PK2',
+      }
+    )
+    const project3Inst = new InstanceElement(
+      'project3',
+      projectType,
+      {
+        id: '30003',
+        name: 'Project3Name',
+        key: 'PK3',
+      }
+    )
+    const fieldType = new ObjectType({
+      elemID: new ElemID('jira', 'Field'),
+      fields: {
+        id: { refType: BuiltinTypes.STRING },
+        name: { refType: BuiltinTypes.STRING },
+      },
+    })
+    const regularField = new InstanceElement(
+      'Summary',
+      fieldType,
+      {
+        id: 'summary',
+        name: 'summary',
+      }
+    )
+    const customField = new InstanceElement(
+      'LockedForms',
+      fieldType,
+      {
+        id: 'customfield_10027',
+        name: 'Locked forms',
+      }
+    )
+    const inIssueField = new InstanceElement(
+      'Timespent',
+      fieldType,
+      {
+        id: 'timespent',
+        name: 'Timespent',
+      }
+    )
+    const withSpacesField = new InstanceElement(
+      'StatusCategoryChange',
+      fieldType,
+      {
+        id: 'statuscategorychangedate',
+        name: 'Status Category Changed',
+      }
+    )
+    const arrayField = new InstanceElement(
+      'Lables',
+      fieldType,
+      {
+        id: 'labels',
+        name: 'Lables',
+      }
+    )
+
+    return [
+      IssueType, firstIssueTypeInst, subTaskIssueTypeInst, defaultIssueTypeInst,
+      projectType, project1Inst, project2Inst, project3Inst,
+      fieldType, regularField, customField, inIssueField, withSpacesField, arrayField,
+    ]
+  }
   describe('on post-fetch primary', () => {
     let currentAdapterElements: Element[]
     let salesforceElements: Element[]
     let netsuiteElements: Element[]
     let zuoraElements: Element[]
+    let jiraElements: Element[]
 
     beforeAll(async () => {
       filter = filterCreator({
@@ -979,6 +1202,7 @@ describe('Recipe references filter', () => {
               salesforce: ['salesforce sandbox 1'],
               netsuite: ['netsuite sbx 123'],
               zuora_billing: ['zuora sbx 123'],
+              jira: ['jira sbx 123'],
             },
           },
           apiDefinitions: {
@@ -998,17 +1222,20 @@ describe('Recipe references filter', () => {
       salesforceElements = generateSalesforceElements()
       netsuiteElements = generateNetsuiteElements()
       zuoraElements = generateZuoraElements()
+      jiraElements = generateJiraElements()
       await filter.onPostFetch({
         currentAdapterElements,
         elementsByAccount: {
           salesforce: salesforceElements,
           netsuite: netsuiteElements,
           zuora_billing: zuoraElements,
+          jira: jiraElements,
         },
         accountToServiceNameMap: {
           zuora_billing: 'zuora_billing',
           salesforce: 'salesforce',
           netsuite: 'netsuite',
+          jira: 'jira',
         },
         progressReporter: { reportProgress: () => null },
       })
@@ -1269,6 +1496,54 @@ describe('Recipe references filter', () => {
         expect(recipeCode.value.block[0].block[0].input.object.elemID.getFullName()).toEqual('zuora_billing.accountingcode')
         expect(recipeCode.value.block[1].input.object).toBeInstanceOf(ReferenceExpression)
         expect(recipeCode.value.block[1].input.object.elemID.getFullName()).toEqual('zuora_billing.product')
+      })
+    })
+
+    describe('recipe8Jira', () => {
+      it('should show all resolved references in the _generated_dependencies annotation, in alphabetical order', () => {
+        const recipeCode = currentAdapterElements.find(e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe8_code')
+        expect(recipeCode).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeDefined()
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toHaveLength(11)
+        expect(recipeCode?.annotations?.[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES].map(
+          dereferenceDep
+        )).toEqual([
+          { reference: 'jira.Field.instance.Lables', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1.input.description', direction: 'input' }] },
+          { reference: 'jira.Field.instance.LockedForms', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1.input.reporter_id', direction: 'input' }] },
+          { reference: 'jira.Field.instance.StatusCategoryChange', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1.input.description', direction: 'input' }] },
+          { reference: 'jira.Field.instance.Summary', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.0.block.0.input.summary', direction: 'input' }] },
+          { reference: 'jira.Field.instance.Timespent', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1.input.description', direction: 'input' }] },
+          { reference: 'jira.IssueType.instance.FirstType', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'jira.IssueType.instance.Sub-task', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'jira.IssueType.instance.ThirdType', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1', direction: 'output' }] },
+          { reference: 'jira.Project.instance.project1', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.1', direction: 'output' }] },
+          { reference: 'jira.Project.instance.project2', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.0.block.0', direction: 'output' }] },
+          { reference: 'jira.Project.instance.project3', occurrences: [{ location: 'workato.recipe__code.instance.recipe8_code.block.0.block.0', direction: 'output' }] },
+        ])
+      })
+
+      it('should resolve references in-place where possible', () => {
+        const recipeCode = currentAdapterElements.find(
+          e => e.elemID.getFullName() === 'workato.recipe__code.instance.recipe8_code'
+        ) as InstanceElement
+        expect(recipeCode).toBeInstanceOf(InstanceElement)
+        const innerBlock = recipeCode.value.block[0].block[0]
+        const secondBlock = recipeCode.value.block[1]
+
+        expect(innerBlock.input.projectKey).toBeInstanceOf(ReferenceExpression)
+        expect(innerBlock.input.projectKey.elemID.getFullName()).toEqual('jira.Project.instance.project2')
+        expect(innerBlock.input.issueType).toBeInstanceOf(ReferenceExpression)
+        expect(innerBlock.input.issueType.elemID.getFullName()).toEqual('jira.IssueType.instance.FirstType')
+
+        expect(innerBlock.input.sampleProjectKey).toBeInstanceOf(ReferenceExpression)
+        expect(innerBlock.input.sampleProjectKey.elemID.getFullName()).toEqual('jira.Project.instance.project3')
+        expect(innerBlock.input.sampleIssueType).toBeInstanceOf(ReferenceExpression)
+        expect(innerBlock.input.sampleIssueType.elemID.getFullName()).toEqual('jira.IssueType.instance.Sub-task')
+
+        expect(secondBlock.input.projectKey).toBeInstanceOf(ReferenceExpression)
+        expect(secondBlock.input.projectKey.elemID.getFullName()).toEqual('jira.Project.instance.project1')
+        expect(secondBlock.input.issueType).toBeInstanceOf(ReferenceExpression)
+        expect(secondBlock.input.issueType.elemID.getFullName()).toEqual('jira.IssueType.instance.ThirdType')
       })
     })
 

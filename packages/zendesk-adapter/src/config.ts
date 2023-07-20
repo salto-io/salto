@@ -86,7 +86,8 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
 }
 export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
+  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
+  configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
   >
 
 export type ZendeskConfig = {
@@ -2759,7 +2760,10 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       ),
     },
     [API_DEFINITIONS_CONFIG]: {
-      refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK }),
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: ZENDESK,
+        additionalTransformationFields: { omitInactive: { refType: BuiltinTypes.BOOLEAN } },
+      }),
     },
   },
   annotations: {

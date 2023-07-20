@@ -426,7 +426,7 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [
-            new Error('cannot add new employee'),
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, elemID: newEmployee.elemID },
             { message: 'cannot add new employee', severity: 'Error' as SeverityLevel },
           ],
         }))

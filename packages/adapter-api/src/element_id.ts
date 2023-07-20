@@ -155,7 +155,7 @@ export class ElemID {
       // First name part is the instance name which is top level
       return this.nameParts.length - 1
     }
-    if (this.isAnnotationTypeID()) {
+    if (this.isIDNestedInType()) {
       // annotation/attr/field are already 1 level nested
       return this.nameParts.length + 1
     }

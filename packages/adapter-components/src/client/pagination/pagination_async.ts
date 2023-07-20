@@ -33,27 +33,35 @@ const allSettled = async <T>(promises: IterableIterator<Promise<T>>): Promise<vo
 
 type KeyFromPromiseResult<T> = (result: T) => string
 class PromisesQueue<T> {
-  private readonly promises: Map<string, Promise<T>>
+  private readonly promises: Promise<T>[]
+  private readonly promisesKeys: Set<string>
   private readonly hashFunc: KeyFromPromiseResult<T>
   constructor(hashFunc: KeyFromPromiseResult<T>) {
-    this.promises = new Map()
+    this.promises = []
+    this.promisesKeys = new Set()
     this.hashFunc = hashFunc
   }
 
   enqueue(key: string, promise: Promise<T>): void {
-    this.promises.set(key, promise)
-    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.size}`)
+    this.promisesKeys.add(key)
+    this.promises.push(promise)
+    log.debug(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
 
   async dequeue(): Promise<T> {
-    const settledPromise = await Promise.race(this.promises.values())
-    this.promises.delete(this.hashFunc(settledPromise))
-    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.size}`)
+    const settledPromise = await this.promises.shift()
+    if (settledPromise === undefined) {
+      // this may occur if the queue is empty which we checked it before calling dequeue
+      log.error('No promises to dequeue from pagination queue')
+      throw new Error('No promises to dequeue from pagination queue')
+    }
+    this.promisesKeys.delete(this.hashFunc(settledPromise))
+    log.debug(`Removed promise from pagination queue. Queue size: ${this.promises.length}`)
     return settledPromise
   }
 
   size(): number {
-    return this.promises.size
+    return this.promises.length
   }
 
   async clear(): Promise<void> {

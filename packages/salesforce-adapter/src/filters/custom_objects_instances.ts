@@ -427,7 +427,7 @@ export const getIdFields = async (
   ))
   const [aliasFields, invalidAliasFields] = _.partition(
     aliasFieldsWithParents,
-    fieldName => type.fields[fieldName] !== undefined
+    fieldName => type.fields[fieldName] !== undefined && isQueryableField(type.fields[fieldName])
   )
   if (invalidIdFieldNames.length > 0) {
     return { idFields: [], aliasFields: [], invalidIdFields: invalidIdFieldNames, invalidAliasFields }

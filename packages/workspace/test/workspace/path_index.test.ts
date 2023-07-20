@@ -443,17 +443,17 @@ describe('split element by path', () => {
     await updatePathIndex({ pathIndex: pi, unmergedElements })
   })
 
-  it('should split an element with multiple pathes', async () => {
-    const splitedElements = await splitElementByPath(objFull, pi)
+  it('should split an element with multiple paths', async () => {
+    const splitElements = await splitElementByPath(objFull, pi)
     fullObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
 
   it('should split an element with one fields file', async () => {
-    const splitedElements = await splitElementByPath(singleFieldObjFull, pi)
+    const splitElements = await splitElementByPath(singleFieldObjFull, pi)
     singleFieldObjFrags.forEach(
-      frag => expect(splitedElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
+      frag => expect(splitElements.filter(elem => elem.isEqual(frag))).toHaveLength(1)
     )
   })
 
@@ -466,15 +466,15 @@ describe('split element by path', () => {
   })
 
   it('should return a single object for an element with one path', async () => {
-    const splitedElements = await splitElementByPath(singlePathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(singlePathObj)
+    const splitElements = await splitElementByPath(singlePathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(singlePathObj)
   })
 
   it('should return the element for an element with no pathes', async () => {
-    const splitedElements = await splitElementByPath(noPathObj, pi)
-    expect(splitedElements).toHaveLength(1)
-    expect(splitedElements[0]).toEqual(noPathObj)
+    const splitElements = await splitElementByPath(noPathObj, pi)
+    expect(splitElements).toHaveLength(1)
+    expect(splitElements[0]).toEqual(noPathObj)
   })
 })
 

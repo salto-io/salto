@@ -15,64 +15,76 @@
 */
 import { collections } from '@salto-io/lowerdash'
 import {
-  ChangeError, isAdditionOrModificationChange, isInstanceChange, ChangeValidator,
-  InstanceElement, getChangeData, Values,
+  ChangeError,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  ChangeValidator,
+  InstanceElement,
+  getChangeData,
+  Values,
+  Value,
+  ElemID,
 } from '@salto-io/adapter-api'
+import {
+  transformElement,
+  TransformFuncArgs,
+} from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { apiName } from '../transformers/transformer'
-import { isInstanceOfType, buildSelectQueries, queryClient } from '../filters/utils'
+import {
+  buildSelectQueries,
+  isInstanceOfType,
+  queryClient,
+} from '../filters/utils'
 import SalesforceClient from '../client/client'
 
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
 
 // cf. 'Statement Character Limit' in https://developer.salesforce.com/docs/atlas.en-us.soql_sosl.meta/soql_sosl/sforce_api_calls_soql_select.htm
 const SALESFORCE_MAX_QUERY_LEN = 100000
 
-type GetUserField = (instance: InstanceElement, fieldName: string) => string[]
+type GetUserField = (container: Values, fieldName: string) => string[]
 
 type UserFieldGetter = {
+  subType: string | undefined
   field: string
-  getter: (instance: InstanceElement) => string[]
+  getter: (container: Values) => string[]
 }
 
 // https://stackoverflow.com/a/44154193
 const TYPES_WITH_USER_FIELDS = [
   'CaseSettings',
+  'EscalationRules',
   'FolderShare',
   'WorkflowAlert',
   'WorkflowTask',
   'WorkflowOutboundMessage',
-  'RuleEntry',
-  'Approver',
+  'AssignmentRules',
+  'ApprovalProcess',
   'CustomSite',
-  'EmailServicesAddress',
-  'PresenceConfigAssignments',
-  'Users',
+  'EmailServicesFunction',
+  'PresenceUserConfig',
+  'Queue',
 ] as const
 type TypeWithUserFields = typeof TYPES_WITH_USER_FIELDS[number]
 
 type TypesWithUserFields = Record<TypeWithUserFields, UserFieldGetter[]>
 
-type MissingUser = {
-  instance: InstanceElement
+type UserRef = {
+  elemId: ElemID
   field: string
-  userName: string
+  user: string
 }
 
-const userFieldValue = (instance: InstanceElement, fieldName: string): string[] => {
-  if (instance.value[fieldName] === undefined) {
-    return []
-  }
-  return [instance.value[fieldName]]
-}
+const userFieldValue = (container: Values, fieldName: string): string[] => makeArray(container?.[fieldName])
 
 const getUserDependingOnType = (typeField: string): GetUserField => (
-  (instance: InstanceElement, userField: string) => {
-    const type = instance.value[typeField]
+  (container: Values, userField: string) => {
+    const type = container[typeField]
     if (!type || type.toLocaleLowerCase() !== 'user') {
       return []
     }
-    return [instance.value[userField]]
+    return [container[userField]]
   }
 )
 
@@ -86,8 +98,7 @@ const isEmailRecipientsValue = (recipients: Values): recipients is EmailRecipien
   && recipients.every(recipient => _.isString(recipient.type) && _.isString(recipient.recipient))
 )
 
-const getEmailRecipients: GetUserField = instance => {
-  const { recipients } = instance.value
+const getEmailRecipients: GetUserField = ({ recipients }) => {
   if (!isEmailRecipientsValue(recipients)) {
     return []
   }
@@ -101,8 +112,21 @@ const userField = (
   userFieldGetter: GetUserField,
 ): UserFieldGetter => (
   {
+    subType: undefined,
     field: fieldName,
-    getter: (instance: InstanceElement) => userFieldGetter(instance, fieldName),
+    getter: (container: Values) => userFieldGetter(container, fieldName),
+  }
+)
+
+const userNestedField = (
+  subType: string,
+  fieldName: string,
+  userFieldGetter: GetUserField,
+): UserFieldGetter => (
+  {
+    subType,
+    field: fieldName,
+    getter: (container: Values) => userFieldGetter(container, fieldName),
   }
 )
 
@@ -123,49 +147,74 @@ const USER_GETTERS: TypesWithUserFields = {
   WorkflowOutboundMessage: [
     userField('integrationUser', userFieldValue),
   ],
-  RuleEntry: [
-    userField('assignedTo', getUserDependingOnType('assignedToType')),
+  AssignmentRules: [
+    userNestedField('RuleEntry', 'assignedTo', getUserDependingOnType('assignedToType')),
   ],
-  Approver: [
-    userField('name', getUserDependingOnType('type')),
+  ApprovalProcess: [
+    userNestedField('Approver', 'name', getUserDependingOnType('type')),
   ],
   CustomSite: [
     userField('siteAdmin', userFieldValue),
     userField('siteGuestRecordDefaultOwner', userFieldValue),
   ],
-  EmailServicesAddress: [
-    userField('runAsUser', userFieldValue),
+  EmailServicesFunction: [
+    userNestedField('EmailServicesAddress', 'runAsUser', userFieldValue),
   ],
-  PresenceConfigAssignments: [
-    userField('user', userFieldValue),
+  PresenceUserConfig: [
+    userNestedField('PresenceConfigAssignments', 'user', userFieldValue),
   ],
-  Users: [
-    userField('user', userFieldValue),
+  Queue: [
+    userNestedField('Users', 'user', userFieldValue),
+  ],
+  EscalationRules: [
+    userNestedField('EscalationAction', 'assignedTo', getUserDependingOnType('assignedToType')),
   ],
 }
 
-const userFieldGettersForInstance = async (defMapping: TypesWithUserFields, instance: InstanceElement)
-    : Promise<UserFieldGetter[]> => {
-  const instanceTypeAsTypeWithUserFields = async (): Promise<TypeWithUserFields | undefined> => {
-    const typeAsString = await apiName(await instance.getType())
-    return TYPES_WITH_USER_FIELDS.find(t => t === typeAsString)
-  }
+const userFieldGettersForType = (defMapping: TypesWithUserFields, type: string): UserFieldGetter[] => {
+  const instanceTypeAsTypeWithUserFields = (): TypeWithUserFields | undefined => (
+    TYPES_WITH_USER_FIELDS.find(t => t === type)
+  )
 
-  const instanceType = await instanceTypeAsTypeWithUserFields()
+  const instanceType = instanceTypeAsTypeWithUserFields()
   return instanceType ? defMapping[instanceType] : []
 }
 
-const getUsersFromInstance = (instance: InstanceElement, getterDefs: UserFieldGetter[]): string[] => (
-  getterDefs.flatMap(getterDef => getterDef.getter(instance))
-)
+const getUsersFromInstance = async (instance: InstanceElement, getterDefs: TypesWithUserFields): Promise<UserRef[]> => {
+  const gettersForInstanceType = userFieldGettersForType(getterDefs, (await instance.getType()).elemID.typeName)
+
+  const [topLevelGetters, nestedGetters] = _.partition(gettersForInstanceType, g => g.subType === undefined)
+
+  const users: UserRef[] = topLevelGetters
+    .flatMap(getter => (
+      getter.getter(instance.value).map(user => ({ user, elemId: instance.elemID, field: getter.field }))
+    ))
+
+  const gettersBySubType = new Map(nestedGetters.map(getter => ([getter.subType, getter])))
+  const extractUsers = async ({ value, path, field }: TransformFuncArgs): Promise<Value> => {
+    const subType = (await field?.getType())?.elemID.typeName
+    const subTypeGetter = gettersBySubType.get(subType)
+    if (subTypeGetter && path) {
+      const userRefs = subTypeGetter.getter(value).map(user => ({ user, elemId: path, field: subTypeGetter.field }))
+      users.push(...userRefs)
+    }
+    return value
+  }
+
+  await transformElement({
+    element: instance,
+    transformFunc: extractUsers,
+  })
+  return users
+}
 
 const getUsersFromInstances = async (
   defMapping: TypesWithUserFields,
-  instances: InstanceElement[]): Promise<string[]> => (
-  awu(instances).map(async instance => {
-    const getterDefs = await userFieldGettersForInstance(defMapping, instance)
-    return getUsersFromInstance(instance, getterDefs)
-  }).flat().toArray()
+  instances: InstanceElement[]): Promise<UserRef[]> => (
+  awu(instances)
+    .map(async instance => getUsersFromInstance(instance, defMapping))
+    .flat()
+    .toArray()
 )
 
 const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Promise<string[]> => {
@@ -178,34 +227,12 @@ const getSalesforceUsers = async (client: SalesforceClient, users: string[]): Pr
   return awu(await queryClient(client, queries)).map(sfRecord => sfRecord.Username).toArray()
 }
 
-const getUnknownUsers = async (
-  defMapping: TypesWithUserFields,
-  instanceElement: InstanceElement,
-  knownUsers: string[],
-): Promise<MissingUser[]> => {
-  const extractUserInfo = (instance: InstanceElement, userFieldGetter: UserFieldGetter): MissingUser[] => {
-    const userNames = userFieldGetter.getter(instance)
-
-    return userNames.map(userName => ({
-      instance,
-      field: userFieldGetter.field,
-      userName,
-    }))
-  }
-
-  const getterDefs = await userFieldGettersForInstance(defMapping, instanceElement)
-
-  return (getterDefs
-    .flatMap(getterDef => extractUserInfo(instanceElement, getterDef))
-    .filter(missingUserInfo => !knownUsers.includes(missingUserInfo.userName)))
-}
-
-const unknownUserError = ({ instance, field, userName }: MissingUser): ChangeError => (
+const unknownUserError = ({ elemId, field, user }: UserRef): ChangeError => (
   {
-    elemID: instance.elemID,
+    elemID: elemId,
     severity: 'Error',
-    message: `User ${userName} doesn't exist`,
-    detailedMessage: `The field ${field} in '${instance.elemID.getFullName()}' refers to the user '${userName}' which does not exist in this Salesforce environment`,
+    message: `User ${user} doesn't exist`,
+    detailedMessage: `The field ${field} in '${elemId.getFullName()}' refers to the user '${user}' which does not exist in this Salesforce environment`,
   }
 )
 
@@ -222,12 +249,11 @@ const changeValidator = (client: SalesforceClient): ChangeValidator => async cha
     .toArray()
 
   const userRefs = await getUsersFromInstances(USER_GETTERS, instancesOfInterest)
-  const existingUsers = await getSalesforceUsers(client, userRefs)
+  const existingUsers = new Set(await getSalesforceUsers(client, userRefs.map(({ user }) => user)))
 
-  return awu(instancesOfInterest)
-    .flatMap(async elem => getUnknownUsers(USER_GETTERS, elem, existingUsers))
+  return userRefs
+    .filter(({ user }) => !existingUsers.has(user))
     .map(unknownUserError)
-    .toArray()
 }
 
 export default changeValidator

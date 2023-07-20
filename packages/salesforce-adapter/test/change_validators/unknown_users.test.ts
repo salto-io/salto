@@ -21,13 +21,23 @@ import {
   ElemID,
   getChangeData,
   InstanceElement,
+  ListType,
   ObjectType,
   toChange,
 } from '@salto-io/adapter-api'
 import mockAdapter from '../adapter'
 import changeValidator from '../../src/change_validators/unknown_users'
-import { createInstanceElement } from '../../src/transformers/transformer'
-import { CUSTOM_OBJECT, CUSTOM_OBJECT_ID_FIELD, INSTANCE_FULL_NAME_FIELD, SALESFORCE } from '../../src/constants'
+import {
+  createInstanceElement,
+  createMetadataObjectType,
+} from '../../src/transformers/transformer'
+import {
+  CUSTOM_OBJECT,
+  CUSTOM_OBJECT_ID_FIELD,
+  INSTANCE_FULL_NAME_FIELD,
+  METADATA_TYPE,
+  SALESFORCE,
+} from '../../src/constants'
 import { SalesforceRecord } from '../../src/client/types'
 import { mockTypes } from '../mock_elements'
 import { createCustomObjectType } from '../utils'
@@ -158,7 +168,7 @@ describe('unknown user change validator', () => {
         userField: 'defaultCaseOwner',
         typeField: 'defaultCaseOwnerType',
       },
-    ])('when the username doesn\'t exist but type is not \'User\' [$type.elemID.typeName]', ({ type, userField, typeField }) => {
+    ])('when the username doesn`t exist but type is not `User` [$type.elemID.typeName]', ({ type, userField, typeField }) => {
       beforeEach(() => {
         const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
         const beforeRecord = instanceElement
@@ -190,7 +200,7 @@ describe('unknown user change validator', () => {
         userField: 'defaultCaseOwner',
         typeField: 'defaultCaseOwnerType',
       },
-    ])('when the username doesn\'t exist [$type.elemID.typeName]', ({ type, userField, typeField }) => {
+    ])('when the username doesn`t exist [$type.elemID.typeName]', ({ type, userField, typeField }) => {
       beforeEach(() => {
         const instanceElement = instanceElementWithTypeAndUser(type, userField, typeField)
         const beforeRecord = instanceElement
@@ -317,6 +327,155 @@ describe('unknown user change validator', () => {
       it('should not create errors', () => {
         expect(changeErrors).toBeEmpty()
       })
+    })
+  })
+  describe('when the user information is in a nested field', () => {
+    const approverType = createMetadataObjectType({
+      fields: {
+        name: {
+          refType: BuiltinTypes.STRING,
+        },
+        type: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'Approver',
+      },
+    })
+    const approvalStepApproverType = createMetadataObjectType({
+      fields: {
+        approver: {
+          refType: approverType,
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'ApprovalStepApprover',
+      },
+    })
+    const approvalStepType = createMetadataObjectType({
+      fields: {
+        assignedApprover: {
+          refType: approvalStepApproverType,
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'ApprovalStep',
+      },
+    })
+    const approvalProcessType = createMetadataObjectType({
+      fields: {
+        approvalStep: {
+          refType: new ListType(approvalStepType),
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'ApprovalProcess',
+      },
+    })
+    let changeErrors: readonly ChangeError[]
+    beforeEach(async () => {
+      const newRecord = createInstanceElement({
+        [INSTANCE_FULL_NAME_FIELD]: 'SomeApprovalProcess',
+        approvalStep: [
+          {
+            assignedApprover: {
+              approver: {
+                name: TEST_USERNAME,
+                type: 'User',
+              },
+            },
+          },
+
+          {
+            assignedApprover: {
+              approver: {
+                name: ANOTHER_TEST_USERNAME,
+                type: 'User',
+              },
+            },
+          },
+        ],
+      },
+      approvalProcessType)
+      const change = toChange({ after: newRecord })
+      setupClientMock([IRRELEVANT_USERNAME])
+      changeErrors = await validator([change])
+    })
+    it('should fail if the users don`t exist', () => {
+      expect(changeErrors).toHaveLength(2)
+      const instanceElemId = new ElemID(SALESFORCE, 'ApprovalProcess', 'instance', 'SomeApprovalProcess')
+      expect(changeErrors[0]).toHaveProperty('elemID', instanceElemId.createNestedID('approvalStep', '0', 'assignedApprover', 'approver'))
+      expect(changeErrors[1]).toHaveProperty('elemID', instanceElemId.createNestedID('approvalStep', '1', 'assignedApprover', 'approver'))
+    })
+  })
+  describe('when the user information is in a nested array', () => {
+    const ruleEntryType = createMetadataObjectType({
+      fields: {
+        assignedTo: {
+          refType: BuiltinTypes.STRING,
+        },
+        assignedToType: {
+          refType: BuiltinTypes.STRING,
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'RuleEntry',
+      },
+    })
+    const assignmentRuleType = createMetadataObjectType({
+      fields: {
+        ruleEntry: {
+          refType: new ListType(ruleEntryType),
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'AssignmentRule',
+      },
+    })
+    const assignmentRulesType = createMetadataObjectType({
+      fields: {
+        assignmentRule: {
+          refType: new ListType(assignmentRuleType),
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: 'AssignmentRules',
+      },
+    })
+    let changeErrors: readonly ChangeError[]
+    beforeEach(async () => {
+      const newRecord = createInstanceElement({
+        fullName: 'SomeAssignmentRules',
+        assignmentRule: [
+          {
+            ruleEntry: [
+              {
+                assignedTo: TEST_USERNAME,
+                assignedToType: 'User',
+              },
+            ],
+          },
+          {
+            ruleEntry: [
+              {
+                assignedTo: ANOTHER_TEST_USERNAME,
+                assignedToType: 'User',
+              },
+            ],
+          },
+        ],
+      },
+      assignmentRulesType)
+      const change = toChange({ after: newRecord })
+      setupClientMock([IRRELEVANT_USERNAME])
+      changeErrors = await validator([change])
+    })
+    it('should fail if any of the users don`t exist', () => {
+      expect(changeErrors).toHaveLength(2)
+      const instanceElemId = new ElemID(SALESFORCE, 'AssignmentRules', 'instance', 'SomeAssignmentRules')
+      expect(changeErrors[0]).toHaveProperty('elemID', instanceElemId.createNestedID('assignmentRule', '0', 'ruleEntry', '0'))
+      expect(changeErrors[1]).toHaveProperty('elemID', instanceElemId.createNestedID('assignmentRule', '1', 'ruleEntry', '0'))
     })
   })
 })

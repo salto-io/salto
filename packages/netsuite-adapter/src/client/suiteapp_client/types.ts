@@ -383,7 +383,7 @@ export const GET_BUNDLES_RESULT_SCHEMA = {
     properties: {
       id: { type: 'number' },
       name: { type: 'string' },
-      version: { type: 'string' },
+      version: { type: ['string', 'null'] },
     },
     required: ['id', 'name', 'version'],
   },

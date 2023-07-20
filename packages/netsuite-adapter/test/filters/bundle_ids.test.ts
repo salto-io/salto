@@ -38,6 +38,7 @@ describe('bundle_ids filter', () => {
   describe('onFetch', () => {
     let fileCabinetInstance: InstanceElement
     let recordInstance: InstanceElement
+    let falseBundleIdFileCabinetInstance: InstanceElement
 
     beforeEach(() => {
       recordInstance = new InstanceElement(
@@ -47,6 +48,9 @@ describe('bundle_ids filter', () => {
       )
       fileCabinetInstance = new InstanceElement('fileInstance', fileType(), {
         [PATH]: 'SuiteBundles/Bundle 39609/SomeInnerFolder/content.html',
+      })
+      falseBundleIdFileCabinetInstance = new InstanceElement('fileInstance', fileType(), {
+        [PATH]: 'SuiteBundles/Bundle 11111/SomeInnerFolder/content.html',
       })
     })
 
@@ -69,6 +73,11 @@ describe('bundle_ids filter', () => {
       const notInRecordVersion = new InstanceElement('39609', bundleType().type, { id: '39609', version: 'v4.1.0' })
       await filterCreator(filterOpts).onFetch?.([fileCabinetInstance, notInRecordVersion])
       expect(fileCabinetInstance.value.bundle).toEqual(bundleRef)
+    })
+
+    it('should not add bundle field for bundle that only exists in SuiteBundles', async () => {
+      await filterCreator(filterOpts).onFetch?.([falseBundleIdFileCabinetInstance, bundleInstance])
+      expect(falseBundleIdFileCabinetInstance.value.bundle).toBeUndefined()
     })
   })
 

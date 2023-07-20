@@ -13,7 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, StaticFile } from '@salto-io/adapter-api'
+import {
+  Element,
+  getChangeData,
+  InstanceElement,
+  isAdditionOrModificationChange,
+  isInstanceChange,
+  isInstanceElement,
+  StaticFile,
+} from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
@@ -23,7 +31,7 @@ import path from 'path'
 import { LocalFilterCreator } from '../filter'
 import { apiName } from '../transformers/transformer'
 import { EMAIL_TEMPLATE_METADATA_TYPE, RECORDS_PATH, SALESFORCE } from '../constants'
-import { isInstanceOfType } from './utils'
+import { isInstanceOfType, isInstanceOfTypeChange } from './utils'
 
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -99,6 +107,24 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
   }
 }
 
+type ChangedEmailTemplateInstance = InstanceElement & {
+  value: InstanceElement['value'] & {
+    attachments: {
+      content: Buffer | string
+    }[]
+  }
+}
+
+const isEmailTemplateWithAttachmentsInstance = (
+  instance: InstanceElement
+): instance is ChangedEmailTemplateInstance => (
+  makeArray(instance.value.attachments)
+    .every(attachment => {
+      const content = _.get(attachment, 'content')
+      return Buffer.isBuffer(content) || _.isString(content)
+    })
+)
+
 /**
  * Extract emailTemplate with attachments and save their content in a static file.
  */
@@ -109,6 +135,40 @@ const filter: LocalFilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(isInstanceOfType(EMAIL_TEMPLATE_METADATA_TYPE))
       .forEach(organizeStaticFiles)
+  },
+  // Convert EmailTemplate attachments to base64 string
+  preDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
+      .map(getChangeData)
+      .filter(isEmailTemplateWithAttachmentsInstance)
+      .forEach(instance => {
+        makeArray(instance.value.attachments)
+          .forEach(attachment => {
+            if (_.isBuffer(attachment.content)) {
+              attachment.content = attachment.content.toString('base64')
+            }
+          })
+      })
+  },
+  // Convert EmailTemplate attachments back to binary files
+  onDeploy: async changes => {
+    await awu(changes)
+      .filter(isAdditionOrModificationChange)
+      .filter(isInstanceChange)
+      .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
+      .map(getChangeData)
+      .filter(isEmailTemplateWithAttachmentsInstance)
+      .forEach(instance => {
+        makeArray(instance.value.attachments)
+          .forEach(attachment => {
+            if (_.isString(attachment.content)) {
+              attachment.content = Buffer.from(attachment.content, 'base64')
+            }
+          })
+      })
   },
 })
 

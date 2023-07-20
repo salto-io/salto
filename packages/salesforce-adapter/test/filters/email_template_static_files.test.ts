@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, StaticFile } from '@salto-io/adapter-api'
+import { Element, InstanceElement, StaticFile, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/email_template_static_files'
 import { defaultFilterContext } from '../utils'
 import { mockTypes } from '../mock_elements'
@@ -24,7 +24,15 @@ describe('emailTemplate static files filter', () => {
   const ATTACHMENT_AS_STRING = 'attachment'
   const EMAILCONTENT = 'email-content'
   const ATTACHMENT_NAME = 'attachment.txt'
+
+  type FilterType = FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>
+
   let elements: Element[]
+  let filter: FilterType
+
+  beforeEach(() => {
+    filter = filterCreator({ config: defaultFilterContext }) as FilterType
+  })
 
   const attachment = new StaticFile({
     filepath: 'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/attachment.txt',
@@ -37,9 +45,6 @@ describe('emailTemplate static files filter', () => {
   })
 
   describe('on fetch', () => {
-    type FilterType = FilterWith<'onFetch'>
-    let filter: FilterType
-
     describe('attachment as an object', () => {
       beforeAll(async () => {
         const emailNoArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
@@ -49,7 +54,6 @@ describe('emailTemplate static files filter', () => {
 
         elements = [emailNoArrayAttachment]
 
-        filter = filterCreator({ config: defaultFilterContext }) as FilterType
         await filter.onFetch(elements)
       })
 
@@ -73,7 +77,6 @@ describe('emailTemplate static files filter', () => {
 
         elements = [emailArrayAttachment]
 
-        filter = filterCreator({ config: defaultFilterContext }) as FilterType
         await filter.onFetch(elements)
       })
 
@@ -86,6 +89,32 @@ describe('emailTemplate static files filter', () => {
           'salesforce/Records/EmailTemplate/unfiled$public/emailTemplate/emailTemplate.email'
         )
       })
+    })
+  })
+  describe('deploy flow', () => {
+    const ATTACHMENT_AS_BASE64_STRING = 'attachmeng=='
+    const ATTACHMENT_AS_BUFFER = Buffer.from(ATTACHMENT_AS_BASE64_STRING, 'base64')
+
+    let deployedInstance: InstanceElement
+    beforeEach(async () => {
+      deployedInstance = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
+        content: staticContent,
+        attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER }] },
+      mockTypes.EmailTemplate)
+    })
+
+    it('should encode the attachment to base64 string on preDeploy and revert back to binary buffer on onDeploy', async () => {
+      const changes = [toChange({ after: deployedInstance })]
+      // preDeploy - encode the attachment content to base64 string
+      await filter.preDeploy(changes)
+      expect(deployedInstance.value.attachments).toEqual([
+        { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BASE64_STRING },
+      ])
+      // onDeploy - decode the attachment content back to binary buffer
+      await filter.onDeploy(changes)
+      expect(deployedInstance.value.attachments).toEqual([
+        { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_BUFFER },
+      ])
     })
   })
 })

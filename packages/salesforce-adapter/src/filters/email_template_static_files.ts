@@ -21,12 +21,12 @@ import {
   isAdditionOrModificationChange,
   isInstanceChange,
   isInstanceElement,
+  isStaticFile,
   StaticFile,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { createSchemeGuard, safeJsonStringify } from '@salto-io/adapter-utils'
-import Joi from 'joi'
+import { safeJsonStringify } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import path from 'path'
 import { LocalFilterCreator } from '../filter'
@@ -45,20 +45,15 @@ type Attachment = {
   content: string | Buffer | StaticFile
 }
 
-type EmailAttachmentsArray = {
-  attachments: Attachment[]
+const isEmailTemplateAttachment = (attachment: unknown): attachment is Attachment => {
+  const name = _.get(attachment, 'name')
+  const content = _.get(attachment, 'content')
+  return _.isString(name) && (Buffer.isBuffer(content) || _.isString(content) || isStaticFile(content))
 }
 
-const ATTACHMENT = Joi.object({
-  name: Joi.string().required(),
-  content: Joi.string().required(),
-}).required()
-
-const EMAIL_ATTACHMENTS_ARRAY = Joi.object({
-  attachments: Joi.array().items(ATTACHMENT).required(),
-}).unknown(true)
-
-const isEmailAttachmentsArray = createSchemeGuard<EmailAttachmentsArray>(EMAIL_ATTACHMENTS_ARRAY)
+const isEmailAttachmentsArray = (attachments: unknown[]): attachments is Attachment[] => (
+  attachments.every(isEmailTemplateAttachment)
+)
 
 const createStaticFile = (
   folderName: string,
@@ -86,7 +81,7 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
     })
     try {
       instance.value.attachments = makeArray(instance.value.attachments)
-      if (isEmailAttachmentsArray(instance.value)) {
+      if (isEmailAttachmentsArray(instance.value.attachments)) {
         instance.value.attachments.forEach(attachment => {
           attachment.content = createStaticFile(
             // attachment.content type is a string before the creation of the static file
@@ -108,30 +103,14 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
   }
 }
 
-type ChangedEmailTemplateInstance = InstanceElement & {
-  value: InstanceElement['value'] & {
-    attachments: Attachment[]
-  }
-}
-
-const isEmailTemplateWithAttachmentsInstance = (
-  instance: InstanceElement
-): instance is ChangedEmailTemplateInstance => (
-  makeArray(instance.value.attachments)
-    .every(attachment => {
-      const content = _.get(attachment, 'content')
-      return Buffer.isBuffer(content) || _.isString(content)
-    })
-)
-
 const getAttachmentsFromChanges = async (changes: Change[]): Promise<Attachment[]> => (
   awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
     .map(getChangeData)
-    .filter(isEmailTemplateWithAttachmentsInstance)
-    .flatMap(instance => instance.value.attachments)
+    .flatMap(instance => makeArray(instance.value.attachments))
+    .filter(isEmailTemplateAttachment)
     .toArray()
 )
 

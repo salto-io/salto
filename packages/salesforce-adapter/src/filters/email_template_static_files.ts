@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import {
+  Change,
   Element,
   getChangeData,
   InstanceElement,
@@ -41,7 +42,7 @@ const log = logger(module)
 // Attachment content should be a string before the creation of the static file
 type Attachment = {
   name: string
-  content: string | StaticFile
+  content: string | Buffer | StaticFile
 }
 
 type EmailAttachmentsArray = {
@@ -109,9 +110,7 @@ const organizeStaticFiles = async (instance: InstanceElement): Promise<void> => 
 
 type ChangedEmailTemplateInstance = InstanceElement & {
   value: InstanceElement['value'] & {
-    attachments: {
-      content: Buffer | string
-    }[]
+    attachments: Attachment[]
   }
 }
 
@@ -123,6 +122,17 @@ const isEmailTemplateWithAttachmentsInstance = (
       const content = _.get(attachment, 'content')
       return Buffer.isBuffer(content) || _.isString(content)
     })
+)
+
+const getAttachmentsFromChanges = async (changes: Change[]): Promise<Attachment[]> => (
+  awu(changes)
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
+    .map(getChangeData)
+    .filter(isEmailTemplateWithAttachmentsInstance)
+    .flatMap(instance => instance.value.attachments)
+    .toArray()
 )
 
 /**
@@ -138,36 +148,20 @@ const filter: LocalFilterCreator = () => ({
   },
   // Convert EmailTemplate attachments to base64 string
   preDeploy: async changes => {
-    await awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
-      .map(getChangeData)
-      .filter(isEmailTemplateWithAttachmentsInstance)
-      .forEach(instance => {
-        makeArray(instance.value.attachments)
-          .forEach(attachment => {
-            if (_.isBuffer(attachment.content)) {
-              attachment.content = attachment.content.toString('base64')
-            }
-          })
+    (await getAttachmentsFromChanges(changes))
+      .forEach(attachment => {
+        if (_.isBuffer(attachment.content)) {
+          attachment.content = attachment.content.toString('base64')
+        }
       })
   },
   // Convert EmailTemplate attachments back to binary files
   onDeploy: async changes => {
-    await awu(changes)
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(isInstanceOfTypeChange(EMAIL_TEMPLATE_METADATA_TYPE))
-      .map(getChangeData)
-      .filter(isEmailTemplateWithAttachmentsInstance)
-      .forEach(instance => {
-        makeArray(instance.value.attachments)
-          .forEach(attachment => {
-            if (_.isString(attachment.content)) {
-              attachment.content = Buffer.from(attachment.content, 'base64')
-            }
-          })
+    (await getAttachmentsFromChanges(changes))
+      .forEach(attachment => {
+        if (_.isString(attachment.content)) {
+          attachment.content = Buffer.from(attachment.content, 'base64')
+        }
       })
   },
 })

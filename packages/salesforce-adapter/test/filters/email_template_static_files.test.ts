@@ -46,7 +46,7 @@ describe('emailTemplate static files filter', () => {
 
   describe('on fetch', () => {
     describe('attachment as an object', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         const emailNoArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
           content: staticContent,
           attachments: { name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING } },
@@ -69,7 +69,7 @@ describe('emailTemplate static files filter', () => {
     })
 
     describe('attachment as an array', () => {
-      beforeAll(async () => {
+      beforeEach(async () => {
         const emailArrayAttachment = createInstanceElement({ fullName: 'unfiled$public/emailTemplate',
           content: staticContent,
           attachments: [{ name: ATTACHMENT_NAME, content: ATTACHMENT_AS_STRING }] },

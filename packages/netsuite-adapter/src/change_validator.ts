@@ -45,6 +45,7 @@ import netsuiteClientValidation from './change_validators/client_validation'
 import currencyUndeployableFieldsValidator from './change_validators/currency_undeployable_fields'
 import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_internal_ids'
 import rolePermissionValidator from './change_validators/role_permission_ids'
+import dataElementsOmitFieldsValidator from './change_validators/data_elements_omit_fields'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -83,6 +84,7 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   undeployableConfigFeatures: undeployableConfigFeaturesValidator,
   extraReferenceDependencies: extraReferenceDependenciesValidator,
   rolePermission: rolePermissionValidator,
+  dataElementsOmitFields: dataElementsOmitFieldsValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {

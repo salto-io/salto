@@ -25,7 +25,7 @@ const { awu } = collections.asynciterable
 
 const IS_INACTIVE_FIELD = 'isInactive'
 
-const isDataElementChange = async (change: Change<InstanceElement>): Promise<boolean> => {
+export const isDataElementChange = async (change: Change<InstanceElement>): Promise<boolean> => {
   const changeType = await getChangeData(change).getType()
   return isDataObjectType(changeType)
     && !isCustomRecordType(changeType) // custom record types don't have inactive parent limitation on NetSuite

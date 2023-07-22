@@ -52,6 +52,7 @@ describe('data elements omit fields filter tests', () => {
     },
   }
   let subsidiaryInstance: InstanceElement
+  let after: InstanceElement
   beforeEach(() => {
     subsidiaryInstance = new InstanceElement(
       'Parent_Company',
@@ -62,6 +63,7 @@ describe('data elements omit fields filter tests', () => {
         classTranslationList,
       }
     )
+    after = subsidiaryInstance.clone()
   })
   it('should remove field from addition change on preDeploy', async () => {
     expect(subsidiaryInstance.value.classTranslationList).toEqual(classTranslationList)
@@ -74,7 +76,6 @@ describe('data elements omit fields filter tests', () => {
   })
 
   it('should remove field from modification change if the field was modified', async () => {
-    const after = subsidiaryInstance.clone()
     after.value.classTranslationList.classTranslation.Russian = {
       language: 'Russian',
       name: 'Сводная материнская компания',
@@ -88,7 +89,6 @@ describe('data elements omit fields filter tests', () => {
   })
 
   it('should not remove field if it wasn\'t modified', async () => {
-    const after = subsidiaryInstance.clone()
     after.value.state = 'FLA'
     await filterCreator(filterOpts).preDeploy?.(
       [

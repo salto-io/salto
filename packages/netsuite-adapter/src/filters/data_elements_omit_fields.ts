@@ -16,9 +16,12 @@
 
 import { isAdditionOrModificationChange, isInstanceChange, isModificationChange, isAdditionChange, Change, ModificationChange, getChangeData, ChangeDataType } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { collections } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
 import { isDataElementChange } from '../change_validators/inactive_parent'
 import { getElementValueOrAnnotations } from '../types'
+
+const { awu } = collections.asynciterable
 
 export const CLASS_TRANSLATION_LIST = 'classTranslationList'
 const FIELDS_TO_OMIT = [CLASS_TRANSLATION_LIST]
@@ -43,7 +46,7 @@ export const shouldOmitField = (
 const filterCreator: LocalFilterCreator = () => ({
   name: 'dataElementsOmitFields',
   preDeploy: async changes => {
-    changes
+    await awu(changes)
       .filter(isAdditionOrModificationChange)
       .filter(isInstanceChange)
       .filter(isDataElementChange)

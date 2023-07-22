@@ -13,24 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { isAdditionOrModificationChange, isInstanceChange, getChangeData } from '@salto-io/adapter-api'
+import { isAdditionOrModificationChange, isInstanceChange, getChangeData, ChangeError } from '@salto-io/adapter-api'
+import { collections } from '@salto-io/lowerdash'
 import { isDataElementChange } from './inactive_parent'
 import { NetsuiteChangeValidator } from './types'
 import { shouldOmitField, CLASS_TRANSLATION_LIST } from '../filters/data_elements_omit_fields'
 
+const { awu } = collections.asynciterable
+
 const changeValidator: NetsuiteChangeValidator = async changes =>
-  changes
+  awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(isInstanceChange)
     .filter(isDataElementChange)
     .filter(change => shouldOmitField(change, CLASS_TRANSLATION_LIST))
     .map(getChangeData)
-    .map(instance => ({
-      elemID: instance.elemID,
+    .map((changeData): ChangeError => ({
+      elemID: changeData.elemID,
       severity: 'Warning',
       message: `Changes to the ${CLASS_TRANSLATION_LIST} are not deployable`,
       detailedMessage: `Changes to the ${CLASS_TRANSLATION_LIST} are not deployable and will be removed from the deployment.`,
     }))
-
+    .toArray()
 
 export default changeValidator

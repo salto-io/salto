@@ -21,7 +21,10 @@ import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS } from '../constants'
 import { getProductSettings } from '../product_settings'
 import { JiraDuckTypeConfig } from './api_config'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType, createDucktypeAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType,
+  createSwaggerAdapterApiConfigType,
+  createDucktypeAdapterApiConfigType,
+  defaultMissingUserFallbackField } = configUtils
 
 const FETCH_CONFIG = 'fetch'
 

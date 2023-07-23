@@ -22,7 +22,6 @@ import JiraAdapter, { JiraAdapterParams } from '../src/adapter'
 import { Credentials } from '../src/auth'
 import { getDefaultConfig, JiraConfig } from '../src/config/config'
 import { credsSpec } from './jest_environment'
-import ScriptRunnerCredentials from '../src/script_runner_auth'
 
 const log = logger(module)
 
@@ -47,7 +46,8 @@ export const realAdapter = (
     || new JiraClient({ credentials, isDataCenter })
   const scriptRunnerClient = new ScriptRunnerClient(
     {
-      credentials: new ScriptRunnerCredentials(client),
+      jiraClient: client,
+      credentials: {},
       isDataCenter,
     },
   )

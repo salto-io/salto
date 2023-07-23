@@ -28,7 +28,6 @@ import { AUTOMATION_TYPE, SCRIPT_RUNNER_API_DEFINITIONS, WEBHOOK_TYPE } from './
 import { getProductSettings } from './product_settings'
 import { configCreator } from './config_creator'
 import ScriptRunnerClient from './client/script_runner_client'
-import ScriptRunnerCredentials from './script_runner_auth'
 
 const log = logger(module)
 const { validateClientConfig, createRetryOptions, DEFAULT_RETRY_OPTS } = clientUtils
@@ -127,9 +126,10 @@ export const adapter: Adapter = {
     })
     const scriptRunnerClient = new ScriptRunnerClient(
       {
-        credentials: new ScriptRunnerCredentials(client),
+        credentials: {},
         config: config.client,
         isDataCenter,
+        jiraClient: client,
       },
     )
     const adapterOperations = new JiraAdapter({

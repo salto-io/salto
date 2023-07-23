@@ -15,13 +15,11 @@
 */
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
-import Joi from 'joi'
-import { parse } from 'node-html-parser'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { handleDeploymentErrors } from '../deployment/deployment_error_handling'
 import { JIRA } from '../constants'
-import { createScriptRunnerConnection } from './script_runner_connection'
-import ScriptRunnerCredentials from '../script_runner_auth'
+import { ScriptRunnerLoginError, createScriptRunnerConnection } from './script_runner_connection'
+import JiraClient from './client'
+import { ScriptRunnerCredentials } from '../auth'
 
 const log = logger(module)
 
@@ -42,33 +40,6 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
   get: 1000,
 }
 
-type TokenResponse = {
-  data: string
-}
-
-const TOKEN_RESPONSE_SCHEME = Joi.object({
-  data: Joi.string().required(),
-}).unknown(true)
-
-const isTokenResponse = createSchemeGuard<TokenResponse>(TOKEN_RESPONSE_SCHEME, 'Failed to get script runner token from scriptRunner service')
-
-const getSrTokenFromHtml = (html: string): string => {
-  const root = parse(html)
-
-  // Find the meta tag with name="sr-token"
-  const srTokenElement = root.querySelector('meta[name="sr-token"]')
-  if (srTokenElement === null) {
-    log.error('Failed to get script runner token from scriptRunner service, could not find meta tag with name="sr-token"')
-    // we do not want to throw an error here to allow fetch to succeed without ScriptRunner
-    return ''
-  }
-
-  // Extract the content attribute value
-  const srToken = srTokenElement.getAttribute('content')
-
-  return srToken ?? ''
-}
-
 export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
   ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig
 > {
@@ -77,12 +48,12 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
 
   constructor(
     clientOpts: clientUtils.ClientOpts<ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig>
-      & { isDataCenter: boolean},
+      & { isDataCenter: boolean; jiraClient: JiraClient},
   ) {
     super(
       JIRA,
       clientOpts,
-      createScriptRunnerConnection,
+      createScriptRunnerConnection(clientOpts.jiraClient),
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
@@ -93,33 +64,6 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
     this.isDataCenter = clientOpts.isDataCenter
   }
 
-  private async getJwtFromService(): Promise<string> {
-    const url = await this.credentials.getUrl()
-    const baseUrl = await this.credentials.getBaseUrl()
-    const srResponse = await super.getSinglePage({
-      url: url.replace(baseUrl, ''),
-    })
-
-    if (!isTokenResponse(srResponse)) {
-      log.error('Failed to get script runner token from scriptRunner service', srResponse)
-      // we do not want to throw an error here to allow fetch to succeed without ScriptRunner
-      return ''
-    }
-    return getSrTokenFromHtml(srResponse.data)
-  }
-
-  private async getJwt(): Promise<string> {
-    if (!this.jwTokenPromise) {
-      this.jwTokenPromise = this.getJwtFromService()
-    }
-    return this.jwTokenPromise
-  }
-
-  private async getAuthHeader(): Promise<Record<string, string>> {
-    return {
-      Authorization: `JWT ${await this.getJwt()}`,
-    }
-  }
 
   public async getSinglePage(
     args: clientUtils.ClientBaseParams,
@@ -128,11 +72,17 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
       return await super.getSinglePage({
         ...args,
         headers: {
-          ...await this.getAuthHeader(),
           ...(args.headers ?? {}),
         },
       })
     } catch (e) {
+      if (e instanceof ScriptRunnerLoginError) {
+        log.error('Suppressing script runner login error %o', e)
+        return {
+          data: [],
+          status: 401,
+        }
+      }
       // The http_client code catches the original error and transforms it such that it removes
       // the parsed information (like the status code), so we have to parse the string here in order
       // to realize what type of error was thrown
@@ -160,41 +110,5 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
     params: clientUtils.HttpMethodToClientParams[T]
   ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
     return super.sendRequest(method, params)
-  }
-
-  public async delete(
-    args: clientUtils.ClientBaseParams,
-  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    return super.delete({
-      ...args,
-      headers: {
-        ...(await this.getAuthHeader()),
-        ...(args.headers ?? {}),
-      },
-    })
-  }
-
-  public async put(
-    args: clientUtils.ClientDataParams,
-  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    return super.put({
-      ...args,
-      headers: {
-        ...(await this.getAuthHeader()),
-        ...(args.headers ?? {}),
-      },
-    })
-  }
-
-  public async post(
-    args: clientUtils.ClientDataParams,
-  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
-    return super.post({
-      ...args,
-      headers: {
-        ...(await this.getAuthHeader()),
-        ...(args.headers ?? {}),
-      },
-    })
   }
 }

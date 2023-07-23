@@ -77,12 +77,23 @@ export const removeCustomRecordTypePrefix = (name: string): string =>
 type MetadataTypes = {
   standardTypes: TypesMap<StandardType>
   additionalTypes: Readonly<Record<string, ObjectType>>
+  innerAdditionalTypes: Readonly<Record<string, ObjectType>>
 }
 
-export const getMetadataTypes = (): MetadataTypes => ({
-  standardTypes: getStandardTypes(),
-  additionalTypes: { ...getFileCabinetTypes(), ...getConfigurationTypes(), bundle: bundleType().type },
-})
+export const getMetadataTypes = (): MetadataTypes => {
+  const bundle = bundleType()
+  return {
+    standardTypes: getStandardTypes(),
+    additionalTypes: {
+      ...getFileCabinetTypes(),
+      ...getConfigurationTypes(),
+      [BUNDLE]: bundle.type,
+    },
+    innerAdditionalTypes: {
+      ...bundle.innerTypes,
+    },
+  }
+}
 
 export const getTopLevelStandardTypes = (standardTypes: TypesMap<StandardType>): ObjectType[] =>
   Object.values(standardTypes).map(standardType => standardType.type)
@@ -91,14 +102,14 @@ export const getInnerStandardTypes = (standardTypes: TypesMap<StandardType>): Ob
   Object.values(standardTypes).flatMap(standardType => Object.values(standardType.innerTypes))
 
 export const metadataTypesToList = (metadataTypes: MetadataTypes): TypeElement[] => {
-  const { standardTypes, additionalTypes } = metadataTypes
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = metadataTypes
   return [
     ...getTopLevelStandardTypes(standardTypes),
     ...getInnerStandardTypes(standardTypes),
     ...Object.values(enums),
     ...Object.values(additionalTypes),
     ...Object.values(fieldTypes),
-    ...Object.values(bundleType().innerTypes),
+    ...Object.values(innerAdditionalTypes),
   ]
 }
 

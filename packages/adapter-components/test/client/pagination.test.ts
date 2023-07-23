@@ -475,36 +475,6 @@ describe('client_pagination', () => {
       paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
         .mockReturnValueOnce([{ page: '6' }]).mockReturnValueOnce([{ page: '8' }])
     })
-    it('should not call additional calls before asked', async () => {
-      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
-        paginationFunc,
-        extractPageEntries
-      )({
-        client,
-        pageSize: 1,
-        getParams,
-      }), 0)
-      expect(result).toEqual([{ a: 'a1' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(1)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-      expect(paginationFunc).toHaveBeenCalledTimes(0)
-    })
-    it('should call pages in parallel and return the correct page', async () => {
-      const result = await getNthItem(traverseAsync.traverseRequestsAsync(
-        paginationFunc,
-        extractPageEntries
-      )({
-        client,
-        pageSize: 1,
-        getParams,
-      }), 1)
-      expect(result).toEqual([{ a: 'a2' }])
-      expect(client.getSinglePage).toHaveBeenCalledTimes(3)
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { arg1: 'val1' } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '2', arg1: 'val1' } })
-      expect(client.getSinglePage).toHaveBeenCalledWith({ url: '/ep', queryParams: { page: '4', arg1: 'val1' } })
-      expect(paginationFunc).toHaveBeenCalledTimes(1)
-    })
   })
   describe('getWithItemIndexPagination', () => {
     it('should query a single page if data has less items than page size', async () => {

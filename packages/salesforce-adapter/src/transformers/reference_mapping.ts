@@ -691,6 +691,11 @@ export const referencesFromProfile: FieldReferenceDefinition[] = [
     src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
     target: { type: 'CustomApplication' },
   },
+  {
+    src: { field: 'columns', parentTypes: ['ListView'] },
+    serializationStrategy: 'relativeApiName',
+    target: { type: CUSTOM_FIELD, parentContext: 'instanceParent' },
+  },
 ]
 
 /**

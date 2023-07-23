@@ -419,63 +419,6 @@ describe('client_pagination', () => {
       }))).rejects.toThrow('Something went wrong')
     })
   })
-  describe('traverse requests async', () => {
-    const getParams = {
-      url: '/ep',
-      paginationField: 'page',
-      queryParams: {
-        arg1: 'val1',
-      },
-    }
-    const getNthItem = async (iterable: AsyncIterable<ResponseValue[]>, n: number)
-    : Promise<ResponseValue[] | undefined> => {
-      let currentNum = 0
-      for await (const item of iterable) {
-        if (currentNum === n) {
-          return item
-        }
-        currentNum += 1
-      }
-      return undefined
-    }
-    const client: MockInterface<HTTPReadClientInterface> = {
-      getSinglePage: mockFunction<HTTPReadClientInterface['getSinglePage']>(),
-      getPageSize: mockFunction<HTTPReadClientInterface['getPageSize']>(),
-    }
-    const paginationFunc = mockFunction<PaginationFunc>()
-    beforeEach(() => {
-      client.getSinglePage.mockReset()
-      client.getPageSize.mockReset()
-      paginationFunc.mockReset()
-      client.getSinglePage.mockResolvedValueOnce(Promise.resolve({
-        data: {
-          items: [{
-            a: 'a1',
-          }],
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {
-          items: [{
-            a: 'a2',
-          }],
-        },
-        status: 200,
-        statusText: 'OK',
-      })).mockResolvedValueOnce(Promise.resolve({
-        data: {
-          items: [{
-            a: 'a3',
-          }],
-        },
-        status: 200,
-        statusText: 'OK',
-      }))
-      paginationFunc.mockReturnValueOnce([{ page: '2' }, { page: '4' }])
-        .mockReturnValueOnce([{ page: '6' }]).mockReturnValueOnce([{ page: '8' }])
-    })
-  })
   describe('getWithItemIndexPagination', () => {
     it('should query a single page if data has less items than page size', async () => {
       const paginate = getWithItemIndexPagination({ firstIndex: 0, pageSizeArgName: 'maxResults' })

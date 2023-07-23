@@ -75,7 +75,7 @@ describe('articleAttachmentDependencyChanger', () => {
     const dependencyChanges = [...await articleAttachmentDependencyChanger(inputChanges, inputDeps)]
     expect(dependencyChanges.length).toBe(0)
   })
-  it('should crush and add dependency if parent is not defined for attachment', async () => {
+  it('should not crush and add dependency if parent is not defined for attachment', async () => {
     const clonedAttachment = articleAttachment.clone()
     clonedAttachment.annotations[CORE_ANNOTATIONS.PARENT] = []
     const inputChanges = new Map([
@@ -88,5 +88,21 @@ describe('articleAttachmentDependencyChanger', () => {
 
     const dependencyChanges = [...await articleAttachmentDependencyChanger(inputChanges, inputDeps)]
     expect(dependencyChanges.length).toBe(0)
+  })
+  it('should not crush and should add dependency if attachment is not defined in the parent', async () => {
+    const clonedArticle = article.clone()
+    clonedArticle.value.attachments = []
+    const inputChanges = new Map([
+      [0, toChange({ after: articleAttachment })],
+      [1, toChange({ before: clonedArticle, after: clonedArticle })],
+    ])
+    const inputDeps = new Map<collections.set.SetId, Set<collections.set.SetId>>([
+      [0, new Set()], [1, new Set()],
+    ])
+
+    const dependencyChanges = [...await articleAttachmentDependencyChanger(inputChanges, inputDeps)]
+    expect(dependencyChanges.length).toBe(1)
+    expect(dependencyChanges.every(change => change.action === 'add')).toBe(true)
+    expect(dependencyChanges[0].dependency).toMatchObject({ source: 0, target: 1 })
   })
 })

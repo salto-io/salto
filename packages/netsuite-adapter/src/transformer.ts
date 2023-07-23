@@ -202,7 +202,7 @@ export const createElements = async (
   elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
 ): Promise<Array<InstanceElement | TypeElement>> => {
-  const { standardTypes, additionalTypes } = getMetadataTypes()
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
 
   getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
     .forEach(addApplicationIdToType)
@@ -236,7 +236,7 @@ export const createElements = async (
   )
 
   return [
-    ...metadataTypesToList({ standardTypes, additionalTypes }),
+    ...metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes }),
     ...instances,
     ...customRecordTypes,
   ]

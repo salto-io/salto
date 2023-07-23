@@ -496,11 +496,11 @@ const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
-      const { idFields, invalidFields } = await getIdFields(
+      const { idFields, invalidIdFields } = await getIdFields(
         await instances[0].getType(), actualDataManagement
       )
-      if (invalidFields !== undefined && invalidFields.length > 0) {
-        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
+      if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
+        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
       return await deployAddInstances(instances, idFields, client, groupId)
     }

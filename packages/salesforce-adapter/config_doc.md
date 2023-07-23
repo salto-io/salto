@@ -162,12 +162,13 @@ salesforce {
 
 ### Data management configuration options
 
-| Name                                                        | Default when undefined                           | Description                                                                                               |
-|-------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| includeObjects                                              | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
-| excludeObjects                                              | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
-| allowReferenceTo                                            | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
-| [saltoIDSettings](#salto-id-settings-configuration-options) | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
+| Name                                                              | Default when undefined                           | Description                                                                                               |
+|-------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| includeObjects                                                    | N/A (required when dataManagement is configured) | Data records of matched object names will be fetched                                                      |
+| excludeObjects                                                    | []                                               | Data records of matched object names will not be fetched in case they are matched in includeObjects       |
+| allowReferenceTo                                                  | []                                               | Data records of matched object names will be fetched only when referenced from other fetched data records |
+| [saltoIDSettings](#salto-id-settings-configuration-options)       | N/A (required when dataManagement is configured) | Configuration for cross environments data record ids management                                           |
+| [saltoAliasSettings](#salto-alias-settings-configuration-options) | N/A                                              | Configuration for data record aliases                                                                     |
 
 #### Salto ID settings configuration options
 
@@ -176,12 +177,26 @@ salesforce {
 | defaultIdFields                                        | N/A (required when saltoIDSettings is configured) | Default fields list for defining the data record's cross environment id |
 | [overrides](#object-id-settings-configuration-options) | []                                                | Overrides the default id fields for specific objects                    |
 
+#### Salto Alias settings configuration options
+
+| Name                                                      | Default when undefined | Description                                              |
+|-----------------------------------------------------------|------------------------|----------------------------------------------------------|
+| defaultAliasFields                                        | N/A                    | Default fields list for defining the data record's alias |
+| [overrides](#object-alias-settings-configuration-options) | []                     | Overrides the default alias fields for specific objects  |
+
 #### Object ID settings configuration options
 
 | Name         | Default when undefined                      | Description                                                                                   |
 |--------------|---------------------------------------------|-----------------------------------------------------------------------------------------------|
 | objectsRegex | N/A (required when overrides is configured) | Cross environments ids of the matched object names will be defined by the specified id fields |
 | idFields     | []                                          | Fields list for defining the data record's cross environment id                               |
+
+#### Object Alias settings configuration options
+
+| Name         | Default when undefined                      | Description                                                                  |
+|--------------|---------------------------------------------|------------------------------------------------------------------------------|
+| objectsRegex | N/A (required when overrides is configured) | Alias of the matched object names will be defined by the specified id fields |
+| aliasFields  | []                                          | Fields list for defining the data record's alias                             |
 
 ### Client configuration options
 

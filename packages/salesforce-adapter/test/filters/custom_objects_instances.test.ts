@@ -26,10 +26,11 @@ import {
   ObjectType,
   PrimitiveType,
   PrimitiveTypes,
+  SaltoError,
   ServiceIds,
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
-import { ConfigChangeSuggestion, isDataManagementConfigSuggestions } from '../../src/types'
+import { ConfigChangeSuggestion, isDataManagementConfigSuggestions, SaltoAliasSettings } from '../../src/types'
 import { buildSelectQueries, getFieldNamesForQuery } from '../../src/filters/utils'
 import { FilterResult } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
@@ -38,7 +39,7 @@ import filterCreator from '../../src/filters/custom_objects_instances'
 import mockAdapter from '../adapter'
 import {
   API_NAME,
-  CUSTOM_OBJECT,
+  CUSTOM_OBJECT, DETECTS_PARENTS_INDICATOR,
   FIELD_ANNOTATIONS,
   INSTALLED_PACKAGES_PATH,
   LABEL,
@@ -1136,19 +1137,17 @@ describe('Custom Object Instances filter', () => {
     const MASTER_DETAIL_RECORD_ID = 'a0B8d000008r49lEAA'
     const INSTANCE_TYPE = 'SBQQ__LineColumn__c'
 
-    const createFilterForAliases = (skipAliases: boolean): FilterType => filterCreator({
+    const createFilterForAliases = (saltoAliasSettings?: SaltoAliasSettings): FilterType => filterCreator({
       client,
       config: {
         ...defaultFilterContext,
         fetchProfile: buildFetchProfile({
-          optionalFeatures: {
-            skipAliases,
-          },
           data: {
             includeObjects: ['.*'],
             saltoIDSettings: {
               defaultIdFields: ['Id'],
             },
+            saltoAliasSettings,
           },
         }),
       },
@@ -1168,20 +1167,7 @@ describe('Custom Object Instances filter', () => {
       }
 
       beforeEach(async () => {
-        filter = filterCreator({
-          client,
-          config: {
-            ...defaultFilterContext,
-            fetchProfile: buildFetchProfile({
-              data: {
-                includeObjects: ['.*'],
-                saltoIDSettings: {
-                  defaultIdFields: ['Id'],
-                },
-              },
-            }),
-          },
-        }) as FilterType
+        filter = createFilterForAliases()
         connection.query = jest.fn().mockImplementation(((query: string) => {
           if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
             return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
@@ -1201,6 +1187,41 @@ describe('Custom Object Instances filter', () => {
           expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
           expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName TestField InstanceName' }) }),
         ])
+      })
+
+      describe('when some alias fields are invalid', () => {
+        let errors: SaltoError[]
+        beforeEach(async () => {
+          filter = createFilterForAliases({
+            overrides: [{
+              objectsRegex: INSTANCE_TYPE,
+              aliasFields: [DETECTS_PARENTS_INDICATOR, 'Name', 'InvalidField', 'SBQQ__FieldName__c', 'AnotherInvalidField'],
+            }],
+          })
+          connection.query = jest.fn().mockImplementation(((query: string) => {
+            if (query.includes(`FROM ${MASTER_DETAIL_TYPE}`)) {
+              return Promise.resolve({ records: [MASTER_DETAIL_RECORD] })
+            }
+            if (query.includes(`FROM ${INSTANCE_TYPE}`)) {
+              return Promise.resolve({ records: [INSTANCE_RECORD] })
+            }
+            return []
+          }))
+          const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
+          const result = await filter.onFetch(elements) as FilterResult
+          errors = result.errors ?? []
+          instances = elements.filter(isInstanceElement)
+        })
+        it('should create correct aliases and warn about invalid fields', async () => {
+          expect(instances).toEqual([
+            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName' }) }),
+            expect.objectContaining({ annotations: expect.objectContaining({ [CORE_ANNOTATIONS.ALIAS]: 'ParentName InstanceName TestField' }) }),
+          ])
+          expect(errors).toEqual([{
+            message: expect.stringContaining('InvalidField') && expect.stringContaining('AnotherInvalidField'),
+            severity: 'Warning',
+          }])
+        })
       })
     })
 
@@ -1228,7 +1249,7 @@ describe('Custom Object Instances filter', () => {
           return []
         }))
         const elements: Element[] = [mockTypes[MASTER_DETAIL_TYPE], mockTypes[INSTANCE_TYPE]]
-        await createFilterForAliases(false).onFetch(elements)
+        await createFilterForAliases().onFetch(elements)
         instances = elements.filter(isInstanceElement)
       })
       it('should not create aliases', () => {

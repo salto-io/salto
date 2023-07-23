@@ -25,7 +25,12 @@ import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { buildElementsSourceForFetch, ENDS_WITH_CUSTOM_SUFFIX_REGEX, getNamespace } from './utils'
+import {
+  namePartsFromApiName,
+  buildElementsSourceForFetch,
+  removeCustomSuffix,
+  getNamespace,
+} from './utils'
 import { NAMESPACE_SEPARATOR } from '../constants'
 import { isMetadataInstanceElement, MetadataInstanceElement } from '../transformers/transformer'
 
@@ -35,9 +40,8 @@ const { isDefined } = values
 const log = logger(module)
 
 const getAliasFromFullName = (instanceFullName: string): string => {
-  const nameWithoutParent = _.last(instanceFullName.split(/[.-]/)) ?? instanceFullName
-  return _.last(nameWithoutParent
-    .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+  const nameWithoutParent = _.last(namePartsFromApiName(instanceFullName)) ?? instanceFullName
+  return _.last(removeCustomSuffix(nameWithoutParent)
     .split(NAMESPACE_SEPARATOR)) ?? instanceFullName
 }
 
@@ -46,8 +50,11 @@ const getParentAlias = async (
   elementsSource: ReadOnlyElementsSource
 ): Promise<string | undefined> => {
   const [parent] = getParents(instance)
+  if (parent === undefined) {
+    return undefined
+  }
   if (!isReferenceExpression(parent)) {
-    log.debug('parent is not a reference expression. %o', parent)
+    log.debug('parent is not a reference expression. parent: %o', parent)
     return undefined
   }
   const resolvedParent = await parent.getResolvedValue(elementsSource)
@@ -63,12 +70,14 @@ const setInstanceAlias = async (
   const namespace = await getNamespace(instance)
   const parentAlias = await getParentAlias(instance, elementsSource)
   const alias = [
-    parentAlias ? `${parentAlias}:` : undefined,
+    namespace ? `${namespace}:` : undefined,
     getAliasFromFullName(instance.value.fullName),
-    namespace ? `(${namespace})` : undefined,
+    parentAlias ? `(${parentAlias})` : undefined,
   ].filter(isDefined)
     .join(' ')
     .replace(/_/g, ' ') // replace all underscores with spaces
+  // No need to create alias if the calculated alias is the same as the fullName.
+  // Adding unnecessary aliases can cause performance issues.
   if (alias !== instance.value.fullName) {
     instance.annotations[CORE_ANNOTATIONS.ALIAS] = alias
   }

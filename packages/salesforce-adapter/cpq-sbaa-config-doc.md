@@ -26,7 +26,7 @@ Paste the following configuration snippet under the include fetch metadata secti
 ```
 
 ### Adding Relevant Data Records to the Salto workspace
-Managing salesforce data records within a Salto workspace is disabled by default and its required to add a `data` configuration section in `/salto.config/adapters/salesforce.nacl`
+Managing salesforce data records within a Salto workspace is disabled by default and requires adding a `data` configuration section in `/salto.config/adapters/salesforce.nacl`
 
 Salesforce data configuration includes the following information:
 * `includeObjects`: A list of object name patterns. Data records of matching salesforce objects will be managed in the salto workspace.

@@ -17,14 +17,11 @@
 import { ElemID, getChangeData, isAdditionOrModificationChange, isInstanceChange, isInstanceElement } from '@salto-io/adapter-api'
 import { setPath, walkOnElement } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import { FilterCreator } from '../../filter'
 import { walkOnUsers } from './account_id_filter'
 import { getCurrentUserInfo, getUserIdFromEmail, getUsersMap, getUsersMapByVisibleId, UserMap } from '../../users'
 import JiraClient from '../../client/client'
-
-const log = logger(module)
 
 const getFallbackUser = async (
   client: JiraClient,
@@ -84,7 +81,7 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => {
             }, config),
           }))
     },
-    onDeploy: async changes => log.time(async () => {
+    onDeploy: async changes => {
       if (_.isEmpty(fallbackPathToUser)) {
         return
       }
@@ -106,7 +103,7 @@ const filter: FilterCreator = ({ client, config, elementsSource }) => {
 
           setPath(idToInstance[baseId], idPath.createNestedID('id'), userId)
         })
-    }, 'user_id_filter deploy'),
+    },
   }
 }
 

@@ -17,11 +17,9 @@ import { Change, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData,
   InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { walkOnElement, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
-import { logger } from '@salto-io/logging'
 import JiraClient from '../client/client'
 import { MASK_VALUE } from '../filters/masking'
 
-const log = logger(module)
 export const DETAILED_MESSAGE = 'This element will be deployed with masked values instead of the intended values. It will not operate correctly until manually fixing this after deployment. Learn more at https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
 export const DOCUMENTATION_URL = 'https://help.salto.io/en/articles/6933977-masked-data-will-be-deployed-to-the-service'
 export const createChangeError = (
@@ -68,11 +66,10 @@ const doesHaveMaskedValues = (instance: InstanceElement): boolean => {
   return maskedValueFound
 }
 
-export const maskingValidator: (client: JiraClient) =>
-  ChangeValidator = client => async changes => log.time(() => (
-    changes
-      .filter(isAdditionOrModificationChange)
-      .filter(isInstanceChange)
-      .filter(change => doesHaveMaskedValues(getChangeData(change)))
-      .map(change => createChangeError(change, client))
-  ), 'masking change validator')
+export const maskingValidator: (client: JiraClient) => ChangeValidator = client => async changes => (
+  changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .filter(change => doesHaveMaskedValues(getChangeData(change)))
+    .map(change => createChangeError(change, client))
+)

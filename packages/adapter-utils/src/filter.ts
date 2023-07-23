@@ -145,7 +145,7 @@ export const filtersRunner = <
         {
           deployResult: {
             appliedChanges: [] as ReadonlyArray<Change>,
-            errors: [] as ReadonlyArray<SaltoError | SaltoElementError | Error>,
+            errors: [] as ReadonlyArray<SaltoError | SaltoElementError>,
           },
           leftoverChanges: changes,
         }

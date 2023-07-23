@@ -494,9 +494,15 @@ export const mockTypes = {
         refType: Types.primitiveDataTypes.MasterDetail,
         annotations: {
           referenceTo: ['SBQQ__Template__c'],
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
         },
       },
-      SBQQ__FieldName__c: { refType: BuiltinTypes.STRING },
+      SBQQ__FieldName__c: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+        },
+      },
     },
   }),
   WebLink: createMetadataObjectType({

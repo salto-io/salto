@@ -48,7 +48,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
       RegExp(`Details: The following features must be specified in the manifest to use the .*: (?<${FEATURE_NAME}>\\w+)`, 'gm'),
     ],
     deployedObjectRegex: RegExp(`^(Create|Update) object -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
-    errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm'),
+    errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
     manifestErrorDetailsRegex: RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm'),
     configureFeatureFailRegex: RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature has FAILED`),
     validationFailed: RegExp('^Validation failed\\.$', 'm'),
@@ -65,7 +65,7 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     ],
     deployedObjectRegex: RegExp(`^(Cr.er un objet|Mettre . jour l'objet) -- (?<${OBJECT_ID}>[a-z0-9_]+)`, 'gm'),
     // TODO: find in french
-    errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'm'),
+    errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
     manifestErrorDetailsRegex: RegExp(`D.tails: Le manifeste comporte une d.pendance sur l'objet (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm'),
     configureFeatureFailRegex: RegExp(`Configurer la fonction -- (L'activation|La d.sactivation) de la fonction (?<${FEATURE_NAME}>\\w+)\\(.*?\\) a .chou.`),
     validationFailed: RegExp('^La validation a .chou.\\.$', 'm'),

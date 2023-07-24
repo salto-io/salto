@@ -31,7 +31,7 @@ const filter: FilterCreator = () => ({
       .forEach(instance => {
         instance.value.fieldContexts = _.sortBy(
           instance.value.fieldContexts,
-          (ref:ReferenceExpression) => ref.elemID.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )
       })
   },
@@ -45,7 +45,7 @@ const filter: FilterCreator = () => ({
       .forEach(element => {
         element.value.fieldContexts = _.sortBy(
           element.value.fieldContexts,
-          (ref:ReferenceExpression) => ref.elemID.getFullName()
+          (ref: ReferenceExpression) => ref.elemID.getFullName()
         )
       })
   },

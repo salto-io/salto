@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { Value } from '@salto-io/adapter-api'
 import { FIELD_TYPE_NAMES, CUSTOM_OBJECT_ID_FIELD } from '../constants'
 
-const RELATIONSHIP_FIELD_NAMES = [
+const RELATIONSHIP_FIELD_NAMES: string[] = [
   FIELD_TYPE_NAMES.METADATA_RELATIONSHIP,
   FIELD_TYPE_NAMES.LOOKUP,
   FIELD_TYPE_NAMES.MASTER_DETAIL,
@@ -26,7 +26,7 @@ const RELATIONSHIP_FIELD_NAMES = [
 ]
 
 const isRelationshipFieldName = (fieldName: string): boolean => (
-  (RELATIONSHIP_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName)
+  RELATIONSHIP_FIELD_NAMES.includes(fieldName)
 )
 
 export type JSONBool = boolean | 'true' | 'false'

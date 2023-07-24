@@ -133,8 +133,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
-  const { standardTypes, additionalTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
     .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
   beforeEach(() => {

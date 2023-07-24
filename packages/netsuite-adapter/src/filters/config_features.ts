@@ -18,7 +18,6 @@ import { logger } from '@salto-io/logging'
 import { BuiltinTypes, Field, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { LocalFilterCreator } from '../filter'
 import { CONFIG_FEATURES } from '../constants'
-import { FeaturesDeployError } from '../client/errors'
 import { featuresType } from '../types/configuration_types'
 import { FEATURES_LIST_TAG } from '../client/sdf_parser'
 
@@ -85,14 +84,9 @@ const filterCreator: LocalFilterCreator = () => ({
     type.fields = featuresType().fields
   },
   onDeploy: async (changes, deployInfo) => {
-    const errorIds = deployInfo.sdfErrors?.flatMap(error => {
-      if (error instanceof FeaturesDeployError) {
-        return error.ids
-      }
-      return []
-    }) ?? []
-
-    if (errorIds.length === 0) return
+    if (deployInfo.failedFeaturesIds === undefined) {
+      return
+    }
 
     const featuresChange = changes
       .filter(isInstanceChange)
@@ -103,8 +97,8 @@ const filterCreator: LocalFilterCreator = () => ({
 
     const { after, before } = featuresChange.data
     after.value = {
-      ..._.omit(after.value, errorIds),
-      ..._.pick(before.value, errorIds),
+      ..._.omit(after.value, deployInfo.failedFeaturesIds),
+      ..._.pick(before.value, deployInfo.failedFeaturesIds),
     }
   },
 })

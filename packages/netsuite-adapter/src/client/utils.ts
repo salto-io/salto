@@ -66,7 +66,7 @@ export const sliceMessagesByRegex = (
   includeMatchedRegex = true
 ): string[] => {
   // remove the global flag of the regex
-  const fixedLookedFromRegex = RegExp(lookFromRegex, '')
+  const fixedLookedFromRegex = RegExp(lookFromRegex, lookFromRegex.flags.replace('g', ''))
   const matchedMessages = messages.map(message => fixedLookedFromRegex.test(message))
   const lookFromIndex = includeMatchedRegex
     ? matchedMessages.indexOf(true)

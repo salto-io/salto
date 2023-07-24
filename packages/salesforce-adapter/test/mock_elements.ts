@@ -344,6 +344,21 @@ export const mockTypes = {
       [API_NAME]: 'Account',
     },
   }),
+  User: createCustomObjectType('User', {
+    fields: {
+      Manager__c: {
+        refType: Types.primitiveDataTypes.Hierarchy,
+        annotations: {
+          [API_NAME]: 'User.Manager__c',
+          [FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [FIELD_ANNOTATIONS.CREATABLE]: true,
+          [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [FIELD_ANNOTATIONS.RELATIONSHIP_NAME]: 'Manager',
+          [FIELD_ANNOTATIONS.REFERENCE_TO]: ['User'],
+        },
+      },
+    },
+  }),
   ListView: createMetadataObjectType({
     annotations: {
       metadataType: 'ListView',

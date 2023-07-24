@@ -125,12 +125,14 @@ const filter: LocalFilterCreator = () => ({
       .filter(isInstanceOfType(EMAIL_TEMPLATE_METADATA_TYPE))
       .forEach(organizeStaticFiles)
   },
-  // Convert EmailTemplate attachments to base64 string
+  // Convert EmailTemplate attachments content from Buffer to base64 string
   preDeploy: async changes => {
     (await getAttachmentsFromChanges(changes))
       .forEach(attachment => {
         if (_.isBuffer(attachment.content)) {
           attachment.content = attachment.content.toString('base64')
+        } else {
+          log.error(`The EmailTemplate attachment "${attachment.name}" content is not a Buffer on preDeploy`)
         }
       })
   },
@@ -140,6 +142,8 @@ const filter: LocalFilterCreator = () => ({
       .forEach(attachment => {
         if (_.isString(attachment.content)) {
           attachment.content = Buffer.from(attachment.content, 'base64')
+        } else {
+          log.error(`The EmailTemplate attachment "${attachment.name}" content is not a string on onDeploy`)
         }
       })
   },

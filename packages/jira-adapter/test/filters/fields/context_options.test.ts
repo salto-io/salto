@@ -40,15 +40,19 @@ describe('context options', () => {
       },
     })).reduce((acc, option) => ({ ...acc, ...option }), {})
 
-  const generateOptionsWithId = (count: number): Values =>
-    Array.from({ length: count }, (_, i) => ({
-      [`p${i}`]: {
-        value: `p${i}`,
+  const generateOptionsWithId = (count: number): Values => {
+    const options: { [key: string]: { value: string; disabled: boolean; position: number; id: string } } = {}
+    Array.from({ length: count }, (_, i) => i).forEach(i => {
+      const key = `p${i}`
+      options[key] = {
+        value: key,
         disabled: false,
         position: i,
         id: `100${i}`,
-      },
-    })).reduce((acc, option) => ({ ...acc, ...option }), {})
+      }
+    })
+    return options
+  }
 
   describe('data center', () => {
     describe('setContextOptions', () => {
@@ -684,9 +688,10 @@ describe('context options', () => {
       })
       describe('change has over 10K options', () => {
         // Set long timeout as we create instance with more than 10K options
-        jest.setTimeout(1000 * 60 * 5)
+        jest.setTimeout(1000 * 60 * 1)
         let contextInstanceAfter: InstanceElement
         let contextInstanceBefore: InstanceElement
+        const tenKOptions = generateOptionsWithId(10010)
 
         beforeEach(async () => {
           connection.post.mockImplementation(async (url, data) => {
@@ -744,7 +749,7 @@ describe('context options', () => {
           })
         })
         it('should use public API for first 10K options, and than use private API for all other options.', async () => {
-          const optionsAfter = generateOptions(10010)
+          const optionsAfter = tenKOptions
           contextInstanceAfter = contextInstance.clone()
           contextInstanceAfter.value.options = optionsAfter
           await setContextOptions(
@@ -765,7 +770,7 @@ describe('context options', () => {
           )
         })
         it('should use only private API if all added options are over 10K', async () => {
-          const optionsBefore = generateOptionsWithId(10010)
+          const optionsBefore = tenKOptions
           contextInstanceBefore = contextInstance.clone()
           contextInstanceBefore.value.options = optionsBefore
           contextInstanceAfter = contextInstanceBefore.clone()
@@ -792,7 +797,7 @@ describe('context options', () => {
           )
         })
         it('should add cascading options through private API', async () => {
-          const optionsBefore = generateOptionsWithId(10000)
+          const optionsBefore = tenKOptions
           contextInstanceBefore = contextInstance.clone()
           contextInstanceBefore.value.options = optionsBefore
           contextInstanceAfter = contextInstanceBefore.clone()

@@ -65,7 +65,9 @@ export const sliceMessagesByRegex = (
   lookFromRegex: RegExp,
   includeMatchedRegex = true
 ): string[] => {
-  const matchedMessages = messages.map(message => lookFromRegex.test(message))
+  // remove the global flag of the regex
+  const fixedLookedFromRegex = RegExp(lookFromRegex, '')
+  const matchedMessages = messages.map(message => fixedLookedFromRegex.test(message))
   const lookFromIndex = includeMatchedRegex
     ? matchedMessages.indexOf(true)
     : matchedMessages.lastIndexOf(true)

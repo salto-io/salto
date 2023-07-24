@@ -13,8 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, ObjectType, toChange, InstanceElement, getChangeData } from '@salto-io/adapter-api'
-import DummyAdapter from '../src/adapter'
+import {
+  ElemID,
+  ObjectType,
+  toChange,
+  InstanceElement,
+  getChangeData,
+  isInstanceElement,
+  isObjectType, CORE_ANNOTATIONS,
+} from '@salto-io/adapter-api'
+import _ from 'lodash'
+import DummyAdapter, { addAlias } from '../src/adapter'
 import * as generator from '../src/generator'
 import testParams from './test_params'
 import { ChangeErrorFromConfigFile, DUMMY_ADAPTER } from '../src/generator'
@@ -83,8 +92,9 @@ describe('dummy adapter', () => {
     it('should return the result of the generateElement command withuot modifications', async () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
-      expect(fetchResult)
-        .toEqual({ elements: await generator.generateElements(testParams, mockReporter) })
+      const elements = await generator.generateElements(testParams, mockReporter)
+      elements.forEach(addAlias)
+      expect(fetchResult).toEqual({ elements })
     })
     it('should report fetch progress', async () => {
       await adapter.fetch({ progressReporter: progressReportMock })
@@ -92,6 +102,24 @@ describe('dummy adapter', () => {
       expect(progressReportMock.reportProgress).toHaveBeenLastCalledWith({
         message: 'Generation done',
       })
+    })
+    it('should add alias to instances and custom objects', async () => {
+      const mockReporter = { reportProgress: jest.fn() }
+      const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
+      expect(fetchResult.elements.every(elem => {
+        if (isInstanceElement(elem)
+          && elem.path
+          && elem.path[1] === 'Records') {
+          return elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+        }
+        if (isObjectType(elem)
+          && elem.path
+          && elem.path[1] === 'Objects'
+          && _.last(elem.path)?.endsWith('Annotations')) {
+          return elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+        }
+        return elem.annotations[CORE_ANNOTATIONS.ALIAS] === undefined
+      })).toBeTruthy()
     })
   })
 

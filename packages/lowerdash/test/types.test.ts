@@ -15,15 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  AtLeastOne,
-  RequiredMember,
-  hasMember,
-  filterHasMember,
-  ValueOf,
-  Bean,
-  isArrayOfType,
-  TypeGuard,
-  isNonEmptyArray,
+  AtLeastOne, RequiredMember, hasMember, filterHasMember, ValueOf, Bean, isArrayOfType, TypeGuard, isNonEmptyArray,
 } from '../src/types'
 
 // Note: some of the tests here are compile-time, so the actual assertions may look weird.

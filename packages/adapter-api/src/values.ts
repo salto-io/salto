@@ -196,10 +196,8 @@ export class TypeReference {
     return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 
-  getResolvedValueSync(): TypeElement {
-    if (this.type === undefined) {
-      throw new Error(`Type ${this.elemID.getFullName()} cannot be resolved synchronously`)
-    }
+
+  getResolvedValueSync(): TypeElement | undefined {
     return this.type
   }
 

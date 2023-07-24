@@ -109,15 +109,19 @@ export type TransformFunc = (args: TransformFuncArgs) => Promise<Value> | Value 
 
 export type TransformFuncSync = (args: TransformFuncArgs) => lowerDashTypes.NonPromise<Value> | undefined
 
-export type TransformValuesArgs = {
+type TransformValuesBaseArgs = {
   values: Value
   type: ObjectType | TypeMap | MapType | ListType
-  transformFunc: TransformFunc
   strict?: boolean
   pathID?: ElemID
-  elementsSource?: ReadOnlyElementsSource
   isTopLevel?: boolean
   allowEmpty?: boolean
+}
+
+type TransformValuesSyncArgs = TransformValuesBaseArgs & {transformFunc: TransformFuncSync}
+type TransformValuesArgs = TransformValuesBaseArgs & {
+  transformFunc: TransformFunc
+  elementsSource?: ReadOnlyElementsSource
 }
 
 // NOTE: Any changes that are made to this function need to take into account whether
@@ -261,8 +265,6 @@ export const transformValues = async (
   return newVal
 }
 
-// IMPORTANT: this function will only work if transformFunc is synchronous.
-//  It is up to the caller to ensure that this is the case.
 // NOTE: Any changes that are made to this function need to take into account whether
 //  they're also needed over at transformValues. The two functions are separated
 //  only because of the way async is intertwined with the logic.
@@ -275,7 +277,7 @@ export const transformValuesSync = (
     pathID = undefined,
     isTopLevel = true,
     allowEmpty = false,
-  }: Omit<TransformValuesArgs, 'elementsSource'>,
+  }: TransformValuesSyncArgs,
 ): Values | undefined => {
   const transformValueSync = (
     value: Value,

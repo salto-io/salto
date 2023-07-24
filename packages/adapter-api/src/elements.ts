@@ -185,20 +185,11 @@ export class ListType<T extends TypeElement = TypeElement> extends Element {
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const refInnerTypeVal = await this.refInnerType.getResolvedValue(elementsSource)
-    // eslint-disable-next-line no-use-before-define
-    if (!isType(refInnerTypeVal)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
-    }
-    return refInnerTypeVal
+    return validateType(await this.refInnerType.getResolvedValue(elementsSource), this.elemID)
   }
 
   getInnerTypeSync(): TypeElement {
-    const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
-    if (!isType(refInnerTypeVal)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
-    }
-    return refInnerTypeVal
+    return validateType(this.refInnerType.getResolvedValueSync(), this.elemID)
   }
 
   setRefInnerType(innerTypeOrRefInnerType: TypeOrRef): void {
@@ -253,20 +244,11 @@ export class MapType<T extends TypeElement = TypeElement> extends Element {
   }
 
   async getInnerType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const refInnerTypeVal = await this.refInnerType.getResolvedValue(elementsSource)
-    // eslint-disable-next-line no-use-before-define
-    if (!isType(refInnerTypeVal)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s innerType is resolved non-TypeElement`)
-    }
-    return refInnerTypeVal
+    return validateType(await this.refInnerType.getResolvedValue(elementsSource), this.elemID)
   }
 
   getInnerTypeSync(): TypeElement {
-    const refInnerTypeVal = this.refInnerType.getResolvedValueSync()
-    if (!isType(refInnerTypeVal)) {
-      throw new Error(`Cannot resolve ${this.elemID.getFullName()}'s innerType synchronously as non-TypeElement`)
-    }
-    return refInnerTypeVal
+    return validateType(this.refInnerType.getResolvedValueSync(), this.elemID)
   }
 
 
@@ -311,20 +293,11 @@ export class Field extends Element {
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<TypeElement> {
-    const type = await this.refType.getResolvedValue(elementsSource)
-    // eslint-disable-next-line no-use-before-define
-    if (!isType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
-    }
-    return type
+    return validateType(await this.refType.getResolvedValue(elementsSource), this.elemID)
   }
 
   getTypeSync(): TypeElement {
-    const type = this.refType.getResolvedValueSync()
-    if (!isType(type)) {
-      throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-TypeElement`)
-    }
-    return type
+    return validateType(this.refType.getResolvedValueSync(), this.elemID)
   }
 
   /**
@@ -469,6 +442,26 @@ export class ObjectType extends Element {
 export class PlaceholderObjectType extends ObjectType {
 }
 
+const objectTypeOrPlaceholder = (type: TypeElement | undefined, elemID: ElemID): ObjectType => {
+  // This can happen when the user has an instance like
+  // string name {}
+  // an instance like that can be created in some cases of syntax errors in the user's nacl
+  // In this case the type will be a primitive type of string
+  if (!isObjectType(type)) {
+    log.warn(`Element with ElemID ${elemID.getFullName()}'s type is resolved non-ObjectType`)
+    return new PlaceholderObjectType({
+      elemID,
+    })
+  }
+  return type
+}
+
+const validateType = (type: TypeElement | undefined, elemID: ElemID): TypeElement => {
+  if (!isType(type)) {
+    throw new Error(`Element with ElemID ${elemID.getFullName()}'s innerType is resolved non-TypeElement`)
+  }
+  return type
+}
 export class InstanceElement extends Element {
   public refType: TypeReference
   constructor(
@@ -488,32 +481,12 @@ export class InstanceElement extends Element {
   }
 
   async getType(elementsSource?: ReadOnlyElementsSource): Promise<ObjectType> {
-    const type = await this.refType.getResolvedValue(elementsSource)
-    // This can happen when the user has an instance like
-    // string name {}
-    // an instance like that can be created in some cases of syntax errors in the user's nacl
-    // In this case the type will be a primitive type of string
-    if (!isObjectType(type)) {
-      log.warn(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
-      return new PlaceholderObjectType({
-        elemID: this.elemID,
-      })
-    }
-    return type
+    return objectTypeOrPlaceholder(await this.refType.getResolvedValue(elementsSource), this.elemID)
   }
 
   getTypeSync(): ObjectType {
     const type = this.refType.getResolvedValueSync()
-    if (!isObjectType(type)) {
-      log.warn(`Element with ElemID ${this.elemID.getFullName()}'s type is resolved non-ObjectType`)
-      if (type === undefined) {
-        throw new Error(`Element with ElemID ${this.elemID.getFullName()}'s type is undefined`)
-      }
-      return new PlaceholderObjectType({
-        elemID: this.elemID,
-      })
-    }
-    return type
+    return objectTypeOrPlaceholder(type, this.elemID)
   }
 
 

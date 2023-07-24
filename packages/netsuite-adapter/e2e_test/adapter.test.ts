@@ -62,8 +62,8 @@ const logging = (message: string): void => {
 describe('Netsuite adapter E2E with real account', () => {
   let adapter: NetsuiteAdapter
   let credentialsLease: CredsLease<Required<Credentials>>
-  const { standardTypes, additionalTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
 
   const createInstanceElement = (typeName: string, valuesOverride: Values, annotations?: Values): InstanceElement => {
     const instValues = {

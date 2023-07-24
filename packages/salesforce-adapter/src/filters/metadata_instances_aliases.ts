@@ -69,18 +69,13 @@ const setInstanceAlias = async (
 ): Promise<void> => {
   const namespace = await getNamespace(instance)
   const parentAlias = await getParentAlias(instance, elementsSource)
-  const alias = [
+  instance.annotations[CORE_ANNOTATIONS.ALIAS] = [
     namespace ? `${namespace}:` : undefined,
     getAliasFromFullName(instance.value.fullName),
     parentAlias ? `(${parentAlias})` : undefined,
   ].filter(isDefined)
     .join(' ')
     .replace(/_/g, ' ') // replace all underscores with spaces
-  // No need to create alias if the calculated alias is the same as the fullName.
-  // Adding unnecessary aliases can cause performance issues.
-  if (alias !== instance.value.fullName) {
-    instance.annotations[CORE_ANNOTATIONS.ALIAS] = alias
-  }
 }
 
 const filterCreator: LocalFilterCreator = ({ config }) => ({

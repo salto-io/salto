@@ -104,7 +104,7 @@ describe('metadataInstancesAliases filter', () => {
     })
     it('should add correct aliases', async () => {
       await filter.onFetch(fetchElements)
-      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toBeUndefined()
+      expect(basicInstance.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestInstance')
       expect(instanceWithCustomSuffix.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('TestValueSet')
       expect(instanceWithParent.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('Billing (Account)')
       expect(layoutInstanceWithNamespace.annotations[CORE_ANNOTATIONS.ALIAS]).toEqual('SBQQ: CPQ Account Layout (Account)')

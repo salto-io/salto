@@ -42,7 +42,7 @@ import { DEFAULT_MAX_FILE_CABINET_SIZE_IN_GB } from '../../config'
 import { NetsuiteQuery } from '../../query'
 import { isFileCabinetType, isFileInstance } from '../../types'
 import { filterFilePathsInFolders, filterFolderPathsInFolders, largeFoldersToExclude } from '../file_cabinet_utils'
-import { getDeployResultFromSuiteAppResult, toError } from '../utils'
+import { getDeployResultFromSuiteAppResult, toElementError, toError } from '../utils'
 
 const log = logger(module)
 
@@ -607,7 +607,7 @@ SuiteAppFileCabinetOperations => {
     } catch (e) {
       const { message } = toError(e)
       return {
-        errors: changes.map(change => ({ elemID: getChangeData(change).elemID, message, severity: 'Error' })),
+        errors: changes.map(change => toElementError(getChangeData(change).elemID, message)),
         appliedChanges: [],
         elemIdToInternalId: {},
       }
@@ -686,11 +686,8 @@ SuiteAppFileCabinetOperations => {
 
     const dependencyErrors = [...changesToSkip].map(id => {
       const elemID = ElemID.fromFullName(id)
-      return {
-        elemID,
-        message: `Cannot deploy this ${elemID.typeName} because its parent folder deploy failed`,
-        severity: 'Error' as const,
-      }
+      const message = `Cannot deploy this ${elemID.typeName} because its parent folder deploy failed`
+      return toElementError(elemID, message)
     })
 
     return {

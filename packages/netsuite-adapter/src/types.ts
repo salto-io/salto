@@ -152,11 +152,12 @@ export const FIELD_TYPES = [
   'customfield',
 ]
 
+type DeployError = SaltoElementError | SaltoError
 export type DeployResult = {
   appliedChanges: Change[]
-  errors: (SaltoElementError | SaltoError)[]
-  sdfErrors?: Error[]
+  errors: DeployError[]
   elemIdToInternalId?: Record<string, string>
+  failedFeaturesIds?: string[]
 }
 
 export const SUITEAPP_CONFIG_RECORD_TYPES = [

@@ -1476,7 +1476,15 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `An error occurred during custom object validation. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1513,7 +1521,15 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1565,7 +1581,15 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1615,7 +1639,15 @@ File: ~/Objects/custform_15_t1049933_143.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1718,7 +1750,13 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['customrecord_flo_customization']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'customrecord_flo_customization',
+            [{ message: `An error occurred during custom object update.
+File: ~/Objects/customrecord_flo_customization.xml
+Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
+` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1772,7 +1810,12 @@ File: ~/AccountConfiguration/features.xml`
         } catch (e) {
           isRejected = true
           expect(e instanceof SettingsDeployError).toBeTruthy()
-          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Set(['companyFeatures']))
+          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Map([[
+            'companyFeatures',
+            [{ message: `An error occurred during configuration validation.
+Details: Disable the SUPPLYCHAINPREDICTEDRISKS(Supply Chain Predicted Risks) feature before disabling the SUPPLYCHAINCONTROLTOWER(Supply Chain Control Tower) feature.
+File: ~/AccountConfiguration/features.xml` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -2000,7 +2043,8 @@ File: ~/AccountConfiguration/features.xml`
       it('should throw ManifestValidationError', async () => {
         let errorMessage: string
         const errorReferenceName = 'some_scriptid'
-        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
+        const manifestErrorMessage = `An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             errorMessage = `Warning: The validation process has encountered an error.
@@ -2039,7 +2083,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
-          expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
+          expect(e.missingDependencies).toEqual([{ scriptId: errorReferenceName, message: manifestErrorMessage }])
         }
       })
 

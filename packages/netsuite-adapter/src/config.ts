@@ -562,8 +562,8 @@ export type OnlySuiteAppValidatorName = (
 )
 
 type ChangeValidatorConfig = Record<
-  NetsuiteValidatorName & NonSuiteAppValidatorName & OnlySuiteAppValidatorName,
-  boolean
+  NetsuiteValidatorName | NonSuiteAppValidatorName | OnlySuiteAppValidatorName,
+  boolean | undefined
 >
 
 const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
@@ -594,6 +594,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeFileCabinet: { refType: BuiltinTypes.BOOLEAN },
     removeStandardTypes: { refType: BuiltinTypes.BOOLEAN },
     fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
+    translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

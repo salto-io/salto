@@ -46,7 +46,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
             customCollectionReferences.push(
               ...captureServiceIdInfo(value)
                 .map(serviceIdInfo => serviceIdInfo.serviceId)
-                .filter(serviceId => serviceId.includes(CUSTOM_COLLECTION))
+                .filter(serviceId => serviceId.startsWith(CUSTOM_COLLECTION))
                 .map(serviceId => serviceId.split('.')[0])
             )
             return WALK_NEXT_STEP.SKIP
@@ -55,7 +55,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => (
         },
       })
       return customCollectionReferences.length > 0
-        ? toChangeError(element, customCollectionReferences)
+        ? toChangeError(element, _.uniq(customCollectionReferences))
         : undefined
     })
     .filter(isDefined)

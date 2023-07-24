@@ -14,14 +14,15 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { createReference } from '../../utils'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 
 export const createWorkflowValues = (name: string, allElements: Element[]): Values => ({
   name,
   description: name,
-  transitions: [
-    {
+  transitions: {
+    [naclCase('Build Broken::From: any status::Global')]: {
       name: 'Build Broken',
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
@@ -92,7 +93,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    {
+    [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
@@ -177,7 +178,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    {
+    [naclCase('TransitionToShared::From: backlog, done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
       from: [{
@@ -386,7 +387,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         },
       },
     },
-  ],
+  },
   statuses: [
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),

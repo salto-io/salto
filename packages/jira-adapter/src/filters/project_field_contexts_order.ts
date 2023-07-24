@@ -19,7 +19,7 @@ import { FilterCreator } from '../filter'
 import { PROJECT_TYPE } from '../constants'
 
 /**
- * Restructures ProjectCategory to fit the deployment endpoint
+ * sorting project field contexts to avoid unnecessary noise
  */
 const filter: FilterCreator = () => ({
   name: 'projectFieldContexts',

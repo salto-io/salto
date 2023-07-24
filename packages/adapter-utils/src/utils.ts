@@ -118,7 +118,7 @@ type TransformValuesBaseArgs = {
   allowEmpty?: boolean
 }
 
-type TransformValuesSyncArgs = TransformValuesBaseArgs & {transformFunc: TransformFuncSync}
+type TransformValuesSyncArgs = TransformValuesBaseArgs & { transformFunc: TransformFuncSync }
 type TransformValuesArgs = TransformValuesBaseArgs & {
   transformFunc: TransformFunc
   elementsSource?: ReadOnlyElementsSource

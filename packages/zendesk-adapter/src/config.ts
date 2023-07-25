@@ -2663,6 +2663,7 @@ export type ChangeValidatorName = (
   | 'childrenReferences'
   | 'orderChildrenParent'
   | 'guideOrderDeletion'
+  | 'attachmentWithoutContent'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2720,6 +2721,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
     defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
+    attachmentWithoutContent: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
     childInOrder: { refType: BuiltinTypes.BOOLEAN },

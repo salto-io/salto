@@ -131,7 +131,7 @@ describe('macro attachment filter', () => {
         }),
       })
     })
-    describe('invalid attachments reponse', () => {
+    describe('invalid attachments response', () => {
       it('should return no attachments if response is an array', async () => {
         mockGet = jest.spyOn(client, 'getSinglePage')
         mockGet.mockImplementation(params => {
@@ -235,6 +235,42 @@ describe('macro attachment filter', () => {
             'zendesk.macro.instance.macro',
             'zendesk.macro_attachment',
           ])
+      })
+      it('should return attachment without content if response with invalid status', async () => {
+        mockGet = jest.spyOn(client, 'getSinglePage')
+        mockGet.mockImplementation(params => {
+          if (params.url === `/api/v2/macros/${macroInstance.value.id}/attachments`) {
+            return {
+              status: 200,
+              data: {
+                macro_attachments: [
+                  {
+                    id: attachmentId,
+                    filename,
+                    content_type: 'text/plain',
+                    content_url: `https://myBrand.zendesk.com/api/v2/macros/attachments/${attachmentId}/content`,
+                  },
+                ],
+              },
+            }
+          }
+          if (params.url === `/api/v2/macros/attachments/${attachmentId}/content`) {
+            throw Error('status 500')
+          }
+          throw new Error('Err')
+        })
+        const elements = [macroType, macroInstance].map(e => e.clone())
+        await filter.onFetch(elements)
+        expect(elements.map(e => e.elemID.getFullName()).sort())
+          .toEqual([
+            'zendesk.macro',
+            'zendesk.macro.instance.macro',
+            'zendesk.macro_attachment',
+            'zendesk.macro_attachment.instance.test__test_txt@uuv',
+          ])
+        const attachmentInst = elements.filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'zendesk.macro_attachment.instance.test__test_txt@uuv')
+        expect(attachmentInst?.value.content).not.toBeDefined()
       })
     })
   })

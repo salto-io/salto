@@ -170,6 +170,12 @@ const createAttachmentType = (): ObjectType =>
     path: [ZENDESK, TYPES_PATH, SUBTYPES_PATH, MACRO_ATTACHMENT_TYPE_NAME],
   })
 
+const getAttachmentError = (attachment: Attachment, attachmentInstance: InstanceElement): SaltoElementError => ({
+  message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
+  severity: 'Warning',
+  elemID: attachmentInstance.elemID,
+})
+
 const getAttachmentContent = async ({
   client, attachment, macro, attachmentType,
 }: {
@@ -188,11 +194,7 @@ const getAttachmentContent = async ({
       log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
       const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
       return [
-        createSaltoElementError({
-          message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
-          severity: 'Warning',
-          elemID: attachmentInstance.elemID,
-        }),
+        getAttachmentError(attachment, attachmentInstance),
         attachmentInstance,
       ]
     }
@@ -201,11 +203,7 @@ const getAttachmentContent = async ({
     log.error(`could not add content to attachment ${attachment.filename} with id ${attachment.id} received error: ${e}`)
     const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
     return [
-      createSaltoElementError({
-        message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
-        severity: 'Warning',
-        elemID: attachmentInstance.elemID,
-      }),
+      getAttachmentError(attachment, attachmentInstance),
       attachmentInstance,
     ]
   }

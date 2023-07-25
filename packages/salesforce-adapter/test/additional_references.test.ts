@@ -13,6 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import {
   BuiltinTypes,
   Change,
@@ -96,6 +97,7 @@ describe('getAdditionalReferences', () => {
       })
       const fieldAfter = field.clone()
       fieldAfter.annotations.someAnn = 'val'
+
       const refs = await getAdditionalReferences([
         toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
         toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
@@ -392,9 +394,9 @@ describe('getAdditionalReferences', () => {
 
     beforeEach(() => {
       layout = new InstanceElement(
-        'Account_Account_Layout',
+        'Account_Account_Layout@bs',
         mockTypes.Layout,
-        { [INSTANCE_FULL_NAME_FIELD]: 'Account_Account_Layout' },
+        { [INSTANCE_FULL_NAME_FIELD]: 'Account-Account Layout' },
       )
     })
 
@@ -405,9 +407,9 @@ describe('getAdditionalReferences', () => {
       })
       const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
         layoutAssignments: {
-          Account_Account_Layout: [
+          'Account_Account_Layout@bs': [
             {
-              layout: 'Account_Account_Layout',
+              layout: 'Account-Account Layout',
             },
           ],
         },
@@ -420,26 +422,26 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
       expect(refs).toHaveLength(2)
       expect(refs).toIncludeAllPartialMembers([
-        { source: permissionSetInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
-        { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: layout.elemID },
+        { source: permissionSetInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'), target: layout.elemID },
+        { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'), target: layout.elemID },
       ])
     })
 
     it('should create a reference to modification', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         layoutAssignments: {
-          Account_Account_Layout: [
+          'Account_Account_Layout@bs': [
             {
-              layout: 'Account2_Account_Layout',
+              layout: 'Account-Account Other Layout',
             },
           ],
         },
       })
       const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
         layoutAssignments: {
-          Account_Account_Layout: [
+          'Account_Account_Layout@bs': [
             {
-              layout: 'Account_Account_Layout',
+              layout: 'Account-Account Layout',
             },
           ],
         },
@@ -454,32 +456,43 @@ describe('getAdditionalReferences', () => {
       const refs = await getAdditionalReferences(changes)
 
       expect(refs).toEqual([
-        { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout', '0', 'layout'), target: layout.elemID.createNestedID('someAnn') },
-        { source: permissionSetInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout', '0', 'layout'), target: layout.elemID.createNestedID('someAnn') },
+        { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs', '0', 'layout'), target: layout.elemID.createNestedID('someAnn') },
+        { source: permissionSetInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs', '0', 'layout'), target: layout.elemID.createNestedID('someAnn') },
       ])
     })
 
     describe('with recordType reference', () => {
-      let recordType: InstanceElement
+      let recordTypes: InstanceElement[]
       beforeEach(() => {
-        recordType = new InstanceElement(
-          'SomeRecordType',
-          mockTypes.RecordType,
-          { [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType' },
-        )
+        recordTypes = [
+          new InstanceElement(
+            'SomeRecordType',
+            mockTypes.RecordType,
+            { [INSTANCE_FULL_NAME_FIELD]: 'SomeRecordType' },
+          ),
+          new InstanceElement(
+            'SomeOtherRecordType',
+            mockTypes.RecordType,
+            { [INSTANCE_FULL_NAME_FIELD]: 'SomeOtherRecordType' },
+          ),
+        ]
       })
 
-      it('should create a recordType reference on addition', async () => {
+      it('should create recordType references on addition', async () => {
         const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
           layoutAssignments: {
           },
         })
         const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
           layoutAssignments: {
-            Account_Account_Layout: [
+            'Account_Account_Layout@bs': [
               {
-                layout: 'Account_Account_Layout',
+                layout: 'Account-Account Layout',
                 recordType: 'SomeRecordType',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType',
               },
             ],
           },
@@ -488,50 +501,72 @@ describe('getAdditionalReferences', () => {
           toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
           toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
           toChange({ after: layout }),
-          toChange({ after: recordType }),
+          ...recordTypes.map(recordType => toChange({ after: recordType })),
         ]
 
         const refs = await getAdditionalReferences(changes)
         expect(refs).toIncludeAllPartialMembers([
-          { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout'), target: recordType.elemID },
+          {
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+            target: recordTypes[0].elemID,
+          },
+          {
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs'),
+            target: recordTypes[1].elemID,
+          },
         ])
       })
 
-      it('should create a recordType reference on modification', async () => {
+      it('should create recordType references on modification', async () => {
         const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
           layoutAssignments: {
-            Account_Account_Layout: [
+            'Account_Account_Layout@bs': [
               {
-                layout: 'Account_Account_Layout',
+                layout: 'Account-Account Layout',
                 recordType: 'SomeRecordType2',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType2',
               },
             ],
           },
         })
         const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
           layoutAssignments: {
-            Account_Account_Layout: [
+            'Account_Account_Layout@bs': [
               {
-                layout: 'Account_Account_Layout',
+                layout: 'Account-Account Layout',
                 recordType: 'SomeRecordType',
+              },
+              {
+                layout: 'Account-Account Layout',
+                recordType: 'SomeOtherRecordType',
               },
             ],
           },
         })
-        const recordTypeAfter = recordType.clone()
-        recordTypeAfter.annotations.someAnn = 'val'
+        const recordTypesAfter = recordTypes.map(recordType => recordType.clone())
+        recordTypesAfter.forEach(recordType => { recordType.annotations.someAnn = 'val' })
         const layoutAfter = layout.clone()
         layout.annotations.someAnn = 'val'
         changes = [
           toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
           toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
           toChange({ before: layout, after: layoutAfter }),
-          toChange({ before: recordType, after: recordTypeAfter }),
+          ..._.zip(recordTypes, recordTypesAfter).map(([before, after]) => toChange({ before, after })),
         ]
         const refs = await getAdditionalReferences(changes)
 
         expect(refs).toIncludeAllPartialMembers([
-          { source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout', '0', 'recordType'), target: recordType.elemID.createNestedID('someAnn') },
+          {
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs', '0', 'recordType'),
+            target: recordTypes[0].elemID.createNestedID('someAnn'),
+          },
+          {
+            source: profileInstanceAfter.elemID.createNestedID('layoutAssignments', 'Account_Account_Layout@bs', '1', 'recordType'),
+            target: recordTypes[1].elemID.createNestedID('someAnn'),
+          },
         ])
       })
     })

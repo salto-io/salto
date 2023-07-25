@@ -113,7 +113,7 @@ describe('Field contexts', () => {
     elementsSource = buildElementsSourceFromElements(elements)
     projectInstance.value[PROJECT_CONTEXTS_FIELD] = []
     fieldInstance.value.contexts = [
-      new ReferenceExpression(contextInstance.elemID, contextInstance),
+      new ReferenceExpression(contextInstance.elemID),
     ]
     expect(await fieldContextValidator(
       changes,

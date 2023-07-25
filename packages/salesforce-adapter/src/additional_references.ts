@@ -24,7 +24,9 @@ import {
   isFieldChange,
   isInstanceChange,
   isModificationChange,
+  isReferenceExpression,
   ModificationChange,
+  ReferenceExpression,
   ReferenceMapping,
   Value,
 } from '@salto-io/adapter-api'
@@ -126,7 +128,7 @@ const fieldRefsFromProfileOrPermissionSet = async (
 
 type RefTargetName = {
   typeName: string
-  refName: string
+  refName: string | ReferenceExpression
 }
 
 type RefNameGetter = (element: Value, key: string) => RefTargetName[]
@@ -139,7 +141,9 @@ const instanceRefsFromProfileOrPermissionSet = async (
   profilesAndPermissionSets: ModificationChange<InstanceElement>[],
   profileSection: string,
   instanceNameGetter: RefNameGetter,
-  instanceIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  instanceApiNameIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  instanceElemIdIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+
 ): Promise<ReferenceMapping[]> => {
   const extractRefFromSectionEntry = async (
     profileOrPermissionSetChange: ModificationChange<InstanceElement>,
@@ -148,7 +152,11 @@ const instanceRefsFromProfileOrPermissionSet = async (
   ): Promise<ReferenceMapping[]> => {
     const refNames = instanceNameGetter(sectionEntryContents, sectionEntryKey)
     return refNames
-      .map(({ typeName, refName }) => instanceIndex.get(typeName, refName))
+      .map(({ typeName, refName }) => (
+        isReferenceExpression(refName)
+          ? instanceElemIdIndex.get(typeName, refName.elemID.getFullName())
+          : instanceApiNameIndex.get(typeName, refName)
+      ))
       .filter(isDefined)
       .flatMap(refTarget => createReferenceMapping(
         profileOrPermissionSetChange,
@@ -234,6 +242,10 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
       name: 'byTypeAndApiName',
       key: async change => [getChangeData(change).elemID.typeName, await safeApiName(getChangeData(change)) ?? ''],
     })
+    .addIndex({
+      name: 'byTypeAndElemId',
+      key: async change => [getChangeData(change).elemID.typeName, getChangeData(change).elemID.getFullName()],
+    })
     .process(awu(instanceChanges).concat(customObjectChanges))
 
   const customAppsRefs = await instanceRefsFromProfileOrPermissionSet(
@@ -241,6 +253,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     CUSTOM_APP_SECTION,
     refNameFromField(CUSTOM_APPLICATION_METADATA_TYPE, 'application'),
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const apexClassRefs = await instanceRefsFromProfileOrPermissionSet(
@@ -248,6 +261,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     APEX_CLASS_SECTION,
     refNameFromField(APEX_CLASS_METADATA_TYPE, 'apexClass'),
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const flowRefs = await instanceRefsFromProfileOrPermissionSet(
@@ -255,6 +269,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     FLOW_SECTION,
     refNameFromField(FLOW_METADATA_TYPE, 'flow'),
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const getRefsFromLayoutAssignment = (layoutAssignment: Value): RefTargetName[] => (
@@ -274,6 +289,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     LAYOUTS_SECTION,
     getRefsFromLayoutAssignment,
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const apexPageRefs = await instanceRefsFromProfileOrPermissionSet(
@@ -281,6 +297,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     APEX_PAGE_SECTION,
     refNameFromField(APEX_PAGE_METADATA_TYPE, 'apexPage'),
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const objectRefs = await instanceRefsFromProfileOrPermissionSet(
@@ -288,6 +305,7 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     OBJECT_SECTION,
     (object, key) => ([{ typeName: key, refName: object.object }]),
     instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
   )
 
   const fieldPermissionsRefs = awu(relevantFieldChanges)

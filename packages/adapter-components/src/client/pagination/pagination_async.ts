@@ -50,6 +50,46 @@ type GetPageArgs = {
   usedParams: Set<string>
 }
 
+const singlePagePagination = async (
+  pageArgs: GetPageArgs,
+  additionalArgs: Record<string, string>
+):Promise<PaginationResult> => {
+  const { client, extractPageEntries, customEntryExtractor, getParams } = pageArgs
+  const { url, queryParams, headers } = getParams
+  const params = { ...queryParams, ...additionalArgs }
+
+  const response = await client.getSinglePage({
+    url,
+    queryParams: Object.keys(params).length > 0 ? params : undefined,
+    headers,
+  })
+  if (response.status !== 200) {
+    log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
+    return { response, page: [], additionalArgs, yieldResult: false }
+  }
+  const entries = (
+    (!Array.isArray(response.data) && Array.isArray(response.data.items))
+      ? response.data.items
+      : makeArray(response.data)
+  ).flatMap(extractPageEntries)
+
+  // checking original entries and not the ones that passed the custom extractor, because even if all entries are
+  // filtered out we should still continue querying
+  if (entries.length === 0) {
+    return { response, page: [], additionalArgs, yieldResult: false }
+  }
+  const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
+  // eslint-disable-next-line no-use-before-define
+  addNextPages({
+    pageArgs,
+    page,
+    response,
+    additionalArgs,
+  })
+  return { response, page, additionalArgs, yieldResult: true }
+}
+
+
 class PromisesQueue {
   private readonly promises: Promise<PaginationResult>[]
   private shouldContinue: boolean
@@ -59,7 +99,10 @@ class PromisesQueue {
   }
 
   enqueue(pageArgs: GetPageArgs, additionalArgs: Record<string, string>): void {
-    const promise = this.singlePagePagination(pageArgs, additionalArgs)
+    if (!this.shouldContinue) {
+      return
+    }
+    const promise = singlePagePagination(pageArgs, additionalArgs)
     this.promises.push(promise)
     log.debug(`Added promise to pagination queue. Queue size: ${this.promises.length}`)
   }
@@ -82,48 +125,6 @@ class PromisesQueue {
   async clear(): Promise<void> {
     this.shouldContinue = false
     await allSettled(this.promises.values())
-  }
-
-
-  async singlePagePagination(
-    pageArgs: GetPageArgs,
-    additionalArgs: Record<string, string>
-  ):Promise<PaginationResult> {
-    const { client, extractPageEntries, customEntryExtractor, getParams } = pageArgs
-    const { url, queryParams, headers } = getParams
-    const params = { ...queryParams, ...additionalArgs }
-
-    const response = await client.getSinglePage({
-      url,
-      queryParams: Object.keys(params).length > 0 ? params : undefined,
-      headers,
-    })
-    if (response.status !== 200) {
-      log.warn(`error getting result for ${url}: %s %o %o`, response.status, response.statusText, response.data)
-      return { response, page: [], additionalArgs, yieldResult: false }
-    }
-    const entries = (
-      (!Array.isArray(response.data) && Array.isArray(response.data.items))
-        ? response.data.items
-        : makeArray(response.data)
-    ).flatMap(extractPageEntries)
-
-    // checking original entries and not the ones that passed the custom extractor, because even if all entries are
-    // filtered out we should still continue querying
-    if (entries.length === 0) {
-      return { response, page: [], additionalArgs, yieldResult: false }
-    }
-    const page = customEntryExtractor ? entries.flatMap(customEntryExtractor) : entries
-    if (this.shouldContinue) {
-      // eslint-disable-next-line no-use-before-define
-      addNextPages({
-        pageArgs,
-        page,
-        response,
-        additionalArgs,
-      })
-    }
-    return { response, page, additionalArgs, yieldResult: true }
   }
 }
 

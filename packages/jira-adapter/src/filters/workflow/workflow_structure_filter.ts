@@ -36,15 +36,15 @@ const FETCHED_ONLY_INITIAL_POST_FUNCTION = [
   'IssueStoreFunction',
 ]
 
-const PARTS_SEPARATOR = '::'
-
-const TYPE_TO_FROM_MAP = new Map([
-  ['Initial', 'none'],
-  ['Global', 'any status'],
-  ['Circular', 'any status'],
-])
+export const TRANSITION_PARTS_SEPARATOR = '::'
 
 type TransitionType = 'Directed' | 'Initial' | 'Global' | 'Circular'
+
+const TYPE_TO_FROM_MAP: Record<Exclude<TransitionType, 'Directed'>, string> = {
+  Initial: 'none',
+  Global: 'any status',
+  Circular: 'any status',
+}
 
 export const createStatusMap = (statuses: Status[]): Map<string, string> => new Map(statuses
   .filter((status): status is {id: string; name: string} => typeof status.id === 'string' && status.name !== undefined)
@@ -78,9 +78,9 @@ export const getTransitionKey = (transition: Transition, statusesMap: Map<string
       .map(from => statusesMap.get(from) ?? from)
       .sort()
       .join(',')
-    : TYPE_TO_FROM_MAP.get(type) ?? ''
+    : TYPE_TO_FROM_MAP[type]
 
-  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(PARTS_SEPARATOR))
+  return naclCase([transition.name ?? '', `From: ${fromSorted}`, type].join(TRANSITION_PARTS_SEPARATOR))
 }
 
 const transformProperties = (item: Status | Transition): void => {
@@ -188,11 +188,7 @@ const transformRules = (rules: Rules, transitionType?: string): void => {
 
 const transformTransitions = (value: Value): SaltoError[] => {
   const statusesMap = createStatusMap(value.statuses ?? [])
-  const maxCounts: Record<string, number> = {}
-  value.transitions.forEach((transition: Transition) => {
-    const key = getTransitionKey(transition, statusesMap)
-    maxCounts[key] = (maxCounts[key] ?? 0) + 1
-  })
+  const maxCounts = _(value.transitions).map(transition => getTransitionKey(transition, statusesMap)).countBy().value()
 
   const counts: Record<string, number> = {}
 
@@ -202,18 +198,19 @@ const transformTransitions = (value: Value): SaltoError[] => {
       const key = getTransitionKey(transition, statusesMap)
       counts[key] = (counts[key] ?? 0) + 1
       if (maxCounts[key] > 1) {
-        return [naclCase(`${invertNaclCase(key)}${PARTS_SEPARATOR}${counts[key]}`), transition]
+        return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
       }
       return [key, transition]
     }))
-  const errorKeys = Object.entries(counts)
+  const errorKeyNames = Object.entries(counts)
     .filter(([, count]) => count > 1)
-    .map(([key]) => key)
+    .map(([key]) => invertNaclCase(key).split(TRANSITION_PARTS_SEPARATOR)[0])
 
-  return errorKeys.length === 0
+
+  return errorKeyNames.length === 0
     ? []
     : [{
-      message: `The following transitions of workflow ${value.name} have the same key: ${errorKeys.join(', ')}.
+      message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
       severity: 'Warning',
     }]

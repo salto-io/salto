@@ -101,7 +101,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    [naclCase('TransitionToShared::From: done::Directed')]: {
+    [naclCase('TransitionToShared::From: Done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
       from: [{
@@ -201,7 +201,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
   statuses: [
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      name: 'CustomBacklog',
+      name: 'Backlog',
       properties: [{
         key: 'jira.issue.editable',
         value: 'true',

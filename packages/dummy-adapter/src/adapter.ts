@@ -15,25 +15,11 @@
 */
 import {
   FetchResult, AdapterOperations, DeployResult, FetchOptions,
-  DeployOptions, DeployModifiers, getChangeData, isInstanceElement, Element, isObjectType, CORE_ANNOTATIONS,
+  DeployOptions, DeployModifiers, getChangeData, isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { generateElements, GeneratorParams } from './generator'
 import { changeValidator } from './change_validator'
-
-// will add alias only to instances under records and custom objects under objects
-export const addAlias = (element: Element): void => {
-  if (isInstanceElement(element) && element.path && element.path[1] === 'Records') {
-    element.annotations[CORE_ANNOTATIONS.ALIAS] = `${element.elemID.name}_alias`
-  }
-  if (isObjectType(element) && element.path && element.path[1] === 'Objects') {
-    // for when element is split to annotations and fields files
-    if (_.last(element.path)?.endsWith('Fields')) {
-      return
-    }
-    element.annotations[CORE_ANNOTATIONS.ALIAS] = `${element.elemID.name}_alias`
-  }
-}
 
 export default class DummyAdapter implements AdapterOperations {
   public constructor(private genParams: GeneratorParams) {
@@ -44,10 +30,8 @@ export default class DummyAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   public async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    const elements = await generateElements(this.genParams, progressReporter)
-    elements.forEach(addAlias)
     return {
-      elements,
+      elements: await generateElements(this.genParams, progressReporter),
     }
   }
 

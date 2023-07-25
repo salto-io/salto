@@ -104,21 +104,21 @@ describe('dummy adapter', () => {
     it('should add alias to instances and custom objects', async () => {
       const mockReporter = { reportProgress: jest.fn() }
       const fetchResult = await adapter.fetch({ progressReporter: mockReporter })
-      expect(fetchResult.elements.every(elem => {
+      fetchResult.elements.forEach(elem => {
         if (isInstanceElement(elem)
           && elem.elemID.typeName !== 'Profile'
           && elem.path
           && elem.path[1] === 'Records') {
-          return elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
-        }
-        if (isObjectType(elem)
+          expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
+        } else if (isObjectType(elem)
           && elem.path
           && elem.path[1] === 'Objects'
           && _.last(elem.path)?.endsWith('Annotations')) {
-          return elem.annotations[CORE_ANNOTATIONS.ALIAS] !== undefined
+          expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).toBeDefined()
+        } else {
+          expect(elem.annotations[CORE_ANNOTATIONS.ALIAS]).not.toBeDefined()
         }
-        return elem.annotations[CORE_ANNOTATIONS.ALIAS] === undefined
-      })).toBeTruthy()
+      })
     })
   })
 

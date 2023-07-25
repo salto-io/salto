@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange, isRemovalChange, toChange, getChangeData } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange, isRemovalChange, toChange, getChangeData, Element } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
@@ -104,19 +104,18 @@ export async function createRestoreChanges(
 }
 
 export const createRestorePathChanges = async (
-  workspaceElements: elementSource.ElementsSource,
+  elements: Element[],
   index: remoteMap.RemoteMap<pathIndex.Path[]>,
   accounts?: string[],
 ): Promise<DetailedChange[]> => {
-  const elements = await awu(await (workspaceElements).getAll())
+  const relevantElements = elements
     .filter(element => accounts === undefined || accounts.includes(element.elemID.adapter))
-    .toArray()
-  const removalChanges = elements.map(element => ({
+  const removalChanges = relevantElements.map(element => ({
     ...toChange({ before: element }),
     id: element.elemID,
   }))
 
-  const additionChanges = await awu(elements)
+  const additionChanges = await awu(relevantElements)
     .map(element => toChange({ after: element }))
     .flatMap(change => splitDetailedChangeByPath(
       {

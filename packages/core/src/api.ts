@@ -525,7 +525,7 @@ export const restorePaths = async (
   workspace: Workspace,
   accounts?: string[],
 ): Promise<LocalChange[]> => (await createRestorePathChanges(
-  await workspace.elements(),
+  await awu(await (await workspace.elements()).getAll()).toArray(),
   await workspace.state().getPathIndex(),
   accounts,
 )).map(change => ({ change, serviceChanges: [change] }))

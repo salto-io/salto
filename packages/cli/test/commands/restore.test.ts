@@ -49,6 +49,7 @@ describe('restore command', () => {
   let telemetry: mocks.MockTelemetry
   let output: mocks.MockCliOutput
   let mockRestore: jest.MockedFunction<typeof restore>
+  let mockRestorePaths: jest.MockedFunction<typeof restorePaths>
   let mockGetUserBooleanInput: jest.MockedFunction<typeof getUserBooleanInput>
 
   beforeEach(() => {
@@ -59,6 +60,11 @@ describe('restore command', () => {
     mockRestore = restore as typeof mockRestore
     mockRestore.mockReset()
     mockRestore.mockResolvedValue(
+      mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
+    )
+    mockRestorePaths = restorePaths as typeof mockRestorePaths
+    mockRestorePaths.mockReset()
+    mockRestorePaths.mockResolvedValue(
       mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
     )
     mockGetUserBooleanInput = getUserBooleanInput as typeof mockGetUserBooleanInput
@@ -544,7 +550,7 @@ describe('restore command', () => {
   })
 
   describe('restore paths', () => {
-    it('should not warn of added static files with content', async () => {
+    it('should call the restorePaths api', async () => {
       const workspace = mocks.mockWorkspace({})
 
       const result = await action({
@@ -556,13 +562,16 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          restorePaths: true,
+          reorganizeDirStructure: true,
         },
         workspace,
       })
 
       expect(restorePaths).toHaveBeenCalled()
       expect(restore).not.toHaveBeenCalled()
+
+      expect(workspace.updateNaclFiles).toHaveBeenCalledWith(mocks.dummyChanges, 'default')
+
       expect(result).toBe(CliExitCode.Success)
     })
 
@@ -579,7 +588,7 @@ describe('restore command', () => {
           listPlannedChanges: false,
           mode: 'default',
           accounts,
-          restorePaths: true,
+          reorganizeDirStructure: true,
         },
         workspace,
       })

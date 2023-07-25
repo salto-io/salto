@@ -340,7 +340,7 @@ describe('restore', () => {
     })
     it('should create deletion and addition references', async () => {
       const changes = await createRestorePathChanges(
-        createElementSource([type]),
+        [type],
         index,
       )
 
@@ -373,7 +373,7 @@ describe('restore', () => {
       ])
 
       const changes = await createRestorePathChanges(
-        createElementSource([type, type2]),
+        [type, type2],
         index,
         ['salto'],
       )

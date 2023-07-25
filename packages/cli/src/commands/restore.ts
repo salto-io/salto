@@ -72,7 +72,7 @@ type RestoreArgs = {
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
-    restorePaths?: boolean
+    reorganizeDirStructure?: boolean
 } & AccountsArg & EnvArg & UpdateModeArg
 
 const applyLocalChangesToWorkspace = async (
@@ -153,9 +153,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
 }): Promise<CliExitCode> => {
   const {
     elementSelectors = [], force, dryRun,
-    detailedPlan, listPlannedChanges, accounts, mode, restorePaths,
+    detailedPlan, listPlannedChanges, accounts, mode, reorganizeDirStructure,
   } = input
-  if (elementSelectors.length > 0 && restorePaths) {
+  if (elementSelectors.length > 0 && reorganizeDirStructure) {
     errorOutputLine(Prompts.RESTORE_PATHS_WITH_ELEMENT_SELECTORS, output)
     return CliExitCode.UserInputError
   }
@@ -201,7 +201,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  if (!restorePaths && _.isEmpty(await getRestoreChanges())) {
+  // getRestoreChanges() returns only semantic changes so
+  // if reorganizeDirStructure is passed we need to proceed
+  if (!reorganizeDirStructure && _.isEmpty(await getRestoreChanges())) {
     outputLine(EOL, output)
     outputLine(Prompts.FETCH_NO_CHANGES, output)
     return CliExitCode.Success
@@ -212,7 +214,10 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  const changesToApply = restorePaths
+  // The restorePathsCore changes also include the elements'
+  // value changes so we when reorganizeDirStructure is passed we need to apply
+  // only those and not the changes from restorePathsCore
+  const changesToApply = reorganizeDirStructure
     ? await restorePathsCore(workspace, accounts)
     : await getRestoreChanges()
 
@@ -272,9 +277,9 @@ const restoreDef = createWorkspaceCommand({
         type: 'boolean',
       },
       {
-        name: 'restorePaths',
+        name: 'reorganizeDirStructure',
         alias: 'r',
-        description: 'Restore the elements to their original path',
+        description: 'Reorganize directory structure and move files to their default locations',
         required: false,
         type: 'boolean',
       },

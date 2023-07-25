@@ -117,6 +117,14 @@ describe('scriptRunnerClient', () => {
         expect(await scriptRunnerClient.getSinglePage({ url: '/myPath' })).toEqual({ status: 404, data: [] })
       })
     })
+    it('should not call endpoints for dc', async () => {
+      scriptRunnerClient = new ScriptRunnerClient(
+        { credentials: {},
+          jiraClient,
+          isDataCenter: true }
+      )
+      expect(mockAxios.history.get).toHaveLength(0)
+    })
   })
 
   describe('getSinglePage', () => {

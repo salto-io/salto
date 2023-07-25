@@ -439,15 +439,15 @@ export default class JiraAdapter implements AdapterOperations {
   ): Promise<elementUtils.FetchElements<Element[]>> {
     log.debug('going to fetch jira account configuration..')
     progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
     progressReporter.reportProgress({ message: 'Fetching instances' })
     const [swaggerResponse, scriptRunnerElements] = await Promise.all([
-      this.getSwaggerInstances(allTypes, parsedConfigs),
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
       this.getScriptRunnerElements(),
     ])
 
     const elements: Element[] = [
-      ...Object.values(allTypes),
+      ...Object.values(swaggerTypes),
       ...swaggerResponse.elements,
       ...scriptRunnerElements.elements,
     ]

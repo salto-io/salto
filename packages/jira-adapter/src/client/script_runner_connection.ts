@@ -109,10 +109,14 @@ const getJwtFromService = async (getUrl: Promise<string>): Promise<string> => {
 }
 
 export const createScriptRunnerConnection = (
-  jiraClient: JiraClient
+  jiraClient: JiraClient,
+  isDataCenter: boolean
 ): clientUtils.ConnectionCreator<ScriptRunnerCredentials> => {
   let urlPromise: Promise<string> | undefined
   const getUrl = async (): Promise<string> => {
+    if (isDataCenter) {
+      return '' // Currently all the implementation is only for cloud
+    }
     if (urlPromise === undefined) {
       urlPromise = getUrlFromService(jiraClient)
     }

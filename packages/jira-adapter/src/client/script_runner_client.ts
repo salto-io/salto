@@ -43,9 +43,6 @@ const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
 export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
   ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig
 > {
-  readonly isDataCenter: boolean
-  jwTokenPromise: Promise<string> | undefined
-
   constructor(
     clientOpts: clientUtils.ClientOpts<ScriptRunnerCredentials, clientUtils.ClientRateLimitConfig>
       & { isDataCenter: boolean; jiraClient: JiraClient},
@@ -53,7 +50,7 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
     super(
       JIRA,
       clientOpts,
-      createScriptRunnerConnection(clientOpts.jiraClient),
+      createScriptRunnerConnection(clientOpts.jiraClient, clientOpts.isDataCenter),
       {
         pageSize: DEFAULT_PAGE_SIZE,
         rateLimit: DEFAULT_MAX_CONCURRENT_API_REQUESTS,
@@ -61,7 +58,6 @@ export default class ScriptRunnerClient extends clientUtils.AdapterHTTPClient<
         retry: DEFAULT_RETRY_OPTS,
       }
     )
-    this.isDataCenter = clientOpts.isDataCenter
   }
 
 

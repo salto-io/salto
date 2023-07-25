@@ -133,8 +133,11 @@ export const buildS3DirectoryStore = (
   )
 
   const flush = async (): Promise<void> => {
-    await Promise.all(Object.values(updated).map(f => writeFile(f)))
-    updated = {}
+    const entries = Object.entries(updated)
+    await Promise.all(entries.map(async ([key, file]) => {
+      await writeFile(file)
+      delete updated[key]
+    }))
   }
 
   return {

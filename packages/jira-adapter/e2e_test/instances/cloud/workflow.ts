@@ -178,7 +178,7 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    [naclCase('TransitionToShared::From: backlog, done::Directed')]: {
+    [naclCase('TransitionToShared::From: done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
       from: [{

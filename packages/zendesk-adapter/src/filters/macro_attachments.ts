@@ -186,14 +186,23 @@ const getAttachmentContent = async ({
     const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
     if (!Buffer.isBuffer(content)) {
       log.error(`Received invalid response from Zendesk API for attachment content, ${safeJsonStringify(res.data, undefined, 2)}. Not adding macro attachments`)
-      return [undefined]
+      const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
+      return [
+        createSaltoElementError({
+          message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
+          severity: 'Warning',
+          elemID: attachmentInstance.elemID,
+        }),
+        attachmentInstance,
+      ]
     }
     return [createAttachmentInstance({ attachment, attachmentType, macro, content })]
   } catch (e) {
+    log.error(`could not add content to attachment ${attachment.filename} with id ${attachment.id} received error: ${e}`)
     const attachmentInstance = createAttachmentInstance({ attachment, attachmentType, macro })
     return [
       createSaltoElementError({
-        message: `could not add content to attachment ${attachment.filename} with id ${attachment.id} received error: ${e}`,
+        message: `could not add content to attachment ${attachment.filename} with id ${attachment.id}`,
         severity: 'Warning',
         elemID: attachmentInstance.elemID,
       }),

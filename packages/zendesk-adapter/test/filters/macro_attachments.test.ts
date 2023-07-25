@@ -234,7 +234,11 @@ describe('macro attachment filter', () => {
             'zendesk.macro',
             'zendesk.macro.instance.macro',
             'zendesk.macro_attachment',
+            'zendesk.macro_attachment.instance.test__test_txt@uuv',
           ])
+        const attachmentInst = elements.filter(isInstanceElement)
+          .find(e => e.elemID.getFullName() === 'zendesk.macro_attachment.instance.test__test_txt@uuv')
+        expect(attachmentInst?.value.content).not.toBeDefined()
       })
       it('should return attachment without content if response with invalid status', async () => {
         mockGet = jest.spyOn(client, 'getSinglePage')

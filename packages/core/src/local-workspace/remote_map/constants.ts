@@ -13,14 +13,4 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export {
-  createRemoteMapCreator,
-  createReadOnlyRemoteMapCreator,
-  closeAllRemoteMaps,
-  closeRemoteMapsOfLocation,
-  cleanDatabases,
-} from './remote_map'
-
-export {
-  replicateDB,
-} from './db_connection_pool'
+export const NAMESPACE_SEPARATOR = '::'

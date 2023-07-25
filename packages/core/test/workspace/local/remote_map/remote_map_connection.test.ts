@@ -15,7 +15,8 @@
 */
 import _ from 'lodash'
 import { remoteMap as rm } from '@salto-io/workspace'
-import { createRemoteMapCreator, createReadOnlyRemoteMapCreator, MAX_CONNECTIONS, closeAllRemoteMaps } from '../../../../src/local-workspace/remote_map/remote_map'
+import { createRemoteMapCreator, createReadOnlyRemoteMapCreator, closeAllRemoteMaps } from '../../../../src/local-workspace/remote_map'
+import { MAX_CONNECTIONS } from '../../../../src/local-workspace/remote_map/db_connection_pool'
 
 describe('connection creation', () => {
   const DB_LOCATION = '/tmp/test_db'

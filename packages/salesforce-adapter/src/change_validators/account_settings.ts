@@ -37,7 +37,8 @@ const invalidRecordTypeError = (instance: InstanceElement): ChangeError => (
     severity: 'Error',
     message: 'Cannot set a value for \'enableAccountOwnerReport\' unless your organization-wide sharing access level for Accounts is set to Private',
     detailedMessage: `enableAccountOwnerReport is set to '${instance.value.enableAccountOwnerReport}' but the organization-wide sharing access level for Accounts is not set to 'Private'.
-See https://help.salesforce.com/s/articleView?id=sf.admin_sharing.htm for instruction on how to change the organization-wide sharing defaults, or remove the 'enableAccountOwnerReport' value from ${instance.value.fullName}.`,
+See https://help.salesforce.com/s/articleView?id=sf.admin_sharing.htm for instruction on how to change the organization-wide sharing defaults, or remove the 'enableAccountOwnerReport' value from ${instance.value.fullName}.
+      You can learn more about this deployment preview error here: https://help.salto.io/en/articles/7907434-account-owner-report-cannot-be-enabled`,
   }
 )
 

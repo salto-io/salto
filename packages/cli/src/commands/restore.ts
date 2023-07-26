@@ -17,7 +17,7 @@ import _ from 'lodash'
 import { Workspace, nacl, createElementSelectors } from '@salto-io/workspace'
 import { EOL } from 'os'
 import { logger } from '@salto-io/logging'
-import { CommandConfig, LocalChange, restore } from '@salto-io/core'
+import { CommandConfig, LocalChange, restore, restorePaths as restorePathsCore } from '@salto-io/core'
 import { getChangeData, isRemovalChange } from '@salto-io/adapter-api'
 import { collections, promises, values } from '@salto-io/lowerdash'
 import { CliOutput, CliExitCode, CliTelemetry } from '../types'
@@ -72,6 +72,7 @@ type RestoreArgs = {
     dryRun: boolean
     detailedPlan: boolean
     listPlannedChanges: boolean
+    reorganizeDirStructure?: boolean
 } & AccountsArg & EnvArg & UpdateModeArg
 
 const applyLocalChangesToWorkspace = async (
@@ -152,8 +153,13 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
 }): Promise<CliExitCode> => {
   const {
     elementSelectors = [], force, dryRun,
-    detailedPlan, listPlannedChanges, accounts, mode,
+    detailedPlan, listPlannedChanges, accounts, mode, reorganizeDirStructure,
   } = input
+  if (elementSelectors.length > 0 && reorganizeDirStructure) {
+    errorOutputLine(Prompts.REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS, output)
+    return CliExitCode.UserInputError
+  }
+
   const { validSelectors, invalidSelectors } = createElementSelectors(elementSelectors)
   if (!_.isEmpty(invalidSelectors)) {
     errorOutputLine(formatInvalidFilters(invalidSelectors), output)
@@ -177,9 +183,16 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
   outputLine(EOL, output)
   outputLine(formatStepStart(Prompts.RESTORE_CALC_DIFF_START), output)
 
-  const changes = await restore(workspace, activeAccounts, validSelectors)
+  let changes: LocalChange[] | undefined
+  const getRestoreChanges = async (): Promise<LocalChange[]> => {
+    if (changes === undefined) {
+      changes = await restore(workspace, activeAccounts, validSelectors)
+    }
+    return changes
+  }
+
   if (listPlannedChanges || dryRun) {
-    await printRestorePlan(changes, detailedPlan, output)
+    await printRestorePlan(await getRestoreChanges(), detailedPlan, output)
   }
 
   outputLine(formatStepCompleted(Prompts.RESTORE_CALC_DIFF_FINISH), output)
@@ -188,7 +201,9 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
-  if (_.isEmpty(changes)) {
+  // getRestoreChanges() returns only semantic changes so
+  // if reorganizeDirStructure is passed we need to proceed
+  if (!reorganizeDirStructure && _.isEmpty(await getRestoreChanges())) {
     outputLine(EOL, output)
     outputLine(Prompts.FETCH_NO_CHANGES, output)
     return CliExitCode.Success
@@ -199,8 +214,15 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     return CliExitCode.Success
   }
 
+  // The restorePathsCore changes also include the elements'
+  // value changes so we when reorganizeDirStructure is passed we need to apply
+  // only those and not the changes from restorePathsCore
+  const changesToApply = reorganizeDirStructure
+    ? await restorePathsCore(workspace, accounts)
+    : await getRestoreChanges()
+
   const updatingWsSucceeded = await applyLocalChangesToWorkspace(
-    changes,
+    changesToApply,
     workspace,
     cliTelemetry,
     config,
@@ -252,6 +274,13 @@ const restoreDef = createWorkspaceCommand({
         name: 'listPlannedChanges',
         alias: 'l',
         description: 'Print a summary of the planned changes',
+        type: 'boolean',
+      },
+      {
+        name: 'reorganizeDirStructure',
+        alias: 'r',
+        description: 'Reorganize directory structure and move files to their default locations',
+        required: false,
         type: 'boolean',
       },
       ACCOUNTS_OPTION,

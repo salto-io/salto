@@ -16,10 +16,41 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  TypeElement,
+  ObjectType,
+  ElemID,
+  PrimitiveTypes,
+  PrimitiveType,
+  Values,
+  BuiltinTypes,
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isPrimitiveType,
+  ElemIdGetter,
+  ServiceIds,
+  toServiceIdsString,
+  OBJECT_SERVICE_ID,
+  CORE_ANNOTATIONS,
+  PrimitiveValue,
+  Field,
+  TypeMap,
+  ListType,
+  isField,
+  createRestriction,
+  isPrimitiveValue,
+  Value,
+  isObjectType,
+  isContainerType,
+  TypeReference,
+  createRefToElmWithValue,
+  isElement,
+} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
 import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'
 
+import { logger } from '@salto-io/logging'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -41,6 +72,8 @@ import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
 
+
+const log = logger(module)
 const { mapValuesAsync, pickAsync } = promises.object
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -1363,14 +1396,19 @@ export const getSObjectFieldElement = (
 }
 
 export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
-  const removeLocalOnly: TransformFunc = ({ value, field }) => (
-    (isLocalOnly(field))
-      ? undefined
-      : value
-  )
+  const removeNonDeployableValues: TransformFunc = ({ value, field }) => {
+    if (isLocalOnly(field)) {
+      return undefined
+    }
+    if (isElement(value)) {
+      log.warn('The value of the field %s is Element with Id %s in toDeployableInstance', field?.elemID.getFullName(), value.elemID.getFullName())
+      return undefined
+    }
+    return value
+  }
   return transformElement({
     element,
-    transformFunc: removeLocalOnly,
+    transformFunc: removeNonDeployableValues,
     strict: false,
     allowEmpty: true,
   })

@@ -593,7 +593,7 @@ describe('restore command', () => {
         workspace,
       })
 
-      expect(output.stderr.content).toContain(Prompts.RESTORE_PATHS_WITH_ELEMENT_SELECTORS)
+      expect(output.stderr.content).toContain(Prompts.REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS)
       expect(result).toBe(CliExitCode.UserInputError)
     })
   })

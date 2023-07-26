@@ -216,7 +216,7 @@ ${Prompts.ACCOUNT_ADD_HELP}`
   public static readonly RESTORE_SUCCESS_FINISHED = 'Done! Your NaCL files are now updated with the latest changes.'
   public static readonly RESTORE_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your NaCL files.'
   public static readonly SHOULD_EXECUTE_RESTORE = 'Do you want to restore?'
-  public static readonly RESTORE_PATHS_WITH_ELEMENT_SELECTORS = 'Restore paths flag with element selectors is not supported'
+  public static readonly REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS = 'Reorganize dir structure flag with element selectors is not supported'
   public static readonly INVALID_FILTERS = (
     invalidFilters: string
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`

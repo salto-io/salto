@@ -156,7 +156,7 @@ export const action: WorkspaceCommandAction<RestoreArgs> = async ({
     detailedPlan, listPlannedChanges, accounts, mode, reorganizeDirStructure,
   } = input
   if (elementSelectors.length > 0 && reorganizeDirStructure) {
-    errorOutputLine(Prompts.RESTORE_PATHS_WITH_ELEMENT_SELECTORS, output)
+    errorOutputLine(Prompts.REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS, output)
     return CliExitCode.UserInputError
   }
 

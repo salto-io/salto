@@ -30,7 +30,7 @@ import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
-import { SUITEAPP_CONFIG_TYPE_NAMES, getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
@@ -633,16 +633,13 @@ describe('Netsuite adapter E2E with real account', () => {
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)
           // some sub-instances don't have alias
           .filter(element => getElementValueOrAnnotations(element)[IS_SUB_INSTANCE] !== true)
-          .map(element => element.elemID.getFullName())
-          .sort()
 
-        const settingsTypeNames = new Set([...SUITEAPP_CONFIG_TYPE_NAMES, CONFIG_FEATURES, SERVER_TIME_TYPE_NAME])
-        const settingsElements = relevantElements
-          .filter(element => settingsTypeNames.has(element.elemID.typeName))
-          .map(element => element.elemID.getFullName())
-          .sort()
-
-        expect(elementsWithoutAlias).toEqual(settingsElements)
+        if (withSuiteApp) {
+          expect(elementsWithoutAlias).toHaveLength(1)
+          expect(elementsWithoutAlias[0].elemID.typeName).toEqual(SERVER_TIME_TYPE_NAME)
+        } else {
+          expect(elementsWithoutAlias).toHaveLength(0)
+        }
       })
 
       it('should fetch the created entityCustomField and its special chars', async () => {

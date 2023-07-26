@@ -695,7 +695,33 @@ describe('getAdditionalReferences', () => {
       customObject = createCustomObjectType('Account', {})
     })
 
-    it('should create a reference to addition', async () => {
+    it('should not create a reference to addition if all permissions are disabled', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        objectPermissions: {
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        objectPermissions: {
+          Account: {
+            allowCreate: false,
+            allowDelete: false,
+            allowEdit: false,
+            allowRead: false,
+            modifyAllRecords: false,
+            object: 'Account',
+            viewAllRecords: false,
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: customObject }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toBeEmpty()
+    })
+    it('should create a reference to addition if any permission is enabled', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         objectPermissions: {
         },
@@ -869,7 +895,34 @@ describe('getAdditionalReferences', () => {
       )
     })
 
-    it('should create a reference to addition', async () => {
+    it('should not create a reference to addition if neither default nor visible', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+          },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: false,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: false,
+            },
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: recordType }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toBeEmpty()
+    })
+
+    it('should create a reference to addition if default', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         recordTypeVisibilities: {
           Case: {
@@ -881,6 +934,36 @@ describe('getAdditionalReferences', () => {
           Case: {
             SomeCaseRecordType: {
               default: true,
+              recordType: 'Case.SomeCaseRecordType',
+              visible: false,
+            },
+          },
+        },
+      })
+      changes = [
+        toChange({ before: profileInstanceBefore, after: profileInstanceAfter }),
+        toChange({ before: permissionSetInstanceBefore, after: permissionSetInstanceAfter }),
+        toChange({ after: recordType }),
+      ]
+      const refs = await getAdditionalReferences(changes)
+      expect(refs).toIncludeAllPartialMembers([
+        { source: permissionSetInstanceAfter.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
+        { source: profileInstanceAfter.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
+      ])
+    })
+
+    it('should create a reference to addition if visible', async () => {
+      const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+          },
+        },
+      })
+      const [profileInstanceAfter, permissionSetInstanceAfter] = createTestInstances({
+        recordTypeVisibilities: {
+          Case: {
+            SomeCaseRecordType: {
+              default: false,
               recordType: 'Case.SomeCaseRecordType',
               visible: true,
             },
@@ -898,7 +981,6 @@ describe('getAdditionalReferences', () => {
         { source: profileInstanceAfter.elemID.createNestedID('recordTypeVisibilities', 'Case', 'SomeCaseRecordType'), target: recordType.elemID },
       ])
     })
-
     it('should create a reference to modification', async () => {
       const [profileInstanceBefore, permissionSetInstanceBefore] = createTestInstances({
         recordTypeVisibilities: {

@@ -16,6 +16,7 @@
 import {
   AdditionChange,
   ChangeDataType,
+  ElemID,
   GetAdditionalReferencesFunc,
   getChangeData,
   InstanceElement,
@@ -23,14 +24,25 @@ import {
   isFieldChange,
   isInstanceChange,
   isModificationChange,
+  isReferenceExpression,
   ModificationChange,
+  ReferenceExpression,
   ReferenceMapping,
   Value,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
-import { getDetailedChanges, getValuesChanges, resolvePath } from '@salto-io/adapter-utils'
+import {
+  collections,
+  multiIndex,
+  values,
+} from '@salto-io/lowerdash'
+import {
+  getDetailedChanges,
+  getValuesChanges,
+  resolvePath,
+  WALK_NEXT_STEP,
+  walkOnValue,
+} from '@salto-io/adapter-utils'
 import {
   isCustomObject,
   isFieldOfCustomObject,
@@ -51,7 +63,7 @@ import {
 
 const { awu } = collections.asynciterable
 
-const log = logger(module)
+const { isDefined } = values
 
 const CUSTOM_APP_SECTION = 'applicationVisibilities'
 const APEX_CLASS_SECTION = 'classAccesses'
@@ -61,15 +73,17 @@ const OBJECT_SECTION = 'objectPermissions'
 const APEX_PAGE_SECTION = 'pageAccesses'
 const RECORD_TYPE_SECTION = 'recordTypeVisibilities'
 
+type AdditionOrModificationChange<T = ChangeDataType> = ModificationChange<T> | AdditionChange<T>
+
 const createReferenceMapping = (
   source: ModificationChange<InstanceElement>,
-  target: ModificationChange<ChangeDataType> | AdditionChange<ChangeDataType>,
-  targetApiName: string,
+  target: AdditionOrModificationChange,
+  sectionEntryKey: string,
   profileSection: string,
 ): ReferenceMapping[] => {
   const { before: beforeSource, after: afterSource } = source.data
 
-  const sourceId = afterSource.elemID.createNestedID(profileSection, ...targetApiName.split(API_NAME_SEPARATOR))
+  const sourceId = afterSource.elemID.createNestedID(profileSection, ...sectionEntryKey.split(API_NAME_SEPARATOR))
 
   const sourceDetailedChanges = getValuesChanges({
     id: sourceId,
@@ -86,57 +100,121 @@ const createReferenceMapping = (
   })))
 }
 
-const refsFromProfileOrPermissionSet = async (
+const fieldRefsFromProfileOrPermissionSet = async (
   profilesAndPermissionSetsChanges: ModificationChange<InstanceElement>[],
-  potentialTarget: ModificationChange<ChangeDataType> | AdditionChange<ChangeDataType>,
-  profileSection: string,
+  potentialTarget: AdditionOrModificationChange,
 ): Promise<ReferenceMapping[]> => {
   /**
    * Note: if the adapter config `generateRefsInProfiles` is set then these fields will already contain the correct
    * references, in which case we will create duplicate references and drop them. We won't crash because we don't
    * actually look at the content of any field/annotation, only on the keys in the provided profile section.
+   *
+   * Note: We use the section keys (as opposed to a field that contains the apiName of the referred entity) because
+   * there is no such field in the fieldPermissions section
    */
   const apiName = await safeApiName(getChangeData(potentialTarget))
   if (apiName === undefined) {
     return []
   }
   return profilesAndPermissionSetsChanges
-    .filter(profileOrPermissionSet => _.get(getChangeData(profileOrPermissionSet).value[profileSection], apiName))
+    .filter(profileOrPermissionSet => _.get(getChangeData(profileOrPermissionSet).value[FIELD_PERMISSIONS], apiName))
     .flatMap(profileOrPermissionSet => createReferenceMapping(
       profileOrPermissionSet,
       potentialTarget,
       apiName,
-      profileSection,
+      FIELD_PERMISSIONS
     ))
 }
 
-const recordTypeRefsFromLayoutAssignments = (
-  layoutAssignments: Value,
-  recordTypesByApiName: Record<string, AdditionChange<InstanceElement> | ModificationChange<InstanceElement>>,
-  profileOrPermissionSetChange: ModificationChange<InstanceElement>,
-  layoutApiName: string
-): ReferenceMapping[] => {
-  /*
-  * Every key in the layoutAssignments section contains an array. Each element in the array contains (among other
-  * things) a 'recordType' key that references a record type.
-  * If the adapter config `generateRefsInProfiles` is set and the `recordType` field already contains a reference,
-  * we will filter it out when we check if `isString(layoutAssignment.recordType)`. If the reference is resolved and
-  * it's already a string, we won't find it in recordTypesByApiName and still skip it.
-  * */
-  if (!Array.isArray(layoutAssignments)) {
-    log.warn('Profile layoutAssignment not an array: %o', layoutAssignments)
-    return []
-  }
-  return layoutAssignments
-    .filter(layoutAssignment => _.isString(layoutAssignment.recordType))
-    .filter(layoutAssignment => layoutAssignment.recordType in recordTypesByApiName)
-    .flatMap(layoutAssignment => createReferenceMapping(
-      profileOrPermissionSetChange,
-      recordTypesByApiName[layoutAssignment.recordType],
-      layoutApiName,
-      LAYOUTS_SECTION
-    ))
+type RefTargetName = {
+  typeName: string
+  refName: string | ReferenceExpression
 }
+
+type RefNameGetter = (element: Value, key: string) => RefTargetName[]
+
+const refNameFromField = (typeName: string, fieldName: string): RefNameGetter => (
+  element => ([{ typeName, refName: element[fieldName] }])
+)
+
+const instanceRefsFromProfileOrPermissionSet = async (
+  profilesAndPermissionSets: ModificationChange<InstanceElement>[],
+  profileSection: string,
+  instanceNameGetter: RefNameGetter,
+  instanceApiNameIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  instanceElemIdIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+
+): Promise<ReferenceMapping[]> => {
+  const extractRefFromSectionEntry = async (
+    profileOrPermissionSetChange: ModificationChange<InstanceElement>,
+    sectionEntryKey: string,
+    sectionEntryContents: Value,
+  ): Promise<ReferenceMapping[]> => {
+    const refNames = instanceNameGetter(sectionEntryContents, sectionEntryKey)
+    return refNames
+      .map(({ typeName, refName }) => (
+        isReferenceExpression(refName)
+          ? instanceElemIdIndex.get(typeName, refName.elemID.getFullName())
+          : instanceApiNameIndex.get(typeName, refName)
+      ))
+      .filter(isDefined)
+      .flatMap(refTarget => createReferenceMapping(
+        profileOrPermissionSetChange,
+        refTarget,
+        sectionEntryKey,
+        profileSection,
+      ))
+  }
+
+  return awu(profilesAndPermissionSets)
+    .filter(change => profileSection in getChangeData(change).value)
+    .flatMap(async change => (
+      awu(Object.entries(getChangeData(change).value[profileSection]))
+        .flatMap(async ([sectionEntryKey, sectionEntryContents]) => extractRefFromSectionEntry(
+          change,
+          sectionEntryKey,
+          sectionEntryContents,
+        ))
+        .filter(isDefined)
+        .toArray()
+    ))
+    .toArray()
+}
+
+const getAllRefNamesFromSection = (
+  rootElemId: ElemID,
+  section: Value,
+  fieldName: string
+): string[] => {
+  const recordTypeRefNames: string[] = []
+  walkOnValue({
+    elemId: rootElemId,
+    value: section,
+    func: ({ value }) => {
+      if (typeof value === 'object' && fieldName in value) {
+        recordTypeRefNames.push(value[fieldName])
+        return WALK_NEXT_STEP.SKIP
+      }
+      return WALK_NEXT_STEP.RECURSE
+    },
+  })
+  return recordTypeRefNames
+}
+
+const createRecordTypeRef = (
+  profileOrPermSet: ModificationChange<InstanceElement>,
+  instancesIndex: multiIndex.Index<[string, string], AdditionOrModificationChange>,
+  sectionName: string,
+  sourceSectionEntry: string[],
+  targetRefName: string,
+): ReferenceMapping[] => (
+  createReferenceMapping(
+    profileOrPermSet,
+    instancesIndex.get(RECORD_TYPE_METADATA_TYPE, targetRefName) as AdditionOrModificationChange,
+    sourceSectionEntry.join(API_NAME_SEPARATOR),
+    sectionName
+  )
+)
 
 export const getAdditionalReferences: GetAdditionalReferencesFunc = async changes => {
   const relevantFieldChanges = await awu(changes)
@@ -145,85 +223,109 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .filter(change => isFieldOfCustomObject(getChangeData(change)))
     .toArray()
 
-  const customObjectChanges = changes
+  const customObjectChanges = awu(changes)
     .filter(isAdditionOrModificationChange)
     .filter(change => isCustomObject(getChangeData(change)))
 
-  const addedOrModifiedInstancesChanges = changes
+  const instanceChanges: AdditionOrModificationChange[] = changes
     .filter(isInstanceChange)
     .filter(isAdditionOrModificationChange)
-
-  const addedOrModifiedInstancesChangesByType = await awu(addedOrModifiedInstancesChanges)
-    .groupBy(async change => (await getChangeData(change).getType()).elemID.typeName)
 
   const profilesAndPermSetsChanges = await awu(changes)
     .filter(isModificationChange)
     .filter(isInstanceChange)
-    .filter(instance => isInstanceOfType(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE)(getChangeData(instance)))
+    .filter(change => isInstanceOfType(PROFILE_METADATA_TYPE, PERMISSION_SET_METADATA_TYPE)(getChangeData(change)))
     .toArray()
 
-  const fieldPermissionsRefs = awu(relevantFieldChanges)
-    .flatMap(async fieldChange => refsFromProfileOrPermissionSet(
-      profilesAndPermSetsChanges,
-      fieldChange,
-      FIELD_PERMISSIONS
-    ))
+  const instancesIndex = await multiIndex.buildMultiIndex<AdditionOrModificationChange>()
+    .addIndex({
+      name: 'byTypeAndApiName',
+      key: async change => [getChangeData(change).elemID.typeName, await safeApiName(getChangeData(change)) ?? ''],
+    })
+    .addIndex({
+      name: 'byTypeAndElemId',
+      key: async change => [getChangeData(change).elemID.typeName, getChangeData(change).elemID.getFullName()],
+    })
+    .process(awu(instanceChanges).concat(customObjectChanges))
 
-  const customAppsRefs = awu(addedOrModifiedInstancesChangesByType[CUSTOM_APPLICATION_METADATA_TYPE] ?? [])
-    .flatMap(async customApp => refsFromProfileOrPermissionSet(
-      profilesAndPermSetsChanges,
-      customApp,
-      CUSTOM_APP_SECTION
-    ))
+  const customAppsRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    CUSTOM_APP_SECTION,
+    refNameFromField(CUSTOM_APPLICATION_METADATA_TYPE, 'application'),
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
 
-  const apexClassRefs = awu(addedOrModifiedInstancesChangesByType[APEX_CLASS_METADATA_TYPE] ?? [])
-    .flatMap(async apexClass => refsFromProfileOrPermissionSet(
-      profilesAndPermSetsChanges,
-      apexClass,
-      APEX_CLASS_SECTION
-    ))
+  const apexClassRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    APEX_CLASS_SECTION,
+    refNameFromField(APEX_CLASS_METADATA_TYPE, 'apexClass'),
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
 
-  const flowRefs = awu(addedOrModifiedInstancesChangesByType[FLOW_METADATA_TYPE] ?? [])
-    .flatMap(async flow => refsFromProfileOrPermissionSet(profilesAndPermSetsChanges, flow, FLOW_SECTION))
+  const flowRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    FLOW_SECTION,
+    refNameFromField(FLOW_METADATA_TYPE, 'flow'),
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
+
+  const getRefsFromLayoutAssignment = (layoutAssignment: Value): RefTargetName[] => (
+    [
+      { typeName: LAYOUT_TYPE_ID_METADATA_TYPE, refName: layoutAssignment[0]?.layout },
+      ...layoutAssignment
+        .map((layoutAssignmentEntry: Value) => layoutAssignmentEntry.recordType)
+        .filter(isDefined)
+        .map((recordTypeName: string) => ({ typeName: RECORD_TYPE_METADATA_TYPE, refName: recordTypeName })),
+    ]
+  )
 
   // note that permission sets don't contain layout assignments, but it simplifies our code to pretend like they might
   // ref: https://ideas.salesforce.com/s/idea/a0B8W00000GdlSPUAZ/permission-sets-with-page-layout-assignment
-  const layoutRefs = awu(addedOrModifiedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
-    .flatMap(async layout => refsFromProfileOrPermissionSet(profilesAndPermSetsChanges, layout, LAYOUTS_SECTION))
+  const layoutRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    LAYOUTS_SECTION,
+    getRefsFromLayoutAssignment,
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
 
-  const apexPageRefs = awu(addedOrModifiedInstancesChangesByType[APEX_PAGE_METADATA_TYPE] ?? [])
-    .flatMap(async apexPage => refsFromProfileOrPermissionSet(profilesAndPermSetsChanges, apexPage, APEX_PAGE_SECTION))
+  const apexPageRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    APEX_PAGE_SECTION,
+    refNameFromField(APEX_PAGE_METADATA_TYPE, 'apexPage'),
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
 
-  const recordTypeRefs = awu(addedOrModifiedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
-    .flatMap(async recordType => refsFromProfileOrPermissionSet(
-      profilesAndPermSetsChanges,
-      recordType,
-      RECORD_TYPE_SECTION,
-    ))
+  const objectRefs = await instanceRefsFromProfileOrPermissionSet(
+    profilesAndPermSetsChanges,
+    OBJECT_SECTION,
+    (object, key) => ([{ typeName: key, refName: object.object }]),
+    instancesIndex.byTypeAndApiName,
+    instancesIndex.byTypeAndElemId,
+  )
 
-  const objectRefs = awu(customObjectChanges)
-    .flatMap(async object => refsFromProfileOrPermissionSet(profilesAndPermSetsChanges, object, OBJECT_SECTION))
+  const fieldPermissionsRefs = awu(relevantFieldChanges)
+    .flatMap(async field => fieldRefsFromProfileOrPermissionSet(profilesAndPermSetsChanges, field))
 
-  const recordTypesByApiName = await awu(addedOrModifiedInstancesChangesByType[RECORD_TYPE_METADATA_TYPE] ?? [])
-    .keyBy(async recordType => (await safeApiName(getChangeData(recordType))) ?? '')
-
-  const recordTypeRefsFromLayouts = awu(addedOrModifiedInstancesChangesByType[LAYOUT_TYPE_ID_METADATA_TYPE] ?? [])
-    .map(getChangeData)
-    .flatMap(async layout => {
-      const apiName = await safeApiName(layout)
-      if (apiName === undefined) {
-        return []
-      }
-      return profilesAndPermSetsChanges
-        .filter(profileOrPermissionSet => _.get(getChangeData(profileOrPermissionSet).value[LAYOUTS_SECTION], apiName))
-        .flatMap(profileOrPermissionSet => (
-          Object.values(getChangeData(profileOrPermissionSet).value[LAYOUTS_SECTION])
-            .flatMap(layoutAssignments => recordTypeRefsFromLayoutAssignments(
-              layoutAssignments,
-              recordTypesByApiName,
-              profileOrPermissionSet,
-              apiName
-            ))
+  const recordTypeRefs = profilesAndPermSetsChanges
+    .flatMap(change => {
+      const recordTypeRefNames = getAllRefNamesFromSection(
+        getChangeData(change).elemID,
+        getChangeData(change).value[RECORD_TYPE_SECTION],
+        'recordType',
+      )
+      return recordTypeRefNames
+        .filter(refName => instancesIndex.byTypeAndApiName.get(RECORD_TYPE_METADATA_TYPE, refName))
+        .flatMap(refName => createRecordTypeRef(
+          change,
+          instancesIndex.byTypeAndApiName,
+          RECORD_TYPE_SECTION,
+          refName.split(API_NAME_SEPARATOR),
+          refName
         ))
     })
 
@@ -235,6 +337,5 @@ export const getAdditionalReferences: GetAdditionalReferencesFunc = async change
     .concat(objectRefs)
     .concat(apexPageRefs)
     .concat(recordTypeRefs)
-    .concat(recordTypeRefsFromLayouts)
     .toArray()
 }

@@ -17,6 +17,7 @@
 import { resolveValues, restoreValues } from '@salto-io/adapter-utils'
 import { isAdditionOrModificationChange, getChangeData, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { references as referenceUtils } from '@salto-io/adapter-components'
 import { FilterCreator } from '../../../filter'
 import { WORKFLOW_TYPE_NAME } from '../../../constants'
 import { getLookUpName } from '../../../reference_mapping'
@@ -31,13 +32,16 @@ const getTransitionIdToKeyMap = (workflowInstance: WorkflowInstance): Map<string
     .map(([key, transition]) => [transition.id, key])
     .filter((entry): entry is [string, string] => entry[0] !== undefined))
 
-const addTransitionReferences = (workflowInstance: WorkflowInstance): void => {
+const addTransitionReferences = (workflowInstance: WorkflowInstance, enableMissingReferences: boolean): void => {
   const transitionIdToKey = getTransitionIdToKeyMap(workflowInstance)
   Object.values(workflowInstance.value.transitions).forEach(transition => {
     walkOverTransitionIds(transition, scriptRunner => {
       const transitionKey = transitionIdToKey.get(scriptRunner.transitionId)
+      const missingValue = enableMissingReferences
+        ? referenceUtils.createMissingValueReference(workflowInstance.elemID, ['transitions'], scriptRunner.transitionId)
+        : scriptRunner.transitionId
       scriptRunner.transitionId = transitionKey === undefined
-        ? scriptRunner.transitionId
+        ? missingValue
         : new ReferenceExpression(
           workflowInstance.elemID.createNestedID('transitions', transitionKey),
           workflowInstance.value.transitions[transitionKey],
@@ -61,7 +65,10 @@ const filter: FilterCreator = ({ config, client }) => {
       elements
         .filter(isInstanceElement)
         .filter(isWorkflowInstance)
-        .forEach(addTransitionReferences)
+        .forEach(workflowInstance => addTransitionReferences(
+          workflowInstance,
+          config.fetch.enableMissingReferences ?? true
+        ))
     },
     preDeploy: async changes => {
       if (!config.fetch.enableScriptRunnerAddon) {
@@ -103,7 +110,7 @@ const filter: FilterCreator = ({ config, client }) => {
         .filter(isInstanceElement)
         .filter(isWorkflowInstance)
 
-      workflows.forEach(addTransitionReferences)
+      workflows.forEach(workflow => addTransitionReferences(workflow, config.fetch.enableMissingReferences ?? true))
 
       await awu(workflows)
         .filter(instance => instance.elemID.typeName === WORKFLOW_TYPE_NAME)

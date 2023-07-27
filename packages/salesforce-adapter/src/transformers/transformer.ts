@@ -1400,6 +1400,8 @@ export const toDeployableInstance = async (element: InstanceElement): Promise<In
     if (isLocalOnly(field)) {
       return undefined
     }
+    // When we have a reference that resolves to undefined, we return the Element as a PlaceHolder.
+    // This value is not deployable and should not be parsed to XML.
     if (isElement(value)) {
       log.warn('The value of the field %s is Element with Id %s in toDeployableInstance', field?.elemID.getFullName(), value.elemID.getFullName())
       return undefined

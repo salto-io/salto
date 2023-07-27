@@ -49,6 +49,7 @@ import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSObjectField } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
+import { mockTypes } from '../mock_elements'
 
 const { awu } = collections.asynciterable
 
@@ -808,6 +809,13 @@ describe('transformer', () => {
       field.annotations[INTERNAL_ID_ANNOTATION] = 'internal id'
       const customField = await toCustomField(field)
       expect(customField).not.toHaveProperty(INTERNAL_ID_ANNOTATION)
+    })
+    describe('Hierarchy CustomField', () => {
+      it('should have relationshipName value but no relatesTo value', async () => {
+        const customField = await toCustomField(mockTypes.User.fields.Manager__c)
+        expect(customField.relationshipName).toEqual('Manager')
+        expect(customField.referenceTo).toBeUndefined()
+      })
     })
   })
 

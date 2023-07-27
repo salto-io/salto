@@ -25,13 +25,17 @@ import { ZendeskIndex } from './element_index'
 import { isZendeskBlock, ZendeskBlock } from './recipe_block_types'
 
 const { isDefined } = lowerdashValues
-
-const TICKET = 'ticket'
-const USER = 'user'
-const ORGANIZATION = 'organization'
-const OTHER = 'other'
+const ID_FIELD_REGEX = /^field_(\d+)$/ // pattern: field_<number>
+const KEY_FIELD_REGEX = /^field_([^\s]+)$/ // pattern: field_<string>
 
 type ZendeskFieldMatchGroup = { custom?: string; field: string; block: string }
+
+type pasten = {
+  indexKey: Record<string | number, Readonly<InstanceElement>>
+  indexValue: Record<string | number, Record<string, Readonly<InstanceElement>>>
+  regex?: RegExp
+  fieldKeyConverter?: (match: string) => string | number
+}
 
 const isZendeskFieldMatchGroup = (val: Values): val is ZendeskFieldMatchGroup => (
   (val.custom === undefined || _.isString(val.custom))
@@ -60,8 +64,22 @@ const createFormulaFieldMatcher = (application: string): Matcher<ZendeskFieldMat
   )
 }
 
-const ID_FIELD_REGEX = /^field_(\d+)$/ // pattern: filed_<number>
-const KEY_FIELD_REGEX = /^field_([^\s]+)$/ // pattern: filed_<string>
+const getFieldReference = (
+  fieldName: string | number,
+  index: Record<string | number, Readonly<InstanceElement>>,
+  path: ElemID
+) : MappedReference | undefined => {
+  if (fieldName === undefined || !isInstanceElement(index[fieldName])) {
+    return undefined
+  }
+
+  return {
+    location: new ReferenceExpression(path),
+    // references inside formulas are always used as input
+    direction: 'input' as DependencyDirection,
+    reference: new ReferenceExpression(index[fieldName].elemID),
+  }
+}
 
 export const addZendeskRecipeReferences = async (
   inst: InstanceElement,
@@ -76,7 +94,7 @@ export const addZendeskRecipeReferences = async (
 
     const direction = getBlockDependencyDirection(blockValue)
     const inputFieldKeys = Object.keys(input)
-    actionBlock[blockValue.as] = OTHER
+    actionBlock[blockValue.as] = 'other'
 
     const addPotentialIdReference = (
       valueInst: unknown, nestedPath : ElemID | undefined = undefined,
@@ -95,99 +113,86 @@ export const addZendeskRecipeReferences = async (
       return false
     }
 
+    const addFieldsReferences = (
+      { indexKey, indexValue, regex = KEY_FIELD_REGEX, fieldKeyConverter = match => match } : pasten
+    ) : void => {
+      inputFieldKeys.forEach(field => {
+        const match = field.match(regex)
+        if (match === null || match.length < 2) {
+          return
+        }
+
+        const fieldKey = fieldKeyConverter(match[1])
+        if (!_.isNaN(fieldKey) && addPotentialIdReference(
+          indexKey[fieldKey]
+          // no pathToOverride because we can't override the field keys in the current format
+        )) {
+          const optionsByValue = indexValue[fieldKey]
+          if (optionsByValue !== undefined && input[field] !== undefined) {
+            addPotentialIdReference(
+              optionsByValue[input[field]],
+              path.createNestedID('input', field),
+            )
+          }
+        }
+      })
+    }
+
     if (input.macro_ids !== undefined && input.macro_ids.id !== undefined) {
       addPotentialIdReference(
-        indexedElements.elementByID[input.macro_ids.id],
+        indexedElements.elementsByInternalID.macros[input.macro_ids.id],
         path.createNestedID('input', 'macro_ids', 'id')
       )
     }
 
     if (input.group_id !== undefined) {
       addPotentialIdReference(
-        indexedElements.elementByID[input.group_id],
+        indexedElements.elementsByInternalID.groups[input.group_id],
         path.createNestedID('input', 'group_id')
       )
     }
 
     if (input.brand_id !== undefined) {
       addPotentialIdReference(
-        indexedElements.elementByID[input.brand_id],
+        indexedElements.elementsByInternalID.brands[input.brand_id],
         path.createNestedID('input', 'brand_id')
       )
     }
 
     if (input.ticket_form_id !== undefined) {
       addPotentialIdReference(
-        indexedElements.elementByID[input.ticket_form_id],
+        indexedElements.elementsByInternalID.ticketForms[input.ticket_form_id],
         path.createNestedID('input', 'ticket_form_id')
       )
     }
 
-    if (name.includes(TICKET)) {
-      actionBlock[blockValue.as] = TICKET
-      Object.keys(indexedElements.standardTicketFieldByName).forEach(fieldName => {
-        if (input[fieldName] !== undefined) {
-          addPotentialIdReference(
-            indexedElements.standardTicketFieldByName[fieldName]
-            // no pathToOverride because we can't override the field keys in the current format
-          )
-        }
+    if (name.includes('ticket')) { // TODO change to specific list of blocks
+      actionBlock[blockValue.as] = 'ticket'
+      // Object.keys(indexedElements.standardTicketFieldByName).forEach(fieldName => {
+      //   if (input[fieldName] !== undefined) {
+      //     addPotentialIdReference(
+      //       indexedElements.standardTicketFieldByName[fieldName]
+      //       // no pathToOverride because we can't override the field keys in the current format
+      //     )
+      //   }
+      // })
+      addFieldsReferences({
+        indexKey: indexedElements.elementsByInternalID.ticketFields,
+        indexValue: indexedElements.ticketCustomOptionByFieldIdAndValue,
+        regex: ID_FIELD_REGEX,
+        fieldKeyConverter: match => Number(match),
       })
-
-      inputFieldKeys.forEach(field => {
-        const match = field.match(ID_FIELD_REGEX)
-        const fieldId = match !== null && match.length > 1 ? Number(match[1]) : undefined
-
-        if (fieldId && !_.isNaN(fieldId) && addPotentialIdReference(
-          indexedElements.elementByID[fieldId]
-          // no pathToOverride because we can't override the field keys in the current method
-        )) {
-          const optionsByValue = indexedElements.ticketCustomOptionByFieldIdAndValue[fieldId]
-          if (optionsByValue !== undefined && input[field] !== undefined) {
-            addPotentialIdReference(
-              optionsByValue[input[field]],
-              path.createNestedID('input', field),
-            )
-          }
-        }
+    } else if (name.includes('user')) { // TODO change to specific list of blocks
+      actionBlock[blockValue.as] = 'user'
+      addFieldsReferences({
+        indexKey: indexedElements.customFieldsByKey.user,
+        indexValue: indexedElements.customOptionsByFieldKeyAndValue.user,
       })
-    } else if (name.includes(USER)) {
-      actionBlock[blockValue.as] = USER
-      inputFieldKeys.forEach(field => {
-        const match = field.match(KEY_FIELD_REGEX)
-        const fieldKey = match !== null && match.length > 1 ? match[1] : undefined
-
-        if (fieldKey && addPotentialIdReference(
-          indexedElements.userCustomFieldByKey[fieldKey]
-          // no pathToOverride because we can't override the field keys in the current format
-        )) {
-          const optionsByValue = indexedElements.userCustomOptionByFieldKeyAndValue[fieldKey]
-          if (optionsByValue !== undefined && input[field] !== undefined) {
-            addPotentialIdReference(
-              optionsByValue[input[field]],
-              path.createNestedID('input', field),
-            )
-          }
-        }
-      })
-    } else if (name.includes(ORGANIZATION)) {
-      actionBlock[blockValue.as] = ORGANIZATION
-      inputFieldKeys.forEach(field => {
-        const match = field.match(KEY_FIELD_REGEX)
-        const fieldKey = match !== null && match.length > 1 ? match[1] : undefined
-
-        if (fieldKey && addPotentialIdReference(
-          indexedElements.organizationCustomFieldByKey[fieldKey]
-          // no pathToOverride because we can't override the field keys in the current format
-        )) {
-          const optionsByValue = indexedElements.organizationCustomOptionByFieldKeyAndValue[fieldKey]
-          if (optionsByValue !== undefined && input[field] !== undefined) {
-            addPotentialIdReference(
-              optionsByValue[input[field]],
-              path.createNestedID('input', field),
-            )
-          }
-        }
+    } else if (name.includes('organization')) { // TODO change to specific list of blocks
+      actionBlock[blockValue.as] = 'organization'
+      addFieldsReferences({
+        indexKey: indexedElements.customFieldsByKey.organization,
+        indexValue: indexedElements.customOptionsByFieldKeyAndValue.organization,
       })
     }
 
@@ -205,56 +210,31 @@ export const addZendeskRecipeReferences = async (
       }
 
       if (custom !== undefined) {
-        if (custom === 'custom') { // === TICKET. there is no ticket_fields only custom_fields
+        if (custom === 'custom') { // === 'ticket'. there is no ticket_fields only custom_fields
           const fieldId = Number(fieldName)
-          if (_.isNaN(fieldId) || !isInstanceElement(indexedElements.elementByID[fieldId])) {
-            return undefined
-          }
-
-          return {
-            location: new ReferenceExpression(path),
-            // references inside formulas are always used as input
-            direction: 'input' as DependencyDirection,
-            reference: new ReferenceExpression(indexedElements.elementByID[fieldId].elemID),
-          }
+          return !_.isNaN(fieldId)
+            ? getFieldReference(fieldId, indexedElements.elementsByInternalID.ticketFields, path)
+            : undefined
         }
 
-        if (custom === USER) {
-          if (fieldName === undefined || !isInstanceElement(indexedElements.userCustomFieldByKey[fieldName])) {
-            return undefined
-          }
-
-          return {
-            location: new ReferenceExpression(path),
-            // references inside formulas are always used as input
-            direction: 'input' as DependencyDirection,
-            reference: new ReferenceExpression(indexedElements.userCustomFieldByKey[fieldName].elemID),
-          }
+        if (custom === 'user') {
+          return getFieldReference(fieldName, indexedElements.customFieldsByKey.user, path)
         }
 
-        if (custom === ORGANIZATION) {
-          if (fieldName === undefined || !isInstanceElement(indexedElements.organizationCustomFieldByKey[fieldName])) {
-            return undefined
-          }
-
-          return {
-            location: new ReferenceExpression(path),
-            // references inside formulas are always used as input
-            direction: 'input' as DependencyDirection,
-            reference: new ReferenceExpression(indexedElements.organizationCustomFieldByKey[fieldName].elemID),
-          }
+        if (custom === 'organization') {
+          return getFieldReference(fieldName, indexedElements.customFieldsByKey.organization, path)
         }
         return undefined
       }
 
-      if (actionBlock[block] === TICKET && indexedElements.standardTicketFieldByName[fieldName] !== undefined) {
-        return {
-          location: new ReferenceExpression(path),
-          // references inside formulas are always used as input
-          direction: 'input' as DependencyDirection,
-          reference: new ReferenceExpression(indexedElements.standardTicketFieldByName[fieldName].elemID),
-        }
-      }
+      // if (actionBlock[block] === 'ticket' && indexedElements.standardTicketFieldByName[fieldName] !== undefined) {
+      //   return {
+      //     location: new ReferenceExpression(path),
+      //     // references inside formulas are always used as input
+      //     direction: 'input' as DependencyDirection,
+      //     reference: new ReferenceExpression(indexedElements.standardTicketFieldByName[fieldName].elemID),
+      //   }
+      // }
       return undefined
     }).filter(isDefined)
   }

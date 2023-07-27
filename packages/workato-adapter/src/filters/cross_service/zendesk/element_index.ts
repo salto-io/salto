@@ -13,44 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { Element, InstanceElement, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
 
-const { isDefined } = lowerDashValues
+const ZENDESK_TICKET_FIELD_TYPE = 'ticket_field'
+const ZENDESK_USER_FIELD_TYPE = 'user_field'
+const ZENDESK_ORGANIZATION_FIELD_TYPE = 'organization_field'
+// const ZENDESK_TICKET_FORM_TYPE = 'ticket_form'
 
 export type ZendeskIndex = {
-  elementByID: Record<number, Readonly<InstanceElement>>
-  userCustomFieldByKey: Record<string, Readonly<InstanceElement>>
-  organizationCustomFieldByKey: Record<string, Readonly<InstanceElement>>
-  standardTicketFieldByName: Record<string, Readonly<InstanceElement>>
+  elementsByInternalID: Record<string, Record<number, Readonly<InstanceElement>>>
+  customFieldsByKey: Record<string, Record<string, Readonly<InstanceElement>>>
+  // standardTicketFieldByName: Record<string, Readonly<InstanceElement>>
   ticketCustomOptionByFieldIdAndValue: Record<number, Record<string, Readonly<InstanceElement>>>
-  userCustomOptionByFieldKeyAndValue: Record<string, Record<string, Readonly<InstanceElement>>>
-  organizationCustomOptionByFieldKeyAndValue: Record<string, Record<string, Readonly<InstanceElement>>>
+  customOptionsByFieldKeyAndValue: Record<string, Record<string, Record<string, Readonly<InstanceElement>>>>
 }
-const indexElementsByID = (
-  elems: InstanceElement[],
-): Record<number, Readonly<InstanceElement>> => {
-  const toId = (element: Readonly<Element>): number | undefined => (
-    isInstanceElement(element) ? element.value.id : undefined
-  )
-
-  return _.keyBy(
-    elems.filter(e => toId(e) !== undefined),
-    e => toId(e) as number,
-  )
-}
-
-const toKey = (element: Readonly<Element>): string | undefined => (
-  isInstanceElement(element) ? element.value.key : undefined
+const indexElementsByInternalID = (
+  elements: InstanceElement[],
+): Record<number, Readonly<InstanceElement>> => _.keyBy(
+  elements.filter(isInstanceElement).filter(e => !_.isNaN(Number(e.value.id))),
+  e => Number(e.value.id),
 )
-
-const toRawTitle = (element: Readonly<Element>): string | undefined => {
-  if (isInstanceElement(element) && element.value.raw_title !== undefined) {
-    return element.value.raw_title.toLowerCase()
-  }
-  return undefined
-}
 
 
 const indexCustomOptionByFieldAndValue = (
@@ -58,7 +41,7 @@ const indexCustomOptionByFieldAndValue = (
 ): Record<string| number, Record<string, Readonly<InstanceElement>>> => {
   const mapFieldsToCustomOptions = (field: Readonly<InstanceElement>): Record<string, Readonly<InstanceElement>> => {
     const customOptionToValue = (option: Readonly<Element>): string | undefined => (
-      (isInstanceElement(option) && option.value.value !== undefined)
+      (isInstanceElement(option) && option.value.value !== undefined && _.isString(option.value.value))
         ? option.value.value : undefined
     )
 
@@ -66,8 +49,7 @@ const indexCustomOptionByFieldAndValue = (
 
     const options = optionsRefList !== undefined
     && _.isArray(optionsRefList)
-      ? optionsRefList.map(option => (isReferenceExpression(option) ? option.value : undefined))
-        .filter(isDefined)
+      ? optionsRefList.filter(isReferenceExpression).map(option => option.value)
       : []
 
     return _.keyBy(
@@ -86,41 +68,57 @@ export const indexZendesk = (
   elements: ReadonlyArray<Readonly<Element>>
 ): ZendeskIndex => {
   const instances = elements.filter(isInstanceElement)
-  const ticketFields = instances.filter(e => e.elemID.typeName === 'ticket_field')
+  const ticketFields = instances.filter(e => e.elemID.typeName === ZENDESK_TICKET_FIELD_TYPE)
 
   // User and organization custom fields parsed as field_<value.key>
   // whereas ticket custom field parsed as field_<ID>
-  const indexCustomFieldsByKey = (objectField: 'user_field' | 'organization_field'): Record<string, Readonly<InstanceElement>> => _.keyBy(
-    instances.filter(e => e.elemID.typeName === objectField).filter(e => toKey(e) !== undefined),
-    e => toKey(e) as string,
+  const indexCustomFieldsByKey = (objectField: string): Record<string, Readonly<InstanceElement>> => _.keyBy(
+    instances.filter(e => e.elemID.typeName === objectField)
+      .filter(isInstanceElement)
+      .filter(e => e.value.key !== undefined),
+    e => e.value.key as string,
   )
 
-  const userFieldByKey = indexCustomFieldsByKey('user_field')
-  const organizationFieldByKey = indexCustomFieldsByKey('organization_field')
+  const fieldsByKey = {
+    user: indexCustomFieldsByKey(ZENDESK_USER_FIELD_TYPE),
+    organization: indexCustomFieldsByKey(ZENDESK_ORGANIZATION_FIELD_TYPE),
+  }
 
-  const defaultTicketForm = instances.filter(e => e.elemID.typeName === 'ticket_form')
-    .find(e => e.value.default)
+  const optionsByFieldKeyAndValue = {
+    user: indexCustomOptionByFieldAndValue(fieldsByKey.user),
+    organization: indexCustomOptionByFieldAndValue(fieldsByKey.organization),
+  }
 
-  // We search only within the defaultTicketForm.ticket_field_ids.
-  // Otherwise, we might refer to a custom field with the same raw_name.
-  const fieldNames: string[] = defaultTicketForm !== undefined
-    && defaultTicketForm.value.ticket_field_ids !== undefined
-    ? (defaultTicketForm.value.ticket_field_ids as Array<ReferenceExpression>)
-      .map(e => e.elemID.name) : []
+  // const defaultTicketForm = instances.filter(e => e.elemID.typeName === ZENDESK_TICKET_FORM_TYPE)
+  //   .find(e => e.value.default)
 
-  const indexStandardTicketFieldByRawTitle = _.keyBy(
-    ticketFields.filter(field => fieldNames.includes(field.elemID.name))
-      .filter(e => toRawTitle(e) !== undefined),
-    e => toRawTitle(e) as string,
-  )
+  // // We search only within the defaultTicketForm.ticket_field_ids.
+  // // Otherwise, we might refer to a custom field with the same raw_name.
+  // const fieldNames: string[] = defaultTicketForm !== undefined
+  //   && defaultTicketForm.value.ticket_field_ids !== undefined
+  //   ? (defaultTicketForm.value.ticket_field_ids as Array<ReferenceExpression>)
+  //     .map(e => e.elemID.name) : []
+
+  // const indexStandardTicketFieldByRawTitle = _.keyBy(
+  //   ticketFields.filter(field => fieldNames.includes(field.elemID.name))
+  //     .filter(isInstanceElement)
+  //     .filter(e => e.value.raw_title !== undefined),
+  //   e => e.value.raw_title.toLowerCase() as string,
+  // )
+
+  const internalIdIndex = {
+    macros: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'macro')),
+    groups: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'group')),
+    brands: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'brand')),
+    ticketForms: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'ticket_form')),
+    ticketFields: indexElementsByInternalID(instances.filter(e => e.elemID.typeName === 'ticket_field')),
+  }
 
   return {
-    elementByID: indexElementsByID(instances),
-    standardTicketFieldByName: indexStandardTicketFieldByRawTitle,
-    userCustomFieldByKey: userFieldByKey,
-    organizationCustomFieldByKey: organizationFieldByKey,
-    ticketCustomOptionByFieldIdAndValue: indexCustomOptionByFieldAndValue(indexElementsByID(ticketFields)),
-    userCustomOptionByFieldKeyAndValue: indexCustomOptionByFieldAndValue(userFieldByKey),
-    organizationCustomOptionByFieldKeyAndValue: indexCustomOptionByFieldAndValue(organizationFieldByKey),
+    elementsByInternalID: internalIdIndex,
+    // standardTicketFieldByName: indexStandardTicketFieldByRawTitle,
+    customFieldsByKey: fieldsByKey,
+    ticketCustomOptionByFieldIdAndValue: indexCustomOptionByFieldAndValue(indexElementsByInternalID(ticketFields)),
+    customOptionsByFieldKeyAndValue: optionsByFieldKeyAndValue,
   }
 }

@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
 import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'
 
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
@@ -1156,7 +1156,7 @@ export const isNull = (value: Value): boolean =>
     && (_.get(value, ['$', 'xsi:nil']) === 'true'
       || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
-export const transformPrimitive: TransformFunc = async ({ value, path, field }) => {
+export const transformPrimitive: TransformFuncSync = ({ value, path, field }) => {
   if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
@@ -1169,7 +1169,7 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
     const convertFunc = getXsdConvertFunc(_.get(value, ['$', 'xsi:type']))
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  const fieldType = await field?.getType()
+  const fieldType = field?.getTypeSync()
 
   if (isContainerType(fieldType) && _.isEmpty(value)) {
     return undefined

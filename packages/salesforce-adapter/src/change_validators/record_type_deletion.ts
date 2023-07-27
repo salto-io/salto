@@ -40,7 +40,7 @@ const createChangeError = (instance: InstanceElement): ChangeError =>
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Cannot delete RecordType',
-    detailedMessage: `You cannot delete RecordType instance. name: ${instance.elemID.name}`,
+    detailedMessage: `You cannot delete RecordType instance. name: ${instance.elemID.name}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/7936556-cannot-delete-record-type`,
   })
 
 /**

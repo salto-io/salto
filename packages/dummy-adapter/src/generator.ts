@@ -540,6 +540,7 @@ export const generateElements = async (
         annotationRefsOrTypes,
         annotations: await generateAnnotations(annotationRefsOrTypes),
       })
+      fullObjType.annotations[CORE_ANNOTATIONS.ALIAS] = `${fullObjType.elemID.name}_alias`
       const fieldsObjType = new ObjectType({
         elemID: fullObjType.elemID,
         fields: fullObjType.fields,
@@ -570,6 +571,7 @@ export const generateElements = async (
       ),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
+    record.annotations[CORE_ANNOTATIONS.ALIAS] = `${instanceType.elemID.name}_alias`
     if (randomGen() < defaultParams.parentFreq) {
       record.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
         chooseObjIgnoreRank().elemID

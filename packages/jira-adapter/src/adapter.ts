@@ -131,6 +131,7 @@ import storeUsersFilter from './filters/store_users'
 import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
+import projectFieldContextOrder from './filters/project_field_contexts_order'
 
 const {
   generateTypes,
@@ -235,6 +236,8 @@ export const DEFAULT_FILTERS = [
   fieldReferencesFilter,
   // Must run after fieldReferencesFilter
   contextsProjectsFilter,
+  // must run after contextsProjectsFilter
+  projectFieldContextOrder,
   fieldConfigurationIrrelevantFields,
   // Must run after fieldConfigurationIrrelevantFields
   fieldConfigurationSplitFilter,

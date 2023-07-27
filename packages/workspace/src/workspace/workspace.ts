@@ -760,13 +760,17 @@ export const loadWorkspace = async (
   }
 
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
+    const wsConfig = await config.getWorkspaceConfig()
     if (_.isUndefined(workspaceState)) {
-      const wsConfig = await config.getWorkspaceConfig()
       log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
       const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      workspaceState = buildWorkspaceState({
-        workspaceChanges,
-      })
+      // it's possible that during the 'await' in the line above somebody initialized the workspace state. So we check
+      // again before calling `buildWorkspaceState`
+      if (_.isUndefined(workspaceState)) {
+        workspaceState = buildWorkspaceState({
+          workspaceChanges,
+        })
+      }
     }
     return workspaceState
   }

@@ -856,7 +856,7 @@ export default class SdfClient {
       return new MissingManifestFeaturesError(error.message, _.uniq(missingFeatureNames))
     }
 
-    const validationErrorsMap = getFailedObjectsMap(messages, objectValidationErrorRegex)
+    const validationErrorsMap = getFailedObjectsMap(messages, ...objectValidationErrorRegex)
     if (validationErrorsMap.size > 0) {
       return new ObjectsDeployError(error.message, validationErrorsMap)
     }

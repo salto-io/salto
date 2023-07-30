@@ -82,9 +82,9 @@ export const getFailedObjects = (
 
 export const getFailedObjectsMap = (
   messages: string[],
-  regex: RegExp,
+  ...regexes: RegExp[]
 ): Map<string, MessageAndScriptId[]> => new Map(Object.entries(
-  _.groupBy(getFailedObjects(messages, regex), obj => obj.scriptId)
+  _.groupBy(regexes.flatMap(regex => getFailedObjects(messages, regex)), obj => obj.scriptId)
 ))
 
 export const toFeaturesDeployPartialSuccessResult = (

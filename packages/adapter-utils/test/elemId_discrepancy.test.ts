@@ -34,6 +34,10 @@ describe('getElemIdFuncWrapper', () => {
   const func = (serviceName: string, _serviceIds: ServiceIds, _name: string): ElemID =>
     new ElemID(serviceName, elemName)
 
+  beforeEach(async () => {
+    jest.clearAllMocks()
+  })
+
   it('should add to map in case the elemId is different then the name', () => {
     const wrapper = getElemIdFuncWrapper(func)
     elemName = 'other test'

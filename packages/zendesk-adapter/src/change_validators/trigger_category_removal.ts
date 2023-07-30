@@ -50,9 +50,9 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === TRIGGER_CATEGORY_TYPE_NAME)
 
-    // if (removedTriggerCategories.length === 0) {
-    //   return []
-    // }
+    if (removedTriggerCategories.length === 0) {
+      return []
+    }
 
     const elementSourceTriggers = await awu(await elementSource.list())
       .filter(id => id.typeName === TRIGGER_TYPE_NAME)

@@ -76,7 +76,7 @@ describe('triggerCategoryRemovalValidator', () => {
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category with inactive triggers',
-      detailedMessage: 'Trigger category is used by the following inactive triggers: [inactiveTrigger], and they will be removed with the removal of this trigger category',
+      detailedMessage: 'Trigger category is used by the following inactive triggers: [inactiveTrigger], and they will be automatically removed with the removal of this trigger category',
     }])
   })
 
@@ -109,7 +109,7 @@ describe('triggerCategoryRemovalValidator', () => {
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category with inactive triggers',
-      detailedMessage: 'Trigger category is used by the following inactive triggers: [activeTrigger], and they will be removed with the removal of this trigger category',
+      detailedMessage: 'Trigger category is used by the following inactive triggers: [activeTrigger], and they will be automatically removed with the removal of this trigger category',
     }])
   })
 })

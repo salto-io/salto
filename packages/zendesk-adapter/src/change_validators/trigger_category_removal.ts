@@ -78,7 +78,7 @@ export const triggerCategoryRemovalValidator: ChangeValidator = async (changes, 
     if (triggersByTriggerCategory === undefined) {
       return
     }
-    // If this trigger wasn't changed, the instance from the elementSource is updated
+    // If this trigger wasn't changed, the updated instance is the one in the element source
     if (triggerChangesByTriggerName[trigger.elemID.name] === undefined) {
       triggersByTriggerCategory[triggerCategoryName] = [
         ...(triggersByTriggerCategory[triggerCategoryName] ?? []),
@@ -86,7 +86,7 @@ export const triggerCategoryRemovalValidator: ChangeValidator = async (changes, 
       ]
       return
     }
-    // If this trigger was added or modifications, the instance from the changes is the updated one
+    // If this trigger was added or modifications, the updated instance is the one in the changes
     const triggerChange = triggerChangesByTriggerName[trigger.elemID.name]
     if (isAdditionOrModificationChange(triggerChange)) {
       triggersByTriggerCategory[triggerCategoryName] = [
@@ -121,7 +121,7 @@ export const triggerCategoryRemovalValidator: ChangeValidator = async (changes, 
       elemID: removedTriggerCategory.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category with inactive triggers',
-      detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be removed with the removal of this trigger category`,
+      detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be automatically removed with the removal of this trigger category`,
     } : undefined
   })
 

@@ -1077,7 +1077,7 @@ public class MyClass${index} {
     })
 
     describe('when there is an empty id in retrieve response', () => {
-      it('should not have an id field after retrieve', async () => {
+      it('should not create instance with internalId', async () => {
         mockMetadataType(
           { xmlName: 'Account' },
           { valueTypeFields: [] },

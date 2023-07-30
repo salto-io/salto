@@ -82,6 +82,7 @@ export type DeployParams = UserDeployConfig & {
     include?: Partial<AdditionalSdfDeployDependencies>
     exclude?: Partial<AdditionalSdfDeployDependencies>
   }
+  fieldsToOmit?: FieldToOmitParams[]
 }
 
 export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
@@ -90,6 +91,7 @@ export const DEPLOY_PARAMS: lowerdashTypes.TypeKeysEnum<DeployParams> = {
   deployReferencedElements: 'deployReferencedElements',
   additionalDependencies: 'additionalDependencies',
   changeValidators: 'changeValidators',
+  fieldsToOmit: 'fieldsToOmit',
 }
 
 type MaxInstancesPerType = {
@@ -550,6 +552,7 @@ export type NetsuiteValidatorName = (
   | 'extraReferenceDependencies'
   | 'rolePermission'
   | 'translationCollectionReferences'
+  | 'omitFields'
 )
 
 export type NonSuiteAppValidatorName = (
@@ -595,6 +598,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     removeStandardTypes: { refType: BuiltinTypes.BOOLEAN },
     fileCabinetInternalIds: { refType: BuiltinTypes.BOOLEAN },
     translationCollectionReferences: { refType: BuiltinTypes.BOOLEAN },
+    omitFields: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

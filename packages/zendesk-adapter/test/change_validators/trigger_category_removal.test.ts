@@ -120,27 +120,4 @@ describe('triggerCategoryRemovalValidator', () => {
     const changeErrors = await triggerCategoryRemovalValidator(apiConfig)(changes, elementSource)
     expect(changeErrors).toMatchObject([])
   })
-
-  it('should look at changed trigger instead of its elementSource instance', async () => {
-    const changedActiveTrigger = activeTriggerInstance.clone()
-    const changedInactiveTrigger = inactiveTriggerInstance.clone()
-    changedActiveTrigger.value.active = false
-
-    const elementSource = createInMemoryElementSource([
-      activeTriggerInstance,
-      inactiveTriggerInstance,
-    ])
-    const changes = [
-      toChange({ before: triggerCategoryWithTriggers }),
-      toChange({ before: activeTriggerInstance, after: changedActiveTrigger }),
-      toChange({ before: changedInactiveTrigger }),
-    ]
-    const changeErrors = await triggerCategoryRemovalValidator(apiConfig)(changes, elementSource)
-    expect(changeErrors).toMatchObject([{
-      elemID: triggerCategoryWithTriggers.elemID,
-      severity: 'Warning',
-      message: 'Removal of trigger category with inactive triggers',
-      detailedMessage: 'Trigger category is used by the following inactive triggers: [activeTrigger], and they will be automatically removed with the removal of this trigger category',
-    }])
-  })
 })

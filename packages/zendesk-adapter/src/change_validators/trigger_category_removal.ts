@@ -16,7 +16,6 @@
 import {
   isInstanceChange,
   ChangeValidator,
-  isAdditionOrModificationChange,
   ChangeError,
   getChangeData,
   InstanceElement,
@@ -51,9 +50,9 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       .map(getChangeData)
       .filter(instance => instance.elemID.typeName === TRIGGER_CATEGORY_TYPE_NAME)
 
-    if (removedTriggerCategories.length === 0) {
-      return []
-    }
+    // if (removedTriggerCategories.length === 0) {
+    //   return []
+    // }
 
     const elementSourceTriggers = await awu(await elementSource.list())
       .filter(id => id.typeName === TRIGGER_TYPE_NAME)
@@ -62,42 +61,18 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       .filter(isInstanceElement)
       .toArray()
 
-    const triggerChangesByTriggerName = _.keyBy(
-      changes
-        .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === TRIGGER_TYPE_NAME),
-      change => getChangeData(change).elemID.name
-    )
-
     const triggersByTriggerCategory: Record<string, InstanceElement[]> = _.fromPairs(
       removedTriggerCategories.map(instance => instance.elemID.name).map(name => [name, []])
     )
+
     elementSourceTriggers.forEach(trigger => {
       const triggerCategory = trigger.value.category_id
-      const triggerCategoryName = isReferenceExpression(triggerCategory)
-        ? triggerCategory.elemID.name
-        : triggerCategory
+      const triggerCategoryName = isReferenceExpression(triggerCategory) ? triggerCategory.elemID.name : triggerCategory
       // If this trigger's category wasn't removed, we don't care about it
-      if (triggersByTriggerCategory === undefined) {
+      if (triggersByTriggerCategory[triggerCategoryName] === undefined) {
         return
       }
-      // If this trigger wasn't changed, the updated instance is the one in the element source
-      if (triggerChangesByTriggerName[trigger.elemID.name] === undefined) {
-        triggersByTriggerCategory[triggerCategoryName] = [
-          ...(triggersByTriggerCategory[triggerCategoryName] ?? []),
-          trigger,
-        ]
-        return
-      }
-      // If this trigger was added or modifications, the updated instance is the one in the changes
-      const triggerChange = triggerChangesByTriggerName[trigger.elemID.name]
-      if (isAdditionOrModificationChange(triggerChange)) {
-        triggersByTriggerCategory[triggerCategoryName] = [
-          ...(triggersByTriggerCategory[triggerCategoryName] ?? []),
-          getChangeData(triggerChange),
-        ]
-      }
-      // If this is a removal change, we do nothing because it is irrelevant
+      triggersByTriggerCategory[triggerCategoryName].push(trigger)
     })
 
 

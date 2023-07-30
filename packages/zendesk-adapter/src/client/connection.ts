@@ -82,7 +82,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
         ? accessTokenAuthParamsFunc(creds)
         : usernamePasswordAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ subdomain, domain }) => baseUrl(subdomain, domain),
+    baseURLFunc: async ({ subdomain, domain }) => baseUrl(subdomain, domain),
     credValidateFunc: validateCredentials,
   })
 )

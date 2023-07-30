@@ -1381,7 +1381,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   macros: {
     request: {
       url: '/api/v2/macros',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
+        access: 'shared',
+      },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {

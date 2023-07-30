@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -132,6 +132,10 @@ import projectCategoryFilter from './filters/project_category'
 import addAliasFilter from './filters/add_alias'
 import projectRoleRemoveTeamManagedDuplicatesFilter from './filters/remove_specific_duplicate_roles'
 import projectFieldContextOrder from './filters/project_field_contexts_order'
+import ScriptRunnerClient from './client/script_runner_client'
+
+const { getAllElements } = elementUtils.ducktype
+const { findDataField, computeGetArgs } = elementUtils
 
 const {
   generateTypes,
@@ -276,6 +280,7 @@ export const DEFAULT_FILTERS = [
 export interface JiraAdapterParams {
   filterCreators?: FilterCreator[]
   client: JiraClient
+  scriptRunnerClient: ScriptRunnerClient
   config: JiraConfig
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
@@ -289,6 +294,7 @@ type AdapterSwaggers = {
 export default class JiraAdapter implements AdapterOperations {
   private createFiltersRunner: () => Required<Filter>
   private client: JiraClient
+  private scriptRunnerClient: ScriptRunnerClient
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
@@ -298,6 +304,7 @@ export default class JiraAdapter implements AdapterOperations {
   public constructor({
     filterCreators = DEFAULT_FILTERS,
     client,
+    scriptRunnerClient,
     getElemIdFunc,
     config,
     elementsSource,
@@ -305,6 +312,7 @@ export default class JiraAdapter implements AdapterOperations {
     this.userConfig = config
     this.getElemIdFunc = getElemIdFunc
     this.client = client
+    this.scriptRunnerClient = scriptRunnerClient
     const paginator = createPaginator({
       client: this.client,
       paginationFuncCreator: paginate,
@@ -370,8 +378,8 @@ export default class JiraAdapter implements AdapterOperations {
     return _.merge({}, ...results)
   }
 
-  @logDuration('generating instances from service')
-  private async getInstances(
+  @logDuration('generating swagger instances from service')
+  private async getSwaggerInstances(
     allTypes: TypeMap,
     parsedConfigs: Record<string, configUtils.RequestableTypeSwaggerConfig>
   ): Promise<elementUtils.FetchElements<InstanceElement[]>> {
@@ -395,19 +403,61 @@ export default class JiraAdapter implements AdapterOperations {
     })
   }
 
+  @logDuration('generating scriptRunner instances and types from service')
+  private async getScriptRunnerElements(): Promise<elementUtils.FetchElements<Element[]>> {
+    const { scriptRunnerApiDefinitions } = this.userConfig
+    // scriptRunnerApiDefinitions is currently undefined for DC
+    if (this.scriptRunnerClient === undefined
+      || !this.userConfig.fetch.enableScriptRunnerAddon
+      || scriptRunnerApiDefinitions === undefined) {
+      return { elements: [] }
+    }
+
+    const paginator = createPaginator({
+      client: this.scriptRunnerClient,
+      paginationFuncCreator: paginate,
+    })
+
+    return getAllElements({
+      adapterName: JIRA,
+      types: scriptRunnerApiDefinitions.types,
+      shouldAddRemainingTypes: false,
+      supportedTypes: scriptRunnerApiDefinitions.supportedTypes,
+      fetchQuery: this.fetchQuery,
+      paginator,
+      nestedFieldFinder: findDataField,
+      computeGetArgs,
+      typeDefaults: scriptRunnerApiDefinitions.typeDefaults,
+      getElemIdFunc: this.getElemIdFunc,
+    })
+  }
+
+  @logDuration('generating instances from service')
+  private async getAllJiraElements(
+    progressReporter: ProgressReporter,
+    swaggers: AdapterSwaggers
+  ): Promise<elementUtils.FetchElements<Element[]>> {
+    log.debug('going to fetch jira account configuration..')
+    progressReporter.reportProgress({ message: 'Fetching types' })
+    const { allTypes: swaggerTypes, parsedConfigs } = await this.getAllTypes(swaggers)
+    progressReporter.reportProgress({ message: 'Fetching instances' })
+    const [swaggerResponse, scriptRunnerElements] = await Promise.all([
+      this.getSwaggerInstances(swaggerTypes, parsedConfigs),
+      this.getScriptRunnerElements(),
+    ])
+
+    const elements: Element[] = [
+      ...Object.values(swaggerTypes),
+      ...swaggerResponse.elements,
+      ...scriptRunnerElements.elements,
+    ]
+    return { elements, errors: (swaggerResponse.errors ?? []).concat(scriptRunnerElements.errors ?? []) }
+  }
+
   @logDuration('fetching account configuration')
   async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
-    log.debug('going to fetch jira account configuration..')
     const swaggers = await this.generateSwaggers()
-    progressReporter.reportProgress({ message: 'Fetching types' })
-    const { allTypes, parsedConfigs } = await this.getAllTypes(swaggers)
-    progressReporter.reportProgress({ message: 'Fetching instances' })
-    const { errors, elements: instances } = await this.getInstances(allTypes, parsedConfigs)
-
-    const elements = [
-      ...Object.values(allTypes),
-      ...instances,
-    ]
+    const { elements, errors } = await this.getAllJiraElements(progressReporter, swaggers)
 
     log.debug('going to run filters on %d fetched elements', elements.length)
     progressReporter.reportProgress({ message: 'Running filters for additional information' })

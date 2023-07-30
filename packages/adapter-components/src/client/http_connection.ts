@@ -165,7 +165,7 @@ export type AuthParams = {
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
   authParamsFunc: (creds: TCredentials) => Promise<AuthParams>
-  baseURLFunc: (creds: TCredentials) => string
+  baseURLFunc: (creds: TCredentials) => Promise<string>
   credValidateFunc: ({ credentials, connection }: {
     credentials: TCredentials
     connection: APIConnection
@@ -182,7 +182,7 @@ export const axiosConnection = <TCredentials>({
     creds: TCredentials,
   ): Promise<AuthenticatedAPIConnection> => {
     const httpClient = axios.create({
-      baseURL: baseURLFunc(creds),
+      baseURL: await baseURLFunc(creds),
       ...await authParamsFunc(creds),
     })
     axiosRetry(httpClient, retryOptions)

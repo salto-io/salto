@@ -264,7 +264,6 @@ export const getConfigFromConfigChanges = (
     )
   }
 
-
   const data = currentDataManagement === undefined ? undefined : _.pickBy({
     ...currentDataManagement,
     ...dataManagementOverrides,

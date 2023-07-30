@@ -31,7 +31,7 @@ export type SaltoElementError = SaltoError & {
 }
 
 export const isSaltoElementError = (error: SaltoError | SaltoElementError):
-    error is SaltoElementError => 'elemID' in error
+    error is SaltoElementError => 'elemID' in error && error.elemID !== undefined
 
 export const isSaltoError = (error: unknown): error is SaltoError =>
   (_.isObject(error) && ('message' in error) && ('severity' in error))

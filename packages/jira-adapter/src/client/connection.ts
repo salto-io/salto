@@ -61,7 +61,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = retr
         headers: credentials.isDataCenter ? {} : FORCE_ACCEPT_LANGUAGE_HEADERS,
       }
     ),
-    baseURLFunc: ({ baseUrl }) => baseUrl,
+    baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: async () => ({ accountId: '' }), // There is no login endpoint to call
   })
 )

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { restore } from '@salto-io/core'
+import { restore, restorePaths } from '@salto-io/core'
 import { Workspace } from '@salto-io/workspace'
 import { DetailedChange, ElemID, ModificationChange, StaticFile, Values } from '@salto-io/adapter-api'
 import { getUserBooleanInput } from '../../src/callbacks'
@@ -21,6 +21,7 @@ import { CliExitCode } from '../../src/types'
 import { action } from '../../src/commands/restore'
 import * as mocks from '../mocks'
 import { buildEventName } from '../../src/telemetry'
+import Prompts from '../../src/prompts'
 
 const commandName = 'restore'
 const eventsNames = {
@@ -39,6 +40,7 @@ jest.mock('../../src/callbacks', () => ({
 jest.mock('@salto-io/core', () => ({
   ...jest.requireActual<{}>('@salto-io/core'),
   restore: jest.fn().mockImplementation(() => Promise.resolve([])),
+  restorePaths: jest.fn().mockImplementation(() => Promise.resolve([])),
 }))
 
 describe('restore command', () => {
@@ -47,6 +49,7 @@ describe('restore command', () => {
   let telemetry: mocks.MockTelemetry
   let output: mocks.MockCliOutput
   let mockRestore: jest.MockedFunction<typeof restore>
+  let mockRestorePaths: jest.MockedFunction<typeof restorePaths>
   let mockGetUserBooleanInput: jest.MockedFunction<typeof getUserBooleanInput>
 
   beforeEach(() => {
@@ -57,6 +60,11 @@ describe('restore command', () => {
     mockRestore = restore as typeof mockRestore
     mockRestore.mockReset()
     mockRestore.mockResolvedValue(
+      mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
+    )
+    mockRestorePaths = restorePaths as typeof mockRestorePaths
+    mockRestorePaths.mockReset()
+    mockRestorePaths.mockResolvedValue(
       mocks.dummyChanges.map(change => ({ change, serviceChanges: [change] }))
     )
     mockGetUserBooleanInput = getUserBooleanInput as typeof mockGetUserBooleanInput
@@ -538,6 +546,55 @@ describe('restore command', () => {
 
       expect(output.stdout.content).not.toContain('Static resources are not supported')
       expect(result).toBe(CliExitCode.Success)
+    })
+  })
+
+  describe('restore paths', () => {
+    it('should call the restorePaths api', async () => {
+      const workspace = mocks.mockWorkspace({})
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+          reorganizeDirStructure: true,
+        },
+        workspace,
+      })
+
+      expect(restorePaths).toHaveBeenCalled()
+      expect(restore).not.toHaveBeenCalled()
+
+      expect(workspace.updateNaclFiles).toHaveBeenCalledWith(mocks.dummyChanges, 'default')
+
+      expect(result).toBe(CliExitCode.Success)
+    })
+
+    it('should fail when requesting to restore paths with specific selectors', async () => {
+      const workspace = mocks.mockWorkspace({})
+
+      const result = await action({
+        ...cliCommandArgs,
+        input: {
+          elementSelectors: ['salto.*'],
+          force: false,
+          dryRun: false,
+          detailedPlan: false,
+          listPlannedChanges: false,
+          mode: 'default',
+          accounts,
+          reorganizeDirStructure: true,
+        },
+        workspace,
+      })
+
+      expect(output.stderr.content).toContain(Prompts.REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS)
+      expect(result).toBe(CliExitCode.UserInputError)
     })
   })
 })

@@ -52,7 +52,7 @@ export const createConnection: clientUtils.ConnectionCreator<Credentials> = (
     authParamsFunc: async (creds: Credentials) => (
       accessTokenAuthParamsFunc(creds)
     ),
-    baseURLFunc: ({ baseUrl }) => baseUrl,
+    baseURLFunc: async ({ baseUrl }) => baseUrl,
     credValidateFunc: validateCredentials,
   })
 )

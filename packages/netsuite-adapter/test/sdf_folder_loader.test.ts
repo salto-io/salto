@@ -116,8 +116,8 @@ describe('sdf folder loader', () => {
     })
     expect(parseSdfProjectDirMock).toHaveBeenCalledWith('projectDir')
 
-    const { standardTypes, additionalTypes } = getMetadataTypes()
-    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes })
+    const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+    const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
       .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
     // metadataTypes + folderInstance + fileInstance + featuresInstance + customTypeInstance + customRecordType

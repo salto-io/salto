@@ -196,6 +196,11 @@ export class TypeReference {
     return getResolvedValue(this.elemID, elementsSource, this.type)
   }
 
+
+  getResolvedValueSync(): TypeElement | undefined {
+    return this.type
+  }
+
   [inspect.custom](): string {
     return `TypeReference(${this.elemID.getFullName()}, ${this.type ? '<omitted>' : '<no value>'})`
   }

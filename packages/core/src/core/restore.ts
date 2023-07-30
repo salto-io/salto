@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, DetailedChange, isRemovalChange } from '@salto-io/adapter-api'
+import { ElemID, DetailedChange, isRemovalChange, toChange, getChangeData, Element } from '@salto-io/adapter-api'
 import { filterByID, applyFunctionToChangeData } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { pathIndex, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
+import { pathIndex, filterByPathHint, ElementSelector, elementSource, remoteMap } from '@salto-io/workspace'
 import { createDiffChanges } from './diff'
 import { ChangeWithDetails } from './plan/plan_item'
 
@@ -32,13 +32,9 @@ const splitDetailedChangeByPath = async (
     return [change]
   }
   return Promise.all(changeHints.map(async hint => {
-    const filterByPathHint = async (id: ElemID): Promise<boolean> => {
-      const idHints = await pathIndex.getFromPathIndex(id, index)
-      return idHints.some(idHint => _.isEqual(idHint, hint))
-    }
     const filteredChange = await applyFunctionToChangeData(
       change,
-      async changeData => filterByID(change.id, changeData, filterByPathHint),
+      async changeData => filterByID(change.id, changeData, id => filterByPathHint(index, hint, id)),
     )
     return {
       ...filteredChange,
@@ -105,4 +101,30 @@ export async function createRestoreChanges(
   return awu(detailedChanges)
     .flatMap(change => splitDetailedChangeByPath(change, index))
     .toArray()
+}
+
+export const createRestorePathChanges = async (
+  elements: Element[],
+  index: remoteMap.RemoteMap<pathIndex.Path[]>,
+  accounts?: string[],
+): Promise<DetailedChange[]> => {
+  const relevantElements = elements
+    .filter(element => accounts === undefined || accounts.includes(element.elemID.adapter))
+  const removalChanges = relevantElements.map(element => ({
+    ...toChange({ before: element }),
+    id: element.elemID,
+  }))
+
+  const additionChanges = await awu(relevantElements)
+    .map(element => toChange({ after: element }))
+    .flatMap(change => splitDetailedChangeByPath(
+      {
+        ...change,
+        id: getChangeData(change).elemID,
+      },
+      index
+    ))
+    .toArray()
+
+  return removalChanges.concat(additionChanges)
 }

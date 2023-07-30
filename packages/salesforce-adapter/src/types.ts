@@ -26,6 +26,7 @@ import {
   ObjectType,
 } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
+import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
 import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
@@ -125,9 +126,19 @@ type ObjectIdSettings = {
   idFields: string[]
 }
 
+type ObjectAliasSettings = {
+  objectsRegex: string
+  aliasFields: string[]
+}
+
 export type SaltoIDSettings = {
   defaultIdFields: string[]
   overrides?: ObjectIdSettings[]
+}
+
+export type SaltoAliasSettings = {
+  defaultAliasFields?: types.NonEmptyArray<string>
+  overrides?: ObjectAliasSettings[]
 }
 
 const objectIdSettings = new ObjectType({
@@ -169,6 +180,43 @@ const saltoIDSettingsType = new ObjectType({
   },
 })
 
+
+const objectAliasSettings = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'objectAliasSettings'),
+  fields: {
+    objectsRegex: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    aliasFields: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  } as Record<keyof ObjectAliasSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const saltoAliasSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoAliasSettings'),
+  fields: {
+    defaultAliasFields: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    overrides: {
+      refType: new ListType(objectAliasSettings),
+    },
+  } as Record<keyof SaltoAliasSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -176,6 +224,7 @@ export type DataManagementConfig = {
   ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
+  saltoAliasSettings?: SaltoAliasSettings
 }
 
 export type FetchParameters = {
@@ -419,6 +468,9 @@ const dataManagementType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
+    },
+    saltoAliasSettings: {
+      refType: saltoAliasSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {

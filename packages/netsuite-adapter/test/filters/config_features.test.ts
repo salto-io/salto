@@ -15,7 +15,6 @@
 */
 import { BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/config_features'
-import { FeaturesDeployError } from '../../src/client/errors'
 import { CONFIG_FEATURES, NETSUITE } from '../../src/constants'
 import { featuresType } from '../../src/types/configuration_types'
 import { LocalFilterOpts } from '../../src/filter'
@@ -96,12 +95,12 @@ describe('config features filter', () => {
   describe('onDeploy', () => {
     it('should succeed', async () => {
       const change = getChange()
-      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { sdfErrors: [new Error('error')], appliedChanges: [], errors: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: true, DEF: true })
     })
     it('should restore failed to deploy features', async () => {
       const change = getChange()
-      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { sdfErrors: [new FeaturesDeployError('error', ['ABC'])], appliedChanges: [], errors: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { failedFeaturesIds: ['ABC'], appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: false, DEF: true })
     })
   })

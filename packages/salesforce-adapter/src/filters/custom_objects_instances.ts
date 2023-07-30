@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
-import { pathNaclCase } from '@salto-io/adapter-utils'
+import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS, SaltoError } from '@salto-io/adapter-api'
+import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
@@ -30,7 +30,15 @@ import {
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries, getFieldNamesForQuery } from './utils'
+import {
+  getNamespace,
+  isMasterDetailField,
+  isLookupField,
+  queryClient,
+  buildSelectQueries,
+  getFieldNamesForQuery,
+  safeApiName,
+} from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -51,7 +59,8 @@ export type CustomObjectFetchSetting = {
   isBase: boolean
   idFields: Field[]
   aliasFields: Field[]
-  invalidIdFields?: string[]
+  invalidIdFields: string[]
+  invalidAliasFields: string[]
 }
 
 const defaultRecordKeysToOmit = ['attributes']
@@ -403,7 +412,7 @@ const getParentFieldNames = (fields: Field[]): string[] =>
 export const getIdFields = async (
   type: ObjectType,
   dataManagement: DataManagement
-): Promise<{ idFields: Field[]; aliasFields: Field[]; invalidFields?: string[] }> => {
+): Promise<Pick<CustomObjectFetchSetting, 'idFields' | 'aliasFields' | 'invalidIdFields' | 'invalidAliasFields' >> => {
   const typeName = await apiName(type)
   const idFieldsNames = dataManagement.getObjectIdsFields(typeName)
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
@@ -416,19 +425,18 @@ export const getIdFields = async (
   const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
   ))
+  const [aliasFields, invalidAliasFields] = _.partition(
+    aliasFieldsWithParents,
+    fieldName => type.fields[fieldName] !== undefined && isQueryableField(type.fields[fieldName])
+  )
   if (invalidIdFieldNames.length > 0) {
-    return { idFields: [], aliasFields: [], invalidFields: invalidIdFieldNames }
+    return { idFields: [], aliasFields: [], invalidIdFields: invalidIdFieldNames, invalidAliasFields }
   }
   return {
     idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]),
-    aliasFields: aliasFieldsWithParents
-      .map(fieldName => {
-        const field = type.fields[fieldName]
-        if (field === undefined) {
-          log.warn('Alias field with name %s does not exist in type %s', fieldName, typeName)
-        }
-        return field
-      }).filter(isDefined),
+    aliasFields: aliasFields.map((fieldName => type.fields[fieldName])),
+    invalidIdFields: [],
+    invalidAliasFields,
   }
 }
 
@@ -436,16 +444,11 @@ export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
-    const { idFields, aliasFields, invalidFields: invalidIdFields } = await getIdFields(type, dataManagement)
-    return {
-      objectType: type,
-      isBase: dataManagement.isObjectMatch(await apiName(type)),
-      idFields,
-      aliasFields,
-      invalidIdFields,
-    }
-  }
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
+    objectType: type,
+    isBase: dataManagement.isObjectMatch(await apiName(type)),
+    ...await getIdFields(type, dataManagement),
+  })
 
   return awu(types)
     .filter(async type => dataManagement.isObjectMatch(await apiName(type))
@@ -489,6 +492,13 @@ const filterTypesWithManyInstances = async (
   }
 }
 
+const createInvalidAliasFieldFetchWarning = async (
+  { objectType, invalidAliasFields }: CustomObjectFetchSetting
+): Promise<SaltoError> => ({
+  message: `Invalid alias fields for type ${await safeApiName(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
+  severity: 'Warning',
+})
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
   remote: true,
@@ -504,7 +514,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,
-      setting => setting.invalidIdFields === undefined
+      setting => setting.invalidIdFields.length === 0
     )
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
@@ -539,6 +549,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
+      errors: await awu(customObjectFetchSetting)
+        .filter(setting => setting.invalidAliasFields.length > 0)
+        .map(createInvalidAliasFieldFetchWarning)
+        .toArray(),
     }
   },
 })

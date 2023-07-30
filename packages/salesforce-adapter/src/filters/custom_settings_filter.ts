@@ -62,7 +62,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customSettingsFetchSettings,
-      setting => setting.invalidIdFields === undefined
+      setting => setting.invalidIdFields.length === 0
     )
     await logInvalidCustomSettings(invalidFetchSettings)
     const customSettingsMap = await keyByAsync(validFetchSettings, obj => apiName(obj.objectType))

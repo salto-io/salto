@@ -70,6 +70,7 @@ import {
   standardFieldsValidator,
   uniqueAutomationConditionsValidator,
   defaultAutomationRemovalValidator,
+  attachmentWithoutContentValidator,
   triggerCategoryRemovalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -153,6 +154,7 @@ export default ({
     standardFields: standardFieldsValidator,
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
+    attachmentWithoutContent: attachmentWithoutContentValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,

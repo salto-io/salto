@@ -60,10 +60,35 @@ export const getGroupItemFromRegex = (str: string, regex: RegExp, item: string):
     .filter(isDefined)
     .map(groups => groups[item])
 
+export const sliceMessagesByRegex = (
+  messages: string[],
+  lookFromRegex: RegExp,
+  includeMatchedRegex = true
+): string[] => {
+  // remove the global flag of the regex
+  const fixedLookedFromRegex = RegExp(lookFromRegex, lookFromRegex.flags.replace('g', ''))
+  const matchedMessages = messages.map(message => fixedLookedFromRegex.test(message))
+  const lookFromIndex = includeMatchedRegex
+    ? matchedMessages.indexOf(true)
+    : matchedMessages.lastIndexOf(true)
+  return lookFromIndex !== -1
+    ? messages.slice(lookFromIndex + (includeMatchedRegex ? 0 : 1))
+    : []
+}
+
 export const getConfigRecordsFieldValue = (
   configRecord: ConfigRecord | undefined,
   field: string,
 ): unknown => configRecord?.data?.fields?.[field]
+
+export const toElementError = (
+  elemID: ElemID,
+  message: string
+): SaltoElementError => ({
+  elemID,
+  message,
+  severity: 'Error',
+})
 
 export const toDependencyError = (
   dependency: { elemId: ElemID; dependOn: ElemID[] }
@@ -103,7 +128,7 @@ export const getDeployResultFromSuiteAppResult = <T extends Change>(
         appliedChanges.push(change)
         elemIdToInternalId[elemID.getFullName()] = result.toString()
       } else {
-        errors.push({ elemID, message: result.message, severity: 'Error' })
+        errors.push(toElementError(elemID, result.message))
       }
     })
 

@@ -2206,6 +2206,8 @@ describe('transformer', () => {
       NotCreatable: 'DontSendMeOnCreate',
       Updateable: 'Update',
       NotUpdateable: 'NotUpdateable',
+      // Used to validate we don't parse Elements if for some reason we reach this flow.
+      ElementField: mockTypes.User,
 
     }
     let instance: InstanceElement
@@ -2250,6 +2252,7 @@ describe('transformer', () => {
       expect(res.value.Id).toBeUndefined()
       expect(res.value.Name).toBeDefined()
       expect(res.value.LocalAddress).toBeUndefined()
+      expect(res.value.ElementField).toBeUndefined()
     })
   })
 

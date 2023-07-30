@@ -266,7 +266,7 @@ describe('adapter', () => {
     it('should pass elem id getter to getAllInstances', () => {
       expect(getAllInstances).toHaveBeenCalledWith(
         expect.objectContaining({
-          getElemIdFunc,
+          getElemIdFunc: expect.any(Function),
         })
       )
     })

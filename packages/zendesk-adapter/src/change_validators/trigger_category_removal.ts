@@ -41,7 +41,7 @@ const log = logger(module)
 export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
   => ChangeValidator = apiConfig => async (changes, elementSource) => {
     if (elementSource === undefined) {
-      log.error('Failed to run activeTriggerCategoryValidator because element source is undefined')
+      log.error('Failed to run triggerCategoryRemovalValidator because element source is undefined')
       return []
     }
 
@@ -97,7 +97,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
           getChangeData(triggerChange),
         ]
       }
-    // If this is a removal change, we do nothing because it is irrelevant
+      // If this is a removal change, we do nothing because it is irrelevant
     })
 
 

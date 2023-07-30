@@ -201,48 +201,51 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
   const attachmentChanges = changes
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
-  const attachmentsPromises = attachmentChanges
-    .map(async attachmentChange => {
-      const attachmentInstance = getChangeData(attachmentChange)
-      await createUnassociatedAttachment(client, attachmentInstance)
-      // Keeping article-attachment relation for deploy stage
-      const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
-      if (instanceBeforeResolve === undefined) {
-        log.error(`Couldn't find attachment ${attachmentInstance.elemID.name} instance.`)
-        // Deleting the newly created udpated-id attachment instance
-        await deleteArticleAttachment(client, attachmentInstance)
-        return
-      }
-      const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
-      if (parentArticleRef === undefined) {
-        log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
-        await deleteArticleAttachment(client, attachmentInstance)
-        return
-      }
-      // We can't really modify article attachments in Zendesk
-      // To do so we're going to delete the existing attachment and create a new one instead
-      if (isModificationChange(attachmentChange)) {
-        const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
-        if (articleInstance === undefined) {
-          log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
+
+  await Promise.all(
+    attachmentChanges
+      .map(async attachmentChange => {
+        const attachmentInstance = getChangeData(attachmentChange)
+        await createUnassociatedAttachment(client, attachmentInstance)
+        // Keeping article-attachment relation for deploy stage
+        const instanceBeforeResolve = await elementsSource.get(attachmentInstance.elemID)
+        if (instanceBeforeResolve === undefined) {
+          log.error(`Couldn't find attachment ${attachmentInstance.elemID.name} instance.`)
+          // Deleting the newly created udpated-id attachment instance
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
-        const res = await associateAttachments(client, articleInstance, [attachmentInstance.value.id])
-        if (!res) {
-          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} with id ${attachmentInstance.value.id} has failed `)
+        const parentArticleRef = getAttachmentArticleRef(instanceBeforeResolve)
+        if (parentArticleRef === undefined) {
+          log.error(`Couldn't find attachment ${instanceBeforeResolve.elemID.name} article parent instance.`)
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
-        await deleteArticleAttachment(client, attachmentChange.data.before)
-        return
-      }
-      const parentArticleName = parentArticleRef.elemID.name
-      articleNameToAttachments[parentArticleName] = (
-        articleNameToAttachments[parentArticleName] || []
-      ).concat(attachmentInstance.value.id)
-    })
-  await Promise.all(attachmentsPromises)
+        // We can't really modify article attachments in Zendesk
+        // To do so we're going to delete the existing attachment and create a new one instead
+        if (isModificationChange(attachmentChange)) {
+          const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
+          if (articleInstance === undefined) {
+            log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
+            await deleteArticleAttachment(client, attachmentInstance)
+            return
+          }
+          const res = await associateAttachments(client, articleInstance, [attachmentInstance.value.id])
+          if (!res) {
+            log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} with id ${attachmentInstance.value.id} has failed `)
+            await deleteArticleAttachment(client, attachmentInstance)
+            return
+          }
+          await deleteArticleAttachment(client, attachmentChange.data.before)
+          return
+        }
+        const parentArticleName = parentArticleRef.elemID.name
+        articleNameToAttachments[parentArticleName] = (
+          articleNameToAttachments[parentArticleName] || []
+        ).concat(attachmentInstance.value.id)
+      })
+  )
+
   // Article bodies needs to be updated when modifying inline attachments
   // There might be another request if the article_translation 'body' fields also changed
   // (To Do: SALTO-3076)

@@ -155,7 +155,7 @@ export default ({
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
-    triggerCategoryRemoval: triggerCategoryRemovalValidator,
+    triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

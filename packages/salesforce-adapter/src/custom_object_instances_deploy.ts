@@ -160,6 +160,7 @@ const getRecordsBySaltoIds = async (
   const fieldsToQuery = _.uniq(
     // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
     MANDATORY_FIELDS_FOR_UPDATE
+      // Some mandatory fields might not be in the type (e.g. for custom settings)
       .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
       .concat(
         (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())

@@ -244,6 +244,10 @@ export const getConfigFromConfigChanges = (
     .map(value => Math.max(value, constants.MINIMUM_MAX_ITEMS_IN_RETRIEVE_REQUEST))
     .sort((a, b) => a - b)[0]
 
+  if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
+    return undefined
+  }
+
   const currentDataManagement = currentConfig.fetch?.data
 
   const dataManagementOverrides = {
@@ -260,9 +264,6 @@ export const getConfigFromConfigChanges = (
     )
   }
 
-  if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
-    return undefined
-  }
 
   const data = currentDataManagement === undefined ? undefined : _.pickBy({
     ...currentDataManagement,

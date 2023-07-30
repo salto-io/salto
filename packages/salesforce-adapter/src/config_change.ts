@@ -27,7 +27,7 @@ import {
   SalesforceConfig,
   DataManagementConfig,
   isRetrieveSizeConfigSuggstion,
-  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams, DEPLOY_CONFIG,
+  MAX_INSTANCES_PER_TYPE, MetadataConfigSuggestion, MetadataQueryParams,
 } from './types'
 import * as constants from './constants'
 import {
@@ -260,14 +260,16 @@ export const getConfigFromConfigChanges = (
     )
   }
 
+  if ([newMetadataExclude, dataObjectsToExclude].every(_.isEmpty) && retrieveSize === undefined) {
+    return undefined
+  }
+
   const data = currentDataManagement === undefined ? undefined : _.pickBy({
     ...currentDataManagement,
     ...dataManagementOverrides,
   }, isDefined) as DataManagementConfig | undefined
 
   const maxItemsInRetrieveRequest = retrieveSize ?? currentConfig.maxItemsInRetrieveRequest
-
-  const message = getConfigChangeMessage(configChanges)
 
   return {
     config: [new InstanceElement(
@@ -290,9 +292,8 @@ export const getConfigFromConfigChanges = (
         }, isDefined),
         maxItemsInRetrieveRequest,
         client: currentConfig.client,
-        deploy: currentConfig[DEPLOY_CONFIG],
       }, isDefined)
     )],
-    message,
+    message: getConfigChangeMessage(configChanges),
   }
 }

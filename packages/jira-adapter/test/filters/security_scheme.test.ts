@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, getChangeData, InstanceElement, isReferenceExpression, ListType, ObjectType, ReferenceExpression, SeverityLevel, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -368,7 +368,7 @@ describe('securitySchemeFilter', () => {
       it('should return the error from deployWithJspEndpoints when deploying the schemes', async () => {
         deployWithJspEndpointsMock.mockResolvedValue({
           appliedChanges: [],
-          errors: [new Error('error')],
+          errors: [{ message: 'error', severity: 'Error' as SeverityLevel }],
         })
 
         const { deployResult } = await filter.deploy([
@@ -389,7 +389,7 @@ describe('securitySchemeFilter', () => {
         }))
         deployWithJspEndpointsMock.mockResolvedValueOnce({
           appliedChanges: [],
-          errors: [new Error('error')],
+          errors: [{ message: 'error', severity: 'Error' as SeverityLevel }],
         })
 
         const { deployResult } = await filter.deploy([

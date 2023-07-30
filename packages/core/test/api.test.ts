@@ -60,6 +60,15 @@ jest.mock('../src/core/restore', () => ({
       }]
       : detailedChanges
   }),
+  createRestorePathChanges: jest.fn().mockResolvedValue([{
+    action: 'add',
+    data: { after: 'value' },
+    detailedChanges: () => [{
+      action: 'add',
+      data: { after: 'value' },
+      path: ['path'],
+    }],
+  }]),
 }))
 
 jest.mock('../src/core/diff', () => ({
@@ -426,7 +435,7 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
           errors: [
-            new Error('cannot add new employee'),
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, elemID: newEmployee.elemID },
             { message: 'cannot add new employee', severity: 'Error' as SeverityLevel },
           ],
         }))
@@ -719,6 +728,20 @@ describe('api.ts', () => {
       const changes = await api.restore(ws, undefined, undefined, 'changes')
       expect(changes).toHaveLength(1)
       expect(_.keys(changes[0])).toEqual(['action', 'data', 'detailedChanges'])
+    })
+  })
+
+  describe('restorePaths', () => {
+    it('should return all changes as local changes', async () => {
+      const ws = mockWorkspace({
+        elements: [],
+        name: 'restore',
+        index: [],
+        stateElements: [],
+      })
+      const changes = await api.restorePaths(ws)
+      expect(changes).toHaveLength(1)
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
     })
   })
 

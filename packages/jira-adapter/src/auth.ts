@@ -44,3 +44,4 @@ export const basicAuthCredentialsType = createMatchingObjectType<BasicAuthCreden
 })
 
 export type Credentials = BasicAuthCredentials
+export type ScriptRunnerCredentials = Record<string, never>

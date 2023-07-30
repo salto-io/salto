@@ -49,6 +49,7 @@ import { LAYOUT_TYPE_ID } from '../../src/filters/layouts'
 import { mockValueTypeField, mockDescribeValueResult, mockFileProperties, mockSObjectField } from '../connection'
 import { allMissingSubTypes } from '../../src/transformers/salesforce_types'
 import { convertRawMissingFields } from '../../src/transformers/missing_fields'
+import { mockTypes } from '../mock_elements'
 
 const { awu } = collections.asynciterable
 
@@ -808,6 +809,13 @@ describe('transformer', () => {
       field.annotations[INTERNAL_ID_ANNOTATION] = 'internal id'
       const customField = await toCustomField(field)
       expect(customField).not.toHaveProperty(INTERNAL_ID_ANNOTATION)
+    })
+    describe('Hierarchy CustomField', () => {
+      it('should have relationshipName value but no relatesTo value', async () => {
+        const customField = await toCustomField(mockTypes.User.fields.Manager__c)
+        expect(customField.relationshipName).toEqual('Manager')
+        expect(customField.referenceTo).toBeUndefined()
+      })
     })
   })
 
@@ -2198,6 +2206,8 @@ describe('transformer', () => {
       NotCreatable: 'DontSendMeOnCreate',
       Updateable: 'Update',
       NotUpdateable: 'NotUpdateable',
+      // Used to validate we don't parse Elements if for some reason we reach this flow.
+      ElementField: mockTypes.User,
 
     }
     let instance: InstanceElement
@@ -2242,6 +2252,7 @@ describe('transformer', () => {
       expect(res.value.Id).toBeUndefined()
       expect(res.value.Name).toBeDefined()
       expect(res.value.LocalAddress).toBeUndefined()
+      expect(res.value.ElementField).toBeUndefined()
     })
   })
 
@@ -2260,69 +2271,69 @@ describe('transformer', () => {
       })
     })
     describe('with primitive field', () => {
-      it('should convert number type', async () => {
+      it('should convert number type', () => {
         expect(
-          await transformPrimitive({ value: '1', field: mockObjType.fields.num })
+          transformPrimitive({ value: '1', field: mockObjType.fields.num })
         ).toEqual(1)
       })
-      it('should convert string type', async () => {
+      it('should convert string type', () => {
         expect(
-          await transformPrimitive({ value: '1', field: mockObjType.fields.str })
+          transformPrimitive({ value: '1', field: mockObjType.fields.str })
         ).toEqual('1')
       })
-      it('should convert boolean type', async () => {
+      it('should convert boolean type', () => {
         expect(
-          await transformPrimitive({ value: 'true', field: mockObjType.fields.bool })
+          transformPrimitive({ value: 'true', field: mockObjType.fields.bool })
         ).toEqual(true)
       })
-      it('should leave unknown type as-is', async () => {
+      it('should leave unknown type as-is', () => {
         expect(
-          await transformPrimitive({ value: '1', field: mockObjType.fields.unknown })
+          transformPrimitive({ value: '1', field: mockObjType.fields.unknown })
         ).toEqual('1')
         expect(
-          await transformPrimitive({ value: 1, field: mockObjType.fields.unknown })
+          transformPrimitive({ value: 1, field: mockObjType.fields.unknown })
         ).toEqual(1)
       })
-      it('should convert values with xsi:type attribute', async () => {
+      it('should convert values with xsi:type attribute', () => {
         expect(
-          await transformPrimitive({
+          transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:boolean' } },
             field: mockObjType.fields.bool,
           })
         ).toEqual(true)
         expect(
-          await transformPrimitive({
+          transformPrimitive({
             value: { _: '12.3', $: { 'xsi:type': 'xsd:double' } },
             field: mockObjType.fields.num,
           })
         ).toEqual(12.3)
       })
-      it('should convert value by field type if xsi:type is unrecognized', async () => {
+      it('should convert value by field type if xsi:type is unrecognized', () => {
         expect(
-          await transformPrimitive({
+          transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
             field: mockObjType.fields.bool,
           })
         ).toEqual(true)
         expect(
-          await transformPrimitive({
+          transformPrimitive({
             value: { _: 'true', $: { 'xsi:type': 'xsd:unknown' } },
             field: mockObjType.fields.str,
           })
         ).toEqual('true')
       })
-      it('should omit null values', async () => {
-        expect(await transformPrimitive({
+      it('should omit null values', () => {
+        expect(transformPrimitive({
           value: { $: { 'xsi:nil': 'true' } }, field: mockObjType.fields.bool,
         })).toBeUndefined()
       })
-      it('should not transform object types', async () => {
-        expect(await transformPrimitive({
+      it('should not transform object types', () => {
+        expect(transformPrimitive({
           value: { bla: 'foo' }, field: mockObjType.fields.obj,
         })).toEqual({ bla: 'foo' })
       })
-      it('should not transform object values', async () => {
-        expect(await transformPrimitive({
+      it('should not transform object values', () => {
+        expect(transformPrimitive({
           value: { bla: 'foo' }, field: mockObjType.fields.string,
         })).toEqual({ bla: 'foo' })
       })

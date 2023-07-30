@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange } from '@salto-io/adapter-api'
+import { Element, ObjectType, ElemID, BuiltinTypes, ListType, InstanceElement, DetailedChange, isAdditionChange, isRemovalChange, isModificationChange, getChangeData } from '@salto-io/adapter-api'
 import { merger, pathIndex, remoteMap } from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { createRestoreChanges } from '../../src/core/restore'
+import { createRestoreChanges, createRestorePathChanges } from '../../src/core/restore'
 import { createElementSource } from '../common/helpers'
 import { ChangeWithDetails } from '../../src/core/plan/plan_item'
 
@@ -311,6 +311,90 @@ describe('restore', () => {
         expect(changes).toHaveLength(1)
         expect(changes[0].detailedChanges()).toHaveLength(1)
       })
+    })
+  })
+
+  describe('restorePaths', () => {
+    let type: ObjectType
+
+    beforeAll(async () => {
+      type = new ObjectType({
+        elemID: new ElemID('salto', 'type'),
+        fields: {
+          field1: { refType: BuiltinTypes.STRING },
+          field2: { refType: BuiltinTypes.STRING },
+        },
+      })
+
+      index = new remoteMap.InMemoryRemoteMap<pathIndex.Path[]>()
+      await index.set(type.elemID.getFullName(), [
+        ['salto', 'type', 'field1'],
+        ['salto', 'type', 'field2'],
+      ])
+      await index.set(type.fields.field1.elemID.getFullName(), [
+        ['salto', 'type', 'field1'],
+      ])
+      await index.set(type.fields.field2.elemID.getFullName(), [
+        ['salto', 'type', 'field2'],
+      ])
+    })
+    it('should create deletion and addition references', async () => {
+      const changes = await createRestorePathChanges(
+        [type],
+        index,
+      )
+
+      expect(changes).toHaveLength(3)
+      const [removalChange, additionChange1, additionChange2] = changes
+
+      expect(isRemovalChange(removalChange)).toBeTruthy()
+      expect(removalChange.id).toEqual(type.elemID)
+
+      expect(isAdditionChange(additionChange1)).toBeTruthy()
+      expect(additionChange1.id).toEqual(type.elemID)
+      expect(additionChange1.path).toEqual(['salto', 'type', 'field1'])
+      expect(getChangeData(additionChange1)).toHaveProperty('fields.field1')
+      expect(getChangeData(additionChange1)).not.toHaveProperty('fields.field2')
+
+      expect(isAdditionChange(additionChange2)).toBeTruthy()
+      expect(additionChange2.id).toEqual(type.elemID)
+      expect(additionChange2.path).toEqual(['salto', 'type', 'field2'])
+      expect(getChangeData(additionChange2)).toHaveProperty('fields.field2')
+      expect(getChangeData(additionChange2)).not.toHaveProperty('fields.field1')
+    })
+
+    it('should restore only the requested accounts', async () => {
+      const type2 = new ObjectType({
+        elemID: new ElemID('salto2', 'type2'),
+      })
+
+      await index.set(type2.elemID.getFullName(), [
+        ['salto2', 'type2'],
+      ])
+
+      const changes = await createRestorePathChanges(
+        [type, type2],
+        index,
+        ['salto'],
+      )
+
+      expect(changes).toHaveLength(3)
+      const [removalChange, additionChange1, additionChange2] = changes
+
+      expect(isRemovalChange(removalChange)).toBeTruthy()
+      expect(removalChange.id).toEqual(type.elemID)
+
+      expect(isAdditionChange(additionChange1)).toBeTruthy()
+      expect(additionChange1.id).toEqual(type.elemID)
+      expect(additionChange1.path).toEqual(['salto', 'type', 'field1'])
+      expect(getChangeData(additionChange1)).toHaveProperty('fields.field1')
+      expect(getChangeData(additionChange1)).not.toHaveProperty('fields.field2')
+
+      expect(isAdditionChange(additionChange2)).toBeTruthy()
+      expect(additionChange2.id).toEqual(type.elemID)
+      expect(additionChange2.path).toEqual(['salto', 'type', 'field2'])
+      expect(getChangeData(additionChange2)).toHaveProperty('fields.field2')
+      expect(getChangeData(additionChange2)).not.toHaveProperty('fields.field1')
     })
   })
 })

@@ -31,6 +31,20 @@ describe('buildDataManagement', () => {
           idFields: ['field'],
         }],
       },
+      saltoAliasSettings: {
+        overrides: [
+          // type that is not in ALIAS_FIELDS_BY_TYPE
+          {
+            objectsRegex: 'TestOverrideType',
+            aliasFields: ['TestField1', 'TestField2'],
+          },
+          // type in ALIAS_FIELDS_BY_TYPE
+          {
+            objectsRegex: 'Product2',
+            aliasFields: ['Name', 'IsActive'],
+          },
+        ],
+      },
     })
   })
 
@@ -57,5 +71,7 @@ describe('buildDataManagement', () => {
       'SBQQ__PriceRule2__c',
       'Name',
     ])
+    expect(dataManagement.getObjectAliasFields('TestOverrideType')).toEqual(['TestField1', 'TestField2'])
+    expect(dataManagement.getObjectAliasFields('Product2')).toEqual(['Name', 'IsActive'])
   })
 })

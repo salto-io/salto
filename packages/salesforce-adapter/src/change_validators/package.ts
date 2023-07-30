@@ -32,7 +32,7 @@ const createPackageElementModificationChangeWarning = (
   severity: 'Warning',
   message: 'Modification of element from managed package may not be allowed',
   detailedMessage: `Modification of element ${elemID.getFullName()} from managed package with namespace ${namespace} may not be allowed. `
-  + `For more information refer to ${annotations[CORE_ANNOTATIONS.SERVICE_URL]}. If you cannot find the information there refer to https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/packaging_packageable_components.htm`,
+  + `For more information refer to ${annotations[CORE_ANNOTATIONS.SERVICE_URL]}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8046659-modifying-an-element-from-a-managed-package-may-not-be-allowed`,
 })
 
 export const hasNamespace = async (customElement: Element): Promise<boolean> => {

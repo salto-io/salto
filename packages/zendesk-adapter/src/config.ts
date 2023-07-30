@@ -1381,7 +1381,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   macros: {
     request: {
       url: '/api/v2/macros',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
+        access: 'shared',
+      },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
@@ -2664,6 +2667,7 @@ export type ChangeValidatorName = (
   | 'childrenReferences'
   | 'orderChildrenParent'
   | 'guideOrderDeletion'
+  | 'attachmentWithoutContent'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2721,6 +2725,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     featureActivation: { refType: BuiltinTypes.BOOLEAN },
     standardFields: { refType: BuiltinTypes.BOOLEAN },
     defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
+    attachmentWithoutContent: { refType: BuiltinTypes.BOOLEAN },
     deflectionAction: { refType: BuiltinTypes.BOOLEAN },
     uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
     triggerCategoryRemoval: { refType: BuiltinTypes.BOOLEAN },

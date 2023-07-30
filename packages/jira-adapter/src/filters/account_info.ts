@@ -129,7 +129,7 @@ const getAccountInfo = async (client: JiraClient, accountInfoType: ObjectType): 
 */
 const filter: FilterCreator = ({ client }) => ({
   name: 'accountInfo',
-  onFetch: async elements => log.time(async () => {
+  onFetch: async elements => {
     const { accountInfoType, licenseType, licensedApplications } = createAccountTypes()
     try {
       elements.push(licenseType, licensedApplications, accountInfoType, await getAccountInfo(client, accountInfoType))
@@ -152,6 +152,6 @@ const filter: FilterCreator = ({ client }) => ({
       .forEach(role => {
         delete role.value.userCount
       })
-  }, 'account info filter'),
+  },
 })
 export default filter

@@ -58,7 +58,8 @@ describe('NetsuiteClient', () => {
 
       it('should try again to deploy after ObjectsDeployError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const objectsDeployError = new ObjectsDeployError('error', new Set(['failedObject']))
+        const failedObjectsMap = new Map([['failedObject', [{ message: 'error' }]]])
+        const objectsDeployError = new ObjectsDeployError('error', failedObjectsMap)
         mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
@@ -77,14 +78,14 @@ describe('NetsuiteClient', () => {
             message: objectsDeployError.message,
             severity: 'Error',
           }],
-          sdfErrors: [objectsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
       it('should fail when failed changes couldn\'t be found in ObjectsDeployError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const objectsDeployError = new ObjectsDeployError('error', new Set(['unknownObject']))
+        const failedObjectsMap = new Map([['unknownObject', [{ message: 'error' }]]])
+        const objectsDeployError = new ObjectsDeployError('error', failedObjectsMap)
         mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
@@ -99,7 +100,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: objectsDeployError.message, severity: 'Error' }],
-          sdfErrors: [objectsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -107,7 +107,8 @@ describe('NetsuiteClient', () => {
       it('should try again to deploy after SettingsDeployError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const settingsType = new ObjectType({ elemID: new ElemID(NETSUITE, 'settingsType') })
-        const settingsDeployError = new SettingsDeployError('error', new Set(['settingsType']))
+        const failedSettingsMap = new Map([['settingsType', [{ message: 'error' }]]])
+        const settingsDeployError = new SettingsDeployError('error', failedSettingsMap)
         mockSdfDeploy.mockRejectedValueOnce(settingsDeployError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
@@ -126,14 +127,14 @@ describe('NetsuiteClient', () => {
             message: settingsDeployError.message,
             severity: 'Error',
           }],
-          sdfErrors: [settingsDeployError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
       })
       it('should not try again to deploy if SettingsDeployError doesn\'t contain an actual failing change', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
-        const settingsDeployError = new SettingsDeployError('error', new Set(['settingsType']))
+        const failedSettingsMap = new Map([['settingsType', [{ message: 'error' }]]])
+        const settingsDeployError = new SettingsDeployError('error', failedSettingsMap)
         mockSdfDeploy.mockRejectedValue(settingsDeployError)
         const change = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject' }),
@@ -145,7 +146,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: settingsDeployError.message, severity: 'Error' }],
-          sdfErrors: [settingsDeployError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -154,7 +154,10 @@ describe('NetsuiteClient', () => {
       it('should try to deploy again after ManifestValidationError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'failed_scriptid' }]
+        )
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=test_scriptid]' },),
@@ -173,7 +176,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -182,7 +184,10 @@ describe('NetsuiteClient', () => {
       it('should try to deploy again after ManifestValidationError from inner NS ref', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on customworkflow1.workflowstate17.workflowaction33'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['customworkflow1.workflowstate17.workflowaction33'])
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'customworkflow1.workflowstate17.workflowaction33' }]
+        )
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=customworkflow1]' }),
@@ -201,7 +206,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -210,7 +214,10 @@ describe('NetsuiteClient', () => {
       it('should not apply any changes if failed scriptid cant be extracted from error message', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on some_id'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['some_id'])
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'some_id' }]
+        )
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
@@ -225,7 +232,6 @@ describe('NetsuiteClient', () => {
           async () => true,
         )).toEqual({
           errors: [{ message: manifestValidationError.message, severity: 'Error' }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(1)
@@ -234,7 +240,10 @@ describe('NetsuiteClient', () => {
       it('should try to deploy again after removing instance and its dependencies due to ManifestValidationError', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'failed_scriptid' }]
+        )
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
@@ -260,7 +269,6 @@ describe('NetsuiteClient', () => {
             message: `Element cannot be deployed due to an error in its dependency: ${getChangeData(failedChange).elemID.getFullName()}`,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -269,7 +277,10 @@ describe('NetsuiteClient', () => {
       it('should try to deploy again without removing dependencies when the failed changeType is modification', async () => {
         const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'type') })
         const manifestErrorMessage = 'Details: The manifest contains a dependency on failed_scriptid'
-        const manifestValidationError = new ManifestValidationError(manifestErrorMessage, ['failed_scriptid'])
+        const manifestValidationError = new ManifestValidationError(
+          manifestErrorMessage,
+          [{ message: manifestErrorMessage, scriptId: 'failed_scriptid' }]
+        )
         mockSdfDeploy.mockRejectedValueOnce(manifestValidationError)
         const successChange = toChange({
           after: new InstanceElement('instance', type, { scriptid: 'someObject', ref: '[scriptid=some_ref]' }),
@@ -292,7 +303,6 @@ describe('NetsuiteClient', () => {
             message: manifestValidationError.message,
             severity: 'Error',
           }],
-          sdfErrors: [manifestValidationError],
           appliedChanges: [successChange, failedChangeDependency],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -396,7 +406,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             { message: missingManifestFeaturesError.message, severity: 'Error' },
             { message: 'The following features are required but they are excluded: SUBSCRIPTIONBILLING.', severity: 'Error' },
           ],
-          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(2)
@@ -460,7 +469,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
           async () => true,
         )).toEqual({
           errors: [{ message: missingManifestFeaturesError.message, severity: 'Error' }],
-          sdfErrors: [missingManifestFeaturesError],
           appliedChanges: [],
         })
         expect(mockSdfDeploy).toHaveBeenCalledTimes(3)
@@ -545,7 +553,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
             async () => true,
           )).toEqual({
             errors: [],
-            sdfErrors: [],
             appliedChanges: [change],
           })
           expect(mockSdfDeploy).toHaveBeenCalledWith(
@@ -576,7 +583,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
             },
           })
-          const objectsDeployError = new ObjectsDeployError('error', new Set(['some_object']))
+          const failedObjectsMap = new Map([['some_object', [{ message: 'error' }]]])
+          const objectsDeployError = new ObjectsDeployError('error', failedObjectsMap)
           mockSdfDeploy.mockRejectedValueOnce(objectsDeployError)
           const failedChange = toChange({
             after: new InstanceElement(
@@ -602,7 +610,6 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: objectsDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [objectsDeployError],
             appliedChanges: [successTypeChange, successFieldChange],
           })
         })
@@ -647,8 +654,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: featuresDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [featuresDeployError],
             appliedChanges: [],
+            failedFeaturesIds: ['ABC'],
           })
         })
         it('should return change and error when some features deployed and some failed', async () => {
@@ -684,8 +691,8 @@ File: ~/Objects/custimport_xepi_subscriptionimport.xml`
               message: featuresDeployError.message,
               severity: 'Error',
             }],
-            sdfErrors: [featuresDeployError],
             appliedChanges: [change],
+            failedFeaturesIds: ['ABC'],
           })
         })
       })

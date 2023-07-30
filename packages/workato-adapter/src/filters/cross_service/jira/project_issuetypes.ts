@@ -27,9 +27,9 @@ const INPUT_SEPERATOR = '--'
 type JiraExportedBlock = BlockBase & {
   as: string
   provider: 'jira' | 'jira_secondary'
-  dynamicPickListSelection: {
-    project_issuetype: string
-    sample_project_issuetype?: string
+  dynamicPickListSelection?: {
+    project_issuetype: unknown
+    sample_project_issuetype?: unknown
   }
   input: {
     project_issuetype: string
@@ -46,9 +46,9 @@ const JIRA_EXPORTED_BLOCK_SCHEMA = Joi.object({
   as: Joi.string().required(),
   provider: Joi.string().valid('jira', 'jira_secondary').required(),
   dynamicPickListSelection: Joi.object({
-    project_issuetype: Joi.string().required(),
-    sample_project_issuetype: Joi.string(),
-  }).unknown(true).required(),
+    project_issuetype: Joi.any().required(),
+    sample_project_issuetype: Joi.any(),
+  }).unknown(true),
   input: Joi.object({
     project_issuetype: Joi.string().required(),
     sample_project_issuetype: Joi.string(),
@@ -63,8 +63,7 @@ const splitProjectAndIssueType = (
 ): void => {
   const projectKeyAndIssueType = value.input[argName]
   if (projectKeyAndIssueType !== undefined
-    && projectKeyAndIssueType.includes(INPUT_SEPERATOR)
-    && value.dynamicPickListSelection[argName] !== undefined) {
+    && projectKeyAndIssueType.includes(INPUT_SEPERATOR)) {
     // The project key can't contain '-' sign while issueTypeName and projectName could.
     // So we split by first '-' in input args.
     const firstValue = projectKeyAndIssueType.split(INPUT_SEPERATOR, 1)[0]
@@ -73,7 +72,10 @@ const splitProjectAndIssueType = (
     value.input[firstKey] = firstValue
     value.input[secondKey] = secondValue
     delete value.input[argName]
-    delete value.dynamicPickListSelection[argName]
+    if (value.dynamicPickListSelection !== undefined
+      && value.dynamicPickListSelection[argName] !== undefined) {
+      delete value.dynamicPickListSelection[argName]
+    }
   }
 }
 

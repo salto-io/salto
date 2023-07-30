@@ -26,6 +26,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction } from '@salto-io/test-utils'
 import Joi from 'joi'
+import wu from 'wu'
 import {
   transformValues, resolvePath, TransformFunc, restoreValues, resolveValues, resolveChangeElement,
   findElement, findElements, findObjectType, GetLookupNameFunc, safeJsonStringify,
@@ -40,6 +41,9 @@ import {
   getSubtypes,
   formatConfigSuggestionsReasons,
   isResolvedReferenceExpression,
+  FILTER_FUNC_NEXT_STEP,
+  transformValuesSync,
+  TransformFuncSync,
 } from '../src/utils'
 import { buildElementsSourceFromElements } from '../src/element_source'
 
@@ -772,6 +776,517 @@ describe('Test utils.ts', () => {
     })
   })
 
+  describe('transformValuesSync func', () => {
+    let resp: Values
+
+    const defaultFieldParent = new ObjectType({ elemID: new ElemID('') })
+
+    describe('with empty values', () => {
+      it('should return undefined', async () => {
+        expect(transformValuesSync({
+          values: {},
+          transformFunc: () => undefined,
+          type: mockType,
+        })).toBeUndefined()
+      })
+    })
+
+    describe('with empty transform func', () => {
+      let transformFunc: jest.MockedFunction<TransformFuncSync>
+
+      beforeEach(() => {
+        transformFunc = mockFunction<TransformFuncSync>().mockImplementation(({ value }) => value)
+      })
+
+      describe('when called with objectType as type parameter', () => {
+        beforeEach(async () => {
+          const result = transformValuesSync({
+            values: mockInstance.value,
+            type: mockType,
+            transformFunc,
+          })
+
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+
+        it('should preserve static files', () => {
+          expect(resp.file).toBeInstanceOf(StaticFile)
+        })
+
+        it('should call transform on top level primitive values', () => {
+          const primitiveFieldNames = ['str', 'bool', 'num']
+          primitiveFieldNames.forEach(field => {
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.value[field],
+              path: undefined,
+              field: mockType.fields[field],
+            })
+          })
+        })
+
+        it('should call transform on top level references values', () => {
+          const referenceFieldNames = ['ref']
+          referenceFieldNames.forEach(field => {
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.value[field],
+              path: undefined,
+              field: mockType.fields[field],
+            })
+          })
+        })
+
+        it('should call transform on non-list types even for list types', () => {
+          expect(isListType(mockType.fields.strArray.getTypeSync())).toBeTruthy()
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: mockInstance.value.strArray,
+            path: undefined,
+            field: new Field(
+              mockType.fields.strArray.parent,
+              mockType.fields.strArray.name,
+              (mockType.fields.strArray.getTypeSync() as ListType).getInnerTypeSync(),
+              mockType.fields.strArray.annotations,
+            ),
+          })
+        })
+
+
+        it('should call transform on map types', () => {
+          expect(isMapType(mockType.fields.strMap.getTypeSync())).toBeTruthy()
+          expect(transformFunc).toHaveBeenCalledWith({
+            value: mockInstance.value.strMap,
+            path: undefined,
+            field: new Field(
+              mockType.fields.strMap.parent,
+              mockType.fields.strMap.name,
+              mockType.fields.strMap.getTypeSync(),
+              mockType.fields.strMap.annotations,
+            ),
+          })
+        })
+
+        it('should call transform on array elements', () => {
+          const numArrayFieldType = mockType.fields.numArray.getTypeSync()
+          expect(isListType(numArrayFieldType)).toBeTruthy()
+          const numArrayValues = (mockInstance.value.numArray as string[])
+          wu(numArrayValues).forEach(
+            async value => expect(transformFunc).toHaveBeenCalledWith({
+              value,
+              path: undefined,
+              field: new Field(
+                mockType.fields.numArray.parent,
+                mockType.fields.numArray.name,
+                await (numArrayFieldType as ListType).getInnerType(),
+                mockType.fields.numArray.annotations,
+              ),
+            })
+          )
+        })
+
+        it('should call transform on map value elements', () => {
+          const numMapFieldType = mockType.fields.numMap.getTypeSync()
+          expect(isMapType(numMapFieldType)).toBeTruthy()
+          const numMapValues = (mockInstance.value.numMap as Map<string, number>)
+          wu(Object.entries(numMapValues)).forEach(
+            async ([key, value]) => {
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === key
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].value).toEqual(value)
+              expect(calls[0].path).toBeUndefined()
+              expect(await calls[0].field?.getType()).toEqual(BuiltinTypes.NUMBER)
+              expect(calls[0].field?.parent.elemID).toEqual(mockType.fields.numMap.refType.elemID)
+            }
+          )
+        })
+
+        it('should call transform on primitive types in nested objects', () => {
+          const getField = async (
+            type: ObjectType | ContainerType,
+            path: (string | number)[],
+            value: Values,
+          ): Promise<Field> => {
+            if (isListType(type)) {
+              if (typeof path[0] !== 'number') {
+                throw new Error(`type ${type.elemID.getFullName()} is a list type but path part ${path[0]} is not a number`)
+              }
+              return getField(
+                (await type.getInnerType() as ObjectType | ContainerType),
+                path.slice(1),
+                value[path[0]],
+              )
+            }
+            const field = isMapType(type)
+              ? new Field(toObjectType(type, value), String(path[0]), await type.getInnerType())
+              : type.fields[path[0]]
+            return path.length === 1 ? field
+              : getField(
+                await field.getType() as ObjectType | ContainerType, path.slice(1), value[path[0]]
+              )
+          }
+          const nestedPrimitivePaths = [
+            ['obj', 0, 'field'],
+            ['obj', 1, 'field'],
+            ['obj', 2, 'field'],
+            ['obj', 0, 'innerObj', 'name'],
+            ['obj', 0, 'innerObj', 'magical', 'deepName'],
+            ['obj', 0, 'mapOfStringList'],
+            ['obj', 0, 'mapOfStringList', 'l1'],
+            ['obj', 1, 'mapOfStringList', 'something'],
+          ]
+          wu(nestedPrimitivePaths).forEach(
+            async path => {
+              const field = await getField(mockType, path, mockInstance.value)
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                  && c.value === _.get(mockInstance.value, path)
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(calls[0].field?.getTypeSync()).toEqual(field.getTypeSync())
+              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+            }
+          )
+        })
+
+        it('should omit undefined fields in object', () => {
+          expect(resp).not.toHaveProperty('notExist')
+          expect(resp).not.toHaveProperty('notExistArray')
+        })
+
+        it('should omit undefined fields in nested objects', () => {
+          const { magical } = resp?.obj[1]?.innerObj
+          expect(magical).toBeDefined()
+          expect(magical).not.toHaveProperty('notExist2')
+        })
+
+        it('should keep all defined field values', () => {
+          Object.keys(mockType.fields)
+            .filter(key => !['obj', 'emptyStr', 'emptyArray'].includes(key))
+            .forEach(key => {
+              expect(resp[key]).toEqual(mockInstance.value[key])
+            })
+        })
+
+        it('should keep all nested defined fields values', () => {
+          expect(resp.obj[0]).toEqual(mockInstance.value.obj[0])
+        })
+      })
+
+      describe('when called with instance annotations', () => {
+        beforeEach(async () => {
+          const result = transformValuesSync({
+            values: mockInstance.annotations,
+            type: InstanceAnnotationTypes,
+            transformFunc,
+          })
+          expect(result).toEqual(mockInstance.annotations)
+        })
+
+
+        it('should call transform on instance annotation references values', () => {
+          const referenceAnnotationNames = [CORE_ANNOTATIONS.DEPENDS_ON]
+          referenceAnnotationNames.forEach(annotation => {
+            expect(transformFunc).toHaveBeenCalledWith({
+              value: mockInstance.annotations[annotation],
+              path: undefined,
+              field: new Field(defaultFieldParent, annotation, InstanceAnnotationTypes[annotation]),
+            })
+          })
+        })
+      })
+
+      describe('when called with type map', () => {
+        let origValue: Values
+        let typeMap: TypeMap
+        beforeEach(async () => {
+          origValue = {
+            str: 'asd',
+            num: '10',
+            bool: 'true',
+            nums: ['1', '2'],
+            numMap: { one: 1, two: 2 },
+            notExist: 'a',
+          }
+          typeMap = {
+            str: BuiltinTypes.STRING,
+            num: BuiltinTypes.NUMBER,
+            bool: BuiltinTypes.BOOLEAN,
+            nums: new ListType(BuiltinTypes.NUMBER),
+            numMap: new MapType(BuiltinTypes.NUMBER),
+          }
+          const result = transformValuesSync({
+            values: origValue,
+            type: typeMap,
+            transformFunc,
+          })
+
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+        it('should call transform func on all defined types', () => {
+          const primitiveTypes = ['str', 'num', 'bool']
+          primitiveTypes.forEach(
+            name => expect(transformFunc).toHaveBeenCalledWith({
+              value: origValue[name],
+              path: undefined,
+              field: new Field(defaultFieldParent, name, typeMap[name]),
+            })
+          )
+          origValue.nums.forEach(
+            (value: string) => expect(transformFunc).toHaveBeenCalledWith({
+              value,
+              path: undefined,
+              field: new Field(defaultFieldParent, 'nums', BuiltinTypes.NUMBER),
+            })
+          )
+          wu(Object.entries(origValue.numMap)).forEach(
+            async ([key, value]) => {
+              const field = new Field(
+                toObjectType(new MapType(BuiltinTypes.NUMBER), origValue.numMap),
+                key,
+                BuiltinTypes.NUMBER,
+              )
+              const calls = transformFunc.mock.calls.map(c => c[0]).filter(
+                c => c.field && c.field.name === field.name
+                  && c.value === value
+              )
+              expect(calls).toHaveLength(1)
+              expect(calls[0].path).toBeUndefined()
+              expect(await calls[0].field?.getType()).toEqual(await field.getType())
+              expect(calls[0].field?.parent.elemID).toEqual(field.parent.elemID)
+            }
+          )
+        })
+        it('should omit undefined fields values', () => {
+          expect(resp).not.toHaveProperty('notExist')
+        })
+        it('should keep all defined fields values', () => {
+          expect(origValue).toMatchObject(resp)
+        })
+      })
+
+      describe('when called with value as top level', () => {
+        let refResult: Values | undefined
+        let staticFileResult: Values | undefined
+        let varResult: Values | undefined
+        beforeEach(async () => {
+          refResult = transformValuesSync({
+            values: new ReferenceExpression(mockInstance.elemID),
+            type: mockType,
+            transformFunc,
+          })
+          staticFileResult = transformValuesSync({
+            values: new StaticFile({ content: Buffer.from('asd'), filepath: 'a' }),
+            type: mockType,
+            transformFunc,
+          })
+          varResult = transformValuesSync({
+            values: new VariableExpression(
+              new ElemID(ElemID.VARIABLES_NAMESPACE, 'myVar', 'var')
+            ),
+            type: mockType,
+            transformFunc,
+          })
+        })
+        it('should keep the value type', () => {
+          expect(refResult).toBeInstanceOf(ReferenceExpression)
+          expect(staticFileResult).toBeInstanceOf(StaticFile)
+          expect(varResult).toBeInstanceOf(VariableExpression)
+        })
+      })
+    })
+    const MAGIC_VAL = 'magix'
+    const MOD_MAGIC_VAL = 'BIRD'
+    const transformTest: TransformFuncSync = ({ value, field }) => {
+      if (value === MAGIC_VAL) {
+        return MOD_MAGIC_VAL
+      }
+      if (isReferenceExpression(value)) {
+        return value.value
+      }
+      const fieldType = field?.getTypeSync()
+      if (!isPrimitiveType(fieldType) || !isPrimitiveValue(value)) {
+        return value
+      }
+      switch (fieldType.primitive) {
+        case PrimitiveTypes.NUMBER:
+          return Number(value)
+        case PrimitiveTypes.BOOLEAN:
+          return value.toString().toLowerCase() === 'true'
+        case PrimitiveTypes.STRING:
+          return value.toString().length === 0 ? undefined : value.toString()
+        default:
+          return value
+      }
+    }
+
+    describe('when transformPrimitives and transformReference was received', () => {
+      describe('when called with instance values', () => {
+        beforeEach(() => {
+          const result = transformValuesSync({
+            values: mockInstance.value,
+            type: mockType,
+            transformFunc: transformTest,
+          })
+          expect(result).toBeDefined()
+          resp = result as Values
+        })
+
+        it('should transform primitive types', () => {
+          expect(resp.str).toEqual('val')
+          expect(resp.bool).toEqual(true)
+          expect(resp.num).toEqual(99)
+        })
+
+        it('should transform reference types', () => {
+          expect(resp.ref).toEqual('regValue')
+        })
+
+        it('should transform inner object', () => {
+          expect(resp.obj[0].innerObj.magical.deepNumber).toEqual(888)
+        })
+      })
+    })
+
+    describe('when strict is false', () => {
+      const unTypedValues = {
+        unTypedArr: [MAGIC_VAL],
+        unTypedObj: {
+          key: MAGIC_VAL,
+        },
+      }
+      beforeEach(() => {
+        const result = transformValuesSync(
+          {
+            values: {
+              ...mockInstance.value,
+              ...unTypedValues,
+            },
+            type: mockType,
+            transformFunc: transformTest,
+            strict: false,
+          }
+        )
+        expect(result).toBeDefined()
+        resp = result as Values
+      })
+
+      it('should transform primitive types', () => {
+        expect(resp.emptyStr).toBeUndefined()
+        expect(resp.bool).toEqual(true)
+        expect(resp.num).toEqual(99)
+        expect(resp.notExist).toEqual('notExist')
+      })
+
+      it('should transform inner object', () => {
+        expect(resp.obj[0]).not.toEqual(mockInstance.value.obj[0])
+        expect(resp.obj[1].innerObj.magical.deepNumber).toBeUndefined()
+        expect(resp.obj[1].innerObj.magical.notExist2).toEqual('false')
+        expect(resp.obj[2]).not.toEqual(mockInstance.value.obj[2])
+      })
+
+      it('should not change non primitive values in primitive fields', () => {
+        expect(resp.obj[0].value).toEqual(mockInstance.value.obj[0].value)
+      })
+
+      it('should tranfsorm nested arrays which do not have a field', () => {
+        expect(resp.unTypedArr[0]).toEqual(MOD_MAGIC_VAL)
+      })
+
+      it('should tranfsorm nested objects which do not have a field', () => {
+        expect(resp.unTypedObj.key).toEqual(MOD_MAGIC_VAL)
+      })
+    })
+
+    describe('when called with pathID', () => {
+      const paths = new Set<string>()
+      const createPathsSet: TransformFuncSync = ({ value, field, path }) => {
+        if (value && field && path) {
+          paths.add(path.getFullName())
+        }
+        return value
+      }
+
+      beforeAll(() => {
+        transformValuesSync(
+          {
+            values: mockInstance.value,
+            type: mockType,
+            transformFunc: createPathsSet,
+            pathID: mockInstance.elemID,
+          }
+        )
+      })
+
+      it('should traverse list items with correct path ID', () => {
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'field').getFullName())
+      })
+
+      it('should traverse map items with correct path ID', () => {
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList').getFullName())
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1').getFullName())
+        expect(paths)
+          .toContain(mockInstance.elemID.createNestedID('obj', '0', 'mapOfStringList', 'l1', '0').getFullName())
+      })
+    })
+
+    describe('when called with array', () => {
+      beforeEach(async () => {
+        const result = transformValuesSync({
+          values: [{ key: 1 }, { key: 2 }, { key: 3 }],
+          type: new ListType(
+            new ObjectType({
+              elemID: mockElem,
+              fields: { key: { refType: BuiltinTypes.NUMBER } },
+            })
+          ),
+          transformFunc: ({ value, path }) => (
+            _.isPlainObject(value) || _.isArray(value) ? value : `${path?.getFullName()}:${value}`
+          ),
+          pathID: mockElem.createNestedID('instance', 'list'),
+          strict: true,
+        })
+        expect(result).toBeDefined()
+        resp = result as Values
+      })
+      it('should return array with transformed values', () => {
+        expect(resp).toEqual([
+          { key: 'mockAdapter.test.instance.list.0.key:1' },
+          { key: 'mockAdapter.test.instance.list.1.key:2' },
+          { key: 'mockAdapter.test.instance.list.2.key:3' },
+        ])
+      })
+    })
+
+    describe('with allowEmpty', () => {
+      it('should not remove empty list', async () => {
+        const result = transformValuesSync({
+          values: [],
+          type: new ListType(BuiltinTypes.NUMBER),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual([])
+      })
+
+      it('should not remove empty object', async () => {
+        const result = transformValuesSync({
+          values: {},
+          type: new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+          transformFunc: ({ value }) => value,
+          allowEmpty: true,
+        })
+
+        expect(result).toEqual({})
+      })
+    })
+  })
   describe('transformElement', () => {
     let primType: PrimitiveType
     let listType: ListType
@@ -1814,6 +2329,7 @@ describe('Test utils.ts', () => {
       },
       primitive: PrimitiveTypes.STRING,
     })
+
     it('should filter object type', async () => {
       const expectEqualFields = (actual: FieldMap | undefined, expected: FieldMap): void => {
         expect(actual).toBeDefined()
@@ -1826,7 +2342,7 @@ describe('Test utils.ts', () => {
       const onlyFields = await filterByID(
         objElemID,
         obj,
-        async id => id.idType === 'type' || id.idType === 'field'
+        async id => (id.idType === 'type' || id.idType === 'field' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(onlyFields).toBeDefined()
       expectEqualFields(onlyFields?.fields, obj.fields)
@@ -1835,7 +2351,7 @@ describe('Test utils.ts', () => {
       const onlyAnno = await filterByID(
         objElemID,
         obj,
-        async id => id.idType === 'type' || id.idType === 'attr'
+        async id => (id.idType === 'type' || id.idType === 'attr' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(onlyAnno).toBeDefined()
       expect(onlyAnno?.fields).toEqual({})
@@ -1845,7 +2361,7 @@ describe('Test utils.ts', () => {
       const onlyAnnoType = await filterByID(
         objElemID,
         obj,
-        async id => id.idType === 'type' || id.idType === 'annotation'
+        async id => (id.idType === 'type' || id.idType === 'annotation' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(onlyAnnoType).toBeDefined()
       expect(onlyAnnoType?.fields).toEqual({})
@@ -1855,7 +2371,7 @@ describe('Test utils.ts', () => {
       const withoutAnnoObjStr = await filterByID(
         objElemID,
         obj,
-        async id => !id.getFullNameParts().includes('str')
+        async id => (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(withoutAnnoObjStr).toBeDefined()
       expectEqualFields(withoutAnnoObjStr?.fields, obj.fields)
@@ -1867,7 +2383,7 @@ describe('Test utils.ts', () => {
       const withoutFieldAnnotations = await filterByID(
         objElemID,
         obj,
-        async id => id.getFullName() !== 'salto.obj.field.obj.label'
+        async id => (id.getFullName() !== 'salto.obj.field.obj.label' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
 
       expect(withoutFieldAnnotations).toBeDefined()
@@ -1879,8 +2395,8 @@ describe('Test utils.ts', () => {
         objElemID,
         obj,
         async id => (
-          Number.isNaN(Number(_.last(id.getFullNameParts())))
-          || Number(_.last(id.getFullNameParts())) === 0
+          (Number.isNaN(Number(_.last(id.getFullNameParts()))) || Number(_.last(id.getFullNameParts())) === 0
+            ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
         )
       )
       expect(onlyI).toBeDefined()
@@ -1894,7 +2410,7 @@ describe('Test utils.ts', () => {
       const filteredPrim = await filterByID(
         prim.elemID,
         prim,
-        async id => !id.getFullNameParts().includes('str')
+        async id => (!id.getFullNameParts().includes('str') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(filteredPrim?.annotations.obj).toEqual({ num: 17 })
       expect(filteredPrim?.annotationRefTypes).toEqual({ obj: createRefToElmWithValue(annoType) })
@@ -1904,7 +2420,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        async id => !id.getFullNameParts().includes('list')
+        async id => (!id.getFullNameParts().includes('list') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(filteredInstance?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
       expect(filteredInstance?.annotations).toEqual(inst.annotations)
@@ -1922,7 +2438,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         instance.elemID,
         instance,
-        async () => true
+        async () => FILTER_FUNC_NEXT_STEP.RECURSE
       )
       expect(filteredInstance?.value).toEqual({ emptyList: [], emptyObj: {} })
     })
@@ -1931,7 +2447,7 @@ describe('Test utils.ts', () => {
       const filteredInstance = await filterByID(
         inst.elemID,
         inst,
-        async id => id.idType !== 'instance'
+        async id => (id.idType !== 'instance' ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(filteredInstance).toBeUndefined()
     })
@@ -1940,34 +2456,47 @@ describe('Test utils.ts', () => {
       const withoutList = await filterByID(
         inst.elemID,
         inst,
-        async id => Number.isNaN(Number(_.last(id.getFullNameParts())))
+        async id => (Number.isNaN(Number(_.last(id.getFullNameParts())))
+          ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(withoutList?.value).toEqual({ obj: inst.value.obj, map: inst.value.map })
 
       const withoutObj = await filterByID(
         inst.elemID,
         inst,
-        async id => !id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num')
+        async id => (!id.getFullNameParts().includes('str') && !id.getFullNameParts().includes('num') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE)
       )
       expect(withoutObj?.value).toEqual({ list: inst.value.list, map: inst.value.map })
 
       const withoutMap = await filterByID(
         inst.elemID,
         inst,
-        async id => !id.getFullNameParts().includes('Do'),
+        async id => (!id.getFullNameParts().includes('Do') ? FILTER_FUNC_NEXT_STEP.RECURSE : FILTER_FUNC_NEXT_STEP.EXCLUDE),
       )
       expect(withoutMap?.value).toEqual({ obj: inst.value.obj, list: inst.value.list })
     })
-
-    it('should not call filter function with invalid attr ID', async () => {
-      const filterFunc = jest.fn().mockResolvedValue(true)
-      await filterByID(
-        obj.elemID,
-        obj,
-        filterFunc
+    it('should include value that filterFunc returns INCLUDE for without recursing', async () => {
+      const includedID = inst.elemID.createNestedID('obj')
+      const filterFunc = jest.fn().mockImplementation(
+        async (id: ElemID): Promise<FILTER_FUNC_NEXT_STEP> => {
+          if (id.isParentOf(includedID)) {
+            return FILTER_FUNC_NEXT_STEP.RECURSE
+          }
+          if (id.isEqual(includedID)) {
+            return FILTER_FUNC_NEXT_STEP.INCLUDE
+          }
+          return FILTER_FUNC_NEXT_STEP.EXCLUDE
+        }
       )
-
-      expect(filterFunc).not.toHaveBeenCalledWith(obj.elemID.createNestedID('attr'))
+      const filteredInstance = await filterByID(
+        inst.elemID,
+        inst,
+        filterFunc,
+      )
+      expect(filteredInstance?.value).toEqual({ obj: inst.value.obj })
+      Object.keys(inst.value.obj).forEach(key => {
+        expect(filterFunc).not.toHaveBeenCalledWith(includedID.createNestedID(key))
+      })
     })
   })
   describe('Flat Values', () => {

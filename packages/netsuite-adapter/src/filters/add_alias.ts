@@ -16,12 +16,13 @@
 import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, Element, InstanceElement, ReadOnlyElementsSource, isInstanceElement, isObjectType, isReferenceExpression } from '@salto-io/adapter-api'
-import { addAliasToElements, AliasData as GenericAliasData, AliasComponent } from '@salto-io/adapter-components'
+import { addAliasToElements, AliasData as GenericAliasData, AliasComponent, ConstantComponent } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { LocalFilterCreator } from '../filter'
-import { APPLICATION_ID, CUSTOM_RECORD_TYPE, FILE_CABINET_PATH_SEPARATOR, IS_SUB_INSTANCE, PATH, TRANSLATION_COLLECTION } from '../constants'
-import { getElementValueOrAnnotations, isCustomRecordType, isFileCabinetType } from '../types'
+import { APPLICATION_ID, BUNDLE, CUSTOM_RECORD_TYPE, FILE_CABINET_PATH_SEPARATOR, IS_SUB_INSTANCE, PATH, TRANSLATION_COLLECTION } from '../constants'
+import { SuiteAppConfigTypeName, getElementValueOrAnnotations, isCustomRecordType, isFileCabinetType } from '../types'
+import { ConfigurationTypeName } from '../types/configuration_types'
 import { StandardType } from '../autogen/types'
 import { SupportedDataType, isItemType } from '../data_elements/types'
 
@@ -36,6 +37,7 @@ const DEFAULT_TRANSLATION = 'defaulttranslation'
 type ElementsMap = Parameters<typeof addAliasToElements>['0']['elementsMap']
 type AliasDataWithSingleComponent = GenericAliasData<[AliasComponent]>
 type AliasDataWithMultipleComponents = GenericAliasData<AliasComponent[]>
+type SettingsAliasData = GenericAliasData<[ConstantComponent]>
 
 const toAliasDataWithMultipleComponents = (...parts: string[]): AliasDataWithMultipleComponents => ({
   aliasComponents: parts.map(name => ({
@@ -45,6 +47,10 @@ const toAliasDataWithMultipleComponents = (...parts: string[]): AliasDataWithMul
 
 const toAliasDataWithSingleComponent = (fieldName: string): AliasDataWithSingleComponent => ({
   aliasComponents: [{ fieldName }],
+})
+
+const toSettingsAliasData = (constant: string): SettingsAliasData => ({
+  aliasComponents: [{ constant }],
 })
 
 const labelAlias = toAliasDataWithSingleComponent('label')
@@ -180,6 +186,15 @@ const [itemTypes, otherDataTypes] = _.partition(Object.keys(dataTypesAliasMap), 
 const entityIdFallbackAliasMap = Object.fromEntries(otherDataTypes.map(type => [type, entityIdAlias]))
 const itemTypesFallbackAliasMap = Object.fromEntries(itemTypes.map(type => [type, itemIdAlias]))
 
+type SettingsTypeName = SuiteAppConfigTypeName | ConfigurationTypeName
+const settingsAliasMap: Record<SettingsTypeName, SettingsAliasData> = {
+  companyFeatures: toSettingsAliasData('Company Features'),
+  userPreferences: toSettingsAliasData('User Preferences'),
+  companyInformation: toSettingsAliasData('Company Information'),
+  companyPreferences: toSettingsAliasData('Company Preferences'),
+  accountingPreferences: toSettingsAliasData('Accounting Preferences'),
+}
+
 const splitInstancesToGroups = async (instances: InstanceElement[]): Promise<{
   fileCabinetInstances: InstanceElement[]
   customRecordInstances: InstanceElement[]
@@ -309,6 +324,8 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource, isPartial }
       aliasMap: {
         ...standardTypesAliasMap,
         ...dataTypesAliasMap,
+        ...settingsAliasMap,
+        [BUNDLE]: nameAlias,
         [IS_SUB_INSTANCE]: nameAlias,
         [CUSTOM_RECORD_INSTANCES]: nameAlias,
       },

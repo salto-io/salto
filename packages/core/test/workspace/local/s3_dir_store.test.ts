@@ -189,6 +189,24 @@ describe('buildS3DirectoryStore', () => {
         Body: Buffer.from('aaa'),
       })
     })
+
+    it('should write the file only once', async () => {
+      await directoryStore.set({ filename: 'a/b', buffer: Buffer.from('aaa') })
+
+      expect(putObjectMock).not.toHaveBeenCalled()
+
+      await directoryStore.flush()
+
+      expect(putObjectMock).toHaveBeenCalledWith({
+        Bucket: bucketName,
+        Key: 'baseDir/a/b',
+        Body: Buffer.from('aaa'),
+      })
+
+      await directoryStore.flush()
+
+      expect(putObjectMock).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('getFullPath', () => {

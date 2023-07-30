@@ -56,6 +56,15 @@ describe('Custom Object Instances CRUD', () => {
           [constants.API_NAME]: 'Id',
         },
       },
+      [OWNER_ID]: {
+        refType: BuiltinTypes.STRING,
+        annotations: {
+          [constants.FIELD_ANNOTATIONS.CREATABLE]: true,
+          [constants.FIELD_ANNOTATIONS.UPDATEABLE]: true,
+          [constants.FIELD_ANNOTATIONS.QUERYABLE]: true,
+          [constants.API_NAME]: OWNER_ID,
+        },
+      },
       SaltoName: {
         refType: BuiltinTypes.STRING,
         annotations: {
@@ -364,7 +373,7 @@ describe('Custom Object Instances CRUD', () => {
       })
       it('Should query according to instance values', () => {
         expect(mockQuery.mock.calls).toHaveLength(1)
-        expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,OwnerId,Name FROM Type WHERE Name IN (\'TestName1\',\'TestName2\')')
+        expect(mockQuery.mock.calls[0][0]).toEqual('SELECT Id,Name FROM Type WHERE Name IN (\'TestName1\',\'TestName2\')')
       })
 
       it('Should call load operation twice - once with insert once with update', () => {

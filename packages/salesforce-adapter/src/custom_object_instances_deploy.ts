@@ -159,9 +159,11 @@ const getRecordsBySaltoIds = async (
 
   const fieldsToQuery = _.uniq(
     // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
-    MANDATORY_FIELDS_FOR_UPDATE.concat(
-      (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
-    )
+    MANDATORY_FIELDS_FOR_UPDATE
+      .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+      .concat(
+        (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
+      )
   )
   const queries = await buildSelectQueries(
     await apiName(type),
@@ -382,7 +384,7 @@ const deployAddInstances = async (
   existingInstances.forEach(instance => {
     const salesforceRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
     MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
-      if (instance.value[mandatoryField] === undefined) {
+      if (instance.value[mandatoryField] === undefined && salesforceRecordLookup[mandatoryField] !== undefined) {
         instance.value[mandatoryField] = salesforceRecordLookup[mandatoryField]
       }
     })

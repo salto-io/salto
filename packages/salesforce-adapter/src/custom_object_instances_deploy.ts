@@ -383,10 +383,10 @@ const deployAddInstances = async (
     client.dataRetry.maxAttempts
   )
   existingInstances.forEach(instance => {
-    const salesforceRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
+    const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
     MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
-      if (instance.value[mandatoryField] === undefined && salesforceRecordLookup[mandatoryField] !== undefined) {
-        instance.value[mandatoryField] = salesforceRecordLookup[mandatoryField]
+      if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
+        instance.value[mandatoryField] = existingRecordLookup[mandatoryField]
       }
     })
   })

@@ -41,7 +41,6 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
     projects: ['projectId.elemID.name', 'projectTypeKey'],
   },
   [WORKFLOW_TYPE_NAME]: {
-    transitions: ['name'],
     statuses: ['id.elemID.name'],
   },
   [NOTIFICATION_EVENT_TYPE_NAME]: {

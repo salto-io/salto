@@ -29,7 +29,7 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(isWorkflowInstance)
       .forEach(instance => {
-        instance.value.transitions?.forEach(transition => {
+        Object.values(instance.value.transitions).forEach(transition => {
           // We don't need to id after this filter since
           // in modification we remove and create a new workflow
           delete transition.id

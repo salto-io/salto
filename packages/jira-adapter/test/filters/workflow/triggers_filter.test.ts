@@ -63,9 +63,9 @@ describe('triggersFilter', () => {
         {
           name: 'name',
           transitionIds: { '4-5-transition1': '1' },
-          transitions: [
-            { id: '1', name: 'transition1', from: ['4', '5'] },
-          ],
+          transitions: {
+            tran1: { id: '1', name: 'transition1', from: ['4', '5'] },
+          },
         },
       )
 
@@ -91,7 +91,7 @@ describe('triggersFilter', () => {
           headers: PRIVATE_API_HEADERS,
         }
       )
-      expect(instance.value.transitions[0].rules.triggers).toEqual([
+      expect(instance.value.transitions.tran1.rules.triggers).toEqual([
         {
           key: 'key',
           configuration: {},
@@ -106,9 +106,9 @@ describe('triggersFilter', () => {
         {
           name: 'name',
           transitionIds: { '4-5-transition1': '1' },
-          transitions: [
-            { id: '1', name: 'transition1', from: ['4', '5'] },
-          ],
+          transitions: {
+            tran1: { id: '1', name: 'transition1', from: ['4', '5'] },
+          },
         },
       )
 

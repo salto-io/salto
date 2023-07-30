@@ -34,8 +34,9 @@ describe('empty validator workflow', () => {
       'instance',
       workflowType,
       {
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             rules: {
               validators: [
                 {
@@ -53,7 +54,7 @@ describe('empty validator workflow', () => {
               ],
             },
           },
-        ],
+        },
       },
     )
 
@@ -69,7 +70,7 @@ describe('empty validator workflow', () => {
   describe('preDeploy', () => {
     it('should remove empty validators from workflow transitions but keep add on ones', async () => {
       await filter.preDeploy(changes)
-      expect(getChangeData(changes[0]).value.transitions[0].rules.validators).toEqual([
+      expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
         {
           type: 'FieldChangedValidator',
           configuration: {
@@ -83,8 +84,8 @@ describe('empty validator workflow', () => {
     })
 
     it('should not change valid validators', async () => {
-      workflowInstance.value.transitions[0].rules.validators.pop()
-      expect(getChangeData(changes[0]).value.transitions[0].rules.validators).toEqual([
+      workflowInstance.value.transitions.tran1.rules.validators.pop()
+      expect(getChangeData(changes[0]).value.transitions.tran1.rules.validators).toEqual([
         {
           type: 'FieldChangedValidator',
           configuration: {

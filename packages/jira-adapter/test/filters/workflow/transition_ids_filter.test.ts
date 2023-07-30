@@ -42,20 +42,20 @@ describe('transitionIdsFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            { id: '1', name: 'transition1', from: ['4', '5'] },
-            { id: '2', name: 'transition2' },
-            { id: '3', from: ['7', '6'] },
-          ],
+          transitions: {
+            tran1: { id: '1', name: 'transition1', from: ['4', '5'] },
+            tran2: { id: '2', name: 'transition2' },
+            tran3: { name: 'tran3', id: '3', from: ['7', '6'] },
+          },
         },
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
-        transitions: [
-          { name: 'transition1', from: ['4', '5'] },
-          { name: 'transition2' },
-          { from: ['7', '6'] },
-        ],
+        transitions: {
+          tran1: { name: 'transition1', from: ['4', '5'] },
+          tran2: { name: 'transition2' },
+          tran3: { name: 'tran3', from: ['7', '6'] },
+        },
       })
     })
 

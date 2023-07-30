@@ -45,8 +45,8 @@ export const INITIAL_VALIDATOR = {
  * not create an additional one if one validator like that already appears in the nacl.
  */
 const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
-  instance.value.transitions
-    ?.filter(transition => transition.type === 'initial')
+  Object.values(instance.value.transitions)
+    .filter(transition => transition.type === 'initial')
     .forEach(transition => {
       const createIssuePermissionValidatorIndex = _.findLastIndex(
         transition.rules?.validators ?? [],
@@ -78,6 +78,10 @@ const changeIdsToString = (
   })
 }
 
+const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
+  workflowInstance.value.transitions = Object.values(workflowInstance.value.transitions)
+}
+
 export const deployWorkflow = async (
   change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
@@ -92,18 +96,19 @@ export const deployWorkflow = async (
   }
   const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
-  instance.value.transitions.forEach(transition => {
+  Object.values(instance.value.transitions).forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
 
   fixGroupNames(instance)
-  const resolvedChangeWithoutDiagram = _.cloneDeep(resolvedChange)
-  const instanceWithoutDiagram = getChangeData(resolvedChangeWithoutDiagram)
+  const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
+  const deployInstance = getChangeData(resolvedChangeForDeployment)
   if (!isRemovalChange(resolvedChange)) {
-    removeWorkflowDiagramFields(instanceWithoutDiagram)
+    removeWorkflowDiagramFields(deployInstance)
+    workflowTransitionsToList(deployInstance)
   }
   await defaultDeployChange({
-    change: resolvedChangeWithoutDiagram,
+    change: resolvedChangeForDeployment,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
@@ -111,7 +116,7 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-  instance.value.entityId = instanceWithoutDiagram.value.entityId
+  instance.value.entityId = deployInstance.value.entityId
   if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
     try {
       await deployWorkflowDiagram({ instance, client })

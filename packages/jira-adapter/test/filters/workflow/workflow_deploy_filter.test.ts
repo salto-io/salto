@@ -85,6 +85,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     validators: [
@@ -125,8 +126,9 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
                 rules: {
                   conditions: {
@@ -144,7 +146,7 @@ describe('workflowDeployFilter', () => {
                   },
                 },
               },
-            ],
+            },
           },
         ),
       })
@@ -160,6 +162,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     conditions: {
@@ -209,7 +212,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [],
+            transitions: {},
           }
         ),
       })
@@ -241,11 +244,12 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
               },
-            ],
+            },
           }
         ),
       })
@@ -261,6 +265,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                 },
               ],
@@ -447,6 +452,7 @@ describe('workflowDeployFilter', () => {
     })
     describe('workflow diagrams', () => {
       let instance: InstanceElement
+      const TRANSITION_KEY_3 = 'hey__From__Open__Directed@fffsff'
       beforeEach(() => {
         instance = new InstanceElement(
           'instance',
@@ -507,13 +513,13 @@ describe('workflowDeployFilter', () => {
               x: -15.85,
               y: 109.40,
             },
-            transitions: [
-              {
+            transitions: {
+              'Building__From__any_status__Global@fffssff': {
                 name: 'Building',
                 to: '400',
                 type: 'global',
               },
-              {
+              'Create__From__none__Initial@fffsff': {
                 name: 'Create',
                 to: '1',
                 type: 'initial',
@@ -524,7 +530,7 @@ describe('workflowDeployFilter', () => {
                   },
                 ],
               },
-              {
+              [TRANSITION_KEY_3]: {
                 name: 'hey',
                 to: '5',
                 type: 'directed',
@@ -536,7 +542,7 @@ describe('workflowDeployFilter', () => {
                   },
                 ],
               },
-              {
+              'super__From__the_best_name__Directed@fffsssff': {
                 name: 'super',
                 from: [
                   {
@@ -548,7 +554,7 @@ describe('workflowDeployFilter', () => {
                 to: '400',
                 type: 'directed',
               },
-              {
+              'yey__From__Resolved__Directed@fffsff': {
                 name: 'yey',
                 from: [
                   {
@@ -560,7 +566,7 @@ describe('workflowDeployFilter', () => {
                 to: '10007',
                 type: 'directed',
               },
-              {
+              'with_from_a_string__From__Resolved__Directed@sssfffssff': {
                 name: 'with from as string',
                 from: [
                   '5',
@@ -568,13 +574,13 @@ describe('workflowDeployFilter', () => {
                 to: '10007',
                 type: 'directed',
               },
-              {
+              'looped__From__any_status__Circular@fffssff': {
                 name: 'looped',
                 from: [],
                 to: '',
                 type: 'global',
               },
-            ],
+            },
           }
         )
         mockConnection.post.mockResolvedValue({
@@ -793,7 +799,7 @@ describe('workflowDeployFilter', () => {
           responseType: undefined },)
       })
       it('should log error when transition from id is undefined', async () => {
-        instance.value.transitions[2].from[0].id = undefined
+        instance.value.transitions[TRANSITION_KEY_3].from[0].id = undefined
         await filter.deploy([toChange(
           { after: instance }
         )])
@@ -819,7 +825,7 @@ describe('workflowDeployFilter', () => {
         expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Status The best name Diagram values')
       })
       it('should work ok with partial transition from values', async () => {
-        instance.value.transitions[2].from[0].targetAngle = undefined
+        instance.value.transitions[TRANSITION_KEY_3].from[0].targetAngle = undefined
         await filter.deploy([toChange(
           { after: instance }
         )])

@@ -1076,6 +1076,25 @@ public class MyClass${index} {
       })
     })
 
+    describe('when there is an empty id in retrieve response', () => {
+      it('should not have an id field after retrieve', async () => {
+        mockMetadataType(
+          { xmlName: 'Account' },
+          { valueTypeFields: [] },
+          [
+            {
+              props: { fullName: 'Account', id: '' },
+              values: { fullName: 'Account' },
+            },
+          ]
+        )
+        const { elements: result } = await adapter.fetch(mockFetchOpts)
+        const [testObject] = findElements(result, 'Account', 'Account') as [InstanceElement]
+        expect(testObject).toBeDefined()
+        expect(testObject.value.internalId).toBeUndefined()
+      })
+    })
+
     it('should not fail the fetch on instances too large', async () => {
       mockMetadataType(
         { xmlName: 'ApexClass', metaFile: true, suffix: 'cls', directoryName: 'classes' },

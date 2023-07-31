@@ -16,7 +16,7 @@
 import _ from 'lodash'
 import { Element, FetchResult, AdapterOperations, DeployResult, InstanceElement, TypeMap, isObjectType, FetchOptions, DeployOptions, Change, isInstanceChange, ElemIdGetter, ReadOnlyElementsSource, ProgressReporter } from '@salto-io/adapter-api'
 import { config as configUtils, elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
-import { applyFunctionToChangeData, logDuration } from '@salto-io/adapter-utils'
+import { applyFunctionToChangeData, getElemIdFuncWrapper, logDuration } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { objects } from '@salto-io/lowerdash'
 import JiraClient from './client/client'
@@ -298,6 +298,7 @@ export default class JiraAdapter implements AdapterOperations {
   private userConfig: JiraConfig
   private paginator: clientUtils.Paginator
   private getElemIdFunc?: ElemIdGetter
+  private logIdsFunc?: () => void
   private fetchQuery: elementUtils.query.ElementQuery
   private getUserMapFunc: GetUserMapFunc
 
@@ -309,8 +310,10 @@ export default class JiraAdapter implements AdapterOperations {
     config,
     elementsSource,
   }: JiraAdapterParams) {
+    const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
-    this.getElemIdFunc = getElemIdFunc
+    this.getElemIdFunc = wrapper?.getElemIdFunc
+    this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.scriptRunnerClient = scriptRunnerClient
     const paginator = createPaginator({
@@ -335,7 +338,7 @@ export default class JiraAdapter implements AdapterOperations {
           client,
           paginator,
           config,
-          getElemIdFunc,
+          getElemIdFunc: this.getElemIdFunc,
           elementsSource,
           fetchQuery: this.fetchQuery,
           adapterContext: filterContext,
@@ -470,7 +473,9 @@ export default class JiraAdapter implements AdapterOperations {
       Object.values(swaggers),
       this.userConfig.apiDefinitions,
     )
-
+    if (this.logIdsFunc !== undefined) {
+      this.logIdsFunc()
+    }
     return { elements, errors: (errors ?? []).concat(filterResult.errors ?? []) }
   }
 

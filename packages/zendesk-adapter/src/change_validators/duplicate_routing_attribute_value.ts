@@ -69,7 +69,7 @@ export const duplicateRoutingAttributeValueValidator: ChangeValidator = async (c
     const nameAndParent = getNameAndParent(instance)
     const duplicatedValues = _.isEmpty(nameAndParent)
       ? []
-      // Ignore the instance we are checking itself
+      // Ignore the instance we are checking
       : valueNameAndParentToInstance[nameAndParent]
         .filter(value => value.elemID.getFullName() !== instance.elemID.getFullName())
 

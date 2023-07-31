@@ -368,15 +368,32 @@ export const loadWorkspace = async (
     mergedRecoveryMode
   )
   let workspaceState: Promise<WorkspaceState> | undefined
-  const buildWorkspaceState = async ({
-    workspaceChanges = {},
-    stateOnlyChanges = {},
-    validate = true,
-  }: {
-    workspaceChanges?: Record<string, ChangeSet<Change>>
+
+  type BuildWorkspaceStateArgs = {
+    workspaceFileSource: MultiEnvSource
+    workspaceChanges?: never
     stateOnlyChanges?: Record<string, ChangeSet<Change>>
     validate?: boolean
-  }): Promise<WorkspaceState> => {
+  } | {
+    workspaceFileSource?: never
+    workspaceChanges: Record<string, ChangeSet<Change>>
+    stateOnlyChanges?: Record<string, ChangeSet<Change>>
+    validate?: boolean
+  }
+
+  const buildWorkspaceState = async ({
+    workspaceFileSource,
+    workspaceChanges,
+    stateOnlyChanges = {},
+    validate = true,
+  }: BuildWorkspaceStateArgs): Promise<WorkspaceState> => {
+    let wsChanges: Record<string, ChangeSet<Change>>
+    if (workspaceChanges !== undefined) {
+      wsChanges = workspaceChanges
+    } else if (workspaceFileSource !== undefined) {
+      wsChanges = await workspaceFileSource.load({ ignoreFileChanges })
+    }
+
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
@@ -572,7 +589,7 @@ export const loadWorkspace = async (
           : []
         log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(workspaceChanges[envName]?.changes ?? [])
+        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
           .filter(async change => (
             isRemovalChange(change)
             && getChangeData(change).elemID.isTopLevel()
@@ -616,7 +633,7 @@ export const loadWorkspace = async (
       }
 
       const workspaceChangedElements = Object.fromEntries(
-        await awu(workspaceChanges[envName]?.changes ?? [])
+        await awu(wsChanges[envName]?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
@@ -652,7 +669,7 @@ export const loadWorkspace = async (
       }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: workspaceChanges[envName],
+        src1Changes: wsChanges[envName],
         src2Changes: await completeStateOnlyChanges(
           stateOnlyChanges[envName]
           ?? createEmptyChangeSet(
@@ -763,14 +780,7 @@ export const loadWorkspace = async (
     const wsConfig = await config.getWorkspaceConfig()
     if (_.isUndefined(workspaceState)) {
       log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
-      const workspaceChanges = await naclFilesSource.load({ ignoreFileChanges })
-      // it's possible that during the 'await' in the line above somebody initialized the workspace state. So we check
-      // again before calling `buildWorkspaceState`
-      if (_.isUndefined(workspaceState)) {
-        workspaceState = buildWorkspaceState({
-          workspaceChanges,
-        })
-      }
+      workspaceState = buildWorkspaceState({ workspaceFileSource: naclFilesSource })
     }
     return workspaceState
   }

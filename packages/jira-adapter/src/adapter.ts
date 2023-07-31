@@ -181,7 +181,6 @@ export const DEFAULT_FILTERS = [
   avatarsFilter,
   iconUrlFilter,
   triggersFilter,
-  transitionIdsFilter,
   resolutionPropertyFilter,
   scriptRunnerWorkflowFilter,
   // must run after scriptRunnerWorkflowFilter
@@ -190,6 +189,7 @@ export const DEFAULT_FILTERS = [
   scriptRunnerWorkflowReferencesFilter,
   scriptRunnerTemplateExpressionFilter,
   scriptRunnerEmptyAccountIdsFilter,
+  transitionIdsFilter,
   workflowPropertiesFilter,
   workflowDeployFilter,
   workflowModificationFilter,

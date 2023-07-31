@@ -18,7 +18,7 @@ import { walkOnValue, WalkOnFunc, WALK_NEXT_STEP } from '@salto-io/adapter-utils
 import { InstanceElement, Value } from '@salto-io/adapter-api'
 import { SCRIPT_RUNNER_DC_TYPES } from './workflow_dc'
 import { SCRIPT_RUNNER_CLOUD_TYPES } from './workflow_cloud'
-import { Transition, isWorkflowInstance } from '../../workflow/types'
+import { isWorkflowInstance } from '../../workflow/types'
 
 
 const SCRIPT_DC_FIELDS = ['FIELD_CONDITION', 'FIELD_ADDITIONAL_SCRIPT', 'FIELD_SCRIPT_FILE_OR_SCRIPT']
@@ -71,9 +71,9 @@ export const walkOnScripts = (
   instances
     .filter(isWorkflowInstance)
     .forEach(instance => {
-      instance.value.transitions.forEach((transition: Transition, index: number) => {
+      Object.entries(instance.value.transitions).forEach(([key, transition]) => {
         if (transition.rules !== undefined) {
-          walkOnValue({ elemId: instance.elemID.createNestedID('transitions', index.toString(), 'rules'),
+          walkOnValue({ elemId: instance.elemID.createNestedID('transitions', key, 'rules'),
             value: transition.rules,
             func: isDc
               ? walkOnDcScripts(func)

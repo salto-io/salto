@@ -56,8 +56,9 @@ describe('workflowGroupsFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 conditions: {
                   type: 'UserInGroupCondition',
@@ -67,7 +68,8 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-            {
+            tran2: {
+              name: 'tran2',
               rules: {
                 conditions: {
                   type: 'UserInAnyGroupCondition',
@@ -77,13 +79,13 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-          ],
+          },
         }
       )
       await filter.onFetch([workflow, group])
-      expect(workflow.value.transitions[0].rules.conditions.configuration.group.elemID)
+      expect(workflow.value.transitions.tran1.rules.conditions.configuration.group.elemID)
         .toEqual(group.elemID.createNestedID('name'))
-      expect(workflow.value.transitions[1].rules.conditions.configuration.groups[0].elemID)
+      expect(workflow.value.transitions.tran2.rules.conditions.configuration.groups[0].elemID)
         .toEqual(group.elemID.createNestedID('name'))
     })
 
@@ -92,8 +94,9 @@ describe('workflowGroupsFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 conditions: {
                   type: 'UserInGroupCondition',
@@ -103,7 +106,8 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-            {
+            tran2: {
+              name: 'tran2',
               rules: {
                 conditions: {
                   type: 'UserInAnyGroupCondition',
@@ -113,13 +117,13 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-          ],
+          },
         }
       )
       await filter.onFetch([workflow])
-      expect(workflow.value.transitions[0].rules.conditions.configuration.group)
+      expect(workflow.value.transitions.tran1.rules.conditions.configuration.group)
         .toBe('abc')
-      expect(workflow.value.transitions[1].rules.conditions.configuration.groups[0])
+      expect(workflow.value.transitions.tran2.rules.conditions.configuration.groups[0])
         .toBe('abc')
     })
 
@@ -128,8 +132,9 @@ describe('workflowGroupsFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            tran1: {
+              name: 'tran1',
               rules: {
                 conditions: {
                   type: 'UserInGroupCondition',
@@ -138,7 +143,8 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-            {
+            tran2: {
+              name: 'tran2',
               rules: {
                 conditions: {
                   type: 'UserInAnyGroupCondition',
@@ -147,13 +153,13 @@ describe('workflowGroupsFilter', () => {
                 },
               },
             },
-          ],
+          },
         }
       )
       await filter.onFetch([workflow])
-      expect(workflow.value.transitions[0].rules.conditions.configuration.group)
+      expect(workflow.value.transitions.tran1.rules.conditions.configuration.group)
         .toBeUndefined()
-      expect(workflow.value.transitions[1].rules.conditions.configuration.groups)
+      expect(workflow.value.transitions.tran2.rules.conditions.configuration.groups)
         .toBeUndefined()
     })
   })

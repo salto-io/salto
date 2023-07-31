@@ -13,10 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { getChangeData, InstanceElement, isAdditionOrModificationChange } from '@salto-io/adapter-api'
+import { getChangeData, isAdditionOrModificationChange, Value } from '@salto-io/adapter-api'
 import { CONFIGURATION_VALIDATOR_TYPE } from '../../change_validators/workflows/empty_validator_workflow'
 import { FilterCreator } from '../../filter'
-import { getWorkflowChanges } from './types'
+import { getWorkflowChanges, WorkflowInstance } from './types'
 
 type TransitionValidator = {
     type: string
@@ -25,21 +25,20 @@ type TransitionValidator = {
     }
 }
 
-const removeValidatorsWithoutConfiguration = (instance: InstanceElement): void => {
-  for (const transition of instance.value.transitions) {
-    if (transition.rules !== undefined && transition.rules.validators !== undefined) {
+const removeValidatorsWithoutConfiguration = (instance: WorkflowInstance): void => {
+  Object.values(instance.value.transitions)
+    .filter((transition: Value) => transition.rules?.validators !== undefined)
+    .forEach((transition: Value) => {
       transition.rules.validators = transition.rules.validators.filter(
         (validator: TransitionValidator) => 'configuration' in validator || !CONFIGURATION_VALIDATOR_TYPE.has(validator.type)
       )
-    }
-  }
+    })
 }
 
 const filter: FilterCreator = () => ({
   name: 'emptyValidatorWorkflowFilter',
   preDeploy: async changes => {
-    const relevantChanges = getWorkflowChanges(changes)
-    relevantChanges
+    getWorkflowChanges(changes)
       .filter(isAdditionOrModificationChange)
       .map(getChangeData)
       .forEach(removeValidatorsWithoutConfiguration)

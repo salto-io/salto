@@ -75,16 +75,16 @@ export class MissingManifestFeaturesError extends Error {
 
 export const getFailedObjects = (
   messages: string[],
-  regex: RegExp,
-): MessageAndScriptId[] => messages
-  .flatMap(message => getGroupItemFromRegex(message, regex, OBJECT_ID)
+  ...regexes: RegExp[]
+): MessageAndScriptId[] => messages.flatMap(message =>
+  regexes.flatMap(regex => getGroupItemFromRegex(message, regex, OBJECT_ID))
     .map(scriptId => ({ scriptId, message })))
 
 export const getFailedObjectsMap = (
   messages: string[],
-  regex: RegExp,
+  ...regexes: RegExp[]
 ): Map<string, MessageAndScriptId[]> => new Map(Object.entries(
-  _.groupBy(getFailedObjects(messages, regex), obj => obj.scriptId)
+  _.groupBy(getFailedObjects(messages, ...regexes), obj => obj.scriptId)
 ))
 
 export const toFeaturesDeployPartialSuccessResult = (

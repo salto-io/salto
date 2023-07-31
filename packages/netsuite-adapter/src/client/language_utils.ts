@@ -28,8 +28,8 @@ type SupportedLanguage = 'english' | 'french'
 type ErrorDetectors = {
   deployStartMessageRegex: RegExp
   settingsValidationErrorRegex: RegExp
-  objectValidationErrorRegex: RegExp
-  missingFeatureErrorRegex: RegExp[]
+  objectValidationErrorRegexes: RegExp[]
+  missingFeatureErrorRegexes: RegExp[]
   deployedObjectRegex: RegExp
   errorObjectRegex: RegExp
   manifestErrorDetailsRegex: RegExp
@@ -41,8 +41,12 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
   english: {
     deployStartMessageRegex: RegExp('^Begin deployment$', 'm'),
     settingsValidationErrorRegex: RegExp('^Validation of account settings failed\\.$', 'm'),
-    objectValidationErrorRegex: RegExp(`^(An error occurred during custom object validation\\.|An error occured during validation of Custom Objects against the account) \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
-    missingFeatureErrorRegex: [
+    objectValidationErrorRegexes: [
+      RegExp(`^An error occurred during custom object validation\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
+      RegExp(`^An error occured during validation of Custom Objects against the account \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
+      RegExp(`^Details: The object (?<${OBJECT_ID}>[a-z0-9_]+) cannot be deployed because it is locked.`, 'gm'),
+    ],
+    missingFeatureErrorRegexes: [
       RegExp(`Details: You must specify the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature in the project manifest`, 'gm'),
       RegExp(`Details: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
       RegExp(`Details: The following features must be specified in the manifest to use the .*: (?<${FEATURE_NAME}>\\w+)`, 'gm'),
@@ -57,8 +61,12 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
   french: {
     deployStartMessageRegex: RegExp('^Commencer le d.ploiement$', 'm'),
     settingsValidationErrorRegex: RegExp('^La validation des param.tres du compte a .chou.\\.$', 'm'),
-    objectValidationErrorRegex: RegExp(`^(Une erreur s'est produite lors de la validation de l'objet personnalis.\\.|An error occured during validation of Custom Objects against the account) \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
-    missingFeatureErrorRegex: [
+    objectValidationErrorRegexes: [
+      RegExp(`^Une erreur s'est produite lors de la validation de l'objet personnalis.\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
+      RegExp(`^An error occured during validation of Custom Objects against the account \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
+      RegExp(`^Details: The object (?<${OBJECT_ID}>[a-z0-9_]+) cannot be deployed because it is locked.`, 'gm'),
+    ],
+    missingFeatureErrorRegexes: [
       RegExp(`D.tails: Vous devez sp.cifier la fonctionnalit. (?<${FEATURE_NAME}>\\w+)\\(.*?\\) dans le manifeste du projet`, 'gm'),
       RegExp(`D.tails: When the SuiteCloud project contains a \\w+, the manifest must define the (?<${FEATURE_NAME}>\\w+) feature`, 'gm'),
       RegExp(`D.tails: The following features must be specified in the manifest to use the .*: (?<${FEATURE_NAME}>\\w+)`, 'gm'),

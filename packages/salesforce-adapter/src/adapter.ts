@@ -86,6 +86,7 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
+import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
@@ -190,6 +191,7 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
+  { creator: metadataInstancesAliasesFilter },
 ]
 
 // By default we run all filters and provide a client

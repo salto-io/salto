@@ -18,29 +18,36 @@ import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReferenceExpress
 import { JIRA } from '../../../src/constants'
 import { customFieldsWith10KOptionValidator } from '../../../src/change_validators/field_contexts/custom_field_with_10K_options'
 
-const generateOptions = (count: number): Values =>
-  Array.from({ length: count }, (_, i) => ({
-    [`p${i}`]: {
-      value: `p${i}`,
+const generateOptions = (count: number): Values => {
+  const options: { [key: string]: { value: string; disabled: boolean; position: number } } = {}
+  Array.from({ length: count }, (_, i) => i).forEach(i => {
+    const key = `p${i}`
+    options[key] = {
+      value: key,
       disabled: false,
       position: i,
-    },
-  })).reduce((acc, option) => ({ ...acc, ...option }), {})
+    }
+  })
+  return options
+}
 
-// Set long timeout as we create instance with more than 10K options
-jest.setTimeout(1000 * 60 * 5)
 describe('customFieldsWith10KOptionValidator', () => {
-  const parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
-  const contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
-    id: 3,
-    options: [],
-  },
-  undefined,
-  {
-    [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+  let parentField: InstanceElement
+  let contextInstance: InstanceElement
+  const tenKOptions = generateOptions(10010)
+  beforeEach(() => {
+    parentField = new InstanceElement('parentField', new ObjectType({ elemID: new ElemID(JIRA, 'Field') }), { id: 2 })
+    contextInstance = new InstanceElement('context', new ObjectType({ elemID: new ElemID(JIRA, 'CustomFieldContext') }), {
+      id: 3,
+      options: [],
+    },
+    undefined,
+    {
+      [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(parentField.elemID, parentField)],
+    })
   })
   it('should return info message when context has more than 10K options', async () => {
-    const largeOptionsObject = generateOptions(10001)
+    const largeOptionsObject = tenKOptions
     const contextInstanceAfter = contextInstance.clone()
     contextInstanceAfter.value.options = largeOptionsObject
     const changes = [toChange({ after: contextInstanceAfter })]
@@ -50,7 +57,42 @@ describe('customFieldsWith10KOptionValidator', () => {
       elemID: contextInstance.elemID,
       severity: 'Info',
       message: 'Slow deployment due to field with more than 10K options',
-      detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with the context ${contextInstance.elemID.name} which has more than 10K options.`,
+      detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
+    }])
+  })
+  it('should not return info message when context has less than 10K options', async () => {
+    const smallOptionsObject = generateOptions(100)
+    const contextInstanceAfter = contextInstance.clone()
+    contextInstanceAfter.value.options = smallOptionsObject
+    const changes = [toChange({ after: contextInstanceAfter })]
+    const changeErrors = await customFieldsWith10KOptionValidator(changes)
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('handle multy changes', async () => {
+    const largeOptionsObject = tenKOptions
+    const contextInstanceAfterOne = contextInstance.clone()
+    const contextInstanceAfterTwo = contextInstance.clone()
+    contextInstanceAfterOne.value.options = largeOptionsObject
+    contextInstanceAfterTwo.value.options = largeOptionsObject
+    const smallContextInstanceAfter = contextInstance.clone()
+    smallContextInstanceAfter.value.options = generateOptions(10)
+    const changes = [
+      toChange({ after: contextInstanceAfterOne }),
+      toChange({ after: contextInstanceAfterTwo }),
+    ]
+    const changeErrors = await customFieldsWith10KOptionValidator(changes)
+    expect(changeErrors).toHaveLength(2)
+    expect(changeErrors).toEqual([{
+      elemID: contextInstance.elemID,
+      severity: 'Info',
+      message: 'Slow deployment due to field with more than 10K options',
+      detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
+    },
+    {
+      elemID: contextInstance.elemID,
+      severity: 'Info',
+      message: 'Slow deployment due to field with more than 10K options',
+      detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
     }])
   })
 })

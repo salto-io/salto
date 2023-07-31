@@ -108,7 +108,7 @@ export default (
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
-    customFieldsWith10KOption: customFieldsWith10KOptionValidator,
+    customFieldsWith10KOptions: customFieldsWith10KOptionValidator,
   }
 
   return createChangeValidator({

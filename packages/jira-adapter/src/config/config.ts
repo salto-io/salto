@@ -223,7 +223,7 @@ export type ChangeValidatorName = (
   | 'permissionSchemeDeployment'
   | 'projectCategory'
   | 'unresolvedFieldConfigurationItems'
-  | 'customFieldsWith10KOption'
+  | 'customFieldsWith10KOptions'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -270,7 +270,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
     unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
-    customFieldsWith10KOption: { refType: BuiltinTypes.BOOLEAN },
+    customFieldsWith10KOptions: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

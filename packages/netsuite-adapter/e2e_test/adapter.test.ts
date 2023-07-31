@@ -30,7 +30,7 @@ import each from 'jest-each'
 import NetsuiteAdapter from '../src/adapter'
 import { configType } from '../src/config'
 import { credsLease, realAdapter } from './adapter'
-import { getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList } from '../src/types'
+import { getElementValueOrAnnotations, getMetadataTypes, isCustomRecordType, isSDFConfigTypeName, metadataTypesToList, netsuiteSupportedTypes } from '../src/types'
 import { adapter as adapterCreator } from '../src/adapter_creator'
 import {
   CUSTOM_RECORD_TYPE, EMAIL_TEMPLATE, ENTITY_CUSTOM_FIELD,
@@ -136,6 +136,9 @@ describe('Netsuite adapter E2E with real account', () => {
 
     const randomNumber = String(Date.now()).substring(6)
     const randomString = `created by oss e2e - ${randomNumber}`
+
+    additionalTypes[FOLDER].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'Folder' })
+    additionalTypes[FILE].annotate({ [CORE_ANNOTATIONS.ALIAS]: 'File' })
 
     const entityCustomFieldToCreate = createInstanceElement(
       ENTITY_CUSTOM_FIELD,
@@ -627,7 +630,10 @@ describe('Netsuite adapter E2E with real account', () => {
 
       it('should add alias to elements', async () => {
         const relevantElements = fetchResult.elements
-          .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
+          .filter(element => isInstanceElement(element)
+            || (isObjectType(element) && (
+              isCustomRecordType(element) || netsuiteSupportedTypes.includes(element.elemID.name)
+            )))
 
         const elementsWithoutAlias = relevantElements
           .filter(element => element.annotations[CORE_ANNOTATIONS.ALIAS] === undefined)

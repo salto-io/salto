@@ -67,8 +67,8 @@ describe('triggerCategoryRemovalValidator', () => {
     expect(changeErrors).toMatchObject([{
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Error',
-      message: 'Removal of trigger category with active triggers',
-      detailedMessage: 'Trigger category is used by the following active triggers: [activeTrigger], please deactivate or remove them before removing the trigger category',
+      message: 'Cannot remove a trigger category with active triggers',
+      detailedMessage: 'Trigger category is used by the following active triggers: [activeTrigger], please deactivate or remove them before removing this category',
     }])
   })
 
@@ -80,7 +80,7 @@ describe('triggerCategoryRemovalValidator', () => {
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category with inactive triggers',
-      detailedMessage: 'Trigger category is used by the following inactive triggers: [inactiveTrigger], and they will be automatically removed with the removal of this trigger category',
+      detailedMessage: 'Trigger category is used by the following inactive triggers: [inactiveTrigger], and they will be automatically removed with the removal of this category',
     }])
   })
 
@@ -93,7 +93,7 @@ describe('triggerCategoryRemovalValidator', () => {
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category',
-      detailedMessage: 'Any inactive triggers of this trigger category will be automatically removed with the removal of this trigger category',
+      detailedMessage: 'Any inactive triggers of this category will be automatically removed',
     }])
   })
 
@@ -107,7 +107,7 @@ describe('triggerCategoryRemovalValidator', () => {
       elemID: triggerCategoryWithTriggers.elemID,
       severity: 'Warning',
       message: 'Removal of trigger category',
-      detailedMessage: 'Any inactive triggers of this trigger category will be automatically removed with the removal of this trigger category',
+      detailedMessage: 'Any inactive triggers of this category will be automatically removed',
     }])
   })
 

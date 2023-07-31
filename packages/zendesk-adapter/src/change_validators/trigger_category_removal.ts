@@ -84,8 +84,8 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       return triggerCategoryActiveTriggers.length > 0 ? {
         elemID: removedTriggerCategory.elemID,
         severity: 'Error',
-        message: 'Removal of trigger category with active triggers',
-        detailedMessage: `Trigger category is used by the following active triggers: [${triggerCategoryActiveTriggers.join(', ')}], please deactivate or remove them before removing the trigger category`
+        message: 'Cannot remove a trigger category with active triggers',
+        detailedMessage: `Trigger category is used by the following active triggers: [${triggerCategoryActiveTriggers.join(', ')}], please deactivate or remove them before removing this category`
         ,
       } : undefined
     })
@@ -101,7 +101,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
           elemID: removedTriggerCategory.elemID,
           severity: 'Warning',
           message: 'Removal of trigger category',
-          detailedMessage: 'Any inactive triggers of this trigger category will be automatically removed with the removal of this trigger category',
+          detailedMessage: 'Any inactive triggers of this category will be automatically removed',
         }
       }
 
@@ -113,7 +113,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
         elemID: removedTriggerCategory.elemID,
         severity: 'Warning',
         message: 'Removal of trigger category with inactive triggers',
-        detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be automatically removed with the removal of this trigger category`,
+        detailedMessage: `Trigger category is used by the following inactive triggers: [${triggerCategoryInactiveTriggers.join(', ')}], and they will be automatically removed with the removal of this category`,
       } : undefined
     })
 

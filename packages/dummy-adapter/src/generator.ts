@@ -571,7 +571,7 @@ export const generateElements = async (
       ),
       [DUMMY_ADAPTER, 'Records', instanceType.elemID.name, name]
     )
-    record.annotations[CORE_ANNOTATIONS.ALIAS] = `${instanceType.elemID.name}_alias`
+    record.annotations[CORE_ANNOTATIONS.ALIAS] = `${name}_alias`
     if (randomGen() < defaultParams.parentFreq) {
       record.annotations[CORE_ANNOTATIONS.PARENT] = new ReferenceExpression(
         chooseObjIgnoreRank().elemID

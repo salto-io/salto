@@ -34,8 +34,9 @@ const { awu } = collections.asynciterable
 const log = logger(module)
 
 /**
- * Prevents removal of a trigger category that is used by an active automation
- * Warns about removal of a trigger category that is used by an inactive automation
+ * Prevents removal of a trigger category that is used by an active trigger
+ * Warns about removal of a trigger category that is used by an inactive trigger
+ * Warns about removal of a trigger category if omitInactive is true for triggers
  */
 export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
   => ChangeValidator = apiConfig => async (changes, elementSource) => {

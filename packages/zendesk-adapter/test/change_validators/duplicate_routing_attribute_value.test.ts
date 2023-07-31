@@ -52,17 +52,29 @@ describe('routingAttributeValueNameValidator', () => {
   it('should error on creation of a new routing attribute value with the same name and parent', async () => {
     const attributeValue1 = createAttributeValueInstance('attributeValue1', 'name', routingAttribute1)
     const attributeValue2 = createAttributeValueInstance('attributeValue2', 'name', routingAttribute1)
+    const attributeValue3 = createAttributeValueInstance('attributeValue3', 'name', routingAttribute1)
 
-    const elementSource = createInMemoryElementSource([attributeValue1, attributeValue2])
-    const changes = [toChange({ after: attributeValue1 })]
+    const elementSource = createInMemoryElementSource([attributeValue1, attributeValue2, attributeValue3])
+    const changes = [
+      toChange({ after: attributeValue1 }),
+      toChange({ after: attributeValue2 }),
+    ]
 
     const changeErrors = await duplicateRoutingAttributeValueValidator(changes, elementSource)
-    expect(changeErrors).toMatchObject([{
-      elemID: attributeValue1.elemID,
-      severity: 'Error',
-      message: 'Duplicate routing attribute value',
-      detailedMessage: `This routing attribute value has the same name and is under the same routing attribute as '${attributeValue2.elemID.getFullName()}'`,
-    }])
+    expect(changeErrors).toMatchObject([
+      {
+        elemID: attributeValue1.elemID,
+        severity: 'Error',
+        message: 'Duplicate routing attribute value',
+        detailedMessage: `This routing attribute value has the same name and is under the same routing attribute as '${attributeValue2.elemID.getFullName()}, ${attributeValue3.elemID.getFullName()}'`,
+      },
+      {
+        elemID: attributeValue2.elemID,
+        severity: 'Error',
+        message: 'Duplicate routing attribute value',
+        detailedMessage: `This routing attribute value has the same name and is under the same routing attribute as '${attributeValue1.elemID.getFullName()}, ${attributeValue3.elemID.getFullName()}'`,
+      },
+    ])
   })
 
   it('should not error on creation of a new routing attribute value with a different name but same parent', async () => {

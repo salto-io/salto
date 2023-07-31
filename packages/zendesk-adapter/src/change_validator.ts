@@ -69,7 +69,9 @@ import {
   deflectionActionValidator,
   standardFieldsValidator,
   uniqueAutomationConditionsValidator,
-  defaultAutomationRemovalValidator, attachmentWithoutContentValidator,
+  defaultAutomationRemovalValidator,
+  attachmentWithoutContentValidator,
+  duplicateRoutingAttributeValueValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -153,6 +155,7 @@ export default ({
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
+    duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

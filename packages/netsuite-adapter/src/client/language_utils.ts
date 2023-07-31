@@ -34,7 +34,7 @@ type ErrorDetectors = {
   errorObjectRegex: RegExp
   manifestErrorDetailsRegex: RegExp
   configureFeatureFailRegex: RegExp
-  validationFailed: RegExp
+  otherErrorRegexes: RegExp[]
 }
 
 export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetectors> = {
@@ -55,7 +55,9 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
     manifestErrorDetailsRegex: RegExp(`Details: The manifest contains a dependency on (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm'),
     configureFeatureFailRegex: RegExp(`Configure feature -- (Enabling|Disabling) of the (?<${FEATURE_NAME}>\\w+)\\(.*?\\) feature has FAILED`),
-    validationFailed: RegExp('^Validation failed\\.$', 'm'),
+    otherErrorRegexes: [
+      RegExp('An error occurred during account settings validation.'),
+    ],
   },
   // NOTE: all non-english letters are replaced with a dot
   french: {
@@ -76,7 +78,9 @@ export const multiLanguageErrorDetectors: Record<SupportedLanguage, ErrorDetecto
     errorObjectRegex: RegExp(`^An unexpected error has occurred\\. \\((?<${OBJECT_ID}>[a-z0-9_]+)\\)`, 'gm'),
     manifestErrorDetailsRegex: RegExp(`D.tails: Le manifeste comporte une d.pendance sur l'objet (?<${OBJECT_ID}>[a-z0-9_]+(\\.[a-z0-9_]+)*)`, 'gm'),
     configureFeatureFailRegex: RegExp(`Configurer la fonction -- (L'activation|La d.sactivation) de la fonction (?<${FEATURE_NAME}>\\w+)\\(.*?\\) a .chou.`),
-    validationFailed: RegExp('^La validation a .chou.\\.$', 'm'),
+    otherErrorRegexes: [
+      RegExp('An error occurred during account settings validation.'),
+    ],
   },
 }
 

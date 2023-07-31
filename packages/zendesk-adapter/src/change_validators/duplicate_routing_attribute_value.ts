@@ -56,28 +56,29 @@ export const duplicateRoutingAttributeValueValidator: ChangeValidator = async (c
     return []
   }
 
-  const addedRoutingAttributeValues = new Set<string>(
-    routingAttributeValueAdditions.map(instance => instance.elemID.getFullName())
-  )
   const routingAttributeValues = await awu(await elementSource.list())
     .filter(id => id.typeName === ROUTING_ATTRIBUTE_VALUE_TYPE_NAME)
     .filter(id => id.idType === 'instance')
     .map(id => elementSource.get(id))
     .filter(isInstanceElement)
-    .filter(instance => !addedRoutingAttributeValues.has(instance.elemID.getFullName()))
     .toArray()
 
   const valueNameAndParentToInstance = _.groupBy(routingAttributeValues, instance => getNameAndParent(instance))
 
   return routingAttributeValueAdditions.map((instance): ChangeError | undefined => {
     const nameAndParent = getNameAndParent(instance)
+    const duplicatedValues = _.isEmpty(nameAndParent)
+      ? []
+      // Ignore the instance we are checking itself
+      : valueNameAndParentToInstance[nameAndParent]
+        .filter(value => value.elemID.getFullName() !== instance.elemID.getFullName())
 
-    return !_.isEmpty(nameAndParent) && valueNameAndParentToInstance[nameAndParent]
+    return duplicatedValues.length > 0
       ? {
         elemID: instance.elemID,
         severity: 'Error',
         message: 'Duplicate routing attribute value',
-        detailedMessage: `This routing attribute value has the same name and is under the same routing attribute as '${valueNameAndParentToInstance[nameAndParent].map(inst => inst.elemID.getFullName()).join(', ')}'`,
+        detailedMessage: `This routing attribute value has the same name and is under the same routing attribute as '${duplicatedValues.map(inst => inst.elemID.getFullName()).join(', ')}'`,
       }
       : undefined
   }).filter(isDefined)

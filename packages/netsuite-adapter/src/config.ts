@@ -601,15 +601,20 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
   },
 })
 
-const deployConfigType = configUtils.createUserDeployConfigType(
-  NETSUITE,
-  changeValidatorConfigType,
-  {
+const baseDeployConfigType = createMatchingObjectType<Omit<DeployParams, keyof UserDeployConfig>>({
+  elemID: new ElemID(NETSUITE, 'deploy_config'),
+  fields: {
     warnOnStaleWorkspaceData: { refType: BuiltinTypes.BOOLEAN },
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
-  }
+  },
+})
+
+const deployConfigType = configUtils.createUserDeployConfigType(
+  NETSUITE,
+  changeValidatorConfigType,
+  baseDeployConfigType.fields,
 )
 
 const additionalDependenciesConfigPath: string[] = [

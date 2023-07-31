@@ -20,25 +20,24 @@ import { logger } from '@salto-io/logging'
 const log = logger(module)
 
 export const getElemIdFuncWrapper = (func: ElemIdGetter): {getElemIdFunc: ElemIdGetter; logIdsFunc: () => void} => {
-  const nonMatchingIdsMap: Record<string, string> = {}
+  const nonMatchingIdsMap: Map<string, string> = new Map()
   const logIdsFunc = (): void => {
-    if (Object.keys(nonMatchingIdsMap).length === 0) {
+    if (nonMatchingIdsMap.size === 0) {
       return
     }
-    const diffsListString = Object.keys(nonMatchingIdsMap).map(current => {
-      const calculated = nonMatchingIdsMap[current]
-      return `current id: ${current} --- calculated id: ${calculated}`
-    })
-    log.warn(`The following elements have differences between current elemId and calculated elemId:\n${diffsListString.join('\n')}`)
+    const diffsListString = Array.from(nonMatchingIdsMap.entries()).map(([current, calculated]) =>
+      `current id: ${current} --- calculated id: ${calculated}`)
+
+    log.warn(`The following elements have differences between current elemId and calculated elemId:\n${diffsListString.slice(0, 100).join('\n')}`)
   }
 
   const getElemIdFunc = (adapterName: string, serviceIds: ServiceIds, name: string): ElemID => {
     const res = func(adapterName, serviceIds, name)
     if (res.name !== name) {
-      nonMatchingIdsMap[res.name] = name
+      nonMatchingIdsMap.set(res.name, name)
     }
-    if ((res.name === name) && nonMatchingIdsMap[res.name] !== undefined) {
-      delete nonMatchingIdsMap[res.name]
+    if ((res.name === name) && nonMatchingIdsMap.get(res.name) !== undefined) {
+      nonMatchingIdsMap.delete(res.name)
     }
     return res
   }

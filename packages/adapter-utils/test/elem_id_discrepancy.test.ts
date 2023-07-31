@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, ServiceIds } from '@salto-io/adapter-api'
-import { getElemIdFuncWrapper } from '../src/elemId_discrepancy'
+import { getElemIdFuncWrapper } from '../src/elem_id_discrepancy'
 
 const mockLogWarn = jest.fn()
 jest.mock('@salto-io/logging', () => ({

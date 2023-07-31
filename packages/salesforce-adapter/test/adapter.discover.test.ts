@@ -1378,7 +1378,6 @@ public class LargeClass${index} {
         expect(config).toBeDefined()
         expect(config.value).toEqual(
           {
-            deploy: {},
             fetch: {
               metadata: {
                 exclude: [
@@ -1412,7 +1411,6 @@ public class LargeClass${index} {
         config = result?.updatedConfig?.config[0] as InstanceElement
         expect(config.value).toEqual(
           {
-            deploy: {},
             fetch: {
               metadata: {
                 exclude: [

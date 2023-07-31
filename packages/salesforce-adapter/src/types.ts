@@ -118,8 +118,7 @@ export type ChangeValidatorName = (
   | 'dataCategoryGroup'
 )
 
-// Can stop being exported with (SALTO-4468)
-export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
   objectsRegex: string

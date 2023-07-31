@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { Change, ChangeDataType, ChangeError, getChangeData, isModificationChange, Values } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, getChangeData, isAdditionOrModificationChange, isModificationChange, Values } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { NetsuiteChangeValidator } from './types'
 import { FIELDS_TO_OMIT_PRE_DEPLOY, getFieldsToOmitByType } from '../filters/omit_fields'
@@ -40,7 +40,7 @@ const getChangeError = (
     return {
       elemID: element.elemID,
       severity: 'Error',
-      message: 'This element will be removed from deployment',
+      message: 'This element contains an undeployable change',
       detailedMessage: `This element will be removed from deployment because it only contains changes to the undeployable field '${fieldsToOmitByType[element.elemID.typeName].join(', ')}'.`,
     }
   }
@@ -58,6 +58,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
   const fieldsToOmitByType = getFieldsToOmitByType(typeNames, FIELDS_TO_OMIT_PRE_DEPLOY)
 
   return changes
+    .filter(isAdditionOrModificationChange)
     .map(change => {
       const element = getChangeData(change)
       const { typeName } = element.elemID

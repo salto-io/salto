@@ -26,9 +26,8 @@ import { CUSTOM_FIELDS_LIST } from '../custom_records/custom_record_type'
 const { awu } = collections.asynciterable
 const { isFullRegexMatch } = regex
 
-const FIELDS_TO_OMIT_ON_FETCH: FieldToOmitParams[] = []
 const CLASS_TRANSLATION_LIST = 'classTranslationList'
-
+const FIELDS_TO_OMIT_ON_FETCH: FieldToOmitParams[] = []
 export const FIELDS_TO_OMIT_PRE_DEPLOY: FieldToOmitParams[] = [
   { type: 'inventoryItem', fields: [CURRENCY] },
   { type: 'subsidiary', fields: [CLASS_TRANSLATION_LIST] },

@@ -55,7 +55,7 @@ describe('omit fields change validator test', () => {
     expect(changeError[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Error',
-      message: 'This element will be removed from deployment',
+      message: 'This element contains an undeployable change',
       detailedMessage: 'This element will be removed from deployment because it only contains changes to the undeployable field \'currency\'.',
     })
   })

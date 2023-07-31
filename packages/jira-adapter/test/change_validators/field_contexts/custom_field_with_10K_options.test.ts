@@ -74,6 +74,7 @@ describe('customFieldsWith10KOptionValidator', () => {
     const contextInstanceAfterTwo = contextInstance.clone()
     contextInstanceAfterOne.value.options = largeOptionsObject
     contextInstanceAfterTwo.value.options = largeOptionsObject
+    contextInstanceAfterTwo.value.id = '2'
     const smallContextInstanceAfter = contextInstance.clone()
     smallContextInstanceAfter.value.options = generateOptions(10)
     const changes = [
@@ -83,13 +84,13 @@ describe('customFieldsWith10KOptionValidator', () => {
     const changeErrors = await customFieldsWith10KOptionValidator(changes)
     expect(changeErrors).toHaveLength(2)
     expect(changeErrors).toEqual([{
-      elemID: contextInstance.elemID,
+      elemID: contextInstanceAfterOne.elemID,
       severity: 'Info',
       message: 'Slow deployment due to field with more than 10K options',
       detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
     },
     {
-      elemID: contextInstance.elemID,
+      elemID: contextInstanceAfterTwo.elemID,
       severity: 'Info',
       message: 'Slow deployment due to field with more than 10K options',
       detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,

@@ -15,12 +15,23 @@
 */
 import _ from 'lodash'
 import {
-  AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
-  Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
+  AdapterOperations,
+  ElemIdGetter,
+  AdapterOperationsContext,
+  ElemID,
+  InstanceElement,
+  Adapter,
+  AdapterAuthentication,
+  Element,
+  ReadOnlyElementsSource,
+  GLOBAL_ADAPTER,
+  ObjectType,
+  isElement,
+  isInstanceElement, isObjectType,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { createAdapterReplacedID, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
+import { createAdapterReplacedID, expressions, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
 import adapterCreators from './creators'
 
@@ -181,6 +192,74 @@ const filterElementsSource = (
   }
 }
 
+export const createResolvedTypesElementsSource = (
+  elementsSource: ReadOnlyElementsSource
+): ReadOnlyElementsSource => {
+  const resolvedTypes: Record<string, ObjectType> = {}
+  const getResolved = async (id: ElemID): Promise<Element> => {
+    const elemFullName = id.getFullName()
+    if (resolvedTypes[elemFullName] !== undefined) {
+      return resolvedTypes[elemFullName]
+    }
+    const value = await elementsSource.get(id)
+    if (!isObjectType(value) && !isInstanceElement(value)) {
+      return value
+    }
+    const element = value.clone()
+    // If the type of the instance is resolved, simply set the type on the instance
+    if (isInstanceElement(element)) {
+      const resolvedType = resolvedTypes[element.refType.elemID.getFullName()]
+      if (resolvedType !== undefined) {
+        element.refType.type = resolvedType
+        return element
+      }
+    }
+    // Resolve the instance / type alongside the already resolved types
+    (await expressions.resolve(
+      ([] as Element[]).concat(element, Object.values(resolvedTypes)),
+      elementsSource,
+      {
+        shouldCloneElements: false,
+        shouldResolveReferences: false,
+      }
+    )).filter(isObjectType)
+      .forEach(objectType => {
+        resolvedTypes[objectType.elemID.getFullName()] = objectType
+      })
+    return element
+  }
+  return {
+    get: getResolved,
+    getAll: async () => {
+      const [objectTypes, rest] = _.partition(
+        await awu(await elementsSource.getAll())
+          .filter(isElement)
+          .toArray(),
+        isObjectType,
+      );
+      // Resolve all the types together for better performance
+      (await expressions.resolve(
+        objectTypes.map(objectType => objectType.clone()),
+        elementsSource,
+        {
+          shouldCloneElements: false,
+          shouldResolveReferences: false,
+        }
+      )).filter(isObjectType)
+        .forEach(objectType => {
+          resolvedTypes[objectType.elemID.getFullName()] = objectType
+        })
+      return awu(([] as Element[])
+        .concat(
+          await awu(rest).map(element => getResolved(element.elemID)).toArray(),
+          Object.values(resolvedTypes),
+        ))
+    },
+    list: elementsSource.list,
+    has: elementsSource.has,
+  }
+}
+
 type AdapterConfigGetter = (
   adapter: string, defaultValue?: InstanceElement
 ) => Promise<InstanceElement | undefined>
@@ -202,9 +281,9 @@ export const getAdaptersCreatorConfigs = async (
         {
           credentials: credentials[account],
           config: await getConfig(account, defaultConfig),
-          elementsSource: createElemIDReplacedElementsSource(filterElementsSource(
+          elementsSource: createResolvedTypesElementsSource(createElemIDReplacedElementsSource(filterElementsSource(
             elementsSource, account
-          ), account, accountToServiceName[account]),
+          ), account, accountToServiceName[account])),
           getElemIdFunc: elemIdGetters[account],
         },
       ]

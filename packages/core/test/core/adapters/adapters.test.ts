@@ -13,19 +13,32 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, ElemID, AdapterAuthentication, ObjectType, AdapterOperationsContext, Adapter } from '@salto-io/adapter-api'
+import 'jest-extended'
+import {
+  InstanceElement,
+  ElemID,
+  AdapterAuthentication,
+  ObjectType,
+  AdapterOperationsContext,
+  Adapter,
+  ReadOnlyElementsSource,
+  isObjectType,
+} from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { adapter } from '@salto-io/salesforce-adapter'
 import { mockFunction } from '@salto-io/test-utils'
 import _ from 'lodash'
+import { expressions } from '@salto-io/workspace'
 import {
   initAdapters, getAdaptersCredentialsTypes, getAdaptersCreatorConfigs,
   getDefaultAdapterConfig,
   adapterCreators,
-  getAdaptersConfigTypesMap,
+  getAdaptersConfigTypesMap, createResolvedTypesElementsSource,
 } from '../../../src/core/adapters'
+
+const { toArrayAsync } = collections.asynciterable
 
 jest.mock('@salto-io/workspace', () => ({
   ...jest.requireActual<{}>('@salto-io/workspace'),
@@ -65,6 +78,13 @@ describe('adapters.ts', () => {
       sandbox: false,
     }
   )
+
+  let resolveSpy: jest.SpyInstance
+
+  beforeEach(() => {
+    resolveSpy = jest.spyOn(expressions, 'resolve')
+    jest.clearAllMocks()
+  })
 
   describe('run get adapters config statuses', () => {
     let credentials: Record<string, AdapterAuthentication>
@@ -281,6 +301,100 @@ describe('adapters.ts', () => {
           },
         }
       )).toThrow()
+    })
+  })
+  describe('createResolvedTypesElementsSource', () => {
+    const ADAPTER = 'salesforce'
+
+    let type: ObjectType
+    let innerType: ObjectType
+    let innerInnerType: ObjectType
+    let instance: InstanceElement
+    let elementsSource: ReadOnlyElementsSource
+
+    beforeEach(async () => {
+      innerInnerType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'InnerInnerType'),
+      })
+      innerType = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'InnerType'),
+        fields: {
+          field: { refType: innerInnerType },
+        },
+      })
+      type = new ObjectType({
+        elemID: new ElemID(ADAPTER, 'Type'),
+        fields: {
+          field: { refType: innerType },
+        },
+      })
+      instance = new InstanceElement('TestInstance', type)
+      elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
+        type,
+        innerType,
+        innerInnerType,
+        instance,
+      ]))
+    })
+
+    describe('get', () => {
+      describe('when element is ObjectType', () => {
+        it('should return recursively resolved type', async () => {
+          const resolvedType = await elementsSource.get(type.elemID) as ObjectType
+          const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
+          const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
+          expect([resolvedType, resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isObjectType)
+        })
+        describe('when element was already resolved before', () => {
+          it('should invoke expressions.resolve once', async () => {
+            await elementsSource.get(type.elemID)
+            await elementsSource.get(type.elemID)
+            expect(jest.isMockFunction(expressions.resolve)).toBeTrue()
+            expect(resolveSpy).toHaveBeenCalledOnce()
+          })
+        })
+      })
+      describe('when element is InstanceElement', () => {
+        it('should return instance with resolved type', async () => {
+          const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
+          expect(resolvedInstance.refType.type).toBeInstanceOf(ObjectType)
+          expect(resolveSpy).toHaveBeenCalledOnce()
+        })
+      })
+    })
+    describe('getAll', () => {
+      it('should return all elements with resolved types', async () => {
+        const resolvedElements = await toArrayAsync(await elementsSource.getAll())
+        expect(resolvedElements).toHaveLength(4)
+        const resolvedElementsByElemId = _.keyBy(
+          resolvedElements,
+          element => element.elemID.getFullName(),
+        )
+        const resolvedType = resolvedElementsByElemId[type.elemID.getFullName()] as ObjectType
+        const resolvedInnerType = resolvedElementsByElemId[innerType.elemID.getFullName()] as ObjectType
+        const resolvedInnerInnerType = resolvedElementsByElemId[innerInnerType.elemID.getFullName()] as ObjectType
+        const resolvedInstance = resolvedElementsByElemId[instance.elemID.getFullName()] as InstanceElement
+        expect(resolvedInnerType.fields.field.refType.type).toEqual(resolvedInnerInnerType)
+        expect(resolvedType.fields.field.refType.type).toEqual(resolvedInnerType)
+        expect(resolvedInstance.refType.type).toEqual(resolvedType)
+      })
+    })
+    describe('list', () => {
+      it('should return correct element IDs', async () => {
+        const elementIds = await toArrayAsync(await elementsSource.list())
+        expect(elementIds).toIncludeSameMembers([
+          type.elemID,
+          innerType.elemID,
+          innerInnerType.elemID,
+          instance.elemID,
+        ])
+      })
+    })
+    describe('has', () => {
+      it('should return true for existing element and false otherwise', async () => {
+        expect(await elementsSource.has(type.elemID)).toBeTrue()
+        expect(await elementsSource.has(new ElemID(ADAPTER, 'NonExistingType'))).toBeFalse()
+      })
     })
   })
 })

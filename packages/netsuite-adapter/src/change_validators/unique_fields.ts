@@ -14,12 +14,12 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, isAdditionOrModificationChange, ChangeError,
-  ReadOnlyElementsSource, ChangeDataType, isObjectType } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ChangeDataType, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
-import { isCustomFieldName, isCustomRecordType } from '../types'
-import { NAME_FIELD, FINANCIAL_LAYOUT, SAVED_SEARCH, SCRIPT_ID, CUSTOM_RECORD_TYPE_NAME_PREFIX } from '../constants'
+import { isCustomFieldName, isCustomRecordType, SCRIPT_TYPES } from '../types'
+import { NAME_FIELD, FINANCIAL_LAYOUT, SAVED_SEARCH, SCRIPT_ID, CUSTOM_RECORD_TYPE_NAME_PREFIX, WORKFLOW } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 
 const { awu } = collections.asynciterable
@@ -29,7 +29,7 @@ const { mapValuesAsync } = promises.object
 
 const FIELD_DEFAULT_NAME = 'FIELD_DEFAULT_NAME'
 
-type RestrictedType = 'savedSearch' | 'financialLayout' | 'customRecordField'
+type RestrictedType = 'savedSearch' | 'financialLayout' | 'customRecordField' | 'workflow' | 'script'
 
 type GetterParams = {
   elemID: ElemID
@@ -37,13 +37,13 @@ type GetterParams = {
 }
 
 type ElementGetter = (params: GetterParams) => Promise<string[]>
-type ChangeGetter = (change: ChangeDataType) => string
+type ChangeGetter = (change: ChangeDataType) => string[]
 
 type RestrictedTypeGetters = {
   getChangeRestrictedField: ChangeGetter
   getSourceRestrictedFields: ElementGetter
   getMessage: () => string
-  getDetailedMessage: (field: string) => string
+  getDetailedMessage: (field: string[]) => string
 }
 
 const getNestedField = async ({ elemID, elementsSource }: GetterParams, field: string) : Promise<string[]> =>
@@ -66,35 +66,68 @@ const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterP
     .map(field => element.fields[field].annotations[SCRIPT_ID])
 }
 
+const getWorkflowChangeRestrictedData = (change: ChangeDataType): string[] =>
+  (isInstanceElement(change)
+    ? _.values(change.value.workflowcustomfields?.workflowcustomfield ?? {}).map(val => val.scriptid) : [])
+
+const workflowSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
+  _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
+    .map(val => val.scriptid)
+
+const getscriptChangeRestrictedData = (change: ChangeDataType): string[] =>
+  (isInstanceElement(change)
+    ? _.values(change.value.scriptcustomfields?.scriptcustomfield ?? {}).map(val => val.scriptid) : [])
+
+const scriptSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
+  _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
+    .map(val => val.scriptid)
 
 const savedSearchGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => getChangeNestedField(change, FIELD_DEFAULT_NAME),
+  getChangeRestrictedField: change => [getChangeNestedField(change, FIELD_DEFAULT_NAME)],
   getSourceRestrictedFields: params => getNestedField(params, FIELD_DEFAULT_NAME),
   getMessage: () => 'A Saved Search with that title already exists',
-  getDetailedMessage: title => `Can't deploy this Saved Search because there is already a Saved Search with the title "${title}" in the target account.`
+  getDetailedMessage: title => `Can't deploy this Saved Search because there is already a Saved Search with the title "${title[0]}" in the target account.`
     + ' To deploy it, change its title to a unique one.',
 }
 
 const financialLayoutGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => getChangeNestedField(change, NAME_FIELD),
+  getChangeRestrictedField: change => [getChangeNestedField(change, NAME_FIELD)],
   getSourceRestrictedFields: params => getNestedField(params, NAME_FIELD),
   getMessage: () => 'A Financial Layout with that name already exists',
-  getDetailedMessage: name => `Can't deploy this Financial Layout because there is already a Financial Layout with the name "${name}" in the target account.`
+  getDetailedMessage: name => `Can't deploy this Financial Layout because there is already a Financial Layout with the name "${name[0]}" in the target account.`
     + ' To deploy it, change its name to a unique one.',
 }
 
 const customRecordGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => getChangeNestedField(change, SCRIPT_ID),
+  getChangeRestrictedField: change => [getChangeNestedField(change, SCRIPT_ID)],
   getSourceRestrictedFields: getCustomRecordRestrictedData,
   getMessage: () => 'A Custom Record Type Field with that ID already exists',
-  getDetailedMessage: scriptID => `Can't deploy this Custom Record Type Field because there is already a Custom Record Type Field with the ID "${scriptID}" in the target account.`
+  getDetailedMessage: scriptID => `Can't deploy this Custom Record Type Field because there is already a Custom Record Type Field with the ID "${scriptID[0]}" in the target account.`
     + ' To deploy it, change its ID to a unique one.',
+}
+
+const workflowGetters: RestrictedTypeGetters = {
+  getChangeRestrictedField: getWorkflowChangeRestrictedData,
+  getSourceRestrictedFields: workflowSourceGetter,
+  getMessage: () => 'This Workflow contains a custom field with an existing ID',
+  getDetailedMessage: scriptids => `Can't deploy this Workflow as it contains custom fields with IDs that already exist in the target environment: "${scriptids.toString()}".`
+  + ' To deploy it, change their IDs to a unique one.',
+}
+
+const scriptGetters: RestrictedTypeGetters = {
+  getChangeRestrictedField: getscriptChangeRestrictedData,
+  getSourceRestrictedFields: scriptSourceGetter,
+  getMessage: () => 'This script contains a parameter with an existing ID',
+  getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that already exist in the target environment: "${scriptids.toString()}".`
+  + ' To deploy it, change their IDs to a unique one.',
 }
 
 const restrictedTypeGettersMap: Record<RestrictedType, RestrictedTypeGetters> = {
   savedSearch: savedSearchGetters,
   financialLayout: financialLayoutGetters,
   customRecordField: customRecordGetters,
+  workflow: workflowGetters,
+  script: scriptGetters,
 }
 
 const getRestrictedType = (elemID: ElemID, includeFieldElements: boolean): RestrictedType | undefined => {
@@ -105,6 +138,14 @@ const getRestrictedType = (elemID: ElemID, includeFieldElements: boolean): Restr
 
     if (elemID.typeName === FINANCIAL_LAYOUT) {
       return 'financialLayout'
+    }
+
+    if (elemID.typeName === WORKFLOW) {
+      return 'workflow'
+    }
+
+    if (SCRIPT_TYPES.includes(elemID.typeName)) {
+      return 'script'
     }
   } else if ((includeFieldElements && elemID.idType === 'field') || (!includeFieldElements && elemID.idType === 'type')) {
     if (elemID.typeName.startsWith(CUSTOM_RECORD_TYPE_NAME_PREFIX)) {
@@ -119,6 +160,8 @@ const getEmptyRestrictedTypeRecord = <T>() : Record<RestrictedType, T[]> => ({
   savedSearch: [],
   financialLayout: [],
   customRecordField: [],
+  workflow: [],
+  script: [],
 })
 
 const getTypeToDataRecord = <T> (
@@ -143,6 +186,31 @@ const getTypeToDataRecord = <T> (
   return typeToDataRecord
 }
 
+// const getAllRestrictedFields = async (
+//   elementsSource: ReadOnlyElementsSource,
+//   elemIDs: ElemID[],
+//   type: string
+// ): Promise<string[]> => {
+//   if (type === 'workflow') {
+//     return awu(elemIDs)
+//       .flatMap(async elemID =>
+//         _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
+//           .map(val => val.scriptid))
+//       .toArray()
+//   }
+//   if (type === 'script') {
+//     return awu(elemIDs)
+//       .flatMap(async elemID =>
+//         _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
+//           .map(val => val.scriptid))
+//       .toArray()
+//   }
+//   return awu(elemIDs)
+//     .flatMap(elemID => restrictedTypeGettersMap[type as RestrictedType]
+//       .getSourceRestrictedFields({ elemID, elementsSource }))
+//     .toArray()
+// }
+
 const getTypeToRestrictedFields = (
   elementsSource: ReadOnlyElementsSource,
   typeToElementsRecord: Record<RestrictedType, ElemID[]>
@@ -161,12 +229,26 @@ const validateDuplication = (
 ): Promise<Array<ChangeError>> => {
   const getters = restrictedTypeGettersMap[type]
 
+  if (type === 'workflow' || type === 'script') {
+    return awu(changesData)
+      .map(change => ({
+        elemID: change.elemID,
+        fields: getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1),
+      }))
+      .map(({ elemID, fields }): ChangeError => ({
+        elemID,
+        severity: 'Error',
+        message: getters.getMessage(),
+        detailedMessage: getters.getDetailedMessage(fields),
+      }))
+      .toArray()
+  }
   return awu(changesData)
     .map(change => ({
       elemID: change.elemID,
       field: getters.getChangeRestrictedField(change),
     }))
-    .filter(({ field }) => (uniqueFieldToID[field] ?? 0) > 1)
+    .filter(({ field }) => (uniqueFieldToID[field[0]] ?? 0) > 1)
     .map(({ elemID, field }): ChangeError => ({
       elemID,
       severity: 'Error',

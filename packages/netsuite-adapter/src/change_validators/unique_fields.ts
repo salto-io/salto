@@ -204,36 +204,21 @@ const validateDuplication = (
 ): Promise<Array<ChangeError>> => {
   const getters = restrictedTypeGettersMap[type]
 
-  if (type === 'workflow' || type === 'script') {
-    return awu(changesData)
-      .map(change => ({
-        elemID: change.elemID,
-        fields: Array.from(
-          new Set(
-            getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1)
-          )
-        ),
-      }))
-      .filter(({ fields }) => fields.length > 0)
-      .map(({ elemID, fields }): ChangeError => ({
-        elemID,
-        severity: 'Error',
-        message: getters.getMessage(),
-        detailedMessage: getters.getDetailedMessage(fields),
-      }))
-      .toArray()
-  }
   return awu(changesData)
     .map(change => ({
       elemID: change.elemID,
-      field: getters.getChangeRestrictedField(change),
+      fields: Array.from(
+        new Set(
+          getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1)
+        )
+      ),
     }))
-    .filter(({ field }) => (uniqueFieldToID[field[0]] ?? 0) > 1)
-    .map(({ elemID, field }): ChangeError => ({
+    .filter(({ fields }) => fields.length > 0)
+    .map(({ elemID, fields }): ChangeError => ({
       elemID,
       severity: 'Error',
       message: getters.getMessage(),
-      detailedMessage: getters.getDetailedMessage(field),
+      detailedMessage: getters.getDetailedMessage(fields),
     }))
     .toArray()
 }

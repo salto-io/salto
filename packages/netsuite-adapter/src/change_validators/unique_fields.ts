@@ -111,7 +111,7 @@ const workflowGetters: RestrictedTypeGetters = {
   getSourceRestrictedFields: workflowSourceGetter,
   getMessage: () => 'This Workflow contains a custom field with an existing ID',
   getDetailedMessage: scriptids => `Can't deploy this Workflow as it contains custom fields with IDs that already exist in the target environment: "${scriptids.toString()}".`
-  + ' To deploy it, change their IDs to a unique one.',
+  + ' To deploy it, change their IDs to a unique one.', // need to change the message
 }
 
 const scriptGetters: RestrictedTypeGetters = {
@@ -119,7 +119,7 @@ const scriptGetters: RestrictedTypeGetters = {
   getSourceRestrictedFields: scriptSourceGetter,
   getMessage: () => 'This script contains a parameter with an existing ID',
   getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that already exist in the target environment: "${scriptids.toString()}".`
-  + ' To deploy it, change their IDs to a unique one.',
+  + ' To deploy it, change their IDs to a unique one.', // need to change the message
 }
 
 const restrictedTypeGettersMap: Record<RestrictedType, RestrictedTypeGetters> = {
@@ -186,31 +186,6 @@ const getTypeToDataRecord = <T> (
   return typeToDataRecord
 }
 
-// const getAllRestrictedFields = async (
-//   elementsSource: ReadOnlyElementsSource,
-//   elemIDs: ElemID[],
-//   type: string
-// ): Promise<string[]> => {
-//   if (type === 'workflow') {
-//     return awu(elemIDs)
-//       .flatMap(async elemID =>
-//         _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
-//           .map(val => val.scriptid))
-//       .toArray()
-//   }
-//   if (type === 'script') {
-//     return awu(elemIDs)
-//       .flatMap(async elemID =>
-//         _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
-//           .map(val => val.scriptid))
-//       .toArray()
-//   }
-//   return awu(elemIDs)
-//     .flatMap(elemID => restrictedTypeGettersMap[type as RestrictedType]
-//       .getSourceRestrictedFields({ elemID, elementsSource }))
-//     .toArray()
-// }
-
 const getTypeToRestrictedFields = (
   elementsSource: ReadOnlyElementsSource,
   typeToElementsRecord: Record<RestrictedType, ElemID[]>
@@ -233,8 +208,13 @@ const validateDuplication = (
     return awu(changesData)
       .map(change => ({
         elemID: change.elemID,
-        fields: getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1),
+        fields: Array.from(
+          new Set(
+            getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1)
+          )
+        ),
       }))
+      .filter(({ fields }) => fields.length > 0)
       .map(({ elemID, fields }): ChangeError => ({
         elemID,
         severity: 'Error',

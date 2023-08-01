@@ -23,8 +23,8 @@ import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { filter } from '@salto-io/adapter-utils'
 import { createElements } from './transformer'
-import { DeployResult, isCustomRecordType } from './types'
-import { BUNDLE, INTEGRATION } from './constants'
+import { DeployResult, TYPES_TO_SKIP, isCustomRecordType } from './types'
+import { BUNDLE } from './constants'
 import convertListsToMaps from './filters/convert_lists_to_maps'
 import replaceElementReferences from './filters/element_references'
 import parseReportTypes from './filters/parse_report_types'
@@ -186,12 +186,7 @@ export default class NetsuiteAdapter implements AdapterOperations {
     client,
     elementsSource,
     filtersCreators = defaultFilters,
-    typesToSkip = [
-      INTEGRATION, // The imported xml has no values, especially no SCRIPT_ID, for standard
-      // integrations and contains only SCRIPT_ID attribute for custom ones.
-      // There is no value in fetching them as they contain no data and are not deployable.
-      // If we decide to fetch them we should set the SCRIPT_ID by the xml's filename upon fetch.
-    ],
+    typesToSkip = TYPES_TO_SKIP,
     filePathRegexSkipList = [],
     getElemIdFunc,
     config,

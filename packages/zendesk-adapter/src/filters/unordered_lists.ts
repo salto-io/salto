@@ -26,8 +26,8 @@ import {
   TICKET_FIELD_CUSTOM_FIELD_OPTION,
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
+  VIEW_TYPE_NAME,
 } from '../constants'
-import { VIEW_TYPE_NAME } from './view'
 
 const log = logger(module)
 

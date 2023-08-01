@@ -279,12 +279,23 @@ const getClonedElements = (elements: Element[]): Element[] => {
   return clonedRestOfElements.concat(clonedFields)
 }
 
+type ResolveOpts = {
+  shouldCloneElements?: boolean
+  shouldResolveReferences?: boolean
+}
+
 export const resolve = (
   elements: Element[],
-  elementsSource: ReadOnlyElementsSource
+  elementsSource: ReadOnlyElementsSource,
+  {
+    shouldCloneElements = true,
+    shouldResolveReferences = true,
+  }: ResolveOpts = {}
 ): Promise<Element[]> => log.time(async () => {
   // Create a clone of the input elements to ensure we do not modify the input
-  const elementsToResolve = getClonedElements(elements)
+  const elementsToResolve = shouldCloneElements
+    ? getClonedElements(elements)
+    : elements
 
   // Since fields technically reference their parent type with the .parent property
   // we need to make sure to resolve all field parents as well
@@ -347,25 +358,27 @@ export const resolve = (
         resolveTypeReference(element.refType)
       }
 
-      walkOnElement({
-        element,
-        func: ({ value, path }) => {
-          try {
-            if (isReferenceExpression(value)) {
-              resolveReferenceExpression(value, path)
-              return WALK_NEXT_STEP.SKIP
+      if (shouldResolveReferences) {
+        walkOnElement({
+          element,
+          func: ({ value, path }) => {
+            try {
+              if (isReferenceExpression(value)) {
+                resolveReferenceExpression(value, path)
+                return WALK_NEXT_STEP.SKIP
+              }
+              if (isTemplateExpression(value)) {
+                resolveTemplateExpression(value, path)
+                return WALK_NEXT_STEP.SKIP
+              }
+            } catch (err) {
+              log.error(`Failed to resolve path ${path.getFullName()}. value: ${safeJsonStringify(value, undefined, 2)}`)
+              throw err
             }
-            if (isTemplateExpression(value)) {
-              resolveTemplateExpression(value, path)
-              return WALK_NEXT_STEP.SKIP
-            }
-          } catch (err) {
-            log.error(`Failed to resolve path ${path.getFullName()}. value: ${safeJsonStringify(value, undefined, 2)}`)
-            throw err
-          }
-          return WALK_NEXT_STEP.RECURSE
-        },
-      })
+            return WALK_NEXT_STEP.RECURSE
+          },
+        })
+      }
     }
 
     // Note - this fills pendingAsyncResolves and pendingAsyncOperations as a side effect

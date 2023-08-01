@@ -34,7 +34,7 @@ jest.mock('@salto-io/adapter-components', () => {
 })
 
 describe('views filter', () => {
-  type FilterType = filterUtils.FilterWith<'onFetch' | 'deploy' | 'preDeploy' | 'onDeploy'>
+  type FilterType = filterUtils.FilterWith<'deploy' | 'preDeploy' | 'onDeploy'>
   let filter: FilterType
   const view = new InstanceElement(
     'Test',
@@ -78,16 +78,6 @@ describe('views filter', () => {
             title: 'zip code with validation',
             type: 'regexp',
           },
-          {
-            id: 3,
-            title: 'custom_field2',
-            type: 'regexp',
-          },
-          {
-            id: 1,
-            title: 'custom_field3',
-            type: 'regexp',
-          },
         ],
         fields: [
           {
@@ -103,16 +93,6 @@ describe('views filter', () => {
           {
             id: 2,
             title: 'zip code with validation',
-            type: 'regexp',
-          },
-          {
-            id: 3,
-            title: 'custom_field2',
-            type: 'regexp',
-          },
-          {
-            id: 1,
-            title: 'custom_field3',
             type: 'regexp',
           },
         ],
@@ -159,37 +139,6 @@ describe('views filter', () => {
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
   })
 
-  describe('onFetch', () => {
-    it('should reorder custom_fields by id', async () => {
-      const testView = view.clone()
-      await filter.onFetch([testView])
-      expect(testView.value.execution.custom_fields).toEqual([
-        {
-          id: 1,
-          title: 'custom_field3',
-          type: 'regexp',
-        },
-        {
-          id: 2,
-          title: 'zip code with validation',
-          type: 'regexp',
-        },
-        {
-          id: 3,
-          title: 'custom_field2',
-          type: 'regexp',
-        },
-      ])
-    })
-    it('should not crash when there are no execution or custom_fields', async () => {
-      const testView = view.clone()
-      const testView2 = view.clone()
-      testView.value.execution = undefined
-      testView2.value.execution.custom_fields = undefined
-      await filter.onFetch([testView, testView2])
-    })
-  })
-
   describe('preDeploy', () => {
     const clonedView = view.clone()
     beforeEach(async () => {
@@ -215,7 +164,7 @@ describe('views filter', () => {
       expect(clonedView.value.output).toEqual({
         ...clonedView.value.execution,
         group_by: '123',
-        columns: ['subject', 'requester', 2, 3, 1],
+        columns: ['subject', 'requester', 2],
       })
     })
     it('should keep conditions', async () => {

@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isArray } from 'lodash'
+import _ from 'lodash'
 import {
-  Change, Element, getChangeData, InstanceElement, isInstanceElement, isRemovalChange, Value, Values,
+  Change, getChangeData, InstanceElement, isRemovalChange, Value, Values,
 } from '@salto-io/adapter-api'
 import { values } from '@salto-io/lowerdash'
 import { FilterCreator } from '../filter'
@@ -27,20 +27,10 @@ export const VIEW_TYPE_NAME = 'view'
 const valToString = (val: Value): string | string[] => (_.isArray(val) ? val.map(String) : val?.toString())
 
 /**
- * On fetch, reorders custom_fields field because its order is irrelevant and not constant between envs
  * Deploys views
  */
 const filterCreator: FilterCreator = ({ config, client }) => ({
   name: 'viewFilter',
-  onFetch: async (elements: Element[]): Promise<void> => {
-    const views = elements.filter(isInstanceElement).filter(e => e.elemID.typeName === VIEW_TYPE_NAME)
-    views.forEach(view => {
-      const customFields = view.value.execution?.custom_fields
-      if (isArray(customFields)) {
-        view.value.execution.custom_fields = _.sortBy(customFields, ['id'])
-      }
-    })
-  },
   preDeploy: async changes => {
     await applyforInstanceChangesOfType(
       changes,

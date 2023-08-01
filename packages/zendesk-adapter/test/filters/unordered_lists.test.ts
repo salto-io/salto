@@ -478,4 +478,63 @@ describe('Unordered lists filter', () => {
       expect(instance.value.conditions_any[2].type).toEqual('charlie')
     })
   })
+
+  describe('view', () => {
+    let view: InstanceElement
+    beforeEach(() => {
+      view = new InstanceElement(
+        'Test',
+        new ObjectType({ elemID: new ElemID(ZENDESK, 'view') }),
+        {
+          execution: {
+            custom_fields: [
+              {
+                id: 2,
+                title: 'zip code with validation',
+                type: 'regexp',
+              },
+              {
+                id: 3,
+                title: 'custom_field2',
+                type: 'regexp',
+              },
+              {
+                id: 1,
+                title: 'custom_field3',
+                type: 'regexp',
+              },
+            ],
+          },
+        }
+      )
+    })
+    it('should reorder custom_fields by id', async () => {
+      const testView = view.clone()
+      await filter.onFetch([testView])
+      expect(testView.value.execution.custom_fields).toEqual([
+        {
+          id: 1,
+          title: 'custom_field3',
+          type: 'regexp',
+        },
+        {
+          id: 2,
+          title: 'zip code with validation',
+          type: 'regexp',
+        },
+        {
+          id: 3,
+          title: 'custom_field2',
+          type: 'regexp',
+        },
+      ])
+    })
+    it('should not crash when there are no execution or custom_fields', async () => {
+      const testView = view.clone()
+      const testView2 = view.clone()
+      testView.value.execution = undefined
+      testView2.value.execution.custom_fields = undefined
+      await filter.onFetch([testView, testView2])
+    })
+  })
 })

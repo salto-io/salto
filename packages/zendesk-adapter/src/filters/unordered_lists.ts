@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { isArray } from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -27,6 +27,7 @@ import {
   TICKET_FIELD_TYPE_NAME,
   TICKET_FORM_TYPE_NAME,
 } from '../constants'
+import { VIEW_TYPE_NAME } from './view'
 
 const log = logger(module)
 
@@ -200,6 +201,17 @@ const orderFormCondition = (instances: InstanceElement[]): void => {
   sortChildFields(formInstances, ticketFieldById)
 }
 
+// The order is irrelevant and cannot be changed
+// We need to make it constant between environments
+const orderViewCustomFields = (instances: InstanceElement[]): void => {
+  instances.filter(e => e.elemID.typeName === VIEW_TYPE_NAME).forEach(view => {
+    const customFields = view.value.execution?.custom_fields
+    if (isArray(customFields)) {
+      view.value.execution.custom_fields = _.sortBy(customFields, ['id'])
+    }
+  })
+}
+
 /**
  * Sort lists whose order changes between fetches, to avoid unneeded noise.
  */
@@ -211,6 +223,7 @@ const filterCreator: FilterCreator = () => ({
     orderTriggerDefinitions(instances)
     orderMacros(instances)
     orderFormCondition(instances)
+    orderViewCustomFields(instances)
   },
 })
 

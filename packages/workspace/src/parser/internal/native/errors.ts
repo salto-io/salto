@@ -177,6 +177,12 @@ export const contentMergeConflict = (range: SourceRange): ParseError => createEr
   'Unresolved merge conflict',
 )
 
+export const invalidSyntax = (range: SourceRange): ParseError =>
+  createError(range, 'Invalid syntax',)
+
+export const unknownParsingError = (range: SourceRange, message: string): ParseError =>
+  createError(range, message)
+
 export const invalidStringChar = (stringRange: SourceRange, errMsg: string): ParseError => {
   const errMsgPosition = Number.parseInt(_.last(errMsg.split(' ')) || '', 10)
   const range = Number.isNaN(errMsgPosition)

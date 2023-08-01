@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { BuiltinTypes, ElemID, isObjectType, ObjectType } from '@salto-io/adapter-api'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 import { CUSTOM_RECORD_TYPE, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../../src/constants'
 import filterCreator from '../../src/filters/custom_record_types'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
@@ -31,7 +31,7 @@ describe('custom record types filter', () => {
         throw new Error('should not call getIndexes')
       },
     },
-  } as unknown as FilterOpts
+  } as unknown as LocalFilterOpts
 
   beforeEach(() => {
     customRecordType = new ObjectType({

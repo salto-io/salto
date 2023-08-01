@@ -242,7 +242,7 @@ Go to ${url} to see valid users and account IDs.`,
       elemID: instances[0].elemID,
       severity: 'Error',
       message: 'Element references users which don’t exist in target environment',
-      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
+      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
     }])
   })
 
@@ -257,7 +257,7 @@ Go to ${url} to see valid users and account IDs.`,
       elemID: instances[0].elemID,
       severity: 'Warning',
       message: '1 usernames will be overridden to email1list2',
-      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403. If you continue, they will be set to email1list2 according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
+      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". If you continue, they will be set to email1list2 according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
     }])
   })
 
@@ -272,7 +272,7 @@ Go to ${url} to see valid users and account IDs.`,
       elemID: instances[0].elemID,
       severity: 'Warning',
       message: '1 usernames will be overridden to the deployer\'s user',
-      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403. If you continue, they will be set to the deployer\'s user according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
+      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". If you continue, they will be set to the deployer\'s user according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
     }])
   })
 
@@ -287,7 +287,7 @@ Go to ${url} to see valid users and account IDs.`,
       elemID: instances[0].elemID,
       severity: 'Error',
       message: 'Element references users which don’t exist in target environment',
-      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403. In addition, the defined fallback user 404 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
+      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403: "disp0l". In addition, the defined fallback user 404 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
     }])
   })
 
@@ -361,7 +361,7 @@ Go to ${url} to see valid users and account IDs.`,
       elemID: instances[1].elemID,
       severity: 'Error',
       message: 'Element references users which don’t exist in target environment',
-      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403. In addition, the defined fallback user 404 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
+      detailedMessage: 'The following users are referenced by this element, but do not exist in the target environment: 403: "disp11". In addition, the defined fallback user 404 was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira',
     })
   })
   it('should not raise errors when the flag is off', async () => {

@@ -21,7 +21,7 @@ import { createIssueTypeSchemeValues } from './issueTypeScheme'
 import { createDashboardValues, createGadget1Values, createGadget2Values } from './dashboard'
 import { findType } from '../../utils'
 import { createWorkflowValues } from './workflow'
-import { createFieldConfigurationItemValues, createFieldConfigurationValues } from './fieldConfiguration'
+import { createFieldConfigurationValues } from './fieldConfiguration'
 import { createNotificationSchemeValues } from './notificationScheme'
 import { createAutomationValues } from './automation'
 import { createKanbanBoardValues, createScrumBoardValues } from './board'
@@ -67,18 +67,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     randomString,
     findType('FieldConfiguration', fetchedElements),
     createFieldConfigurationValues(randomString),
-  )
-
-  const fieldConfigurationItem = new InstanceElement(
-    `${randomString}_Assignee__user`,
-    findType('FieldConfigurationItem', fetchedElements),
-    createFieldConfigurationItemValues(fetchedElements),
-    undefined,
-    {
-      [CORE_ANNOTATIONS.PARENT]: [
-        new ReferenceExpression(fieldConfiguration.elemID, fieldConfiguration),
-      ],
-    }
   )
 
   const securityLevel = new InstanceElement(
@@ -135,7 +123,6 @@ export const createInstances = (randomString: string, fetchedElements: Element[]
     [issueTypeScheme],
     [workflow],
     [fieldConfiguration],
-    [fieldConfigurationItem],
     [securityScheme, securityLevel],
     [notificationScheme],
     [automation],

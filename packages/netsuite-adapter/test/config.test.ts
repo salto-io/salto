@@ -15,8 +15,9 @@
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { formatConfigSuggestionsReasons } from '@salto-io/adapter-utils'
 import { NetsuiteQueryParameters } from '../src/query'
-import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, UPDATE_FETCH_CONFIG_FORMAT, UPDATE_DEPLOY_CONFIG, combineQueryParams, fetchDefault, UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT, CONFIG } from '../src/config'
+import { configType, getConfigFromConfigChanges, STOP_MANAGING_ITEMS_MSG, fetchDefault, LARGE_FOLDERS_EXCLUDED_MESSAGE, instanceLimiterCreator, UNLIMITED_INSTANCES_VALUE, LARGE_TYPES_EXCLUDED_MESSAGE, validateClientConfig, DEFAULT_MAX_INSTANCES_VALUE, InstanceLimiterFunc } from '../src/config'
 
 describe('config', () => {
   const skipList: NetsuiteQueryParameters = {
@@ -60,9 +61,12 @@ describe('config', () => {
 
   it('should return undefined when having no currentConfig suggestions', () => {
     expect(getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
+      {
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
       currentConfigWithFetch
     )).toBeUndefined()
   })
@@ -71,9 +75,12 @@ describe('config', () => {
     const lockedFiles = ['lockedFile']
     const lockedTypes = { lockedType: ['lockedInstance'] }
     const configFromConfigChanges = getConfigFromConfigChanges(
-      true,
-      { lockedError: lockedFiles, otherError: [newFailedFilePath] },
-      { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes },
+      {
+        failedToFetchAllAtOnce: true,
+        failedFilePaths: { lockedError: lockedFiles, otherError: [newFailedFilePath], largeFolderError: [] },
+        failedTypes: { lockedError: lockedTypes, unexpectedError: suggestedSkipListTypes, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
       {}
     )?.config as InstanceElement[]
     expect(configFromConfigChanges[0].isEqual(new InstanceElement(
@@ -109,19 +116,27 @@ describe('config', () => {
   })
 
   it('should return updated currentConfig when having suggestions and the currentConfig has values', () => {
+    const newLargeFolderPath = '/largeFolder/'
+    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newExclude = {
       types: [
         { name: 'testAll', ids: ['.*'] },
         { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2', 'scriptid3', 'scriptid4'] },
         { name: 'testNew', ids: ['scriptid5', 'scriptid6'] },
+        { name: 'excludedTypeTest' },
       ],
-      fileCabinet: ['SomeRegex'],
+      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
+      customRecords: [
+        { name: 'excludedCustomRecord' },
+      ],
     }
-    newExclude.fileCabinet.push(_.escapeRegExp(newFailedFilePath))
     const configChange = getConfigFromConfigChanges(
-      true,
-      { lockedError: [], otherError: [newFailedFilePath] },
-      { lockedError: {}, unexpectedError: suggestedSkipListTypes },
+      {
+        failedToFetchAllAtOnce: true,
+        failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
+        failedTypes: { lockedError: {}, unexpectedError: suggestedSkipListTypes, excludedTypes: ['excludedTypeTest'] },
+        failedCustomRecords: ['excludedCustomRecord'],
+      },
       currentConfigWithFetch,
     )
     expect(configChange?.config[0]
@@ -142,136 +157,14 @@ describe('config', () => {
         }
       ))).toBe(true)
 
-    expect(configChange?.message).toBe(STOP_MANAGING_ITEMS_MSG)
-  })
-
-  it('should convert typesToSkip and filePathsRegexSkipList to fetch', () => {
-    const newFetch = {
-      include: fetchDefault.include,
-      exclude: combineQueryParams({
-        types: [
-          { name: 'someType', ids: ['.*'] },
-        ],
-        fileCabinet: ['.*someRegex1.*', 'someRegex2.*', '.*someRegex3', 'someRegex4'],
-        customRecords: [],
-      },
-      fetchDefault.exclude),
-    }
-    const config = {
-      ..._.omit(currentConfigWithSkipList, CONFIG.skipList),
-      typesToSkip: ['someType'],
-      filePathRegexSkipList: ['someRegex1', '^someRegex2', 'someRegex3$', '^someRegex4$'],
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: newFetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
-  })
-
-  it('should convert deployReferencedElements when its value is "true" to deploy', () => {
-    const config = {
-      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
-      deployReferencedElements: true,
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config).toHaveLength(1)
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: configChange?.config[0].value.fetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-          deploy: {
-            deployReferencedElements: true,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
-  })
-
-  it('should delete deployReferencedElements when its value is "false" without adding deploy section', () => {
-    const config = {
-      ..._.omit(currentConfigWithFetch, CONFIG.deployReferencedElements),
-      deployReferencedElements: false,
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config
-    )
-    expect(configChange?.config?.[0].value.deployReferencedElements).toBe(undefined)
-    expect(configChange?.config?.[0].value.deploy).toBe(undefined)
-    expect(configChange?.message).toBe(UPDATE_DEPLOY_CONFIG)
-  })
-
-  it('should convert skipList to fetch', () => {
-    const config = {
-      ...currentConfigWithSkipList,
-    }
-    const newFetch = {
-      include: fetchDefault.include,
-      exclude: {
-        ...combineQueryParams(
-          currentConfigWithFetch.fetch.exclude,
-          fetchDefault.exclude
-        ),
-        customRecords: [],
-      },
-    }
-
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      config,
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: newFetch,
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-
-    expect(configChange?.message).toBe(UPDATE_FETCH_CONFIG_FORMAT)
+    expect(configChange?.message).toBe(formatConfigSuggestionsReasons([
+      STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE, LARGE_TYPES_EXCLUDED_MESSAGE,
+    ]))
   })
 
   it('should combine configuration messages when needed', () => {
+    const newLargeFolderPath = '/largeFolder/'
+    const newLargeFolderExclusion = `^${newLargeFolderPath}.*`
     const newSkipList = _.cloneDeep(skipList)
     newSkipList.types = { ...newSkipList.types, someType: ['.*'] }
     newSkipList.filePaths?.push('.*someRegex.*')
@@ -279,80 +172,21 @@ describe('config', () => {
       ...currentConfigWithSkipList,
       typesToSkip: ['someType'],
       filePathRegexSkipList: ['someRegex'],
+      fileCabinet: ['SomeRegex', _.escapeRegExp(newFailedFilePath), newLargeFolderExclusion],
     }
 
     const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: ['someFailedFile'] },
-      { lockedError: {}, unexpectedError: {} },
+      {
+        failedToFetchAllAtOnce: false,
+        failedFilePaths: { lockedError: [], otherError: [newFailedFilePath], largeFolderError: [newLargeFolderPath] },
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+        failedCustomRecords: [],
+      },
       config
     )
 
-    expect(configChange?.message).toBe(`${STOP_MANAGING_ITEMS_MSG} In addition, ${UPDATE_FETCH_CONFIG_FORMAT}`)
-  })
-
-  it('should omit skipList and update "fetch.exclude". config with skipList AND fetch', () => {
-    const conf = { ...currentConfigWithFetch,
-      skipList: currentConfigWithSkipList.skipList }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      conf
-    )
-    expect(configChange?.config[0]
-      .isEqual(new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        {
-          fetch: {
-            include: fetchDefault.include,
-            exclude: {
-              fileCabinet: ['SomeRegex'],
-              types: [
-                { name: 'testAll', ids: ['.*'] },
-                { name: 'testExistingPartial', ids: ['scriptid1', 'scriptid2'] },
-              ],
-              customRecords: [],
-            },
-          },
-          client: {
-            fetchTypeTimeoutInMinutes: 15,
-            maxItemsInImportObjectsRequest: 10,
-            sdfConcurrencyLimit: 2,
-          },
-        }
-      ))).toBe(true)
-  })
-
-  it('should convert PascalCase typeNames to camelCase', () => {
-    const conf = {
-      fetch: {
-        exclude: {
-          types: [{
-            name: 'Subsidiary',
-          }],
-          fileCabinet: [],
-        },
-      },
-    }
-    const configChange = getConfigFromConfigChanges(
-      false,
-      { lockedError: [], otherError: [] },
-      { lockedError: {}, unexpectedError: {} },
-      conf,
-    )
-    expect(configChange?.config?.[0].value).toEqual({
-      fetch: {
-        exclude: {
-          types: [{
-            name: 'subsidiary',
-          }],
-          fileCabinet: [],
-        },
-      },
-    })
-    expect(configChange?.message).toBe(UPDATE_SUITEAPP_TYPES_CONFIG_FORMAT)
+    expect(configChange?.message)
+      .toBe(formatConfigSuggestionsReasons([STOP_MANAGING_ITEMS_MSG, LARGE_FOLDERS_EXCLUDED_MESSAGE]))
   })
 
   describe('should have a correct default fetch config', () => {
@@ -361,6 +195,111 @@ describe('config', () => {
         .toContainEqual({
           name: 'assemblyItem|lotNumberedAssemblyItem|serializedAssemblyItem|descriptionItem|discountItem|kitItem|markupItem|nonInventoryPurchaseItem|nonInventorySaleItem|nonInventoryResaleItem|otherChargeSaleItem|otherChargeResaleItem|otherChargePurchaseItem|paymentItem|serviceResaleItem|servicePurchaseItem|serviceSaleItem|subtotalItem|inventoryItem|lotNumberedInventoryItem|serializedInventoryItem|itemGroup',
         })
+    })
+  })
+
+  describe('instanceLimiter', () => {
+    const overDefault = DEFAULT_MAX_INSTANCES_VALUE + 1
+    const underDefault = DEFAULT_MAX_INSTANCES_VALUE - 1
+    describe('with maxInstancesPerType in the config', () => {
+      let limiter: InstanceLimiterFunc
+      beforeAll(() => {
+        limiter = instanceLimiterCreator({ maxInstancesPerType: [
+          { name: 'customsegment', limit: 30 },
+          { name: 'customsegment', limit: 6000 },
+          { name: 'unlimited', limit: UNLIMITED_INSTANCES_VALUE },
+          { name: 'savedsearch', limit: 50_000 },
+        ] })
+      })
+
+      it('should apply limit only if over the default', () => {
+        expect(limiter('customsegment', 31)).toBeFalsy()
+      })
+
+      it('should limit according to type if exists and over default', () => {
+        expect(limiter('customsegment', 6001)).toBeTruthy()
+        expect(limiter('customsegment', 5999)).toBeFalsy()
+      })
+      it('should limit according to default if type does not exist', () => {
+        expect(limiter('test', overDefault)).toBeTruthy()
+        expect(limiter('test', underDefault)).toBeFalsy()
+      })
+      it('should not limit at all if the type is unlimited', () => {
+        expect(limiter('unlimited', 100_000_000)).toBeFalsy()
+      })
+      it('should limit to the highest match if multiple exist (also from default definition)', () => {
+        expect(limiter('savedsearch', 30_000)).toBeFalsy()
+        expect(limiter('savedsearch', 60_000)).toBeTruthy()
+      })
+    })
+    describe('without maxInstancesPerType in the config', () => {
+      let limiter: InstanceLimiterFunc
+      beforeAll(() => {
+        limiter = instanceLimiterCreator({})
+      })
+
+      it('should limit according to type if exists', () => {
+        expect(limiter('customrecord_type', 10_001)).toBeTruthy()
+        expect(limiter('customrecord_type', 9999)).toBeFalsy()
+      })
+      it('should limit according to default if type does not exist', () => {
+        expect(limiter('test', overDefault)).toBeTruthy()
+        expect(limiter('test', underDefault)).toBeFalsy()
+      })
+    })
+
+    it('should limit according to default if no parameter is given', () => {
+      const limiter = instanceLimiterCreator()
+      expect(limiter('test', overDefault)).toBeTruthy()
+      expect(limiter('test', underDefault)).toBeFalsy()
+    })
+
+    it('should limit according to the largest matching limit', () => {
+      const limiter = instanceLimiterCreator({ maxInstancesPerType: [
+        { name: 'customsegment', limit: 8000 },
+        { name: 'custom.*', limit: 7000 },
+        { name: '.*', limit: 6000 },
+      ] })
+      expect(limiter('customsegment', 7999)).toBeFalsy()
+      expect(limiter('customsegment', 8001)).toBeTruthy()
+
+      expect(limiter('customlist', 6999)).toBeFalsy()
+      expect(limiter('customlist', 7001)).toBeTruthy()
+
+      expect(limiter('test', 5999)).toBeFalsy()
+      expect(limiter('test', 6001)).toBeTruthy()
+    })
+  })
+
+  describe('validateClientConfig', () => {
+    describe('validateMaxInstancesPerType', () => {
+      it('should validate maxInstancesPerType is the correct object with valid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should validate also customrecordtype instances', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'customrecord_ForTesting', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).not.toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the wrong object', () => {
+        const config = {
+          maxInstancesPerType: [{ wrong_name: 'customsegment', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
+
+      it('should throw if maxInstancesPerType is the correct object with invalid NS types', () => {
+        const config = {
+          maxInstancesPerType: [{ name: 'not_supported_type', limit: 3 }],
+        }
+        expect(() => validateClientConfig(config, false)).toThrow()
+      })
     })
   })
 })

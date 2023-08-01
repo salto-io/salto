@@ -23,6 +23,7 @@ import { getChangedObjects } from '../../src/changes_detector/changes_detector'
 import NetsuiteClient from '../../src/client/client'
 import mockSdfClient from '../client/sdf_client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('changes_detector', () => {
   const query = {
@@ -66,7 +67,7 @@ describe('changes_detector', () => {
     await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(getCustomRecordTypeChangesMock).toHaveBeenCalled()
@@ -78,10 +79,24 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/anyFile')).toBeTruthy()
+  })
+
+  it('should match the file direct parent directory if the file was changed', async () => {
+    getChangedFilesMock.mockResolvedValue([{ type: 'object', objectId: '/Templates/path/to/file', time: new Date('03/15/2020 03:04 pm') }])
+    const changedObjectsQuery = await getChangedObjects(
+      client,
+      query,
+      createDateRange(new Date('2022-01-11T18:55:17.949Z'), new Date('2022-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
+      serviceIdToLastFetchDate,
+    )
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/')).toBeTruthy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/')).toBeFalsy()
+    expect(changedObjectsQuery.isFileMatch('/Templates/path/to/irrelevantFile')).toBeFalsy()
   })
 
   it('should match types that are not supported by the changes detector', async () => {
@@ -92,7 +107,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
@@ -109,7 +124,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord1',
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('customrecordtype')).toBeTruthy()
@@ -123,6 +138,7 @@ describe('changes_detector', () => {
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecordtype'))
     expect(runSuiteQLMock).toHaveBeenCalledWith(expect.stringContaining('FROM customrecord1'))
   })
+
   it('should match custom records of custom segments', async () => {
     runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'customrecord_cseg1' }, { scriptid: 'customrecord2' }])
     runSuiteQLMock.mockResolvedValueOnce([{ scriptid: 'VAL_123' }])
@@ -134,7 +150,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: (name: string) => name === 'customrecord_cseg1',
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isTypeMatch('customsegment')).toBeTruthy()
@@ -151,7 +167,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.isFileMatch('/Templates/path/to/file')).toBeTruthy()
@@ -177,7 +193,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
 
@@ -196,7 +212,7 @@ describe('changes_detector', () => {
         areSomeFilesMatch: () => false,
         isCustomRecordTypeMatch: () => false,
       } as unknown as NetsuiteQuery,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()
@@ -210,7 +226,7 @@ describe('changes_detector', () => {
     const changedObjectsQuery = await getChangedObjects(
       client,
       query,
-      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+      createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
       serviceIdToLastFetchDate,
     )
     expect(changedObjectsQuery.areSomeFilesMatch()).toBeFalsy()

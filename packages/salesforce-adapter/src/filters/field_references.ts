@@ -20,7 +20,13 @@ import { logger } from '@salto-io/logging'
 import { collections, multiIndex } from '@salto-io/lowerdash'
 import { apiName, metadataType } from '../transformers/transformer'
 import { LocalFilterCreator } from '../filter'
-import { generateReferenceResolverFinder, ReferenceContextStrategyName, FieldReferenceDefinition, getLookUpName, fieldNameToTypeMappingDefs, defaultFieldNameToTypeMappingDefs } from '../transformers/reference_mapping'
+import {
+  generateReferenceResolverFinder,
+  ReferenceContextStrategyName,
+  FieldReferenceDefinition,
+  getLookUpName,
+  getReferenceMappingDefs,
+} from '../transformers/reference_mapping'
 import {
   WORKFLOW_ACTION_ALERT_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
   WORKFLOW_FLOW_ACTION_METADATA_TYPE, WORKFLOW_OUTBOUND_MESSAGE_METADATA_TYPE,
@@ -66,7 +72,7 @@ const shareToMapper: referenceUtils.ContextValueMapperFunc = (val: string) => {
 
 const neighborContextFunc = (args: {
   contextFieldName: string
-  levelsUp?: number
+  levelsUp?: number | 'top'
   contextValueMapper?: referenceUtils.ContextValueMapperFunc
 }): referenceUtils.ContextFunc => neighborContextGetter({ ...args, getLookUpName })
 
@@ -88,6 +94,7 @@ const contextStrategyLookup: Record<
   neighborCPQRuleLookup: neighborContextFunc({ contextFieldName: CPQ_RULE_LOOKUP_OBJECT_FIELD }),
   neighborLookupValueTypeLookup: neighborContextFunc({ contextFieldName: 'lookupValueType' }),
   neighborObjectLookup: neighborContextFunc({ contextFieldName: 'object' }),
+  neighborSobjectLookup: neighborContextFunc({ contextFieldName: 'sobjectType' }),
   parentObjectLookup: neighborContextFunc({ contextFieldName: 'object', levelsUp: 1 }),
   parentInputObjectLookup: neighborContextFunc({ contextFieldName: 'inputObject', levelsUp: 1 }),
   parentOutputObjectLookup: neighborContextFunc({ contextFieldName: 'outputObject', levelsUp: 1 }),
@@ -97,14 +104,14 @@ const contextStrategyLookup: Record<
   neighborCaseOwnerTypeLookup: neighborContextFunc({ contextFieldName: 'caseOwnerType' }),
   neighborAssignedToTypeLookup: neighborContextFunc({ contextFieldName: 'assignedToType' }),
   neighborRelatedEntityTypeLookup: neighborContextFunc({ contextFieldName: 'relatedEntityType' }),
-
+  parentSObjectTypeLookupTopLevel: neighborContextFunc({ contextFieldName: 'SObjectType', levelsUp: 'top' }),
 }
 
 
 export const addReferences = async (
   elements: Element[],
   referenceElements: ReadOnlyElementsSource,
-  defs?: FieldReferenceDefinition[]
+  defs: FieldReferenceDefinition[]
 ): Promise<void> => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
@@ -150,9 +157,10 @@ export const addReferences = async (
 const filter: LocalFilterCreator = ({ config }) => ({
   name: 'fieldReferencesFilter',
   onFetch: async elements => {
-    const refDef = config.enumFieldPermissions
-      ? defaultFieldNameToTypeMappingDefs
-      : fieldNameToTypeMappingDefs
+    const refDef = getReferenceMappingDefs({
+      enumFieldPermissions: config.enumFieldPermissions ?? false,
+      otherProfileRefs: config.fetchProfile.isFeatureEnabled('generateRefsInProfiles'),
+    })
     await addReferences(
       elements,
       buildElementsSourceForFetch(elements, config),

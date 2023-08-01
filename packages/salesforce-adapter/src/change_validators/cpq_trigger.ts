@@ -42,6 +42,7 @@ const getCpqError = (
     postAction: {
       title: 'Re-enable CPQ Triggers',
       description: 'CPQ triggers should now be re-enabled:',
+      showOnFailure: true,
       subActions: [
         'In Salesforce, navigate to Setup > Installed Packages > Salesforce CPQ > Configure > Additional Settings tab',
         'Uncheck the "Triggers Disabled" checkbox',

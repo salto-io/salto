@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { Change, ChangeDataType, ChangeError, ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ModificationChange, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
 import os from 'os'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -77,14 +78,14 @@ const getAllIssueTypesForWorkflowScheme = async (
 ): Promise<ReferenceExpression[]> => {
   const issueTypeSchemes: InstanceElement[] = await awu(assignedProjects)
     .map(instance => instance.value.issueTypeScheme)
-    .filter(isReferenceExpression)
+    .filter(isResolvedReferenceExpression)
     .map(ref => elementSource.get(ref.elemID))
     .filter(isInstanceElement)
     .toArray()
   const issueTypes: ReferenceExpression[] = issueTypeSchemes
     .filter(issueTypeScheme => Array.isArray(issueTypeScheme.value.issueTypeIds))
     .flatMap(issueTypeScheme => issueTypeScheme.value.issueTypeIds)
-    .filter(isReferenceExpression)
+    .filter(isResolvedReferenceExpression)
   return _.uniqBy(
     issueTypes,
     issueType => issueType.elemID.getFullName()
@@ -218,6 +219,7 @@ const getErrorMessageForStatusMigration = (
       postAction: serviceUrl ? {
         title: 'Finalize workflow scheme change',
         description: `Salto pushed the ${instance.elemID.name} workflow scheme changes, but did not publish it. Please follow these steps to complete this change and migrate affected issues`,
+        showOnFailure: false,
         subActions: [
           `Go to ${serviceUrl}`,
           'Click on "Publish"',

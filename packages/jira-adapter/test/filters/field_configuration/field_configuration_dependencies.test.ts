@@ -247,5 +247,17 @@ describe('fieldConfigurationItemsFilter', () => {
       ])
       expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
     })
+    it('should not add generated dependencies if issueTypeScreenScheme is not a valid reference', async () => {
+      projectInstance.value.issueTypeScreenScheme = new ReferenceExpression(
+        new ElemID(JIRA, 'IssueTypeScreenScheme', 'instance', 'issueTypeScreenScheme'),
+      )
+      await filter.onFetch([
+        projectInstance,
+        ...fieldConfigurationItems,
+        fieldInstance,
+        fieldConfigurationInstance,
+      ])
+      expect(projectInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]).toBeUndefined()
+    })
   })
 })

@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change, getChangeData, InstanceElement,
+  Change, getChangeData, InstanceElement, SaltoError,
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
@@ -37,7 +37,10 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
         deployResult: {
           appliedChanges: [],
           errors: [
-            new Error(`${ACCOUNT_SETTING_TYPE_NAME} element is a singleton and should have only on instance. Found multiple: ${accountSettingChanges.length}`),
+            {
+              message: `${ACCOUNT_SETTING_TYPE_NAME} element is a singleton and should have only on instance. Found multiple: ${accountSettingChanges.length}`,
+              severity: 'Error',
+            } as SaltoError,
           ],
         },
         leftoverChanges,

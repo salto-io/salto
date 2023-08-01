@@ -17,12 +17,13 @@ import { ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter
 import filterCreator from '../../src/filters/data_instances_identifiers'
 import { NETSUITE } from '../../src/constants'
 import { IDENTIFIER_FIELD } from '../../src/data_elements/types'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('data_instances_identifiers', () => {
   it('should remove identifier field', async () => {
     const accountType = new ObjectType({ elemID: new ElemID(NETSUITE, 'account'), annotations: { source: 'soap' } })
     const accountInstance = new InstanceElement('instance', accountType, { [IDENTIFIER_FIELD]: 'someValue' })
-    await filterCreator().preDeploy?.([
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([
       toChange({ after: accountInstance }),
     ])
     expect(accountInstance.value[IDENTIFIER_FIELD]).toBeUndefined()

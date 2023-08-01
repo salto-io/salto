@@ -14,17 +14,20 @@
 * limitations under the License.
 */
 import { ElemID, ObjectType, toChange } from '@salto-io/adapter-api'
-import { createChangeValidator } from '@salto-io/adapter-utils'
+import { createChangeValidator } from '../../../src/deployment/change_validators'
 import { deployNotSupportedValidator } from '../../../src/deployment/change_validators/deploy_not_supported'
 
 describe('change validator creator', () => {
   describe('deployNotSupportedValidator', () => {
+    const validators = {
+      deployNotSupported: deployNotSupportedValidator,
+    }
     it('should not fail if there are no deploy changes', async () => {
-      expect(await createChangeValidator([deployNotSupportedValidator])([])).toEqual([])
+      expect(await createChangeValidator({ validators })([])).toEqual([])
     })
 
     it('should fail each change individually', async () => {
-      expect(await createChangeValidator([deployNotSupportedValidator])([
+      expect(await createChangeValidator({ validators })([
         toChange({ after: new ObjectType({ elemID: new ElemID('myAdapter', 'obj') }) }),
         toChange({ before: new ObjectType({ elemID: new ElemID('myAdapter', 'obj2') }) }),
       ])).toEqual([

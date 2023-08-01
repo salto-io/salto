@@ -23,6 +23,7 @@ import { NETSUITE, RECORDS_PATH, SOAP } from '../constants'
 import { NetsuiteQuery } from '../query'
 import { getTypeIdentifier, SUPPORTED_TYPES } from './types'
 import NetsuiteClient from '../client/client'
+import { DataElementsResult } from '../client/types'
 import { castFieldValue } from './custom_fields'
 import { addIdentifierToValues, addIdentifierToType } from './multi_fields_identifiers'
 
@@ -136,12 +137,12 @@ export const getDataElements = async (
   client: NetsuiteClient,
   query: NetsuiteQuery,
   elemIdGetter?: ElemIdGetter,
-): Promise<(ObjectType | InstanceElement)[]> => {
+): Promise<DataElementsResult> => {
   const types = await getDataTypes(client)
 
   const typesToFetch = SUPPORTED_TYPES.filter(query.isTypeMatch)
   if (typesToFetch.length === 0) {
-    return types
+    return { elements: types, requestedTypes: [], largeTypesError: [] }
   }
 
   const typesMap = _.keyBy(types, e => e.elemID.name)
@@ -149,23 +150,28 @@ export const getDataElements = async (
   const availableTypesToFetch = typesToFetch.filter(typeName => typeName in typesMap)
 
   if (availableTypesToFetch.length === 0) {
-    return types
+    return { elements: types, requestedTypes: [], largeTypesError: [] }
   }
 
+  const { records: allRecords, largeTypesError } = await client.getAllRecords(availableTypesToFetch)
   const instances = await createInstances(
-    await client.getAllRecords(availableTypesToFetch),
+    allRecords,
     typesMap,
     elemIdGetter,
   )
 
-  return [
-    ...types,
-    ...await awu(instances).filter(async instance => {
-      const type = await instance.getType()
-      return query.isObjectMatch({
-        type: type.elemID.name,
-        instanceId: instance.value[getTypeIdentifier(type)],
-      })
-    }).toArray(),
-  ]
+  return {
+    elements: [
+      ...types,
+      ...await awu(instances).filter(async instance => {
+        const type = await instance.getType()
+        return query.isObjectMatch({
+          type: type.elemID.name,
+          instanceId: instance.value[getTypeIdentifier(type)],
+        })
+      }).toArray(),
+    ],
+    requestedTypes: availableTypesToFetch,
+    largeTypesError,
+  }
 }

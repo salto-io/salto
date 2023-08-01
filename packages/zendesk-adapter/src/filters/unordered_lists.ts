@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isArray, isString } from 'lodash'
+import _ from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -70,7 +70,7 @@ const orderDynamicContentItems = (instances: InstanceElement[]): void => {
           ([dynamicContentItemVariantInstancesById[variant.elemID.getFullName()].value.locale_id.value.value?.locale])
       )
     } else {
-      log.error(`could not sort variants for ${inst.elemID.getFullName()}`)
+      log.warn(`could not sort variants for ${inst.elemID.getFullName()}`)
     }
   })
 }
@@ -94,7 +94,7 @@ const orderTriggerDefinitions = (instances: InstanceElement[]): void => {
 
 const isValidMacroIds = (ids: unknown, groupInstancesById: Record<string, InstanceElement>)
   : ids is ReferenceExpression[] =>
-  isArray(ids) && ids.every(
+  _.isArray(ids) && ids.every(
     id => isReferenceExpression(id) && (groupInstancesById[id.elemID.getFullName()]?.value.name !== undefined)
   )
 
@@ -103,6 +103,9 @@ const orderMacros = (instances: InstanceElement[]): void => {
   const groupInstancesById = getInstanceByFullName(GROUP_TYPE_NAME, instances)
   macroInstances.forEach(macro => {
     const ids = macro.value.restriction?.ids
+    if (ids === undefined) { // the restriction does not have to be by ids
+      return
+    }
     if (isValidMacroIds(ids, groupInstancesById)) {
       macro.value.restriction.ids = _.sortBy(
         ids,
@@ -110,19 +113,20 @@ const orderMacros = (instances: InstanceElement[]): void => {
         id => ([groupInstancesById[id.elemID.getFullName()].value.name])
       )
     } else {
-      log.error(`could not sort ids for ${macro.elemID.getFullName()}`)
+      log.warn(`could not sort ids for ${macro.elemID.getFullName()}`)
     }
   })
 }
 
 const isValidConditions = (conditions: unknown, customFieldById: Record<string, InstanceElement>)
   : conditions is Condition[] =>
-  isArray(conditions) && conditions.every(condition =>
+  _.isArray(conditions) && conditions.every(condition =>
     (
       isReferenceExpression(condition.value)
       && (customFieldById[condition.value.elemID.getFullName()]?.value.value !== undefined)
     )
-    || (isString(condition.value)))
+    || _.isString(condition.value)
+    || _.isBoolean(condition.value))
 
 const sortConditions = (
   formInstances: InstanceElement[],
@@ -131,15 +135,18 @@ const sortConditions = (
 ): void => {
   formInstances.forEach(form => {
     const conditions = form.value[conditionType]
+    if (conditions === undefined) { // there may not be any conditions
+      return
+    }
     if (isValidConditions(conditions, customFieldById)) {
       form.value[conditionType] = _.sortBy(
         conditions,
-        condition => (isString(condition.value)
+        condition => (_.isString(condition.value) || _.isBoolean(condition.value)
           ? condition.value
           : [customFieldById[condition.value.elemID.getFullName()].value.value])
       )
     } else {
-      log.error(`could not sort conditions for ${form.elemID.getFullName()}`)
+      log.warn(`could not sort conditions for ${form.elemID.getFullName()}`)
     }
   })
 }
@@ -171,7 +178,7 @@ const sortChildFields = (
           field => ([ticketFieldById[field.id.elemID.getFullName()].value.raw_title])
         )
       } else {
-        log.error(`could not sort child fields for ${form.elemID.getFullName()}`)
+        log.warn(`could not sort child fields for ${form.elemID.getFullName()}`)
       }
     })
   })

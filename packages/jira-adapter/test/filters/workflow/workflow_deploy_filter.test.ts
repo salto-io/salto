@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
+import { logger } from '@salto-io/logging'
 import { deployment, filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
 import JiraClient from '../../../src/client/client'
@@ -22,6 +23,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
 import workflowFilter, { INITIAL_VALIDATOR } from '../../../src/filters/workflow/workflow_deploy_filter'
 import { getFilterParams, mockClient } from '../../utils'
 import { WITH_PERMISSION_VALIDATORS } from './workflow_values'
+
 
 jest.mock('@salto-io/adapter-components', () => {
   const actual = jest.requireActual('@salto-io/adapter-components')
@@ -33,6 +35,9 @@ jest.mock('@salto-io/adapter-components', () => {
     },
   }
 })
+
+const logging = logger('jira-adapter/src/filters/workflow/workflow_deploy_filter')
+const logErrorSpy = jest.spyOn(logging, 'error')
 
 describe('workflowDeployFilter', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'deploy'>
@@ -80,6 +85,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     validators: [
@@ -120,8 +126,9 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
                 rules: {
                   conditions: {
@@ -131,15 +138,15 @@ describe('workflowDeployFilter', () => {
                     },
                     conditions: [
                       {
-                        configuration: [{
+                        configuration: {
                           id: 2,
-                        }],
+                        },
                       },
                     ],
                   },
                 },
               },
-            ],
+            },
           },
         ),
       })
@@ -155,6 +162,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                   rules: {
                     conditions: {
@@ -164,9 +172,9 @@ describe('workflowDeployFilter', () => {
                       },
                       conditions: [
                         {
-                          configuration: [{
+                          configuration: {
                             id: '2',
-                          }],
+                          },
                         },
                       ],
                     },
@@ -204,6 +212,7 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
+            transitions: {},
           }
         ),
       })
@@ -217,6 +226,7 @@ describe('workflowDeployFilter', () => {
             workflowType,
             {
               name: 'name',
+              transitions: [],
             },
           ),
         }),
@@ -234,11 +244,12 @@ describe('workflowDeployFilter', () => {
           workflowType,
           {
             name: 'name',
-            transitions: [
-              {
+            transitions: {
+              'tran1__From__none__Initial@fffsff': {
+                name: 'tran1',
                 type: 'initial',
               },
-            ],
+            },
           }
         ),
       })
@@ -254,6 +265,7 @@ describe('workflowDeployFilter', () => {
               name: 'name',
               transitions: [
                 {
+                  name: 'tran1',
                   type: 'initial',
                 },
               ],
@@ -437,6 +449,388 @@ describe('workflowDeployFilter', () => {
       await filter.deploy([change])
 
       expect(connection.get).not.toHaveBeenCalledWith('/rest/workflowDesigner/1.0/workflows', expect.anything())
+    })
+    describe('workflow diagrams', () => {
+      let instance: InstanceElement
+      const TRANSITION_KEY_3 = 'hey__From__Open__Directed@fffsff'
+      beforeEach(() => {
+        instance = new InstanceElement(
+          'instance',
+          workflowType,
+          {
+            name: 'workflowName',
+            statuses: [
+              {
+                name: 'Resolved',
+                id: '5',
+                location: {
+                  x: -33,
+                  y: 3,
+                },
+              },
+              {
+                name: 'Open',
+                id: '1',
+                location: {
+                  x: -3,
+                  y: 3,
+                },
+              },
+              {
+                name: 'The best name',
+                id: '10007',
+                location: {
+                  x: 3,
+                  y: -3,
+                },
+              },
+              {
+                name: 'Create',
+                id: '5',
+                location: {
+                  x: 3,
+                  y: 33,
+                },
+              },
+              {
+                name: 'Building',
+                id: '400',
+                location: {
+                  x: 33,
+                  y: 3,
+                },
+              },
+              {
+                name: 'without location',
+                id: '500',
+              },
+            ],
+            diagramInitialEntry: {
+              x: 33,
+              y: 66,
+            },
+            diagramGlobalLoopedTransition: {
+              x: -15.85,
+              y: 109.40,
+            },
+            transitions: {
+              'Building__From__any_status__Global@fffssff': {
+                name: 'Building',
+                to: '400',
+                type: 'global',
+              },
+              'Create__From__none__Initial@fffsff': {
+                name: 'Create',
+                to: '1',
+                type: 'initial',
+                from: [
+                  {
+                    sourceAngle: 11,
+                    targetAngle: 19,
+                  },
+                ],
+              },
+              [TRANSITION_KEY_3]: {
+                name: 'hey',
+                to: '5',
+                type: 'directed',
+                from: [
+                  {
+                    id: '1',
+                    sourceAngle: 19,
+                    targetAngle: 11,
+                  },
+                ],
+              },
+              'super__From__the_best_name__Directed@fffsssff': {
+                name: 'super',
+                from: [
+                  {
+                    id: '10007',
+                    sourceAngle: 111,
+                    targetAngle: 199,
+                  },
+                ],
+                to: '400',
+                type: 'directed',
+              },
+              'yey__From__Resolved__Directed@fffsff': {
+                name: 'yey',
+                from: [
+                  {
+                    id: 5,
+                    sourceAngle: 111,
+                    targetAngle: 1,
+                  },
+                ],
+                to: '10007',
+                type: 'directed',
+              },
+              'with_from_a_string__From__Resolved__Directed@sssfffssff': {
+                name: 'with from as string',
+                from: [
+                  '5',
+                ],
+                to: '10007',
+                type: 'directed',
+              },
+              'looped__From__any_status__Circular@fffssff': {
+                name: 'looped',
+                from: [],
+                to: '',
+                type: 'global',
+              },
+            },
+          }
+        )
+        mockConnection.post.mockResolvedValue({
+          status: 200,
+          data: {
+          },
+        })
+        mockConnection.get.mockResolvedValue({
+          status: 200,
+          data: {
+            isDraft: false,
+            layout: {
+              statuses: [
+                {
+                  id: 'S<3>',
+                  name: 'Open',
+                  stepId: '3',
+                  statusId: '1',
+                  x: 3,
+                  y: 6,
+                },
+                {
+                  id: 'I<1>',
+                  name: 'Create',
+                  stepId: '1',
+                  initial: true,
+                  x: 33,
+                  y: 66,
+                },
+                {
+                  id: 'S<4>',
+                  name: 'Resolved',
+                  stepId: '4',
+                  statusId: '5',
+                  x: -3,
+                  y: 6,
+                },
+                {
+                  id: 'S<1>',
+                  name: 'Building',
+                  stepId: '1',
+                  statusId: '400',
+                  x: 3,
+                  y: -66,
+                },
+                {
+                  id: 'S<2>',
+                  name: 'The best name',
+                  stepId: '2',
+                  statusId: '10007',
+                  x: 33,
+                  y: -66,
+                },
+                {
+                  id: 'S<22>',
+                  name: 'without x and y',
+                  stepId: '5',
+                  statusId: '500',
+                  x: 3333,
+                  y: -6666,
+                },
+              ],
+              transitions: [
+                {
+                  id: 'A<31:S<2>:S<1>>',
+                  name: 'super',
+                  sourceId: 'S<2>',
+                  targetId: 'S<1>',
+                  sourceAngle: 34.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'IA<1:I<1>:S<3>>',
+                  name: 'Create',
+                  sourceId: 'I<1>',
+                  targetId: 'S<3>',
+                  sourceAngle: 99.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'A<41:S<4>:S<2>>',
+                  name: 'yey',
+                  sourceId: 'S<4>',
+                  targetId: 'S<2>',
+                  sourceAngle: 78.11,
+                  targetAngle: 122.58,
+                },
+                {
+                  id: 'A<21:S<3>:S<4>>',
+                  name: 'hey',
+                  sourceId: 'S<3>',
+                  targetId: 'S<4>',
+                  sourceAngle: -78.11,
+                  targetAngle: 173.58,
+                },
+                {
+                  id: 'A<51:S<3>:S<4>>',
+                  name: 'with from as string',
+                  sourceId: 'S<4>',
+                  targetId: 'S<2>',
+                  sourceAngle: 78.11,
+                  targetAngle: 122.58,
+                },
+                {
+                  id: 'A<11:S<1>:S<1>>',
+                  name: 'Building',
+                  sourceId: 'S<1>',
+                  targetId: 'S<1>',
+                  sourceAngle: 78.11,
+                  targetAngle: -173.58,
+                },
+                {
+                  id: 'A<51:S<-1>:S<-1>>',
+                  name: 'looped',
+                  sourceId: 'S<-1>',
+                  targetId: 'S<-1>',
+                  globalTransition: true,
+                  loopedTransition: true,
+                },
+              ],
+              loopedTransitionContainer: {
+                x: -15.85,
+                y: 109.40,
+              },
+            },
+          },
+        })
+        filter = workflowFilter(getFilterParams({
+          client,
+        })) as typeof filter
+      })
+      afterEach(() => {
+        jest.clearAllMocks()
+      })
+      it('should deploy workflow diagram values', async () => {
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(mockConnection.post).toHaveBeenCalledWith('/rest/workflowDesigner/latest/workflows', {
+          name: 'workflowName',
+          draft: false,
+          layout: {
+            statuses: [
+              {
+                id: 'S<4>',
+                x: -33,
+                y: 3,
+              },
+              {
+                id: 'S<3>',
+                x: -3,
+                y: 3,
+              },
+              {
+                id: 'S<2>',
+                x: 3,
+                y: -3,
+              },
+              {
+                id: 'S<4>',
+                x: 3,
+                y: 33,
+              },
+              {
+                id: 'S<1>',
+                x: 33,
+                y: 3,
+              },
+              {
+                id: 'S<22>',
+              },
+              {
+                id: 'I<1>',
+                x: 33,
+                y: 66,
+              },
+            ],
+            transitions: [
+              {
+                id: 'IA<1:I<1>:S<3>>',
+                sourceId: 'I<1>',
+                targetId: 'S<3>',
+                sourceAngle: 11,
+                targetAngle: 19,
+              },
+              {
+                id: 'A<21:S<3>:S<4>>',
+                sourceId: 'S<3>',
+                targetId: 'S<4>',
+                sourceAngle: 19,
+                targetAngle: 11,
+              },
+              {
+                id: 'A<31:S<2>:S<1>>',
+                sourceId: 'S<2>',
+                targetId: 'S<1>',
+                sourceAngle: 111,
+                targetAngle: 199,
+              },
+              {
+                id: 'A<41:S<4>:S<2>>',
+                sourceId: 'S<4>',
+                targetId: 'S<2>',
+                sourceAngle: 111,
+                targetAngle: 1,
+              },
+            ],
+            loopedTransitionContainer: {
+              x: -15.85,
+              y: 109.40,
+            },
+          },
+        },
+        { headers: { 'X-Atlassian-Token': 'no-check' },
+          params: undefined,
+          responseType: undefined },)
+      })
+      it('should log error when transition from id is undefined', async () => {
+        instance.value.transitions[TRANSITION_KEY_3].from[0].id = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Transition hey diagram values')
+      })
+
+      it('should log error when post return an error ', async () => {
+        mockConnection.post.mockResolvedValue({
+          status: 400,
+          data: {
+          },
+        })
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to post Workflow workflowName diagram values with status 400')
+      })
+      it('should log error when status does not have id ', async () => {
+        instance.value.statuses[2].id = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).toHaveBeenCalledWith('Fail to deploy Workflow workflowName diagram with the error: Fail to deploy Workflow workflowName Status The best name Diagram values')
+      })
+      it('should work ok with partial transition from values', async () => {
+        instance.value.transitions[TRANSITION_KEY_3].from[0].targetAngle = undefined
+        await filter.deploy([toChange(
+          { after: instance }
+        )])
+        expect(logErrorSpy).not.toHaveBeenCalled()
+      })
     })
   })
 })

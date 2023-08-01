@@ -22,6 +22,8 @@ import {
   AdapterAuthentication, OAuthRequestParameters, OauthAccessTokenResponse,
   createRefToElmWithValue,
   StaticFile,
+  ChangeError,
+  ChangeDataType,
 } from '@salto-io/adapter-api'
 import {
   Plan, PlanItem, EVENT_TYPES, DeployResult,
@@ -349,9 +351,9 @@ export const mockWorkspace = ({
     getSourceRanges: mockFunction<Workspace['getSourceRanges']>().mockResolvedValue([]),
     getElementReferencedFiles: mockFunction<Workspace['getElementReferencedFiles']>().mockResolvedValue([]),
     getReferenceSourcesIndex: mockFunction<Workspace['getReferenceSourcesIndex']>(),
-    getReferenceTargetsIndex: mockFunction<Workspace['getReferenceTargetsIndex']>(),
     getElementOutgoingReferences: mockFunction<Workspace['getElementOutgoingReferences']>().mockResolvedValue([]),
     getElementIncomingReferences: mockFunction<Workspace['getElementIncomingReferences']>().mockResolvedValue([]),
+    getElementAuthorInformation: mockFunction<Workspace['getElementAuthorInformation']>().mockResolvedValue({}),
     getElementNaclFiles: mockFunction<Workspace['getElementNaclFiles']>().mockResolvedValue([]),
     getElementIdsBySelectors: mockFunction<Workspace['getElementIdsBySelectors']>().mockResolvedValue(awu([])),
     getParsedNaclFile: mockFunction<Workspace['getParsedNaclFile']>(),
@@ -519,6 +521,37 @@ const createChange = (action: 'add' | 'modify' | 'remove', ...path: string[]): C
   }
 }
 
+const showOnFailureDummyChanges = {
+  successful: {
+    withShowOnFailure: createChange('add', 'successful.with.show_on_failure'),
+    withoutShowOnFailure: createChange('add', 'successful.without.show_on_failure'),
+  },
+  failure: {
+    withShowOnFailure: createChange('add', 'failure.with.show_on_failure'),
+    withoutShowOnFailure: createChange('add', 'failure.without.show_on_failure'),
+  },
+}
+
+const createShowOnFailureDummyChangeError = (
+  { change, isSuccessful, showOnFailure }: { change: Change; isSuccessful: boolean; showOnFailure: boolean }
+): ChangeError => {
+  const prefix = isSuccessful ? 'Successful' : 'Failed'
+  const message = `${prefix} change with showOnFailure=${showOnFailure}`
+  return {
+    elemID: getChangeData(change).elemID,
+    severity: 'Info',
+    message,
+    detailedMessage: message,
+    deployActions: {
+      postAction: {
+        title: `${prefix} change - postDeployAction with showOnFailure=${showOnFailure}`,
+        subActions: ['subaction1'],
+        showOnFailure,
+      },
+    },
+  }
+}
+
 export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement } => {
   const result = new DataNodeMap<Group<Change>>()
   const configElemID = new ElemID('salesforce')
@@ -567,6 +600,18 @@ export const configChangePlan = (): { plan: Plan; updatedConfig: InstanceElement
 
 export const preview = (): Plan => {
   const result = new DataNodeMap<Group<Change>>()
+
+  const showOnFailureChanges: Array<Change<ChangeDataType>> = [
+    showOnFailureDummyChanges.failure.withShowOnFailure,
+    showOnFailureDummyChanges.failure.withoutShowOnFailure,
+    showOnFailureDummyChanges.successful.withShowOnFailure,
+    showOnFailureDummyChanges.successful.withoutShowOnFailure,
+  ]
+
+  const showOnFailurePlanItems = showOnFailureChanges.map(change => toPlanItem(change, [], []))
+  showOnFailurePlanItems.forEach(planItem => {
+    result.addNode(_.uniqueId('showOnFailure'), [], planItem)
+  })
 
   const leadPlanItem = toPlanItem(
     createChange('modify', 'lead'),
@@ -626,7 +671,7 @@ export const preview = (): Plan => {
     ],
   )
   result.addNode(_.uniqueId('instance'), [], instancePlanItem)
-  const changeErrors = [
+  const changeErrors: ChangeError[] = [
     {
       elemID: new ElemID('salesforce', 'test'),
       severity: 'Error',
@@ -648,6 +693,7 @@ export const preview = (): Plan => {
         postAction: {
           title: 'postDeployAction',
           subActions: ['third subtext', 'fourth subtext'],
+          showOnFailure: true,
         },
       },
     },
@@ -664,13 +710,34 @@ export const preview = (): Plan => {
         postAction: {
           title: 'postDeployAction2',
           subActions: ['third subtext2', 'fourth subtext2'],
+          showOnFailure: true,
         },
       },
     },
+    createShowOnFailureDummyChangeError({
+      change: showOnFailureDummyChanges.successful.withShowOnFailure,
+      showOnFailure: true,
+      isSuccessful: true,
+    }),
+    createShowOnFailureDummyChangeError({
+      change: showOnFailureDummyChanges.successful.withoutShowOnFailure,
+      showOnFailure: false,
+      isSuccessful: true,
+    }),
+    createShowOnFailureDummyChangeError({
+      change: showOnFailureDummyChanges.failure.withShowOnFailure,
+      showOnFailure: true,
+      isSuccessful: false,
+    }),
+    createShowOnFailureDummyChangeError({
+      change: showOnFailureDummyChanges.failure.withoutShowOnFailure,
+      showOnFailure: false,
+      isSuccessful: false,
+    }),
   ]
   Object.assign(result, {
     itemsByEvalOrder(): Iterable<PlanItem> {
-      return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem]
+      return [leadPlanItem, accountPlanItem, activityPlanItem, instancePlanItem, ...showOnFailurePlanItems]
     },
     getItem(id: string): PlanItem {
       if (id.startsWith('lead')) return leadPlanItem
@@ -708,6 +775,9 @@ export const deploy = async (
   return {
     success: true,
     changes: dummyChanges.map(c => ({ change: c, serviceChanges: [c] })),
+    appliedChanges: [
+      showOnFailureDummyChanges.successful.withShowOnFailure,
+      showOnFailureDummyChanges.successful.withoutShowOnFailure],
     errors: [],
   }
 }

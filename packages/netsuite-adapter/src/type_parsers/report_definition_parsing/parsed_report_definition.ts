@@ -144,7 +144,7 @@ type ReportDefinitionInnerFields = {
 type ReportCriteriaValuesType = {
   FIELD_DATE_FILTER_INDEX?: number
   SEQ_NUMBER?: number
-  FIELD_VALUE?: string
+  FIELD_VALUE?: unknown
 }
 
 type ReportCriteriaDescriptor = {
@@ -216,7 +216,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   const reportDefinitionUiPrefElemID = new ElemID(constants.NETSUITE, 'reportdefinition_uipreferences')
   const reportDefinitionLayoutsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_layouts')
   const reportDefinitionParamsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_parameters')
-  const reportDefinitionInnerFieldsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_fields')
+  const reportDefinitionFlagsElemID = new ElemID(constants.NETSUITE, 'reportdefinition_flags')
   const reportDefinitionAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_audience')
   const reportdefinitionAccessAudienceElemID = new ElemID(constants.NETSUITE, 'reportdefinition_accessaudience')
 
@@ -288,7 +288,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     fields: {
       FIELD_DATE_FILTER_INDEX: { refType: BuiltinTypes.NUMBER },
       SEQ_NUMBER: { refType: BuiltinTypes.NUMBER },
-      FIELD_VALUE: { refType: BuiltinTypes.STRING },
+      FIELD_VALUE: { refType: BuiltinTypes.UNKNOWN },
     },
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
@@ -429,8 +429,8 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
     path: [constants.NETSUITE, constants.TYPES_PATH, reportDefinitionElemID.name],
   })
 
-  const reportDefinitionInnerFields = createMatchingObjectType<ReportDefinitionInnerFields>({
-    elemID: reportDefinitionInnerFieldsElemID,
+  const reportDefinitionFlags = createMatchingObjectType<ReportDefinitionInnerFields>({
+    elemID: reportDefinitionFlagsElemID,
     annotations: {
     },
     fields: {
@@ -475,7 +475,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
   innerTypes.reportDefinitionCriteria = reportDefinitionCriteria
   innerTypes.reportDefinitionCriteriaDescriptor = reportCriteriaDescriptor
   innerTypes.reportDefinitionCriteriaValues = reportCriteriaValues
-  innerTypes.reportDefinitionInnerFields = reportDefinitionInnerFields
+  innerTypes.reportDefinitionFlags = reportDefinitionFlags
   innerTypes.reportdefinition_dependencies = reportDefinitionDependencies
   innerTypes.reportDefinitionFields = reportDefinitionFields
   innerTypes.reportDefinitionLayouts = reportDefinitionLayouts
@@ -540,7 +540,7 @@ export const reportdefinitionType = (): TypeAndInnerTypes => {
         refType: reportDefinitionUiPref,
       },
       flags: {
-        refType: reportDefinitionInnerFields,
+        refType: reportDefinitionFlags,
       },
     },
     annotations: {

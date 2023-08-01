@@ -29,8 +29,8 @@ const DEFAULT_OPTIONS = {
   warnStaleData: false,
   validate: false,
   additionalDependencies: {
-    include: { features: [], objects: [] },
-    exclude: { features: [], objects: [] },
+    include: { features: [], objects: [], files: [] },
+    exclude: { features: [], objects: [], files: [] },
   },
   deployReferencedElements: false,
   filtersRunner: () => ({
@@ -52,11 +52,14 @@ describe('change validator', () => {
     beforeEach(() => {
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {} },
-        errors: [],
+        failures: {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         elements: [],
+        deletedElements: [],
       }))
     })
     describe('without SuiteApp', () => {
@@ -125,11 +128,14 @@ describe('change validator', () => {
 
       fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
       Promise<FetchByQueryReturnType> => (Promise.resolve({
-        failedToFetchAllAtOnce: false,
-        failedFilePaths: { lockedError: [], otherError: [] },
-        failedTypes: { lockedError: {}, unexpectedError: {} },
-        errors: [],
+        failures: {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         elements: [serviceInstance],
+        deletedElements: [],
       }))
     })
     it('should not have change error when warnOnStaleWorkspaceData is false', async () => {

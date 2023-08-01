@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType, ReadOnlyElementsSource } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { entitycustomfieldType } from '../src/autogen/types/standard_types/entitycustomfield'
 import { CUSTOM_RECORD_TYPE, INTERNAL_ID, METADATA_TYPE, NETSUITE, SCRIPT_ID } from '../src/constants'
@@ -75,6 +75,41 @@ describe('createElementsSourceIndex', () => {
       '-123-2': new ElemID(NETSUITE, 'customrecord1'),
     })
   })
+  it('should not create internal ids index for a deleted element', async () => {
+    const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
+    const toBeDeleted = new InstanceElement(
+      'name',
+      type,
+      { internalId: '4' },
+    )
+    getMock.mockImplementation(buildElementsSourceFromElements([
+      type,
+    ]).get)
+    getAllMock.mockImplementation(buildElementsSourceFromElements([
+      toBeDeleted,
+      new InstanceElement(
+        'name2',
+        type,
+        { internalId: '5', isSubInstance: true },
+      ),
+      type,
+      new ObjectType({
+        elemID: new ElemID(NETSUITE, 'customrecord1'),
+        annotations: {
+          [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          [SCRIPT_ID]: 'customrecord1',
+          [INTERNAL_ID]: '2',
+        },
+      }),
+    ]).getAll)
+
+    const elementsSourceIndex = createElementsSourceIndex(elementsSource, true, [toBeDeleted.elemID])
+    const index = (await elementsSourceIndex.getIndexes()).internalIdsIndex
+    expect(index).toEqual({
+      'customrecordtype-2': new ElemID(NETSUITE, 'customrecord1'),
+      '-123-2': new ElemID(NETSUITE, 'customrecord1'),
+    })
+  })
   it('should not create internal ids index on full fetch', async () => {
     const type = new ObjectType({ elemID: new ElemID(NETSUITE, 'someType') })
     getMock.mockImplementation(buildElementsSourceFromElements([
@@ -117,10 +152,10 @@ describe('createElementsSourceIndex', () => {
 
     const elementsSourceIndex = createElementsSourceIndex(elementsSource, true)
     const index = (await elementsSourceIndex.getIndexes()).customFieldsIndex
-    expect(index.Contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
+    expect(index.contact.map(e => e.elemID.getFullName())).toEqual([instance1, instance2]
       .map(e => e.elemID.getFullName()))
 
-    expect(index.Employee.map(e => e.elemID.getFullName()))
+    expect(index.employee.map(e => e.elemID.getFullName()))
       .toEqual([instance1.elemID.getFullName()])
   })
   it('should not create custom fields index on full fetch', async () => {
@@ -194,6 +229,28 @@ describe('createElementsSourceIndex', () => {
       .toEqual({
         'netsuite.someType.instance.inst': '03/23/2022',
         'netsuite.customrecord1': '05/26/2022',
+      })
+  })
+  it('should create the correct customRecordField index', async () => {
+    const custRecordType = new ObjectType({
+      elemID: new ElemID(NETSUITE, 'customrecord1'),
+      fields: {
+        custom_field: {
+          refType: BuiltinTypes.STRING,
+          annotations: {
+            [SCRIPT_ID]: 'custom_field',
+          },
+        },
+      },
+      annotations: {
+        [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+      },
+    })
+    const custRecordField = custRecordType.fields.custom_field
+    getAllMock.mockImplementation(buildElementsSourceFromElements([custRecordType]).getAll)
+    expect((await createElementsSourceIndex(elementsSource, true).getIndexes()).customRecordFieldsServiceIdRecordsIndex)
+      .toEqual({
+        custom_field: { elemID: custRecordField.elemID.createNestedID(SCRIPT_ID), serviceID: 'custom_field' },
       })
   })
 })

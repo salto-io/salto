@@ -14,15 +14,14 @@
 * limitations under the License.
 */
 import { AdditionChange, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
-  isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, isReferenceExpression, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { logger } from '@salto-io/logging'
+  isAdditionChange, isAdditionOrModificationChange, isInstanceChange, isModificationChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { isFreeLicense } from '../utils'
 import JiraClient from '../client/client'
 import { PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 const projectError = (elemID: ElemID): ChangeError => ({
   elemID,
@@ -55,10 +54,11 @@ const schemeWarning = (elemID: ElemID): ChangeError => ({
 const isPermissionSchemeAssociationChange = (
   change: AdditionChange<InstanceElement> | ModificationChange<InstanceElement>
 ): boolean => {
-  const elemBefore = isModificationChange(change) && isReferenceExpression(change.data.before.value.permissionScheme)
+  const elemBefore = isModificationChange(change)
+  && isResolvedReferenceExpression(change.data.before.value.permissionScheme)
     ? change.data.before.value.permissionScheme.elemID.getFullName()
     : undefined
-  const elemAfter = isReferenceExpression(change.data.after.value.permissionScheme)
+  const elemAfter = isResolvedReferenceExpression(change.data.after.value.permissionScheme)
     ? change.data.after.value.permissionScheme.elemID.getFullName()
     : undefined
   return (elemBefore !== elemAfter)
@@ -69,68 +69,67 @@ const isPermissionSchemeAssociationChange = (
  * In cloud free tier you cannot create a new one
  */
 export const permissionSchemeDeploymentValidator = (client: JiraClient): ChangeValidator =>
-  async (changes, elementsSource) =>
-    log.time(async () => {
-      if (client.isDataCenter || elementsSource === undefined
-        || (!await isFreeLicense(elementsSource))
-        || !changes) {
-        return []
-      }
-      const projectAndSchemeChanges = changes
-        .filter(isInstanceChange)
-        .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
-              || getChangeData(change).elemID.typeName === PROJECT_TYPE)
-      if (projectAndSchemeChanges.length === 0) {
-        return []
-      }
+  async (changes, elementsSource) => {
+    if (client.isDataCenter || elementsSource === undefined
+      || (!await isFreeLicense(elementsSource))
+      || !changes) {
+      return []
+    }
+    const projectAndSchemeChanges = changes
+      .filter(isInstanceChange)
+      .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME
+            || getChangeData(change).elemID.typeName === PROJECT_TYPE)
+    if (projectAndSchemeChanges.length === 0) {
+      return []
+    }
 
-      const associatedSchemes = new Set(await awu(await elementsSource.list())
-        .filter(id => id.idType === 'instance' && id.typeName === PROJECT_TYPE)
-        .filter(async id => (await elementsSource.get(id)).value.permissionScheme !== undefined)
-        .map(async id => (await elementsSource.get(id)).value.permissionScheme.elemID.getFullName())
-        .toArray())
+    const associatedSchemes = new Set(await awu(await elementsSource.list())
+      .filter(id => id.idType === 'instance' && id.typeName === PROJECT_TYPE)
+      .filter(async id => (await elementsSource.get(id)).value.permissionScheme !== undefined)
+      .map(async id => (await elementsSource.get(id)).value.permissionScheme.elemID.getFullName())
+      .toArray())
 
-      const schemesThatWereAddedWithProjects = new Set(
-        projectAndSchemeChanges
-          .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
-          .filter(isAdditionChange)
-          .filter(change => isReferenceExpression(getChangeData(change).value.permissionScheme))
-          .map(change => getChangeData(change).value.permissionScheme.elemID.getFullName())
-      )
-
-      const schemesThatWereAssociatedBefore = new Set(
-        projectAndSchemeChanges
-          .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
-          .filter(isModificationChange)
-          .filter(change => isReferenceExpression(change.data.before.value.permissionScheme))
-          .map(change => change.data.before.value.permissionScheme.elemID.getFullName())
-      )
-
-      // removal should not cause a warning if the project is also removed
-      // addition changes should only cause a warning
-      const associatedSchemeChangeErrors = projectAndSchemeChanges
-        .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-        .filter(change => associatedSchemes.has(getChangeData(change).elemID.getFullName()))
-        .map(change => (isAdditionChange(change)
-          && schemesThatWereAddedWithProjects.has(getChangeData(change).elemID.getFullName())
-          ? schemeWarning(getChangeData(change).elemID)
-          : schemeError(getChangeData(change).elemID)))
-      // unassociated schemes can be edited, issue an error only if an addition
-      // or if the association is removed in a different change
-      // (the element source reflects the state after the changes)
-      const unassociatedSchemeChangeErrors = projectAndSchemeChanges
-        .filter(change => isAdditionChange(change)
-          || schemesThatWereAssociatedBefore.has(getChangeData(change).elemID.getFullName()))
-        .map(getChangeData)
-        .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
-        .filter(instance => !associatedSchemes.has(instance.elemID.getFullName()))
-        .map(instance => schemeError(instance.elemID))
-      const projectChangeErrors = projectAndSchemeChanges
+    const schemesThatWereAddedWithProjects = new Set(
+      projectAndSchemeChanges
         .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
-        .filter(isAdditionOrModificationChange)
-        .filter(isPermissionSchemeAssociationChange)
-        .map(change => (isAdditionChange(change)
-          ? projectWarning(getChangeData(change).elemID, change.data.after.value.permissionScheme.elemID.name)
-          : projectError(getChangeData(change).elemID)))
-      return [...associatedSchemeChangeErrors, ...unassociatedSchemeChangeErrors, ...projectChangeErrors]
-    }, 'permission scheme validator')
+        .filter(isAdditionChange)
+        .filter(change => isResolvedReferenceExpression(getChangeData(change).value.permissionScheme))
+        .map(change => getChangeData(change).value.permissionScheme.elemID.getFullName())
+    )
+
+    const schemesThatWereAssociatedBefore = new Set(
+      projectAndSchemeChanges
+        .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+        .filter(isModificationChange)
+        .filter(change => isResolvedReferenceExpression(change.data.before.value.permissionScheme))
+        .map(change => change.data.before.value.permissionScheme.elemID.getFullName())
+    )
+
+    // removal should not cause a warning if the project is also removed
+    // addition changes should only cause a warning
+    const associatedSchemeChangeErrors = projectAndSchemeChanges
+      .filter(change => getChangeData(change).elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
+      .filter(change => associatedSchemes.has(getChangeData(change).elemID.getFullName()))
+      .map(change => (isAdditionChange(change)
+        && schemesThatWereAddedWithProjects.has(getChangeData(change).elemID.getFullName())
+        ? schemeWarning(getChangeData(change).elemID)
+        : schemeError(getChangeData(change).elemID)))
+    // unassociated schemes can be edited, issue an error only if an addition
+    // or if the association is removed in a different change
+    // (the element source reflects the state after the changes)
+    const unassociatedSchemeChangeErrors = projectAndSchemeChanges
+      .filter(change => isAdditionChange(change)
+        || schemesThatWereAssociatedBefore.has(getChangeData(change).elemID.getFullName()))
+      .map(getChangeData)
+      .filter(instance => instance.elemID.typeName === PERMISSION_SCHEME_TYPE_NAME)
+      .filter(instance => !associatedSchemes.has(instance.elemID.getFullName()))
+      .map(instance => schemeError(instance.elemID))
+    const projectChangeErrors = projectAndSchemeChanges
+      .filter(change => getChangeData(change).elemID.typeName === PROJECT_TYPE)
+      .filter(isAdditionOrModificationChange)
+      .filter(isPermissionSchemeAssociationChange)
+      .map(change => (isAdditionChange(change)
+        ? projectWarning(getChangeData(change).elemID, change.data.after.value.permissionScheme.elemID.name)
+        : projectError(getChangeData(change).elemID)))
+    return [...associatedSchemeChangeErrors, ...unassociatedSchemeChangeErrors, ...projectChangeErrors]
+  }

@@ -14,28 +14,35 @@
 * limitations under the License.
 */
 
-import { AccountId, Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError, isAdditionChange, isAdditionOrModificationChange, ObjectType, isFieldChange, ElemID } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, isModificationChange, CredentialError,
+  isAdditionChange, isAdditionOrModificationChange, ElemID,
+  SaltoError, AccountInfo } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { decorators, collections, values } from '@salto-io/lowerdash'
 import { elements as elementUtils } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { captureServiceIdInfo } from '../service_id_info'
-import { NetsuiteQuery } from '../query'
+import { NetsuiteFetchQueries, NetsuiteQuery } from '../query'
 import { Credentials, isSuiteAppCredentials, toUrlAccountId } from './credentials'
 import SdfClient from './sdf_client'
-import SuiteAppClient from './suiteapp_client/suiteapp_client'
-import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from '../suiteapp_file_cabinet'
-import { ConfigRecord, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
-import { CustomRecordTypeRecords, RecordValue } from './suiteapp_client/soap_client/types'
-import { FeaturesMap, GetCustomObjectsResult, getDeployableChanges, getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies } from './types'
+import SuiteAppClient, { SuiteAppType } from './suiteapp_client/suiteapp_client'
+import { createSuiteAppFileCabinetOperations, SuiteAppFileCabinetOperations, DeployType } from './suiteapp_client/suiteapp_file_cabinet'
+import { ConfigRecord, EnvType, HasElemIDFunc, SavedSearchQuery, SystemInformation } from './suiteapp_client/types'
+import { CustomRecordResponse, RecordResponse } from './suiteapp_client/soap_client/types'
+import { DeployableChange, FeaturesMap, getChangeNodeId, GetCustomObjectsResult, getDeployableChanges, getNodeId,
+  getOrTransformCustomRecordTypeToInstance, ImportFileCabinetResult, ManifestDependencies, SDFObjectNode } from './types'
 import { toCustomizationInfo } from '../transformer'
-import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId, isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID, SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
-import { DeployResult, getElementValueOrAnnotations, isFileCabinetInstance } from '../types'
-import { APPLICATION_ID, PATH, SCRIPT_ID } from '../constants'
+import { isSdfCreateOrUpdateGroupId, isSdfDeleteGroupId, isSuiteAppCreateRecordsGroupId, isSuiteAppDeleteRecordsGroupId,
+  isSuiteAppUpdateRecordsGroupId, SUITEAPP_CREATING_FILES_GROUP_ID, SUITEAPP_DELETING_FILES_GROUP_ID,
+  SUITEAPP_FILE_CABINET_GROUPS, SUITEAPP_UPDATING_CONFIG_GROUP_ID, SUITEAPP_UPDATING_FILES_GROUP_ID } from '../group_changes'
+import { DeployResult, getElementValueOrAnnotations, getServiceId } from '../types'
+import { APPLICATION_ID, CONFIG_FEATURES } from '../constants'
 import { toConfigDeployResult, toSetConfigTypes } from '../suiteapp_config_elements'
 import { FeaturesDeployError, MissingManifestFeaturesError, getChangesElemIdsToRemove, toFeaturesDeployPartialSuccessResult } from './errors'
-import { Graph, GraphNode, SDFObjectNode } from './graph_utils'
+import { Graph, GraphNode } from './graph_utils'
 import { AdditionalDependencies, isRequiredFeature, removeRequiredFeatureSuffix } from '../config'
+import { BundleType } from '../types/bundle_type'
+import { getDeployResultFromSuiteAppResult, toDependencyError, toElementError, toError } from './utils'
 
 const { awu } = collections.asynciterable
 const { lookupValue } = values
@@ -48,13 +55,6 @@ const GROUP_TO_DEPLOY_TYPE: Record<string, DeployType> = {
   [SUITEAPP_DELETING_FILES_GROUP_ID]: 'delete',
 }
 
-const getServiceIdFromElement = (changeData: ObjectType | InstanceElement): string => {
-  if (isFileCabinetInstance(changeData)) {
-    return getElementValueOrAnnotations(changeData)[PATH]
-  }
-  return getElementValueOrAnnotations(changeData)[SCRIPT_ID]
-}
-
 const getChangeType = (change: Change): 'addition' | 'modification' =>
   (isAdditionChange(change) ? 'addition' : 'modification')
 
@@ -62,6 +62,13 @@ type DependencyInfo = {
   dependencyMap: Map<string, Set<string>>
   dependencyGraph: Graph<SDFObjectNode>
 }
+
+const isLegalEdge = (
+  startNode: GraphNode<SDFObjectNode>,
+  endNode: GraphNode<SDFObjectNode>,
+): boolean =>
+  startNode.value.changeType === 'addition'
+  && (startNode.id !== endNode.id)
 
 export default class NetsuiteClient {
   private sdfClient: SdfClient
@@ -82,24 +89,42 @@ export default class NetsuiteClient {
     this.url = new URL(`https://${toUrlAccountId(this.sdfClient.getCredentials().accountId)}.app.netsuite.com`)
   }
 
-  @NetsuiteClient.logDecorator
-  static async validateCredentials(credentials: Credentials): Promise<AccountId> {
+  private static async suiteAppValidateCredentials(
+    credentials: Credentials,
+  ): Promise<SystemInformation | undefined> {
     if (isSuiteAppCredentials(credentials)) {
       try {
-        await SuiteAppClient.validateCredentials(credentials)
+        return await SuiteAppClient.validateCredentials(credentials)
       } catch (e) {
-        e.message = `Salto SuiteApp Authentication failed. ${e.message}`
-        throw new CredentialError(e.message)
+        throw new CredentialError(`Salto SuiteApp Authentication failed. ${toError(e).message}`)
       }
     } else {
       log.debug('SuiteApp is not configured - skipping SuiteApp credentials validation')
+      return undefined
     }
+  }
 
+  private static async sdfValidateCredentials(
+    credentials: Credentials,
+  ): Promise<AccountInfo> {
     try {
       return await SdfClient.validateCredentials(credentials)
     } catch (e) {
-      e.message = `SDF Authentication failed. ${e.message}`
-      throw new CredentialError(e)
+      throw new CredentialError(`SDF Authentication failed. ${toError(e).message}`)
+    }
+  }
+
+  @NetsuiteClient.logDecorator
+  static async validateCredentials(credentials: Credentials): Promise<AccountInfo> {
+    const systemInformation = await NetsuiteClient.suiteAppValidateCredentials(credentials)
+    const { accountId } = await NetsuiteClient.sdfValidateCredentials(credentials)
+    if (systemInformation?.envType === undefined) {
+      return { accountId }
+    }
+    return {
+      accountId,
+      isProduction: systemInformation.envType === EnvType.PRODUCTION,
+      accountType: EnvType[systemInformation.envType],
     }
   }
 
@@ -109,11 +134,26 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
+  async getInstalledBundles(): Promise<BundleType[]> {
+    return this.suiteAppClient?.getInstalledBundles() ?? []
+  }
+
+  async getInstalledSuiteApps(): Promise<SuiteAppType[]> {
+    return this.suiteAppClient?.getInstalledSuiteApps() ?? []
+  }
+
+  @NetsuiteClient.logDecorator
   async deployConfigChanges(
     instancesChanges: Change<InstanceElement>[]
   ): Promise<DeployResult> {
     if (this.suiteAppClient === undefined) {
-      return { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`)], appliedChanges: [] }
+      return {
+        errors: [{
+          message: `Salto SuiteApp is not configured and therefore changes group "${SUITEAPP_UPDATING_CONFIG_GROUP_ID}" cannot be deployed`,
+          severity: 'Error',
+        }],
+        appliedChanges: [],
+      }
     }
     const modificationChanges = instancesChanges.filter(isModificationChange)
     return toConfigDeployResult(
@@ -125,50 +165,52 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  async getCustomObjects(typeNames: string[], query: NetsuiteQuery):
-    Promise<GetCustomObjectsResult> {
-    return this.sdfClient.getCustomObjects(typeNames, query)
+  async getCustomObjects(
+    typeNames: string[],
+    queries: NetsuiteFetchQueries,
+  ): Promise<GetCustomObjectsResult> {
+    return this.sdfClient.getCustomObjects(
+      typeNames, queries
+    )
   }
 
   @NetsuiteClient.logDecorator
-  async importFileCabinetContent(query: NetsuiteQuery):
+  async importFileCabinetContent(query: NetsuiteQuery, maxFileCabinetSizeInGB: number):
     Promise<ImportFileCabinetResult> {
     if (this.suiteAppFileCabinet !== undefined) {
-      return this.suiteAppFileCabinet.importFileCabinet(query)
+      return this.suiteAppFileCabinet.importFileCabinet(query, maxFileCabinetSizeInGB)
     }
 
-    return this.sdfClient.importFileCabinetContent(query)
+    return this.sdfClient.importFileCabinetContent(query, maxFileCabinetSizeInGB)
   }
 
-  private static async getSDFObjectNodes(
-    changes: Change<InstanceElement | ObjectType>[],
-  ): Promise<SDFObjectNode[]> {
-    const elementsAndChangeTypes = changes
+  private static async getSDFObjectGraphNodes(
+    changes: DeployableChange[],
+  ): Promise<GraphNode<SDFObjectNode>[]> {
+    return awu(changes)
       .filter(isAdditionOrModificationChange)
-      .map(change =>
-        ({ element: getChangeData(change), changeType: getChangeType(change) }))
-    return awu(elementsAndChangeTypes)
-      .map(async ({ element, changeType }) => ({
-        elemIdFullName: element.elemID.getFullName(),
-        serviceid: getServiceIdFromElement(element),
-        changeType,
-        customizationInfo: await toCustomizationInfo(getOrTransformCustomRecordTypeToInstance(element)),
-      }))
+      .map(async change => new GraphNode(
+        getChangeNodeId(change),
+        {
+          change,
+          serviceid: getServiceId(getChangeData(change)),
+          changeType: getChangeType(change),
+          customizationInfo: await toCustomizationInfo(
+            getOrTransformCustomRecordTypeToInstance(getChangeData(change))
+          ),
+        }
+      ))
       .toArray()
   }
 
   public static async createDependencyMapAndGraph(
-    changes: Change<InstanceElement | ObjectType>[],
+    changes: DeployableChange[],
   ): Promise<DependencyInfo> {
     const dependencyMap = new DefaultMap<string, Set<string>>(() => new Set())
-    const elemIdsAndCustInfos = await NetsuiteClient.getSDFObjectNodes(changes)
-    const dependencyGraph = new Graph<SDFObjectNode>(
-      'elemIdFullName', elemIdsAndCustInfos.map(elemIdsAndCustInfo => new GraphNode(elemIdsAndCustInfo))
-    )
-    elemIdsAndCustInfos.forEach(elemIdAndCustInfo => {
-      const currSet = dependencyMap.get(elemIdAndCustInfo.elemIdFullName)
-      const endNode = dependencyGraph.findNode(elemIdAndCustInfo)
-      lookupValue(elemIdAndCustInfo.customizationInfo.values, val => {
+    const dependencyGraph = new Graph(await NetsuiteClient.getSDFObjectGraphNodes(changes))
+    dependencyGraph.nodes.forEach(node => {
+      const currSet = dependencyMap.get(node.id)
+      lookupValue(node.value.customizationInfo.values, val => {
         if (!_.isString(val)) {
           return
         }
@@ -176,10 +218,10 @@ export default class NetsuiteClient {
         serviceIdInfoArray.forEach(serviceIdInfo => {
           currSet.add(serviceIdInfo.serviceId)
           const startNode = dependencyGraph.findNodeByField(
-            'serviceid', (serviceIdInfo.serviceIdType === PATH ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
+            'serviceid', (serviceIdInfo.serviceIdType === 'path' ? serviceIdInfo.serviceId : serviceIdInfo.serviceId.split('.')[0])
           )
-          if (startNode && endNode && startNode.value.changeType === 'addition') {
-            startNode.addEdge(dependencyGraph.key, endNode)
+          if (startNode && isLegalEdge(startNode, node)) {
+            startNode.addEdge(node)
           }
         })
       })
@@ -188,13 +230,26 @@ export default class NetsuiteClient {
   }
 
   private static getDependenciesFromGraph(
-    elemIds: ElemID[],
+    nodes: GraphNode<SDFObjectNode>[],
     dependencyGraph: Graph<SDFObjectNode>
-  ): Set<string> {
-    return new Set(elemIds.map(id => dependencyGraph.findNodeByKey(id.getFullName()))
-      .filter(values.isDefined)
-      .flatMap(node => dependencyGraph.getNodeDependencies(node))
-      .map(node => node.value.elemIdFullName))
+  ): { id: string; elemId: ElemID; dependOn: ElemID[] }[] {
+    const originalNodeIds = new Set(nodes.map(node => node.id))
+
+    const dependsOnMap = new DefaultMap<string, ElemID[]>(() => [])
+    const nodeIdToElemId: Record<string, ElemID> = {}
+    nodes
+      .forEach(node => {
+        const nodeElemId = getChangeData(node.value.change).elemID
+        dependencyGraph.getNodeDependencies(node)
+          .filter(dependencyNode => !originalNodeIds.has(dependencyNode.id))
+          .forEach(dependencyNode => {
+            nodeIdToElemId[dependencyNode.id] = getChangeData(dependencyNode.value.change).elemID
+            dependsOnMap.get(dependencyNode.id).push(nodeElemId)
+          })
+      })
+
+    return [...dependsOnMap.entries()]
+      .map(([id, dependOn]) => ({ id, elemId: nodeIdToElemId[id], dependOn }))
   }
 
   private static toManifestDependencies(
@@ -211,6 +266,8 @@ export default class NetsuiteClient {
       excludedFeatures: excluded.map(feature => feature.name),
       includedObjects: additionalDependencies.include.objects,
       excludedObjects: additionalDependencies.exclude.objects,
+      includedFiles: additionalDependencies.include.files,
+      excludedFiles: additionalDependencies.exclude.files,
     }
   }
 
@@ -235,7 +292,7 @@ export default class NetsuiteClient {
   private static updateFeaturesMap(
     featuresMap: FeaturesMap,
     missingFeaturesError: MissingManifestFeaturesError
-  ): { failedToUpdate: boolean; error?: Error } {
+  ): { failedToUpdate: boolean; error?: SaltoError } {
     log.debug('going to update the features map with the following missing features: %o', missingFeaturesError.missingFeatures)
 
     const missingExcludedFeatures = new Set<string>()
@@ -257,8 +314,13 @@ export default class NetsuiteClient {
       }
     })
     if (missingExcludedFeatures.size > 0) {
-      const error = new Error(`The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`)
-      return { failedToUpdate: true, error }
+      return {
+        failedToUpdate: true,
+        error: {
+          message: `The following features are required but they are excluded: ${Array.from(missingExcludedFeatures).join(', ')}.`,
+          severity: 'Error',
+        },
+      }
     }
     if (!failedToUpdate) {
       log.debug('features map was updated: %o', featuresMap)
@@ -275,28 +337,25 @@ export default class NetsuiteClient {
     additionalDependencies: AdditionalDependencies
     validateOnly?: boolean
   }): Promise<DeployResult> {
-    const changesToDeploy = getDeployableChanges(changes)
-    const fieldChangesByType = _.groupBy(
-      changes.filter(isFieldChange),
-      change => getChangeData(change).parent.elemID.getFullName()
-    )
+    const changesByTopLevel = _.groupBy(changes, change => getChangeData(change)
+      .elemID.createTopLevelParentID().parent.getFullName())
 
-    const someElementToDeploy = getChangeData(changes[0])
+    const deployableChanges = getDeployableChanges(changes)
+    const someElementToDeploy = getChangeData(deployableChanges[0])
     const suiteAppId = getElementValueOrAnnotations(someElementToDeploy)[APPLICATION_ID]
 
-    const errors: Error[] = []
-    const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(changesToDeploy)
+    const errors: DeployResult['errors'] = []
+    const { dependencyMap, dependencyGraph } = await NetsuiteClient.createDependencyMapAndGraph(deployableChanges)
     const featuresMap = NetsuiteClient.createFeaturesMap(additionalDependencies)
 
-    while (changesToDeploy.length > 0) {
-      const changesToApply = changesToDeploy.flatMap(change => [
-        change,
-        ...(fieldChangesByType[getChangeData(change).elemID.getFullName()] ?? []),
-      ])
+    while (dependencyGraph.nodes.size > 0) {
+      const changesToDeploy = Array.from(dependencyGraph.nodes.values()).map(node => node.value.change)
+      const changesToApply = changesToDeploy.flatMap(change =>
+        changesByTopLevel[getChangeData(change).elemID.getFullName()])
       const manifestDependencies = NetsuiteClient.toManifestDependencies(additionalDependencies, featuresMap)
 
       try {
-        log.debug('deploying %d changes', changesToDeploy.length)
+        log.debug('deploying %d changes', dependencyGraph.nodes.size)
         // eslint-disable-next-line no-await-in-loop
         await log.time(
           () => this.sdfClient.deploy(
@@ -308,40 +367,68 @@ export default class NetsuiteClient {
         )
         return { errors, appliedChanges: changesToApply }
       } catch (error) {
-        errors.push(error)
         if (error instanceof FeaturesDeployError) {
+          const { message } = error
+          const featuresError = changesToDeploy
+            .filter(isInstanceChange)
+            .map(getChangeData)
+            .filter(inst => inst.elemID.typeName === CONFIG_FEATURES)
+            .map(({ elemID }) => toElementError(elemID, message))
+
           return {
-            errors,
+            errors: errors.concat(featuresError),
             appliedChanges: toFeaturesDeployPartialSuccessResult(error, changesToApply),
+            failedFeaturesIds: error.ids,
           }
         }
         if (error instanceof MissingManifestFeaturesError) {
           const res = NetsuiteClient.updateFeaturesMap(featuresMap, error)
           if (res.failedToUpdate) {
-            return { errors: errors.concat(res.error ?? []), appliedChanges: [] }
+            return {
+              errors: errors
+                .concat({ message: error.message, severity: 'Error' })
+                .concat(res.error ?? []),
+              appliedChanges: [],
+            }
           }
-          // remove error because if the deploy succeeds there shouldn't be a change error
-          errors.pop()
           // eslint-disable-next-line no-continue
           continue
         }
-        const elemIdsToRemove = NetsuiteClient.getDependenciesFromGraph(
-          getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy),
-          dependencyGraph
-        )
-        elemIdsToRemove.forEach(elemIdName => dependencyGraph.removeNode(elemIdName))
-        const removedChanges = _.remove(
-          changesToDeploy,
-          change => elemIdsToRemove.has(getChangeData(change).elemID.getFullName())
-        )
-        if (removedChanges.length === 0) {
+        const elemIdsWithError = getChangesElemIdsToRemove(error, dependencyMap, changesToDeploy)
+        const elementErrors = elemIdsWithError
+          .flatMap(({ message, elemID }) =>
+            changesByTopLevel[elemID.getFullName()]
+              .map(getChangeData)
+              .map(elem => toElementError(elem.elemID, message)))
+        errors.push(...elementErrors)
+
+        const nodesWithError = elemIdsWithError
+          .map(({ elemID }) => dependencyGraph.getNode(getNodeId(elemID)))
+          .filter(values.isDefined)
+
+        const dependentNodes = NetsuiteClient.getDependenciesFromGraph(nodesWithError, dependencyGraph)
+        const dependencyErrors = dependentNodes
+          .flatMap(({ elemId, dependOn }) => changesByTopLevel[elemId.getFullName()]
+            .map(change => ({ elemId: getChangeData(change).elemID, dependOn })))
+          .map(toDependencyError)
+        errors.push(...dependencyErrors)
+
+        const numOfAttemptedNodesToDeploy = dependencyGraph.nodes.size
+        nodesWithError.forEach(node => dependencyGraph.removeNode(node.id))
+        dependentNodes.forEach(node => dependencyGraph.removeNode(node.id))
+
+        const numOfRemovedNodes = numOfAttemptedNodesToDeploy - dependencyGraph.nodes.size
+        if (numOfRemovedNodes === 0) {
           log.error('no changes were removed from error: %o', error)
+          errors.push({ message: toError(error).message, severity: 'Error' })
           return { errors, appliedChanges: [] }
         }
         log.debug(
           'removed %d changes (%o) from error: %o',
-          removedChanges.length,
-          removedChanges.map(change => getChangeData(change).elemID.getFullName()),
+          numOfRemovedNodes,
+          changesToDeploy
+            .map(getChangeNodeId)
+            .filter(nodeId => dependencyGraph.getNode(nodeId) === undefined),
           error
         )
       }
@@ -354,7 +441,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
-  ): Promise<ReadonlyArray<Error>> {
+  ): Promise<DeployResult['errors']> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return (await this.sdfDeploy({
         changes,
@@ -370,6 +457,7 @@ export default class NetsuiteClient {
     changes: Change[],
     groupID: string,
     additionalSdfDependencies: AdditionalDependencies,
+    hasElemID: HasElemIDFunc,
   ): Promise<DeployResult> {
     if (isSdfCreateOrUpdateGroupId(groupID)) {
       return this.sdfDeploy({
@@ -385,48 +473,49 @@ export default class NetsuiteClient {
           instancesChanges,
           GROUP_TO_DEPLOY_TYPE[groupID],
         )
-        : { errors: [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)], appliedChanges: [] }
+        : {
+          errors: [{
+            message: `Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`,
+            severity: 'Error',
+          }],
+          appliedChanges: [],
+        }
     }
 
     if (groupID === SUITEAPP_UPDATING_CONFIG_GROUP_ID) {
       return this.deployConfigChanges(instancesChanges)
     }
 
-    return this.deployRecords(changes, groupID)
+    return this.deployRecords(changes, groupID, hasElemID)
   }
 
-  private async deployRecords(changes: Change[], groupID: string): Promise<DeployResult> {
+  private async deployRecords(changes: Change[], groupID: string, hasElemID: HasElemIDFunc): Promise<DeployResult> {
     const relevantChanges = getDeployableChanges(changes)
     const relevantInstances = relevantChanges.map(getChangeData).map(getOrTransformCustomRecordTypeToInstance)
 
-    const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID)
-    const results = deployResults
-      .map((result, index) => (typeof result === 'number' ? relevantChanges[index] : result))
-      .filter(values.isDefined)
-
-    const [errors, appliedChanges] = _.partition(
-      results, res => res instanceof Error
-    ) as [Error[], Change[]]
-
-    const elemIdToInternalId = Object.fromEntries(deployResults
-      .map((result, index) => (typeof result === 'number' ? [relevantInstances[index].elemID.getFullName(), result.toString()] : undefined))
-      .filter(values.isDefined))
-
-    return { errors, appliedChanges, elemIdToInternalId }
+    try {
+      const deployResults = await this.runDeployRecordsOperation(relevantInstances, groupID, hasElemID)
+      return getDeployResultFromSuiteAppResult(relevantChanges, deployResults)
+    } catch (error) {
+      return {
+        errors: [{ message: toError(error).message, severity: 'Error' }],
+        appliedChanges: [],
+      }
+    }
   }
 
-  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string):
+  private async runDeployRecordsOperation(elements: InstanceElement[], groupID: string, hasElemID: HasElemIDFunc):
   Promise<(number | Error)[]> {
     if (this.suiteAppClient === undefined) {
-      return [new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)]
+      throw new Error(`Salto SuiteApp is not configured and therefore changes group "${groupID}" cannot be deployed`)
     }
 
     if (isSuiteAppUpdateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.updateInstances(elements)
+      return this.suiteAppClient.updateInstances(elements, hasElemID)
     }
 
     if (isSuiteAppCreateRecordsGroupId(groupID)) {
-      return this.suiteAppClient.addInstances(elements)
+      return this.suiteAppClient.addInstances(elements, hasElemID)
     }
 
     if (isSuiteAppDeleteRecordsGroupId(groupID)) {
@@ -451,7 +540,12 @@ export default class NetsuiteClient {
   }
 
   public async getSystemInformation(): Promise<SystemInformation | undefined> {
-    return this.suiteAppClient?.getSystemInformation()
+    try {
+      return await this.suiteAppClient?.getSystemInformation()
+    } catch (error) {
+      log.error('The following error was thrown in getSystemInformation', { error })
+      return undefined
+    }
   }
 
   public isSuiteAppConfigured(): boolean {
@@ -478,7 +572,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getAllRecords when SuiteApp is not installed')
     }
@@ -486,7 +580,7 @@ export default class NetsuiteClient {
   }
 
   @NetsuiteClient.logDecorator
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     if (this.suiteAppClient === undefined) {
       throw new Error('Cannot call getCustomRecords when SuiteApp is not installed')
     }

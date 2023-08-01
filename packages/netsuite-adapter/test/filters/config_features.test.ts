@@ -15,9 +15,9 @@
 */
 import { BuiltinTypes, Change, ElemID, getChangeData, InstanceElement, isListType, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/config_features'
-import { FeaturesDeployError } from '../../src/client/errors'
 import { CONFIG_FEATURES, NETSUITE } from '../../src/constants'
 import { featuresType } from '../../src/types/configuration_types'
+import { LocalFilterOpts } from '../../src/filter'
 
 const getChange = (): Change<InstanceElement> => {
   const type = new ObjectType({
@@ -58,7 +58,7 @@ describe('config features filter', () => {
     })
 
     it('should transform values', async () => {
-      await filterCreator().onFetch([instance])
+      await filterCreator({} as LocalFilterOpts).onFetch?.([instance])
       const type = await instance.getType()
       expect(Object.keys(type.fields)).toEqual(['ABC', 'DEF', 'NO'])
       expect(type.fields.ABC.annotations).toEqual({ label: 'A Blue Cat' })
@@ -68,14 +68,14 @@ describe('config features filter', () => {
     })
     it('should remove features type when there is no instance', async () => {
       const elements = [featuresType()]
-      await filterCreator().onFetch(elements)
+      await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
       expect(elements.length).toEqual(0)
     })
   })
   describe('preDeploy', () => {
     it('should transform values', async () => {
       const change = getChange()
-      await filterCreator().preDeploy([change])
+      await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
       const instance = getChangeData(change)
       const type = await instance.getType()
 
@@ -95,12 +95,12 @@ describe('config features filter', () => {
   describe('onDeploy', () => {
     it('should succeed', async () => {
       const change = getChange()
-      await filterCreator().onDeploy([change], { errors: [new Error('error')], appliedChanges: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: true, DEF: true })
     })
     it('should restore failed to deploy features', async () => {
       const change = getChange()
-      await filterCreator().onDeploy([change], { errors: [new FeaturesDeployError('error', ['ABC'])], appliedChanges: [] })
+      await filterCreator({} as LocalFilterOpts).onDeploy?.([change], { failedFeaturesIds: ['ABC'], appliedChanges: [], errors: [] })
       expect(getChangeData(change).value).toEqual({ ABC: false, DEF: true })
     })
   })

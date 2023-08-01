@@ -36,12 +36,12 @@ describe('connection', () => {
     })
 
     describe('when authorized', () => {
-      let result: string
+      let accountId: string
 
       beforeEach(async () => {
-        result = await validateCredentials({
+        ({ accountId } = await validateCredentials({
           connection,
-        })
+        }))
       })
 
       it('should get server info with auth headers', () => {
@@ -53,7 +53,7 @@ describe('connection', () => {
       })
 
       it('should return the base url from the response as account id', () => {
-        expect(result).toEqual('http://my.jira.net')
+        expect(accountId).toEqual('http://my.jira.net')
       })
     })
 

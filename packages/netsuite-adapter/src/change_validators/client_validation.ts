@@ -14,61 +14,57 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeError, changeId, getChangeData, ChangeDataType, isField, isFieldChange, isInstanceChange, isObjectTypeChange, InstanceElement, ObjectType } from '@salto-io/adapter-api'
+import { Change, ChangeError, changeId, getChangeData, isSaltoElementError, SaltoElementError } from '@salto-io/adapter-api'
 import { AdditionalDependencies } from '../config'
 import { getGroupItemFromRegex } from '../client/utils'
 import NetsuiteClient from '../client/client'
 import { getChangeGroupIdsFunc } from '../group_changes'
-import { ManifestValidationError, ObjectsDeployError, SettingsDeployError } from '../client/errors'
-import { detectLanguage, multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
-import { SCRIPT_ID } from '../constants'
-import { getElementValueOrAnnotations } from '../types'
+import { multiLanguageErrorDetectors, OBJECT_ID } from '../client/language_utils'
 import { Filter } from '../filter'
 import { cloneChange } from './utils'
 
+const log = logger(module)
 const { awu } = collections.asynciterable
 
-type FailedChangeWithDependencies = {
-  change: Change<ChangeDataType>
-  dependencies: string[]
-}
+const toChangeErrors = (
+  errors: SaltoElementError[]
+): ChangeError[] => {
+  const missingDependenciesRegexes = Object.values(multiLanguageErrorDetectors)
+    .map(regexes => regexes.manifestErrorDetailsRegex)
+  const [missingDependenciesErrors, otherErrors] = _.partition(
+    errors,
+    error => missingDependenciesRegexes.some(regex =>
+      getGroupItemFromRegex(error.message, regex, OBJECT_ID).length > 0)
+  )
 
-const mapObjectDeployErrorToInstance = (error: Error):
-{ get: (changeData: ChangeDataType) => string | undefined } => {
-  const detectedLanguage = detectLanguage(error.message)
-  const { validationFailed, objectValidationErrorRegex } = multiLanguageErrorDetectors[detectedLanguage]
-  const scriptIdToErrorRecord: Record<string, string> = {}
-  const errorMessageChunks = error.message.split(validationFailed)[1]?.split('\n\n') ?? []
-  errorMessageChunks.forEach(chunk => {
-    const objectErrorScriptId = getGroupItemFromRegex(
-      chunk, objectValidationErrorRegex, OBJECT_ID
-    )
-    objectErrorScriptId.forEach(scriptId => { scriptIdToErrorRecord[scriptId] = chunk })
+  const missingDependenciesChangeErrors = Object.values(_.groupBy(
+    missingDependenciesErrors,
+    error => error.elemID.getFullName()
+  )).map(elementErrors => {
+    const missingDependencies = elementErrors
+      .flatMap(error => missingDependenciesRegexes
+        .flatMap(regex => getGroupItemFromRegex(error.message, regex, OBJECT_ID)))
+
+    return {
+      elemID: elementErrors[0].elemID,
+      severity: 'Error' as const,
+      message: 'This element depends on missing elements',
+      detailedMessage: `Cannot deploy elements because of missing dependencies: ${missingDependencies.join(', ')}.`
+        + ' The missing dependencies might be locked elements in the source environment which do not exist in the target environment.'
+        + ' Moreover, the dependencies might be part of a 3rd party bundle or SuiteApp.'
+        + ' If so, please make sure that all the bundles from the source account are installed and updated in the target account.',
+    }
   })
-  return {
-    get: changeData => scriptIdToErrorRecord[getElementValueOrAnnotations(changeData)[SCRIPT_ID]] ?? (
-      isField(changeData)
-        ? scriptIdToErrorRecord[getElementValueOrAnnotations(changeData.parent)[SCRIPT_ID]]
-        : undefined
-    ),
-  }
+
+  return otherErrors.map(error => ({
+    elemID: error.elemID,
+    severity: error.severity,
+    message: 'SDF validation error',
+    detailedMessage: error.message,
+  })).concat(missingDependenciesChangeErrors)
 }
-
-const getFailedChangesWithDependencies = (
-  groupChanges:Change<ChangeDataType>[],
-  dependencyMap: Map<string, Set<string>>,
-  error: ManifestValidationError,
-): FailedChangeWithDependencies[] => groupChanges
-  .map(change => ({
-    change,
-    dependencies: error.missingDependencyScriptIds.filter(scriptid =>
-      dependencyMap.get(getChangeData(change).elemID.getFullName())?.has(scriptid)
-      || (isFieldChange(change)
-      && dependencyMap.get(getChangeData(change).parent.elemID.getFullName())?.has(scriptid))),
-  }))
-  .filter(({ dependencies }) => dependencies.length > 0)
-
 
 export type ClientChangeValidator = (
   changes: ReadonlyArray<Change>,
@@ -112,66 +108,26 @@ const changeValidator: ClientChangeValidator = async (
         groupId,
         additionalDependencies,
       )
-      if (errors.length > 0) {
-        const topLevelChanges = groupChanges.filter(
-          change => isInstanceChange(change) || isObjectTypeChange(change)
-        ) as Change<InstanceElement | ObjectType>[]
-        const { dependencyMap } = await NetsuiteClient.createDependencyMapAndGraph(topLevelChanges)
-        return awu(errors).flatMap(async error => {
-          if (error instanceof ObjectsDeployError) {
-            const scriptIdToErrorMap = mapObjectDeployErrorToInstance(error)
-            return groupChanges.map(getChangeData)
-              .filter(element => scriptIdToErrorMap.get(element) !== undefined)
-              .map(element => ({
-                message: 'Netsuite\'s validation failed with an SDF Objects validation error',
-                severity: 'Error' as const,
-                elemID: element.elemID,
-                detailedMessage: `SDF Objects validation error: ${scriptIdToErrorMap.get(element) ?? ''}`,
-              }))
-          }
-          if (error instanceof SettingsDeployError) {
-            const failedChanges = groupChanges
-              .filter(change => error.failedConfigTypes.has(getChangeData(change).elemID.typeName))
-            return (failedChanges.length > 0 ? failedChanges : groupChanges)
-              .map(change => ({
-                message: 'Netsuite\'s validation failed with an SDF Settings validation error',
-                severity: 'Error' as const,
-                elemID: getChangeData(change).elemID,
-                detailedMessage: `SDF Settings validation error: ${error.message}`,
-              }))
-          }
-          if (error instanceof ManifestValidationError) {
-            const failedChangesWithDependencies = getFailedChangesWithDependencies(
-              groupChanges, dependencyMap, error
-            )
-            const lockedElemsMessage = `The missing dependencies might be locked elements in the source environment which do not exist in the target environment. Moreover, the dependencies might be part of a 3rd party bundle or SuiteApp.
-If so, please make sure that all the bundles from the source account are installed and updated in the target account.`
-            if (failedChangesWithDependencies.length === 0) {
-              return groupChanges.map(change => ({
-                message: 'Some elements in this deployment have missing dependencies',
-                severity: 'Error' as const,
-                elemID: getChangeData(change).elemID,
-                detailedMessage: `Cannot deploy elements because of missing dependencies: (${error.missingDependencyScriptIds.join(', ')}).\n${lockedElemsMessage}`,
-              }))
-            }
-            return failedChangesWithDependencies
-              .map(changeAndMissingDependencies => ({
-                message: 'This element depends on missing elements',
-                severity: 'Error' as const,
-                elemID: getChangeData(changeAndMissingDependencies.change).elemID,
-                detailedMessage: `This element depends on the following missing elements: (${changeAndMissingDependencies.dependencies.join(', ')}).\n${lockedElemsMessage}`,
-              }))
-          }
-          return groupChanges
-            .map(change => ({
-              message: `NetSuite validation error on ${groupId}`,
-              severity: 'Error' as const,
-              elemID: getChangeData(change).elemID,
-              detailedMessage: `SDF validation error for ${groupId}: ${error.message}`,
-            }))
-        })
-      }
-      return []
+      const originalChangesElemIds = new Set(groupChanges.map(change =>
+        getChangeData(change).elemID.getFullName()))
+
+      const [saltoElementErrors, saltoErrors] = _.partition(errors, isSaltoElementError)
+
+      const originalChangesErrors = saltoElementErrors.filter(error => {
+        if (!originalChangesElemIds.has(error.elemID.createBaseID().parent.getFullName())) {
+          log.warn('ignoring error on element that is not in the original changes list: %o', error)
+          return false
+        }
+        return true
+      })
+
+      const errorsOnAllChanges = saltoErrors.flatMap(error => groupChanges.map(change => ({
+        elemID: getChangeData(change).elemID,
+        message: error.message,
+        severity: error.severity,
+      })))
+
+      return toChangeErrors(originalChangesErrors.concat(errorsOnAllChanges))
     })
     .toArray()
 }

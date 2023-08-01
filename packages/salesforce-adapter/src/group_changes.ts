@@ -14,44 +14,75 @@
 * limitations under the License.
 */
 import { collections } from '@salto-io/lowerdash'
-import { Change, ChangeGroupIdFunction, getChangeData, InstanceElement, isAdditionChange, ChangeGroupId, ChangeId } from '@salto-io/adapter-api'
-import { apiName } from './transformers/transformer'
+import {
+  Change,
+  ChangeGroupIdFunction,
+  getChangeData,
+  ChangeGroupId,
+  ChangeId,
+  isInstanceChange,
+  isAdditionChange,
+  isReferenceExpression,
+  InstanceElement,
+  AdditionChange,
+} from '@salto-io/adapter-api'
+import wu from 'wu'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
+import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from './constants'
 
 const { awu } = collections.asynciterable
 
-type ChangeGroupDescription = {
-  groupId: string
-  disjoint?: boolean
+const getGroupId = async (change: Change): Promise<string> => {
+  if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
+    return 'salesforce_metadata'
+  }
+  const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
+  return `${change.action}_${typeName}_instances`
 }
 
-type ChangeIdFunction = (change: Change) => Promise<ChangeGroupDescription> | ChangeGroupDescription
-
-const instanceOfCustomObjectChangeToGroupId: ChangeIdFunction = async change => ({
-  groupId: `${change.action}_${await apiName(await (getChangeData(change) as InstanceElement).getType())}_instances`,
-  // CustomObjects instances might have references to instances of the same type (via Lookup
-  // fields), and if we deploy them together the reference gets removed.
-  disjoint: isAdditionChange(change),
-})
-
-// Everything that is not a custom object instance goes into the deploy api
-const deployableMetadataChangeGroupId: ChangeIdFunction = () => ({ groupId: 'salesforce_metadata' })
+/**
+ * Returns the changes that should be part of the special deploy group for adding sbaa__ApprovalRule
+ * instances with sbaa__ConditionsMet = 'Custom' and their corresponding sbaa__ApprovalCondition instances.
+ */
+const getAddCustomRuleAndConditionGroupChangeIds = async (
+  changes: Map<ChangeId, Change>
+): Promise<Set<ChangeId>> => {
+  const addedInstancesChanges = wu(changes.entries())
+    .filter(([_changeId, change]) => isAdditionChange(change))
+    .filter(([_changeId, change]) => isInstanceChange(change))
+    .toArray() as [ChangeId, AdditionChange<InstanceElement>][]
+  const customApprovalRuleAdditions = addedInstancesChanges
+    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_RULE)(change))
+    .filter(([_changeId, change]) => getChangeData(change).value[SBAA_CONDITIONS_MET] === 'Custom')
+  const customApprovalRuleElemIds = new Set(customApprovalRuleAdditions
+    .map(([_changeId, change]) => getChangeData(change).elemID.getFullName()))
+  const customApprovalConditionAdditions = await awu(addedInstancesChanges)
+    .filter(([_changeId, change]) => isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION)(change))
+    .filter(([_changeId, change]) => {
+      const approvalRule = getChangeData(change).value[SBAA_APPROVAL_RULE]
+      return isReferenceExpression(approvalRule) && customApprovalRuleElemIds.has(approvalRule.elemID.getFullName())
+    })
+    .toArray()
+  return new Set(customApprovalRuleAdditions
+    .concat(customApprovalConditionAdditions)
+    .map(([changeId]) => changeId))
+}
 
 export const getChangeGroupIds: ChangeGroupIdFunction = async changes => {
   const changeGroupIdMap = new Map<ChangeId, ChangeGroupId>()
-  const disjointGroups = new Set<ChangeGroupId>()
+  const customApprovalRuleAndConditionChangeIds = await getAddCustomRuleAndConditionGroupChangeIds(changes)
+  await awu(changes.entries())
+    .forEach(async ([changeId, change]) => {
+      const groupId = customApprovalRuleAndConditionChangeIds.has(changeId)
+        ? ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+        : await getGroupId(change)
+      changeGroupIdMap.set(changeId, groupId)
+    })
 
-  await awu(changes.entries()).forEach(async ([changeId, change]) => {
-    const groupIdFunc = await isInstanceOfCustomObjectChange(change)
-      ? instanceOfCustomObjectChangeToGroupId
-      : deployableMetadataChangeGroupId
-    const { groupId, disjoint } = await groupIdFunc(change)
-
-    changeGroupIdMap.set(changeId, groupId)
-    if (disjoint) {
-      disjointGroups.add(groupId)
-    }
-  })
-
-  return { changeGroupIdMap, disjointGroups }
+  return { changeGroupIdMap }
 }

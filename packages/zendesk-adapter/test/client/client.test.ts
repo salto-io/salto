@@ -32,6 +32,7 @@ describe('client', () => {
     let client: ZendeskClient
     beforeEach(() => {
       mockAxios = new MockAdapter(axios)
+      logTrace.mockReset()
       client = new ZendeskClient({
         credentials: { username: 'a', password: 'b', subdomain: 'ignore' },
         config: { retry: { retryDelay: 0 } },
@@ -89,32 +90,32 @@ describe('client', () => {
       await client.getSinglePage({ url: 'organizations/show_many' })
       await client.getSinglePage({ url: 'organizations/autocomplete' })
 
-      expect(logTrace).toHaveBeenNthCalledWith(2, [
+      expect(logTrace).toHaveBeenNthCalledWith(1, [
         'Full HTTP response for %s on %s: %s',
         'GET',
         'organizations/show_many',
-        '{"url":"organizations/show_many","response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"method":"GET"}',
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}',
+      ])
+
+      expect(logTrace).toHaveBeenNthCalledWith(2, [
+        'Full HTTP response for %s on %s: %s',
+        'GET',
+        'organizations/autocomplete',
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]}}',
       ])
 
       expect(logTrace).toHaveBeenNthCalledWith(3, [
         'Full HTTP response for %s on %s: %s',
         'GET',
-        'organizations/autocomplete',
-        '{"url":"organizations/autocomplete","response":{"organizations":[{"id":1,"name":"org1"},{"id":2,"name":"org2"}]},"method":"GET"}',
+        'organizations/show_many',
+        '{"url":"organizations/show_many","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}',
       ])
 
       expect(logTrace).toHaveBeenNthCalledWith(4, [
         'Full HTTP response for %s on %s: %s',
         'GET',
-        'organizations/show_many',
-        '{"url":"organizations/show_many","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
-      ])
-
-      expect(logTrace).toHaveBeenNthCalledWith(5, [
-        'Full HTTP response for %s on %s: %s',
-        'GET',
         'organizations/autocomplete',
-        '{"url":"organizations/autocomplete","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+        '{"url":"organizations/autocomplete","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}',
       ])
     })
   })

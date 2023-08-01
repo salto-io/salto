@@ -21,9 +21,13 @@ export type File<T extends ContentType> = {
   timestamp?: number
 }
 
+export type GetFileOptions = {
+  ignoreDeletionsCache?: boolean
+}
+
 export type DirectoryStore<T extends ContentType> = {
   list(): Promise<string[]>
-  get(filename: string): Promise<File<T> | undefined>
+  get(filename: string, options?: GetFileOptions): Promise<File<T> | undefined>
   set(file: File<T>): Promise<void>
   delete(filename: string): Promise<void>
   clear(): Promise<void>
@@ -31,7 +35,7 @@ export type DirectoryStore<T extends ContentType> = {
   renameFile(name: string, newName: string): Promise<void>
   flush(): Promise<void>
   mtimestamp(filename: string): Promise<number | undefined>
-  getFiles(filenames: string[]): Promise<(File<T> | undefined) []>
+  getFiles(filenames: string[], options?: GetFileOptions): Promise<(File<T> | undefined) []>
   getTotalSize(): Promise<number>
   clone(): DirectoryStore<T>
   isEmpty(): Promise<boolean>

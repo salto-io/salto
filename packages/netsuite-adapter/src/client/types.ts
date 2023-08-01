@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
+import { Change, ChangeData, ElemID, getChangeData, InstanceElement, isInstanceChange, isObjectType, isObjectTypeChange, ObjectType, Values } from '@salto-io/adapter-api'
 import { toCustomRecordTypeInstance } from '../custom_records/custom_record_type'
-import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams } from '../query'
+import { NetsuiteFilePathsQueryParams, NetsuiteTypesQueryParams, ObjectID } from '../query'
 
 export interface CustomizationInfo {
   typeName: string
@@ -34,19 +34,25 @@ export interface TemplateCustomTypeInfo extends CustomTypeInfo {
 export interface FileCustomizationInfo extends CustomizationInfo {
   path: string[]
   fileContent: Buffer
+  hadMissingAttributes?: boolean
 }
 
 export interface FolderCustomizationInfo extends CustomizationInfo {
   path: string[]
+  hadMissingAttributes?: boolean
 }
+
+export type FileCabinetCustomizationInfo = FileCustomizationInfo | FolderCustomizationInfo
 
 export type FailedTypes = {
   unexpectedError: NetsuiteTypesQueryParams
   lockedError: NetsuiteTypesQueryParams
+  excludedTypes: string[]
 }
 
 export type GetCustomObjectsResult = {
   elements: CustomTypeInfo[]
+  instancesIds: ObjectID[]
   failedToFetchAllAtOnce: boolean
   failedTypes: FailedTypes
 }
@@ -54,10 +60,11 @@ export type GetCustomObjectsResult = {
 export type FailedFiles = {
   lockedError: NetsuiteFilePathsQueryParams
   otherError: NetsuiteFilePathsQueryParams
+  largeFolderError: NetsuiteFilePathsQueryParams
 }
 
 export type ImportFileCabinetResult = {
-  elements: (FileCustomizationInfo | FolderCustomizationInfo)[]
+  elements: FileCabinetCustomizationInfo[]
   failedPaths: FailedFiles
 }
 
@@ -79,6 +86,17 @@ export type ImportObjectsResult = {
   failedImports: FailedImport[]
 }
 
+export type DataElementsResult = {
+  elements: (ObjectType | InstanceElement)[]
+  requestedTypes: string[]
+  largeTypesError: string[]
+}
+
+export type CustomRecordResult = {
+  elements: InstanceElement[]
+  largeTypesError: string[]
+}
+
 type OptionalFeature = { status: 'optional'; canBeRequired: boolean }
 type RequiredFeature = { status: 'required' }
 type ExcludedFeature = { status: 'excluded' }
@@ -91,6 +109,8 @@ export type ManifestDependencies = {
   excludedFeatures: string[]
   includedObjects: string[]
   excludedObjects: string[]
+  includedFiles: string[]
+  excludedFiles: string[]
 }
 
 export type SdfDeployParams = {
@@ -104,15 +124,29 @@ export class InvalidSuiteAppCredentialsError extends Error {
   }
 }
 
+export type DeployableChange = Change<ObjectType | InstanceElement>
+
+export type SDFObjectNode = {
+  change: DeployableChange
+  serviceid: string
+  changeType: 'addition' | 'modification'
+  customizationInfo: CustomizationInfo
+}
+
+export const getNodeId = (elemId: ElemID): string => elemId.getFullName()
+
+export const getChangeNodeId = (change: DeployableChange): string =>
+  getNodeId(getChangeData(change).elemID)
+
 export const getDeployableChanges = (
   changes: ReadonlyArray<Change>
-): Change<ObjectType | InstanceElement>[] =>
+): DeployableChange[] =>
   changes.filter(
     change => isInstanceChange(change) || isObjectTypeChange(change)
-  ) as Change<InstanceElement | ObjectType>[]
+  ) as DeployableChange[]
 
 export const getOrTransformCustomRecordTypeToInstance = (
-  element: ObjectType | InstanceElement
+  element: ChangeData<DeployableChange>
 ): InstanceElement => (
   isObjectType(element)
     ? toCustomRecordTypeInstance(element)

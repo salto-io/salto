@@ -125,6 +125,7 @@ describe('buildHistoryStateStaticFilesSource', () => {
     expect(directoryStore.clear).not.toHaveBeenCalled()
   })
 
+  // * If delete is changed to do something, this may create a possible bug in 'getDanglingStaticFiles *
   it('delete should do nothing', async () => {
     await staticFilesSource.delete(new StaticFile({
       filepath: 'name',

@@ -23,11 +23,20 @@ import { DependencyChanger } from './dependency_changer'
 import { SaltoElementError, SaltoError } from './error'
 import { ChangeGroup, ChangeGroupIdFunction } from './change_group'
 
+export type PartialFetchData = {
+  isPartial: true
+  deletedElements?: ElemID[]
+}
+
+export const setPartialFetchData = (isPartial: boolean, deletedElements?: ElemID[]): PartialFetchData | undefined => (
+  isPartial ? { isPartial, deletedElements } : undefined
+)
+
 export interface FetchResult {
   elements: Element[]
   errors?: SaltoError[]
   updatedConfig?: { config: InstanceElement[]; message: string }
-  isPartial?: boolean
+  partialFetchData?: PartialFetchData
 }
 
 export type Group = {
@@ -41,11 +50,16 @@ export type DeployExtraProperties = {
   groups?: Group[]
 }
 
-export type DeployResult = {
+type SaltoDeployErrors = {
+  errors: ReadonlyArray<SaltoError | SaltoElementError>
+}
+
+type BaseDeployResult = {
   appliedChanges: ReadonlyArray<Change>
-  errors: ReadonlyArray<Error>
   extraProperties?: DeployExtraProperties
 }
+
+export type DeployResult = SaltoDeployErrors & BaseDeployResult
 
 export type Progress = {
   message: string
@@ -78,9 +92,13 @@ export type DeployAction = {
   documentationURL?: string
 }
 
+export type PostDeployAction = DeployAction & {
+  showOnFailure?: boolean
+}
+
 export type DeployActions = {
   preAction?: DeployAction
-  postAction?: DeployAction
+  postAction?: PostDeployAction
 }
 
 export type ChangeError = SaltoElementError & {
@@ -121,12 +139,15 @@ export type ServiceIds = Record<string, string>
 
 export type ElemIdGetter = (adapterName: string, serviceIds: ServiceIds, name: string) => ElemID
 
-export type AdapterOperationsContext = {
-  credentials: InstanceElement
+type AdapterBaseContext = {
   config?: InstanceElement
   getElemIdFunc?: ElemIdGetter
   elementsSource: ReadOnlyElementsSource
 }
+
+export type AdapterOperationsContext = {
+  credentials: InstanceElement
+} & AdapterBaseContext
 
 export type AdapterSuccessInstallResult = { success: true; installedVersion: string }
 export type AdapterFailureInstallResult = { success: false; errors: string[] }
@@ -135,7 +156,11 @@ export type AdapterInstallResult = AdapterSuccessInstallResult | AdapterFailureI
 export const isAdapterSuccessInstallResult = (result: AdapterInstallResult):
   result is AdapterSuccessInstallResult => result.success
 
-export type AccountId = string
+export type AccountInfo = {
+  accountId: string
+  accountType?: string
+  isProduction?: boolean
+}
 
 export type ConfigCreator = {
   optionsType: ObjectType
@@ -143,13 +168,26 @@ export type ConfigCreator = {
     => Promise<InstanceElement>
 }
 
+export type LoadElementsFromFolderArgs = {
+  baseDir: string
+} & AdapterBaseContext
+
+export type ReferenceMapping = {
+  source: ElemID
+  target: ElemID
+}
+
+export type GetAdditionalReferencesFunc = (changes: Change[]) => Promise<ReferenceMapping[]>
+
 export type Adapter = {
   operations: (context: AdapterOperationsContext) => AdapterOperations
-  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountId>
+  validateCredentials: (config: Readonly<InstanceElement>) => Promise<AccountInfo>
   authenticationMethods: AdapterAuthentication
   configType?: ObjectType
   configCreator?: ConfigCreator
   install?: () => Promise<AdapterInstallResult>
+  loadElementsFromFolder?: (args: LoadElementsFromFolderArgs) => Promise<FetchResult>
+  getAdditionalReferences?: GetAdditionalReferencesFunc
 }
 
 export const OBJECT_SERVICE_ID = 'object_service_id'

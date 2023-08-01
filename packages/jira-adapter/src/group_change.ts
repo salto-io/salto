@@ -13,24 +13,19 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections, values } from '@salto-io/lowerdash'
-import { ChangeGroupIdFunction, getChangeData, ChangeGroupId, ChangeId, isModificationChange, Change, isAdditionChange, isReferenceExpression } from '@salto-io/adapter-api'
-import { getParent, getParents } from '@salto-io/adapter-utils'
+import { getChangeData, isModificationChange, isAdditionChange } from '@salto-io/adapter-api'
+import { getParent, getParents, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME, SECURITY_LEVEL_TYPE, WORKFLOW_TYPE_NAME } from './constants'
 
-const { awu } = collections.asynciterable
-
-type ChangeIdFunction = (change: Change) => Promise<string | undefined>
-
-
-export const getWorkflowGroup: ChangeIdFunction = async change => (
+export const getWorkflowGroup: deployment.ChangeIdFunction = async change => (
   isModificationChange(change)
     && getChangeData(change).elemID.typeName === WORKFLOW_TYPE_NAME
     ? 'Workflow Modifications'
     : undefined
 )
 
-export const getSecurityLevelGroup: ChangeIdFunction = async change => {
+export const getSecurityLevelGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (!isAdditionChange(change)
     || instance.elemID.typeName !== SECURITY_LEVEL_TYPE) {
@@ -38,7 +33,7 @@ export const getSecurityLevelGroup: ChangeIdFunction = async change => {
   }
 
   const parents = getParents(instance)
-  if (parents.length !== 1 || !isReferenceExpression(parents[0])) {
+  if (parents.length !== 1 || !isResolvedReferenceExpression(parents[0])) {
     throw new Error(`${instance.elemID.getFullName()} must have exactly one reference expression parent`)
   }
 
@@ -46,7 +41,7 @@ export const getSecurityLevelGroup: ChangeIdFunction = async change => {
 }
 
 
-const getFieldConfigItemGroup: ChangeIdFunction = async change => {
+const getFieldConfigItemGroup: deployment.ChangeIdFunction = async change => {
   const instance = getChangeData(change)
   if (instance.elemID.typeName !== FIELD_CONFIGURATION_ITEM_TYPE_NAME) {
     return undefined
@@ -57,24 +52,8 @@ const getFieldConfigItemGroup: ChangeIdFunction = async change => {
   return `${parent.elemID.getFullName()} items`
 }
 
-const changeIdProviders: ChangeIdFunction[] = [
+export const getChangeGroupIds = deployment.getChangeGroupIdsFunc([
   getWorkflowGroup,
   getSecurityLevelGroup,
   getFieldConfigItemGroup,
-]
-
-export const getChangeGroupIds: ChangeGroupIdFunction = async changes => ({
-  changeGroupIdMap: new Map(
-    await awu(changes.entries())
-      .map(async ([id, change]) => {
-        const groupId = await awu(changeIdProviders)
-          .map(provider => provider(change))
-          .find(values.isDefined)
-        return groupId === undefined
-          ? [id, getChangeData(change).elemID.getFullName()] as [ChangeId, ChangeGroupId]
-          : [id, groupId] as [ChangeId, ChangeGroupId]
-      })
-      .filter(values.isDefined)
-      .toArray()
-  ),
-})
+])

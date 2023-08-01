@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, isReferenceExpression, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isInstanceElement, isModificationChange, ReferenceExpression, SeverityLevel } from '@salto-io/adapter-api'
 import { collections, values } from '@salto-io/lowerdash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { DASHBOARD_TYPE } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -29,7 +30,7 @@ export const dashboardLayoutValidator: ChangeValidator = async changes =>
     .filter(instance => instance.elemID.typeName === DASHBOARD_TYPE)
     .map(instance => {
       const invalidGadgets = (instance.value.gadgets ?? [])
-        .filter(isReferenceExpression)
+        .filter(isResolvedReferenceExpression)
         .filter((gadget: ReferenceExpression) => isInstanceElement(gadget.value))
         .filter((gadget: ReferenceExpression) =>
           gadget.value.value.position.column >= instance.value.layout.length)

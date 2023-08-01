@@ -19,9 +19,12 @@ import {
 } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import type { TransformationConfig, TransformationDefaultConfig } from './transformation'
-import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig } from './request'
+import { createRequestConfigs, DeploymentRequestsByAction, FetchRequestConfig, FetchRequestDefaultConfig, getConfigTypeName } from './request'
+import { ValidatorsActivationConfig } from '../deployment/change_validators'
 
 export const DEPLOYER_FALLBACK_VALUE = '##DEPLOYER##'
+
+export class InvalidSingletonType extends Error {}
 
 export type TypeConfig<T extends TransformationConfig = TransformationConfig, A extends string = ActionName> = {
   request?: FetchRequestConfig
@@ -60,9 +63,14 @@ export type UserFetchConfig<T extends Record<string, unknown> | undefined = Defa
   include: FetchEntry<T>[]
   exclude: FetchEntry<T>[]
   hideTypes?: boolean
+  asyncPagination?: boolean
 }
 
 export type UserDeployConfig = {
+  changeValidators?: ValidatorsActivationConfig
+}
+
+export type DefaultMissingUserFallbackConfig = {
   // Replace references for missing users during deploy with defaultMissingUserFallback value
   defaultMissingUserFallback?: string
 }
@@ -74,6 +82,7 @@ export const createAdapterApiConfigType = ({
   transformationTypes,
   additionalRequestFields,
   additionalActions,
+  elemIdPrefix = '',
 }: {
   adapter: string
   additionalFields?: Record<string, FieldDefinition>
@@ -81,10 +90,16 @@ export const createAdapterApiConfigType = ({
   transformationTypes: { transformation: ObjectType; transformationDefault: ObjectType }
   additionalRequestFields?: Record<string, FieldDefinition>
   additionalActions?: string[]
+  elemIdPrefix?: string
 }): ObjectType => {
-  const requestTypes = createRequestConfigs(adapter, additionalRequestFields, additionalActions)
+  const requestTypes = createRequestConfigs({
+    adapter,
+    additionalFields: additionalRequestFields,
+    additionalActions,
+    elemIdPrefix,
+  })
   const typeDefaultsConfigType = createMatchingObjectType<Partial<TypeDefaultsConfig>>({
-    elemID: new ElemID(adapter, 'typeDefaultsConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typeDefaultsConfig')),
     fields: {
       request: { refType: requestTypes.fetch.requestDefault },
       transformation: {
@@ -98,7 +113,7 @@ export const createAdapterApiConfigType = ({
   })
 
   const typesConfigType = createMatchingObjectType<TypeConfig>({
-    elemID: new ElemID(adapter, 'typesConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'typesConfig')),
     fields: {
       request: { refType: requestTypes.fetch.request },
       deployRequests: {
@@ -112,8 +127,9 @@ export const createAdapterApiConfigType = ({
     },
   })
 
+
   const adapterApiConfigType = createMatchingObjectType<Partial<AdapterApiConfig>>({
-    elemID: new ElemID(adapter, 'adapterApiConfig'),
+    elemID: new ElemID(adapter, getConfigTypeName(elemIdPrefix, 'adapterApiConfig')),
     fields: {
       types: {
         refType: new MapType(typesConfigType),
@@ -182,6 +198,7 @@ export const createUserFetchConfigType = (
         annotations: { _required: true },
       },
       hideTypes: { refType: BuiltinTypes.BOOLEAN },
+      asyncPagination: { refType: BuiltinTypes.BOOLEAN },
       ...additionalFields,
     },
     annotations: {
@@ -192,12 +209,16 @@ export const createUserFetchConfigType = (
 
 export const createUserDeployConfigType = (
   adapter: string,
+  changeValidatorsType: ObjectType,
   additionalFields?: Record<string, FieldDefinition>,
 ): ObjectType => (
   createMatchingObjectType<UserDeployConfig>({
     elemID: new ElemID(adapter, 'userDeployConfig'),
     fields: {
-      defaultMissingUserFallback: { refType: BuiltinTypes.STRING },
+      // Record<string, boolean> type check doesn't pass for refType of ObjectType
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      changeValidators: { refType: changeValidatorsType },
       ...additionalFields,
     },
     annotations: {
@@ -205,6 +226,8 @@ export const createUserDeployConfigType = (
     },
   })
 )
+
+export const defaultMissingUserFallbackField = { defaultMissingUserFallback: { refType: BuiltinTypes.STRING } }
 
 export const getConfigWithDefault = <
   T extends TransformationConfig | FetchRequestConfig | undefined,
@@ -239,12 +262,12 @@ export const validateSupportedTypes = (
 /**
  * Verify defaultMissingUserFallback value in deployConfig is valid
  */
-export const validateDeployConfig = (
+export const validateDefaultMissingUserFallbackConfig = (
   deployConfigPath: string,
-  userDeployConfig: UserDeployConfig,
+  defaultMissingUserFallbackConfig: DefaultMissingUserFallbackConfig,
   userValidationFunc: (userValue: string) => boolean
 ): void => {
-  const { defaultMissingUserFallback } = userDeployConfig
+  const { defaultMissingUserFallback } = defaultMissingUserFallbackConfig
   if (defaultMissingUserFallback !== undefined && defaultMissingUserFallback !== DEPLOYER_FALLBACK_VALUE) {
     const isValidUserValue = userValidationFunc(defaultMissingUserFallback)
     if (!isValidUserValue) {

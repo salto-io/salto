@@ -18,11 +18,10 @@ import {
   AdapterOperations, ElemIdGetter, AdapterOperationsContext, ElemID, InstanceElement,
   Adapter, AdapterAuthentication, Element, ReadOnlyElementsSource, GLOBAL_ADAPTER, ObjectType,
 } from '@salto-io/adapter-api'
-import { createDefaultInstanceFromType, safeJsonStringify } from '@salto-io/adapter-utils'
+import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { createAdapterReplacedID, merger, updateElementsWithAlternativeAccount } from '@salto-io/workspace'
 import { collections, promises } from '@salto-io/lowerdash'
-import { elements } from '@salto-io/adapter-components'
 import adapterCreators from './creators'
 
 const { awu } = collections.asynciterable
@@ -80,7 +79,7 @@ export const getAdaptersConfigTypesMap = async (): Promise<Record<string, Object
       async adapterCreator =>
         (adapterCreator.configType ? [
           adapterCreator.configType,
-          ...await elements.subtypes.getSubtypes([adapterCreator.configType], true),
+          ...await getSubtypes([adapterCreator.configType], true),
         ] : [])
     )).filter(entry => entry[1].length > 0)
   )

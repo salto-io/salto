@@ -53,6 +53,28 @@ describe('webhook filter', () => {
       },
     },
   )
+  const webhookAPI = new InstanceElement(
+    'test-api auth',
+    new ObjectType({ elemID: new ElemID(ZENDESK, WEBHOOK_TYPE_NAME) }),
+    {
+      name: 'test',
+      description: 'desc',
+      status: 'active',
+      subscriptions: [
+        'conditional_ticket_events',
+      ],
+      endpoint: 'https://www.example.com/token',
+      http_method: 'GET',
+      request_format: 'json',
+      authentication: {
+        type: 'api_key',
+        data: {
+          name: 'TEST',
+        },
+        add_position: 'header',
+      },
+    },
+  )
   beforeEach(async () => {
     jest.clearAllMocks()
     filter = filterCreator(createFilterCreatorParams({})) as FilterType
@@ -62,6 +84,29 @@ describe('webhook filter', () => {
       const id = 2
       const clonedWebhook = webhook.clone()
       const deployedWebhook = webhook.clone()
+      deployedWebhook.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
+        deployedWebhook.value.authentication.type
+      ]
+      deployedWebhook.value.id = id
+      mockDeployChange.mockImplementation(async () => ({ webhook: { id } }))
+      const res = await filter.deploy([{ action: 'add', data: { after: clonedWebhook } }])
+      expect(mockDeployChange).toHaveBeenCalledTimes(1)
+      expect(mockDeployChange).toHaveBeenCalledWith({
+        change: { action: 'add', data: { after: deployedWebhook } },
+        client: expect.anything(),
+        endpointDetails: expect.anything(),
+        fieldsToIgnore: ['external_source'],
+      })
+      expect(res.leftoverChanges).toHaveLength(0)
+      expect(res.deployResult.errors).toHaveLength(0)
+      expect(res.deployResult.appliedChanges).toHaveLength(1)
+      expect(res.deployResult.appliedChanges)
+        .toEqual([{ action: 'add', data: { after: clonedWebhook } }])
+    })
+    it('should pass the correct params to deployChange on create - api auth', async () => {
+      const id = 2
+      const clonedWebhook = webhookAPI.clone()
+      const deployedWebhook = webhookAPI.clone()
       deployedWebhook.value.authentication.data = AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA[
         deployedWebhook.value.authentication.type
       ]

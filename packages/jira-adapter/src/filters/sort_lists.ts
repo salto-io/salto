@@ -13,8 +13,8 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { InstanceElement, isInstanceElement, isReferenceExpression, Value } from '@salto-io/adapter-api'
-import { transformValues } from '@salto-io/adapter-utils'
+import { InstanceElement, isInstanceElement, Value } from '@salto-io/adapter-api'
+import { isResolvedReferenceExpression, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { AUTOMATION_TYPE, DASHBOARD_TYPE, NOTIFICATION_EVENT_TYPE_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PROJECT_ROLE_TYPE, WORKFLOW_RULES_TYPE_NAME, WORKFLOW_STATUS_TYPE_NAME, WORKFLOW_TRANSITION_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../constants'
@@ -38,9 +38,9 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
   },
   [AUTOMATION_TYPE]: {
     tags: ['tagType', 'tagValue'],
+    projects: ['projectId.elemID.name', 'projectTypeKey'],
   },
   [WORKFLOW_TYPE_NAME]: {
-    transitions: ['name'],
     statuses: ['id.elemID.name'],
   },
   [NOTIFICATION_EVENT_TYPE_NAME]: {
@@ -84,7 +84,7 @@ const VALUES_TO_SORT: Record<string, Record<string, string[]>> = {
 }
 
 const getValue = (value: Value): Value => (
-  isReferenceExpression(value) ? value.elemID.getFullName() : value
+  isResolvedReferenceExpression(value) ? value.elemID.getFullName() : value
 )
 
 const sortLists = async (instance: InstanceElement): Promise<void> => {

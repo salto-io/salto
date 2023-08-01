@@ -92,6 +92,7 @@ export const isActivatingChangeOnly = (change: ModificationChange<InstanceElemen
 const testCoveragePostDeploy = (instance: InstanceElement): DeployActions => ({
   postAction: {
     title: 'Flows test coverage',
+    showOnFailure: false,
     subActions: [
       `Please make sure that activation of the new flow version was not blocked due to insufficient test coverage and manually activate it if needed. Flow name: ${instance.elemID.getFullName()}`,
     ],
@@ -105,6 +106,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
       postAction: {
         title: 'Deploying flows as inactive',
         description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+        showOnFailure: false,
         subActions: [
           `Go to: ${url}`,
           'Activate it by clicking “Activate”',
@@ -117,6 +119,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
       postAction: {
         title: 'Deploying flows as inactive',
         description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+        showOnFailure: false,
         subActions: [
           `Go to: ${baseUrl}${FLOW_URL_SUFFIX}`,
           `Search for the ${instance.elemID.getFullName()} flow and click on it`,
@@ -129,6 +132,7 @@ const deployAsInactivePostDeploy = (instance: InstanceElement, baseUrl?: URL): D
     postAction: {
       title: 'Deploying flows as inactive',
       description: 'Your Salesforce is configured to deploy flows as inactive, please make sure to manually activate them after the deployment completes',
+      showOnFailure: false,
       subActions: [
         'Go to the flow set up page in your org',
         `Search for the ${instance.elemID.getFullName()} flow and click on it`,
@@ -143,14 +147,14 @@ const removeFlowError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Cannot delete flow',
-  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}`,
+  detailedMessage: `Cannot delete flow via metadata API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/7936713-cannot-delete-flow`,
 })
 
 const newVersionInfo = (instance: InstanceElement, active: boolean): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Info',
   message: `Deploying these changes will create a new ${active ? 'active' : 'inactive'} version of this flow`,
-  detailedMessage: `Deploying these changes will create a new ${active ? 'active' : 'inactive'} version of this flow. Flow name: ${instance.elemID.getFullName()}`,
+  detailedMessage: `Deploying these changes will create a new ${active ? 'active' : 'inactive'} version of this flow. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
 })
 
 const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean): ChangeError => {
@@ -159,7 +163,7 @@ const inActiveNewVersionInfo = (instance: InstanceElement, preferActive: boolean
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Deploying these changes will create a new inactive version of this flow',
-      detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}`,
+      detailedMessage: `Bear in mind that the new inactive version will not appear in Salto since your Salto environment is configured to prefer fetching active flow versions. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
     }
   }
   return newVersionInfo(instance, false)
@@ -169,7 +173,7 @@ const deactivatingError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Deactivating a flow is not supported',
-  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}`,
+  detailedMessage: `Deactivating a flow is not supported via metadata API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
 })
 
 const activeFlowModificationError = (instance: InstanceElement, enableActiveDeploy: boolean, baseUrl?: URL):
@@ -179,7 +183,7 @@ const activeFlowModificationError = (instance: InstanceElement, enableActiveDepl
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Deploying these changes will create a new active version of this flow',
-      detailedMessage: `Deploying these changes will create a new active version of this flow in case the test coverage percentage is greater than the number specified in your salesforce org config. Otherwise, a new inactive version of this flow will be created. Flow name: ${instance.elemID.getFullName()}`,
+      detailedMessage: `Deploying these changes will create a new active version of this flow in case the test coverage percentage is greater than the number specified in your salesforce org config. Otherwise, a new inactive version of this flow will be created. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
       deployActions: testCoveragePostDeploy(instance),
     }
   }
@@ -196,7 +200,7 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Activating this flow will work in case of sufficient test coverage as defined in your salesforce org config',
-      detailedMessage: `Activating this flow will work in case of sufficient test coverage as defined in your salesforce org config. Flow name: ${instance.elemID.getFullName()}`,
+      detailedMessage: `Activating this flow will work in case of sufficient test coverage as defined in your salesforce org config. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
       deployActions: testCoveragePostDeploy(instance),
     }
   }
@@ -204,7 +208,7 @@ const activatingFlowError = (instance: InstanceElement, enableActiveDeploy: bool
     elemID: instance.elemID,
     severity: 'Error',
     message: 'Your salesforce org is configured to disallow flow activations via the API',
-    detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}`,
+    detailedMessage: `Your salesforce org is configured to disallow flow activations via the API. Flow name: ${instance.elemID.getFullName()}. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows`,
   }
 }
 
@@ -215,7 +219,7 @@ const activeFlowAdditionError = (instance: InstanceElement, enableActiveDeploy: 
       elemID: instance.elemID,
       severity: 'Info',
       message: 'Addition of a new active flow depends on test coverage',
-      detailedMessage: '',
+      detailedMessage: 'You can learn more about this deployment preview error here: https://help.salto.io/en/articles/6982324-managing-salesforce-flows',
       deployActions: testCoveragePostDeploy(instance),
     }
   }

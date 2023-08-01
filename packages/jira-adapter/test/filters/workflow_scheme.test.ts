@@ -336,7 +336,7 @@ describe('workflowScheme', () => {
       connection.get.mockResolvedValueOnce({
         status: 200,
         data: {
-          isLast: true,
+          total: 1,
           startAt: 0,
           values: [{
             id: '2',
@@ -367,7 +367,7 @@ describe('workflowScheme', () => {
 
       expect(connection.get).toHaveBeenCalledWith(
         '/rest/api/3/workflowscheme',
-        undefined
+        { headers: undefined, params: { maxResults: '1000' }, responseType: undefined }
       )
 
       expect(instance.value.statusMigrations).toBeUndefined()
@@ -472,7 +472,7 @@ describe('workflowScheme', () => {
       connection.get.mockResolvedValueOnce({
         status: 200,
         data: {
-          isLast: true,
+          total: 0,
           startAt: 0,
           values: [],
         },

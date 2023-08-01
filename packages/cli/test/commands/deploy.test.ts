@@ -274,6 +274,10 @@ describe('deploy command', () => {
       if (userBooleanInput) {
         expect(output.stdout.content).not.toContain('Cancelling deploy')
         expect(output.stdout.content).toContain('Deployment succeeded')
+        expect(output.stdout.content).toContain('Successful change - postDeployAction with showOnFailure=true')
+        expect(output.stdout.content).toContain('Successful change - postDeployAction with showOnFailure=false')
+        expect(output.stdout.content).toContain('Failed change - postDeployAction with showOnFailure=true')
+        expect(output.stdout.content).not.toContain('Failed change - postDeployAction with showOnFailure=false')
       } else {
         expect(output.stdout.content).toContain('Cancelling deploy')
         expect(output.stdout.content).not.toContain('Deployment succeeded')

@@ -20,22 +20,25 @@ import { GeneratorParams, DUMMY_ADAPTER, defaultParams, changeErrorType } from '
 
 export const configType = new ObjectType({
   elemID: new ElemID(DUMMY_ADAPTER),
-  fields: { ..._.mapValues(defaultParams, defValue => ({
-    refType: _.isBoolean(defValue)
-      ? BuiltinTypes.BOOLEAN
-      : BuiltinTypes.NUMBER,
-    annotations: {
-      [CORE_ANNOTATIONS.DEFAULT]: defValue,
-    },
-  })),
-  changeErrors: { refType: new ListType(changeErrorType) },
-  extraNaclPath: { refType: BuiltinTypes.STRING },
-  generateEnvName: { refType: BuiltinTypes.STRING } },
+  fields: {
+    ..._.mapValues(defaultParams, defValue => ({
+      refType: _.isBoolean(defValue)
+        ? BuiltinTypes.BOOLEAN
+        : BuiltinTypes.NUMBER,
+      annotations: {
+        [CORE_ANNOTATIONS.DEFAULT]: defValue,
+      },
+    })),
+    changeErrors: { refType: new ListType(changeErrorType) },
+    extraNaclPath: { refType: BuiltinTypes.STRING },
+    generateEnvName: { refType: BuiltinTypes.STRING },
+    fieldsToOmitOnDeploy: { refType: new ListType(BuiltinTypes.STRING) },
+  },
 })
 
 export const adapter: Adapter = {
   operations: context => new DummyAdapter(context.config?.value as GeneratorParams),
-  validateCredentials: async () => '',
+  validateCredentials: async () => ({ accountId: '' }),
   authenticationMethods: ({ basic: {
     credentialsType: new ObjectType({ elemID: new ElemID(DUMMY_ADAPTER) }),
   } }),

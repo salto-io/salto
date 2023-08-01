@@ -15,38 +15,47 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections } from '@salto-io/lowerdash'
+import { collections, strings } from '@salto-io/lowerdash'
 import {
   AdditionChange,
-  Change, ElemID, getChangeData, InstanceElement, isAdditionChange, isModificationChange,
-  isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource,
-  isRemovalChange, ModificationChange, ReferenceExpression, Element, CORE_ANNOTATIONS, isObjectType,
+  Change,
+  CORE_ANNOTATIONS,
+  Element,
+  ElemID,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  isReferenceExpression,
+  isRemovalChange,
+  ModificationChange,
+  ReadOnlyElementsSource,
+  ReferenceExpression,
 } from '@salto-io/adapter-api'
-import {
-  createSchemeGuard,
-  getParents,
-  replaceTemplatesWithValues,
-  resolveChangeElement,
-} from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
 import {
-  ARTICLE_TYPE_NAME,
   ARTICLE_ATTACHMENT_TYPE_NAME,
+  ARTICLE_ATTACHMENTS_FIELD, ARTICLE_TRANSLATION_TYPE_NAME,
+  ARTICLE_TYPE_NAME,
+  EVERYONE_USER_TYPE,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
-  EVERYONE_USER_TYPE,
 } from '../../constants'
 import { addRemovalChangesId, isTranslation } from '../guide_section_and_category'
 import { lookupFunc } from '../field_references'
 import { removeTitleAndBody } from '../guide_fetch_article_section_and_category'
-import { prepRef } from './article_body'
 import ZendeskClient from '../../client/client'
 import {
   createUnassociatedAttachment,
   deleteArticleAttachment,
-  getArticleAttachments, isAttachments,
+  getArticleAttachments,
+  isAttachments,
   updateArticleTranslationBody,
 } from './utils'
 import { API_DEFINITIONS_CONFIG } from '../../config'
@@ -54,8 +63,11 @@ import { API_DEFINITIONS_CONFIG } from '../../config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+const { makeArray } = collections.array
+const { matchAll } = strings
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
+const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
 
 export type TranslationType = {
   title: string
@@ -74,7 +86,7 @@ const isAttachmentWithId = createSchemeGuard<AttachmentWithId>(
   EXPECTED_ATTACHMENT_SCHEMA, 'Received an invalid value for attachment id'
 )
 
-const addTranslationValues = async (change: Change<InstanceElement>): Promise<void> => {
+const addPlaceholderTitleAndBodyValues = async (change: Change<InstanceElement>): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, lookupFunc)
   const currentLocale = getChangeData(resolvedChange).value.source_locale
   const translation = getChangeData(resolvedChange).value.translations
@@ -82,7 +94,7 @@ const addTranslationValues = async (change: Change<InstanceElement>): Promise<vo
     .find((tran: TranslationType) => tran.locale?.locale === currentLocale)
   if (translation !== undefined) {
     getChangeData(change).value.title = translation.title
-    getChangeData(change).value.body = translation.body ?? ''
+    getChangeData(change).value.body = ''
   }
 }
 
@@ -160,14 +172,24 @@ const getAttachmentArticleRef = (
 
 const associateAttachments = async (
   client: ZendeskClient,
-  articleId: number,
+  article: InstanceElement,
   attachmentsIds: number[]
-): Promise<number> => {
-  const res = await client.post({
-    url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
-    data: { attachment_ids: attachmentsIds },
-  })
-  return res.status
+): Promise<boolean> => {
+  const attachChunk = _.chunk(attachmentsIds, 20)
+  const articleId = article.value.id
+  log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
+  const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
+    log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
+    const res = await client.post({
+      url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+      data: { attachment_ids: chunk },
+    })
+    if (res.status !== 200) {
+      log.warn(`could not associate chunk number ${index} for article ${article.elemID.name} received status ${res.status}. The unassociated attachment ids are: ${chunk}`)
+    }
+    return res.status
+  }))
+  return _.isEmpty(allRes.filter(status => status !== 200))
 }
 
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
@@ -206,9 +228,9 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
-        const res = await associateAttachments(client, articleInstance.value.id, [attachmentInstance.value.id])
-        if (res !== 200) {
-          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} has failed with response status ${res}`)
+        const res = await associateAttachments(client, articleInstance, [attachmentInstance.value.id])
+        if (!res) {
+          log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} with id ${attachmentInstance.value.id} has failed `)
           await deleteArticleAttachment(client, attachmentInstance)
           return
         }
@@ -236,11 +258,77 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
 }
 
 const getId = (instance: InstanceElement): number => instance.value.id
-const getName = (instance: InstanceElement): string => instance.elemID.name
+const getName = (instanceOrRef: InstanceElement | ReferenceExpression): string => instanceOrRef.elemID.name
 const getFilename = (attachment: InstanceElement | undefined): string => attachment?.value.file_name
 const getContentType = (attachment: InstanceElement | undefined): string => attachment?.value.content_type
 const getInline = (attachment: InstanceElement | undefined): boolean => attachment?.value.inline
 
+const isRemovedAttachment = (
+  attachment: unknown,
+  articleRemovedAttachmentsIds: Set<number>,
+  attachmentByName: Record<string, InstanceElement>
+): boolean => {
+  const name = isReferenceExpression(attachment) ? getName(attachment) : undefined
+  const attachmentInstance = name ? attachmentByName[name] : undefined
+  return isInstanceElement(attachmentInstance) && articleRemovedAttachmentsIds.has(attachmentInstance.value.id)
+}
+
+const getAttachmentData = (
+  article: InstanceElement,
+  attachmentByName: Record<string, InstanceElement>,
+  translationByName: Record<string, InstanceElement>
+): {
+  inlineAttachmentsNameById: Record<number, string>
+  attachmentIdsFromArticleBody: Set<number | undefined>
+} => {
+  const attachmentsNames = makeArray(article.value.attachments).filter(isReferenceExpression).map(getName)
+  const inlineAttachmentInstances = attachmentsNames
+    .map(name => attachmentByName[name])
+    .filter(isInstanceElement)
+    .filter(attachment => attachment.value.inline)
+    .filter(attachment => getId(attachment) !== undefined)
+  const inlineAttachmentsNameById = _.mapValues(_.keyBy(inlineAttachmentInstances, getId), getName)
+  const articleBodies = makeArray(article.value.translations).filter(isReferenceExpression)
+    .map((ref: ReferenceExpression) => translationByName[ref.elemID.name]?.value.body).join('\n')
+  const attachmentIdsFromArticleBody = new Set(
+    Array.from(
+      matchAll(articleBodies, ATTACHMENTS_IDS_REGEX),
+      (match: RegExpMatchArray | undefined) => match?.groups?.id
+    ).filter(id => id !== undefined).map(Number)
+  )
+  return { inlineAttachmentsNameById, attachmentIdsFromArticleBody }
+}
+
+/**
+ * returns deleted attachments ids
+ * due to an API limitation on the zendesk side, inline attachments deleted from the article body are still returned
+ * from the call to /api/v2/help_center/articles/{article_id}/attachments even though they no longer exist.
+ * we do not want to include these orphaned attachments in the fetch results, so we omit inline attachments that are not
+ * referenced from the article body.
+ */
+const calculateAndRemoveDeletedAttachments = (
+  articleInstances: InstanceElement[],
+  attachmentByName: Record<string, InstanceElement>,
+  translationByName: Record<string, InstanceElement>
+): Set<string> => {
+  const allRemovedAttachmentsNames = new Set<string>()
+  articleInstances.forEach(article => {
+    const articleRemovedAttachmentsIds = new Set<number>()
+    const attachmentData = getAttachmentData(article, attachmentByName, translationByName)
+    Object.keys(attachmentData.inlineAttachmentsNameById).forEach(id => {
+      const numberId = Number(id)
+      if (!attachmentData.attachmentIdsFromArticleBody.has(numberId)) {
+        articleRemovedAttachmentsIds.add(numberId)
+        allRemovedAttachmentsNames.add(attachmentData.inlineAttachmentsNameById[numberId])
+      }
+    })
+    article.value.attachments = makeArray(article.value.attachments).filter(
+      (attachment: unknown) => !isRemovedAttachment(attachment, articleRemovedAttachmentsIds, attachmentByName)
+    )
+  })
+  log.info(`the following article attachments are not going to be included in the fetch, since they are inline but do not appear in the body: ${Array.from(allRemovedAttachmentsNames)}`)
+  return allRemovedAttachmentsNames
+}
 
 /**
  * Deploys articles and adds default user_segment value to visible articles
@@ -270,6 +358,29 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           .filter(attachment => getName(attachment) !== undefined),
         getName,
       )
+      const translationsByName = _.keyBy(
+        elements
+          .filter(isInstanceElement)
+          .filter(instance => instance.elemID.typeName === ARTICLE_TRANSLATION_TYPE_NAME),
+        getName,
+      )
+      const allRemovedAttachmentsIds = calculateAndRemoveDeletedAttachments(
+        articleInstances,
+        attachmentByName,
+        translationsByName,
+      )
+      _.remove(
+        attachments,
+        (attachment => allRemovedAttachmentsIds.has(attachment.elemID.name))
+      )
+      // If in the future articles could share attachments this would have to be changed! We delete attachments that
+      // do not appear in one article, we currently do not check across all articles.
+      _.remove(
+        elements,
+        (element => element.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
+          && isInstanceElement(element)
+          && allRemovedAttachmentsIds.has(element.elemID.name))
+      )
       await getArticleAttachments({
         brandIdToClient,
         attachmentType,
@@ -288,31 +399,15 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
       })
     },
     preDeploy: async (changes: Change<InstanceElement>[]): Promise<void> => {
-      const addedArticleAttachments = await handleArticleAttachmentsPreDeploy(
+      await handleArticleAttachmentsPreDeploy(
         { changes, client, elementsSource, articleNameToAttachments }
       )
       await awu(changes)
         .filter(isAdditionChange)
         .filter(change => getChangeData(change).elemID.typeName === ARTICLE_TYPE_NAME)
         .forEach(async change => {
-          // We add the title and the resolved body values for articles creation
-          await addTranslationValues(change)
-          const instance = getChangeData(change)
-          try {
-            replaceTemplatesWithValues(
-              { values: [instance.value], fieldName: 'body' },
-              {},
-              (part: ReferenceExpression) => (
-                part.elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME
-                  ? addedArticleAttachments
-                    .find(attachment => attachment.elemID.isEqual(part.elemID))
-                    ?.value.id.toString()
-                  : prepRef(part)
-              ),
-            )
-          } catch (e) {
-            log.error('Error parsing article body value in deployment', e)
-          }
+          // We add the title and the body values for articles creation
+          await addPlaceholderTitleAndBodyValues(change)
         })
     },
 
@@ -338,8 +433,8 @@ const filterCreator: FilterCreator = ({ config, client, elementsSource, brandIdT
           if (isAdditionOrModificationChange(change) && haveAttachmentsBeenAdded(change)) {
             await associateAttachments(
               client,
-              articleInstance.value.id,
-              articleNameToAttachments[articleInstance.elemID.name],
+              articleInstance,
+              articleNameToAttachments[articleInstance.elemID.name] ?? [],
             )
           }
         },

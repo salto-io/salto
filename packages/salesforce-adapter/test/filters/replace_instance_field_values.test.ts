@@ -16,7 +16,6 @@
 import { Element, ElemID, ObjectType, InstanceElement, isInstanceElement, Change, ChangeDataType, BuiltinTypes, ListType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/replace_instance_field_values'
 import {
   SALESFORCE, METADATA_TYPE, INSTANCE_FULL_NAME_FIELD,
@@ -24,6 +23,7 @@ import {
 } from '../../src/constants'
 import { metadataType } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const { awu } = collections.asynciterable
 

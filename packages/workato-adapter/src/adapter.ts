@@ -27,6 +27,7 @@ import { FETCH_CONFIG, WorkatoConfig } from './config'
 import addRootFolderFilter from './filters/add_root_folder'
 import fieldReferencesFilter from './filters/field_references'
 import queryFilter from './filters/query'
+import jiraProjectIssueTypeFilter from './filters/cross_service/jira/project_issuetypes'
 import recipeCrossServiceReferencesFilter from './filters/cross_service/recipe_references'
 import serviceUrlFilter from './filters/service_url'
 import commonFilters from './filters/common'
@@ -42,6 +43,7 @@ const { getAllElements } = elementUtils.ducktype
 export const DEFAULT_FILTERS = [
   addRootFolderFilter,
   queryFilter,
+  jiraProjectIssueTypeFilter,
   // fieldReferencesFilter should run after all element manipulations are done
   fieldReferencesFilter,
   recipeCrossServiceReferencesFilter,

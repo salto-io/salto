@@ -25,10 +25,14 @@ import { roleType } from '../../src/autogen/types/standard_types/role'
 import { fileType, folderType } from '../../src/types/file_cabinet_types'
 
 const EMPTY_FETCH_RESULT: FetchByQueryReturnType = {
-  failedToFetchAllAtOnce: false,
-  failedFilePaths: { lockedError: [], otherError: [] },
-  failedTypes: { lockedError: {}, unexpectedError: {} },
+  failures: {
+    failedToFetchAllAtOnce: false,
+    failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+    failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+    failedCustomRecords: [],
+  },
   elements: [],
+  deletedElements: [],
 }
 
 describe('safe deploy change validator', () => {
@@ -136,10 +140,14 @@ describe('safe deploy change validator', () => {
 
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
-            failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [] },
-            failedTypes: { lockedError: {}, unexpectedError: {} },
+            failures: {
+              failedToFetchAllAtOnce: false,
+              failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+              failedCustomRecords: [],
+            },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator(
             [toChange({ before: customRecordType, after: afterCustomRecordType })],
@@ -170,10 +178,14 @@ describe('safe deploy change validator', () => {
 
           const fetchByQuery = (_query: NetsuiteQuery, _progressReporter: ProgressReporter):
             Promise<FetchByQueryReturnType> => (Promise.resolve({
-            failedToFetchAllAtOnce: false,
-            failedFilePaths: { lockedError: [], otherError: [] },
-            failedTypes: { lockedError: {}, unexpectedError: {} },
+            failures: {
+              failedToFetchAllAtOnce: false,
+              failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+              failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+              failedCustomRecords: [],
+            },
             elements: [serviceCustomRecordType.clone()],
+            deletedElements: [],
           }))
           const changeErrors = await safeDeployValidator([toChange({
             before: customRecordType.fields.custom_field,

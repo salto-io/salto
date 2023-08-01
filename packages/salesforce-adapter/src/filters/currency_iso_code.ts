@@ -21,9 +21,12 @@ import {
   ListType,
   InstanceElement,
   ReferenceExpression,
+  isAdditionChange,
+  isObjectTypeChange,
+  getChangeData,
 } from '@salto-io/adapter-api'
 import Joi from 'joi'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import {
   SALESFORCE,
   FIELD_ANNOTATIONS,
@@ -103,7 +106,7 @@ const createCurrencyCodesInstance = (supportedCurrencies?: ValueSet): InstanceEl
  * Build a global list of available currency code, and a replace all the explicit ValueSets
  * with ValueSetName which points to it
  */
-const filterCreator = (): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'currencyIsoCodeFilter',
   onFetch: async (elements: Element[]) => {
     const affectedElements = elements.filter(isObjectType).filter(isTypeWithCurrencyIsoCode)
@@ -117,6 +120,29 @@ const filterCreator = (): FilterWith<'onFetch'> => ({
 
     elements.push(currencyCodeType, currencyCodeInstance)
     affectedElements.forEach(element => transformCurrencyIsoCodes(element, currencyCodeInstance))
+  },
+  preDeploy: async changes => {
+    const objectTypesWithIsoCodeFields = changes
+      .filter(isAdditionChange)
+      .filter(isObjectTypeChange)
+      .map(getChangeData)
+      .filter(objType => objType.fields?.CurrencyIsoCode?.annotations.valueSetName !== undefined)
+
+    objectTypesWithIsoCodeFields
+      .forEach(objType => {
+        delete objType.fields.CurrencyIsoCode?.annotations.valueSetName
+      })
+  },
+  onDeploy: async changes => {
+    const currencyCodeInstance = await config.elementsSource.get(currencyCodeType.elemID.createNestedID('instance', ElemID.CONFIG_NAME))
+    const objectTypesWithIsoCodeFields = changes
+      .filter(isAdditionChange)
+      .filter(isObjectTypeChange)
+      .map(getChangeData)
+      .filter(objType => objType.fields[CURRENCY_ISO_CODE] !== undefined)
+
+    objectTypesWithIsoCodeFields
+      .forEach(objType => transformCurrencyIsoCodes(objType as CurrencyIsoCodeType, currencyCodeInstance))
   },
 })
 

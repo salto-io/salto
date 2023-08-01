@@ -84,6 +84,7 @@ describe('OrganizationExistence', () => {
   beforeEach(() => {
     mockAxios = new MockAdapter(axios)
     client = new ZendeskClient({ credentials: { username: 'a', password: 'b', subdomain: 'ignore' } })
+    logTrace.mockReset()
   })
 
   afterEach(() => {
@@ -114,13 +115,13 @@ describe('OrganizationExistence', () => {
         elemID: slaInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist: three, four',
+        detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist: three, four',
+        detailedMessage: 'The following referenced organizations do not exist in the target environment: three, four',
       },
     ])
   })
@@ -146,13 +147,15 @@ describe('OrganizationExistence', () => {
         elemID: slaInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist: 3, 4',
+        detailedMessage: 'The following referenced organizations do not exist in the target environment: 3, 4. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
+            + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'',
       },
       {
         elemID: triggerInstance.elemID,
         severity: 'Error',
         message: 'Referenced organizations do not exist',
-        detailedMessage: 'The following referenced organizations do not exist: 3, 4',
+        detailedMessage: 'The following referenced organizations do not exist in the target environment: 3, 4. Salto can identify organizations by their names. This requires setting the \'resolveOrganizationIDs\' to true in the zendesk configuration file of both source and target envs and fetch.\n'
+            + 'More information about Salto\'s config files can be found here: \'https://help.salto.io/en/articles/7439324-salto-configuration-file\'',
       },
     ])
   })
@@ -174,7 +177,7 @@ describe('OrganizationExistence', () => {
       'Full HTTP response for %s on %s: %s',
       'GET',
       '/api/v2/organizations/show_many?ids=1,2',
-      '{"url":"/api/v2/organizations/show_many?ids=1,2","response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]},"method":"GET"}',
+      '{"url":"/api/v2/organizations/show_many?ids=1,2","method":"GET","status":200,"response":{"organizations":[{"id":1,"name":"<OMITTED>"},{"id":2,"name":"<OMITTED>"}]}}',
     ])
   })
 })

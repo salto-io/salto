@@ -25,15 +25,21 @@ import {
   MapType,
   ObjectType,
 } from '@salto-io/adapter-api'
+import { config as configUtils } from '@salto-io/adapter-components'
+import { types } from '@salto-io/lowerdash'
 import { SUPPORTED_METADATA_TYPES } from './fetch_profile/metadata_types'
 import * as constants from './constants'
-import { DEFAULT_MAX_INSTANCES_PER_TYPE } from './constants'
+import { DEFAULT_MAX_INSTANCES_PER_TYPE, SALESFORCE } from './constants'
+
+type UserDeployConfig = configUtils.UserDeployConfig
+const { createUserDeployConfigType } = configUtils
 
 export const CLIENT_CONFIG = 'client'
 export const MAX_ITEMS_IN_RETRIEVE_REQUEST = 'maxItemsInRetrieveRequest'
 export const MAX_INSTANCES_PER_TYPE = 'maxInstancesPerType'
 export const CUSTOM_OBJECTS_DEPLOY_RETRY_OPTIONS = 'customObjectsDeployRetryOptions'
 export const FETCH_CONFIG = 'fetch'
+export const DEPLOY_CONFIG = 'deploy'
 export const METADATA_CONFIG = 'metadata'
 export const METADATA_INCLUDE_LIST = 'include'
 export const METADATA_EXCLUDE_LIST = 'exclude'
@@ -77,8 +83,11 @@ export type OptionalFeatures = {
   addMissingIds?: boolean
   authorInformation?: boolean
   describeSObjects?: boolean
-  skipParsingFormulas?: boolean // Negative flag because we want it disabled by default and optional features are
-                                // enabled by default
+  skipAliases?: boolean
+  formulaDeps?: boolean
+  fetchCustomObjectUsingRetrieveApi?: boolean
+  generateRefsInProfiles?: boolean
+  fetchProfilesUsingReadApi?: boolean
 }
 
 export type ChangeValidatorName = (
@@ -92,7 +101,6 @@ export type ChangeValidatorName = (
   | 'multipleDefaults'
   | 'picklistPromote'
   | 'cpqValidator'
-  | 'sbaaApprovalRulesCustomCondition'
   | 'recordTypeDeletion'
   | 'flowsValidator'
   | 'fullNameChangedValidator'
@@ -107,18 +115,30 @@ export type ChangeValidatorName = (
   | 'lastLayoutRemoval'
   | 'accountSettings'
   | 'unknownPicklistValues'
+  | 'installedPackages'
+  | 'dataCategoryGroup'
 )
 
-export type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
 
 type ObjectIdSettings = {
   objectsRegex: string
   idFields: string[]
 }
 
+type ObjectAliasSettings = {
+  objectsRegex: string
+  aliasFields: string[]
+}
+
 export type SaltoIDSettings = {
   defaultIdFields: string[]
   overrides?: ObjectIdSettings[]
+}
+
+export type SaltoAliasSettings = {
+  defaultAliasFields?: types.NonEmptyArray<string>
+  overrides?: ObjectAliasSettings[]
 }
 
 const objectIdSettings = new ObjectType({
@@ -160,6 +180,43 @@ const saltoIDSettingsType = new ObjectType({
   },
 })
 
+
+const objectAliasSettings = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'objectAliasSettings'),
+  fields: {
+    objectsRegex: {
+      refType: BuiltinTypes.STRING,
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+    aliasFields: {
+      refType: new ListType(BuiltinTypes.STRING),
+      annotations: {
+        [CORE_ANNOTATIONS.REQUIRED]: true,
+      },
+    },
+  } as Record<keyof ObjectAliasSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
+const saltoAliasSettingsType = new ObjectType({
+  elemID: new ElemID(constants.SALESFORCE, 'saltoAliasSettings'),
+  fields: {
+    defaultAliasFields: {
+      refType: new ListType(BuiltinTypes.STRING),
+    },
+    overrides: {
+      refType: new ListType(objectAliasSettings),
+    },
+  } as Record<keyof SaltoAliasSettings, FieldDefinition>,
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export type DataManagementConfig = {
   includeObjects: string[]
   excludeObjects?: string[]
@@ -167,6 +224,7 @@ export type DataManagementConfig = {
   ignoreReferenceTo?: string[]
   saltoIDSettings: SaltoIDSettings
   showReadOnlyValues?: boolean
+  saltoAliasSettings?: SaltoAliasSettings
 }
 
 export type FetchParameters = {
@@ -259,7 +317,7 @@ export type SalesforceConfig = {
   [MAX_ITEMS_IN_RETRIEVE_REQUEST]?: number
   [CLIENT_CONFIG]?: SalesforceClientConfig
   [ENUM_FIELD_PERMISSIONS]?: boolean
-  validators?: ChangeValidatorConfig
+  [DEPLOY_CONFIG]?: UserDeployConfig
 }
 
 type DataManagementConfigSuggestions = {
@@ -410,6 +468,9 @@ const dataManagementType = new ObjectType({
       annotations: {
         [CORE_ANNOTATIONS.REQUIRED]: true,
       },
+    },
+    saltoAliasSettings: {
+      refType: saltoAliasSettingsType,
     },
   } as Record<keyof DataManagementConfig, FieldDefinition>,
   annotations: {
@@ -569,7 +630,11 @@ const optionalFeaturesType = createMatchingObjectType<OptionalFeatures>({
     addMissingIds: { refType: BuiltinTypes.BOOLEAN },
     authorInformation: { refType: BuiltinTypes.BOOLEAN },
     describeSObjects: { refType: BuiltinTypes.BOOLEAN },
-    skipParsingFormulas: { refType: BuiltinTypes.BOOLEAN },
+    skipAliases: { refType: BuiltinTypes.BOOLEAN },
+    formulaDeps: { refType: BuiltinTypes.BOOLEAN },
+    fetchCustomObjectUsingRetrieveApi: { refType: BuiltinTypes.BOOLEAN },
+    generateRefsInProfiles: { refType: BuiltinTypes.BOOLEAN },
+    fetchProfilesUsingReadApi: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -589,7 +654,6 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     multipleDefaults: { refType: BuiltinTypes.BOOLEAN },
     picklistPromote: { refType: BuiltinTypes.BOOLEAN },
     cpqValidator: { refType: BuiltinTypes.BOOLEAN },
-    sbaaApprovalRulesCustomCondition: { refType: BuiltinTypes.BOOLEAN },
     recordTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
     flowsValidator: { refType: BuiltinTypes.BOOLEAN },
     fullNameChangedValidator: { refType: BuiltinTypes.BOOLEAN },
@@ -604,6 +668,8 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     lastLayoutRemoval: { refType: BuiltinTypes.BOOLEAN },
     accountSettings: { refType: BuiltinTypes.BOOLEAN },
     unknownPicklistValues: { refType: BuiltinTypes.BOOLEAN },
+    dataCategoryGroup: { refType: BuiltinTypes.BOOLEAN },
+    installedPackages: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
@@ -706,8 +772,8 @@ export const configType = createMatchingObjectType<SalesforceConfig>({
     [CLIENT_CONFIG]: {
       refType: clientConfigType,
     },
-    validators: {
-      refType: changeValidatorConfigType,
+    [DEPLOY_CONFIG]: {
+      refType: createUserDeployConfigType(SALESFORCE, changeValidatorConfigType),
     },
   },
   annotations: {

@@ -15,9 +15,8 @@
 */
 
 import { ElemID, InstanceElement, ObjectType, ReferenceExpression, toChange } from '@salto-io/adapter-api'
-import { WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
-import { externalSourceWebhook } from '../../src/change_validators'
-import { APP_INSTALLATION_TYPE_NAME } from '../../src/filters/app'
+import { APP_INSTALLATION_TYPE_NAME, WEBHOOK_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { externalSourceWebhookValidator } from '../../src/change_validators'
 
 describe('Webhooks with external_source', () => {
   const appInstallation = new InstanceElement(
@@ -41,7 +40,7 @@ describe('Webhooks with external_source', () => {
 
   it('webhook removal', async () => {
     const changes = [toChange({ before: webhook }), toChange({ before: regularWebhook })]
-    const errors = await externalSourceWebhook(changes)
+    const errors = await externalSourceWebhookValidator(changes)
 
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
@@ -52,7 +51,7 @@ describe('Webhooks with external_source', () => {
   })
   it('webhook addition', async () => {
     const changes = [toChange({ after: webhook }), toChange({ after: regularWebhook })]
-    const errors = await externalSourceWebhook(changes)
+    const errors = await externalSourceWebhookValidator(changes)
 
     expect(errors).toMatchObject([{
       elemID: webhook.elemID,
@@ -66,7 +65,7 @@ describe('Webhooks with external_source', () => {
     it('modification of external_source', async () => {
       const changedWebhook = webhook.clone()
       changedWebhook.value.external_source.type = 'changed'
-      const errors = await externalSourceWebhook([toChange({ before: webhook, after: changedWebhook })])
+      const errors = await externalSourceWebhookValidator([toChange({ before: webhook, after: changedWebhook })])
 
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
@@ -78,7 +77,7 @@ describe('Webhooks with external_source', () => {
     it('deactivation of the webhook', async () => {
       const changedWebhook = webhook.clone()
       changedWebhook.value.status = 'inactive'
-      const errors = await externalSourceWebhook([toChange({ before: webhook, after: changedWebhook })])
+      const errors = await externalSourceWebhookValidator([toChange({ before: webhook, after: changedWebhook })])
 
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,
@@ -94,7 +93,7 @@ describe('Webhooks with external_source', () => {
       afterWebhook.value.not_relevant_field.external_source = 'changed'
       afterWebhook.value.external_source.data.installation_id = 123 // To check the detailedMessage without an app name
       beforeWebhook.value.external_source.data.installation_id = 123
-      const errors = await externalSourceWebhook([toChange({ before: beforeWebhook, after: afterWebhook })])
+      const errors = await externalSourceWebhookValidator([toChange({ before: beforeWebhook, after: afterWebhook })])
 
       expect(errors).toMatchObject([{
         elemID: webhook.elemID,

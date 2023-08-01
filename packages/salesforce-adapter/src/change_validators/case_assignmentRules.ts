@@ -58,7 +58,7 @@ const createChangeError = (instance: InstanceElement): ChangeError => ({
   elemID: instance.elemID,
   severity: 'Error',
   message: 'Deployment of case assignment rule that references a predefined case team is not supported. Please remove the ‘team’ property in order to deploy this element and then configure its team via the salesforce UI.',
-  detailedMessage: 'Deployment of case assignment rule that references a predefined case team is not supported in SF. Please  visit: https://help.salesforce.com/s/articleView?id=000387900&type=1',
+  detailedMessage: 'Deployment of case assignment rule that references a predefined case team is not supported in SF. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8031863-deployment-of-case-assignment-rule-that-references-a-predefined-case-team-is-not-supported.',
 })
 
 /**

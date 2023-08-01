@@ -23,9 +23,6 @@ import { NETSUITE } from '../../src/constants'
 import SdfClient from '../../src/client/sdf_client'
 import { getDataElements, getDataTypes } from '../../src/data_elements/data_elements'
 import { NetsuiteQuery } from '../../src/query'
-import { entitycustomfieldType } from '../../src/autogen/types/standard_types/entitycustomfield'
-import { getFieldInstanceTypes } from '../../src/data_elements/custom_fields'
-import { othercustomfieldType } from '../../src/autogen/types/standard_types/othercustomfield'
 
 jest.mock('@salto-io/adapter-components', () => ({
   ...jest.requireActual<{}>('@salto-io/adapter-components'),
@@ -56,8 +53,16 @@ describe('data_elements', () => {
     suiteAppActivationKey: 'suiteAppActivationKey',
   }
   const client = new NetsuiteClient(
-    new SdfClient({ credentials: creds, globalLimiter: new Bottleneck() }),
-    new SuiteAppClient({ credentials: creds, globalLimiter: new Bottleneck() }),
+    new SdfClient({
+      credentials: creds,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    }),
+    new SuiteAppClient({
+      credentials: creds,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: (_t: string, _c: number) => false,
+    }),
   )
 
   const getAllRecordsMock = jest.spyOn(client, 'getAllRecords')
@@ -120,18 +125,20 @@ describe('data_elements', () => {
     it('should return the instances of the types', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name',
             attributes: {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '1',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
 
-      const elements = await getDataElements(client, query)
+      const { elements, requestedTypes } = await getDataElements(client, query)
+      expect(requestedTypes).toEqual(['subsidiary'])
       expect(elements[0].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary'])
       expect(elements[1].elemID.getFullNameParts()).toEqual([NETSUITE, 'subsidiary', 'instance', 'name'])
       expect((elements[1] as InstanceElement).value).toEqual({
@@ -155,7 +162,7 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'accountingPeriod') {
-          return [{
+          return { records: [{
             periodName: 'name',
             attributes: {
               'xsi:type': 'listAcct:AccountingPeriod',
@@ -164,12 +171,13 @@ describe('data_elements', () => {
             fiscalCalendar: {
               name: 'fiscal',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
 
-      const elements = await getDataElements(client, query)
+      const { elements } = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.identifier).toEqual('name_fiscal')
     })
 
@@ -186,7 +194,7 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'child',
             attributes: { 'xsi:type': 'listAcct:Subsidiary', internalId: '2' },
             parent: {
@@ -205,12 +213,13 @@ describe('data_elements', () => {
                 internalId: '4',
               },
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
 
-      const elements = await getDataElements(client, query)
+      const { elements } = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.identifier).toEqual('parent_child')
       expect((elements[2] as InstanceElement).value.identifier).toEqual('parent')
       expect((elements[3] as InstanceElement).value.identifier).toEqual('4_child_without_parent')
@@ -219,7 +228,7 @@ describe('data_elements', () => {
     it('should return only requested instances', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name1',
             attributes: {
               'xsi:type': 'listAcct:Subsidiary',
@@ -231,9 +240,10 @@ describe('data_elements', () => {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '2',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
 
       const netsuiteQuery = {
@@ -241,7 +251,7 @@ describe('data_elements', () => {
         isObjectMatch: ({ instanceId }: { instanceId: string }) => instanceId === 'name1',
       } as unknown as NetsuiteQuery
 
-      const elements = await getDataElements(
+      const { elements } = await getDataElements(
         client,
         netsuiteQuery,
       )
@@ -254,7 +264,7 @@ describe('data_elements', () => {
     it('should return only types when no instances match', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name1',
             attributes: {
               'xsi:type': 'listAcct:Subsidiary',
@@ -266,9 +276,10 @@ describe('data_elements', () => {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '2',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
 
       const netsuiteQuery = {
@@ -276,7 +287,7 @@ describe('data_elements', () => {
         isObjectMatch: () => false,
       } as unknown as NetsuiteQuery
 
-      const elements = await getDataElements(
+      const { elements } = await getDataElements(
         client,
         netsuiteQuery,
       )
@@ -289,7 +300,7 @@ describe('data_elements', () => {
       await expect(getDataElements(
         client,
         query,
-      )).resolves.toEqual([])
+      )).resolves.toEqual({ elements: [], requestedTypes: [], largeTypesError: [] })
     })
 
     it('should throw an error if failed to getAllRecords', async () => {
@@ -303,25 +314,26 @@ describe('data_elements', () => {
     it('should convert date to string', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name',
             date: new Date(2020, 1, 1),
             attributes: {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '1',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
-      const elements = await getDataElements(client, query)
+      const { elements } = await getDataElements(client, query)
       expect(typeof (elements[1] as InstanceElement).value.date).toEqual('string')
     })
 
     it('should convert booleans', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name1',
             booleanField: 'true',
             attributes: {
@@ -335,11 +347,12 @@ describe('data_elements', () => {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '2',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
-      const elements = await getDataElements(client, query)
+      const { elements } = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.booleanField).toBe(true)
       expect((elements[2] as InstanceElement).value.booleanField).toBe(false)
     })
@@ -347,18 +360,19 @@ describe('data_elements', () => {
     it('should convert numbers', async () => {
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name',
             numberField: '1234',
             attributes: {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '1',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
-      const elements = await getDataElements(client, query)
+      const { elements } = await getDataElements(client, query)
       expect((elements[1] as InstanceElement).value.numberField).toBe(1234)
     })
 
@@ -380,7 +394,7 @@ describe('data_elements', () => {
 
       getAllRecordsMock.mockImplementation(async types => {
         if (types[0] === 'subsidiary') {
-          return [{
+          return { records: [{
             name: 'name',
             numberField: '1234',
             attributes: {
@@ -394,25 +408,14 @@ describe('data_elements', () => {
               'xsi:type': 'listAcct:Subsidiary',
               internalId: '2',
             },
-          }]
+          }],
+          largeTypesError: [] }
         }
-        return []
+        return { records: [], largeTypesError: [] }
       })
-      const elements = await getDataElements(client, query, elemIDGetter)
+      const { elements } = await getDataElements(client, query, elemIDGetter)
       expect(elements[1].elemID).toEqual(new ElemID(NETSUITE, 'subsidiary', 'instance', 'customName'))
       expect(elements[2].elemID).toEqual(new ElemID(NETSUITE, 'subsidiary', 'instance', 'name2'))
-    })
-  })
-
-  describe('getFieldInstanceTypes', () => {
-    it('Should identify field instance with appliesto ', () => {
-      const instance = new InstanceElement('name', entitycustomfieldType().type, { appliestocontact: true, appliestocustomer: false, appliestoemployee: true })
-      expect(getFieldInstanceTypes(instance)).toEqual(['Contact', 'Employee'])
-    })
-
-    it('Should identify othercustomfield instance', () => {
-      const instance = new InstanceElement('name', othercustomfieldType().type, { rectype: '-112' })
-      expect(getFieldInstanceTypes(instance)).toEqual(['account'])
     })
   })
 })

@@ -110,6 +110,9 @@ export const SAVED_SEARCH_RESULT_SCHEMA = {
       id: {
         type: 'string',
       },
+      datemodified: {
+        type: 'string',
+      },
       modifiedby: {
         items: {
           properties: {
@@ -132,6 +135,7 @@ export const SAVED_SEARCH_RESULT_SCHEMA = {
     required: [
       'id',
       'modifiedby',
+      'datemodified',
     ],
     type: 'object',
   },
@@ -150,8 +154,8 @@ export type SavedSearchesResult = {
 }
 
 export type ModificationInformation = {
-  name: string
-  date: string
+  lastModifiedBy: string
+  lastModifiedAt: string
 }
 
 export type DateKeys = 'YYYY' | 'M' | 'D'

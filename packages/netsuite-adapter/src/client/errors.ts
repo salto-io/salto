@@ -15,8 +15,18 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { Change, ElemID, getChangeData, InstanceElement, isInstanceChange, isInstanceElement, isModificationChange, ObjectType } from '@salto-io/adapter-api'
+import { Change, ElemID, getChangeData, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
 import { CONFIG_FEATURES, SCRIPT_ID } from '../constants'
+import { DeployableChange } from './types'
+import { getGroupItemFromRegex } from './utils'
+import { OBJECT_ID } from './language_utils'
+
+type Message = {
+  message: string
+  detailedMessage?: string
+}
+type MessageAndElemID = Message & { elemID: ElemID }
+type MessageAndScriptId = Message & { scriptId: string }
 
 export class FeaturesDeployError extends Error {
   ids: string[]
@@ -28,8 +38,8 @@ export class FeaturesDeployError extends Error {
 }
 
 export class ObjectsDeployError extends Error {
-  failedObjects: Set<string>
-  constructor(message: string, failedObjects: Set<string>) {
+  failedObjects: Map<string, Message[]>
+  constructor(message: string, failedObjects: Map<string, Message[]>) {
     super(message)
     this.failedObjects = failedObjects
     this.name = 'ObjectsDeployError'
@@ -37,8 +47,8 @@ export class ObjectsDeployError extends Error {
 }
 
 export class SettingsDeployError extends Error {
-  failedConfigTypes: Set<string>
-  constructor(message: string, failedConfigTypes: Set<string>) {
+  failedConfigTypes: Map<string, Message[]>
+  constructor(message: string, failedConfigTypes: Map<string, Message[]>) {
     super(message)
     this.failedConfigTypes = failedConfigTypes
     this.name = 'SettingsDeployError'
@@ -46,11 +56,11 @@ export class SettingsDeployError extends Error {
 }
 
 export class ManifestValidationError extends Error {
-  missingDependencyScriptIds: string[]
-  constructor(message: string, missingDependencyScriptIds: string[]) {
+  missingDependencies: MessageAndScriptId[]
+  constructor(message: string, missingDependencies: MessageAndScriptId[]) {
     super(message)
     this.name = 'ManifestValidationError'
-    this.missingDependencyScriptIds = missingDependencyScriptIds
+    this.missingDependencies = missingDependencies
   }
 }
 
@@ -62,6 +72,20 @@ export class MissingManifestFeaturesError extends Error {
     this.missingFeatures = missingFeatures
   }
 }
+
+export const getFailedObjects = (
+  messages: string[],
+  ...regexes: RegExp[]
+): MessageAndScriptId[] => messages.flatMap(message =>
+  regexes.flatMap(regex => getGroupItemFromRegex(message, regex, OBJECT_ID))
+    .map(scriptId => ({ scriptId, message })))
+
+export const getFailedObjectsMap = (
+  messages: string[],
+  ...regexes: RegExp[]
+): Map<string, MessageAndScriptId[]> => new Map(Object.entries(
+  _.groupBy(getFailedObjects(messages, ...regexes), obj => obj.scriptId)
+))
 
 export const toFeaturesDeployPartialSuccessResult = (
   error: FeaturesDeployError,
@@ -89,35 +113,37 @@ export const toFeaturesDeployPartialSuccessResult = (
 const getFailedManifestErrorElemIds = (
   error: ManifestValidationError,
   dependencyMap: Map<string, Set<string>>,
-): ElemID[] => Array.from(dependencyMap.keys())
-  .filter(topLevelChangedElement => error.missingDependencyScriptIds
-    .some(scriptid => dependencyMap.get(topLevelChangedElement)?.has(scriptid)))
-  .map(ElemID.fromFullName)
+): MessageAndElemID[] => Array.from(dependencyMap.keys()).flatMap(elemId => {
+  const elemID = ElemID.fromFullName(elemId)
+  const dependencies = dependencyMap.get(elemId)
+  return error.missingDependencies
+    .filter(dep => dependencies?.has(dep.scriptId))
+    .map(dep => ({ elemID, message: dep.message }))
+})
 
 const getFailedSdfDeployChangesElemIDs = (
   error: ObjectsDeployError,
-  changes: Change<InstanceElement | ObjectType>[],
-): ElemID[] => changes
-  .map(getChangeData)
-  .filter(elem => (
-    isInstanceElement(elem) && error.failedObjects.has(elem.value[SCRIPT_ID])
-  ) || (
-    error.failedObjects.has(elem.annotations[SCRIPT_ID])
-  ))
-  .map(elem => elem.elemID)
+  changes: DeployableChange[],
+): MessageAndElemID[] => changes.map(getChangeData).flatMap(elem => {
+  const failedObjectErrors = isInstanceElement(elem)
+    ? error.failedObjects.get(elem.value[SCRIPT_ID])
+    : error.failedObjects.get(elem.annotations[SCRIPT_ID])
+  return failedObjectErrors?.map(({ message }) => ({ elemID: elem.elemID, message })) ?? []
+})
 
 const getFailedSettingsErrorChanges = (
   error: SettingsDeployError,
-  changes: Change<InstanceElement | ObjectType>[],
-): ElemID[] => changes
-  .map(change => getChangeData(change).elemID)
-  .filter(changeElemId => error.failedConfigTypes.has(changeElemId.typeName))
+  changes: DeployableChange[],
+): MessageAndElemID[] => changes.map(getChangeData).flatMap(
+  ({ elemID }) => error.failedConfigTypes
+    .get(elemID.typeName)?.map(({ message }) => ({ elemID, message })) ?? []
+)
 
 export const getChangesElemIdsToRemove = (
   error: unknown,
   dependencyMap: Map<string, Set<string>>,
-  changes: Change<InstanceElement | ObjectType>[]
-): ElemID[] => {
+  changes: DeployableChange[]
+): MessageAndElemID[] => {
   if (error instanceof ManifestValidationError) {
     return getFailedManifestErrorElemIds(error, dependencyMap)
   }

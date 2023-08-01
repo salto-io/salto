@@ -32,7 +32,7 @@ const log = logger(module)
 
 
 type Component = {
-  value?: Values
+  value?: Values | boolean
   rawValue?: unknown
 }
 
@@ -44,7 +44,7 @@ type AutomationInstance = InstanceElement & {
 }
 
 const COMPONENT_SCHEME = Joi.object({
-  value: Joi.object().optional(),
+  value: Joi.alternatives(Joi.object(), Joi.boolean()).optional(),
   rawValue: Joi.optional(),
 }).unknown(true)
 
@@ -69,7 +69,7 @@ const getPossibleSmartValues = (automation: AutomationInstance): SmartValueConta
     .flatMap(component => {
       const containers: SmartValueContainer[] = []
 
-      if (component.value !== undefined) {
+      if (component.value !== undefined && !_.isBoolean(component.value)) {
         const { value } = component
         Object.keys(component.value)
           .filter(key => _.isString(value[key]) || isTemplateExpression(value[key]))
@@ -165,34 +165,38 @@ const filterCreator: FilterCreator = ({ config }) => {
     },
 
     preDeploy: async (changes: Change<InstanceElement>[]) => {
-      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
-        async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
-          try {
-            replaceTemplatesWithValues(
-              { values: [obj], fieldName: key },
-              deployTemplateMapping,
-              prepRef,
-            )
-          } catch (e) {
-            log.error('Error parsing templates in deployment', e)
-          }
-        })
-      )
+      filterAutomations(changes.map(getChangeData))
+        .filter(isInstanceElement)
+        .forEach(
+          instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+            try {
+              replaceTemplatesWithValues(
+                { values: [obj], fieldName: key },
+                deployTemplateMapping,
+                prepRef,
+              )
+            } catch (e) {
+              log.error('Error parsing templates in deployment', e)
+            }
+          })
+        )
     },
 
     onDeploy: async (changes: Change<InstanceElement>[]) => {
-      filterAutomations(changes.map(getChangeData)).filter(isInstanceElement).flatMap(
-        async instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
-          try {
-            resolveTemplates(
-              { values: [obj], fieldName: key },
-              deployTemplateMapping,
-            )
-          } catch (e) {
-            log.error('Error restoring templates in deployment', e)
-          }
-        })
-      )
+      filterAutomations(changes.map(getChangeData))
+        .filter(isInstanceElement)
+        .forEach(
+          instance => getPossibleSmartValues(instance).forEach(({ obj, key }) => {
+            try {
+              resolveTemplates(
+                { values: [obj], fieldName: key },
+                deployTemplateMapping,
+              )
+            } catch (e) {
+              log.error('Error restoring templates in deployment', e)
+            }
+          })
+        )
     },
   })
 }

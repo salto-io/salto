@@ -18,9 +18,9 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, isInstanceElement, isObjectType, ReferenceExpression, TypeElement } from '@salto-io/adapter-api'
 import { naclCase, TransformFunc, transformValues } from '@salto-io/adapter-utils'
-import { isStandardType, isDataObjectType, isFileCabinetType, isCustomFieldName } from '../types'
+import { isStandardType, isDataObjectType, isFileCabinetType } from '../types'
 import { ACCOUNT_SPECIFIC_VALUE, ID_FIELD, INTERNAL_ID, IS_SUB_INSTANCE, NAME_FIELD, NETSUITE, RECORDS_PATH, RECORD_REF } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
@@ -39,10 +39,8 @@ const hasInternalIdHiddenField = (type: unknown): boolean =>
   && type.fields[INTERNAL_ID]
   && type.fields[INTERNAL_ID].annotations[CORE_ANNOTATIONS.HIDDEN_VALUE]
 
-const shouldUseIdField = (fieldType: TypeElement | undefined, path: ElemID): boolean =>
-  fieldType?.elemID.name === RECORD_REF || (
-    isCustomFieldName(path.name) && hasInternalIdHiddenField(fieldType)
-  )
+const shouldUseIdField = (fieldType: TypeElement | undefined): boolean =>
+  fieldType?.elemID.name === RECORD_REF || hasInternalIdHiddenField(fieldType)
 
 const isNestedPath = (path: ElemID | undefined): path is ElemID =>
   path !== undefined && !path.isTopLevel()
@@ -52,7 +50,7 @@ const isNestedPath = (path: ElemID | undefined): path is ElemID =>
  * (since the internal id is hidden, and we don't support hidden values in lists,
  * the objects in the list need to be extracted to new instances).
  */
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'dataInstancesInternalId',
   onFetch: async elements => {
     const newInstancesMap: Record<string, InstanceElement> = {}
@@ -65,38 +63,35 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
 
       const originalInternalId = value[INTERNAL_ID]
       const fieldType = await field?.getType()
-      if (shouldUseIdField(fieldType, path) || !hasInternalIdHiddenField(fieldType)) {
-        value[
-          shouldUseIdField(fieldType, path) ? ID_FIELD : INTERNAL_ID
-        ] = ACCOUNT_SPECIFIC_VALUE
-        delete value.typeId
-      }
-
       const isInsideList = path.getFullNameParts().some(part => isNumberStr(part))
-      if (isObjectType(fieldType)
+
+      if (!(isObjectType(fieldType)
         && (isInsideList
           || isStandardType(fieldType)
-          || isFileCabinetType(fieldType))) {
-        const instanceName = getSubInstanceName(path, originalInternalId)
-
-        if (!(instanceName in newInstancesMap)) {
-          const newInstance = new InstanceElement(
-            instanceName,
-            // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
-            // errors because SDF types has fields with a "required" annotation which might not
-            // be fulfilled
-            (isStandardType(fieldType) || isFileCabinetType(fieldType))
-              && recordRefType !== undefined
-              ? recordRefType : fieldType,
-            { ...value, [IS_SUB_INSTANCE]: true },
-            [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
-          )
-          newInstancesMap[instanceName] = newInstance
-        }
-
-        return new ReferenceExpression(newInstancesMap[instanceName].elemID)
+          || isFileCabinetType(fieldType)))) {
+        value[
+          hasInternalIdHiddenField(fieldType) ? ID_FIELD : INTERNAL_ID
+        ] = ACCOUNT_SPECIFIC_VALUE
+        delete value.typeId
+        return value
       }
-      return value
+      const instanceName = getSubInstanceName(path, originalInternalId)
+      if (!(instanceName in newInstancesMap)) {
+        const newInstance = new InstanceElement(
+          instanceName,
+          // If the fieldType is an SDF type we replace it with RecordRef to avoid validation
+          // errors because SDF types has fields with a "required" annotation which might not
+          // be fulfilled
+          (isStandardType(fieldType) || isFileCabinetType(fieldType))
+            && recordRefType !== undefined
+            ? recordRefType : fieldType,
+          { ...value, [IS_SUB_INSTANCE]: true },
+          [NETSUITE, RECORDS_PATH, fieldType.elemID.name, instanceName]
+        )
+        newInstancesMap[instanceName] = newInstance
+      }
+
+      return new ReferenceExpression(newInstancesMap[instanceName].elemID)
     }
 
     await awu(elements)
@@ -130,7 +125,7 @@ const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
             transformFunc: async ({ value, field, path }) => {
               if (
                 isNestedPath(path)
-                && shouldUseIdField(await field?.getType(), path)
+                && shouldUseIdField(await field?.getType())
                 && value[ID_FIELD] !== undefined
               ) {
                 if (value[ID_FIELD] !== ACCOUNT_SPECIFIC_VALUE) {

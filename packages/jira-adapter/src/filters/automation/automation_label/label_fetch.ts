@@ -15,11 +15,10 @@
 */
 import { ElemIdGetter, InstanceElement, ObjectType, Values } from '@salto-io/adapter-api'
 import { createSchemeGuard, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
-import { elements as elementUtils } from '@salto-io/adapter-components'
+import { elements as elementUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
-import { JIRA, AUTOMATION_LABEL_TYPE } from '../../../constants'
-import JiraClient from '../../../client/client'
+import { JIRA, AUTOMATION_LABEL_TYPE, fetchFailedWarnings } from '../../../constants'
 import { FilterCreator } from '../../../filter'
 import { getCloudId } from '../cloud_id'
 import { createAutomationLabelType } from './types'
@@ -55,21 +54,6 @@ const createInstance = (
   )
 }
 
-export const getAutomationLabels = async (
-  client: JiraClient,
-): Promise<LabelsResponse[]> => {
-  const url = client.isDataCenter
-    ? '/rest/cb-automation/latest/rule-label'
-    : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
-
-  const response = await client.getSinglePage({ url })
-
-  if (!isLabelsGetResponse(response.data)) {
-    throw new Error('Failed to get automation labels, received invalid response')
-  }
-  return response.data
-}
-
 /**
  * Fetching automation labels from Jira using internal API endpoint.
  * We first use `/resources` endpoint to get the cloud id of the account.
@@ -79,21 +63,54 @@ export const filter: FilterCreator = ({ client, getElemIdFunc, config, fetchQuer
   name: 'automationLabelFetchFilter',
   onFetch: async elements => {
     if (!fetchQuery.isTypeMatch(AUTOMATION_LABEL_TYPE)) {
-      return
+      return undefined
     }
 
     if (!config.client.usePrivateAPI) {
       log.debug('Skipping label automation fetch filter because private API is not enabled')
-      return
+      return undefined
     }
 
-    const automationLabels = await getAutomationLabels(client)
-
-    const automationLabelType = createAutomationLabelType()
-    automationLabels.forEach(automationLabel => elements.push(
-      createInstance(automationLabel, automationLabelType, getElemIdFunc),
-    ))
-    elements.push(automationLabelType)
+    try {
+      // get labels
+      const url = client.isDataCenter
+        ? '/rest/cb-automation/latest/rule-label'
+        : `/gateway/api/automation/internal-api/jira/${await getCloudId(client)}/pro/rest/GLOBAL/rule-labels`
+      const response = await client.getSinglePage({ url })
+      if (!isLabelsGetResponse(response.data)) {
+        log.error('Failed to get automation labels, received invalid response')
+        return {
+          errors: [
+            {
+              message: 'Unable to fetch automation labels due to invalid response',
+              severity: 'Warning',
+            },
+          ],
+        }
+      }
+      const automationLabels = response.data
+      const automationLabelType = createAutomationLabelType()
+      automationLabels.forEach(automationLabel => elements.push(
+        createInstance(automationLabel, automationLabelType, getElemIdFunc),
+      ))
+      elements.push(automationLabelType)
+      return undefined
+    } catch (e) {
+      if (e instanceof clientUtils.HTTPError && e.response !== undefined
+        && (e.response.status === 403
+          || e.response.status === 405)) {
+        log.error(`Received a ${e.response.status} error when fetching automation labels. Please make sure you have the "Automation" permission enabled in Jira.`)
+        return {
+          errors: [
+            {
+              message: fetchFailedWarnings(AUTOMATION_LABEL_TYPE),
+              severity: 'Warning',
+            },
+          ],
+        }
+      }
+      throw e
+    }
   },
 })
 

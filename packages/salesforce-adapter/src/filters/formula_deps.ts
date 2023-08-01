@@ -15,22 +15,17 @@
 */
 
 import { logger } from '@salto-io/logging'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections } from '@salto-io/lowerdash'
 import { ElemID, ElemIDType, Field, isObjectType, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
 import { extendGeneratedDependencies, naclCase } from '@salto-io/adapter-utils'
+import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier, extractFormulaIdentifiers } from '@salto-io/salesforce-formula-parser'
 import { LocalFilterCreator } from '../filter'
 import { isFormulaField } from '../transformers/transformer'
 import { CUSTOM_METADATA_SUFFIX, FORMULA, SALESFORCE } from '../constants'
-import { FormulaIdentifierInfo, IdentifierType, parseFormulaIdentifier } from './formula_utils/parse'
-import { buildElementsSourceForFetch, extractFlatCustomObjectFields } from './utils'
-
-/* eslint-disable-next-line @typescript-eslint/no-var-requires */
-const formulon = require('formulon')
-
-const { extract } = formulon
+import { buildElementsSourceForFetch, ensureSafeFilterFetch, extractFlatCustomObjectFields } from './utils'
 
 const log = logger(module)
-const { awu } = collections.asynciterable
+const { awu, groupByAsync } = collections.asynciterable
 
 const identifierTypeToElementName = (identifierInfo: FormulaIdentifierInfo): string[] => {
   if (identifierInfo.type === 'customLabel') {
@@ -86,19 +81,30 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
     return (typeElement !== undefined) && (typeElement.fields[elemId.name] !== undefined)
   }
 
+  const isSelfReference = (elemId: ElemID): boolean => (
+    elemId.isEqual(field.parent.elemID)
+  )
+
+  const referenceValidity = async (elemId: ElemID): Promise<'valid' | 'omitted' | 'invalid'> => {
+    if (isSelfReference(elemId)) {
+      return 'omitted'
+    }
+    return (await isValidReference(elemId)) ? 'valid' : 'invalid'
+  }
+
   const logInvalidReferences = (
     invalidReferences: ElemID[],
     formula: string,
     identifiersInfo: FormulaIdentifierInfo[][]
   ): void => {
     if (invalidReferences.length > 0) {
-      log.error('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
+      log.debug('When parsing the formula %o in field %o, one or more of the identifiers %o was parsed to an invalid reference: ',
         formula,
         field.elemID.getFullName(),
         identifiersInfo.flat().map(info => info.instance))
     }
     invalidReferences.forEach(refElemId => {
-      log.error(`Invalid reference: ${refElemId.getFullName()}`)
+      log.debug(`Invalid reference: ${refElemId.getFullName()}`)
     })
   }
 
@@ -112,7 +118,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
 
   try {
     const formulaIdentifiers: string[] = log.time(
-      () => (extract(formula)),
+      () => (extractFormulaIdentifiers(formula)),
       `Parse formula '${formula.slice(0, 15)}'`
     )
 
@@ -135,11 +141,12 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
       References: ${references.map(ref => ref.getFullName()).join(', ')}`)
     }
 
-    const [validReferences, invalidReferences] = await promises.array.partition(references, isValidReference)
-    logInvalidReferences(invalidReferences, formula, identifiersInfo)
+    const referencesWithValidity = await groupByAsync(references, referenceValidity)
 
-    log.info(`Extracted ${validReferences.length} valid references`)
-    const depsAsRefExpr = validReferences.map(elemId => ({ reference: new ReferenceExpression(elemId) }))
+    logInvalidReferences(referencesWithValidity.invalid ?? [], formula, identifiersInfo)
+
+    const depsAsRefExpr = (referencesWithValidity.valid ?? [])
+      .map(elemId => ({ reference: new ReferenceExpression(elemId) }))
 
     extendGeneratedDependencies(field, depsAsRefExpr)
   } catch (e) {
@@ -147,6 +154,7 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
   }
 }
 
+const FILTER_NAME = 'formulaDeps'
 /**
  * Extract references from formulas
  * Formulas appear in the field definitions of types and may refer to fields in their parent type or in another type.
@@ -155,20 +163,21 @@ const addDependenciesAnnotation = async (field: Field, allElements: ReadOnlyElem
  * Note: Currently (pending a fix to SALTO-3176) we only look at formula fields in custom objects.
  */
 const filter: LocalFilterCreator = ({ config }) => ({
-  name: 'formula_deps',
-  onFetch: async fetchedElements => {
-    if (config.fetchProfile.isFeatureEnabled('skipParsingFormulas')) {
-      log.info('Formula parsing is disabled. Skipping formula_deps filter.')
-      return
-    }
-    const fetchedObjectTypes = fetchedElements.filter(isObjectType)
-    const fetchedFormulaFields = await awu(fetchedObjectTypes)
-      .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
-      .filter(isFormulaField)
-      .toArray()
-    const allElements = buildElementsSourceForFetch(fetchedElements, config)
-    await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
-  },
+  name: FILTER_NAME,
+  onFetch: ensureSafeFilterFetch({
+    warningMessage: 'Error while parsing formulas',
+    config,
+    filterName: FILTER_NAME,
+    fetchFilterFunc: async fetchedElements => {
+      const fetchedObjectTypes = fetchedElements.filter(isObjectType)
+      const fetchedFormulaFields = await awu(fetchedObjectTypes)
+        .flatMap(extractFlatCustomObjectFields) // Get the types + their fields
+        .filter(isFormulaField)
+        .toArray()
+      const allElements = buildElementsSourceForFetch(fetchedElements, config)
+      await Promise.all(fetchedFormulaFields.map(field => addDependenciesAnnotation(field, allElements)))
+    },
+  }),
 })
 
 export default filter

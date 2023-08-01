@@ -18,7 +18,7 @@ import OAuth from 'oauth-1.0a'
 import crypto from 'crypto'
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios'
 import axiosRetry from 'axios-retry'
-import Ajv from 'ajv'
+import Ajv, { Schema } from 'ajv'
 import AsyncLock from 'async-lock'
 import compareVersions from 'compare-versions'
 import os from 'os'
@@ -33,21 +33,21 @@ import { CallsLimiter, ConfigRecord, ConfigRecordData, GetConfigResult, CONFIG_R
   FILES_READ_SCHEMA, HttpMethod, isError, ReadResults, RestletOperation, RestletResults,
   RESTLET_RESULTS_SCHEMA, SavedSearchQuery, SavedSearchResults, SAVED_SEARCH_RESULTS_SCHEMA,
   SuiteAppClientParameters, SuiteQLResults, SUITE_QL_RESULTS_SCHEMA, SystemInformation,
-  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult } from './types'
+  SYSTEM_INFORMATION_SCHEME, FileCabinetInstanceDetails, ConfigFieldDefinition, CONFIG_FIELD_DEFINITION_SCHEMA, SetConfigType, SET_CONFIG_RESULT_SCHEMA, SetConfigRecordsValuesResult, SetConfigResult, HasElemIDFunc, GET_BUNDLES_RESULT_SCHEMA, GET_SUITEAPPS_RESULT_SCHEMA } from './types'
 import { SuiteAppCredentials, toUrlAccountId } from '../credentials'
 import { SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
-import { DEFAULT_CONCURRENCY } from '../../config'
-import { CONSUMER_KEY, CONSUMER_SECRET } from './constants'
+import { DEFAULT_AXIOS_TIMEOUT_IN_MINUTES, DEFAULT_CONCURRENCY } from '../../config'
+import { CONSUMER_KEY, CONSUMER_SECRET, INSUFFICIENT_PERMISSION_ERROR } from './constants'
 import SoapClient from './soap_client/soap_client'
-import { CustomRecordTypeRecords, RecordValue } from './soap_client/types'
+import { CustomRecordResponse, RecordResponse } from './soap_client/types'
 import { ReadFileEncodingError, ReadFileError, ReadFileInsufficientPermissionError, RetryableError, retryOnRetryableError } from './errors'
 import { InvalidSuiteAppCredentialsError } from '../types'
+import { BundleType } from '../../types/bundle_type'
 
 const { isDefined } = values
 const { DEFAULT_RETRY_OPTS, createRetryOptions } = clientUtils
 
 export const PAGE_SIZE = 1000
-const AXIOS_TIMEOUT = 1000 * 60 * 12 // 12 minutes timeout
 
 const log = logger(module)
 
@@ -62,6 +62,8 @@ const NON_BINARY_FILETYPES = new Set([
   'SMS',
   'STYLESHEET',
   'XMLDOC',
+  'JSON',
+  'FREEMARKER',
 ])
 
 const REQUEST_HEADERS = {
@@ -74,11 +76,31 @@ const RETRYABLE_ERROR_CODES = ['SSS_REQUEST_LIMIT_EXCEEDED']
 
 const ACTIVATION_KEY_APP_VERSION = '0.1.3'
 const CONFIG_TYPES_APP_VERSION = '0.1.4'
+const LIST_BUNDLES_APP_VERSION = '0.1.7'
+const LIST_SUITEAPPS_APP_VERSION = '0.1.7'
 
 type VersionFeatures = {
   activationKey: boolean
   configTypes: boolean
+  listBundles: boolean
+  listSuiteApps: boolean
 }
+
+export type SuiteAppType = {
+  appId: string
+  name: string
+  version: string
+  description: string
+  dateInstalled: Date
+  dateLastUpdated: Date
+  publisherId: string
+  installedBy: {
+    id: number
+    name: string
+  }
+}
+
+type SuiteAppInfoOperation = 'listBundles' | 'listSuiteApps'
 
 const getAxiosErrorDetailedMessage = (error: AxiosError): string | undefined => {
   const errorDetails = error.response?.data?.['o:errorDetails']
@@ -120,9 +142,10 @@ export default class SuiteAppClient {
     this.restletUrl = new URL(`https://${accountIdUrl}.restlets.api.netsuite.com/app/site/hosting/restlet.nl?script=customscript_salto_restlet&deploy=customdeploy_salto_restlet`)
 
     this.ajv = new Ajv({ allErrors: true, strict: false })
-    this.soapClient = new SoapClient(this.credentials, this.callsLimiter)
+    const timeout = (params.config?.httpTimeoutLimitInMinutes ?? DEFAULT_AXIOS_TIMEOUT_IN_MINUTES) * 60 * 1000
+    this.soapClient = new SoapClient(this.credentials, this.callsLimiter, params.instanceLimiter, timeout)
 
-    this.axiosClient = axios.create({ timeout: AXIOS_TIMEOUT })
+    this.axiosClient = axios.create({ timeout })
     const retryOptions = createRetryOptions(DEFAULT_RETRY_OPTS)
     axiosRetry(
       this.axiosClient,
@@ -145,8 +168,10 @@ export default class SuiteAppClient {
    * ORDER BY <some unique identifier> ASC/DESC in your queries.
    * Otherwise, you might not get all the results.
    */
-  public async runSuiteQL(query: string):
-    Promise<Record<string, unknown>[] | undefined> {
+  public async runSuiteQL(
+    query: string,
+    throwOnErrors: Record<string, string> = {}
+  ): Promise<Record<string, unknown>[] | undefined> {
     log.debug('Running SuiteQL query: %s', query)
     if (!/ORDER BY .* (ASC|DESC)/.test(query)) {
       log.warn(`SuiteQL ${query} does not contain ORDER BY <unique identifier> ASC/DESC, which can cause the response to not contain all the results`)
@@ -163,9 +188,16 @@ export default class SuiteAppClient {
         log.debug('SuiteQL query received %d/%d results', items.length, results.totalResults)
         hasMore = results.hasMore
       } catch (error) {
-        log.error('SuiteQL query error - %s', query, { error })
+        log.warn('SuiteQL query error - %s', query, { error })
         if (error instanceof InvalidSuiteAppCredentialsError) {
           throw error
+        }
+        if (axios.isAxiosError(error)) {
+          const errorDetailedMessage = getAxiosErrorDetailedMessage(error)
+          const matchingErrorKey = Object.keys(throwOnErrors).find(e => errorDetailedMessage?.includes(e))
+          if (matchingErrorKey !== undefined) {
+            throw new Error(throwOnErrors[matchingErrorKey])
+          }
         }
         return undefined
       }
@@ -193,7 +225,7 @@ export default class SuiteAppClient {
   }
 
   private parseSystemInformation(results: unknown): SystemInformation | undefined {
-    if (!this.ajv.validate<{ time: number; appVersion: number[] }>(
+    if (!this.ajv.validate<SystemInformation>(
       SYSTEM_INFORMATION_SCHEME,
       results
     )) {
@@ -214,6 +246,9 @@ export default class SuiteAppClient {
       const results = await this.sendRestletRequest('sysInfo')
       return this.parseSystemInformation(results)
     } catch (error) {
+      if (error instanceof InvalidSuiteAppCredentialsError) {
+        throw error
+      }
       log.error('error was thrown in getSystemInformation', { error })
       return undefined
     }
@@ -238,7 +273,7 @@ export default class SuiteAppClient {
             return new ReadFileEncodingError(`Received file encoding error: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           log.warn(`Received file read error: ${JSON.stringify(file.error, undefined, 2)}`)
-          if (file.error.name === 'INSUFFICIENT_PERMISSION') {
+          if (file.error.name === INSUFFICIENT_PERMISSION_ERROR) {
             return new ReadFileInsufficientPermissionError(`No permission for reading file: ${JSON.stringify(file.error, undefined, 2)}`)
           }
           return new ReadFileError(`Received an error while tried to read file: ${JSON.stringify(file.error, undefined, 2)}`)
@@ -261,7 +296,6 @@ export default class SuiteAppClient {
         action: 'get',
         types: SUITEAPP_CONFIG_RECORD_TYPES,
       })
-
       if (!this.ajv.validate<GetConfigResult>(GET_CONFIG_RESULT_SCHEMA, result)) {
         log.error(
           'getConfigRecords failed. Got invalid results - %s: %o',
@@ -341,9 +375,52 @@ export default class SuiteAppClient {
     }
   }
 
-  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<void> {
-    const client = new SuiteAppClient({ credentials, globalLimiter: new Bottleneck() })
-    await client.sendRestletRequest('sysInfo')
+  public async getInstalledBundles(): Promise<BundleType[]> {
+    return this.getInstalledBundlesOrSuiteApps<BundleType>('listBundles', GET_BUNDLES_RESULT_SCHEMA)
+  }
+
+  public async getInstalledSuiteApps(): Promise<SuiteAppType[]> {
+    return this.getInstalledBundlesOrSuiteApps<SuiteAppType>('listSuiteApps', GET_SUITEAPPS_RESULT_SCHEMA)
+  }
+
+  public async getInstalledBundlesOrSuiteApps<T>(
+    operation: SuiteAppInfoOperation,
+    schema: Schema
+  ): Promise<T[]> {
+    try {
+      if (!(await this.isFeatureSupported(operation))) {
+        log.warn(`SuiteApp version doesn't support ${operation}`)
+        return []
+      }
+      const result = await this.sendRestletRequest(operation)
+      if (!this.ajv.validate<T[]>(schema, result)) {
+        log.error(
+          `${operation} failed. Got invalid results - %s: %o`,
+          this.ajv.errorsText(),
+          result
+        )
+        throw Error(this.ajv.errorsText())
+      }
+      return result
+    } catch (e) {
+      const errorMessage = `${operation} operation failed. Received the following error: ${e.message}`
+      log.error(errorMessage)
+      throw Error(errorMessage)
+    }
+  }
+
+  public static async validateCredentials(credentials: SuiteAppCredentials): Promise<SystemInformation> {
+    const client = new SuiteAppClient({
+      credentials,
+      globalLimiter: new Bottleneck(),
+      instanceLimiter: () => false,
+    })
+    const sysInfo = await client.getSystemInformation()
+
+    if (sysInfo === undefined) {
+      throw new Error('Failed getting SuiteApp system information')
+    }
+    return sysInfo
   }
 
   private async safeAxiosPost(
@@ -429,6 +506,8 @@ export default class SuiteAppClient {
       this.versionFeatures = {
         activationKey: compareVersions(currentVersion, ACTIVATION_KEY_APP_VERSION) !== -1,
         configTypes: compareVersions(currentVersion, CONFIG_TYPES_APP_VERSION) !== -1,
+        listBundles: compareVersions(currentVersion, LIST_BUNDLES_APP_VERSION) !== -1,
+        listSuiteApps: compareVersions(currentVersion, LIST_SUITEAPPS_APP_VERSION) !== -1,
       }
       log.debug('set SuiteApp version features successfully', { versionFeatures: this.versionFeatures })
     })
@@ -527,7 +606,7 @@ export default class SuiteAppClient {
     try {
       return await this.soapClient.readFile(id)
     } catch (e) {
-      return e
+      return e as Error
     }
   }
 
@@ -550,20 +629,20 @@ export default class SuiteAppClient {
     return this.soapClient.getNetsuiteWsdl()
   }
 
-  public async getAllRecords(types: string[]): Promise<RecordValue[]> {
+  public async getAllRecords(types: string[]): Promise<RecordResponse> {
     return this.soapClient.getAllRecords(types)
   }
 
-  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordTypeRecords[]> {
+  public async getCustomRecords(customRecordTypes: string[]): Promise<CustomRecordResponse> {
     return this.soapClient.getCustomRecords(customRecordTypes)
   }
 
-  public async updateInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.updateInstances(instances)
+  public async updateInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.updateInstances(instances, hasElemID)
   }
 
-  public async addInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {
-    return this.soapClient.addInstances(instances)
+  public async addInstances(instances: InstanceElement[], hasElemID: HasElemIDFunc): Promise<(number | Error)[]> {
+    return this.soapClient.addInstances(instances, hasElemID)
   }
 
   public async deleteInstances(instances: InstanceElement[]): Promise<(number | Error)[]> {

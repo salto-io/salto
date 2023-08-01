@@ -26,6 +26,7 @@ import {
   ZENDESK,
 } from './constants'
 
+const { defaultMissingUserFallbackField } = configUtils
 const { createClientConfigType } = clientUtils
 const {
   createUserFetchConfigType,
@@ -83,9 +84,10 @@ export type ZendeskFetchConfig = configUtils.UserFetchConfig
   guide?: Guide
   resolveOrganizationIDs?: boolean
 }
-export type ZedneskDeployConfig = configUtils.UserDeployConfig
+export type ZedneskDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig
 export type ZendeskApiConfig = configUtils.AdapterApiConfig<
-  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean }
+  configUtils.DuckTypeTransformationConfig & { omitInactive?: boolean },
+  configUtils.TransformationDefaultConfig & { omitInactive?: boolean }
   >
 
 export type ZendeskConfig = {
@@ -1126,6 +1128,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   workspace__selected_macros: {
     transformation: {
       fieldsToHide: [],
+      fieldsToOmit: [{ fieldName: 'usage_7d', fieldType: 'number' }],
     },
   },
   workspace__selected_macros__restriction: {
@@ -1155,8 +1158,8 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
         { fieldName: 'id', fieldType: 'number' },
       ),
       fieldsToOmit: FIELDS_TO_OMIT.concat({ fieldName: 'updated', fieldType: 'string' }),
-      idFields: ['settings.name', 'app_id'],
-      fileNameFields: ['settings.name', 'app_id'],
+      idFields: ['settings.name', 'product'],
+      fileNameFields: ['settings.name', 'product'],
       fieldTypeOverrides: [{ fieldName: 'id', fieldType: 'number' }],
       serviceUrl: '/admin/apps-integrations/apps/support-apps',
     },
@@ -1379,7 +1382,10 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   macros: {
     request: {
       url: '/api/v2/macros',
-      queryParams: { ...DEFAULT_QUERY_PARAMS },
+      queryParams: {
+        ...DEFAULT_QUERY_PARAMS,
+        access: 'shared',
+      },
       paginationField: CURSOR_BASED_PAGINATION_FIELD,
     },
     transformation: {
@@ -1870,6 +1876,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
       },
     },
   },
+  // currently articles do not share attachments, if this changes the attachment code should be reviewed!
   [ARTICLE_ATTACHMENT_TYPE_NAME]: {
     request: {
       url: '/api/v2/help_center/articles/{article_id}/attachments',
@@ -2603,6 +2610,136 @@ const GuideType = createMatchingObjectType<Guide>({
   },
 })
 
+export type ChangeValidatorName = (
+  | 'deployTypesNotSupported'
+  | 'createCheckDeploymentBasedOnConfig'
+  | 'accountSettings'
+  | 'emptyCustomFieldOptions'
+  | 'emptyVariants'
+  | 'parentAnnotationToHaveSingleValue'
+  | 'missingFromParent'
+  | 'childMissingParentAnnotation'
+  | 'removedFromParent'
+  | 'duplicateCustomFieldOptionValues'
+  | 'noDuplicateLocaleIdInDynamicContentItem'
+  | 'onlyOneTicketFormDefault'
+  | 'customRoleName'
+  | 'orderInstanceContainsAllTheInstances'
+  | 'triggerOrderInstanceContainsAllTheInstances'
+  | 'brandCreation'
+  | 'webhookAuthData'
+  | 'targetAuthData'
+  | 'phoneNumbers'
+  | 'automationAllConditions'
+  | 'macroActionsTicketFieldDeactivation'
+  | 'customStatusesEnabled'
+  | 'customStatusUniqueAgentLabel'
+  | 'customStatusCategoryChange'
+  | 'customStatusCategory'
+  | 'customStatusActiveDefault'
+  | 'defaultCustomStatuses'
+  | 'customRoleRemoval'
+  | 'sideConversations'
+  | 'users'
+  | 'requiredAppOwnedParameters'
+  | 'oneTranslationPerLocale'
+  | 'articleRemoval'
+  | 'articleLabelNamesRemoval'
+  | 'articleAttachmentSize'
+  | 'everyoneUserSegmentModification'
+  | 'brandFieldForBrandBasedElements'
+  | 'translationForDefaultLocale'
+  | 'helpCenterActivation'
+  | 'helpCenterCreationOrRemoval'
+  | 'externalSourceWebhook'
+  | 'defaultGroupChange'
+  | 'organizationExistence'
+  | 'badFormatWebhookAction'
+  | 'guideDisabled'
+  | 'additionOfTicketStatusForTicketForm'
+  | 'defaultDynamicContentItemVariant'
+  | 'featureActivation'
+  | 'standardFields'
+  | 'defaultAutomationRemoval'
+  | 'deflectionAction'
+  | 'uniqueAutomationConditions'
+  | 'childInOrder'
+  | 'childrenReferences'
+  | 'orderChildrenParent'
+  | 'guideOrderDeletion'
+  | 'attachmentWithoutContent'
+  | 'duplicateRoutingAttributeValue'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(ZENDESK, 'changeValidatorConfig'),
+  fields: {
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    createCheckDeploymentBasedOnConfig: { refType: BuiltinTypes.BOOLEAN },
+    accountSettings: { refType: BuiltinTypes.BOOLEAN },
+    emptyCustomFieldOptions: { refType: BuiltinTypes.BOOLEAN },
+    emptyVariants: { refType: BuiltinTypes.BOOLEAN },
+    parentAnnotationToHaveSingleValue: { refType: BuiltinTypes.BOOLEAN },
+    missingFromParent: { refType: BuiltinTypes.BOOLEAN },
+    childMissingParentAnnotation: { refType: BuiltinTypes.BOOLEAN },
+    removedFromParent: { refType: BuiltinTypes.BOOLEAN },
+    duplicateCustomFieldOptionValues: { refType: BuiltinTypes.BOOLEAN },
+    noDuplicateLocaleIdInDynamicContentItem: { refType: BuiltinTypes.BOOLEAN },
+    onlyOneTicketFormDefault: { refType: BuiltinTypes.BOOLEAN },
+    customRoleName: { refType: BuiltinTypes.BOOLEAN },
+    orderInstanceContainsAllTheInstances: { refType: BuiltinTypes.BOOLEAN },
+    triggerOrderInstanceContainsAllTheInstances: { refType: BuiltinTypes.BOOLEAN },
+    brandCreation: { refType: BuiltinTypes.BOOLEAN },
+    webhookAuthData: { refType: BuiltinTypes.BOOLEAN },
+    targetAuthData: { refType: BuiltinTypes.BOOLEAN },
+    phoneNumbers: { refType: BuiltinTypes.BOOLEAN },
+    automationAllConditions: { refType: BuiltinTypes.BOOLEAN },
+    macroActionsTicketFieldDeactivation: { refType: BuiltinTypes.BOOLEAN },
+    customStatusesEnabled: { refType: BuiltinTypes.BOOLEAN },
+    customStatusUniqueAgentLabel: { refType: BuiltinTypes.BOOLEAN },
+    customStatusCategoryChange: { refType: BuiltinTypes.BOOLEAN },
+    customStatusCategory: { refType: BuiltinTypes.BOOLEAN },
+    customStatusActiveDefault: { refType: BuiltinTypes.BOOLEAN },
+    defaultCustomStatuses: { refType: BuiltinTypes.BOOLEAN },
+    customRoleRemoval: { refType: BuiltinTypes.BOOLEAN },
+    sideConversations: { refType: BuiltinTypes.BOOLEAN },
+    users: { refType: BuiltinTypes.BOOLEAN },
+    requiredAppOwnedParameters: { refType: BuiltinTypes.BOOLEAN },
+    oneTranslationPerLocale: { refType: BuiltinTypes.BOOLEAN },
+    articleRemoval: { refType: BuiltinTypes.BOOLEAN },
+    articleLabelNamesRemoval: { refType: BuiltinTypes.BOOLEAN },
+    articleAttachmentSize: { refType: BuiltinTypes.BOOLEAN },
+    everyoneUserSegmentModification: { refType: BuiltinTypes.BOOLEAN },
+    brandFieldForBrandBasedElements: { refType: BuiltinTypes.BOOLEAN },
+    translationForDefaultLocale: { refType: BuiltinTypes.BOOLEAN },
+    helpCenterActivation: { refType: BuiltinTypes.BOOLEAN },
+    helpCenterCreationOrRemoval: { refType: BuiltinTypes.BOOLEAN },
+    externalSourceWebhook: { refType: BuiltinTypes.BOOLEAN },
+    defaultGroupChange: { refType: BuiltinTypes.BOOLEAN },
+    organizationExistence: { refType: BuiltinTypes.BOOLEAN },
+    badFormatWebhookAction: { refType: BuiltinTypes.BOOLEAN },
+    guideDisabled: { refType: BuiltinTypes.BOOLEAN },
+    additionOfTicketStatusForTicketForm: { refType: BuiltinTypes.BOOLEAN },
+    defaultDynamicContentItemVariant: { refType: BuiltinTypes.BOOLEAN },
+    featureActivation: { refType: BuiltinTypes.BOOLEAN },
+    standardFields: { refType: BuiltinTypes.BOOLEAN },
+    defaultAutomationRemoval: { refType: BuiltinTypes.BOOLEAN },
+    attachmentWithoutContent: { refType: BuiltinTypes.BOOLEAN },
+    deflectionAction: { refType: BuiltinTypes.BOOLEAN },
+    uniqueAutomationConditions: { refType: BuiltinTypes.BOOLEAN },
+    childInOrder: { refType: BuiltinTypes.BOOLEAN },
+    childrenReferences: { refType: BuiltinTypes.BOOLEAN },
+    orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },
+    guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
+    duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
+
 export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
   elemID: new ElemID(ZENDESK),
   fields: {
@@ -2624,10 +2761,17 @@ export const configType = createMatchingObjectType<Partial<ZendeskConfig>>({
       ),
     },
     [DEPLOY_CONFIG]: {
-      refType: createUserDeployConfigType(ZENDESK),
+      refType: createUserDeployConfigType(
+        ZENDESK,
+        changeValidatorConfigType,
+        defaultMissingUserFallbackField
+      ),
     },
     [API_DEFINITIONS_CONFIG]: {
-      refType: createDucktypeAdapterApiConfigType({ adapter: ZENDESK }),
+      refType: createDucktypeAdapterApiConfigType({
+        adapter: ZENDESK,
+        additionalTransformationFields: { omitInactive: { refType: BuiltinTypes.BOOLEAN } },
+      }),
     },
   },
   annotations: {

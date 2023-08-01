@@ -23,12 +23,14 @@ import SdfClient, {
   COMMANDS,
   MINUTE_IN_MILLISECONDS,
 } from '../../src/client/sdf_client'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, TemplateCustomTypeInfo } from '../../src/client/types'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SdfDeployParams, SDFObjectNode, TemplateCustomTypeInfo } from '../../src/client/types'
 import { fileCabinetTopLevelFolders } from '../../src/client/constants'
 import { DEFAULT_COMMAND_TIMEOUT_IN_MINUTES } from '../../src/config'
 import { FeaturesDeployError, ManifestValidationError, MissingManifestFeaturesError, ObjectsDeployError, SettingsDeployError } from '../../src/client/errors'
-import { Graph, GraphNode, SDFObjectNode } from '../../src/client/graph_utils'
-import { ATTRIBUTES_FILE_SUFFIX, ATTRIBUTES_FOLDER_NAME, FOLDER_ATTRIBUTES_FILE_SUFFIX } from '../../src/client/deploy_xml_utils'
+import { Graph, GraphNode } from '../../src/client/graph_utils'
+import { ATTRIBUTES_FOLDER_NAME } from '../../src/client/sdf_parser'
+import { MOCK_FEATURES_XML, MOCK_FILE_ATTRS_PATH, MOCK_FILE_PATH, MOCK_FOLDER_ATTRS_PATH, MOCK_FOLDER_PATH, MOCK_MANIFEST_VALID_DEPENDENCIES, MOCK_TEMPLATE_CONTENT, readDirMockFunction, readFileMockFunction, statMockFunction } from './mocks'
+import { largeFoldersToExclude } from '../../src/client/file_cabinet_utils'
 
 const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
   undefined,
@@ -39,125 +41,22 @@ const DEFAULT_DEPLOY_PARAMS: [undefined, SdfDeployParams, Graph<SDFObjectNode>] 
       excludedFeatures: [],
       includedObjects: [],
       excludedObjects: [],
+      includedFiles: [],
+      excludedFiles: [],
     },
   },
-  new Graph<SDFObjectNode>('elemIdFullName'),
+  new Graph(),
 ]
 
-
-const MOCK_TEMPLATE_CONTENT = Buffer.from('Template Inner Content')
-const MOCK_FILE_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}content.html`
-const MOCK_FILE_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}content.html${ATTRIBUTES_FILE_SUFFIX}`
-const MOCK_FOLDER_ATTRS_PATH = `${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}${osPath.sep}${FOLDER_ATTRIBUTES_FILE_SUFFIX}`
-
-const MOCK_MANIFEST_INVALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-<projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-<frameworkversion>1.0</frameworkversion>
-<dependencies>
-  <features>
-    <feature required="true">ADVANCEDEXPENSEMANAGEMENT</feature>
-    <feature required="true">SFA</feature>
-    <feature required="true">MULTICURRENCYVENDOR</feature>
-    <feature required="true">ACCOUNTING</feature>
-    <feature required="true">SUBSCRIPTIONBILLING</feature>
-    <feature required="true">ADDRESSCUSTOMIZATION</feature>
-    <feature required="true">WMSSYSTEM</feature>
-    <feature required="true">SUBSIDIARIES</feature>
-    <feature required="true">RECEIVABLES</feature>
-    <feature required="true">BILLINGACCOUNTS</feature>
-  </features>
-  <objects>
-    <object>custentity2edited</object>
-    <object>custentity13</object>
-    <object>custentity_14</object>
-    <object>custentity10</object>
-    <object>custentitycust_active</object>
-    <object>custentity11</object>
-    <object>custentity_slt_tax_reg</object>
-  </objects>
-  <files>
-    <file>/SuiteScripts/clientScript_2_0.js</file>
-  </files>
-</dependencies>
-</manifest>`
-
-const MOCK_MANIFEST_VALID_DEPENDENCIES = `<manifest projecttype="ACCOUNTCUSTOMIZATION">
-  <projectname>TempSdfProject-56067b34-18db-4372-a35b-e2ed2c3aaeb3</projectname>
-  <frameworkversion>1.0</frameworkversion>
-  <dependencies>
-    <features>
-      <feature required="true">SFA</feature>
-      <feature required="true">MULTICURRENCYVENDOR</feature>
-      <feature required="true">ACCOUNTING</feature>
-      <feature required="true">ADDRESSCUSTOMIZATION</feature>
-      <feature required="true">SUBSIDIARIES</feature>
-      <feature required="true">RECEIVABLES</feature>
-    </features>
-    <objects>
-      <object>custentity2edited</object>
-      <object>custentity13</object>
-      <object>custentity_14</object>
-      <object>custentity10</object>
-      <object>custentitycust_active</object>
-      <object>custentity11</object>
-      <object>custentity_slt_tax_reg</object>
-    </objects>
-    <files>
-      <file>/SuiteScripts/clientScript_2_0.js</file>
-    </files>
-  </dependencies>
-</manifest>
-`
-
-const MOCK_FEATURES_XML = '<features><feature><id>SUITEAPPCONTROLCENTER</id><status>ENABLED</status></feature></features>'
-
-const MOCK_ORIGINAL_DEPLOY_XML = `<deploy>
-    <configuration>
-        <path>~/AccountConfiguration/*</path>
-    </configuration>
-    <files>
-        <path>~/FileCabinet/*</path>
-    </files>
-    <objects>
-        <path>~/Objects/*</path>
-    </objects>
-    <translationimports>
-        <path>~/Translations/*</path>
-    </translationimports>
-</deploy>
-`
-
 jest.mock('@salto-io/file', () => ({
-  readDir: jest.fn().mockImplementation(() => ['a.xml', 'b.xml', 'a.template.html']),
-  readFile: jest.fn().mockImplementation(filePath => {
-    if (filePath.includes('.template.')) {
-      return MOCK_TEMPLATE_CONTENT
-    }
-    if (filePath.endsWith(MOCK_FILE_PATH)) {
-      return 'dummy file content'
-    }
-    if (filePath.endsWith(MOCK_FILE_ATTRS_PATH)) {
-      return '<file><description>file description</description></file>'
-    }
-    if (filePath.endsWith(MOCK_FOLDER_ATTRS_PATH)) {
-      return '<folder><description>folder description</description></folder>'
-    }
-
-    if (filePath.endsWith('manifest.xml')) {
-      return MOCK_MANIFEST_INVALID_DEPENDENCIES
-    }
-    if (filePath.endsWith('/features.xml')) {
-      return MOCK_FEATURES_XML
-    }
-    if (filePath.endsWith('/deploy.xml')) {
-      return MOCK_ORIGINAL_DEPLOY_XML
-    }
-    return `<addressForm filename="${filePath.split('/').pop()}">`
-  }),
+  readDir: jest.fn().mockImplementation(() => readDirMockFunction()),
+  readFile: jest.fn().mockImplementation(path => readFileMockFunction(path)),
   writeFile: jest.fn(),
   rename: jest.fn(),
   mkdirp: jest.fn(),
   rm: jest.fn(),
+  stat: jest.fn().mockImplementation(path => statMockFunction(path)),
+  exists: jest.fn().mockResolvedValue(true),
 }))
 const readFileMock = readFile as unknown as jest.Mock
 const readDirMock = readDir as jest.Mock
@@ -193,6 +92,12 @@ jest.mock('@salto-io/suitecloud-cli', () => ({
   },
 }))
 
+jest.mock('../../src/client/file_cabinet_utils', () => ({
+  ...jest.requireActual<{}>('../../src/client/file_cabinet_utils'),
+  largeFoldersToExclude: jest.fn().mockReturnValue([]),
+}))
+const mockLargeFoldersToExclude = largeFoldersToExclude as jest.Mock
+
 describe('sdf client', () => {
   const createProjectCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.CREATE_PROJECT })
@@ -219,6 +124,7 @@ describe('sdf client', () => {
       { name: CONFIG_FEATURES, ids: ['.*'] },
     ],
   })
+  const typeNamesQueries = { originFetchQuery: typeNamesQuery, updatedFetchQuery: typeNamesQuery }
 
   const importObjectsCommandMatcher = expect
     .objectContaining({ commandName: COMMANDS.IMPORT_OBJECTS })
@@ -283,7 +189,7 @@ describe('sdf client', () => {
 
     it('should succeed', async () => {
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const accountId = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
+      const { accountId } = await SdfClient.validateCredentials(DUMMY_CREDENTIALS)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(accountId).toEqual(DUMMY_CREDENTIALS.accountId)
@@ -300,7 +206,7 @@ describe('sdf client', () => {
         }),
       })
       mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
-      const accountId = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
+      const { accountId } = await SdfClient.validateCredentials({ ...DUMMY_CREDENTIALS, accountId: 'account with space' })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, credentialsWithSpaces)
       expect(accountId).toEqual('account with space')
@@ -315,7 +221,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(mockClient().getCustomObjects(
+        typeNames, typeNamesQueries
+      )).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).not.toHaveBeenCalledWith(importObjectsCommandMatcher)
@@ -328,7 +236,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(mockClient().getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(
+        mockClient().getCustomObjects(typeNames, typeNamesQueries)
+      ).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -357,7 +267,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
 
-      await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      await mockClient().getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledWith(createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenCalledWith(saveTokenCommandMatcher)
@@ -387,18 +297,18 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: true })
-      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQuery)
+      const getCustomObjectsResult = await client.getCustomObjects(typeNames, typeNamesQueries)
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, importObjectsCommandMatcher)
-      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, importObjectsCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(7, importConfigurationCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(8, deleteAuthIdCommandMatcher)
       expect(getCustomObjectsResult.failedToFetchAllAtOnce).toEqual(true)
-      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(getCustomObjectsResult.failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
     })
 
     it('should fail when IMPORT_OBJECTS has failed without fetchAllAtOnce', async () => {
@@ -424,7 +334,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await expect(client.getCustomObjects(typeNames, typeNamesQuery)).rejects.toThrow()
+      await expect(client.getCustomObjects(typeNames, typeNamesQueries)).rejects.toThrow()
     })
 
     it('should split to smaller chunks and retry when IMPORT_OBJECTS has failed for a certain chunk', async () => {
@@ -454,7 +364,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -512,7 +422,7 @@ describe('sdf client', () => {
         return Promise.resolve({ isSuccess: () => true })
       })
       const client = mockClient({ fetchAllTypesAtOnce: false })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -566,7 +476,7 @@ describe('sdf client', () => {
       })
 
       const client = mockClient({ fetchAllTypesAtOnce: false, maxItemsInImportObjectsRequest: 2 })
-      await client.getCustomObjects(typeNames, typeNamesQuery)
+      await client.getCustomObjects(typeNames, typeNamesQueries)
       // createProject & setupAccount & listObjects & 3*importObjects & deleteAuthId
       const numberOfExecuteActions = 8
       expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
@@ -596,6 +506,49 @@ describe('sdf client', () => {
         .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
     })
 
+    it('should exclude types with too many instances', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const ids = [
+          { type: 'addressForm', scriptId: 'a' },
+          { type: 'addressForm', scriptId: 'b' },
+          { type: 'addressForm', scriptId: 'c' },
+          { type: 'addressForm', scriptId: 'd' },
+          { type: 'advancedpdftemplate', scriptId: 'd' },
+        ]
+        if (context.commandName === COMMANDS.LIST_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: ids,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_OBJECTS) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: { failedImports: [] },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+
+      const client = mockClient({}, (_type: string, count: number) => count > 3)
+      await client.getCustomObjects(typeNames, typeNamesQueries)
+      // createProject & setupAccount & listObjects & 1*importObjects & deleteAuthId
+      const numberOfExecuteActions = 6
+      expect(mockExecuteAction).toHaveBeenCalledTimes(numberOfExecuteActions)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listObjectsCommandMatcher)
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(4, importObjectsCommandMatcher)
+      expect(mockExecuteAction.mock.calls[3][0].arguments).toEqual(expect.objectContaining({
+        type: 'advancedpdftemplate',
+        scriptid: 'd',
+      }))
+
+      expect(mockExecuteAction).toHaveBeenNthCalledWith(5, importConfigurationCommandMatcher)
+      expect(mockExecuteAction)
+        .toHaveBeenNthCalledWith(numberOfExecuteActions, deleteAuthIdCommandMatcher)
+    })
+
     it('should succeed', async () => {
       mockExecuteAction.mockImplementation(context => {
         if (context.commandName === COMMANDS.LIST_OBJECTS) {
@@ -617,9 +570,11 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+        instancesIds: currentInstanceIds,
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
+      expect(currentInstanceIds).toEqual([{ type: 'addressForm', instanceId: 'a' }])
       expect(readDirMock).toHaveBeenCalledTimes(1)
       expect(readFileMock).toHaveBeenCalledTimes(4)
       expect(rmMock).toHaveBeenCalledTimes(1)
@@ -687,9 +642,9 @@ describe('sdf client', () => {
         elements: customizationInfos,
         failedToFetchAllAtOnce,
         failedTypes,
-      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient({ installedSuiteApps: ['a.b.c'] }).getCustomObjects(typeNames, typeNamesQueries)
       expect(failedToFetchAllAtOnce).toBe(false)
-      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {} })
+      expect(failedTypes).toEqual({ lockedError: {}, unexpectedError: {}, excludedTypes: [] })
       expect(readDirMock).toHaveBeenCalledTimes(2)
       expect(readFileMock).toHaveBeenCalledTimes(7)
       expect(rmMock).toHaveBeenCalledTimes(2)
@@ -842,7 +797,7 @@ describe('sdf client', () => {
       })
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, query)
+      } = await mockClient().getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
       expect(failedTypes).toEqual({
         lockedError: {
           savedcsvimport: ['d'],
@@ -851,6 +806,7 @@ describe('sdf client', () => {
           savedcsvimport: ['c'],
           advancedpdftemplate: ['a'],
         },
+        excludedTypes: [],
       })
     })
 
@@ -899,12 +855,13 @@ describe('sdf client', () => {
 
       const {
         failedTypes,
-      } = await mockClient().getCustomObjects(typeNames, typeNamesQuery)
+      } = await mockClient().getCustomObjects(typeNames, typeNamesQueries)
       expect(failedTypes).toEqual({
         lockedError: {},
         unexpectedError: {
           addressForm: ['a', 'b'],
         },
+        excludedTypes: [],
       })
     })
 
@@ -935,7 +892,7 @@ describe('sdf client', () => {
           { name: 'addressForm', ids: ['a'] },
         ],
       })
-      await mockClient().getCustomObjects(typeNames, query)
+      await mockClient().getCustomObjects(typeNames, { originFetchQuery: query, updatedFetchQuery: query })
       expect(mockExecuteAction).toHaveBeenCalledWith(expect.objectContaining({
         commandName: COMMANDS.LIST_OBJECTS,
         arguments: {
@@ -961,10 +918,9 @@ describe('sdf client', () => {
     })
 
     it('should do nothing of no files are matched', async () => {
+      const netsuiteQuery = buildNetsuiteQuery({ types: [] })
       const { elements, failedToFetchAllAtOnce } = await mockClient()
-        .getCustomObjects(typeNames, buildNetsuiteQuery({
-          types: [],
-        }))
+        .getCustomObjects(typeNames, { originFetchQuery: netsuiteQuery, updatedFetchQuery: netsuiteQuery })
       expect(elements).toHaveLength(0)
       expect(failedToFetchAllAtOnce).toBeFalsy()
       expect(mockExecuteAction).not.toHaveBeenCalledWith()
@@ -975,6 +931,7 @@ describe('sdf client', () => {
     const allFilesQuery = buildNetsuiteQuery({
       fileCabinet: ['.*'],
     })
+    const maxFileCabinetSizeInGB = 1
 
     let client: SdfClient
     beforeEach(() => {
@@ -988,7 +945,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
       expect(rmMock).toHaveBeenCalledTimes(0)
     })
 
@@ -999,9 +956,13 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`) })
+      expect(failedPaths).toEqual({
+        lockedError: [],
+        largeFolderError: [],
+        otherError: fileCabinetTopLevelFolders.map(folderPath => `^${folderPath}.*`),
+      })
     })
 
     it('should fail when SETUP_ACCOUNT has failed', async () => {
@@ -1011,7 +972,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
     })
 
     it('should succeed when having no files', async () => {
@@ -1032,7 +993,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1041,7 +1002,7 @@ describe('sdf client', () => {
       expect(mockExecuteAction).toHaveBeenNthCalledWith(5, listFilesCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(6, deleteAuthIdCommandMatcher)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
     })
 
     it('should fail to importFiles when failing to import a certain file', async () => {
@@ -1093,7 +1054,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      await expect(client.importFileCabinetContent(allFilesQuery)).rejects.toThrow()
+      await expect(client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)).rejects.toThrow()
       expect(mockExecuteAction).toHaveBeenCalledTimes(8)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1145,9 +1106,9 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(3)
-      expect(elements).toHaveLength(2)
+      expect(elements).toHaveLength(4)
       expect(elements).toEqual([{
         typeName: 'file',
         values: {
@@ -1155,6 +1116,7 @@ describe('sdf client', () => {
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
         fileContent: 'dummy file content',
+        hadMissingAttributes: false,
       },
       {
         typeName: 'folder',
@@ -1162,8 +1124,31 @@ describe('sdf client', () => {
           description: 'folder description',
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+        hadMissingAttributes: false,
+      },
+      {
+        typeName: 'folder',
+        values: {
+          bundleable: 'F',
+          description: '',
+          isinactive: 'F',
+          isprivate: 'F',
+        },
+        path: ['Templates'],
+        hadMissingAttributes: true,
+      },
+      {
+        typeName: 'folder',
+        values: {
+          bundleable: 'F',
+          description: '',
+          isinactive: 'F',
+          isprivate: 'F',
+        },
+        path: ['Templates', 'E-mail Templates'],
+        hadMissingAttributes: true,
       }])
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(3, listFilesCommandMatcher)
@@ -1189,10 +1174,10 @@ describe('sdf client', () => {
       const query = notQuery(buildNetsuiteQuery({
         fileCabinet: [MOCK_FILE_PATH],
       }))
-      const { elements, failedPaths } = await client.importFileCabinetContent(query)
+      const { elements, failedPaths } = await client.importFileCabinetContent(query, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(0)
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(mockExecuteAction).toHaveBeenCalledTimes(6)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(1, createProjectCommandMatcher)
       expect(mockExecuteAction).toHaveBeenNthCalledWith(2, saveTokenCommandMatcher)
@@ -1206,10 +1191,10 @@ describe('sdf client', () => {
       const { elements, failedPaths } = await client
         .importFileCabinetContent(buildNetsuiteQuery({
           fileCabinet: [],
-        }))
+        }), maxFileCabinetSizeInGB)
 
       expect(elements).toHaveLength(0)
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], otherError: [], largeFolderError: [] })
       expect(mockExecuteAction).not.toHaveBeenCalled()
     })
 
@@ -1249,7 +1234,7 @@ describe('sdf client', () => {
         }
         return Promise.resolve({ isSuccess: () => true })
       })
-      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery)
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
       expect(readFileMock).toHaveBeenCalledTimes(1)
       expect(elements).toHaveLength(1)
       expect(elements).toEqual([{
@@ -1258,9 +1243,57 @@ describe('sdf client', () => {
           description: 'folder description',
         },
         path: ['Templates', 'E-mail Templates', 'InnerFolder'],
+        hadMissingAttributes: false,
       }])
-      expect(failedPaths).toEqual({ lockedError: [], otherError: [] })
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [], otherError: [] })
       expect(rmMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('should filter out paths under excluded large folders', async () => {
+      mockExecuteAction.mockImplementation(context => {
+        const filesPathResult = [
+          MOCK_FILE_PATH,
+        ]
+        if (context.commandName === COMMANDS.LIST_FILES
+          && context.arguments.folder === `${FILE_CABINET_PATH_SEPARATOR}Templates`) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: filesPathResult,
+          })
+        }
+        if (context.commandName === COMMANDS.IMPORT_FILES
+          && _.isEqual(context.arguments.paths, filesPathResult)) {
+          return Promise.resolve({
+            isSuccess: () => true,
+            data: {
+              results: [
+                {
+                  path: MOCK_FILE_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FILE_ATTRS_PATH,
+                  loaded: true,
+                },
+                {
+                  path: MOCK_FOLDER_ATTRS_PATH,
+                  loaded: true,
+                },
+              ],
+            },
+          })
+        }
+        return Promise.resolve({ isSuccess: () => true })
+      })
+      mockLargeFoldersToExclude.mockReturnValue([MOCK_FOLDER_PATH])
+      const { elements, failedPaths } = await client.importFileCabinetContent(allFilesQuery, maxFileCabinetSizeInGB)
+      expect(mockLargeFoldersToExclude).toHaveBeenCalledWith([
+        { path: MOCK_FILE_PATH, size: 33 },
+        { path: MOCK_FILE_ATTRS_PATH, size: 0 },
+        { path: MOCK_FOLDER_ATTRS_PATH, size: 0 },
+      ], maxFileCabinetSizeInGB)
+      expect(elements).toHaveLength(0)
+      expect(failedPaths).toEqual({ lockedError: [], largeFolderError: [MOCK_FOLDER_PATH], otherError: [] })
     })
   })
 
@@ -1279,16 +1312,29 @@ describe('sdf client', () => {
         },
         scriptId: 'scriptId',
       } as CustomTypeInfo
-      testSDFNode = { serviceid: 'scriptId', elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo }
+      testSDFNode = {
+        serviceid: 'scriptId',
+        changeType: 'addition',
+        customizationInfo: customTypeInfo,
+      } as unknown as SDFObjectNode
     })
     describe('deployCustomObject', () => {
       it('should succeed for CustomTypeInfo', async () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
         customTypeInfo.scriptId = scriptId
-        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: 'name', changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([
+          new GraphNode<SDFObjectNode>(
+            'name',
+            {
+              serviceid: scriptId,
+              changeType: 'addition',
+              customizationInfo: customTypeInfo,
+            } as unknown as SDFObjectNode,
+          ),
+        ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1303,10 +1349,19 @@ describe('sdf client', () => {
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true })
         const scriptId = 'filename'
         customTypeInfo.scriptId = scriptId
-        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: customTypeInfo })])
+        testGraph.addNodes([
+          new GraphNode<SDFObjectNode>(
+            scriptId,
+            {
+              serviceid: scriptId,
+              changeType: 'addition',
+              customizationInfo: customTypeInfo,
+            } as unknown as SDFObjectNode,
+          ),
+        ])
         await client.deploy('a.b.c', DEFAULT_DEPLOY_PARAMS[1], DEFAULT_DEPLOY_PARAMS[2])
         expect(renameMock).toHaveBeenCalled()
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`),
           '<typeName><key>val</key></typeName>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1328,9 +1383,18 @@ describe('sdf client', () => {
           fileContent: MOCK_TEMPLATE_CONTENT,
           fileExtension: 'html',
         } as TemplateCustomTypeInfo
-        testGraph.addNodes([new GraphNode<SDFObjectNode>({ serviceid: scriptId, elemIdFullName: scriptId, changeType: 'addition', customizationInfo: templateCustomTypeInfo })])
+        testGraph.addNodes([
+          new GraphNode<SDFObjectNode>(
+            scriptId,
+            {
+              serviceid: scriptId,
+              changeType: 'addition',
+              customizationInfo: templateCustomTypeInfo,
+            } as unknown as SDFObjectNode,
+          ),
+        ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${scriptId}.xml`), '<typeName><key>val</key></typeName>')
         expect(writeFileMock)
@@ -1405,14 +1469,22 @@ File: ~/Objects/custform_114_t1441298_782.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `An error occurred during custom object validation. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1449,7 +1521,15 @@ File: ~/Objects/custform_114_t1441298_782.xml
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_114_t1441298_782']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_114_t1441298_782',
+            [{
+              message: `Une erreur s'est produite lors de la validation de l'objet personnalis.. (custform_114_t1441298_782)
+File: ~/Objects/custform_114_t1441298_782.xml
+        `,
+              scriptId: 'custform_114_t1441298_782',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1494,14 +1574,22 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1544,14 +1632,22 @@ File: ~/Objects/custform_15_t1049933_143.xml
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['custform_15_t1049933_143']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'custform_15_t1049933_143',
+            [{
+              message: `An unexpected error has occurred. (custform_15_t1049933_143)
+File: ~/Objects/custform_15_t1049933_143.xml
+`,
+              scriptId: 'custform_15_t1049933_143',
+            }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1595,13 +1691,61 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(errorMessage)
+        }
+        expect(isRejected).toBe(true)
+      })
+      it('should throw shorten error', async () => {
+        const errorMessage = `
+The deployment process has encountered an error.
+Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
+2022-03-30 23:55:26 (PST) Installation started
+Info -- Account [(PRODUCTION) Salto Extended Dev]
+Info -- Account Customization Project [TempSdfProject-e5a4eed4-e331-490f-9cfa-69cf84bd231b]
+Info -- Framework Version [1.0]
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`
+        mockExecuteAction.mockImplementation(({ commandName }) => {
+          if (commandName === COMMANDS.DEPLOY_PROJECT) {
+            throw errorMessage
+          }
+          return { isSuccess: () => true }
+        })
+        let isRejected: boolean
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          isRejected = false
+        } catch (e) {
+          isRejected = true
+          expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(`An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`)
         }
         expect(isRejected).toBe(true)
       })
@@ -1647,14 +1791,20 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeTruthy()
-          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Set(['customrecord_flo_customization']))
+          expect(e instanceof ObjectsDeployError && e.failedObjects).toEqual(new Map([[
+            'customrecord_flo_customization',
+            [{ message: `An error occurred during custom object update.
+File: ~/Objects/customrecord_flo_customization.xml
+Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcustomfield)
+` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1701,14 +1851,19 @@ File: ~/AccountConfiguration/features.xml`
           return { isSuccess: () => true }
         })
         let isRejected: boolean
-        testGraph.addNodes([new GraphNode(testSDFNode)])
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
         try {
           await client.deploy(...DEFAULT_DEPLOY_PARAMS)
           isRejected = false
         } catch (e) {
           isRejected = true
           expect(e instanceof SettingsDeployError).toBeTruthy()
-          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Set(['companyFeatures']))
+          expect(e instanceof SettingsDeployError && e.failedConfigTypes).toEqual(new Map([[
+            'companyFeatures',
+            [{ message: `An error occurred during configuration validation.
+Details: Disable the SUPPLYCHAINPREDICTEDRISKS(Supply Chain Predicted Risks) feature before disabling the SUPPLYCHAINCONTROLTOWER(Supply Chain Control Tower) feature.
+File: ~/AccountConfiguration/features.xml` }],
+          ]]))
         }
         expect(isRejected).toBe(true)
       })
@@ -1724,12 +1879,21 @@ File: ~/AccountConfiguration/features.xml`
           },
           path: ['Templates', 'E-mail Templates', 'InnerFolder'],
         }
-        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder', elemIdFullName: 'name', changeType: 'addition', customizationInfo: folderCustomizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'name',
+            {
+              serviceid: 'Templates/E-mail Templates/InnerFolder',
+              changeType: 'addition',
+              customizationInfo: folderCustomizationInfo,
+            } as unknown as SDFObjectNode,
+          ),
+        ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(1)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FOLDER_ATTRS_PATH),
           '<folder><description>folder description</description></folder>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
@@ -1753,14 +1917,23 @@ File: ~/AccountConfiguration/features.xml`
           path: ['Templates', 'E-mail Templates', 'InnerFolder', 'content.html'],
           fileContent: dummyFileContent,
         }
-        testGraph.addNodes([new GraphNode({ serviceid: 'Templates/E-mail Templates/InnerFolder/content.html', elemIdFullName: 'name', changeType: 'addition', customizationInfo: fileCustomizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'name',
+            {
+              serviceid: 'Templates/E-mail Templates/InnerFolder/content.html',
+              changeType: 'addition',
+              customizationInfo: fileCustomizationInfo,
+            } as unknown as SDFObjectNode,
+          ),
+        ])
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
         expect(mkdirpMock).toHaveBeenCalledTimes(2)
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}`))
         expect(mkdirpMock)
           .toHaveBeenCalledWith(expect.stringContaining(`${osPath.sep}Templates${osPath.sep}E-mail Templates${osPath.sep}InnerFolder${osPath.sep}${ATTRIBUTES_FOLDER_NAME}`))
-        expect(writeFileMock).toHaveBeenCalledTimes(3)
+        expect(writeFileMock).toHaveBeenCalledTimes(4)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_ATTRS_PATH),
           '<file><description>file description</description></file>')
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(MOCK_FILE_PATH),
@@ -1787,10 +1960,19 @@ File: ~/AccountConfiguration/features.xml`
         },
       }
       it('should succeed', async () => {
-        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'name',
+            {
+              serviceid: '',
+              changeType: 'addition',
+              customizationInfo: featuresCustomizationInfo,
+            } as SDFObjectNode,
+          ),
+        ])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: ['Configure feature -- The SUITEAPPCONTROLCENTER(Departments) feature has been DISABLED'] })
         await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-        expect(writeFileMock).toHaveBeenCalledTimes(2)
+        expect(writeFileMock).toHaveBeenCalledTimes(3)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('features.xml'), MOCK_FEATURES_XML)
         expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining('manifest.xml'), MOCK_MANIFEST_VALID_DEPENDENCIES)
         expect(rmMock).toHaveBeenCalledTimes(2)
@@ -1802,7 +1984,16 @@ File: ~/AccountConfiguration/features.xml`
 
       it('should throw FeaturesDeployError on failed features deploy', async () => {
         const errorMessage = 'Configure feature -- Enabling of the SUITEAPPCONTROLCENTER(SuiteApp Control Center) feature has FAILED'
-        testGraph.addNodes([new GraphNode({ serviceid: '', elemIdFullName: 'name', changeType: 'addition', customizationInfo: featuresCustomizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'name',
+            {
+              serviceid: '',
+              changeType: 'addition',
+              customizationInfo: featuresCustomizationInfo,
+            } as SDFObjectNode,
+          ),
+        ])
         mockExecuteAction.mockResolvedValue({ isSuccess: () => true, data: [errorMessage] })
         await expect(client.deploy(...DEFAULT_DEPLOY_PARAMS))
           .rejects.toThrow(new FeaturesDeployError(errorMessage, ['SUITEAPPCONTROLCENTER']))
@@ -1834,11 +2025,25 @@ File: ~/AccountConfiguration/features.xml`
         scriptId: scriptId2,
       }
       testGraph.addNodes([
-        new GraphNode({ serviceid: scriptId1, elemIdFullName: 'name1', changeType: 'addition', customizationInfo: customTypeInfo1 } as SDFObjectNode),
-        new GraphNode({ serviceid: scriptId2, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: customTypeInfo2 } as SDFObjectNode),
+        new GraphNode(
+          'name1',
+          {
+            serviceid: scriptId1,
+            changeType: 'addition',
+            customizationInfo: customTypeInfo1,
+          } as unknown as SDFObjectNode,
+        ),
+        new GraphNode(
+          'name2',
+          {
+            serviceid: scriptId2,
+            changeType: 'addition',
+            customizationInfo: customTypeInfo2,
+          } as unknown as SDFObjectNode,
+        ),
       ])
       await client.deploy(...DEFAULT_DEPLOY_PARAMS)
-      expect(writeFileMock).toHaveBeenCalledTimes(3)
+      expect(writeFileMock).toHaveBeenCalledTimes(4)
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId1}.xml`),
         '<typeName><key>val</key></typeName>')
       expect(writeFileMock).toHaveBeenCalledWith(expect.stringContaining(`${scriptId2}.xml`),
@@ -1853,8 +2058,22 @@ File: ~/AccountConfiguration/features.xml`
     describe('validate only', () => {
       const failObject = 'fail_object'
       testGraph.addNodes([
-        new GraphNode({ serviceid: failObject, elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject } } as SDFObjectNode),
-        new GraphNode({ serviceid: 'successObject', elemIdFullName: 'name2', changeType: 'addition', customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' } } as SDFObjectNode),
+        new GraphNode(
+          'name2',
+          {
+            serviceid: failObject,
+            changeType: 'addition',
+            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: failObject },
+          } as unknown as SDFObjectNode,
+        ),
+        new GraphNode(
+          'name2',
+          {
+            serviceid: 'successObject',
+            changeType: 'addition',
+            customizationInfo: { typeName: 'typeName', values: { key: 'val' }, scriptId: 'successObject' },
+          } as unknown as SDFObjectNode,
+        ),
       ])
       const deployParams: [undefined, SdfDeployParams, Graph<SDFObjectNode>] = [
         undefined,
@@ -1872,7 +2091,8 @@ File: ~/AccountConfiguration/features.xml`
       it('should throw ManifestValidationError', async () => {
         let errorMessage: string
         const errorReferenceName = 'some_scriptid'
-        const manifestErrorMessage = `Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
+        const manifestErrorMessage = `An error occurred during account settings validation.
+Details: The manifest contains a dependency on ${errorReferenceName} object, but it is not in the account.`
         mockExecuteAction.mockImplementation(context => {
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             errorMessage = `Warning: The validation process has encountered an error.
@@ -1911,7 +2131,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof ManifestValidationError).toBeTruthy()
           expect(e.message).toContain(manifestErrorMessage)
-          expect(e.missingDependencyScriptIds).toContain(errorReferenceName)
+          expect(e.missingDependencies).toEqual([{ scriptId: errorReferenceName, message: manifestErrorMessage }])
         }
       })
 
@@ -1923,7 +2143,12 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         
         An error occurred during custom object validation. (customworkflow1)
         Details: When the SuiteCloud project contains a workflow, the manifest must define the WORKFLOW feature as required.
-        File: ~/Objects/customworkflow1.xml`
+        File: ~/Objects/customworkflow1.xml
+        
+        An error occurred during custom object validation. (customworkflow2)
+        Details: The following features must be specified in the manifest to use the [scriptid=custform1] value with the Transaction Form1 condition builder parameter in the customworkflow2 workflow: RECEIVABLES
+        File: ~/Objects/customworkflow2.xml`
+
           if (context.commandName === COMMANDS.VALIDATE_PROJECT) {
             throw new Error(errorMessage)
           }
@@ -1935,7 +2160,7 @@ Details: The manifest contains a dependency on ${errorReferenceName} object, but
         } catch (e) {
           expect(e instanceof MissingManifestFeaturesError).toBeTruthy()
           expect(e.message).toContain('Details: You must specify the SUBSCRIPTIONBILLING(Subscription Billing)')
-          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW'])
+          expect(e.missingFeatures).toEqual(['SUBSCRIPTIONBILLING', 'WORKFLOW', 'RECEIVABLES'])
         }
       })
       it('should throw error', async () => {

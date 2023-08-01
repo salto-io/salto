@@ -70,19 +70,21 @@ describe('client_http_client', () => {
       mockAxiosAdapter.onGet('/users/me').reply(200, {
         accountId: 'ACCOUNT_ID',
       })
-      mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456' })
+      mockAxiosAdapter.onGet('/ep').replyOnce(200, { a: 'b' }, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
       mockAxiosAdapter.onGet('/ep2', { a: 'AAA' }).replyOnce(200, { c: 'd' }, { hh: 'header' })
 
       const getRes = await client.getSinglePage({ url: '/ep' })
       const getRes2 = await client.getSinglePage({ url: '/ep2', queryParams: { a: 'AAA' } })
-      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456' } })
+      expect(getRes).toEqual({ data: { a: 'b' }, status: 200, headers: { 'X-Rate-Limit': '456', 'Retry-After': '93' } })
       expect(getRes2).toEqual({ data: { c: 'd' }, status: 200, headers: {} })
       expect(clearValuesFromResponseDataFunc).toHaveBeenCalledTimes(2)
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(1, { a: 'b' }, '/ep')
       expect(clearValuesFromResponseDataFunc).toHaveBeenNthCalledWith(2, { c: 'd' }, '/ep2')
-      expect(extractHeadersFunc).toHaveBeenCalledTimes(2)
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456' })
-      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenCalledTimes(4)
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(1, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(2, { h: '123', 'X-Rate-Limit': '456', 'Retry-After': '93' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(3, { hh: 'header' })
+      expect(extractHeadersFunc).toHaveBeenNthCalledWith(4, { hh: 'header' })
     })
 
     it('should throw Unauthorized on login 401', async () => {
@@ -116,7 +118,11 @@ describe('client_http_client', () => {
           put: mockFunction<APIConnection['put']>(),
           patch: mockFunction<APIConnection['patch']>(),
           delete: mockFunction<APIConnection['delete']>(),
-          accountId: 'ACCOUNT_ID',
+          accountInfo: {
+            accountId: 'ACCOUNT_ID',
+            accountType: 'Sandbox',
+            isProduction: false,
+          },
         }),
       })
       const client = new MyCustomClient({ credentials: { username: 'user', password: 'password' } })

@@ -33,19 +33,22 @@ const hasScriptId = (res: Record<string, unknown>): res is { scriptid: string } 
 const getScriptIdsQuery = ({ from, where }: {from: string; where?: string}): string =>
   `SELECT scriptid FROM ${from} ${where ? `WHERE ${where}` : ''} ORDER BY scriptid ASC`
 
+const getMatchingCustomRecords = async (
+  client: NetsuiteClient,
+  isCustomRecordTypeMatch : NetsuiteQuery['isCustomRecordTypeMatch'],
+): Promise<string[]> => (await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE })))
+  ?.filter(hasScriptId)
+  .map(({ scriptid }) => scriptid.toLowerCase())
+  .filter(isCustomRecordTypeMatch) ?? []
+
 export const getChangedCustomRecords = async (
   client: NetsuiteClient,
   dateRange: DateRange,
-  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>
+  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>,
 ): Promise<ChangedCustomRecord[]> => {
+  const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
+
   const [startDate, endDate] = dateRange.toSuiteQLRange()
-
-  const customRecordTypesScriptIds = (
-    await client.runSuiteQL(getScriptIdsQuery({ from: CUSTOM_RECORD_TYPE }))
-  )?.filter(hasScriptId)
-    .map(({ scriptid }) => scriptid.toLowerCase())
-    .filter(isCustomRecordTypeMatch) ?? []
-
   const changedObjects = await Promise.all(
     customRecordTypesScriptIds.map(async customRecordTypeScriptId => (
       await client.runSuiteQL(getScriptIdsQuery({
@@ -57,5 +60,31 @@ export const getChangedCustomRecords = async (
       objectId: scriptid.toLowerCase(),
     })) ?? [])
   )
+
   return changedObjects.flat()
+}
+
+export const getCustomRecords = async (
+  client: NetsuiteClient,
+  { isCustomRecordTypeMatch }: Pick<NetsuiteQuery, 'isCustomRecordTypeMatch'>,
+  customRecordTypesToIgnore: Set<string>,
+): Promise<Map<string, Set<string>>> => {
+  const customRecordTypesScriptIds = await getMatchingCustomRecords(client, isCustomRecordTypeMatch)
+
+  const customTypeRecords = (await Promise.all(
+    customRecordTypesScriptIds
+      .filter(customRecordTypesScriptId => !customRecordTypesToIgnore.has(customRecordTypesScriptId))
+      .map(async customRecordTypeScriptId => {
+        const scriptIds = (await client.runSuiteQL(getScriptIdsQuery({ from: customRecordTypeScriptId }))
+        )?.filter(hasScriptId).map(({ scriptid }) => (
+          scriptid.toLowerCase()
+        ))
+        return {
+          typeId: customRecordTypeScriptId,
+          recordIds: new Set(scriptIds),
+        }
+      })
+  ))
+
+  return new Map(customTypeRecords.map(customType => [customType.typeId, customType.recordIds]))
 }

@@ -114,7 +114,7 @@ export const buildAdaptersConfigSource = async ({
   const updatedConfigTypes = [...configTypes]
   const changes = await naclSource.load({ ignoreFileChanges })
 
-  let elementsSource = buildElementsSourceFromElements(updatedConfigTypes, naclSource)
+  let elementsSource = buildElementsSourceFromElements(updatedConfigTypes, [naclSource])
 
   const validationErrorsMap = await remoteMapCreator<ValidationError[]>({
     namespace: VALIDATION_ERRORS_NAMESPACE,
@@ -140,8 +140,6 @@ export const buildAdaptersConfigSource = async ({
       .map(conf => ({
         id: conf.elemID, action: 'remove', data: { before: conf },
       })))
-    // If flush is not called here the removal seems to be ignored
-    await naclSource.flush()
 
     const removeUndefined = async (instance: InstanceElement): Promise<InstanceElement> =>
       transformElement({
@@ -204,7 +202,7 @@ export const buildAdaptersConfigSource = async ({
         updatedConfigTypes.push(...additionalConfigs)
         elementsSource = buildElementsSourceFromElements(
           updatedConfigTypes,
-          naclSource
+          [naclSource],
         )
       }
       const configsToUpdate = collections.array.makeArray(configs).map(e => e.clone())

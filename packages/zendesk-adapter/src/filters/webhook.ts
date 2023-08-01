@@ -15,7 +15,7 @@
 */
 import _ from 'lodash'
 import {
-  Change,
+  Change, createSaltoElementError,
   getChangeData,
   InstanceElement,
   isAdditionOrModificationChange,
@@ -29,6 +29,7 @@ import { WEBHOOK_TYPE_NAME } from '../constants'
 export const AUTH_TYPE_TO_PLACEHOLDER_AUTH_DATA: Record<string, unknown> = {
   bearer_token: { token: '123456' },
   basic_auth: { username: 'user@name.com', password: 'password' },
+  api_key: { name: 'tempHeader', value: 'tempValue' },
 }
 
 /**
@@ -66,10 +67,12 @@ const filterCreator: FilterCreator = ({ config, client }) => ({
             instance.value.authentication.type
           ]
           if (placeholder === undefined) {
-            throw new Error(
-              `Unknown auth type was found for webhook ${instance.elemID.getFullName()}: ${
+            throw createSaltoElementError({ // caught by deployChanges
+              message: `Unknown auth type was found for webhook ${instance.elemID.getFullName()}: ${
                 instance.value.authentication.type}`,
-            )
+              severity: 'Error',
+              elemID: getChangeData(change).elemID,
+            })
           }
           instance.value.authentication.data = placeholder
         }

@@ -52,6 +52,10 @@ type ValidAuditRes = {
   audit_logs: { created_at: string; actor_name: string }[]
 }
 
+type ValidAuditResWithCount = {
+  count: number
+}
+
 const AUDIT_SCHEMA = Joi.object({
   audit_logs: Joi.array().items(Joi.object({
     created_at: Joi.string().required(),
@@ -62,6 +66,9 @@ const AUDIT_SCHEMA = Joi.object({
 const isValidAuditRes = createSchemeGuard<ValidAuditRes>(
   AUDIT_SCHEMA, 'Received an invalid value for audit_logs response'
 )
+
+const isValidAuditResWithCount = (res: unknown): res is ValidAuditResWithCount =>
+  _.isObject(res) && 'count' in res
 
 const getLastAuditTime = async (client: ZendeskClient): Promise<string | undefined> => {
   try {
@@ -138,9 +145,9 @@ const getChangedByName = async ({
       }
       return res.audit_logs[0].actor_name
     }
-    log.error(`could not get the audit_log for ${id}, the result of getSinglePage was not valid.`)
+    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, the result of getSinglePage was not valid.`)
   } catch (e) {
-    log.error(`could not get the audit_log for ${id}, getSinglePage returned an error'. error: ${e}`)
+    log.error(`could not get the audit_log for instance ${instance.elemID.getFullName()} with id ${id}, getSinglePage returned an error'. error: ${e}`)
   }
   return undefined
 }
@@ -203,6 +210,21 @@ const addChangedByUsingUpdatedById = (instances: InstanceElement[], idToName: Re
     })
 }
 
+const calculateLogNumber = async (client: ZendeskClient): Promise<string> => {
+  try {
+    const res = (await client.getSinglePage({
+      url: '/api/v2/audit_logs',
+    })).data
+    if (isValidAuditResWithCount(res)) {
+      return res.count.toString()
+    }
+    return 'unknown'
+  } catch (e) {
+    log.error(`could not get amount of audit_log. error: ${e}`)
+    return 'unknown'
+  }
+}
+
 const addChangedByUsingAuditLog = async ({
   instances,
   newLastAuditTime,
@@ -233,6 +255,8 @@ const addChangedByUsingAuditLog = async ({
   if (_.isEmpty(updatedInstances)) {
     return
   }
+  const logNumber = await calculateLogNumber(client)
+  log.debug(`about to update changed_by for ${updatedInstances.length} instances, the amount of audit_logs is ${logNumber}`)
 
   // updated_by for everything else (some types are not supported by zendesk - listed above)
   await awu(updatedInstances)

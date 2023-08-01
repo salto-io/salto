@@ -28,6 +28,7 @@ import {
   TypeSwaggerDefaultConfig, TransformationConfig, TransformationDefaultConfig,
   AdapterSwaggerApiConfig, TypeSwaggerConfig, getConfigWithDefault, getTransformationConfigByType,
 } from '../../config'
+import { InvalidSingletonType } from '../../config/shared'
 import { findDataField, FindNestedFieldFunc } from '../field_finder'
 import { computeGetArgs as defaultComputeGetArgs, ComputeGetArgsFunc } from '../request_parameters'
 import { FetchElements, getElementsWithContext } from '../element_getter'
@@ -282,6 +283,7 @@ type GetEntriesParams = {
   nestedFieldFinder: FindNestedFieldFunc
   computeGetArgs: ComputeGetArgsFunc
   getElemIdFunc?: ElemIdGetter
+  reversedSupportedTypes: Record<string, string[]>
 }
 
 export const extractPageEntriesByNestedField = (fieldName?: string): PageEntriesExtractor => (
@@ -302,7 +304,7 @@ const getEntriesForType = async (
 ): Promise<{ entries: Values[]; objType: ObjectType }> => {
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, objectTypes, contextElements,
-    requestContext, nestedFieldFinder, computeGetArgs,
+    requestContext, nestedFieldFinder, computeGetArgs, reversedSupportedTypes,
   } = params
   const type = await normalizeType(objectTypes[typeName])
   const typeConfig = typesConfig[typeName]
@@ -360,7 +362,7 @@ const getEntriesForType = async (
   const { objType, extractValues } = await getType()
 
   const getEntries = async (): Promise<Values[]> => {
-    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext)
+    const args = computeGetArgs(requestWithDefaults, contextElements, requestContext, reversedSupportedTypes)
 
     const results = (await Promise.all(args.map(
       async getArgs => ((await toArrayAsync(paginator(
@@ -450,7 +452,7 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     const { entries, objType } = await getEntriesForType(params)
     if (objType.isSettings && entries.length > 1) {
       log.warn(`Expected one instance for singleton type: ${typeName} but received: ${entries.length}`)
-      throw new InvalidTypeConfig(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
+      throw new InvalidSingletonType(`Could not fetch type ${typeName}, singleton types should not have more than one instance`)
     }
     return await generateInstancesForType({
       entries,
@@ -464,7 +466,8 @@ const getInstancesForType = async (params: GetEntriesParams): Promise<InstanceEl
     if (e instanceof UnauthorizedError
       || e instanceof InvalidTypeConfig
       || e instanceof TimeoutError
-      || (e instanceof HTTPError && e.response.status === 403)) {
+      || e instanceof InvalidSingletonType
+      || (e instanceof HTTPError && (e.response.status === 403 || e.response.status === 401))) {
       throw e
     }
     return []
@@ -495,6 +498,14 @@ export const getAllInstances = async ({
 }): Promise<FetchElements<InstanceElement[]>> => {
   const { types, typeDefaults } = apiConfig
 
+  const reversedSupportedTypes = _(
+    Object.entries(supportedTypes)
+      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
+  )
+    .groupBy(entry => entry.wrapperType)
+    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
+    .value()
+
   const elementGenerationParams = {
     paginator,
     typesConfig: types,
@@ -503,6 +514,7 @@ export const getAllInstances = async ({
     nestedFieldFinder,
     computeGetArgs,
     getElemIdFunc,
+    reversedSupportedTypes,
   }
 
   return getElementsWithContext<InstanceElement>({
@@ -516,12 +528,15 @@ export const getAllInstances = async ({
           errors: [],
         }
       } catch (e) {
-        if (e.response?.status === 403) {
+        if (e.response?.status === 403 || e.response?.status === 401) {
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
+        }
+        if (e instanceof InvalidSingletonType) {
+          return { elements: [], errors: [{ message: e.message, severity: 'Warning' }] }
         }
         throw e
       }

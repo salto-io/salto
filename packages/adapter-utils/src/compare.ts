@@ -15,9 +15,26 @@
 */
 import _ from 'lodash'
 import {
-  ChangeDataType, DetailedChange, isField, isInstanceElement, ElemID, Value, ObjectType, isType,
-  PrimitiveType, isObjectType, isPrimitiveType, isEqualElements, isEqualValues, isRemovalChange,
-  isElement, CompareOptions, isIndexPathPart, Change, getChangeData, Element,
+  Change,
+  ChangeDataType,
+  CompareOptions,
+  DetailedChange,
+  Element,
+  ElemID,
+  getChangeData,
+  isElement,
+  isEqualElements,
+  isEqualValues,
+  isField,
+  isIndexPathPart,
+  isInstanceElement,
+  isObjectType,
+  isPrimitiveType,
+  isRemovalChange,
+  isType,
+  ObjectType,
+  PrimitiveType,
+  Value,
 } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { resolvePath, setPath } from './utils'
@@ -90,7 +107,7 @@ const compareListWithOrderMatching = ({
 /**
  * Create detailed changes from change data (before and after values)
  */
-const getValuesChanges = ({
+export const getValuesChanges = ({
   id, before, after, options, beforeId, afterId,
 }: {
   id: ElemID
@@ -207,8 +224,9 @@ const getAnnotationTypeChanges = ({
 }
 
 export const detailedCompare = (
-  before: ChangeDataType,
-  after: ChangeDataType,
+  // This function supports all types of Elements, but doesn't necessarily support Variable (SALTO-4363)
+  before: Element,
+  after: Element,
   compareOptions?: DetailedCompareOptions
 ): DetailedChange[] => {
   const createFieldChanges = compareOptions?.createFieldChanges ?? false
@@ -293,6 +311,19 @@ export const detailedCompare = (
     : []
   return [...annotationTypeChanges, ...annotationChanges, ...fieldChanges, ...valueChanges]
 }
+
+export const getDetailedChanges = (change: Change, compareOptions?: CompareOptions): DetailedChange[] => {
+  const elem = getChangeData(change)
+  if (change.action !== 'modify') {
+    return [{ ...change, id: elem.elemID }]
+  }
+  return detailedCompare(
+    change.data.before,
+    change.data.after,
+    compareOptions,
+  )
+}
+
 
 /**
  * This function returns if a change contains a moving of a item in a list for one index to another

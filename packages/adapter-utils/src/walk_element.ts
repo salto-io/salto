@@ -14,9 +14,12 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { logger } from '@salto-io/logging'
 import {
   ElemID, Values, Value, isInstanceElement, isType, isObjectType, isElement, Element, isVariable,
 } from '@salto-io/adapter-api'
+
+const log = logger(module)
 
 export enum WALK_NEXT_STEP {
   RECURSE, // Continue with the recursion
@@ -81,6 +84,7 @@ export const walkOnValue = (
     if (e instanceof ExitWalk) {
       return
     }
+    log.warn(`Failed to walk on element ${elemId.getFullName()}: ${e}`)
     throw e
   }
 }

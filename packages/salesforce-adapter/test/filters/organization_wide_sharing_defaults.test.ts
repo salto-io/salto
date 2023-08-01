@@ -23,6 +23,7 @@ import {
   ORGANIZATION_SETTINGS,
   SALESFORCE,
 } from '../../src/constants'
+import { defaultFilterContext } from '../utils'
 
 jest.mock('../../src/filters/utils', () => ({
   ...jest.requireActual('../../src/filters/utils'),
@@ -34,6 +35,7 @@ describe('organization-wide defaults filter', () => {
   const mockedFilterUtils = jest.mocked(filterUtilsModule)
   const { client, connection } = mockAdapter({})
   const filter = filterCreator({
+    config: defaultFilterContext,
     client,
   })
 
@@ -141,7 +143,7 @@ describe('organization-wide defaults filter', () => {
 
     it('should fetch them', async () => {
       const elements: Element[] = []
-      await filter.onFetch(elements)
+      await filter.onFetch?.(elements)
       expect(elements).toIncludeAllPartialMembers([
         {
           elemID: new ElemID(SALESFORCE, ORGANIZATION_SETTINGS),

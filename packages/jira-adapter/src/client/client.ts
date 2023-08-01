@@ -30,12 +30,12 @@ const {
 
 const DEFAULT_MAX_CONCURRENT_API_REQUESTS: Required<clientUtils.ClientRateLimitConfig> = {
   total: RATE_LIMIT_UNLIMITED_MAX_CONCURRENT_REQUESTS,
-  get: 20,
+  get: 60,
   deploy: 2,
 }
 
 const DEFAULT_PAGE_SIZE: Required<clientUtils.ClientPageSizeConfig> = {
-  get: 50,
+  get: 1000,
 }
 
 export default class JiraClient extends clientUtils.AdapterHTTPClient<

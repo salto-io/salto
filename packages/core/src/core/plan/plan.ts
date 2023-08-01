@@ -84,7 +84,7 @@ const areReferencesEqual = async (
   secondVisitedReferences: Set<string>,
   compareOptions?: CompareOptions,
 ): Promise<ReferenceCompareReturnValue> => {
-  if (compareOptions?.compareReferencesByValue && shouldResolve(first) && shouldResolve(second)) {
+  if (compareOptions?.compareByValue && shouldResolve(first) && shouldResolve(second)) {
     const shouldResolveFirst = isReferenceExpression(first)
 
     const firstValue = shouldResolveFirst
@@ -162,7 +162,7 @@ const compareValuesAndLazyResolveRefs = async (
     )
   }
 
-  const specialCompareRes = compareSpecialValues(first, second)
+  const specialCompareRes = compareSpecialValues(first, second, compareOptions)
   if (values.isDefined(specialCompareRes)) {
     return specialCompareRes
   }

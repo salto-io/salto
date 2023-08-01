@@ -19,6 +19,7 @@ import { collections } from '@salto-io/lowerdash'
 import { customFieldOptionDependencyChanger } from './custom_field_option_change'
 import { guideOrderDependencyChanger } from './guide_order_change'
 import { ticketFormDependencyChanger } from './ticket_form_change'
+import { articleAttachmentDependencyChanger } from './article_attachment_change'
 
 const { awu } = collections.asynciterable
 
@@ -27,6 +28,7 @@ const DEPENDENCY_CHANGERS: DependencyChanger[] = [
   customFieldOptionDependencyChanger,
   guideOrderDependencyChanger,
   ticketFormDependencyChanger,
+  articleAttachmentDependencyChanger,
 ]
 
 export const dependencyChanger: DependencyChanger = async (

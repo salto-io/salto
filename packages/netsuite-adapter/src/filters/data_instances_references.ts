@@ -18,7 +18,7 @@ import { ElemID, isElement, isInstanceElement, isListType, isReferenceExpression
 import { applyFunctionToChangeData, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isDataObjectType } from '../types'
-import { FilterCreator, FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { assignToInternalIdsIndex, getDataInstanceId } from '../elements_source_index/elements_source_index'
 import { PARENT } from '../constants'
 
@@ -96,7 +96,7 @@ const getReferenceInternalId = (reference: ReferenceExpression): Value => (
     : reference.value ?? {}
 ).internalId
 
-const filterCreator: FilterCreator = ({ elementsSourceIndex, isPartial }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ elementsSourceIndex, isPartial }) => ({
   name: 'dataInstancesReferences',
   onFetch: async elements => {
     const elementsMap: Record<string, ElemID> = isPartial ? _.clone(

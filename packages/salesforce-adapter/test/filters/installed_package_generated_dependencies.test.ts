@@ -17,9 +17,9 @@ import { BuiltinTypes, CORE_ANNOTATIONS, Field, InstanceElement, ObjectType } fr
 import { mockTypes } from '../mock_elements'
 import { createInstanceElement } from '../../src/transformers/transformer'
 import { createCustomMetadataType, createCustomObjectType, defaultFilterContext } from '../utils'
-import { FilterWith } from '../../src/filter'
 import filterCreator from '../../src/filters/installed_package_generated_dependencies'
 import { API_NAME } from '../../src/constants'
+import { FilterWith } from './mocks'
 
 describe('installedPackageElementsFilter', () => {
   const NAMESPACE = 'namespace1'

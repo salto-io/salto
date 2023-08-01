@@ -23,6 +23,7 @@ import { Value, TemplateExpression, ElemID, Values } from '@salto-io/adapter-api
 import _, { trimEnd } from 'lodash'
 import { Token } from 'moo'
 import { createTemplateExpression } from '@salto-io/adapter-utils'
+import { logger } from '@salto-io/logging'
 import { Consumer, ParseContext, ConsumerReturnType } from '../types'
 import { createReferenceExpresion, unescapeTemplateMarker, addValuePromiseWatcher,
   registerRange, positionAtStart, positionAtEnd } from '../helpers'
@@ -32,6 +33,16 @@ import { missingComma, unknownFunction, unterminatedString, invalidStringTemplat
 import { IllegalReference } from '../../types'
 
 export const MISSING_VALUE = '****dynamic****'
+
+const log = logger(module)
+
+export class UnknownCharacter extends Error {
+  constructor(
+    public readonly token: LexerToken,
+  ) {
+    super(`Unknown character: ${token.text}`)
+  }
+}
 
 const consumeWord: Consumer<string> = context => {
   const wordToken = context.lexer.next()
@@ -107,7 +118,7 @@ const createStringValue = (
     ? [...tokens.slice(0, -1), trimToken(tokens[tokens.length - 1])]
     : tokens
 
-  const simpleString = _.every(trimmedTokens, token => token.type === TOKEN_TYPES.CONTENT)
+  const simpleString = _.every(trimmedTokens, token => [TOKEN_TYPES.CONTENT, TOKEN_TYPES.ESCAPE].includes(token.type))
   return simpleString
     ? createSimpleStringValue(context, trimmedTokens, transformFunc)
     : createTemplateExpressions(context, trimmedTokens, transformFunc)
@@ -427,7 +438,8 @@ export const consumeValue = (
 ): ConsumerReturnType<Value> => {
   // We force the value to be in the same line if the seperator is a newline by
   // ignoring newlines if the seperator is not a new line...
-  switch (context.lexer.peek(valueSeperator !== TOKEN_TYPES.NEWLINE)?.type) {
+  const token = context.lexer.peek(valueSeperator !== TOKEN_TYPES.NEWLINE)
+  switch (token?.type) {
     case TOKEN_TYPES.OCURLY:
       return consumeObject(context, idPrefix)
     case TOKEN_TYPES.ARR_OPEN:
@@ -443,7 +455,10 @@ export const consumeValue = (
     case valueSeperator:
       return consumeMissingValue(context)
     default:
-      // Linter Mincha
+      if (token !== undefined) {
+        throw new UnknownCharacter(token)
+      }
+      log.error('Received an undefined token in `consumeValue`')
       throw new Error('Unknown value')
   }
 }

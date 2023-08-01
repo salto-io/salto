@@ -33,7 +33,7 @@ import { mockWorkspace } from '../common/workspace'
 import {
   fetchChanges, FetchChange, generateServiceIdToStateElemId,
   FetchChangesResult, FetchProgressEvents, getAdaptersFirstFetchPartial,
-  fetchChangesFromWorkspace, createElemIdGetter,
+  fetchChangesFromWorkspace, createElemIdGetter, calcFetchChanges,
 } from '../../src/core/fetch'
 import { getPlan, Plan } from '../../src/core/plan'
 import { createElementSource } from '../common/helpers'
@@ -210,7 +210,7 @@ describe('fetch', () => {
       describe('fetch is partial', () => {
         it('should ignore deletions', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-            { elements: [newTypeBaseModified], isPartial: true },
+            { elements: [newTypeBaseModified], partialFetchData: { isPartial: true } },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
@@ -224,7 +224,7 @@ describe('fetch', () => {
 
         it('should return the state elements with the account elements', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-            { elements: [newTypeBaseModified], isPartial: true },
+            { elements: [newTypeBaseModified], partialFetchData: { isPartial: true } },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
@@ -236,11 +236,26 @@ describe('fetch', () => {
           expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId,
             typeWithFieldDifferentID])
         })
+
+        it('should return the elements without the deleted elements', async () => {
+          mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+            elements: [newTypeBaseModified],
+            partialFetchData: { isPartial: true, deletedElements: [typeWithFieldDifferentID.elemID] },
+          })
+          const fetchChangesResult = await fetchChanges(
+            mockAdapters,
+            createInMemoryElementSource([]),
+            createInMemoryElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+            { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+            [],
+          )
+          expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
+        })
       })
       describe('fetch is not partial', () => {
         it('should not ignore deletions', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-            { elements: [newTypeBaseModified], isPartial: false },
+            { elements: [newTypeBaseModified] },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
@@ -256,7 +271,7 @@ describe('fetch', () => {
 
         it('should return only the account elements', async () => {
           mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-            { elements: [newTypeBaseModified], isPartial: false },
+            { elements: [newTypeBaseModified] },
           )
           const fetchChangesResult = await fetchChanges(
             mockAdapters,
@@ -299,7 +314,7 @@ describe('fetch', () => {
         afterElement.value.field = 4
 
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          { elements: [afterElement], isPartial: true },
+          { elements: [afterElement], partialFetchData: { isPartial: true } },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
@@ -330,11 +345,11 @@ describe('fetch', () => {
       describe('multiple adapters', () => {
         const adapters = {
           dummy1AccountName: {
-            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: true }),
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], partialFetchData: { isPartial: true } }),
             deploy: mockFunction<AdapterOperations['deploy']>(),
           },
           dummy2: {
-            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [], isPartial: false }),
+            fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
             deploy: mockFunction<AdapterOperations['deploy']>(),
           },
         }
@@ -434,6 +449,22 @@ describe('fetch', () => {
           }),
           1
         )
+      })
+
+      it('should return a config message which includes the account name', async () => {
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createElementSource([]),
+          createElementSource([]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          [],
+        )
+        expect(fetchChangesResult.accountNameToConfigMessage).toBeDefined()
+        const configSuggestionsMessages = Object.values(
+          fetchChangesResult.accountNameToConfigMessage as Record<string, string>
+        )
+        expect(configSuggestionsMessages).toHaveLength(1)
+        expect(configSuggestionsMessages[0]).toMatch(newTypeDifferentAdapterID.adapter)
       })
 
       it('should return empty plan when there is no change', async () => {
@@ -1152,7 +1183,7 @@ describe('fetch', () => {
     describe('fetch is partial', () => {
       it('should call postFetch with the state and account elements combined in elementsByAccount, but only the fetched elements in currentAdapterElements', async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          Promise.resolve({ elements: [newTypeBaseModified], isPartial: true }),
+          Promise.resolve({ elements: [newTypeBaseModified], partialFetchData: { isPartial: true } }),
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
@@ -1179,11 +1210,39 @@ describe('fetch', () => {
           progressReporter: expect.anything(),
         })
       })
+      it('should call postFetch with the state and account elements combined in elementsByAccount, but only the fetched elements in currentAdapterElements, without the deleted elements', async () => {
+        mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce({
+          elements: [newTypeBaseModified],
+          partialFetchData: { isPartial: true, deletedElements: [typeWithFieldDifferentID.elemID] },
+        })
+        const fetchChangesResult = await fetchChanges(
+          mockAdapters,
+          createElementSource([typeWithFieldDifferentID]),
+          createElementSource([newTypeBaseDifferentAdapterID, typeWithFieldDifferentID]),
+          { [newTypeDifferentAdapterID.adapter]: 'dummy' },
+          [],
+        )
+        expect(fetchChangesResult.elements).toEqual([newTypeBaseModifiedDifferentId])
+        expect(mockAdapters[newTypeDifferentAdapterID.adapter].postFetch).toHaveBeenCalledWith({
+          currentAdapterElements: expect.arrayContaining([
+            newTypeBaseModifiedDifferentId,
+          ]),
+          elementsByAccount: {
+            [newTypeDifferentAdapterID.adapter]: expect.arrayContaining([
+              newTypeBaseModifiedDifferentId,
+            ]),
+          },
+          accountToServiceNameMap: {
+            [newTypeDifferentAdapterID.adapter]: 'dummy',
+          },
+          progressReporter: expect.anything(),
+        })
+      })
     })
     describe('fetch is not partial', () => {
       it('should call postFetch with only the account elements', async () => {
         mockAdapters[newTypeDifferentAdapterID.adapter].fetch.mockResolvedValueOnce(
-          { elements: [newTypeBaseModified], isPartial: false },
+          { elements: [newTypeBaseModified] },
         )
         const fetchChangesResult = await fetchChanges(
           mockAdapters,
@@ -1248,16 +1307,16 @@ describe('fetch', () => {
 
       const adapters = {
         [expectedDummy1.elemID.adapter]: {
-          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy1Type1], isPartial: true }),
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy1Type1], partialFetchData: { isPartial: true } }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
         },
         dummy2: {
-          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy2Type1], isPartial: false }),
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy2Type1] }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
           postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },
         dummy3: {
-          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1, dummy2PrimStr], isPartial: false }),
+          fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [dummy3Type1, dummy2PrimStr] }),
           deploy: mockFunction<AdapterOperations['deploy']>(),
           postFetch: mockFunction<Required<AdapterOperations>['postFetch']>().mockResolvedValue(),
         },
@@ -1713,9 +1772,12 @@ describe('fetch from workspace', () => {
     )
 
     beforeEach(async () => {
-      await pathIndex.overridePathIndex(pi, unmergedElements.filter(
-        e => !e.elemID.isEqual(noPathElemID)
-      ))
+      await pathIndex.updatePathIndex({
+        pathIndex: pi,
+        unmergedElements: unmergedElements.filter(
+          e => !e.elemID.isEqual(noPathElemID)
+        ),
+      })
     })
 
     describe('with fromState false', () => {
@@ -1959,11 +2021,45 @@ describe('fetch from workspace', () => {
     it('translated id to new account name', async () => {
       const objID = new ElemID('salesforce', 'obj')
       const obj = new ObjectType({
-        elemID: new ElemID('salesforceaccountName', 'obj'),
+        elemID: new ElemID('salesforceAccountName', 'obj'),
       })
       const idGetter = await createElemIdGetter(awu([obj]), createElementSource([]))
       expect(idGetter('salesforce', { [OBJECT_SERVICE_ID]: objID.getFullName() },
         'obj')).toEqual(objID)
     })
+  })
+})
+
+// TODO: SALTO-4460 only deletion scenarios are covered here. The rest should be moved from under “fetchChanges”
+describe('calc fetch changes', () => {
+  const existingElement = new ObjectType({
+    elemID: new ElemID('salto', 'existing'),
+    path: ['salto', 'existing', 'all'],
+  })
+  const instanceA = new InstanceElement('instanceA', existingElement)
+  const instanceB = new InstanceElement('instanceB', existingElement)
+  it('should calculate a remove change when instanceA was deleted in service', async () => {
+    const { changes, serviceToStateChanges } = await calcFetchChanges(
+      [existingElement],
+      [existingElement],
+      createInMemoryElementSource([existingElement, instanceA, instanceB]),
+      createInMemoryElementSource([existingElement, instanceA, instanceB]),
+      new Map([['salto', { deletedElements: new Set([instanceA.elemID.getFullName()]) }]]),
+      new Set(['salto']),
+    )
+
+    expect(changes).toHaveLength(1)
+    expect(changes[0].change.action).toEqual('remove')
+    expect(changes[0].change.id.getFullName()).toEqual(instanceA.elemID.getFullName())
+
+    expect(changes[0].serviceChanges).toHaveLength(1)
+    expect(changes[0].serviceChanges[0].action).toEqual('remove')
+    expect(changes[0].serviceChanges[0].id.getFullName()).toEqual(instanceA.elemID.getFullName())
+
+    expect(changes[0].pendingChanges ?? []).toHaveLength(0)
+
+    expect(serviceToStateChanges).toHaveLength(1)
+    expect(serviceToStateChanges[0].action).toEqual('remove')
+    expect(serviceToStateChanges[0].id.getFullName()).toEqual(instanceA.elemID.getFullName())
   })
 })

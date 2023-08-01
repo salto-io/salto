@@ -13,11 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values, isReferenceExpression } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, Element, isInstanceElement, isInstanceChange, getChangeData, Change, InstanceElement, isAdditionOrModificationChange, isModificationChange, AdditionChange, ModificationChange, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
+import { createSchemeGuard, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import Joi from 'joi'
+import { client as clientUtils } from '@salto-io/adapter-components'
 import { deployChanges } from '../../deployment/standard_deployment'
 import { findObject, setFieldDeploymentAnnotations } from '../../utils'
 import { FilterCreator } from '../../filter'
@@ -25,6 +26,7 @@ import { STATUS_TYPE_NAME } from '../../constants'
 import JiraClient from '../../client/client'
 
 const log = logger(module)
+const MAX_RETRIES = 3
 const STATUS_CATEGORY_NAME_TO_ID : Record<string, number> = {
   TODO: 2,
   DONE: 3,
@@ -51,7 +53,7 @@ const createDeployableStatusValues = (
 ): Values => {
   const { value } = getChangeData(statusChange)
   const deployableValue = _.clone(value)
-  if (isReferenceExpression(value.statusCategory)) {
+  if (isResolvedReferenceExpression(value.statusCategory)) {
     // resolve statusCategory value before deploy
     const resolvedCategory = INVERTED_STATUS_CATEGORY_NAME_TO_ID[
       value.statusCategory.value.value.id
@@ -61,31 +63,53 @@ const createDeployableStatusValues = (
   return deployableValue
 }
 
+const retry = async <T>(
+  fn: () => Promise<T>,
+  retries: number = MAX_RETRIES,
+): Promise<T> => {
+  try {
+    return await fn()
+  } catch (error) {
+    if (error instanceof clientUtils.HTTPError && Array.isArray(error.response.data.errorMessages)
+      && error.response?.data?.errorMessages?.some((message: string) => message.includes('Failed to acquire lock'))) {
+      if (retries === 1) {
+        throw error
+      }
+      log.debug(`Request to update statuses failed, retrying ${retries} more times.`)
+      return retry(fn, retries - 1)
+    }
+    throw error
+  }
+}
+
 const modifyStatus = async (
   modificationChange: ModificationChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  await client.put({
-    url: '/rest/api/3/statuses',
-    data: {
-      statuses: [createDeployableStatusValues(modificationChange)],
-    },
-  })
+  await retry(async () =>
+    client.put({
+      url: '/rest/api/3/statuses',
+      data: {
+        statuses: [createDeployableStatusValues(modificationChange)],
+      },
+    }))
 }
 
 const addStatus = async (
   additionChange: AdditionChange<InstanceElement>,
   client: JiraClient,
 ): Promise<void> => {
-  const response = await client.post({
-    url: '/rest/api/3/statuses',
-    data: {
-      scope: {
-        type: 'GLOBAL',
+  const response = await retry(async () =>
+    client.post({
+      url: '/rest/api/3/statuses',
+      data: {
+        scope: {
+          type: 'GLOBAL',
+        },
+        statuses: [createDeployableStatusValues(additionChange)],
       },
-      statuses: [createDeployableStatusValues(additionChange)],
-    },
-  })
+    }))
+
   if (!isStatusResponse(response.data)) {
     throw new Error(`Received an invalid status response when attempting to create status: ${additionChange.data.after.elemID.getFullName()}`)
   }

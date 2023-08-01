@@ -75,6 +75,7 @@ export const WARNING_MESSAGE = 'Encountered an error while trying populate inter
  */
 const filter: RemoteFilterCreator = ({ client, config }) => ({
   name: 'addMissingIdsFilter',
+  remote: true,
   onFetch: ensureSafeFilterFetch({
     warningMessage: WARNING_MESSAGE,
     config,

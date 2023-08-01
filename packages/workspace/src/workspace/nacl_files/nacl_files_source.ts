@@ -16,34 +16,59 @@
 import wu from 'wu'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { Element, ElemID, Value, DetailedChange, isElement, getChangeData, isObjectType,
-  isInstanceElement, isIndexPathPart, isReferenceExpression, isContainerType, isVariable, Change,
-  placeholderReadonlyElementsSource, isModificationChange,
-  isObjectTypeChange, toChange, isAdditionChange, StaticFile, isStaticFile } from '@salto-io/adapter-api'
 import {
-  resolvePath,
-  TransformFuncArgs,
-  transformElement,
-  safeJsonStringify,
+  Change,
+  DetailedChange,
+  Element,
+  ElemID,
+  isAdditionChange,
+  isAdditionOrModificationChange,
+  isContainerType,
+  isElement,
+  isIndexPathPart,
+  isInstanceElement,
+  isModificationChange,
+  isObjectType,
+  isObjectTypeChange,
+  isReferenceExpression,
+  isRemovalOrModificationChange,
+  isStaticFile,
+  isVariable,
+  placeholderReadonlyElementsSource,
+  StaticFile,
+  toChange,
+  Value,
+} from '@salto-io/adapter-api'
+import {
   getRelevantNamesFromChange,
+  resolvePath,
+  safeJsonStringify,
+  transformElement,
+  TransformFuncArgs,
 } from '@salto-io/adapter-utils'
-import { promises, values, collections } from '@salto-io/lowerdash'
+import { collections, promises, values } from '@salto-io/lowerdash'
 import { AdditionDiff } from '@salto-io/dag'
 import osPath from 'path'
-import { MergeError, mergeElements } from '../../merger'
-import { getChangeLocations, updateNaclFileData, getChangesToUpdate, DetailedChangeWithSource, getNestedStaticFiles } from './nacl_file_update'
-import { parse, SourceRange, ParseResult, SourceMap } from '../../parser'
+import { mergeElements, MergeError } from '../../merger'
+import {
+  DetailedChangeWithSource,
+  getChangeLocations,
+  getChangesToUpdate,
+  getNestedStaticFiles,
+  updateNaclFileData,
+} from './nacl_file_update'
+import { parse, ParseResult, SourceMap, SourceRange } from '../../parser'
 import { ElementsSource, RemoteElementSource } from '../elements_source'
 import { DirectoryStore } from '../dir_store'
 import { Errors } from '../errors'
 import { StaticFilesSource } from '../static_files'
 import { getStaticFilesFunctions } from '../static_files/functions'
 import { buildNewMergedElementsAndErrors, ChangeSet } from './elements_cache'
-import { serialize, deserializeMergeErrors, deserializeSingleElement } from '../../serializer/elements'
+import { deserializeMergeErrors, deserializeSingleElement, serialize } from '../../serializer/elements'
 import { Functions } from '../../parser/functions'
 import { RemoteMap, RemoteMapCreator } from '../remote_map'
 import { ParsedNaclFile } from './parsed_nacl_file'
-import { ParsedNaclFileCache, createParseResultCache } from './parsed_nacl_files_cache'
+import { createParseResultCache, ParsedNaclFileCache } from './parsed_nacl_files_cache'
 import { isInvalidStaticFile } from '../static_files/common'
 
 const { awu } = collections.asynciterable
@@ -221,18 +246,31 @@ export const toParsedNaclFile = async (
     sourceMap: () => Promise.resolve(parseResult.sourceMap),
   }
 }
+type ParseNaclFileArgs = {
+  naclFile: NaclFile
+  functions: Functions
+  createSourceMap?: boolean
+}
+async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap?: false }): Promise<ParseResult>
+async function parseNaclFile(args: ParseNaclFileArgs & { createSourceMap: boolean }): Promise<Required<ParseResult>>
+async function parseNaclFile(
+  { naclFile, functions, createSourceMap = false }: ParseNaclFileArgs
+): Promise<ParseResult> {
+  return parse(Buffer.from(naclFile.buffer), naclFile.filename, functions, createSourceMap)
+}
 
-const parseNaclFile = async (
-  naclFile: NaclFile, functions: Functions,
-): Promise<Required<ParseResult>> =>
-  (parse(Buffer.from(naclFile.buffer), naclFile.filename, functions))
+type ParseNaclFilesArgs = {
+  naclFiles: NaclFile[]
+  functions: Functions
+  createSourceMap?: boolean
+}
 
 const parseNaclFiles = async (
-  naclFiles: NaclFile[], functions: Functions
+  { naclFiles, functions, createSourceMap = false } : ParseNaclFilesArgs
 ): Promise<ParsedNaclFile[]> => (
   withLimitedConcurrency(
     naclFiles.map(
-      naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
+      naclFile => async () => toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions, createSourceMap }))
     ),
     PARSE_CONCURRENCY,
   )
@@ -559,6 +597,24 @@ const logNaclFileUpdateErrorContext = (
   log.debug('data after:\n%s', naclDataAfter)
 }
 
+// Returns a list of all static files that existed in the changes 'before' and doesn't exist in the 'after'
+export const getDanglingStaticFiles = (fileChanges: DetailedChange[]): StaticFile[] => {
+  // Using filepath is currently enough because all implementations of static files have unique file paths
+  // The only exception is 'buildHistoryStateStaticFilesSource' but it doesn't support deletion at the moment
+  const afterFilePaths = new Set<string>(
+    fileChanges
+      .filter(isAdditionOrModificationChange)
+      .map(change => change.data.after)
+      .flatMap(getNestedStaticFiles)
+      .map(file => file.filepath)
+  )
+  return fileChanges
+    .filter(isRemovalOrModificationChange)
+    .map(change => change.data.before)
+    .flatMap(getNestedStaticFiles)
+    .filter(file => !afterFilePaths.has(file.filepath))
+}
+
 const buildNaclFilesSource = (
   sourceName: string,
   naclFilesStore: DirectoryStore<string>,
@@ -622,10 +678,10 @@ const buildNaclFilesSource = (
         }),
         CACHE_READ_CONCURRENCY,
       )
-      const parsedModifiedFiles = await parseNaclFiles(
-        modifiedNaclFiles,
+      const parsedModifiedFiles = await parseNaclFiles({
+        naclFiles: modifiedNaclFiles,
         functions,
-      )
+      })
       const result = await buildNaclFilesState({
         newNaclFiles: parsedModifiedFiles,
         currentState,
@@ -683,7 +739,7 @@ const buildNaclFilesSource = (
     const naclFile = await getNaclFile(filename)
     if (naclFile === undefined) return undefined
     return addPathParsedNaclFileElements(
-      await toParsedNaclFile(naclFile, await parseNaclFile(naclFile, functions))
+      await toParsedNaclFile(naclFile, await parseNaclFile({ naclFile, functions }))
     )
   }
 
@@ -720,7 +776,7 @@ const buildNaclFilesSource = (
       log.error('failed to find %s in NaCl file store', filename)
       return new SourceMap()
     }
-    const parsedResult = await parseNaclFile(naclFile, functions)
+    const parsedResult = await parseNaclFile({ naclFile, functions, createSourceMap: true })
     if (useCache) {
       const newParsedNaclFile = await toParsedNaclFile(naclFile, parsedResult)
       await (await getState()).parsedNaclFiles.put(filename, newParsedNaclFile)
@@ -822,14 +878,8 @@ const buildNaclFilesSource = (
     // This method was written with the assumption that each static file is pointed by no more
     // then one value in the nacls. A ticket was open to fix that (SALTO-954)
     const removeDanglingStaticFiles = async (fileChanges: DetailedChange[]): Promise<void> => {
-      fileChanges
-        .filter(change => change.action === 'remove')
-        .map(getChangeData)
-        .map(getNestedStaticFiles)
-        .flat()
-        .forEach(file => staticFilesSource.delete(file))
+      await Promise.all(getDanglingStaticFiles(fileChanges).map(file => staticFilesSource.delete(file)))
     }
-
     const changesByFileName = await groupChangesByFilename(changes)
     log.debug(
       'Nacl source %s going to update %d nacl files with %d changes',
@@ -968,7 +1018,7 @@ const buildNaclFilesSource = (
       const preChangeHash = await (await getState()).parsedNaclFiles.getHash()
       await awu(names).forEach(name => naclFilesStore.delete(name))
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(names.map(filename => ({ filename, buffer: '' })), functions),
+        await parseNaclFiles({ naclFiles: names.map(filename => ({ filename, buffer: '' })), functions }),
       )
       state = Promise.resolve(res.state)
       res.changes.preChangeHash = preChangeHash
@@ -1051,7 +1101,7 @@ const buildNaclFilesSource = (
     setNaclFiles: async naclFiles => {
       await setNaclFiles(naclFiles)
       const res = await buildNaclFilesStateInner(
-        await parseNaclFiles(naclFiles, functions)
+        await parseNaclFiles({ naclFiles, functions })
       )
       state = Promise.resolve(res.state)
       return res.changes

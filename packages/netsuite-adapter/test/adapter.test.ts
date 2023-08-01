@@ -15,33 +15,36 @@
 */
 
 import { ElemID, InstanceElement, StaticFile, ChangeDataType, DeployResult,
-  getChangeData, FetchOptions, ObjectType, Change, isObjectType } from '@salto-io/adapter-api'
+  getChangeData, FetchOptions, ObjectType, Change, isObjectType, toChange, BuiltinTypes, SaltoError, SaltoElementError } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import createClient from './client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
-import { getMetadataTypes, metadataTypesToList } from '../src/types'
-import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT } from '../src/constants'
+import { getMetadataTypes, metadataTypesToList, SUITEAPP_CONFIG_RECORD_TYPES } from '../src/types'
+import { ENTITY_CUSTOM_FIELD, SCRIPT_ID, SAVED_SEARCH, FILE, FOLDER, PATH, TRANSACTION_FORM, CONFIG_FEATURES, INTEGRATION, NETSUITE, REPORT_DEFINITION, FINANCIAL_LAYOUT, ROLE, METADATA_TYPE, CUSTOM_RECORD_TYPE } from '../src/constants'
 import { createInstanceElement, toCustomizationInfo } from '../src/transformer'
-import SdfClient, { convertToCustomTypeInfo } from '../src/client/sdf_client'
-import { FilterCreator } from '../src/filter'
+import { LocalFilterCreator } from '../src/filter'
+import SdfClient from '../src/client/sdf_client'
 import resolveValuesFilter from '../src/filters/element_references'
 import { CONFIG, configType, getConfigFromConfigChanges, NetsuiteConfig } from '../src/config'
 import { mockGetElemIdFunc } from './utils'
 import NetsuiteClient from '../src/client/client'
-import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo } from '../src/client/types'
+import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, SDFObjectNode } from '../src/client/types'
 import * as changesDetector from '../src/changes_detector/changes_detector'
+import * as deletionCalculator from '../src/deletion_calculator'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
 import { SERVER_TIME_TYPE_NAME } from '../src/server_time'
-import * as suiteAppFileCabinet from '../src/suiteapp_file_cabinet'
+import * as suiteAppFileCabinet from '../src/client/suiteapp_client/suiteapp_file_cabinet'
 import { SDF_CREATE_OR_UPDATE_GROUP_ID } from '../src/group_changes'
-import { SuiteAppFileCabinetOperations } from '../src/suiteapp_file_cabinet'
+import { SuiteAppFileCabinetOperations } from '../src/client/suiteapp_client/suiteapp_file_cabinet'
 import getChangeValidator from '../src/change_validator'
 import { FetchByQueryFunc } from '../src/change_validators/safe_deploy'
 import { getStandardTypesNames } from '../src/autogen/types'
 import { createCustomRecordTypes } from '../src/custom_records/custom_record_type'
-import { Graph, SDFObjectNode, GraphNode } from '../src/client/graph_utils'
+import { Graph, GraphNode } from '../src/client/graph_utils'
+import { getDataElements } from '../src/data_elements/data_elements'
+import * as elementsSourceIndexModule from '../src/elements_source_index/elements_source_index'
 
 const DEFAULT_SDF_DEPLOY_PARAMS = {
   manifestDependencies: {
@@ -50,6 +53,8 @@ const DEFAULT_SDF_DEPLOY_PARAMS = {
     excludedFeatures: [],
     includedObjects: [],
     excludedObjects: [],
+    includedFiles: [],
+    excludedFiles: [],
   },
   validateOnly: false,
 }
@@ -57,6 +62,11 @@ const DEFAULT_SDF_DEPLOY_PARAMS = {
 jest.mock('../src/config', () => ({
   ...jest.requireActual<{}>('../src/config'),
   getConfigFromConfigChanges: jest.fn(),
+}))
+
+jest.mock('../src/data_elements/data_elements', () => ({
+  ...jest.requireActual<{}>('../src/data_elements/data_elements'),
+  getDataElements: jest.fn(() => ({ elements: [], largeTypesError: [] })),
 }))
 
 jest.mock('../src/change_validator')
@@ -73,12 +83,12 @@ getChangeValidatorMock.mockImplementation(({}: {
 jest.mock('../src/changes_detector/changes_detector')
 
 const onFetchMock = jest.fn().mockImplementation(async _arg => undefined)
-const firstDummyFilter: FilterCreator = () => ({
+const firstDummyFilter: LocalFilterCreator = () => ({
   name: 'firstDummyFilter',
   onFetch: () => onFetchMock(1),
 })
 
-const secondDummyFilter: FilterCreator = () => ({
+const secondDummyFilter: LocalFilterCreator = () => ({
   name: 'secondDummyFilter',
   onFetch: () => onFetchMock(2),
 })
@@ -102,6 +112,7 @@ describe('Adapter', () => {
       fetchAllTypesAtOnce: true,
       fetchTypeTimeoutInMinutes: 1,
     },
+    withPartialDeletion: true,
   }
 
   const suiteAppImportFileCabinetMock = jest.fn()
@@ -122,8 +133,8 @@ describe('Adapter', () => {
     progressReporter: { reportProgress: jest.fn() },
   }
 
-  const { standardTypes, enums, additionalTypes, fieldTypes } = getMetadataTypes()
-  const metadataTypes = metadataTypesToList({ standardTypes, enums, additionalTypes, fieldTypes })
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+  const metadataTypes = metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes })
     .concat(createCustomRecordTypes([], standardTypes.customrecordtype.type))
 
   beforeEach(() => {
@@ -133,13 +144,14 @@ describe('Adapter', () => {
     client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
       .mockResolvedValue({
         elements: [],
-        failedTypes: { lockedError: {}, unexpectedError: {} },
+        instancesIds: [],
+        failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         failedToFetchAllAtOnce: false,
       })
     client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
       .mockResolvedValue({
         elements: [],
-        failedPaths: { lockedError: [], otherError: [] },
+        failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
       })
 
     suiteAppImportFileCabinetMock.mockResolvedValue({ elements: [], failedPaths: [] })
@@ -147,6 +159,7 @@ describe('Adapter', () => {
 
   describe('fetch', () => {
     it('should fetch all types and instances that are not in fetch.exclude', async () => {
+      const mockElementsSource = buildElementsSourceFromElements([])
       const folderCustomizationInfo: FolderCustomizationInfo = {
         typeName: FOLDER,
         values: {
@@ -172,24 +185,30 @@ describe('Adapter', () => {
         },
       }
 
-      const xmlContent = '<entitycustomfield scriptid="custentity_my_script_id">\n'
-        + '  <label>elementName</label>'
-        + '</entitycustomfield>'
-      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'custentity_my_script_id')
+      const customTypeInfo = {
+        typeName: 'entitycustomfield',
+        values: {
+          '@_scriptid': 'custentity_my_script_id',
+          label: 'elementName',
+        },
+        scriptId: 'custentity_my_script_id',
+      }
+
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [folderCustomizationInfo, fileCustomizationInfo],
-          failedPaths: { lockedError: [], otherError: [] },
+          failedPaths: { lockedError: [], otherError: [], largeFolderError: [] },
         })
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo, featuresCustomTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
-      const { elements, isPartial } = await netsuiteAdapter.fetch(mockFetchOpts)
-      expect(isPartial).toBeFalsy()
-      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const { elements, partialFetchData } = await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(partialFetchData?.isPartial).toBeFalsy()
+      const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       const typesToSkip = [SAVED_SEARCH, TRANSACTION_FORM, INTEGRATION, REPORT_DEFINITION, FINANCIAL_LAYOUT]
       expect(_.pull(getStandardTypesNames(), ...typesToSkip)
         .every(customObjectsQuery.isTypeMatch)).toBeTruthy()
@@ -211,6 +230,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           customTypeInfo,
           customFieldType as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -222,6 +242,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           fileCustomizationInfo,
           file as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -233,6 +254,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           folderCustomizationInfo,
           folder as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -244,6 +266,7 @@ describe('Adapter', () => {
         await createInstanceElement(
           featuresCustomTypeInfo,
           featuresType as ObjectType,
+          mockElementsSource,
           mockGetElemIdFunc
         )
       )
@@ -265,10 +288,10 @@ describe('Adapter', () => {
         })
       it('should fetch all types and instances when fetch config is undefined', async () => {
         const adapter = createAdapter(configWithoutFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -279,10 +302,10 @@ describe('Adapter', () => {
           fetch: {},
         }
         const adapter = createAdapter(configWithEmptyDefinedFetch)
-        const { elements, isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
+        const { elements, partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
         expect(elements).toHaveLength(metadataTypes.length)
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         const fileCabinetQuery = (client.importFileCabinetContent as jest.Mock).mock.calls[0][0]
         expect(fileCabinetQuery.isFileMatch('any/kind/of/path')).toBeTruthy()
@@ -299,9 +322,9 @@ describe('Adapter', () => {
           },
         }
         const adapter = createAdapter(configWithIncludeButNoExclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someType')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someType1')).toBeTruthy()
@@ -321,9 +344,9 @@ describe('Adapter', () => {
           },
         }
         const adapter = createAdapter(configWithExcludeButNoInclude)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('someTypeToSkip1')).toBeFalsy()
@@ -343,9 +366,9 @@ describe('Adapter', () => {
           typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithSkipListAndTypesToSkip)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -365,9 +388,9 @@ describe('Adapter', () => {
           typesToSkip: ['skipThisType'],
         }
         const adapter = createAdapter(configWithAllFormats)
-        const { isPartial } = await adapter.fetch(mockFetchOpts)
-        expect(isPartial).toBeFalsy()
-        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+        const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+        expect(partialFetchData?.isPartial).toBeFalsy()
+        const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
         expect(customObjectsQuery.isTypeMatch('any kind of type')).toBeTruthy()
         expect(customObjectsQuery.isTypeMatch('typeToSkip')).toBeFalsy()
         expect(customObjectsQuery.isTypeMatch('skipThisType')).toBeFalsy()
@@ -405,8 +428,8 @@ describe('Adapter', () => {
       })
 
       it('isPartial should be true', async () => {
-        const { isPartial } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
-        expect(isPartial).toBeTruthy()
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection })
+        expect(partialFetchData?.isPartial).toBeTruthy()
       })
     })
 
@@ -458,14 +481,14 @@ describe('Adapter', () => {
         })
 
         it('isPartial should be true', async () => {
-          const { isPartial } = await adapter.fetch(mockFetchOpts)
-          expect(isPartial).toBeTruthy()
+          const { partialFetchData } = await adapter.fetch(mockFetchOpts)
+          expect(partialFetchData?.isPartial).toBeTruthy()
         })
 
         it('should match the types that match fetchTarget and exclude', async () => {
           await adapter.fetch(mockFetchOpts)
 
-          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+          const customObjectsQuery = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
           expect(customObjectsQuery.isTypeMatch('addressForm')).toBeTruthy()
           expect(_.pull(getStandardTypesNames(), 'addressForm', SAVED_SEARCH, TRANSACTION_FORM).some(customObjectsQuery.isTypeMatch)).toBeFalsy()
           expect(customObjectsQuery.isTypeMatch(INTEGRATION)).toBeFalsy()
@@ -480,6 +503,47 @@ describe('Adapter', () => {
           expect(fileCabinetQuery.isFileMatch('Some/File/another')).toBeTruthy()
         })
       })
+    })
+
+    it('should filter large file cabinet folders', async () => {
+      client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
+        .mockResolvedValue({
+          elements: [],
+          failedPaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+        })
+
+      await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: ['largeFolder'] },
+          failedTypes: expect.anything(),
+          failedCustomRecords: expect.anything(),
+        },
+        config,
+      )
+    })
+
+    it('should filter types with too many instances from SDF', async () => {
+      client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
+        .mockResolvedValue({
+          elements: [],
+          instancesIds: [],
+          failedToFetchAllAtOnce: false,
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
+        })
+      const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
+      getConfigFromConfigChangesMock.mockReturnValue(undefined)
+      await netsuiteAdapter.fetch(mockFetchOpts)
+      expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: ['excludedTypeTest'] },
+          failedCustomRecords: [],
+        },
+        config,
+      )
     })
 
     it('should fail when getCustomObjects fails', async () => {
@@ -497,15 +561,19 @@ describe('Adapter', () => {
     })
 
     it('should ignore instances of unknown type', async () => {
-      const xmlContent = '<unknowntype scriptid="unknown">\n'
-        + '  <label>elementName</label>'
-        + '</unknowntype>'
-      const customTypeInfo = convertToCustomTypeInfo(xmlContent, 'unknown')
+      const customTypeInfo = {
+        typeName: 'unknowntype',
+        values: {
+          label: 'elementName',
+        },
+        scriptId: 'unknown',
+      }
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [customTypeInfo],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const { elements } = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(elements).toHaveLength(metadataTypes.length)
@@ -519,7 +587,7 @@ describe('Adapter', () => {
 
     it('should call getCustomObjects with query that matches types that match the types in fetch config', async () => {
       await netsuiteAdapter.fetch(mockFetchOpts)
-      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1]
+      const query = (client.getCustomObjects as jest.Mock).mock.calls[0][1].updatedFetchQuery
       expect(query.isTypeMatch(ENTITY_CUSTOM_FIELD)).toBeTruthy()
       expect(query.isTypeMatch(SAVED_SEARCH)).toBeFalsy()
     })
@@ -529,9 +597,12 @@ describe('Adapter', () => {
       getConfigFromConfigChangesMock.mockReturnValue(undefined)
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: [] },
-        { lockedError: {}, unexpectedError: {} },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         config,
       )
       expect(fetchResult.updatedConfig).toBeUndefined()
@@ -541,16 +612,19 @@ describe('Adapter', () => {
       client.importFileCabinetContent = mockFunction<NetsuiteClient['importFileCabinetContent']>()
         .mockResolvedValue({
           elements: [],
-          failedPaths: { lockedError: [], otherError: ['/path/to/file'] },
+          failedPaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: ['/path/to/file'] },
-        { lockedError: {}, unexpectedError: {} },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: ['/path/to/file'], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -561,17 +635,21 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: false,
-          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances },
+          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        false,
-        { lockedError: [], otherError: [] },
-        { lockedError: {}, unexpectedError: failedTypeToInstances },
+        {
+          failedToFetchAllAtOnce: false,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: failedTypeToInstances, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -581,17 +659,21 @@ describe('Adapter', () => {
       client.getCustomObjects = mockFunction<NetsuiteClient['getCustomObjects']>()
         .mockResolvedValue({
           elements: [],
+          instancesIds: [],
           failedToFetchAllAtOnce: true,
-          failedTypes: { lockedError: {}, unexpectedError: {} },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
         })
       const getConfigFromConfigChangesMock = getConfigFromConfigChanges as jest.Mock
       const updatedConfig = new InstanceElement(ElemID.CONFIG_NAME, configType)
       getConfigFromConfigChangesMock.mockReturnValue({ config: [updatedConfig], message: '' })
       const fetchResult = await netsuiteAdapter.fetch(mockFetchOpts)
       expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
-        true,
-        { lockedError: [], otherError: [] },
-        { lockedError: {}, unexpectedError: {} },
+        {
+          failedToFetchAllAtOnce: true,
+          failedFilePaths: { lockedError: [], otherError: [], largeFolderError: [] },
+          failedTypes: { lockedError: {}, unexpectedError: {}, excludedTypes: [] },
+          failedCustomRecords: [],
+        },
         config,
       )
       expect(fetchResult.updatedConfig?.config[0].isEqual(updatedConfig)).toBe(true)
@@ -617,11 +699,12 @@ describe('Adapter', () => {
     const folderInstance = new InstanceElement('folderInstance', additionalTypes[FOLDER], {
       [PATH]: 'Templates/E-mail Templates/Inner EmailTemplates Folder',
     })
-    const testGraph = new Graph<SDFObjectNode>('elemIdFullName')
+    let testGraph: Graph<SDFObjectNode>
 
     beforeEach(() => {
       instance = origInstance.clone()
       client.deploy = jest.fn().mockImplementation(() => Promise.resolve())
+      testGraph = new Graph()
     })
 
     const adapterAdd = (after: ChangeDataType): Promise<DeployResult> => netsuiteAdapter.deploy({
@@ -632,9 +715,6 @@ describe('Adapter', () => {
     })
 
     describe('add', () => {
-      beforeEach(() => {
-        testGraph.nodes.clear()
-      })
       it('should add custom type instance', async () => {
         const result = await adapterAdd(instance)
         expect(result.errors).toHaveLength(0)
@@ -642,9 +722,19 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedInstance = instance.clone()
-        expectedResolvedInstance.value.description = 'description value'
+        expectedResolvedInstance.value.description = Buffer.from('description value')
         const customizationInfo = await toCustomizationInfo(expectedResolvedInstance)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'addition', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.entitycustomfield.instance.elementName',
+            {
+              serviceid: 'custentity_my_script_id',
+              changeType: 'addition',
+              customizationInfo,
+              change: toChange({ after: expectedResolvedInstance }),
+            }
+          ),
+        ])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -661,7 +751,12 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(fileInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'addition', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.file.instance.fileInstance',
+            { serviceid: serviceId, changeType: 'addition', customizationInfo, change: toChange({ after: fileInstance }) }
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -677,7 +772,12 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(folderInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'addition', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.folder.instance.folderInstance',
+            { serviceid: serviceId, changeType: 'addition', customizationInfo, change: toChange({ after: folderInstance }) },
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -687,12 +787,14 @@ describe('Adapter', () => {
       })
 
       it('should support deploying multiple changes at once', async () => {
+        const fileChange = toChange({ after: fileInstance })
+        const folderChange = toChange({ after: folderInstance })
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
             groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
-              { action: 'add', data: { after: fileInstance } },
-              { action: 'add', data: { after: folderInstance } },
+              fileChange,
+              folderChange,
             ],
           },
         })
@@ -701,8 +803,14 @@ describe('Adapter', () => {
         const folderServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
         const fileServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
         testGraph.addNodes([
-          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo } as SDFObjectNode),
-          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo } as SDFObjectNode),
+          new GraphNode(
+            'netsuite.file.instance.fileInstance',
+            { serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo, change: fileChange }
+          ),
+          new GraphNode(
+            'netsuite.folder.instance.folderInstance',
+            { serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo, change: folderChange }
+          ),
         ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
@@ -716,12 +824,14 @@ describe('Adapter', () => {
       it('should return correct DeployResult in case of failure', async () => {
         const clientError = new Error('some client error')
         client.deploy = jest.fn().mockRejectedValue(clientError)
+        const fileChange = toChange({ after: fileInstance })
+        const folderChange = toChange({ after: folderInstance })
         const result = await netsuiteAdapter.deploy({
           changeGroup: {
             groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
             changes: [
-              { action: 'add', data: { after: fileInstance } },
-              { action: 'add', data: { after: folderInstance } },
+              fileChange,
+              folderChange,
             ],
           },
         })
@@ -730,8 +840,14 @@ describe('Adapter', () => {
         const folderServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
         const fileServiceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
         testGraph.addNodes([
-          new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo } as SDFObjectNode),
-          new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo } as SDFObjectNode),
+          new GraphNode(
+            'netsuite.file.instance.fileInstance',
+            { serviceid: fileServiceId, changeType: 'addition', customizationInfo: fileCustInfo, change: fileChange },
+          ),
+          new GraphNode(
+            'netsuite.folder.instance.folderInstance',
+            { serviceid: folderServiceId, changeType: 'addition', customizationInfo: folderCustInfo, change: folderChange },
+          ),
         ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
@@ -739,7 +855,7 @@ describe('Adapter', () => {
           testGraph,
         )
         expect(result.errors).toHaveLength(1)
-        expect(result.errors).toEqual([clientError])
+        expect(result.errors).toEqual([{ message: clientError.message, severity: 'Error' }])
         expect(result.appliedChanges).toHaveLength(0)
       })
     })
@@ -754,10 +870,6 @@ describe('Adapter', () => {
         },
       })
 
-      beforeEach(() => {
-        testGraph.nodes.clear()
-      })
-
       it('should update custom type instance', async () => {
         const result = await adapterUpdate(instance, instance.clone())
         expect(result.errors).toHaveLength(0)
@@ -765,9 +877,22 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedInstance = instance.clone()
-        expectedResolvedInstance.value.description = 'description value'
+        expectedResolvedInstance.value.description = Buffer.from('description value')
         const customizationInfo = await toCustomizationInfo(expectedResolvedInstance)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.entitycustomfield.instance.elementName',
+            {
+              serviceid: 'custentity_my_script_id',
+              changeType: 'modification',
+              customizationInfo,
+              change: toChange({
+                before: instance,
+                after: expectedResolvedInstance,
+              }),
+            },
+          ),
+        ])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -784,7 +909,17 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(fileInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder/content.html'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.file.instance.fileInstance', serviceid: serviceId, changeType: 'modification', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.file.instance.fileInstance',
+            {
+              serviceid: serviceId,
+              changeType: 'modification',
+              customizationInfo,
+              change: toChange({ before: fileInstance, after: fileInstance }),
+            },
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -800,7 +935,17 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
         const customizationInfo = await toCustomizationInfo(folderInstance)
         const serviceId = 'Templates/E-mail Templates/Inner EmailTemplates Folder'
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.folder.instance.folderInstance', serviceid: serviceId, changeType: 'modification', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.folder.instance.folderInstance',
+            {
+              serviceid: serviceId,
+              changeType: 'modification',
+              customizationInfo,
+              change: toChange({ before: folderInstance, after: folderInstance }),
+            },
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -821,9 +966,22 @@ describe('Adapter', () => {
         const post = getChangeData(result.appliedChanges[0]) as InstanceElement
 
         const expectedResolvedAfter = after.clone()
-        expectedResolvedAfter.value.description = 'edited description value'
+        expectedResolvedAfter.value.description = Buffer.from('edited description value')
         const customizationInfo = await toCustomizationInfo(expectedResolvedAfter)
-        testGraph.addNodes([new GraphNode({ elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', serviceid: 'custentity_my_script_id', changeType: 'modification', customizationInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.entitycustomfield.instance.elementName',
+            {
+              serviceid: 'custentity_my_script_id',
+              changeType: 'modification',
+              customizationInfo,
+              change: toChange({
+                before: instance,
+                after: expectedResolvedAfter,
+              }),
+            },
+          ),
+        ])
         expect(client.deploy)
           .toHaveBeenCalledWith(
             undefined,
@@ -834,14 +992,12 @@ describe('Adapter', () => {
       })
     })
     describe('additional sdf dependencies', () => {
+      let expectedResolvedInstance: InstanceElement
       let custInfo: CustomizationInfo
       beforeAll(async () => {
-        const expectedResolvedInstance = instance.clone()
-        expectedResolvedInstance.value.description = 'description value'
+        expectedResolvedInstance = instance.clone()
+        expectedResolvedInstance.value.description = Buffer.from('description value')
         custInfo = await toCustomizationInfo(expectedResolvedInstance)
-      })
-      beforeEach(() => {
-        testGraph.nodes.clear()
       })
       it('should call deploy with additional dependencies', async () => {
         const configWithAdditionalSdfDependencies = {
@@ -870,7 +1026,17 @@ describe('Adapter', () => {
             changes: [{ action: 'add', data: { after: instance } }],
           },
         })
-        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo } as SDFObjectNode)])
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.entitycustomfield.instance.elementName',
+            {
+              serviceid: 'custentity_my_script_id',
+              changeType: 'addition',
+              customizationInfo: custInfo,
+              change: toChange({ after: expectedResolvedInstance }),
+            },
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           {
@@ -887,7 +1053,18 @@ describe('Adapter', () => {
 
       it('should call deploy without additional dependencies', async () => {
         await adapterAdd(instance)
-        testGraph.addNodes([new GraphNode({ serviceid: 'custentity_my_script_id', elemIdFullName: 'netsuite.entitycustomfield.instance.elementName', changeType: 'addition', customizationInfo: custInfo } as SDFObjectNode)])
+
+        testGraph.addNodes([
+          new GraphNode(
+            'netsuite.entitycustomfield.instance.elementName',
+            {
+              serviceid: 'custentity_my_script_id',
+              changeType: 'addition',
+              customizationInfo: custInfo,
+              change: toChange({ after: expectedResolvedInstance }),
+            },
+          ),
+        ])
         expect(client.deploy).toHaveBeenCalledWith(
           undefined,
           DEFAULT_SDF_DEPLOY_PARAMS,
@@ -995,6 +1172,81 @@ describe('Adapter', () => {
         })
       })
     })
+
+    describe('deploy errors', () => {
+      let adapter: NetsuiteAdapter
+      const mockClientDeploy = jest.fn()
+      beforeEach(() => {
+        adapter = new NetsuiteAdapter({
+          client: { deploy: mockClientDeploy } as unknown as NetsuiteClient,
+          elementsSource: buildElementsSourceFromElements([]),
+          filtersCreators: [],
+          config: {},
+        })
+      })
+      it('should return correct deploy errors', async () => {
+        const customSegment = new InstanceElement('cseg1', standardTypes.customsegment.type)
+        const customRecordType = new ObjectType({
+          elemID: new ElemID(NETSUITE, 'customrecord_cseg1'),
+          fields: {
+            custom_field: { refType: BuiltinTypes.STRING },
+          },
+          annotations: {
+            [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
+          },
+        })
+        const errors: (SaltoError | SaltoElementError)[] = [
+          // general SaltoError
+          {
+            message: 'General error',
+            severity: 'Error',
+          },
+          // field SaltoElementError
+          {
+            elemID: customRecordType.fields.custom_field.elemID,
+            message: 'Custom Field Error',
+            severity: 'Error',
+          },
+          // should be ignored (duplicates the field error)
+          {
+            elemID: customRecordType.elemID,
+            message: 'Custom Field Error',
+            severity: 'Error',
+          },
+          // should be transformed to a SaltoError
+          {
+            elemID: customSegment.elemID,
+            message: 'Custom Segment Error',
+            severity: 'Error',
+          },
+        ]
+        mockClientDeploy.mockResolvedValue({ appliedChanges: [], errors })
+        const deployRes = await adapter.deploy({
+          changeGroup: {
+            changes: [toChange({ after: customRecordType.fields.custom_field })],
+            groupID: SDF_CREATE_OR_UPDATE_GROUP_ID,
+          },
+        })
+        expect(deployRes).toEqual({
+          appliedChanges: [],
+          errors: [
+            {
+              elemID: customRecordType.fields.custom_field.elemID,
+              message: 'Custom Field Error',
+              severity: 'Error',
+            },
+            {
+              message: 'General error',
+              severity: 'Error',
+            },
+            {
+              message: 'Custom Segment Error',
+              severity: 'Error',
+            },
+          ],
+        })
+      })
+    })
   })
 
   describe('SuiteAppClient', () => {
@@ -1002,12 +1254,15 @@ describe('Adapter', () => {
       time: new Date(1000),
       appVersion: [0, 1, 0],
     })
+    const getConfigRecordsMock = jest.fn()
+    const getCustomRecordsMock = jest.fn()
     let adapter: NetsuiteAdapter
 
     const dummyElement = new ObjectType({ elemID: new ElemID('dum', 'test') })
     const elementsSource = buildElementsSourceFromElements([dummyElement])
     const getElementMock = jest.spyOn(elementsSource, 'get')
     const getChangedObjectsMock = jest.spyOn(changesDetector, 'getChangedObjects')
+    const getDeletedElementsMock = jest.spyOn(deletionCalculator, 'getDeletedElements')
 
     beforeEach(() => {
       getElementMock.mockReset()
@@ -1025,17 +1280,30 @@ describe('Adapter', () => {
         isCustomRecordMatch: () => true,
       })
 
+      getDeletedElementsMock.mockReset()
+      getDeletedElementsMock.mockResolvedValue({})
+
       getSystemInformationMock.mockReset()
       getSystemInformationMock.mockResolvedValue({
         time: new Date(1000),
         appVersion: [0, 1, 0],
       })
 
+      getCustomRecordsMock.mockReset()
+      getCustomRecordsMock.mockResolvedValue({
+        customRecords: [{
+          type: 'testtype',
+          records: [],
+        }],
+        largeTypesError: [],
+      })
+
       const suiteAppClient = {
         getSystemInformation: getSystemInformationMock,
         getNetsuiteWsdl: () => undefined,
         getConfigRecords: () => [],
-        getCustomRecords: () => [],
+        getInstalledBundles: () => [],
+        getCustomRecords: getCustomRecordsMock,
       } as unknown as SuiteAppClient
 
       adapter = new NetsuiteAdapter({
@@ -1090,8 +1358,14 @@ describe('Adapter', () => {
         suiteAppClient = {
           getSystemInformation: getSystemInformationMock,
           getNetsuiteWsdl: () => undefined,
-          getConfigRecords: () => [],
-          getCustomRecords: () => [],
+          getConfigRecords: getConfigRecordsMock.mockReturnValue(
+            [
+              { configType: 'USER_PREFERENCES',
+                fieldsDef: [],
+                data: { fields: { DATEFORMAT: 'YYYY-MM-DD', TIMEFORMAT: 'hh:m a' } } }]
+          ),
+          getInstalledBundles: () => [],
+          getCustomRecords: getCustomRecordsMock,
         } as unknown as SuiteAppClient
 
         adapter = new NetsuiteAdapter({
@@ -1124,11 +1398,21 @@ describe('Adapter', () => {
         )
       })
 
+      it('should not call getChangedObjects if date format is undefind', async () => {
+        getConfigRecordsMock.mockReturnValue([{
+          configType: SUITEAPP_CONFIG_RECORD_TYPES[0],
+          fieldsDef: [],
+          data: { fields: { DATEFORMAT: undefined, TIMEFORMAT: 'hh:m a' } },
+        }])
+        await adapter.fetch(mockFetchOpts)
+        expect(getChangedObjectsMock).toHaveBeenCalledTimes(0)
+      })
+
       it('should pass the received query to the client', async () => {
         const getCustomObjectsMock = jest.spyOn(client, 'getCustomObjects')
         await adapter.fetch(mockFetchOpts)
 
-        const passedQuery = getCustomObjectsMock.mock.calls[0][1]
+        const passedQuery = getCustomObjectsMock.mock.calls[0][1].updatedFetchQuery
         expect(passedQuery.isObjectMatch({ instanceId: 'aaaa', type: 'workflow' })).toBeTruthy()
         expect(passedQuery.isObjectMatch({ instanceId: 'bbbb', type: 'workflow' })).toBeFalsy()
       })
@@ -1180,6 +1464,72 @@ describe('Adapter', () => {
 
         await adapter.fetch(mockFetchOpts)
         expect(getChangedObjectsMock).toHaveBeenCalled()
+      })
+    })
+
+    describe('filter types with too many instances', () => {
+      beforeEach(() => {
+        const getDataElementsMock = getDataElements as jest.Mock
+        getDataElementsMock.mockResolvedValue({
+          elements: [],
+          largeTypesError: ['excludedTypeDataElements'],
+        })
+
+        getCustomRecordsMock.mockResolvedValue({
+          customRecords: [],
+          largeTypesError: ['excludedTypeCustomRecord'],
+        })
+      })
+
+      it('should filter from data elements and custom records', async () => {
+        await adapter.fetch(mockFetchOpts)
+        expect(getConfigFromConfigChanges).toHaveBeenCalledWith(
+          {
+            failedToFetchAllAtOnce: false,
+            failedFilePaths: expect.anything(),
+            failedTypes: {
+              lockedError: {},
+              unexpectedError: {},
+              excludedTypes: ['excludedTypeDataElements'],
+            },
+            failedCustomRecords: ['excludedTypeCustomRecord'],
+          },
+          config,
+        )
+      })
+    })
+
+    describe('call getDeletedElements and process result', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts, withChangesDetection: true })
+        expect(getDeletedElementsMock).toHaveBeenCalled()
+        expect(partialFetchData?.deletedElements).toEqual([elemId])
+        expect(spy).toHaveBeenCalledWith(expect.anything(), true, [elemId])
+      })
+    })
+
+    describe('do not call getDeletedElements on full fetch', () => {
+      const spy = jest.spyOn(elementsSourceIndexModule, 'createElementsSourceIndex')
+      let elemId: ElemID
+      beforeEach(() => {
+        elemId = new ElemID(NETSUITE, ROLE)
+        getDeletedElementsMock.mockReset()
+        getDeletedElementsMock.mockResolvedValue({ deletedElements: [elemId] })
+      })
+
+      it('check call getDeletedElements and verify return value', async () => {
+        const { partialFetchData } = await adapter.fetch({ ...mockFetchOpts })
+        expect(getDeletedElementsMock).not.toHaveBeenCalled()
+        expect(partialFetchData?.deletedElements).toEqual(undefined)
+        expect(spy).toHaveBeenCalledWith(expect.anything(), false, undefined)
       })
     })
   })

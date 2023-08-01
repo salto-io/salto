@@ -18,7 +18,7 @@ import { Change, ChangeError, ChangeValidator, getChangeData, Element, ElemID, i
   isReferenceExpression, ActionName } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { AdapterApiConfig, DeploymentRequestsByAction, DeployRequestConfig } from '../../config'
+import { DeploymentRequestsByAction, DeployRequestConfig, TypeConfig } from '../../config'
 
 const { awu } = collections.asynciterable
 
@@ -48,9 +48,9 @@ const createChangeErrors = (
 }
 
 export const createCheckDeploymentBasedOnConfigValidator = ({
-  apiConfig, typesDeployedViaParent = [], typesWithNoDeploy = [],
+  typesConfig, typesDeployedViaParent = [], typesWithNoDeploy = [],
 }: {
-  apiConfig: AdapterApiConfig
+  typesConfig: Record<string, TypeConfig>
   typesDeployedViaParent?: string[]
   typesWithNoDeploy?: string[]
 }): ChangeValidator => async changes => (
@@ -61,7 +61,7 @@ export const createCheckDeploymentBasedOnConfigValidator = ({
         return []
       }
       const getChangeErrorsByTypeName = (typeName: string): ChangeError[] => {
-        const typeConfig = apiConfig?.types?.[typeName]?.deployRequests ?? {}
+        const typeConfig = typesConfig[typeName]?.deployRequests ?? {}
         return createChangeErrors(typeConfig, element.elemID, change.action)
       }
       if (typesWithNoDeploy.includes(element.elemID.typeName)) {

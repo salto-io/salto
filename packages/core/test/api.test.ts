@@ -14,10 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError } from '@salto-io/adapter-api'
+import { AdapterOperations, BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, InstanceElement, ObjectType, PrimitiveType, PrimitiveTypes, Adapter, isObjectType, isEqualElements, isAdditionChange, ChangeDataType, AdditionChange, isInstanceElement, isModificationChange, DetailedChange, ReferenceExpression, Field, CredentialError, getChangeData, toChange, SeverityLevel, GetAdditionalReferencesFunc, Change } from '@salto-io/adapter-api'
 import * as workspace from '@salto-io/workspace'
 import { collections } from '@salto-io/lowerdash'
-import { mockFunction } from '@salto-io/test-utils'
+import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { loadElementsFromFolder, adapter as salesforceAdapter } from '@salto-io/salesforce-adapter'
 import * as api from '../src/api'
 import * as plan from '../src/core/plan/plan'
 import * as fetch from '../src/core/fetch'
@@ -28,7 +29,7 @@ import * as mockElements from './common/elements'
 import * as mockPlan from './common/plan'
 import { createElementSource } from './common/helpers'
 import { mockConfigType, mockEmptyConfigType, mockWorkspace, mockConfigInstance } from './common/workspace'
-import { getAdapterConfigOptionsType, getLoginStatuses } from '../src/api'
+import { getAdapterConfigOptionsType, getLoginStatuses, getAdditionalReferences } from '../src/api'
 
 const { awu } = collections.asynciterable
 const mockService = 'salto'
@@ -59,6 +60,15 @@ jest.mock('../src/core/restore', () => ({
       }]
       : detailedChanges
   }),
+  createRestorePathChanges: jest.fn().mockResolvedValue([{
+    action: 'add',
+    data: { after: 'value' },
+    detailedChanges: () => [{
+      action: 'add',
+      data: { after: 'value' },
+      path: ['path'],
+    }],
+  }]),
 }))
 
 jest.mock('../src/core/diff', () => ({
@@ -77,6 +87,21 @@ jest.mock('../src/core/diff', () => ({
   }),
 }))
 
+jest.mock('@salto-io/salesforce-adapter', () => {
+  const actual = jest.requireActual('@salto-io/salesforce-adapter')
+  return {
+    ...actual,
+    adapter: {
+      ...actual.adapter,
+      loadElementsFromFolder: jest.fn().mockImplementation(actual.adapter.loadElementsFromFolder),
+    },
+  }
+})
+
+const mockLoadElementsFromFolder = (
+  salesforceAdapter.loadElementsFromFolder as jest.MockedFunction<typeof loadElementsFromFolder>
+)
+
 describe('api.ts', () => {
   const mockAdapterOps = {
     fetch: mockFunction<AdapterOperations['fetch']>().mockResolvedValue({ elements: [] }),
@@ -88,20 +113,21 @@ describe('api.ts', () => {
   const mockAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+    getAdditionalReferences: mockFunction<GetAdditionalReferencesFunc>().mockResolvedValue([]),
   }
 
   const mockEmptyAdapter = {
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
     authenticationMethods: { basic: { credentialsType: mockEmptyConfigType } },
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
   }
   const mockAdapterWithInstall = {
     authenticationMethods: { basic: {
       credentialsType: new ObjectType({ elemID: new ElemID(mockServiceWithInstall) }),
     } },
     operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+    validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
     install: jest.fn().mockResolvedValue({ success: true, installedVersion: '123' }),
   }
 
@@ -150,30 +176,31 @@ describe('api.ts', () => {
 
     beforeAll(() => {
       mockPartiallyFetchedAccounts.mockReturnValue(new Set())
-      mockFetchChanges.mockImplementation(async () => ({
-        changes: [],
-        errors: [],
-        configChanges: mockPlan.createPlan([[]]),
-        updatedConfig: {},
-        unmergedElements: fetchedElements,
-        elements: fetchedElements,
-        mergeErrors: [],
-        accountNameToConfigMessage: {},
-        partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
-      }))
     })
 
     describe('Full fetch', () => {
       let ws: workspace.Workspace
-      let stateOverride: jest.SpyInstance
+      let stateUpdateElements: jest.SpyInstance
       let mockGetAdaptersCreatorConfigs: jest.SpyInstance
 
       beforeAll(async () => {
         const workspaceElements = [new InstanceElement('workspace_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         const stateElements = [new InstanceElement('state_instance', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {})]
         ws = mockWorkspace({ elements: workspaceElements, stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override')
+        stateUpdateElements = jest.spyOn(ws.state(), 'updateStateFromChanges')
         mockGetAdaptersCreatorConfigs = jest.spyOn(adapters, 'getAdaptersCreatorConfigs')
+        mockFetchChanges.mockImplementationOnce(async () => ({
+          changes: [],
+          serviceToStateChanges: [],
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, ACCOUNTS)
       })
@@ -181,10 +208,13 @@ describe('api.ts', () => {
       it('should call fetch changes', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      // eslint-disable-next-line jest/no-disabled-tests
-      it.skip('should override state', async () => {
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual(fetchedElements)
+      it('should update the state', async () => {
+        const updateParams = (_.first(stateUpdateElements.mock.calls)[0]) as AsyncIterable<Element>
+        expect(updateParams).toEqual({
+          changes: [],
+          unmergedElements: fetchedElements,
+          fetchAccounts: ACCOUNTS,
+        })
       })
 
       it('should not call flush', () => {
@@ -197,38 +227,28 @@ describe('api.ts', () => {
         expect(await elementsSource.has(new ElemID(mockService, 'test', 'instance', 'workspace_instance'))).toBeFalsy()
       })
     })
-    describe('Partial fetch', () => {
-      let ws: workspace.Workspace
-      let stateElements: InstanceElement[]
-      let mockStateUpdatePathIndex: jest.SpyInstance
-      beforeAll(async () => {
-        stateElements = [
-          new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
-          new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
-        ]
-        ws = mockWorkspace({ stateElements })
-        mockPartiallyFetchedAccounts.mockReturnValueOnce(new Set([mockService]))
-        mockStateUpdatePathIndex = jest.spyOn(ws.state(), 'updatePathIndex').mockResolvedValue(undefined)
-        await api.fetch(ws, undefined, [mockService])
-      })
-      it('should maintain path index entries', async () => {
-        expect(mockStateUpdatePathIndex).toHaveBeenCalledWith(
-          fetchedElements,
-          [mockService, 'salto2'],
-        )
-      })
-    })
     describe('Fetch one service out of two.', () => {
       let ws: workspace.Workspace
       let stateElements: InstanceElement[]
-      let stateOverride: jest.SpyInstance
       beforeAll(async () => {
         stateElements = [
           new InstanceElement('old_instance1', new ObjectType({ elemID: new ElemID(mockService, 'test') }), {}),
           new InstanceElement('old_instance2', new ObjectType({ elemID: new ElemID(emptyMockService, 'test') }), {}),
         ]
         ws = mockWorkspace({ stateElements })
-        stateOverride = jest.spyOn(ws.state(), 'override').mockResolvedValue(undefined)
+        mockFetchChanges.mockImplementationOnce(async () => ({
+          changes: [],
+          // This is the field that is used to determine which elements to update in the state
+          serviceToStateChanges: fetchedElements.map(e => ({ action: 'add', data: { after: e }, id: e.elemID })),
+          errors: [],
+          configChanges: mockPlan.createPlan([[]]),
+          updatedConfig: {},
+          unmergedElements: fetchedElements,
+          elements: fetchedElements,
+          mergeErrors: [],
+          accountNameToConfigMessage: {},
+          partiallyFetchedAccounts: mockPartiallyFetchedAccounts(),
+        }))
         mockFetchChanges.mockClear()
         await api.fetch(ws, undefined, [mockService])
       })
@@ -236,10 +256,9 @@ describe('api.ts', () => {
       it('should call fetch changes with first account only', () => {
         expect(mockFetchChanges).toHaveBeenCalled()
       })
-      it('should override state but also include existing elements', async () => {
-        const existingElements = [stateElements[1]]
-        const overideParam = (_.first(stateOverride.mock.calls)[0]) as AsyncIterable<Element>
-        expect(await awu(overideParam).toArray()).toEqual([...fetchedElements, ...existingElements])
+      it('should update state with the new elements and keep the old ones', async () => {
+        const elements = await awu(await ws.state().getAll()).toArray()
+        expect(elements).toEqual(expect.arrayContaining([...fetchedElements, ...stateElements]))
       })
       it('should not call flush', () => {
         expect(ws.flush).not.toHaveBeenCalled()
@@ -388,7 +407,7 @@ describe('api.ts', () => {
     describe('with partial success from the adapter', () => {
       let newEmployee: InstanceElement
       let existingEmployee: InstanceElement
-      let stateSet: jest.SpyInstance
+      let updateStateFromChangesSpy: jest.SpyInstance
       beforeAll(async () => {
         const wsElements = mockElements.getAllElements()
         existingEmployee = wsElements.find(isInstanceElement) as InstanceElement
@@ -401,7 +420,7 @@ describe('api.ts', () => {
         existingEmployee.value.name = 'updated name'
         const stateElements = mockElements.getAllElements()
         ws = mockWorkspace({ elements: wsElements, stateElements })
-        stateSet = jest.spyOn(ws.state(), 'set')
+        updateStateFromChangesSpy = jest.spyOn(ws.state(), 'updateStateFromChanges')
 
         // Create plan where both changes are in the same group
         const actionPlan = await plan.getPlan({
@@ -415,13 +434,19 @@ describe('api.ts', () => {
         mockAdapterOps.deploy.mockClear()
         mockAdapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => ({
           appliedChanges: changeGroup.changes.filter(isModificationChange),
-          errors: [new Error('cannot add new employee')],
+          errors: [
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel, elemID: newEmployee.elemID },
+            { message: 'cannot add new employee', severity: 'Error' as SeverityLevel },
+          ],
         }))
         result = await api.deploy(ws, actionPlan, jest.fn(), ACCOUNTS)
       })
 
-      it('should return error for the failed part', () => {
-        expect(result.errors).toHaveLength(1)
+      it('should return errors for the failed part', () => {
+        expect(result.errors).toHaveLength(2)
+        expect(result.errors[0]).toMatchObject(expect.objectContaining({
+          elemID: newEmployee.elemID,
+        }))
       })
       it('should return success false for the overall deploy', () => {
         expect(result.success).toBeFalsy()
@@ -435,7 +460,20 @@ describe('api.ts', () => {
         expect(appliedChange?.data?.after).toEqual(existingEmployee)
       })
       it('should update state with applied change', () => {
-        expect(stateSet).toHaveBeenCalledWith(existingEmployee)
+        expect(updateStateFromChangesSpy).toHaveBeenCalledWith(
+          {
+            changes: [
+              expect.objectContaining(
+                {
+                  data: {
+                    before: 'FirstEmployee',
+                    after: 'updated name',
+                  },
+                }
+              ),
+            ],
+          }
+        )
       })
     })
     describe('with checkOnly deployment', () => {
@@ -478,7 +516,7 @@ describe('api.ts', () => {
         it('should fail with error', async () => {
           await executeDeploy()
           expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
-          expect(result.errors).toHaveLength(1)
+          expect(result.errors).toHaveLength(2)
         })
       })
       describe('when adapter implements the validate method', () => {
@@ -496,6 +534,80 @@ describe('api.ts', () => {
           expect(mockAdapterOps.deploy).not.toHaveBeenCalled()
           expect(validateMock).toHaveBeenCalledTimes(1)
         })
+      })
+    })
+
+    describe('with element updates during deploy', () => {
+      let instance: InstanceElement
+      let adapterOps: MockInterface<AdapterOperations>
+      let adapter: Adapter
+      beforeAll(async () => {
+        adapterOps = {
+          fetch: mockFunction<AdapterOperations['fetch']>(),
+          deploy: mockFunction<AdapterOperations['deploy']>(),
+        }
+        adapter = {
+          operations: mockFunction<Adapter['operations']>().mockReturnValue(adapterOps as AdapterOperations),
+          authenticationMethods: { basic: { credentialsType: mockConfigType } },
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
+        }
+        adapterCreators.test = adapter
+
+        instance = new InstanceElement(
+          'inst',
+          new ObjectType({ elemID: new ElemID('test', 'type') }),
+          { name: 'test' }
+        )
+
+        const mockWs = mockWorkspace({
+          elements: [instance],
+          stateElements: [],
+          accounts: ['test'],
+        })
+
+        mockWs.accountCredentials = mockFunction<workspace.Workspace['accountCredentials']>().mockResolvedValue({
+          test: new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockConfigType,
+            {
+              username: 'test@test',
+              password: 'test',
+              token: 'test',
+              sandbox: false,
+            }
+          ),
+        })
+
+        const actionPlan = mockPlan.createPlan([
+          [{ action: 'add', data: { after: instance.clone() } }],
+        ])
+
+        adapterOps.deploy.mockImplementationOnce(async ({ changeGroup }) => {
+          const changeInstance = getChangeData(changeGroup.changes[0]).clone() as InstanceElement
+          changeInstance.value.id = 1
+          return {
+            appliedChanges: [toChange({ after: changeInstance })],
+            errors: [],
+          }
+        })
+
+        result = await api.deploy(mockWs, actionPlan, jest.fn(), ['test'])
+      })
+
+      it('should call adapter deploy function', () => {
+        expect(adapterOps.deploy).toHaveBeenCalledTimes(1)
+      })
+
+      it('should return the applied changes', () => {
+        expect(result.appliedChanges).toHaveLength(1)
+        const [addedChange] = result.appliedChanges ?? []
+        expect((getChangeData(addedChange) as InstanceElement).value.id).toBe(1)
+      })
+
+      it('should update element source', async () => {
+        const elementSource = (adapter.operations as jest.Mock).mock.calls[0][0].elementsSource
+        const instanceFromSource = await elementSource.get(instance.elemID) as InstanceElement
+        expect(instanceFromSource.value.id).toBe(1)
       })
     })
   })
@@ -551,7 +663,7 @@ describe('api.ts', () => {
             basic: { credentialsType: new ObjectType({ elemID: new ElemID(serviceName) }) },
           },
           operations: mockFunction<Adapter['operations']>().mockReturnValue(mockAdapterOps),
-          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue(''),
+          validateCredentials: mockFunction<Adapter['validateCredentials']>().mockResolvedValue({ accountId: '', accountType: 'Sandbox', isProduction: false }),
         }
       })
 
@@ -619,6 +731,20 @@ describe('api.ts', () => {
     })
   })
 
+  describe('restorePaths', () => {
+    it('should return all changes as local changes', async () => {
+      const ws = mockWorkspace({
+        elements: [],
+        name: 'restore',
+        index: [],
+        stateElements: [],
+      })
+      const changes = await api.restorePaths(ws)
+      expect(changes).toHaveLength(1)
+      expect(_.keys(changes[0])).toEqual(['change', 'serviceChanges'])
+    })
+  })
+
   describe('diff', () => {
     const ws = mockWorkspace({ name: 'diff' })
     it('should return detailedChanges', async () => {
@@ -662,6 +788,7 @@ describe('api.ts', () => {
     beforeAll(() => {
       mockFetchChangesFromWorkspace.mockResolvedValue({
         changes: [],
+        serviceToStateChanges: [],
         errors: [],
         configChanges: mockPlan.createPlan([[]]),
         unmergedElements: fetchedElements,
@@ -738,6 +865,127 @@ describe('api.ts', () => {
       })
     })
   })
+
+  describe('calculatePatch', () => {
+    const type = new ObjectType({
+      elemID: new ElemID('salesforce', 'type'),
+      fields: {
+        f: { refType: BuiltinTypes.STRING },
+      },
+    })
+
+    const instance = new InstanceElement('instance', type, { f: 'v' })
+    const instanceState = new InstanceElement('instanceState', type, { f: 'v' })
+    const instanceNacl = instanceState.clone()
+    instanceNacl.value.f = 'v2'
+
+    const ws = mockWorkspace({
+      elements: [type, instance, instanceNacl],
+      stateElements: [type, instance, instanceState],
+      name: 'workspace',
+      accounts: ['salesforce'],
+      accountToServiceName: { salesforce: 'salesforce' },
+    })
+
+    adapterCreators.salesforce = salesforceAdapter
+
+    beforeEach(() => {
+      mockLoadElementsFromFolder.mockClear()
+    })
+
+    describe('when there is a difference between the folders', () => {
+      it('should return the changes with no errors', async () => {
+        const afterModifyInstance = instance.clone()
+        afterModifyInstance.value.f = 'v3'
+        const afterNewInstance = new InstanceElement('instance2', type, { f: 'v' })
+        const beforeElements = [instance]
+        const afterElements = [afterModifyInstance, afterNewInstance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(2)
+      })
+    })
+
+    describe('when there is no difference between the folders', () => {
+      it('should return with no changes and no errors', async () => {
+        const beforeElements = [instance]
+        const afterElements = [instance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(0)
+      })
+    })
+
+    describe('when there is a merge error', () => {
+      it('should return with merge error and success false', async () => {
+        const beforeElements = [instance, instance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeFalsy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(1)
+      })
+    })
+
+    describe('when there is a fetch error', () => {
+      it('should return with changes and fetch errors', async () => {
+        const afterModifyInstance = instance.clone()
+        afterModifyInstance.value.f = 'v3'
+        const beforeElements = [instance]
+        const afterElements = [afterModifyInstance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements, errors: [{ message: 'err', severity: 'Warning' }] })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.changes).toHaveLength(1)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.fetchErrors).toHaveLength(1)
+      })
+    })
+
+    describe('when there are conflicts', () => {
+      it('should return the changes with pendingChanges', async () => {
+        const beforeConflictInstance = instanceState.clone()
+        beforeConflictInstance.value.f = 'v5'
+        const afterConflictInstance = instanceState.clone()
+        afterConflictInstance.value.f = 'v4'
+        const beforeElements = [beforeConflictInstance]
+        const afterElements = [afterConflictInstance]
+        mockLoadElementsFromFolder
+          .mockResolvedValueOnce({ elements: beforeElements })
+          .mockResolvedValueOnce({ elements: afterElements })
+        const res = await api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'salesforce' })
+        expect(res.success).toBeTruthy()
+        expect(res.fetchErrors).toHaveLength(0)
+        expect(res.mergeErrors).toHaveLength(0)
+        expect(res.changes).toHaveLength(1)
+        const firstChange = (await awu(res.changes).toArray())[0]
+        expect(firstChange.pendingChanges).toHaveLength(1)
+      })
+    })
+
+    describe('when used with an account that does not support loadElementsFromFolder', () => {
+      it('Should throw an error', async () => {
+        await expect(
+          api.calculatePatch({ workspace: ws, fromDir: 'before', toDir: 'after', accountName: 'notSalesforce' }),
+        ).rejects.toThrow()
+      })
+    })
+  })
+
   describe('rename', () => {
     let expectedChanges: DetailedChange[]
     let changes: DetailedChange[]
@@ -793,6 +1041,36 @@ describe('api.ts', () => {
     })
     it('should returns undefined when adapter configCreator is undefined', () => {
       expect(getAdapterConfigOptionsType(mockService)).toBeUndefined()
+    })
+  })
+
+  describe('getAdditionalReferences', () => {
+    let ws: workspace.Workspace
+    let change: Change<ObjectType>
+
+    beforeEach(() => {
+      ws = mockWorkspace({
+        accounts: ['salto1'],
+        accountToServiceName: {
+          salto1: 'salto',
+        },
+      })
+
+      change = toChange({ after: new ObjectType({ elemID: new ElemID('salto1', 'test') }) })
+    })
+    it('should return additional references', async () => {
+      mockAdapter.getAdditionalReferences.mockResolvedValue([{
+        source: ElemID.fromFullName('salto1.test'),
+        target: ElemID.fromFullName('salto1.test2'),
+      }])
+      const res = await getAdditionalReferences(ws, [change])
+
+      expect(res).toEqual([{
+        source: ElemID.fromFullName('salto1.test'),
+        target: ElemID.fromFullName('salto1.test2'),
+      }])
+
+      expect(mockAdapter.getAdditionalReferences).toHaveBeenCalledWith([change])
     })
   })
 })

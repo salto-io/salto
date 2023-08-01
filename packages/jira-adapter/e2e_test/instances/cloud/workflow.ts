@@ -14,14 +14,15 @@
 * limitations under the License.
 */
 import { ElemID, Values, Element } from '@salto-io/adapter-api'
+import { naclCase } from '@salto-io/adapter-utils'
 import { createReference } from '../../utils'
 import { JIRA, STATUS_TYPE_NAME } from '../../../src/constants'
 
 export const createWorkflowValues = (name: string, allElements: Element[]): Values => ({
   name,
   description: name,
-  transitions: [
-    {
+  transitions: {
+    [naclCase('Build Broken::From: any status::Global')]: {
       name: 'Build Broken',
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
@@ -92,11 +93,15 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    {
+    [naclCase('Create::From: none::Initial')]: {
       name: 'Create',
       description: '',
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'initial',
+      from: [{
+        sourceAngle: 33.45,
+        targetAngle: 99.89,
+      }],
       rules: {
         validators: [
           {
@@ -173,12 +178,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         ],
       },
     },
-    {
+    [naclCase('TransitionToShared::From: Done::Directed')]: {
       name: 'TransitionToShared',
       description: '',
-      from: [
-        createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
-      ],
+      from: [{
+        id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
+        sourceAngle: 12.45,
+        targetAngle: 67.89,
+      }],
       to: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
       type: 'directed',
       rules: {
@@ -380,15 +387,19 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         },
       },
     },
-  ],
+  },
   statuses: [
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'backlog'), allElements),
-      name: 'CustomBacklog',
+      name: 'Backlog',
       properties: [{
         key: 'jira.issue.editable',
         value: 'true',
       }],
+      location: {
+        x: 12.34,
+        y: 56.78,
+      },
     },
     {
       id: createReference(new ElemID(JIRA, STATUS_TYPE_NAME, 'instance', 'done'), allElements),
@@ -397,6 +408,14 @@ export const createWorkflowValues = (name: string, allElements: Element[]): Valu
         key: 'jira.issue.editable',
         value: 'true',
       }],
+      location: {
+        x: 67.89,
+        y: 20.78,
+      },
     },
   ],
+  diagramInitialEntry: {
+    x: 12.34,
+    y: 34.12,
+  },
 })

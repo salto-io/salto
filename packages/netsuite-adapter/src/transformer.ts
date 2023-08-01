@@ -19,25 +19,29 @@ import {
   OBJECT_SERVICE_ID, OBJECT_NAME, toServiceIdsString, ServiceIds,
   isInstanceElement,
   ElemIDType,
+  TypeElement,
+  BuiltinTypes,
+  ReadOnlyElementsSource,
+  CORE_ANNOTATIONS,
+  TypeReference,
 } from '@salto-io/adapter-api'
 import { MapKeyFunc, mapKeysRecursive, TransformFunc, transformValues, GetLookupNameFunc, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
-import { logger } from '@salto-io/logging'
 import _ from 'lodash'
 import {
   ADDRESS_FORM, ENTRY_FORM, TRANSACTION_FORM, IS_ATTRIBUTE, NETSUITE, RECORDS_PATH,
-  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
-  APPLICATION_ID,
-  SETTINGS_PATH,
+  SCRIPT_ID, ADDITIONAL_FILE_SUFFIX, FILE_CABINET_PATH, PATH, FILE_CABINET_PATH_SEPARATOR,
+  APPLICATION_ID, SETTINGS_PATH, CUSTOM_RECORD_TYPE, CONTENT, ID_FIELD,
 } from './constants'
 import { fieldTypes } from './types/field_types'
-import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType } from './types'
+import { isSDFConfigType, isStandardType, isFileCabinetType, isCustomRecordType, getTopLevelStandardTypes, metadataTypesToList, getMetadataTypes, isFileInstance, isBundleType } from './types'
 import { isFileCustomizationInfo, isFolderCustomizationInfo, isTemplateCustomTypeInfo } from './client/utils'
 import { CustomizationInfo, CustomTypeInfo, FileCustomizationInfo, FolderCustomizationInfo, TemplateCustomTypeInfo } from './client/types'
 import { ATTRIBUTE_PREFIX, CDATA_TAG_NAME } from './client/constants'
+import { isStandardTypeName } from './autogen/types'
+import { createCustomRecordTypes } from './custom_records/custom_record_type'
 
 const { awu } = collections.asynciterable
-const log = logger(module)
 
 const XML_TRUE_VALUE = 'T'
 const XML_FALSE_VALUE = 'F'
@@ -47,24 +51,37 @@ const toXmlBoolean = (value: boolean): string => (value ? XML_TRUE_VALUE : XML_F
 // don't load hidden files to the workspace in the core.
 const removeDotPrefix = (name: string): string => name.replace(/^\.+/, '_')
 
-export const getServiceId = (instance: InstanceElement): string =>
-  instance.value[isStandardType(instance.refType) ? SCRIPT_ID : PATH]
+export const addApplicationIdToType = (type: ObjectType): void => {
+  type.fields[APPLICATION_ID] = new Field(type, APPLICATION_ID, BuiltinTypes.STRING)
+}
+
+const getFileContentField = (type: ObjectType): Promise<Field | undefined> =>
+  awu(Object.values(type.fields))
+    .find(async f => {
+      const fType = await f.getType()
+      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
+    })
+const getServiceIdFieldName = (type: ObjectType): string => {
+  if (isBundleType(type)) {
+    return ID_FIELD
+  }
+  return isStandardType(type) ? SCRIPT_ID : PATH
+}
 
 export const createInstanceElement = async (
   customizationInfo: CustomizationInfo,
   type: ObjectType,
+  elementsSource: ReadOnlyElementsSource,
   getElemIdFunc?: ElemIdGetter,
-  fetchTime?: Date,
-  serverTimeInstance?: InstanceElement,
 ): Promise<InstanceElement> => {
   const getInstanceName = (transformedValues: Values): string => {
     if (isSDFConfigType(type)) {
       return ElemID.CONFIG_NAME
     }
-    if (!isStandardType(type) && !isFileCabinetType(type)) {
+    if (!isStandardType(type) && !isFileCabinetType(type) && !isBundleType(type)) {
       throw new Error(`Failed to getInstanceName for unknown type: ${type.elemID.name}`)
     }
-    const serviceIdFieldName = isStandardType(type) ? SCRIPT_ID : PATH
+    const serviceIdFieldName = getServiceIdFieldName(type)
     const serviceIds: ServiceIds = {
       [serviceIdFieldName]: transformedValues[serviceIdFieldName],
       [OBJECT_SERVICE_ID]: toServiceIdsString({
@@ -95,7 +112,7 @@ export const createInstanceElement = async (
 
   const transformPrimitive: TransformFunc = async ({ value, field }) => {
     const fieldType = await field?.getType()
-    if (value === '') {
+    if (value === '' || value === null) {
       // We sometimes get empty strings that we want to filter out
       return undefined
     }
@@ -123,17 +140,11 @@ export const createInstanceElement = async (
   const valuesWithTransformedAttrs = mapKeysRecursive(customizationInfo.values,
     transformAttributeKey)
 
-  const fileContentField = await awu(Object.values(type.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-
   if (isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo)) {
     valuesWithTransformedAttrs[PATH] = FILE_CABINET_PATH_SEPARATOR
       + customizationInfo.path.join(FILE_CABINET_PATH_SEPARATOR)
     if (isFileCustomizationInfo(customizationInfo) && customizationInfo.fileContent !== undefined) {
-      valuesWithTransformedAttrs[(fileContentField as Field).name] = new StaticFile({
+      valuesWithTransformedAttrs[CONTENT] = new StaticFile({
         filepath: `${NETSUITE}/${FILE_CABINET_PATH}/${customizationInfo.path.map(removeDotPrefix).join('/')}`,
         content: customizationInfo.fileContent,
       })
@@ -142,6 +153,29 @@ export const createInstanceElement = async (
 
   const instanceName = getInstanceName(valuesWithTransformedAttrs)
   const instanceFileName = pathNaclCase(instanceName)
+
+  // SALTO-4227 - Support loading files & folders without their attributes (in SDF):
+  // SDF projects can have FileCabinet objects (files&folders) without their matching .attribute XML file.
+  // In that case we still want to load the objects:
+  // - if the instance doesn't exists in the environment - we use default attributes.
+  // - if the instance exists in the environment - we use the existing attibutes and the new file content.
+  if ((isFolderCustomizationInfo(customizationInfo) || isFileCustomizationInfo(customizationInfo))
+    && customizationInfo.hadMissingAttributes) {
+    const instanceElemId = new ElemID(NETSUITE, type.elemID.name, 'instance', instanceName)
+    const existingInstance = await elementsSource.get(instanceElemId)
+    if (isInstanceElement(existingInstance)) {
+      const clonedInstance = existingInstance.clone()
+      clonedInstance.refType = new TypeReference(type.elemID, type)
+      if (isFileInstance(clonedInstance)) {
+        clonedInstance.value[CONTENT] = valuesWithTransformedAttrs[CONTENT]
+        // file's generated dependencies are based on the content and calculated in element_references.ts
+        delete clonedInstance.annotations[CORE_ANNOTATIONS.GENERATED_DEPENDENCIES]
+      }
+      return clonedInstance
+    }
+  }
+
+  const fileContentField = await getFileContentField(type)
   if (fileContentField && isTemplateCustomTypeInfo(customizationInfo)
     && customizationInfo.fileContent !== undefined) {
     valuesWithTransformedAttrs[fileContentField.name] = new StaticFile({
@@ -155,21 +189,57 @@ export const createInstanceElement = async (
     transformFunc: transformPrimitive,
     strict: false,
   })
-  const instance = new InstanceElement(
+  return new InstanceElement(
     instanceName,
     type,
     values,
     getInstancePath(instanceFileName),
   )
-  if (fetchTime !== undefined && serverTimeInstance !== undefined) {
-    const serviceId = getServiceId(instance)
-    if (serviceId !== undefined) {
-      serverTimeInstance.value.instancesFetchTime[serviceId] = fetchTime.toJSON()
-    } else {
-      log.warn('Instance %s has no serviceId so cannot save it\'s fetchTime', instance.elemID.getFullName())
-    }
-  }
-  return instance
+}
+
+export const createElements = async (
+  customizationInfos: CustomizationInfo[],
+  elementsSource: ReadOnlyElementsSource,
+  getElemIdFunc?: ElemIdGetter,
+): Promise<Array<InstanceElement | TypeElement>> => {
+  const { standardTypes, additionalTypes, innerAdditionalTypes } = getMetadataTypes()
+
+  getTopLevelStandardTypes(standardTypes).concat(Object.values(additionalTypes))
+    .forEach(addApplicationIdToType)
+
+  const customizationInfosWithTypes = customizationInfos
+    .map(customizationInfo => ({
+      customizationInfo,
+      type: isStandardTypeName(customizationInfo.typeName)
+        ? standardTypes[customizationInfo.typeName].type
+        : additionalTypes[customizationInfo.typeName],
+    }))
+    .filter(({ type }) => type !== undefined)
+
+  const allInstances = await awu(customizationInfosWithTypes)
+    .map(({ customizationInfo, type }) => createInstanceElement(
+      customizationInfo,
+      type,
+      elementsSource,
+      getElemIdFunc,
+    ))
+    .toArray()
+
+  const [customRecordTypeInstances, instances] = _.partition(
+    allInstances,
+    instance => instance.elemID.typeName === CUSTOM_RECORD_TYPE
+  )
+
+  const customRecordTypes = createCustomRecordTypes(
+    customRecordTypeInstances,
+    standardTypes.customrecordtype.type
+  )
+
+  return [
+    ...metadataTypesToList({ standardTypes, additionalTypes, innerAdditionalTypes }),
+    ...instances,
+    ...customRecordTypes,
+  ]
 }
 
 export const restoreAttributes = async (values: Values, type: ObjectType, instancePath: ElemID):
@@ -262,19 +332,12 @@ export const toCustomizationInfo = async (
     return { typeName, values }
   }
 
-  const fileContentField = await awu(Object.values(instanceType.fields))
-    .find(async f => {
-      const fType = await f.getType()
-      return isPrimitiveType(fType) && fType.isEqual(fieldTypes.fileContent)
-    })
-
   if (isFileCabinetType(instance.refType)) {
     const path = values[PATH].split(FILE_CABINET_PATH_SEPARATOR).slice(1)
     delete values[PATH]
-    if (instanceType.elemID.isEqual(new ElemID(NETSUITE, FILE))) {
-      const contentFieldName = (fileContentField as Field).name
-      const fileContent = values[contentFieldName]
-      delete values[contentFieldName]
+    if (isFileInstance(instance)) {
+      const fileContent = values[CONTENT]
+      delete values[CONTENT]
       return { typeName, values, fileContent, path } as FileCustomizationInfo
     }
     return { typeName, values, path } as FolderCustomizationInfo
@@ -283,6 +346,7 @@ export const toCustomizationInfo = async (
   delete values[APPLICATION_ID]
 
   const scriptId = instance.value[SCRIPT_ID]
+  const fileContentField = await getFileContentField(instanceType)
   // Template Custom Type
   if (!_.isUndefined(fileContentField) && !_.isUndefined(values[fileContentField.name])
     && isStandardType(instance.refType)) {

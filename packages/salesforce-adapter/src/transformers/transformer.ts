@@ -16,10 +16,41 @@
 /* eslint-disable camelcase */
 import _ from 'lodash'
 import { ValueTypeField, MetadataInfo, DefaultValueWithType, PicklistEntry, Field as SalesforceField, FileProperties } from 'jsforce'
-import { TypeElement, ObjectType, ElemID, PrimitiveTypes, PrimitiveType, Values, BuiltinTypes, Element, isInstanceElement, InstanceElement, isPrimitiveType, ElemIdGetter, ServiceIds, toServiceIdsString, OBJECT_SERVICE_ID, CORE_ANNOTATIONS, PrimitiveValue, Field, TypeMap, ListType, isField, createRestriction, isPrimitiveValue, Value, isObjectType, isContainerType, TypeReference, createRefToElmWithValue } from '@salto-io/adapter-api'
+import {
+  TypeElement,
+  ObjectType,
+  ElemID,
+  PrimitiveTypes,
+  PrimitiveType,
+  Values,
+  BuiltinTypes,
+  Element,
+  isInstanceElement,
+  InstanceElement,
+  isPrimitiveType,
+  ElemIdGetter,
+  ServiceIds,
+  toServiceIdsString,
+  OBJECT_SERVICE_ID,
+  CORE_ANNOTATIONS,
+  PrimitiveValue,
+  Field,
+  TypeMap,
+  ListType,
+  isField,
+  createRestriction,
+  isPrimitiveValue,
+  Value,
+  isObjectType,
+  isContainerType,
+  TypeReference,
+  createRefToElmWithValue,
+  isElement,
+} from '@salto-io/adapter-api'
 import { collections, values as lowerDashValues, promises } from '@salto-io/lowerdash'
-import { TransformFunc, transformElement, naclCase, pathNaclCase } from '@salto-io/adapter-utils'
+import { TransformFunc, transformElement, naclCase, pathNaclCase, TransformFuncSync } from '@salto-io/adapter-utils'
 
+import { logger } from '@salto-io/logging'
 import { CustomObject, CustomField, SalesforceRecord } from '../client/types'
 import {
   API_NAME, CUSTOM_OBJECT, LABEL, SALESFORCE, FORMULA, FIELD_TYPE_NAMES, ALL_FIELD_TYPE_NAMES,
@@ -41,6 +72,8 @@ import SalesforceClient from '../client/client'
 import { allMissingSubTypes } from './salesforce_types'
 import { defaultMissingFields } from './missing_fields'
 
+
+const log = logger(module)
 const { mapValuesAsync, pickAsync } = promises.object
 const { awu } = collections.asynciterable
 const { makeArray } = collections.array
@@ -119,6 +152,9 @@ export const relativeApiName = (name: string): string => (
   _.last(name.split(API_NAME_SEPARATOR)) as string
 )
 
+/**
+ * @deprecated use {@link safeApiName} instead.
+ */
 export const apiName = async (elem: Readonly<Element>, relative = false): Promise<string> => {
   const name = await fullApiName(elem)
   return name && relative ? relativeApiName(name) : name
@@ -938,16 +974,27 @@ const transformCompoundValues = async (
 const toRecord = async (
   instance: InstanceElement,
   fieldAnnotationToFilterBy: string,
+  withNulls: boolean
 ): Promise<SalesforceRecord> => {
   const instanceType = await instance.getType()
-  const valsWithNulls = {
-    ..._.mapValues(instanceType.fields, () => null),
-    ...instance.value,
+  const values = {
+    ...withNulls ? _.mapValues(instanceType.fields, () => null) : {},
+    ..._.mapValues(instance.value, val => {
+      // Lookups to the same types will have an Id value only after the referenced Record was deployed
+      if (isInstanceElement(val)) {
+        const referencedRecordId = val.value[CUSTOM_OBJECT_ID_FIELD]
+        if (referencedRecordId === undefined) {
+          return null
+        }
+        return referencedRecordId
+      }
+      return val
+    }),
   }
   const filteredRecordValues = {
     [CUSTOM_OBJECT_ID_FIELD]: instance.value[CUSTOM_OBJECT_ID_FIELD],
     ..._.pickBy(
-      valsWithNulls,
+      values,
       (_v, k) => (instanceType).fields[k]?.annotations[fieldAnnotationToFilterBy]
     ),
   }
@@ -955,14 +1002,17 @@ const toRecord = async (
 }
 
 export const instancesToUpdateRecords = async (
-  instances: InstanceElement[]
+  instances: InstanceElement[],
+  withNulls: boolean,
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.UPDATEABLE)))
+  Promise.all(instances.map(instance => toRecord(
+    instance, FIELD_ANNOTATIONS.UPDATEABLE, withNulls,
+  )))
 
 export const instancesToCreateRecords = (
   instances: InstanceElement[]
 ): Promise<SalesforceRecord[]> =>
-  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE)))
+  Promise.all(instances.map(instance => toRecord(instance, FIELD_ANNOTATIONS.CREATABLE, false)))
 
 export const instancesToDeleteRecords = (instances: InstanceElement[]): SalesforceRecord[] =>
   instances.map(instance => ({ Id: instance.value[CUSTOM_OBJECT_ID_FIELD] }))
@@ -1139,7 +1189,7 @@ export const isNull = (value: Value): boolean =>
     && (_.get(value, ['$', 'xsi:nil']) === 'true'
       || _.get(value, `${XML_ATTRIBUTE_PREFIX}xsi:nil`) === 'true'))
 
-export const transformPrimitive: TransformFunc = async ({ value, path, field }) => {
+export const transformPrimitive: TransformFuncSync = ({ value, path, field }) => {
   if (isNull(value)) {
     // We transform null to undefined as currently we don't support null in Salto language
     // and the undefined values are omitted later in the code
@@ -1152,7 +1202,7 @@ export const transformPrimitive: TransformFunc = async ({ value, path, field }) 
     const convertFunc = getXsdConvertFunc(_.get(value, ['$', 'xsi:type']))
     return transformPrimitive({ value: convertFunc(_.get(value, '_')), path, field })
   }
-  const fieldType = await field?.getType()
+  const fieldType = field?.getTypeSync()
 
   if (isContainerType(fieldType) && _.isEmpty(value)) {
     return undefined
@@ -1331,8 +1381,6 @@ export const getSObjectFieldElement = (
   // Name is an exception because it can be editable and visible to the user
   if (!field.nameField && systemFields.includes(field.name)) {
     annotations[CORE_ANNOTATIONS.HIDDEN_VALUE] = true
-    annotations[FIELD_ANNOTATIONS.UPDATEABLE] = false
-    annotations[FIELD_ANNOTATIONS.CREATABLE] = false
     delete annotations[CORE_ANNOTATIONS.REQUIRED]
   }
 
@@ -1348,14 +1396,21 @@ export const getSObjectFieldElement = (
 }
 
 export const toDeployableInstance = async (element: InstanceElement): Promise<InstanceElement> => {
-  const removeLocalOnly: TransformFunc = ({ value, field }) => (
-    (isLocalOnly(field))
-      ? undefined
-      : value
-  )
+  const removeNonDeployableValues: TransformFunc = ({ value, field }) => {
+    if (isLocalOnly(field)) {
+      return undefined
+    }
+    // When we have a reference that resolves to undefined, we return the Element as a PlaceHolder.
+    // This value is not deployable and should not be parsed to XML.
+    if (isElement(value)) {
+      log.warn('The value of the field %s is Element with Id %s in toDeployableInstance', field?.elemID.getFullName(), value.elemID.getFullName())
+      return undefined
+    }
+    return value
+  }
   return transformElement({
     element,
-    transformFunc: removeLocalOnly,
+    transformFunc: removeNonDeployableValues,
     strict: false,
     allowEmpty: true,
   })

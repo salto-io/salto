@@ -62,6 +62,8 @@ export type FetchParams = {
   }
   strictInstanceStructure?: boolean
   fieldsToOmit?: FieldToOmitParams[]
+  addAlias?: boolean
+  addBundles?: boolean
 }
 
 export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
@@ -71,6 +73,8 @@ export const FETCH_PARAMS: lowerdashTypes.TypeKeysEnum<FetchParams> = {
   authorInformation: 'authorInformation',
   strictInstanceStructure: 'strictInstanceStructure',
   fieldsToOmit: 'fieldsToOmit',
+  addAlias: 'addAlias',
+  addBundles: 'addBundles',
 }
 
 export const convertToQueryParams = ({
@@ -129,8 +133,21 @@ export type CustomRecordsQuery = {
 
 export type NetsuiteQuery = TypesQuery & FileCabinetQuery & CustomRecordsQuery
 
-const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
+export type NetsuiteFetchQueries = {
+  updatedFetchQuery: NetsuiteQuery
+  originFetchQuery: NetsuiteQuery
+}
+
+export const checkTypeNameRegMatch = (type: FetchTypeQueryParams, str: string): boolean =>
   regex.isFullRegexMatch(str, type.name)
+
+export const noSupportedTypeMatch = (name: string): boolean =>
+  !netsuiteSupportedTypes
+    .some(existTypeName => checkTypeNameRegMatch({ name }, existTypeName)
+    // This is to support the adapter configuration before the migration of
+    // the SuiteApp type names from PascalCase to camelCase
+    || checkTypeNameRegMatch({ name },
+      strings.capitalizeFirstLetter(existTypeName)))
 
 export const validateFetchParameters = ({
   types, fileCabinet, customRecords = [],
@@ -175,14 +192,7 @@ export const validateFetchParameters = ({
     throw new Error(`${ERROR_MESSAGE_PREFIX} The following regular expressions are invalid:\n${invalidRegexes}.`)
   }
 
-  const invalidTypes = receivedTypes
-    .filter(recivedTypeName =>
-      !netsuiteSupportedTypes
-        .some(existTypeName => checkTypeNameRegMatch({ name: recivedTypeName }, existTypeName)
-          // This is to support the adapter configuration before the migration of
-          // the SuiteApp type names from PascalCase to camelCase
-          || checkTypeNameRegMatch({ name: recivedTypeName },
-            strings.capitalizeFirstLetter(existTypeName))))
+  const invalidTypes = receivedTypes.filter(noSupportedTypeMatch)
 
   if (invalidTypes.length !== 0) {
     throw new Error(`${ERROR_MESSAGE_PREFIX} The following types or regular expressions do not match any supported type:\n${invalidTypes}.`)

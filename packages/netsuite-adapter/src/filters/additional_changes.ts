@@ -17,11 +17,11 @@
 import { getChangeData, toChange, isAdditionOrModificationChange, isField } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { getReferencedElements } from '../reference_dependencies'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { DEFAULT_DEPLOY_REFERENCED_ELEMENTS } from '../config'
 import { isStandardInstanceOrCustomRecordType } from '../types'
 
-const filterCreator: FilterCreator = ({ config }) => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'additionalChanges',
   preDeploy: async changes => {
     const sdfChangesData = changes

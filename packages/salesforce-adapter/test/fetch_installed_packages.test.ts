@@ -15,6 +15,7 @@
 */
 import { ObjectType, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
 import { makeArray } from '@salto-io/lowerdash/src/collections/array'
+import { INSTALLED_PACKAGE_METADATA, INSTANCE_FULL_NAME_FIELD } from '../src/constants'
 import mockClient from './client'
 import { fetchMetadataInstances } from '../src/fetch'
 import { buildMetadataQuery } from '../src/fetch_profile/metadata_query'
@@ -25,11 +26,11 @@ describe('Test fetching installed package metadata', () => {
   type MockFetchArgs = {
     fileProp: MockFilePropertiesInput
     mockType: ObjectType
-    addNamespacePrefixToFullName: boolean
+    addNamespacePrefixToFullName?: boolean
   }
 
   const fetch = async (
-    { fileProp, mockType, addNamespacePrefixToFullName }: MockFetchArgs
+    { fileProp, mockType, addNamespacePrefixToFullName = true }: MockFetchArgs
   ): Promise<InstanceElement | undefined> => {
     const { client, connection } = mockClient()
     connection.metadata.read.mockImplementation(async (_type, fullNames) => (
@@ -52,44 +53,66 @@ describe('Test fetching installed package metadata', () => {
     return elements.filter(isInstanceElement)[0]
   }
 
-  describe('Test fetching PermissionSets of installed packages', () => {
-    describe('if the API name already includes namespacePrefix', () => {
+  describe('when fetching PermissionSets of installed packages', () => {
+    describe('API name includes namespacePrefix', () => {
       it('should not add prefix to PermissionSet', async () => {
         const fullNameFromList = 'Test__TestPermissionSet'
-        const expectedFullName = 'Test__TestPermissionSet'
-        const addNamespacePrefixToFullName = true
         const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
-        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
+        const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
 
-        expect(instance).toBeDefined()
-        expect(instance?.value).toHaveProperty('fullName', expectedFullName)
+        expect(instance).toEqual(expect.objectContaining({
+          value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
+        }))
       })
     })
-    describe('if the API name does not include namespacePrefix', () => {
-      describe('addNamespacePrefixToFullName is true', () => {
-        it('should add prefix to the PermissionSet\'s name', async () => {
-          const fullNameFromList = 'TestPermissionSet'
-          const expectedFullName = 'Test__TestPermissionSet'
-          const addNamespacePrefixToFullName = true
-          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
-
-          expect(instance).toBeDefined()
-          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
-        })
-      })
+    describe('API name does not include namespacePrefix', () => {
       describe('addNamespacePrefixToFullName is false', () => {
         it('should not add prefix to PermissionSet', async () => {
           const fullNameFromList = 'TestPermissionSet'
-          const expectedFullName = 'TestPermissionSet'
           const addNamespacePrefixToFullName = false
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
           const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet, addNamespacePrefixToFullName })
 
-          expect(instance).toBeDefined()
-          expect(instance?.value).toHaveProperty('fullName', expectedFullName)
+          expect(instance).toEqual(expect.objectContaining({
+            value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
+          }))
         })
       })
+      describe('name has API_NAME_SEPARATOR in its fullName', () => {
+        it("should add prefix to the object's name correctly", async () => {
+          const fullNameFromList = 'Account.TestObject'
+          const expectedFullName = 'Account.Test__TestObject'
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Account', namespacePrefix: 'Test' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Account })
+
+          expect(instance).toEqual(expect.objectContaining({
+            value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: expectedFullName }),
+          }))
+        })
+      })
+      describe('name does not have API_NAME_SEPARATOR in its fullName', () => {
+        it('should add prefix to the PermissionSet\'s name', async () => {
+          const fullNameFromList = 'TestPermissionSet'
+          const expectedFullName = 'Test__TestPermissionSet'
+          const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'PermissionSet', namespacePrefix: 'Test' })
+          const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
+
+          expect(instance).toEqual(expect.objectContaining({
+            value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: expectedFullName }),
+          }))
+        })
+      })
+    })
+  })
+  describe('when fetching instances of installed packages', () => {
+    it('should return the name of the managed package without any changes', async () => {
+      const fullNameFromList = 'TestNamespace'
+      const fileProp = mockFileProperties({ fullName: fullNameFromList, type: INSTALLED_PACKAGE_METADATA })
+      const instance = await fetch({ fileProp, mockType: mockTypes.PermissionSet })
+
+      expect(instance).toEqual(expect.objectContaining({
+        value: expect.objectContaining({ [INSTANCE_FULL_NAME_FIELD]: fullNameFromList }),
+      }))
     })
   })
   describe('Test fetching layouts of installed packages', () => {
@@ -99,9 +122,8 @@ describe('Test fetching installed package metadata', () => {
           const objectName = 'SBQQ__TestApiName__c'
           const fullNameFromList = `${objectName}-Test Layout`
           const expectedFullName = `${objectName}-SBQQ__Test Layout`
-          const addNamespacePrefixToFullName = true
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
           expect(instance).toBeDefined()
           expect(instance?.value).toHaveProperty('fullName', expectedFullName)
@@ -112,9 +134,8 @@ describe('Test fetching installed package metadata', () => {
           const objectName = 'SBQQ__TestApiName__c'
           const fullNameFromList = `${objectName}-SBQQ__Test Layout`
           const expectedFullName = `${objectName}-SBQQ__Test Layout`
-          const addNamespacePrefixToFullName = true
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
           expect(instance).toBeDefined()
           expect(instance?.value).toHaveProperty('fullName', expectedFullName)
@@ -127,9 +148,8 @@ describe('Test fetching installed package metadata', () => {
           const objectName = 'TestApiName__c'
           const fullNameFromList = `${objectName}-Test Layout`
           const expectedFullName = `${objectName}-SBQQ__Test Layout`
-          const addNamespacePrefixToFullName = true
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
           expect(instance).toBeDefined()
           expect(instance?.value).toHaveProperty('fullName', expectedFullName)
@@ -140,9 +160,8 @@ describe('Test fetching installed package metadata', () => {
           const objectName = 'TestApiName__c'
           const fullNameFromList = `${objectName}-SBQQ__Test Layout`
           const expectedFullName = `${objectName}-SBQQ__Test Layout`
-          const addNamespacePrefixToFullName = true
           const fileProp = mockFileProperties({ fullName: fullNameFromList, type: 'Layout', namespacePrefix: 'SBQQ' })
-          const instance = await fetch({ fileProp, mockType: mockTypes.Layout, addNamespacePrefixToFullName })
+          const instance = await fetch({ fileProp, mockType: mockTypes.Layout })
 
           expect(instance).toBeDefined()
           expect(instance?.value).toHaveProperty('fullName', expectedFullName)

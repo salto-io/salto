@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ElemID, CORE_ANNOTATIONS, InstanceElement, ListType } from '@salto-io/adapter-api'
+import { ElemID, CORE_ANNOTATIONS, ListType } from '@salto-io/adapter-api'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
 import { ZUORA_BILLING, CUSTOM_OBJECT_DEFINITION_TYPE, LIST_ALL_SETTINGS_TYPE, SETTINGS_TYPE_PREFIX, TASK_TYPE, WORKFLOW_DETAILED_TYPE, WORKFLOW_EXPORT_TYPE, PRODUCT_RATE_PLAN_TYPE, ACCOUNTING_CODE_ITEM_TYPE } from './constants'
@@ -835,36 +835,4 @@ export const configType = createMatchingObjectType<Partial<ZuoraConfig>>({
 export type FilterContext = {
   [FETCH_CONFIG]: ZuoraFetchConfig
   [API_DEFINITIONS_CONFIG]: ZuoraApiConfig
-}
-
-const FIXING_SYSTEM_CONFIGURATION_INTRO = 'Fixing system configuration for the following types:'
-
-export const getUpdatedConfig = (
-  currentConfig: ZuoraConfig
-): { config: InstanceElement[]; message: string } | undefined => {
-  if (currentConfig[API_DEFINITIONS_CONFIG].types[`${SETTINGS_TYPE_PREFIX}Gateway`]?.transformation?.idFields === undefined) {
-    // fix id for Settings_Gateway
-    return {
-      config: [new InstanceElement(
-        ElemID.CONFIG_NAME,
-        configType,
-        _.defaultsDeep(
-          currentConfig,
-          {
-            [API_DEFINITIONS_CONFIG]: {
-              types: {
-                [`${SETTINGS_TYPE_PREFIX}Gateway`]: {
-                  transformation: {
-                    idFields: ['gatewayName'],
-                  },
-                },
-              },
-            },
-          },
-        ),
-      )],
-      message: [FIXING_SYSTEM_CONFIGURATION_INTRO, `${SETTINGS_TYPE_PREFIX}Gateway`].join(' '),
-    }
-  }
-  return undefined
 }

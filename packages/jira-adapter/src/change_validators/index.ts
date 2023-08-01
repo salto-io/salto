@@ -15,13 +15,12 @@
 */
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment, client as clientUtils } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { readOnlyProjectRoleChangeValidator } from './read_only_project_role'
 import { defaultFieldConfigurationValidator } from './default_field_configuration'
 import { issueTypeSchemeValidator } from './issue_type_scheme'
 import { screenValidator } from './screen'
 import JiraClient from '../client/client'
-import { JiraConfig } from '../config/config'
+import { ChangeValidatorName, JiraConfig } from '../config/config'
 import { projectDeletionValidator } from './project_deletion'
 import { statusValidator } from './status'
 import { privateApiValidator } from './private_api'
@@ -39,6 +38,7 @@ import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_sche
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
+import { workflowTransitionDuplicateNameValidator } from './workflows/workflow_transition_duplicate_names'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
@@ -53,55 +53,64 @@ import { sameIssueTypeNameChangeValidator } from './same_issue_type_name'
 import { issueTypeSchemeMigrationValidator } from './issue_type_scheme_migration'
 import { issueTypeDeletionValidator } from './issue_type_deletion'
 import { projectCategoryValidator } from './project_category'
+import { unresolvedFieldConfigurationItemsValidator } from './unresolved_field_configuration_items'
+import { fieldSecondGlobalContextValidator } from './field_contexts/second_global_context'
 
 const {
   deployTypesNotSupportedValidator,
+  createChangeValidator,
 } = deployment.changeValidators
 
 
 export default (
   client: JiraClient, config: JiraConfig, paginator: clientUtils.Paginator
 ): ChangeValidator => {
-  const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(['unresolvedReferencesValidator']),
-    unresolvedReferenceValidator,
-    automationProjectUnresolvedReferenceValidator,
-    deployTypesNotSupportedValidator,
-    readOnlyProjectRoleChangeValidator,
-    defaultFieldConfigurationValidator,
-    screenValidator,
-    issueTypeSchemeValidator,
-    issueTypeSchemeDefaultTypeValidator,
-    projectDeletionValidator(client, config),
-    statusValidator,
-    privateApiValidator(config),
-    emptyValidatorWorkflowChangeValidator,
-    readOnlyWorkflowValidator,
-    dashboardGadgetsValidator,
-    dashboardLayoutValidator,
-    permissionTypeValidator,
-    automationsValidator,
-    activeSchemeDeletionValidator,
-    sameIssueTypeNameChangeValidator,
-    statusMigrationChangeValidator,
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
+    ...deployment.changeValidators.getDefaultChangeValidators(['outgoingUnresolvedReferencesValidator']),
+    unresolvedReference: unresolvedReferenceValidator,
+    automationProjectUnresolvedReference: automationProjectUnresolvedReferenceValidator,
+    deployTypesNotSupported: deployTypesNotSupportedValidator,
+    readOnlyProjectRoleChange: readOnlyProjectRoleChangeValidator,
+    defaultFieldConfiguration: defaultFieldConfigurationValidator,
+    screen: screenValidator,
+    issueTypeScheme: issueTypeSchemeValidator,
+    issueTypeSchemeDefaultType: issueTypeSchemeDefaultTypeValidator,
+    projectDeletion: projectDeletionValidator(client, config),
+    status: statusValidator,
+    privateApi: privateApiValidator(config),
+    emptyValidatorWorkflowChange: emptyValidatorWorkflowChangeValidator,
+    readOnlyWorkflow: readOnlyWorkflowValidator,
+    dashboardGadgets: dashboardGadgetsValidator,
+    dashboardLayout: dashboardLayoutValidator,
+    permissionType: permissionTypeValidator,
+    automations: automationsValidator,
+    activeSchemeDeletion: activeSchemeDeletionValidator,
+    sameIssueTypeNameChange: sameIssueTypeNameChangeValidator,
+    statusMigrationChange: statusMigrationChangeValidator,
     // Must run after statusMigrationChangeValidator
-    workflowSchemeMigrationValidator(client, config, paginator),
-    issueTypeSchemeMigrationValidator(client),
-    activeSchemeChangeValidator(client),
-    maskingValidator(client),
-    issueTypeDeletionValidator(client),
-    lockedFieldsValidator,
-    fieldContextValidator,
-    systemFieldsValidator,
-    workflowPropertiesValidator,
-    permissionSchemeValidator,
-    screenSchemeDefaultValidator,
-    wrongUserPermissionSchemeValidator(client, config),
-    accountIdValidator(client, config),
-    workflowSchemeDupsValidator,
-    permissionSchemeDeploymentValidator(client),
-    projectCategoryValidator(client),
-  ]
+    workflowSchemeMigration: workflowSchemeMigrationValidator(client, config, paginator),
+    issueTypeSchemeMigration: issueTypeSchemeMigrationValidator(client),
+    activeSchemeChange: activeSchemeChangeValidator(client),
+    masking: maskingValidator(client),
+    issueTypeDeletion: issueTypeDeletionValidator(client),
+    lockedFields: lockedFieldsValidator,
+    fieldContext: fieldContextValidator,
+    fieldSecondGlobalContext: fieldSecondGlobalContextValidator,
+    systemFields: systemFieldsValidator,
+    workflowProperties: workflowPropertiesValidator,
+    permissionScheme: permissionSchemeValidator,
+    screenSchemeDefault: screenSchemeDefaultValidator,
+    wrongUserPermissionScheme: wrongUserPermissionSchemeValidator(client, config),
+    accountId: accountIdValidator(client, config),
+    workflowSchemeDups: workflowSchemeDupsValidator,
+    workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
+    permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
+    projectCategory: projectCategoryValidator(client),
+    unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,
+  }
 
-  return createChangeValidator(validators)
+  return createChangeValidator({
+    validators,
+    validatorsActivationConfig: config.deploy.changeValidators,
+  })
 }

@@ -28,12 +28,18 @@ import {
   InstanceElement,
   isInstanceChange,
   isInstanceElement,
-  isReferenceExpression,
+  isReferenceExpression, isSaltoError,
   ReadOnlyElementsSource,
   SaltoError,
 } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements as elementUtils } from '@salto-io/adapter-components'
-import { logDuration, resolveChangeElement, resolveValues, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  getElemIdFuncWrapper,
+  logDuration,
+  resolveChangeElement,
+  resolveValues,
+  restoreChangeElement,
+} from '@salto-io/adapter-utils'
 import { collections, objects } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import ZendeskClient from './client/client'
@@ -89,7 +95,7 @@ import hardcodedChannelFilter from './filters/hardcoded_channel'
 import usersFilter from './filters/user'
 import addFieldOptionsFilter from './filters/add_field_options'
 import appOwnedConvertListToMapFilter from './filters/app_owned_convert_list_to_map'
-import appsFilter from './filters/app'
+import appInstallationsFilter from './filters/app_installations'
 import routingAttributeFilter from './filters/routing_attribute'
 import serviceUrlFilter from './filters/service_url'
 import slaPolicyFilter from './filters/sla_policy'
@@ -135,6 +141,9 @@ import { isCurrentUserResponse } from './user_utils'
 import addAliasFilter from './filters/add_alias'
 import macroFilter from './filters/macro'
 import customRoleDeployFilter from './filters/custom_role_deploy'
+import routingAttributeValueDeployFilter from './filters/routing_attribute_value'
+import localeFilter from './filters/locale'
+import ticketStatusCustomStatusDeployFilter from './filters/ticket_status_custom_status'
 
 const { makeArray } = collections.array
 const log = logger(module)
@@ -155,6 +164,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 
 export const DEFAULT_FILTERS = [
   queryFilter,
+  ticketStatusCustomStatusDeployFilter,
   ticketFieldFilter,
   userFieldFilter,
   viewFilter,
@@ -182,6 +192,7 @@ export const DEFAULT_FILTERS = [
   usersFilter,
   organizationsFilter,
   tagsFilter,
+  localeFilter,
   // supportAddress should run before referencedIdFieldsFilter
   supportAddress,
   customStatus,
@@ -212,10 +223,11 @@ export const DEFAULT_FILTERS = [
   addAliasFilter, // should run after fieldReferencesFilter
   // listValuesMissingReferencesFilter should be after fieldReferencesFilter
   listValuesMissingReferencesFilter,
-  appsFilter,
+  appInstallationsFilter,
   appOwnedConvertListToMapFilter,
   slaPolicyFilter,
   routingAttributeFilter,
+  routingAttributeValueDeployFilter,
   addFieldOptionsFilter,
   webhookFilter,
   targetFilter,
@@ -411,6 +423,7 @@ export default class ZendeskAdapter implements AdapterOperations {
   private configInstance?: InstanceElement
   private elementsSource: ReadOnlyElementsSource
   private fetchQuery: elementUtils.query.ElementQuery
+  private logIdsFunc?: () => void
   private createClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private getClientBySubdomain: (subdomain: string, deployRateLimit?: boolean) => ZendeskClient
   private createFiltersRunner: ({
@@ -432,9 +445,11 @@ export default class ZendeskAdapter implements AdapterOperations {
     configInstance,
     elementsSource,
   }: ZendeskAdapterParams) {
+    const wrapper = getElemIdFunc ? getElemIdFuncWrapper(getElemIdFunc) : undefined
     this.userConfig = config
     this.configInstance = configInstance
-    this.getElemIdFunc = getElemIdFunc
+    this.getElemIdFunc = wrapper?.getElemIdFunc
+    this.logIdsFunc = wrapper?.logIdsFunc
     this.client = client
     this.elementsSource = elementsSource
     this.paginator = createPaginator({
@@ -483,7 +498,7 @@ export default class ZendeskAdapter implements AdapterOperations {
           client: filterRunnerClient ?? this.client,
           paginator: paginator ?? this.paginator,
           config,
-          getElemIdFunc,
+          getElemIdFunc: this.getElemIdFunc,
           fetchQuery: this.fetchQuery,
           elementsSource,
           brandIdToClient,
@@ -627,7 +642,54 @@ export default class ZendeskAdapter implements AdapterOperations {
       : undefined
 
     const fetchErrors = (errors ?? []).concat(result.errors ?? []).concat(localeError ?? [])
+    if (this.logIdsFunc !== undefined) {
+      this.logIdsFunc()
+    }
     return { elements, errors: fetchErrors, updatedConfig }
+  }
+
+  private async getGuideDeployResults(
+    subdomainToClient: Record<string, ZendeskClient>,
+    subdomainToGuideChanges: Record<string, Change<InstanceElement>[]>,
+  ): Promise<DeployResult[]> {
+    try {
+      return await awu(Object.entries(subdomainToClient))
+        .map(async ([subdomain, client]) => {
+          const brandRunner = await this.createFiltersRunner({
+            filterRunnerClient: client,
+            paginator: createPaginator({
+              client,
+              paginationFuncCreator: paginate,
+            }),
+          })
+          await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
+          const { deployResult: brandDeployResults } = await brandRunner.deploy(
+            subdomainToGuideChanges[subdomain]
+          )
+          const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
+          try {
+            await brandRunner.onDeploy(guideChangesBeforeRestore)
+          } catch (e) {
+            if (!isSaltoError(e)) {
+              throw e
+            }
+            brandDeployResults.errors = brandDeployResults.errors.concat([e])
+          }
+          return {
+            appliedChanges: guideChangesBeforeRestore,
+            errors: brandDeployResults.errors,
+          }
+        })
+        .toArray()
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      return [{
+        appliedChanges: [],
+        errors: [e],
+      }]
+    }
   }
 
   /**
@@ -649,6 +711,10 @@ export default class ZendeskAdapter implements AdapterOperations {
             config: this.userConfig[API_DEFINITIONS_CONFIG],
           })),
       })) as Change<InstanceElement>[]
+    const sourceChanges = _.keyBy(
+      changesToDeploy,
+      change => getChangeData(change).elemID.getFullName(),
+    )
     const runner = await this.createFiltersRunner({})
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
@@ -665,10 +731,29 @@ export default class ZendeskAdapter implements AdapterOperations {
       resolvedChanges,
       change => GUIDE_TYPES_TO_HANDLE_BY_BRAND.includes(getChangeData(change).elemID.typeName)
     )
-    await runner.preDeploy(supportResolvedChanges)
+    const saltoErrors: SaltoError[] = []
+    try {
+      await runner.preDeploy(supportResolvedChanges)
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      return {
+        appliedChanges: [],
+        errors: [e],
+      }
+    }
     const { deployResult } = await runner.deploy(supportResolvedChanges)
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
-    await runner.onDeploy(appliedChangesBeforeRestore)
+    try {
+      await runner.onDeploy(appliedChangesBeforeRestore)
+    } catch (e) {
+      if (!isSaltoError(e)) {
+        throw e
+      }
+      saltoErrors.push(e)
+    }
+
 
     const brandsList = _.uniq(await getBrandsFromElementsSource(this.elementsSource))
     const resolvedBrandIdToSubdomain = Object.fromEntries(brandsList.map(
@@ -688,34 +773,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     const subdomainToClient = Object.fromEntries(subdomainsList
       .filter(subdomain => subdomainToGuideChanges[subdomain] !== undefined)
       .map(subdomain => ([subdomain, this.getClientBySubdomain(subdomain, true)])))
-    const guideDeployResults = await awu(Object.entries(subdomainToClient))
-      .map(async ([subdomain, client]) => {
-        const brandRunner = await this.createFiltersRunner({
-          filterRunnerClient: client,
-          paginator: createPaginator({
-            client,
-            paginationFuncCreator: paginate,
-          }),
-        })
-        await brandRunner.preDeploy(subdomainToGuideChanges[subdomain])
-        const { deployResult: brandDeployResults } = await brandRunner.deploy(
-          subdomainToGuideChanges[subdomain]
-        )
-        const guideChangesBeforeRestore = [...brandDeployResults.appliedChanges]
-        await brandRunner.onDeploy(guideChangesBeforeRestore)
-
-        return {
-          appliedChanges: guideChangesBeforeRestore,
-          errors: brandDeployResults.errors,
-        }
-      })
-      .toArray()
-
-    const sourceChanges = _.keyBy(
-      changesToDeploy,
-      change => getChangeData(change).elemID.getFullName(),
-    )
-
+    const guideDeployResults = await this.getGuideDeployResults(subdomainToClient, subdomainToGuideChanges)
     const allChangesBeforeRestore = appliedChangesBeforeRestore.concat(
       guideDeployResults.flatMap(result => result.appliedChanges)
     )
@@ -732,7 +790,7 @@ export default class ZendeskAdapter implements AdapterOperations {
     })
     return {
       appliedChanges: restoredAppliedChanges,
-      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)),
+      errors: deployResult.errors.concat(guideDeployResults.flatMap(result => result.errors)).concat(saltoErrors),
     }
   }
 

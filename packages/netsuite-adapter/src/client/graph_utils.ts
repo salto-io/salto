@@ -16,63 +16,70 @@
 
 import _ from 'lodash'
 import wu from 'wu'
-import { CustomizationInfo } from './types'
-
-export type SDFObjectNode = {
-  elemIdFullName: string
-  serviceid: string
-  changeType: 'addition' | 'modification'
-  customizationInfo: CustomizationInfo
-}
 
 export class GraphNode<T> {
-  edges: Map<T[keyof T], GraphNode<T>>
+  edges: Map<string, GraphNode<T>>
   value: T
+  id: string
 
-  constructor(value: T) {
+  constructor(id: string, value: T) {
     this.value = value
-    this.edges = new Map<T[keyof T], GraphNode<T>>()
+    this.edges = new Map<string, GraphNode<T>>()
+    this.id = id
   }
 
-  addEdge(key: keyof T, node: GraphNode<T>): void {
-    this.edges.set(node.value[key], node)
+  addEdge(node: GraphNode<T>): void {
+    this.edges.set(node.id, node)
   }
+}
+
+type DFSParameters<T>= {
+  node: GraphNode<T>
+  visited: Set<string>
+  resultArray?: GraphNode<T>[]
+  // optional parameters for cycle detection
+  path?: string[]
+  cycle?: string[]
 }
 
 export class Graph<T> {
-  nodes: Map<T[keyof T], GraphNode<T>>
-  key: keyof T
+  nodes: Map<string, GraphNode<T>>
 
-  constructor(key: keyof T, nodes: GraphNode<T>[] = []) {
+  constructor(nodes: GraphNode<T>[] = []) {
     this.nodes = new Map()
-    this.key = key
-    nodes.forEach(node => this.nodes.set(node.value[key], node))
+    nodes.forEach(node => this.nodes.set(node.id, node))
   }
 
   addNodes(nodes: GraphNode<T>[]): void {
     nodes.forEach(node => {
-      if (!this.nodes.has(node.value[this.key])) {
-        this.nodes.set(node.value[this.key], node)
+      if (!this.nodes.has(node.id)) {
+        this.nodes.set(node.id, node)
       }
     })
   }
 
-  private dfs(node: GraphNode<T>, visited: Set<T[keyof T]>, resultArray: GraphNode<T>[]): void {
-    if (visited.has(node.value[this.key])) {
+  private dfs(dfsParams: DFSParameters<T>): void {
+    const { node, visited, resultArray = [], path = [], cycle = [] } = dfsParams
+    if (visited.has(node.id)) {
+      const cycleStartIndex = path.indexOf(node.id)
+      if (cycleStartIndex !== -1) {
+        // node is visited & in path mean its a cycle
+        cycle.push(...(path.slice(cycleStartIndex)))
+      }
       return
     }
-    visited.add(node.value[this.key])
+    visited.add(node.id)
     node.edges.forEach(dependency => {
-      this.dfs(dependency, visited, resultArray)
+      this.dfs({ node: dependency, visited, resultArray, path: path.concat(node.id), cycle })
     })
     resultArray.push(node)
   }
 
   getTopologicalOrder(): GraphNode<T>[] {
-    const visited = new Set<T[keyof T]>()
+    const visited = new Set<string>()
     const sortedNodes: GraphNode<T>[] = []
     Array.from(this.nodes.values()).forEach(node => {
-      this.dfs(node, visited, sortedNodes)
+      this.dfs({ node, visited, resultArray: sortedNodes })
     })
     return sortedNodes.reverse()
   }
@@ -81,31 +88,39 @@ export class Graph<T> {
     if (_.isEmpty(startNode.edges)) {
       return [startNode]
     }
-    const visited = new Set<T[keyof T]>()
+    const visited = new Set<string>()
     const dependencies: GraphNode<T>[] = []
-    this.dfs(startNode, visited, dependencies)
+    this.dfs({ node: startNode, visited, resultArray: dependencies })
     return dependencies
   }
 
-  findNode(value: T): GraphNode<T> | undefined {
-    return this.nodes.get(value[this.key])
+  getNode(id: string): GraphNode<T> | undefined {
+    return this.nodes.get(id)
   }
 
-  findNodeByKey(key: T[keyof T]): GraphNode<T> | undefined {
-    return this.nodes.get(key)
-  }
-
-  findNodeByField(key: keyof T, value: T[keyof T]): GraphNode<T> | undefined {
+  findNodeByField<K extends keyof T>(key: K, value: T[K]): GraphNode<T> | undefined {
     return wu(this.nodes.values()).find(node => _.isEqual(node.value[key], value))
   }
 
-  removeNode(key: T[keyof T]): void {
-    const node = this.nodes.get(key)
+  removeNode(id: string): void {
+    const node = this.nodes.get(id)
     if (node) {
       Array.from(this.nodes.values()).forEach(otherNode => {
-        otherNode.edges.delete(key)
+        otherNode.edges.delete(id)
       })
-      this.nodes.delete(key)
+      this.nodes.delete(id)
     }
+  }
+
+  findCycle(): string[] {
+    const visited = new Set<string>()
+    const nodesInCycle: string[] = []
+
+    Array.from(this.nodes.values()).forEach(node => {
+      if (!visited.has(node.id)) {
+        this.dfs({ node, visited, cycle: nodesInCycle })
+      }
+    })
+    return nodesInCycle
   }
 }

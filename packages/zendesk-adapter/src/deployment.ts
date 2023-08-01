@@ -15,7 +15,14 @@
 */
 import _ from 'lodash'
 import {
-  Change, ChangeDataType, DeployResult, getChangeData, InstanceElement, isAdditionChange, Values,
+  Change,
+  ChangeDataType,
+  DeployResult,
+  getChangeData,
+  InstanceElement,
+  isAdditionChange, isSaltoError,
+  SaltoError,
+  Values,
 } from '@salto-io/adapter-api'
 import {
   config as configUtils, deployment, client as clientUtils,
@@ -28,6 +35,7 @@ import { ZendeskApiConfig } from './config'
 
 const log = logger(module)
 const { awu } = collections.asynciterable
+
 
 export const addId = ({
   change, apiDefinitions, response, dataField, addAlsoOnModification = false,
@@ -144,25 +152,38 @@ export const deployChange = async (
   }
 }
 
+const deployChangesHelper = async <T extends Change<ChangeDataType>>(
+  change: T,
+  deployChangeFunc: (change: T) => Promise<void | T[]>
+): Promise<T[] | T | SaltoError> => {
+  try {
+    const res = await deployChangeFunc(change)
+    return res !== undefined ? res : change
+  } catch (err) {
+    if (!isSaltoError(err)) {
+      throw err
+    }
+    return err
+  }
+}
+
 export const deployChanges = async <T extends Change<ChangeDataType>>(
   changes: T[],
   deployChangeFunc: (change: T) => Promise<void | T[]>
 ): Promise<DeployResult> => {
   const result = await Promise.all(
-    changes.map(async change => {
-      try {
-        const res = await deployChangeFunc(change)
-        return res !== undefined ? res : change
-      } catch (err) {
-        if (!_.isError(err)) {
-          throw err
-        }
-        return err
-      }
-    })
+    changes.map(async change => deployChangesHelper(change, deployChangeFunc))
   )
+  const [errors, appliedChanges] = _.partition(result.flat(), isSaltoError)
+  return { errors, appliedChanges }
+}
 
-  const [errors, appliedChanges] = _.partition(result.flat(), _.isError)
+export const deployChangesSequentially = async <T extends Change<ChangeDataType>>(
+  changes: T[],
+  deployChangeFunc: (change: T) => Promise<void | T[]>
+): Promise<DeployResult> => {
+  const result = await awu(changes).map(async change => deployChangesHelper(change, deployChangeFunc)).toArray()
+  const [errors, appliedChanges] = _.partition(result.flat(), isSaltoError)
   return { errors, appliedChanges }
 }
 

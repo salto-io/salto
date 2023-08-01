@@ -19,7 +19,7 @@ import { BuiltinTypes, Change, CORE_ANNOTATIONS, Field, getChangeData, InstanceE
 import { collections, promises } from '@salto-io/lowerdash'
 import { ConfigRecord, SelectOption } from '../client/suiteapp_client/types'
 import { SELECT_OPTION } from '../constants'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { isSuiteAppConfigInstance, isSuiteAppConfigType } from '../types'
 
 const log = logger(module)
@@ -166,7 +166,7 @@ const transformValuesForDeploy = async (change: Change<InstanceElement>): Promis
     }
   )
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'suiteAppConfigElementsFilter',
   onFetch: async elements => {
     const [selectOptionType] = elements

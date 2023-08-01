@@ -99,6 +99,16 @@ describe('contexts_projects_filter', () => {
 
       expect(contextInstance.value.projectIds).toBeUndefined()
     })
+    it('should not add the context to the project, if it is not a valid reference', async () => {
+      delete projectInstance.value[PROJECT_CONTEXTS_FIELD]
+      contextInstance.value.projectIds = [
+        new ReferenceExpression(projectInstance.elemID),
+      ]
+
+      await filter.onFetch([projectInstance, contextInstance])
+
+      expect(projectInstance.value[PROJECT_CONTEXTS_FIELD]).toBeUndefined()
+    })
   })
 
   describe('preDeploy', () => {

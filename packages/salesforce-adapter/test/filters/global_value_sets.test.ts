@@ -15,11 +15,11 @@
 */
 import { ObjectType, ElemID, Element, InstanceElement, ReferenceExpression, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import * as constants from '../../src/constants'
-import { FilterWith } from '../../src/filter'
 import filterCreator,
 { GLOBAL_VALUE_SET, CUSTOM_VALUE, MASTER_LABEL } from '../../src/filters/global_value_sets'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const createGlobalValueSetInstanceElement = (name: string, values: string[]): InstanceElement =>
   new InstanceElement('global_value_set_test', new ObjectType({

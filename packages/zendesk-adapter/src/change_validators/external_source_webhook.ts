@@ -124,7 +124,7 @@ const createRemovalErrorMessage = ({ change, appMessage }: {change: RemovalChang
  *  * If they are deactivated, a warning is added
  *  * If they are modified, a warning is added
  */
-export const externalSourceWebhook: ChangeValidator = async changes => {
+export const externalSourceWebhookValidator: ChangeValidator = async changes => {
   const externalSourceWebhookChanges = changes.filter(isInstanceChange)
     .filter(change => getChangeData(change).elemID.typeName === WEBHOOK_TYPE_NAME)
     .filter(change => getChangeData(change).value.external_source !== undefined)

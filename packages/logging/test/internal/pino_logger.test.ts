@@ -837,7 +837,7 @@ describe('pino based logger', () => {
           arg0: 'moo',
           extra: 'should be in log',
           arg2: true,
-          arg3: '"string with \\"bad chars\\"\\t\\n"',
+          arg3: 'string with "bad chars"\t\n',
         })
       })
 
@@ -885,7 +885,7 @@ describe('pino based logger', () => {
     })
 
     it('should return a Config instance', () => {
-      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize'
+      const expectedProperties = 'minLevel filename format namespaceFilter colorize globalTags maxJsonLogChunkSize maxTagsPerLogMessage'
         .split(' ')
         .sort()
 
@@ -950,40 +950,75 @@ describe('pino based logger', () => {
       })
       describe('with global tags', () => {
         const moreTags = { anotherTag: 'foo', anotherNumber: 4 }
-        beforeEach(async () => {
-          initialConfig.minLevel = 'info'
-          initialConfig.globalTags = moreTags
-          logger = createLogger()
-          logger.assignTags(logTags)
-          logger.log(
-            'error', 'lots of data %s', 'datadata', 'excessArgs',
-            true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
-          );
-          [line] = consoleStream.contents().split(EOL)
+        describe('when tag amount is in allowed config range', () => {
+          beforeEach(async () => {
+            initialConfig.minLevel = 'info'
+            initialConfig.globalTags = moreTags
+            logger = createLogger()
+            logger.assignTags(logTags)
+            logger.log(
+              'error', 'lots of data %s', 'datadata', 'excessArgs',
+              true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
+            );
+            [line] = consoleStream.contents().split(EOL)
+          })
+
+          it('should contain parent log tags', () => {
+            expect(line).toContain('number=1')
+            expect(line).toContain('string="1"')
+            expect(line).toContain('bool=true')
+          })
+          it('should new log tags', () => {
+            expect(line).toContain('anotherTag="foo"')
+            expect(line).toContain('anotherNumber=4')
+          })
+          it('should contain excess arg', () => {
+            expect(line).toContain('arg0="excessArgs"')
+            expect(line).toContain('arg1=true')
+            expect(line).toContain('someArg={"with":"data"}')
+            expect(line).toContain('anotherArg="much simpler"')
+            expect(line).toContain('arg3="bad\\n\\t\\"string"')
+            expect(line).toContain('arg4="undefined"')
+          })
+          it('line should contain basic log data', () => {
+            expect(line).toMatch(TIMESTAMP_REGEX)
+            expect(line).toContain(NAMESPACE)
+            expect(line).toContain('error')
+            expect(line).toContain('lots of data datadata')
+          })
         })
 
-        it('should contain parent log tags', () => {
-          expect(line).toContain('number=1')
-          expect(line).toContain('string="1"')
-          expect(line).toContain('bool=true')
-        })
-        it('should new log tags', () => {
-          expect(line).toContain('anotherTag="foo"')
-          expect(line).toContain('anotherNumber=4')
-        })
-        it('should contain excess arg', () => {
-          expect(line).toContain('arg0="excessArgs"')
-          expect(line).toContain('arg1=true')
-          expect(line).toContain('someArg={"with":"data"}')
-          expect(line).toContain('anotherArg="much simpler"')
-          expect(line).toContain('arg3="bad\\n\\t\\"string"')
-          expect(line).toContain('arg4="undefined"')
-        })
-        it('line should contain basic log data', () => {
-          expect(line).toMatch(TIMESTAMP_REGEX)
-          expect(line).toContain(NAMESPACE)
-          expect(line).toContain('error')
-          expect(line).toContain('lots of data datadata')
+        describe('when there are too many tags', () => {
+          beforeEach(() => {
+            initialConfig.maxTagsPerLogMessage = 8
+            initialConfig.minLevel = 'info'
+            initialConfig.globalTags = moreTags
+            logger = createLogger()
+            logger.assignTags(logTags)
+            logger.log(
+              'error', 'lots of data %s', 'datadata', 'excessArgs',
+              true, { someArg: { with: 'data' }, anotherArg: 'much simpler' }, 'bad\n\t"string', undefined,
+            );
+            [line] = consoleStream.contents().split(EOL)
+          })
+          it('should remove the amount of tags and add indication for it', () => {
+            expect(line).toMatch(TIMESTAMP_REGEX)
+            expect(line).toContain(NAMESPACE)
+            expect(line).toContain('error')
+            expect(line).toContain('lots of data datadata')
+            expect(line).toContain('string="1"')
+            expect(line).toContain('bool=true')
+            expect(line).toContain('functionTag=5')
+            expect(line).toContain('countRemovedTags=9')
+          })
+          it('should not contain excess arg because we prefer logTags', () => {
+            expect(line).not.toContain('arg0="excessArgs"')
+            expect(line).not.toContain('arg1=true')
+            expect(line).not.toContain('someArg={"with":"data"}')
+            expect(line).not.toContain('anotherArg="much simpler"')
+            expect(line).not.toContain('arg3="bad\\n\\t\\"string"')
+            expect(line).not.toContain('arg4="undefined"')
+          })
         })
       })
     })
@@ -1096,6 +1131,32 @@ describe('pino based logger', () => {
           expect(nonChunkedLog.message).toEqual(LOG_MESSAGE)
           expect(nonChunkedLog.chunkIndex).toBeUndefined()
           expect(nonChunkedLog.logId).toBeUndefined()
+        })
+      })
+      describe('when there are too many tags', () => {
+        let lines: string[]
+        beforeEach(() => {
+          initialConfig.maxTagsPerLogMessage = 8
+          logger = createLogger()
+          logger.assignTags(logTags)
+          logger.log('warn', 'some log', { one: 1, two: 2, three: 3 })
+          lines = consoleStream.contents().split(EOL).filter(l => l !== '')
+        })
+
+        it('should remove the amount of tags and add indication for it', () => {
+          const jsonFirstLine = JSON.parse(lines[0])
+          expect(jsonFirstLine).toEqual({
+            bool: true,
+            countRemovedTags: 7,
+            functionTag: 5,
+            string: '1',
+            level: 'warn',
+            message: 'some log',
+            name: 'my-namespace',
+            time: expect.anything(),
+          })
+          expect(Object.keys(jsonFirstLine)).toHaveLength(8)
+          expect(lines).toHaveLength(1)
         })
       })
     })

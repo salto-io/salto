@@ -30,6 +30,7 @@ import { extractStandaloneFields } from './standalone_field_extractor'
 import { shouldRecurseIntoEntry } from '../instance_elements'
 import { addRemainingTypes } from './add_remaining_types'
 import { ElementQuery } from '../query'
+import { InvalidSingletonType } from '../../config/shared'
 
 const { makeArray } = collections.array
 const { toArrayAsync, awu } = collections.asynciterable
@@ -57,6 +58,7 @@ type GetEntriesParams = {
   requestContext?: Record<string, unknown>
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
+  reversedSupportedTypes: Record<string, string[]>
 }
 
 type Entries = {
@@ -121,7 +123,7 @@ const getEntriesForType = async (
   const {
     typeName, paginator, typesConfig, typeDefaultConfig, contextElements,
     requestContext, nestedFieldFinder, computeGetArgs, adapterName, getElemIdFunc,
-    getEntriesResponseValuesFunc,
+    getEntriesResponseValuesFunc, reversedSupportedTypes,
   } = params
   const typeConfig = typesConfig[typeName]
   if (typeConfig === undefined) {
@@ -141,7 +143,7 @@ const getEntriesForType = async (
   const requestWithDefaults = getConfigWithDefault(request, typeDefaultConfig.request ?? {})
 
   const getEntries = async (context: Values | undefined): Promise<Values[]> => {
-    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context)
+    const getArgs = computeGetArgs(requestWithDefaults, contextElements, context, reversedSupportedTypes)
     return (await Promise.all(
       getArgs.map(async args => (
         getEntriesResponseValuesFunc
@@ -177,15 +179,21 @@ const getEntriesForType = async (
   const instances = await awu(entriesValues).flatMap(async (entry, index) => {
     if (nestedFieldDetails !== undefined) {
       return awu(makeArray(entry[nestedFieldDetails.field.name])).map(
-        (nestedEntry, nesteIndex) => toInstance({
-          entry: nestedEntry,
-          type: nestedFieldDetails.type,
-          transformationConfigByType,
-          transformationDefaultConfig,
-          defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
-          hasDynamicFields,
-          getElemIdFunc,
-        })
+        (nestedEntry, nesteIndex) => {
+          if (!isObjectType(nestedFieldDetails.type)) {
+            log.error(`for typeName ${typeName} in adapter ${adapterName} nestedFieldDetails.type is not objectType returning undefined`)
+            return undefined
+          }
+          return toInstance({
+            entry: nestedEntry,
+            type: nestedFieldDetails.type,
+            transformationConfigByType,
+            transformationDefaultConfig,
+            defaultName: `unnamed_${index}_${nesteIndex}`, // TODO improve
+            hasDynamicFields,
+            getElemIdFunc,
+          })
+        }
       ).filter(isDefined).toArray()
     }
 
@@ -202,7 +210,7 @@ const getEntriesForType = async (
 
   if (type.isSettings && instances.length > 1) {
     log.warn(`Expected one instance for singleton type: ${type.elemID.name} but received: ${instances.length}`)
-    throw new Error(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
+    throw new InvalidSingletonType(`Could not fetch type ${type.elemID.name}, singleton types should not have more than one instance`)
   }
 
   const { recurseInto } = requestWithDefaults
@@ -274,6 +282,7 @@ export const getTypeAndInstances = async ({
   contextElements,
   getElemIdFunc,
   getEntriesResponseValuesFunc,
+  reversedSupportedTypes,
 }: {
   adapterName: string
   typeName: string
@@ -285,6 +294,7 @@ export const getTypeAndInstances = async ({
   contextElements?: Record<string, Element[]>
   getElemIdFunc?: ElemIdGetter
   getEntriesResponseValuesFunc?: EntriesRequester
+  reversedSupportedTypes: Record<string, string[]>
 }): Promise<Element[]> => {
   const entries = await getEntriesForType({
     adapterName,
@@ -297,6 +307,7 @@ export const getTypeAndInstances = async ({
     contextElements,
     getElemIdFunc,
     getEntriesResponseValuesFunc,
+    reversedSupportedTypes,
   })
   const elements = [entries.type, ...entries.nestedTypes, ...entries.instances]
   const transformationConfigByType = getTransformationConfigByType(typesConfig)
@@ -347,6 +358,19 @@ export const getAllElements = async ({
   getEntriesResponseValuesFunc?: EntriesRequester
   isErrorTurnToConfigSuggestion?: (error: Error) => boolean
 }): Promise<FetchElements<Element[]>> => {
+  const supportedTypesWithEndpoints = _.mapValues(
+    supportedTypes,
+    typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
+  )
+
+  const reversedSupportedTypes = _(
+    Object.entries(supportedTypesWithEndpoints)
+      .flatMap(([typeName, wrapperTypes]) => wrapperTypes.map(wrapperType => ({ wrapperType, typeName })))
+  )
+    .groupBy(entry => entry.wrapperType)
+    .mapValues(typeEntry => typeEntry.map(value => value.typeName))
+    .value()
+
   const elementGenerationParams = {
     adapterName,
     paginator,
@@ -356,17 +380,8 @@ export const getAllElements = async ({
     typeDefaultConfig: typeDefaults,
     getElemIdFunc,
     getEntriesResponseValuesFunc,
+    reversedSupportedTypes,
   }
-
-  const supportedTypesWithEndpoints = _.mapValues(
-    supportedTypes,
-    typeNames => typeNames.filter(typeName => types[typeName].request?.url !== undefined)
-  )
-  const supportedTypesReversedMapping = Object.fromEntries(
-    Object.entries(supportedTypesWithEndpoints)
-      .flatMap(([typeName, values]) =>
-        values.map(value => [value, typeName] as [string, string]))
-  )
 
   const configSuggestions: ConfigChangeSuggestion[] = []
   const { elements, errors } = await getElementsWithContext({
@@ -381,18 +396,22 @@ export const getAllElements = async ({
         }
       } catch (e) {
         if (isErrorTurnToConfigSuggestion?.(e)
-          && (supportedTypesReversedMapping[args.typeName] !== undefined)) {
-          configSuggestions.push({
-            typeToExclude: supportedTypesReversedMapping[args.typeName],
+          && (reversedSupportedTypes[args.typeName] !== undefined)) {
+          const typesToExclude = reversedSupportedTypes[args.typeName]
+          typesToExclude.forEach(type => {
+            configSuggestions.push({ typeToExclude: type })
           })
           return { elements: [], errors: [] }
         }
-        if (e.response?.status === 403) {
+        if (e.response?.status === 403 || e.response?.status === 401) {
           const newError: SaltoError = {
             message: `Salto could not access the ${args.typeName} resource. Elements from that type were not fetched. Please make sure that this type is enabled in your service, and that the supplied user credentials have sufficient permissions to access this data. You can also exclude this data from Salto's fetches by changing the environment configuration. Learn more at https://help.salto.io/en/articles/6947061-salto-could-not-access-the-resource`,
             severity: 'Warning',
           }
           return { elements: [], errors: [newError] }
+        }
+        if (e instanceof InvalidSingletonType) {
+          return { elements: [], errors: [{ message: e.message, severity: 'Warning' }] }
         }
         throw e
       }

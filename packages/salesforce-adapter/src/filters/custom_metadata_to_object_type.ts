@@ -24,7 +24,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterWith, LocalFilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import {
   CUSTOM_METADATA,
   CUSTOM_METADATA_SUFFIX,
@@ -41,9 +41,14 @@ const { awu, groupByAsync } = collections.asynciterable
 const createCustomMetadataRecordType = async (
   instance: InstanceElement,
   customMetadataType: ObjectType,
+  skipAliases: boolean
 )
   : Promise<ObjectType> => {
-  const objectType = await createCustomTypeFromCustomObjectInstance({ instance, metadataType: CUSTOM_METADATA })
+  const objectType = await createCustomTypeFromCustomObjectInstance({
+    instance,
+    metadataType: CUSTOM_METADATA,
+    skipAliases,
+  })
   objectType.fields = {
     ...objectType.fields,
     // We omit the "values" field, since it will be destructed in the instances later.
@@ -66,7 +71,7 @@ const getApiNameOfRelatedChange = async (change: Change<ObjectType | Field>): Pr
   return isField(element) ? apiName(element.parent) : apiName(element)
 }
 
-const filterCreator: LocalFilterCreator = ({ config }) : FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'> => {
+const filterCreator: LocalFilterCreator = ({ config }) => {
   let groupedOriginalChangesByApiName: Record<string, Change[]>
   return {
     name: 'customMetadataToObjectTypeFilter',
@@ -84,7 +89,7 @@ const filterCreator: LocalFilterCreator = ({ config }) : FilterWith<'onFetch' | 
         .filter(e => e.elemID.name.endsWith(CUSTOM_METADATA_SUFFIX))
 
       const customMetadataRecordTypes = await awu(customMetadataInstances)
-        .map(instance => createCustomMetadataRecordType(instance, customMetadataType))
+        .map(instance => createCustomMetadataRecordType(instance, customMetadataType, config.fetchProfile.isFeatureEnabled('skipAliases')))
         .toArray()
       _.pullAll(elements, customMetadataInstances)
       customMetadataRecordTypes.forEach(e => elements.push(e))

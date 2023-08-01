@@ -15,7 +15,7 @@
 */
 import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
-import { ObjectType, InstanceElement, AccountId, ReadOnlyElementsSource, AdapterOperations } from '@salto-io/adapter-api'
+import { ObjectType, InstanceElement, ReadOnlyElementsSource, AdapterOperations, AccountInfo } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { adapter } from '../src/adapter_creator'
 import { OktaConfig, DEFAULT_CONFIG } from '../src/config'
@@ -37,7 +37,7 @@ describe('adapter creator', () => {
 
   it('should have all config sections', () => {
     expect(adapter.configType).toBeInstanceOf(ObjectType)
-    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual(['client', 'fetch', 'apiDefinitions', 'privateApiDefinitions'])
+    expect(Object.keys(adapter.configType?.fields ?? {})).toEqual(['client', 'fetch', 'deploy', 'apiDefinitions', 'privateApiDefinitions'])
   })
 
   it('should support basic auth', () => {
@@ -46,12 +46,12 @@ describe('adapter creator', () => {
 
   describe('validateCredentials', () => {
     describe('with valid credentials', () => {
-      let accountId: AccountId
+      let accountId: string
       beforeEach(async () => {
-        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' })
-        accountId = await adapter.validateCredentials(
+        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' });
+        ({ accountId } = await adapter.validateCredentials(
           createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
-        )
+        ))
       })
       it('should make an authenticated rest call', () => {
         expect(mockAxiosAdapter.history).toBeDefined()
@@ -62,7 +62,7 @@ describe('adapter creator', () => {
     })
 
     describe('with invalid credentials', () => {
-      let result: Promise<AccountId>
+      let result: Promise<AccountInfo>
       beforeEach(() => {
         mockAxiosAdapter.onGet().reply(403)
         result = adapter.validateCredentials(
@@ -121,6 +121,44 @@ describe('adapter creator', () => {
             privateApiDefinitions: { typeDefaults: 2 },
           } as unknown as OktaConfig),
         })).toThrow()
+      })
+    })
+
+    describe('with invalid fetch config', () => {
+      it('should fail if excluded type name does not part of the apiDefinitions', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            fetch: { exclude: [{ type: 'Bla' }] },
+          } as unknown as OktaConfig),
+        })).toThrow()
+      })
+
+      it('should fail if excluded type name is part of private api defs but usePrivateAPI is disabled', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            client: { usePrivateAPI: false },
+            fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
+          } as unknown as OktaConfig),
+        })).toThrow()
+      })
+    })
+
+    describe('with valid fetch config', () => {
+      it('should not fail if excluded type name is part of private api defs', () => {
+        expect(() => adapter.operations({
+          elementsSource,
+          credentials: credentialsInstance,
+          config: createConfigInstance({
+            ...DEFAULT_CONFIG,
+            fetch: { exclude: [{ type: 'ThirdPartyAdmin' }] },
+          } as unknown as OktaConfig),
+        })).not.toThrow()
       })
     })
   })

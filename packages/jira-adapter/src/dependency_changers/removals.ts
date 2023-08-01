@@ -15,9 +15,9 @@
 */
 import { CORE_ANNOTATIONS, dependencyChange, DependencyChanger, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import { references } from '@salto-io/adapter-utils'
+import { deployment } from '@salto-io/adapter-components'
 import _ from 'lodash'
 import { FIELD_CONTEXT_TYPE_NAME } from '../filters/fields/constants'
-import { ChangeWithKey } from './types'
 
 const TYPES_TO_IGNORE = [
   FIELD_CONTEXT_TYPE_NAME,
@@ -27,7 +27,7 @@ export const removalsDependencyChanger: DependencyChanger = async changes => {
   const removalsChanges = _(Array.from(changes.entries()))
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is ChangeWithKey<RemovalChange<InstanceElement>> =>
+      (change): change is deployment.dependency.ChangeWithKey<RemovalChange<InstanceElement>> =>
         isInstanceChange(change.change)
         && isRemovalChange(change.change)
         && !TYPES_TO_IGNORE.includes(getChangeData(change.change).elemID.typeName)

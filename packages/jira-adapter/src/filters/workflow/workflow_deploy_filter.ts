@@ -13,12 +13,12 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, RemovalChange } from '@salto-io/adapter-api'
+import { AdditionChange, ElemID, getChangeData, InstanceElement, isAdditionChange, isInstanceChange, isRemovalChange, RemovalChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { resolveChangeElement, safeJsonStringify, walkOnValue, WALK_NEXT_STEP, elementExpressionStringifyReplacer } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { FilterCreator } from '../../filter'
-import { isPostFetchWorkflowInstance, WorkflowInstance } from './types'
+import { isPostFetchWorkflowChange, WorkflowInstance } from './types'
 import JiraClient from '../../client/client'
 import { JiraConfig } from '../../config/config'
 import { getLookUpName } from '../../reference_mapping'
@@ -27,6 +27,7 @@ import { JIRA, WORKFLOW_TYPE_NAME } from '../../constants'
 import { deployTriggers } from './triggers_deployment'
 import { deploySteps } from './steps_deployment'
 import { fixGroupNames } from './groups_filter'
+import { deployWorkflowDiagram, hasDiagramFields, removeWorkflowDiagramFields } from './workflow_diagrams'
 
 const log = logger(module)
 
@@ -44,8 +45,8 @@ export const INITIAL_VALIDATOR = {
  * not create an additional one if one validator like that already appears in the nacl.
  */
 const removeCreateIssuePermissionValidator = (instance: WorkflowInstance): void => {
-  instance.value.transitions
-    ?.filter(transition => transition.type === 'initial')
+  Object.values(instance.value.transitions)
+    .filter(transition => transition.type === 'initial')
     .forEach(transition => {
       const createIssuePermissionValidatorIndex = _.findLastIndex(
         transition.rules?.validators ?? [],
@@ -77,26 +78,37 @@ const changeIdsToString = (
   })
 }
 
+const workflowTransitionsToList = (workflowInstance: InstanceElement): void => {
+  workflowInstance.value.transitions = Object.values(workflowInstance.value.transitions)
+}
+
 export const deployWorkflow = async (
   change: AdditionChange<InstanceElement> | RemovalChange<InstanceElement>,
   client: JiraClient,
   config: JiraConfig,
 ): Promise<void> => {
   const resolvedChange = await resolveChangeElement(change, getLookUpName)
-  const instance = getChangeData(resolvedChange)
-  if (!isPostFetchWorkflowInstance(instance)) {
+
+  if (!isPostFetchWorkflowChange(resolvedChange)) {
+    const instance = getChangeData(resolvedChange)
     log.error(`values ${safeJsonStringify(instance.value, elementExpressionStringifyReplacer)} of instance ${instance.elemID.getFullName} are invalid`)
     throw new Error(`instance ${instance.elemID.getFullName()} is not valid for deployment`)
   }
+  const instance = getChangeData(resolvedChange)
   removeCreateIssuePermissionValidator(instance)
-  instance.value.transitions?.forEach(transition => {
+  Object.values(instance.value.transitions).forEach(transition => {
     changeIdsToString(transition.rules?.conditions ?? {})
   })
 
   fixGroupNames(instance)
-
+  const resolvedChangeForDeployment = _.cloneDeep(resolvedChange)
+  const deployInstance = getChangeData(resolvedChangeForDeployment)
+  if (!isRemovalChange(resolvedChange)) {
+    removeWorkflowDiagramFields(deployInstance)
+    workflowTransitionsToList(deployInstance)
+  }
   await defaultDeployChange({
-    change: resolvedChange,
+    change: resolvedChangeForDeployment,
     client,
     apiDefinitions: config.apiDefinitions,
     fieldsToIgnore: path => path.name === 'triggers'
@@ -104,7 +116,14 @@ export const deployWorkflow = async (
       // In DC we support passing the step name as part of the request
       || (!client.isDataCenter && path.name === 'name' && path.getFullNameParts().includes('statuses')),
   })
-
+  instance.value.entityId = deployInstance.value.entityId
+  if (!isRemovalChange(resolvedChange) && hasDiagramFields(instance)) {
+    try {
+      await deployWorkflowDiagram({ instance, client })
+    } catch (e) {
+      log.error(`Fail to deploy Workflow ${instance.value.name} diagram with the error: ${e.message}`)
+    }
+  }
   if (isAdditionChange(resolvedChange)) {
     getChangeData(change).value.entityId = instance.value.entityId
     // If we created the workflow we can edit it
@@ -114,7 +133,8 @@ export const deployWorkflow = async (
       await deployTriggers(resolvedChange, client)
       // No need to run in DC since the main deployment requests already supports deploying steps
       if (!client.isDataCenter) {
-        await deploySteps(getChangeData(change), client)
+        // as is done since it was already verified on the resolved change
+        await deploySteps(getChangeData(change) as WorkflowInstance, client)
       }
     }
   }

@@ -84,10 +84,26 @@ const callbackValueOrValues = (
   }
 }
 
-const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
-: WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
-  if (new RegExp(regexPath).test(path.getFullName()) && value.type === 'ID') {
+const walkOnAutomationValue = (
+  regexPath: string,
+  callback: WalkOnUsersCallback,
+  excludeValues?: string[]
+): WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
+  if (new RegExp(regexPath).test(path.getFullName())
+    && value.type === 'ID'
+    && !excludeValues?.includes(value.value)) {
     callbackValueOrValues({ value, path, callback })
+    return WALK_NEXT_STEP.SKIP
+  }
+  return WALK_NEXT_STEP.RECURSE
+}
+
+const walkOnUserCondition = (callback: WalkOnUsersCallback)
+: WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
+  if (value !== undefined
+    && typeof value.check === 'string'
+    && value.check.startsWith('USER_')) {
+    walkOnValue({ value: value.criteria, elemId: path.createNestedID('criteria'), func: walkOnAutomationValue('value\\.conditions\\.\\d+\\.criteria\\.\\d+', callback) })
     return WALK_NEXT_STEP.SKIP
   }
   return WALK_NEXT_STEP.RECURSE
@@ -162,13 +178,13 @@ const accountIdsScenarios = (
         // the second is 'value.operations.0.value' (numbers can differ)
         func: walkOnAutomationValue('value\\.operations\\.\\d+.value\\.\\d+'
           + '|value\\.operations\\.\\d+\\.value',
-        callback) })
+        callback,
+        ['assignee', 'reporter']) })
       return WALK_NEXT_STEP.SKIP
     }
     // user condition
     if (value.type === 'jira.user.condition') {
-      walkOnValue({ value, elemId: path, func: walkOnAutomationValue('value\\.conditions\\.\\d+\\.criteria\\.\\d+', callback) })
-      return WALK_NEXT_STEP.SKIP
+      walkOnValue({ value: value.value?.conditions, elemId: path.createNestedID('value', 'conditions'), func: walkOnUserCondition(callback) })
     }
     // assign action
     if (value.type === 'jira.issue.assign') {
@@ -186,7 +202,7 @@ export const walkOnUsers = (callback: WalkOnUsersCallback, config: JiraConfig): 
         ? accountIdsScenarios(value.value, path, callback, config)
         : WALK_NEXT_STEP.EXIT
     }
-    if (value !== undefined) {
+    if (value != null) { // null or undefined
       return accountIdsScenarios(value, path, callback, config)
     }
     return WALK_NEXT_STEP.SKIP

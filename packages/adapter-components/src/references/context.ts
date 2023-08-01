@@ -27,6 +27,7 @@ export type ContextFunc = ({ instance, elemByElemID, field, fieldPath }: {
   elemByElemID: multiIndex.Index<[string], Element>
   field: Field
   fieldPath?: ElemID
+  levelsUp?: number
 }) => Promise<string | undefined>
 
 export const findParentPath = (currentFieldPath: ElemID, numLevels = 0): ElemID => {
@@ -52,7 +53,7 @@ export const findParentPath = (currentFieldPath: ElemID, numLevels = 0): ElemID 
  *
  * @param contextFieldName    The name of the neighboring field (same level)
  * @param levelsUp            How many levels to go up in the instance's type definition before
- *                            looking for the neighbor.
+ *                            looking for the neighbor or "top" for top-level element
  * @param contextValueMapper  An additional function to use to convert the value before the lookup
  */
 export const neighborContextGetter = ({
@@ -62,7 +63,7 @@ export const neighborContextGetter = ({
   getLookUpName,
 }: {
   contextFieldName: string
-  levelsUp?: number
+  levelsUp?: number | 'top'
   contextValueMapper?: ContextValueMapperFunc
   getLookUpName: GetLookupNameFunc
 }): ContextFunc => (async ({ instance, elemByElemID, fieldPath }) => {
@@ -86,7 +87,7 @@ export const neighborContextGetter = ({
   }
 
   try {
-    const parent = findParentPath(fieldPath, levelsUp)
+    const parent = levelsUp === 'top' ? fieldPath.createTopLevelParentID().parent : findParentPath(fieldPath, levelsUp)
     if (parent.isConfigType()) {
       // went up too many levels, the current rule is irrelevant for this potential reference
       return undefined

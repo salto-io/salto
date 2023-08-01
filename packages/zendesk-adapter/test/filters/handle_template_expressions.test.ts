@@ -13,15 +13,22 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, InstanceElement, ObjectType, ReferenceExpression,
-  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement } from '@salto-io/adapter-api'
+import {
+  ElemID, InstanceElement, ObjectType, ReferenceExpression,
+  BuiltinTypes, TemplateExpression, MapType, toChange, isInstanceElement, UnresolvedReference,
+} from '@salto-io/adapter-api'
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import filterCreator, {
   TICKET_ORGANIZATION_FIELD,
   TICKET_TICKET_FIELD_OPTION_TITLE,
-  TICKET_TICKET_FIELD, TICKET_USER_FIELD,
+  TICKET_TICKET_FIELD, TICKET_USER_FIELD, prepRef,
 } from '../../src/filters/handle_template_expressions'
-import { ORG_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ZENDESK } from '../../src/constants'
+import {
+  GROUP_TYPE_NAME,
+  ORG_FIELD_TYPE_NAME,
+  USER_FIELD_TYPE_NAME,
+  ZENDESK,
+} from '../../src/constants'
 import { createFilterCreatorParams } from '../utils'
 
 const { createMissingInstance } = referencesUtils
@@ -78,6 +85,14 @@ describe('handle templates filter', () => {
     },
   })
 
+  const orgTypeName = new ObjectType({
+    elemID: new ElemID(ZENDESK, ORG_FIELD_TYPE_NAME),
+  })
+
+  const groupType = new ObjectType({
+    elemID: new ElemID(ZENDESK, GROUP_TYPE_NAME),
+  })
+
   const dynamicContentRecord = new InstanceElement('dynamic_content_test', dynamicContentType, {
     placeholder: '{{dc.dynamic_content_test}}',
   })
@@ -85,6 +100,14 @@ describe('handle templates filter', () => {
   const hyphenDynamicContentRecord = new InstanceElement('dynamic-content-test', dynamicContentType, {
     placeholder: '{{dc.dynamic-content-test}}',
   })
+
+  const missingDynamicContentRecord = new InstanceElement(
+    'missing_not_exists',
+    dynamicContentType,
+    { placeholder: '{{dc.not_exists}}' },
+    undefined,
+    { salto_missing_ref: true }
+  )
 
   const webhookType = new ObjectType({
     elemID: new ElemID(ZENDESK, 'webhook'),
@@ -185,7 +208,14 @@ describe('handle templates filter', () => {
   const macroAlmostTemplate = new InstanceElement('macroAlmost', testType, { id: 1001, actions: [{ value: 'almost template {{ticket.not_an_actual_field_1452}} and {{ticket.ticket_field_1455}}', field: 'comment_value_html' }] })
   const macroAlmostTemplate2 = new InstanceElement('macroAlmost2', testType, { id: 1001, actions: [{ value: '{{ticket.ticket_field_1452}}', field: 'not_template_field' }] })
   const target = new InstanceElement('target', targetType, { id: 1004, target_url: 'url: {{ticket.ticket_field_1452}}' })
-  const trigger = new InstanceElement('trigger', triggerType, { id: 1005, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
+  const trigger = new InstanceElement('trigger', triggerType, { id: 1005,
+    actions: [{
+      field: 'notification_webhook',
+      value: [
+        ['my test', '{{dc.dynamic_content_test}}'],
+        ['dcno', '{{dc.not_exists}}'],
+      ],
+    }] })
   const webhook = new InstanceElement('webhook', webhookType, { id: 1006, endpoint: 'endpoint: {{ticket.ticket_field_1452}}' })
   const automation = new InstanceElement('automation', automationType, { id: 1007, actions: [{ value: 'ticket: {{ticket.ticket_field_1452}}', field: 'notification_webhook' }] })
   const dynamicContent = new InstanceElement('dc', dynamicContentItemType, { id: 1008, content: 'content: {{ticket.ticket_field_1452}}' })
@@ -248,9 +278,16 @@ describe('handle templates filter', () => {
         `endpoint: {{${TICKET_TICKET_FIELD}_`,
         new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
       const fetchedTrigger = elements.filter(isInstanceElement).find(i => i.elemID.name === 'trigger')
-      expect(fetchedTrigger?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
-        `ticket: {{${TICKET_TICKET_FIELD}_`,
-        new ReferenceExpression(placeholder1.elemID, placeholder1), '}}'] }))
+      expect(fetchedTrigger?.value.actions[0].value).toEqual([
+        [
+          'my test',
+          new TemplateExpression({ parts: ['{{', new ReferenceExpression(dynamicContentRecord.elemID, dynamicContentRecord), '}}'] }),
+        ],
+        [
+          'dcno',
+          new TemplateExpression({ parts: ['{{', new ReferenceExpression(missingDynamicContentRecord.elemID, missingDynamicContentRecord), '}}'] }),
+        ],
+      ])
       const fetchedAutomation = elements.filter(isInstanceElement).find(i => i.elemID.name === 'automation')
       expect(fetchedAutomation?.value.actions[0].value).toEqual(new TemplateExpression({ parts: [
         `ticket: {{${TICKET_TICKET_FIELD}_`,
@@ -439,6 +476,49 @@ describe('handle templates filter', () => {
 
     it('Returns elements to after fetch state (with templates) after onDeploy', () => {
       expect(elementsAfterOnDeploy).toEqual(elementsAfterFetch)
+    })
+  })
+
+  describe('prepRef', () => {
+    it('should return \'key\' field or \'undefined\' on ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE', () => {
+      const validOrg = new InstanceElement('instance', orgTypeName, { key: 'test' })
+      const invalidOrg = new InstanceElement('instance', orgTypeName, { noKey: 'test' })
+      const invalidOrgRef = new ReferenceExpression(invalidOrg.elemID, invalidOrg)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validOrg.elemID, validOrg))
+      const invalidPrepRef = prepRef(invalidOrgRef)
+
+      expect(validPrepRef).toEqual('test')
+      expect(invalidPrepRef).toEqual('undefined')
+    })
+    it('should return \'placeholder\' field or the instance reference on dynamic_content_item type', () => {
+      const validDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: '{{dc.test}}' })
+      const invalidDynamicContent = new InstanceElement('instance', dynamicContentType, { placeholder: 'invalid' })
+      const invalidDynamicContentRef = new ReferenceExpression(invalidDynamicContent.elemID, invalidDynamicContent)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validDynamicContent.elemID, validDynamicContent))
+      const invalidPrepRef = prepRef(invalidDynamicContentRef)
+
+      expect(validPrepRef).toEqual('dc.test')
+      expect(invalidPrepRef).toEqual(invalidDynamicContentRef)
+    })
+    it('should return \'id\' field or the instance reference on group type', () => {
+      const validGroup = new InstanceElement('instance', groupType, { id: 123 })
+      const invalidGroup = new InstanceElement('instance', groupType, { noId: 123 })
+      const invalidGroupRef = new ReferenceExpression(invalidGroup.elemID, invalidGroup)
+
+      const validPrepRef = prepRef(new ReferenceExpression(validGroup.elemID, validGroup))
+      const invalidPrepRef = prepRef(invalidGroupRef)
+
+      expect(validPrepRef).toEqual('123')
+      expect(invalidPrepRef).toEqual(invalidGroupRef)
+    })
+    it('should return an empty string on UnresolvedReference', () => {
+      const elemId = new ElemID(ZENDESK, 'test')
+      const unresolvedRef = new UnresolvedReference(elemId)
+      const unresolvedPrepRef = prepRef(new ReferenceExpression(elemId, unresolvedRef))
+
+      expect(unresolvedPrepRef).toEqual('')
     })
   })
 })

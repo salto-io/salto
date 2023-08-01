@@ -25,6 +25,7 @@ import SdfClient from '../src/client/sdf_client'
 import NetsuiteAdapter from '../src/adapter'
 import { mockGetElemIdFunc } from './utils'
 import SuiteAppClient from '../src/client/suiteapp_client/suiteapp_client'
+import { EnvType } from '../src/client/suiteapp_client/types'
 import { SdfCredentials } from '../src/client/credentials'
 
 jest.mock('../src/client/sdf_client')
@@ -75,16 +76,18 @@ describe('NetsuiteAdapter creator', () => {
   )
 
   describe('validateCredentials', () => {
+    const accountId = 'testAccountId'
     const suiteAppClientValidateMock = jest.spyOn(SuiteAppClient, 'validateCredentials')
     const netsuiteValidateMock = jest.spyOn(SdfClient, 'validateCredentials')
+      .mockResolvedValue({ accountId })
 
     beforeEach(() => {
       jest.mock('@salto-io/suitecloud-cli', () => undefined, { virtual: true })
-      suiteAppClientValidateMock.mockReset()
-      netsuiteValidateMock.mockReset()
+      suiteAppClientValidateMock.mockClear()
+      netsuiteValidateMock.mockClear()
     })
 
-    it('should call validateCredentials with the correct credentials', async () => {
+    it('Should call validateCredentials with the correct credentials', async () => {
       await adapter.validateCredentials(credentials)
       expect(netsuiteValidateMock).toHaveBeenCalledWith(expect.objectContaining({
         accountId: 'FOO_A',
@@ -94,9 +97,12 @@ describe('NetsuiteAdapter creator', () => {
       expect(suiteAppClientValidateMock).not.toHaveBeenCalledWith()
     })
 
-    it('should call validateCredentials of SuiteAppClient when SuiteApp credentials were passed', async () => {
-      suiteAppClientValidateMock.mockResolvedValue(undefined)
+    it('Should return accountInfo that only contains accountId', async () => {
+      const accountInfo = await adapter.validateCredentials(credentials)
+      expect(accountInfo).toEqual({ accountId })
+    })
 
+    describe('When SuiteApp credentials were passed', () => {
       const cred = credentials.clone()
       cred.value = {
         ...cred.value,
@@ -105,13 +111,68 @@ describe('NetsuiteAdapter creator', () => {
         suiteAppActivationKey: 'ccc',
       }
 
-      await adapter.validateCredentials(cred)
-      expect(netsuiteValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
-      expect(suiteAppClientValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+      it('Should call validateCredentials of SuiteAppClient when SuiteApp credentials were passed', async () => {
+        suiteAppClientValidateMock.mockResolvedValueOnce({
+          time: new Date(),
+          appVersion: [1, 2, 3],
+        })
+
+        await adapter.validateCredentials(cred)
+        expect(netsuiteValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+        expect(suiteAppClientValidateMock).toHaveBeenCalledWith({ ...cred.value, accountId: 'FOO_A' })
+      })
+
+      describe('AccountInfo values', () => {
+        describe('When systemInformation does not contain envType', () => {
+          it('Should return accountInfo that only contains accountId', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId })
+          })
+        })
+
+        describe('When systemInformation contains envType === PRODUCTION', () => {
+          it('Should return accountInfo with accountType = PRODUCTION and isProduction = true', async () => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType: EnvType.PRODUCTION,
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId, accountType: 'PRODUCTION', isProduction: true })
+          })
+        })
+
+        describe('When systemInformation contains envType !== PRODUCTION', () => {
+          const envTypes = [
+            { accountType: 'BETA', envType: EnvType.BETA },
+            { accountType: 'INTERNAL', envType: EnvType.INTERNAL },
+            { accountType: 'SANDBOX', envType: EnvType.SANDBOX },
+          ]
+          test.each(envTypes)('Should return accountInfo with accountType = $accountType and isProduction = false', async ({ accountType, envType }) => {
+            suiteAppClientValidateMock.mockResolvedValueOnce({
+              time: new Date(),
+              appVersion: [1, 2, 3],
+              envType,
+            })
+
+            const accountInfo = await adapter.validateCredentials(cred)
+            expect(accountInfo).toEqual({ accountId, accountType, isProduction: false })
+          })
+        })
+      })
     })
 
     it('SDF validation failure should throw SDF error', async () => {
-      suiteAppClientValidateMock.mockResolvedValue(undefined)
+      suiteAppClientValidateMock.mockResolvedValue({
+        time: new Date(),
+        appVersion: [1, 2, 3],
+      })
       netsuiteValidateMock.mockRejectedValue(new Error(''))
 
       const cred = credentials.clone()
@@ -168,6 +229,7 @@ describe('NetsuiteAdapter creator', () => {
         },
         config: clientConfig,
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
   })
@@ -215,6 +277,7 @@ describe('NetsuiteAdapter creator', () => {
       expect(SuiteAppClient).toHaveBeenCalledWith({
         credentials: { ...cred.value, accountId: 'FOO_A' },
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
 
@@ -232,6 +295,7 @@ describe('NetsuiteAdapter creator', () => {
         ...config.value,
         suiteAppClient: {
           suiteAppConcurrencyLimit: 5,
+          httpTimeoutLimitInMinutes: 20,
         },
       }
 
@@ -244,8 +308,10 @@ describe('NetsuiteAdapter creator', () => {
         credentials: { ...cred.value, accountId: 'FOO_A' },
         config: {
           suiteAppConcurrencyLimit: 5,
+          httpTimeoutLimitInMinutes: 20,
         },
         globalLimiter: expect.any(Bottleneck),
+        instanceLimiter: expect.any(Function),
       })
     })
   })
@@ -273,9 +339,10 @@ describe('NetsuiteAdapter creator', () => {
       })
     })
 
-    it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
-      const conf = new InstanceElement(
-        ElemID.CONFIG_NAME,
+    describe('validateConfig', () => {
+      it('should override FETCH_ALL_TYPES_AT_ONCE if received FETCH_TARGET', () => {
+        const conf = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           client: {
@@ -285,97 +352,97 @@ describe('NetsuiteAdapter creator', () => {
             filePaths: ['aaa'],
           },
         }
-      )
+        )
 
-      adapter.operations({
-        credentials,
-        config: conf,
-        getElemIdFunc: mockGetElemIdFunc,
-        elementsSource,
-      })
-      expect(NetsuiteAdapter).toHaveBeenCalledWith({
-        client: expect.any(Object),
-        config: {
-          client: {
-            fetchAllTypesAtOnce: false,
+        adapter.operations({
+          credentials,
+          config: conf,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+        })
+        expect(NetsuiteAdapter).toHaveBeenCalledWith({
+          client: expect.any(Object),
+          config: {
+            client: {
+              fetchAllTypesAtOnce: false,
+            },
+            fetchTarget: expect.any(Object),
           },
-          fetchTarget: expect.any(Object),
-        },
-        elementsSource,
-        getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
       })
-    })
 
-    it('should create the adapter correctly when not having config', () => {
-      adapter.operations({
-        credentials,
-        getElemIdFunc: mockGetElemIdFunc,
-        elementsSource,
+      it('should create the adapter correctly when not having config', () => {
+        adapter.operations({
+          credentials,
+          getElemIdFunc: mockGetElemIdFunc,
+          elementsSource,
+        })
+        expect(NetsuiteAdapter).toHaveBeenCalledWith({
+          client: expect.any(Object),
+          config: {},
+          elementsSource,
+          getElemIdFunc: mockGetElemIdFunc,
+        })
       })
-      expect(NetsuiteAdapter).toHaveBeenCalledWith({
-        client: expect.any(Object),
-        config: {},
-        elementsSource,
-        getElemIdFunc: mockGetElemIdFunc,
-      })
-    })
 
-    it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when creating the adapter with an invalid regex for FILE_PATHS_REGEX_SKIP_LIST', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           filePathRegexSkipList: ['\\'],
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when fetchTarget is invalid', () => {
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+      it('should throw an error when fetchTarget is invalid', () => {
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
                 types: ['type1', 'type2'],
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.types should be an object')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.types should be an object')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
                 customRecords: ['customrecord1', 'customrecord2'],
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.customRecords should be an object')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.customRecords should be an object')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
@@ -384,16 +451,16 @@ describe('NetsuiteAdapter creator', () => {
                 },
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.types.type1 should be a list of strings')
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: new InstanceElement(
-            ElemID.CONFIG_NAME,
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.types.type1 should be a list of strings')
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: new InstanceElement(
+              ElemID.CONFIG_NAME,
             adapter.configType as ObjectType,
             {
               fetchTarget: {
@@ -402,16 +469,16 @@ describe('NetsuiteAdapter creator', () => {
                 },
               },
             }
-          ),
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
-    })
+            ),
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow('fetchTarget.customRecords.customrecord1 should be a list of strings')
+      })
 
-    it('should throw an error when include is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when include is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -420,20 +487,20 @@ describe('NetsuiteAdapter creator', () => {
             },
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when exclude is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when exclude is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -444,20 +511,20 @@ describe('NetsuiteAdapter creator', () => {
             },
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
-    })
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
 
-    it('should throw an error when fieldsToOmit is invalid', () => {
-      const invalidConfig = new InstanceElement(
-        ElemID.CONFIG_NAME,
+      it('should throw an error when fieldsToOmit is invalid', () => {
+        const invalidConfig = new InstanceElement(
+          ElemID.CONFIG_NAME,
         adapter.configType as ObjectType,
         {
           fetch: {
@@ -466,15 +533,16 @@ describe('NetsuiteAdapter creator', () => {
             }],
           },
         }
-      )
-      expect(
-        () => adapter.operations({
-          credentials,
-          config: invalidConfig,
-          getElemIdFunc: mockGetElemIdFunc,
-          elementsSource: buildElementsSourceFromElements([]),
-        })
-      ).toThrow()
+        )
+        expect(
+          () => adapter.operations({
+            credentials,
+            config: invalidConfig,
+            getElemIdFunc: mockGetElemIdFunc,
+            elementsSource: buildElementsSourceFromElements([]),
+          })
+        ).toThrow()
+      })
     })
 
     describe('deploy params', () => {
@@ -547,10 +615,12 @@ describe('NetsuiteAdapter creator', () => {
                   include: {
                     features: ['feature1'],
                     objects: ['object1'],
+                    files: ['file1'],
                   },
                   exclude: {
                     features: ['feature2'],
                     objects: ['object2'],
+                    files: ['fil2'],
                   },
                 },
               },
@@ -592,6 +662,27 @@ describe('NetsuiteAdapter creator', () => {
               deploy: {
                 additionalDependencies: {
                   include: { features: ['should be list of strings', 1] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+        it('should throw an error when files in additionalDependencies is invalid', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { files: ['should be list of strings', 1] },
                 },
               },
             }
@@ -679,6 +770,29 @@ describe('NetsuiteAdapter creator', () => {
                 additionalDependencies: {
                   include: { objects: ['script_id'] },
                   exclude: { objects: ['script_id'] },
+                },
+              },
+            }
+          )
+          expect(
+            () => adapter.operations({
+              credentials,
+              config: invalidConfig,
+              getElemIdFunc: mockGetElemIdFunc,
+              elementsSource: buildElementsSourceFromElements([]),
+            })
+          ).toThrow()
+        })
+
+        it('should throw an Error when additionalDependencies has conflicting files', () => {
+          const invalidConfig = new InstanceElement(
+            ElemID.CONFIG_NAME,
+            adapter.configType as ObjectType,
+            {
+              deploy: {
+                additionalDependencies: {
+                  include: { files: ['/Folder/filePath'] },
+                  exclude: { files: ['/Folder/filePath'] },
                 },
               },
             }

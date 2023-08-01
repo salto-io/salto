@@ -16,7 +16,7 @@
 
 import _ from 'lodash'
 import { MockInterface } from '@salto-io/test-utils'
-import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement, ModificationChange } from '@salto-io/adapter-api'
+import { ElemID, InstanceElement, ObjectType, toChange, getChangeData, isInstanceElement, ModificationChange, isObjectType, CORE_ANNOTATIONS, ListType, BuiltinTypes } from '@salto-io/adapter-api'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { getFilterParams, mockClient } from '../utils'
@@ -30,7 +30,12 @@ describe('appDeploymentFilter', () => {
   let client: OktaClient
   type FilterType = filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'deploy' | 'onDeploy'>
   let filter: FilterType
-  const appType = new ObjectType({ elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME) })
+  const appType = new ObjectType({
+    elemID: new ElemID(OKTA, APPLICATION_TYPE_NAME),
+    fields: {
+      features: { refType: new ListType(BuiltinTypes.STRING) },
+    },
+  })
   const orgSettingType = new ObjectType({ elemID: new ElemID(OKTA, ORG_SETTING_TYPE_NAME) })
   const orgSettingInstance = new InstanceElement(
     ElemID.CONFIG_NAME,
@@ -90,6 +95,14 @@ describe('appDeploymentFilter', () => {
       const app = elements.filter(isInstanceElement).find(e => e.elemID.name === 'regular app')
       expect(app?.value.name).toEqual('salesforce')
       expect(app?.value.customName).toBeUndefined()
+    })
+    it('should add deployment annotations for "features" field', async () => {
+      const elements = [appType, orgSettingType, orgSettingInstance, customSamlAppInstance, customSwaInstance]
+      await filter.onFetch(elements)
+      const type = elements.filter(isObjectType).find(e => e.elemID.name === APPLICATION_TYPE_NAME)
+      expect(type?.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE]).toEqual(false)
+      expect(type?.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE]).toEqual(false)
+      expect(type?.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE]).toEqual(false)
     })
   })
 

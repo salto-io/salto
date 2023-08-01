@@ -13,23 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-
 import { ChangeValidator } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { createUnresolvedReferencesValidator } from './unresolved_references'
+import { createOutgoingUnresolvedReferencesValidator } from './outgoing_unresolved_references'
 
 
 export const DEFAULT_CHANGE_VALIDATORS = {
-  unresolvedReferencesValidator: createUnresolvedReferencesValidator(),
+  outgoingUnresolvedReferencesValidator: createOutgoingUnresolvedReferencesValidator(),
 }
 
 type ValidatorName = keyof typeof DEFAULT_CHANGE_VALIDATORS
 
 export const getDefaultChangeValidators = (
   validatorsToOmit: Array<ValidatorName> = []
-): ChangeValidator[] => _(DEFAULT_CHANGE_VALIDATORS)
-  .pickBy((_val, key) => !validatorsToOmit.includes(key as ValidatorName))
-  .values()
-  .filter(values.isDefined)
-  .value()
+): Record<string, ChangeValidator> => _.omit(DEFAULT_CHANGE_VALIDATORS, validatorsToOmit)

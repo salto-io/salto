@@ -15,7 +15,7 @@
 */
 import Bottleneck from 'bottleneck'
 import SdfClient from '../../src/client/sdf_client'
-import { SdfClientConfig } from '../../src/config'
+import { ClientConfig } from '../../src/config'
 
 const DUMMY_ACCOUNT_ID = 'tstdrv123456-sb'
 const DUMMY_TOKEN_ID = 'dummyTokenId'
@@ -26,11 +26,12 @@ export const DUMMY_CREDENTIALS = {
   tokenId: DUMMY_TOKEN_ID,
   tokenSecret: DUMMY_TOKEN_SECRET,
 }
-const mockSdfClient = (config?: SdfClientConfig): SdfClient =>
+const mockSdfClient = (config?: ClientConfig, instanceLimiter = (_t: string, _c: number) => false): SdfClient =>
   new SdfClient({
     credentials: DUMMY_CREDENTIALS,
     config,
     globalLimiter: new Bottleneck(),
+    instanceLimiter,
   })
 
 export default mockSdfClient

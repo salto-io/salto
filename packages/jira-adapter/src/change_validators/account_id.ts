@@ -16,7 +16,6 @@
 import { ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement,
   isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { logger } from '@salto-io/logging'
 import { walkOnElement } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { isDeployableAccountIdType, walkOnUsers, WalkOnUsersCallback } from '../filters/account_id/account_id_filter'
@@ -25,7 +24,23 @@ import { JiraConfig } from '../config/config'
 import JiraClient from '../client/client'
 import { JIRA_USERS_PAGE, PERMISSION_SCHEME_TYPE_NAME } from '../constants'
 
-const log = logger(module)
+type DisplayNameMismatchDetails = {
+  currentDisplayName: string
+  realDisplayName: string
+  accountId: string
+  elemId: ElemID
+}
+
+type missingUsersDetails = {
+  accountId: string
+  displayName?: string
+}
+
+const formatMissingUser = (missingUser: missingUsersDetails): string =>
+  (missingUser.displayName ? `${missingUser.accountId}: "${missingUser.displayName}"` : missingUser.accountId)
+
+const formatMissingUsers = (missingUsers: missingUsersDetails[]): string =>
+  `${missingUsers.map(formatMissingUser).join(',')}`
 
 const noDisplayNameChangeError = (
   elemId: ElemID,
@@ -38,48 +53,48 @@ const noDisplayNameChangeError = (
 
 const noAccountIdChangeError = ({
   elemId,
-  accountIds,
+  missingUsers,
 } : {
   elemId: ElemID
-  accountIds: string[]
+  missingUsers: missingUsersDetails[]
 }): ChangeError => ({
   elemID: elemId,
   severity: 'Error',
   message: 'Element references users which don’t exist in target environment',
-  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${accountIds.join(', ')}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
 })
 
 const replacingAccountIdChangeError = ({
   elemId,
-  accountIds,
+  missingUsers,
   defaultUser,
 } : {
   elemId: ElemID
-  accountIds: string[]
+  missingUsers: missingUsersDetails[]
   defaultUser: string
 }): ChangeError => {
   const user = defaultUser === configUtils.DEPLOYER_FALLBACK_VALUE ? 'the deployer\'s user' : defaultUser
   return {
     elemID: elemId,
     severity: 'Warning',
-    message: `${accountIds.length} usernames will be overridden to ${user}`,
-    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${accountIds.join(', ')}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+    message: `${missingUsers.length} usernames will be overridden to ${user}`,
+    detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. If you continue, they will be set to ${user} according to the environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
   }
 }
 
 const noFallbackUserAccountIdChangeError = ({
   elemId,
-  accountIds,
+  missingUsers,
   defaultUser,
 } : {
   elemId: ElemID
-  accountIds: string[]
+  missingUsers: missingUsersDetails[]
   defaultUser: string
 }): ChangeError => ({
   elemID: elemId,
   severity: 'Error',
   message: 'Element references users which don’t exist in target environment',
-  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${accountIds.join(', ')}. In addition, the defined fallback user ${defaultUser} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
+  detailedMessage: `The following users are referenced by this element, but do not exist in the target environment: ${formatMissingUsers(missingUsers)}. In addition, the defined fallback user ${defaultUser} was not found in the target environment. In order to deploy this element, add these users to your target environment, edit this element to use valid usernames, or set the target environment’s user fallback options. Learn more: https://help.salto.io/en/articles/6955311-element-references-users-which-don-t-exist-in-target-environment-jira`,
 })
 
 const displayNameMismatchChangeError = ({
@@ -127,17 +142,10 @@ const doesDefaultUserExist = (
   return getUserIdFromEmail(defaultUser, userMap) !== undefined
 }
 
-type DisplayNameMismatchDetails = {
-  currentDisplayName: string
-  realDisplayName: string
-  accountId: string
-  elemId: ElemID
-}
-
 const checkAndAddChangeErrors = (
   userMap: UserMap,
   isDataCenter: boolean,
-  missingUsers: Set<string>,
+  missingUsers: missingUsersDetails[],
   displayNameMismatches: DisplayNameMismatchDetails[],
   missingDisplayNamePaths: ElemID[]
 ): WalkOnUsersCallback => (
@@ -154,7 +162,7 @@ const checkAndAddChangeErrors = (
   }
 
   if (!Object.prototype.hasOwnProperty.call(userMap, accountId)) {
-    missingUsers.add(accountId)
+    missingUsers.push({ accountId, displayName: currentDisplayName })
     return
   }
   // in DC we don't save User's displayName
@@ -184,36 +192,37 @@ const createChangeErrorsForAccountIdIssues = (
   config: JiraConfig,
   defaultUserExists: boolean,
 ): ChangeError[] => {
-  const missingUsers = new Set<string>()
+  const allMissingUsers: missingUsersDetails[] = []
   const displayNameMismatches: DisplayNameMismatchDetails[] = []
   const missingDisplayNamePaths: ElemID[] = []
   walkOnElement({ element,
     func: walkOnUsers(checkAndAddChangeErrors(
       userMap,
       isDataCenter,
-      missingUsers,
+      allMissingUsers,
       displayNameMismatches,
       missingDisplayNamePaths
     ), config) })
 
+  const missingUsers = _.uniqBy(allMissingUsers, formatMissingUser)
   const changeErrors: ChangeError[] = []
 
-  if (missingUsers.size > 0) {
+  if (missingUsers.length > 0) {
     if (config.deploy.defaultMissingUserFallback === undefined) {
       changeErrors.push(noAccountIdChangeError({
         elemId: element.elemID,
-        accountIds: Array.from(missingUsers),
+        missingUsers,
       }))
     } else if (defaultUserExists) {
       changeErrors.push(replacingAccountIdChangeError({
         elemId: element.elemID,
-        accountIds: Array.from(missingUsers),
+        missingUsers,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     } else {
       changeErrors.push(noFallbackUserAccountIdChangeError({
         elemId: element.elemID,
-        accountIds: Array.from(missingUsers),
+        missingUsers,
         defaultUser: config.deploy.defaultMissingUserFallback,
       }))
     }
@@ -242,29 +251,27 @@ const createChangeErrorsForAccountIdIssues = (
 export const accountIdValidator: (
   client: JiraClient,
   config: JiraConfig,
-) =>
-  ChangeValidator = (client, config) => async (changes, elementsSource) =>
-    log.time(async () => {
-      if (!(config.fetch.convertUsersIds ?? true)) {
-        return []
-      }
-      const { baseUrl, isDataCenter } = client
-      const rawUserMap = await getUsersMap(elementsSource)
-      if (rawUserMap === undefined) {
-        return []
-      }
-      const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
+) => ChangeValidator = (client, config) => async (changes, elementsSource) => {
+  if (!(config.fetch.convertUsersIds ?? true)) {
+    return []
+  }
+  const { baseUrl, isDataCenter } = client
+  const rawUserMap = await getUsersMap(elementsSource)
+  if (rawUserMap === undefined) {
+    return []
+  }
+  const userMap = getUsersMapByVisibleId(rawUserMap, client.isDataCenter)
 
-      const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
-      return changes
-        .filter(isAdditionOrModificationChange)
-        .filter(isInstanceChange)
-        .map(change => getChangeData(change))
-        .filter(isDeployableAccountIdType)
-        .map(
-          element => createChangeErrorsForAccountIdIssues(
-            element, userMap, baseUrl, isDataCenter, config, defaultUserExist
-          )
-        )
-        .flat()
-    }, 'display name validator')
+  const defaultUserExist = doesDefaultUserExist(config.deploy.defaultMissingUserFallback, userMap, isDataCenter)
+  return changes
+    .filter(isAdditionOrModificationChange)
+    .filter(isInstanceChange)
+    .map(change => getChangeData(change))
+    .filter(isDeployableAccountIdType)
+    .map(
+      element => createChangeErrorsForAccountIdIssues(
+        element, userMap, baseUrl, isDataCenter, config, defaultUserExist
+      )
+    )
+    .flat()
+}

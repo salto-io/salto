@@ -16,8 +16,8 @@
 import _ from 'lodash'
 import { collections, values, promises } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { InstanceElement, ObjectType, Element, Field } from '@salto-io/adapter-api'
-import { pathNaclCase } from '@salto-io/adapter-utils'
+import { InstanceElement, ObjectType, Element, Field, CORE_ANNOTATIONS, SaltoError } from '@salto-io/adapter-api'
+import { pathNaclCase, safeJsonStringify } from '@salto-io/adapter-utils'
 import {
   createInvlidIdFieldConfigChange, createManyInstancesExcludeConfigChange,
   createUnresolvedRefIdFieldConfigChange,
@@ -26,11 +26,19 @@ import SalesforceClient from '../client/client'
 import { SalesforceRecord } from '../client/types'
 import {
   SALESFORCE, RECORDS_PATH, INSTALLED_PACKAGES_PATH, CUSTOM_OBJECT_ID_FIELD,
-  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE,
+  FIELD_ANNOTATIONS, UNLIMITED_INSTANCES_VALUE, DETECTS_PARENTS_INDICATOR,
 } from '../constants'
 import { FilterResult, RemoteFilterCreator } from '../filter'
 import { apiName, isCustomObject, Types, createInstanceServiceIds, isNameField } from '../transformers/transformer'
-import { getNamespace, isMasterDetailField, isLookupField, queryClient, buildSelectQueries, getFieldNamesForQuery } from './utils'
+import {
+  getNamespace,
+  isMasterDetailField,
+  isLookupField,
+  queryClient,
+  buildSelectQueries,
+  getFieldNamesForQuery,
+  safeApiName,
+} from './utils'
 import { ConfigChangeSuggestion } from '../types'
 import { DataManagement } from '../fetch_profile/data_management'
 
@@ -50,12 +58,14 @@ export type CustomObjectFetchSetting = {
   objectType: ObjectType
   isBase: boolean
   idFields: Field[]
-  invalidIdFields?: string[]
+  aliasFields: Field[]
+  invalidIdFields: string[]
+  invalidAliasFields: string[]
 }
 
 const defaultRecordKeysToOmit = ['attributes']
 const nameSeparator = '___'
-const detectsParentsIndicator = '##allMasterDetailFields##'
+const aliasSeparator = ' '
 
 const isReferenceField = (field: Field): boolean => (
   isMasterDetailField(field) || isLookupField(field)
@@ -107,6 +117,7 @@ type recordToInstanceParams = {
   type: ObjectType
   record: SalesforceRecord
   instanceSaltoName: string
+  instanceAlias?: string
 }
 
 const transformCompoundNameValues = async (
@@ -141,7 +152,7 @@ export const transformRecordToValues = async (
 }
 
 const recordToInstance = async (
-  { type, record, instanceSaltoName }: recordToInstanceParams
+  { type, record, instanceSaltoName, instanceAlias }: recordToInstanceParams
 ): Promise<InstanceElement> => {
   const getInstancePath = async (instanceName: string): Promise<string[]> => {
     const typeNamespace = await getNamespace(type)
@@ -162,6 +173,9 @@ const recordToInstance = async (
     type,
     await transformRecordToValues(type, record),
     await getInstancePath(name),
+    instanceAlias !== undefined && instanceAlias !== ''
+      ? { [CORE_ANNOTATIONS.ALIAS]: instanceAlias }
+      : {}
   )
 }
 
@@ -177,6 +191,7 @@ const typesRecordsToInstances = async (
     typesToUnresolvedRefFields[typeName].add(unresolvedFieldName)
   }
   const saltoNameByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
+  const aliasByIdAndType = {} as Record<TypeName, Record<RecordID, string>>
   const setSaltoName = (typeName: TypeName, recordId: string, saltoName: string): void => {
     if (saltoNameByIdAndType[typeName] === undefined) {
       saltoNameByIdAndType[typeName] = {}
@@ -185,6 +200,15 @@ const typesRecordsToInstances = async (
   }
   const getSaltoName = (typeName: TypeName, recordId: string): string | undefined =>
     saltoNameByIdAndType[typeName]?.[recordId]
+
+  const getAlias = (typeName: TypeName, recordId: string): string | undefined =>
+    aliasByIdAndType[typeName]?.[recordId]
+  const setAlias = (typeName: TypeName, recordId: string, alias: string): void => {
+    if (aliasByIdAndType[typeName] === undefined) {
+      aliasByIdAndType[typeName] = {}
+    }
+    aliasByIdAndType[typeName][recordId] = alias
+  }
 
   const getRecordSaltoName = async (
     typeName: string,
@@ -226,6 +250,40 @@ const typesRecordsToInstances = async (
     return fullName
   }
 
+  const getRecordAlias = async (
+    typeName: string,
+    record: SalesforceRecord,
+  ): Promise<string> => {
+    const fieldToAlias = async (field: Field): Promise<string | undefined> => {
+      const fieldValue = record[field.name]
+      if (fieldValue === null || fieldValue === undefined) {
+        return undefined
+      }
+      if (!isReferenceField(field)) {
+        return fieldValue.toString()
+      }
+      const referencedTypeNames = getReferenceTo(field)
+      return awu(referencedTypeNames).map(referencedTypeName => {
+        const rec = recordByIdAndType[referencedTypeName]?.[fieldValue]
+        if (rec === undefined) {
+          log.debug(`Failed to find record with id ${fieldValue} of type ${referencedTypeName} when looking for reference`)
+          return undefined
+        }
+        return getRecordAlias(referencedTypeName, rec)
+      }).find(isDefined)
+    }
+    const existingAlias = getAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD])
+    if (existingAlias !== undefined) {
+      return existingAlias
+    }
+    const alias = (await awu(customObjectFetchSetting[typeName].aliasFields)
+      .map(field => fieldToAlias(field))
+      .filter(fieldAlias => fieldAlias !== undefined && fieldAlias !== '')
+      .toArray()).join(aliasSeparator)
+    setAlias(typeName, record[CUSTOM_OBJECT_ID_FIELD], alias)
+    return alias
+  }
+
   const instances = await awu(Object.entries(recordByIdAndType))
     .flatMap(async ([typeName, idToRecord]) =>
       (awu(Object.values(idToRecord))
@@ -233,6 +291,7 @@ const typesRecordsToInstances = async (
           type: customObjectFetchSetting[typeName].objectType,
           record,
           instanceSaltoName: await getRecordSaltoName(typeName, record),
+          instanceAlias: await getRecordAlias(typeName, record),
         }))
         .filter(async recToInstanceParams =>
           !Object.keys(typesToUnresolvedRefFields).includes(
@@ -353,33 +412,43 @@ const getParentFieldNames = (fields: Field[]): string[] =>
 export const getIdFields = async (
   type: ObjectType,
   dataManagement: DataManagement
-): Promise<{ idFields: Field[]; invalidFields?: string[] }> => {
-  const idFieldsNames = dataManagement.getObjectIdsFields(await apiName(type))
+): Promise<Pick<CustomObjectFetchSetting, 'idFields' | 'aliasFields' | 'invalidIdFields' | 'invalidAliasFields' >> => {
+  const typeName = await apiName(type)
+  const idFieldsNames = dataManagement.getObjectIdsFields(typeName)
   const idFieldsWithParents = idFieldsNames.flatMap(fieldName =>
-    ((fieldName === detectsParentsIndicator)
+    ((fieldName === DETECTS_PARENTS_INDICATOR)
+      ? getParentFieldNames(Object.values(type.fields)) : fieldName))
+  const aliasFieldNames = dataManagement.getObjectAliasFields(typeName)
+  const aliasFieldsWithParents = aliasFieldNames.flatMap(fieldName =>
+    ((fieldName === DETECTS_PARENTS_INDICATOR)
       ? getParentFieldNames(Object.values(type.fields)) : fieldName))
   const invalidIdFieldNames = idFieldsWithParents.filter(fieldName => (
     type.fields[fieldName] === undefined || !isQueryableField(type.fields[fieldName])
   ))
+  const [aliasFields, invalidAliasFields] = _.partition(
+    aliasFieldsWithParents,
+    fieldName => type.fields[fieldName] !== undefined && isQueryableField(type.fields[fieldName])
+  )
   if (invalidIdFieldNames.length > 0) {
-    return { idFields: [], invalidFields: invalidIdFieldNames }
+    return { idFields: [], aliasFields: [], invalidIdFields: invalidIdFieldNames, invalidAliasFields }
   }
-  return { idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]) }
+  return {
+    idFields: idFieldsWithParents.map(fieldName => type.fields[fieldName]),
+    aliasFields: aliasFields.map((fieldName => type.fields[fieldName])),
+    invalidIdFields: [],
+    invalidAliasFields,
+  }
 }
 
 export const getCustomObjectsFetchSettings = async (
   types: ObjectType[],
   dataManagement: DataManagement,
 ): Promise<CustomObjectFetchSetting[]> => {
-  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => {
-    const fields = await getIdFields(type, dataManagement)
-    return {
-      objectType: type,
-      isBase: dataManagement.isObjectMatch(await apiName(type)),
-      idFields: fields.idFields,
-      invalidIdFields: fields.invalidFields,
-    }
-  }
+  const typeToFetchSettings = async (type: ObjectType): Promise<CustomObjectFetchSetting> => ({
+    objectType: type,
+    isBase: dataManagement.isObjectMatch(await apiName(type)),
+    ...await getIdFields(type, dataManagement),
+  })
 
   return awu(types)
     .filter(async type => dataManagement.isObjectMatch(await apiName(type))
@@ -423,8 +492,16 @@ const filterTypesWithManyInstances = async (
   }
 }
 
+const createInvalidAliasFieldFetchWarning = async (
+  { objectType, invalidAliasFields }: CustomObjectFetchSetting
+): Promise<SaltoError> => ({
+  message: `Invalid alias fields for type ${await safeApiName(objectType)}: ${safeJsonStringify(invalidAliasFields)}. Value of these fields will be omitted from the Alias`,
+  severity: 'Warning',
+})
+
 const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
   name: 'customObjectsInstancesFilter',
+  remote: true,
   onFetch: async (elements: Element[]): Promise<FilterResult> => {
     const { dataManagement } = config.fetchProfile
     if (dataManagement === undefined) {
@@ -437,7 +514,7 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
     )
     const [validFetchSettings, invalidFetchSettings] = _.partition(
       customObjectFetchSetting,
-      setting => setting.invalidIdFields === undefined
+      setting => setting.invalidIdFields.length === 0
     )
     const validChangesFetchSettings = await keyByAsync(
       validFetchSettings,
@@ -472,6 +549,10 @@ const filterCreator: RemoteFilterCreator = ({ client, config }) => ({
         ...heavyTypesSuggestions,
         ...configChangeSuggestions,
       ],
+      errors: await awu(customObjectFetchSetting)
+        .filter(setting => setting.invalidAliasFields.length > 0)
+        .map(createInvalidAliasFieldFetchWarning)
+        .toArray(),
     }
   },
 })

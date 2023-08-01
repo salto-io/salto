@@ -13,16 +13,27 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ObjectType, ElemID, StaticFile } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  StaticFile,
+  toChange,
+  BuiltinTypes,
+  Field,
+  InstanceElement,
+  Element,
+} from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
+import { detailedCompare } from '@salto-io/adapter-utils'
 import { serialize } from '../../src/serializer'
 import { StateData, buildInMemState, buildStateData } from '../../src/workspace/state'
-import { PathIndex, getElementsPathHints, getTopLevelPathHints } from '../../src/workspace/path_index'
+import { PathIndex, getElementsPathHints } from '../../src/workspace/path_index'
 import { createInMemoryElementSource } from '../../src/workspace/elements_source'
 import { InMemoryRemoteMap, RemoteMapCreator } from '../../src/workspace/remote_map'
 import { StaticFilesSource } from '../../src/workspace/static_files/common'
 import { mockStaticFilesSource } from '../utils'
+import * as pathIndexModule from '../../src/workspace/path_index'
 
 const { awu } = collections.asynciterable
 
@@ -143,12 +154,6 @@ describe('state', () => {
       await state.setAll(awu([newElem]))
       expect(await state.get(newElemID)).toEqual(newElem)
     })
-    it('override', async () => {
-      await state.override(awu([newElem]), ['dummy'])
-      expect(await awu(await state.getAll()).toArray()).toEqual([newElem])
-      expect(Object.keys(await state.getAccountsUpdateDates())).toEqual(['dummy', adapter])
-      expect(stateStaticFilesSource.clear).toHaveBeenCalled()
-    })
     it('getAccountsUpdateDates', async () => {
       expect(await state.getAccountsUpdateDates()).toEqual(accountsUpdateDate)
     })
@@ -161,26 +166,6 @@ describe('state', () => {
     it('getTopLevelPathIndex', async () => {
       expect(await state.getTopLevelPathIndex()).toEqual(topLevelPathIndex)
     })
-    it('overridePathIndex', async () => {
-      const elements = [elem, newElem]
-      await state.overridePathIndex(elements)
-      const index = await awu((await state.getPathIndex()).entries()).toArray()
-      expect(index).toEqual(getElementsPathHints([newElem, elem]))
-      const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
-      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
-    })
-
-    it('updatePathIndex', async () => {
-      const elements = [elem, newElem]
-      await state.overridePathIndex(elements)
-      const oneElement = [newElem]
-      await state.updatePathIndex(oneElement, ['salesforce'])
-      const index = await awu((await state.getPathIndex()).entries()).toArray()
-      const topLevelIndex = await awu((await state.getTopLevelPathIndex()).entries()).toArray()
-      expect(index).toEqual(getElementsPathHints([newElem, elem]))
-      expect(topLevelIndex).toEqual(getTopLevelPathHints([newElem, elem]))
-    })
-
     it('clear should clear all data', async () => {
       await state.clear()
       expect(await awu(await state.getAll()).toArray()).toHaveLength(0)
@@ -201,6 +186,144 @@ describe('state', () => {
 
     it('should return the salto version that was provided in load data', async () => {
       expect(await state.getStateSaltoVersion()).toEqual('0.0.1')
+    })
+
+    describe('updateStateFromChanges', () => {
+      describe('elements state', () => {
+        const toRemove = new ObjectType({ elemID: new ElemID(adapter, 'remove', 'type') })
+        const toAdd = new ObjectType({ elemID: new ElemID(adapter, 'add', 'type') })
+        const toModify = new ObjectType({
+          elemID: new ElemID(adapter, 'modify', 'type'),
+          fields: { removeMe: { refType: BuiltinTypes.STRING }, modifyMe: { refType: BuiltinTypes.STRING } },
+        })
+
+        const fieldToAdd = new Field(toModify, 'addMe', BuiltinTypes.STRING)
+        const fieldToModify = new Field(toModify, 'modifyMe', BuiltinTypes.NUMBER)
+        const fieldToRemove = new Field(toModify, 'removeMe', BuiltinTypes.STRING)
+        const fieldToAddElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'addMe')
+        const fieldToModifyElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'modifyMe')
+        const fieldToRemoveElemID = new ElemID(adapter, toModify.elemID.name, 'field', 'removeMe')
+
+        let allElements: Element[]
+        beforeAll(async () => {
+          await state.clear()
+          await state.setAll([toRemove, toModify, newElem])
+
+          await state.updateStateFromChanges({
+            changes: [
+              { action: 'add', data: { after: toAdd }, id: toAdd.elemID }, // Element to be added
+              { action: 'remove', data: { before: toRemove }, id: toRemove.elemID }, // Element to be removed
+
+              { action: 'add', data: { after: fieldToAdd }, id: fieldToAddElemID }, // Field to be added
+              { action: 'remove', data: { before: fieldToRemove }, id: fieldToRemoveElemID }, // Field to be removed
+              { action: 'modify', data: { before: fieldToModify, after: fieldToModify }, id: fieldToModifyElemID }, // Field to be modified
+            ],
+          })
+
+          allElements = await awu(await state.getAll()).toArray()
+          expect(allElements).toHaveLength(3)
+        })
+
+        it('should not remove existing elements', () => {
+          expect(allElements.some(e => e.isEqual(newElem))).toBeTruthy()
+        })
+        it('should remove elements that were removed', () => {
+          expect(allElements.some(e => e.isEqual(toRemove))).toBeFalsy()
+        })
+        it('should add elements that were added', () => {
+          expect(allElements.some(e => e.isEqual(toAdd))).toBeTruthy()
+        })
+        it('should modify elements that were modified', () => {
+          expect(allElements[2].isEqual(new ObjectType({
+            elemID: new ElemID(adapter, 'modify', 'type'),
+            fields: { modifyMe: { refType: BuiltinTypes.NUMBER }, addMe: { refType: BuiltinTypes.STRING } },
+          }))).toBeTruthy()
+        })
+      })
+      describe('pathIndex', () => {
+        const updatePathSpyIndex = jest.spyOn(pathIndexModule, 'updatePathIndex')
+        const updateTopLevelPathSpyIndex = jest.spyOn(pathIndexModule, 'updateTopLevelPathIndex')
+
+        beforeEach(async () => {
+          updatePathSpyIndex.mockClear()
+          updateTopLevelPathSpyIndex.mockClear()
+        })
+        it('should call updatePathIndex functions with all elements and removals', async () => {
+          const nonTopLevelElem = new ObjectType({ elemID: new ElemID(adapter, elem.elemID.typeName, 'field') })
+          const unmergedElements = [newElem, elem, nonTopLevelElem]
+
+          await state.updateStateFromChanges({
+            changes: [
+              { ...toChange({ before: elem }), id: elem.elemID }, // Removal
+              { ...toChange({ before: nonTopLevelElem }), id: nonTopLevelElem.elemID }, // Field removal
+              { ...toChange({ after: newElem }), id: newElem.elemID }, // Addition
+              ...detailedCompare(elem, newElem), // Modification
+            ],
+            unmergedElements,
+          })
+
+          const removedElementsFullNames = new Set<string>([
+            elem.elemID.getFullName(),
+            nonTopLevelElem.elemID.getFullName(),
+          ])
+          expect(updatePathSpyIndex).toHaveBeenCalledWith({
+            pathIndex,
+            unmergedElements,
+            removedElementsFullNames,
+          })
+          expect(updateTopLevelPathSpyIndex).toHaveBeenCalledWith({
+            pathIndex: topLevelPathIndex,
+            unmergedElements,
+            removedElementsFullNames,
+          })
+        })
+        it('should delete path index of removal changes when called without unmerged elements', async () => {
+          await pathIndex.clear()
+          await pathIndex.set(newElem.elemID.getFullName(), [])
+
+          await state.updateStateFromChanges({
+            changes: [{ ...toChange({ before: newElem }), id: newElem.elemID }],
+          })
+
+          const elemPath = await pathIndex.get(newElem.elemID.getFullName())
+          expect(elemPath).toBeUndefined()
+        })
+        it('should not call updatePathIndex when when called without unmerged element and the are no removals', async () => {
+          await state.updateStateFromChanges({
+            changes: [{ ...toChange({ after: newElem }), id: newElem.elemID }],
+          })
+
+          expect(updatePathSpyIndex).not.toHaveBeenCalled()
+          expect(updateTopLevelPathSpyIndex).not.toHaveBeenCalled()
+        })
+      })
+      it('should update the accounts update dates', async () => {
+        const accountsUpdateDates = await state.getAccountsUpdateDates()
+        await state.updateStateFromChanges({
+          changes: [],
+          fetchAccounts: [adapter],
+        })
+        const newAccountsUpdateDates = await state.getAccountsUpdateDates()
+        expect(accountsUpdateDates[adapter] < newAccountsUpdateDates[adapter]).toBeTruthy()
+      })
+      it('should call removal of static file that was removed', async () => {
+        const beforeElem = new InstanceElement(
+          'elem',
+          new ObjectType({ elemID: new ElemID('salesforce', 'type') }),
+          {
+            f1: staticFile, // To modify
+          }
+        )
+        const afterElem = beforeElem.clone()
+        delete afterElem.value.f1
+
+        await state.set(beforeElem)
+        await state.updateStateFromChanges({
+          changes: detailedCompare(beforeElem, afterElem),
+        })
+
+        expect(stateStaticFilesSource.delete).toHaveBeenCalledWith(staticFile)
+      })
     })
   })
 

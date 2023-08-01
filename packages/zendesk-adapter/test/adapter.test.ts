@@ -38,7 +38,7 @@ import { usernamePasswordCredentialsType } from '../src/auth'
 import { configType, FETCH_CONFIG, API_DEFINITIONS_CONFIG, DEFAULT_CONFIG } from '../src/config'
 import {
   BRAND_TYPE_NAME,
-  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME,
+  GUIDE_LANGUAGE_SETTINGS_TYPE_NAME, TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME,
   USER_SEGMENT_TYPE_NAME,
   ZENDESK,
 } from '../src/constants'
@@ -176,8 +176,8 @@ describe('adapter', () => {
           'zendesk.api_token',
           'zendesk.api_tokens',
           'zendesk.app_installation',
-          'zendesk.app_installation.instance.Salesforce_10',
-          'zendesk.app_installation.instance.Slack_156097',
+          'zendesk.app_installation.instance.Salesforce_support',
+          'zendesk.app_installation.instance.Slack_support',
           'zendesk.app_installation__plan_information',
           'zendesk.app_installation__settings',
           'zendesk.app_installation__settings_objects',
@@ -1025,6 +1025,8 @@ describe('adapter', () => {
     let operations: AdapterOperations
     const groupType = new ObjectType({ elemID: new ElemID(ZENDESK, 'group') })
     const brandType = new ObjectType({ elemID: new ElemID(ZENDESK, 'brand') })
+    const ticketFormType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) })
+    const ticketFieldType = new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FIELD_TYPE_NAME) })
     const anotherType = new ObjectType({ elemID: new ElemID(ZENDESK, 'anotherType') })
 
     beforeEach(() => {
@@ -1041,6 +1043,9 @@ describe('adapter', () => {
         }
         if (getChangeData<InstanceElement>(change).elemID.typeName === 'brand') {
           return { brand: { key: 2 } }
+        }
+        if (getChangeData<InstanceElement>(change).elemID.typeName === TICKET_FORM_TYPE_NAME) {
+          return { ticket_form: { id: 3 } }
         }
         return { key: 2 }
       })
@@ -1099,6 +1104,15 @@ describe('adapter', () => {
                   deployRequests: {
                     add: {
                       url: '/api/v2/brands',
+                      method: 'post',
+                    },
+                  },
+                },
+                [TICKET_FORM_TYPE_NAME]: {
+                  deployRequests: {
+                    add: {
+                      url: '/api/v2/ticket_forms',
+                      deployAsField: 'ticket_form',
                       method: 'post',
                     },
                   },
@@ -1200,7 +1214,11 @@ describe('adapter', () => {
       })
 
       expect(deployRes.errors).toEqual([
-        new Error('some error'),
+        {
+          message: 'some error',
+          severity: 'Error',
+          elemID: new InstanceElement('inst2', groupType).elemID,
+        },
       ])
     })
     it('should have change validator', () => {
@@ -1224,6 +1242,50 @@ describe('adapter', () => {
           undefined,
           { [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/people/team/groups' },
         ) }),
+      ])
+    })
+    it('should omit reference in array if the reference does not have an id', async () => {
+      const ticketFieldWithId = new InstanceElement('withId', ticketFieldType, { id: 5 })
+      const ticketFieldWithoutId = new InstanceElement('withoutId', ticketFieldType)
+      const refWithId = new ReferenceExpression(ticketFieldWithId.elemID, ticketFieldWithId)
+      const refWithoutId = new ReferenceExpression(ticketFieldWithoutId.elemID, ticketFieldWithoutId)
+
+      const additionChange = toChange({
+        after: new InstanceElement(
+          'inst4',
+          ticketFormType,
+          {
+            ticket_field_ids: [
+              refWithId,
+              refWithoutId,
+            ],
+          }
+        ),
+      })
+      const appliedChanges = toChange({
+        after: new InstanceElement(
+          'inst4',
+          ticketFormType,
+          {
+            id: 3,
+            ticket_field_ids: [refWithId],
+          },
+          undefined,
+          {
+            [CORE_ANNOTATIONS.SERVICE_URL]: 'https://mybrand.zendesk.com/admin/objects-rules/tickets/ticket-forms/edit/3',
+          }
+        ),
+      })
+      const deployRes = await operations.deploy({
+        changeGroup: {
+          groupID: TICKET_FORM_TYPE_NAME,
+          changes: [
+            additionChange,
+          ],
+        },
+      })
+      expect(deployRes.appliedChanges).toEqual([
+        appliedChanges,
       ])
     })
     it('should not update id if the response is primitive', async () => {

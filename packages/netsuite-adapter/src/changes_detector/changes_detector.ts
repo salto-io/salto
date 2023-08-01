@@ -26,7 +26,7 @@ import savedSearchDetector from './changes_detectors/savedsearch'
 import { ChangedObject, ChangedType, DateRange, FileCabinetChangesDetector } from './types'
 import NetsuiteClient from '../client/client'
 import { getChangedCustomRecords } from './changes_detectors/custom_records'
-import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT } from '../constants'
+import { CUSTOM_RECORD_TYPE, CUSTOM_SEGMENT, FILE_CABINET_PATH_SEPARATOR } from '../constants'
 import { addCustomRecordTypePrefix } from '../types'
 
 const log = logger(module)
@@ -107,6 +107,9 @@ export const getChangedObjects = async (
   )
 
   const filePaths = getChangedIds(changedFiles, serviceIdToLastFetchDate, isFileMatch)
+  Array.from(filePaths)
+    .map(path => path.substring(0, path.lastIndexOf(FILE_CABINET_PATH_SEPARATOR) + 1))
+    .forEach(item => filePaths.add(item))
   const folderPaths = Array.from(getChangedIds(changedFolders, serviceIdToLastFetchDate, isFileMatch))
   const unresolvedFolderPaths = folderPaths
     .map(folder => `${folder}/`)

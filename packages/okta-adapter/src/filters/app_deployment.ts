@@ -15,11 +15,11 @@
 */
 import _ from 'lodash'
 import Joi from 'joi'
-import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange } from '@salto-io/adapter-api'
+import { Change, InstanceElement, Element, isInstanceChange, getChangeData, isAdditionOrModificationChange, isAdditionChange, AdditionChange, isInstanceElement, ElemID, ReadOnlyElementsSource, Values, isModificationChange, ModificationChange, isObjectType, CORE_ANNOTATIONS } from '@salto-io/adapter-api'
 import { config as configUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
 import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, ACTIVE_STATUS } from '../constants'
+import { APPLICATION_TYPE_NAME, INACTIVE_STATUS, OKTA, ORG_SETTING_TYPE_NAME, CUSTOM_NAME_FIELD, ACTIVE_STATUS, SAML_2_0_APP } from '../constants'
 import OktaClient from '../client/client'
 import { API_DEFINITIONS_CONFIG, OktaSwaggerApiConfig } from '../config'
 import { FilterCreator } from '../filter'
@@ -28,7 +28,6 @@ import { deployChanges, defaultDeployChange, deployEdges, deployStatusChange, ge
 const log = logger(module)
 
 const AUTO_LOGIN_APP = 'AUTO_LOGIN'
-const SAML_2_0_APP = 'SAML_2_0'
 const APP_ASSIGNMENT_FIELDS: Record<string, configUtils.DeploymentRequestsByAction> = {
   assignedGroups: {
     add: {
@@ -183,6 +182,14 @@ const filterCreator: FilterCreator = ({ elementsSource, client, config }) => ({
         delete app.value.name
       }
     })
+
+    // Set deployment annotaitons for `features` field which cannot be managed through the API
+    const appType = elements.filter(isObjectType).find(type => type.elemID.name === APPLICATION_TYPE_NAME)
+    if (appType?.fields.features !== undefined) {
+      appType.fields.features.annotations[CORE_ANNOTATIONS.CREATABLE] = false
+      appType.fields.features.annotations[CORE_ANNOTATIONS.UPDATABLE] = false
+      appType.fields.features.annotations[CORE_ANNOTATIONS.DELETABLE] = false
+    }
   },
   preDeploy: async (changes: Change<InstanceElement>[]) => {
     changes

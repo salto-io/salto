@@ -31,7 +31,6 @@ import replaceObjectWithIdFilter from './filters/replace_object_with_id'
 import fieldReferencesFilter from './filters/field_references'
 import urlReferencesFilter from './filters/url_references'
 import defaultDeployFilter from './filters/default_deploy'
-import groupDeploymentFilter from './filters/group_deployment'
 import appDeploymentFilter from './filters/app_deployment'
 import standardRolesFilter from './filters/standard_roles'
 import userTypeFilter from './filters/user_type'
@@ -41,10 +40,16 @@ import defaultPolicyRuleDeployment from './filters/default_rule_deployment'
 import policyRuleRemoval from './filters/policy_rule_removal'
 import authorizationRuleFilter from './filters/authorization_server_rule'
 import privateApiDeployFilter from './filters/private_api_deploy'
+import profileEnrollmentAttributesFilter from './filters/profile_enrollment_attributes'
+import deleteFieldsFilter from './filters/delete_fields'
 import userFilter from './filters/user'
-import { OKTA } from './constants'
-import { getLookUpName } from './reference_mapping'
 import serviceUrlFilter from './filters/service_url'
+import schemaFieldsRemovalFilter from './filters/schema_field_removal'
+import appLogoFilter from './filters/app_logo'
+import brandThemeFilesFilter from './filters/brand_theme_files'
+import { APP_LOGO_TYPE_NAME, BRAND_LOGO_TYPE_NAME, FAV_ICON_TYPE_NAME, OKTA } from './constants'
+import { getLookUpName } from './reference_mapping'
+
 
 const { awu } = collections.asynciterable
 
@@ -59,6 +64,7 @@ const { query: queryFilter, ...otherCommonFilters } = commonFilters
 export const DEFAULT_FILTERS = [
   queryFilter,
   standardRolesFilter,
+  deleteFieldsFilter,
   userTypeFilter,
   userSchemaFilter,
   authorizationRuleFilter,
@@ -68,18 +74,27 @@ export const DEFAULT_FILTERS = [
   replaceObjectWithIdFilter,
   userFilter,
   oktaExpressionLanguageFilter,
-  fieldReferencesFilter,
-  groupDeploymentFilter,
-  // should run before appDeploymentFilter and after after userSchemaFilter
-  serviceUrlFilter,
-  appDeploymentFilter,
+  profileEnrollmentAttributesFilter,
   defaultPolicyRuleDeployment,
   policyRuleRemoval,
+  schemaFieldsRemovalFilter,
+  appLogoFilter,
+  brandThemeFilesFilter,
+  fieldReferencesFilter,
+  // should run before appDeploymentFilter and after userSchemaFilter
+  serviceUrlFilter,
+  appDeploymentFilter,
   // should run after fieldReferences
   ...Object.values(otherCommonFilters),
   privateApiDeployFilter,
   // should run last
   defaultDeployFilter,
+]
+
+const SKIP_RESOLVE_TYPE_NAMES = [
+  APP_LOGO_TYPE_NAME,
+  BRAND_LOGO_TYPE_NAME,
+  FAV_ICON_TYPE_NAME,
 ]
 
 export interface OktaAdapterParams {
@@ -254,7 +269,9 @@ export default class OktaAdapter implements AdapterOperations {
 
     const resolvedChanges = await awu(changesToDeploy)
       .map(async change =>
-        resolveChangeElement(change, getLookUpName)).toArray()
+        (SKIP_RESOLVE_TYPE_NAMES.includes(getChangeData(change).elemID.typeName)
+          ? change
+          : resolveChangeElement(change, getLookUpName))).toArray()
     const runner = this.createFiltersRunner()
     await runner.preDeploy(resolvedChanges)
 
@@ -282,9 +299,12 @@ export default class OktaAdapter implements AdapterOperations {
     }
   }
 
-  static get deployModifiers(): AdapterOperations['deployModifiers'] {
+  public get deployModifiers(): AdapterOperations['deployModifiers'] {
     return {
-      changeValidator: changeValidator(),
+      changeValidator: changeValidator({
+        client: this.client,
+        config: this.userConfig,
+      }),
       dependencyChanger,
     }
   }

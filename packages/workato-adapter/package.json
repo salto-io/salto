@@ -1,6 +1,6 @@
 {
   "name": "@salto-io/workato-adapter",
-  "version": "0.3.36",
+  "version": "0.3.44",
   "license": "Apache-2.0",
   "description": "Salto Workato adapter",
   "repository": {
@@ -11,9 +11,8 @@
     "access": "public"
   },
   "files": [
-    "dist",
-    "src",
-    "index.ts"
+    "dist/src",
+    "dist/index.*"
   ],
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,21 +29,22 @@
     "lint-fix": "yarn lint --fix"
   },
   "dependencies": {
-    "@salto-io/adapter-api": "0.3.36",
-    "@salto-io/adapter-components": "0.3.36",
-    "@salto-io/adapter-utils": "0.3.36",
-    "@salto-io/logging": "0.3.36",
-    "@salto-io/lowerdash": "0.3.36",
+    "@salto-io/adapter-api": "0.3.44",
+    "@salto-io/adapter-components": "0.3.44",
+    "@salto-io/adapter-utils": "0.3.44",
+    "@salto-io/logging": "0.3.44",
+    "@salto-io/lowerdash": "0.3.44",
+    "joi": "^17.4.0",
     "lodash": "^4.17.21"
   },
   "devDependencies": {
-    "@salto-io/test-utils": "0.3.36",
+    "@salto-io/test-utils": "0.3.44",
     "@types/jest": "^27.4.0",
     "@types/lodash": "^4.14.168",
     "@types/mime-types": "^2.1.0",
     "@typescript-eslint/eslint-plugin": "4.22.1",
     "@typescript-eslint/parser": "4.22.1",
-    "axios": "^0.21.3",
+    "axios": "^0.26.1",
     "axios-mock-adapter": "^1.19.0",
     "eslint": "^6.2.2",
     "eslint-config-airbnb": "18.0.1",

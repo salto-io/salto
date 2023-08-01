@@ -15,7 +15,12 @@
 */
 import { ElemID, InstanceElement } from '@salto-io/adapter-api'
 
-export type ServiceIdRecords = Record<string, { elemID: ElemID; serviceID: string }>
+export type ElemServiceID = {
+  elemID: ElemID
+  serviceID: string
+}
+
+export type ServiceIdRecords = Record<string, ElemServiceID>
 
 export type ElementsSourceIndexes = {
   serviceIdRecordsIndex: ServiceIdRecords
@@ -23,6 +28,7 @@ export type ElementsSourceIndexes = {
   customFieldsIndex: Record<string, InstanceElement[]>
   elemIdToChangeByIndex: Record<string, string>
   elemIdToChangeAtIndex: Record<string, string>
+  customRecordFieldsServiceIdRecordsIndex: ServiceIdRecords
 }
 
 export type LazyElementsSourceIndexes = {

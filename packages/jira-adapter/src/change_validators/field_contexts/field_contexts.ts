@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression, UnresolvedReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
@@ -31,7 +31,7 @@ const getFieldContexts = async (
 ): Promise<InstanceElement[]> =>
   awu(field.value.contexts)
     .filter((ref): ref is ReferenceExpression => {
-      if (!isReferenceExpression(ref)) {
+      if (!isReferenceExpression(ref) || ref.value instanceof UnresolvedReference) {
         log.warn(`Found a non reference expression in field ${field.elemID.getFullName()}`)
         return false
       }

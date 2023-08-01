@@ -130,7 +130,7 @@ The steps are: I. Fetching configs, II. Calculating difference and III. Applying
     } - do you want to abort?`
 
   public static readonly CONFIG_CHANGE_NEEDED = (introMessage: string, formattedChanges: string):
-  string => `\n${introMessage}\n\n${formattedChanges}\n\n`
+  string => `\nThe fetch operation encountered the following issues which require configuration changes:\n\n${introMessage}\n\n${formattedChanges}\n\n`
 
   public static readonly SHOULD_UPDATE_CONFIG = 'Would you like to apply this configuration change (answering no will cancel the fetch operation)?'
   public static readonly SHOULD_CANCEL_WITH_OLD_STATE = 'It is highly recommended to fetch more frequently so Salto\'s deployment plan can take into account the latest state - do you want to cancel?'
@@ -216,6 +216,7 @@ ${Prompts.ACCOUNT_ADD_HELP}`
   public static readonly RESTORE_SUCCESS_FINISHED = 'Done! Your NaCL files are now updated with the latest changes.'
   public static readonly RESTORE_UPDATE_WORKSPACE_FAIL = 'Failed to apply changes to your NaCL files.'
   public static readonly SHOULD_EXECUTE_RESTORE = 'Do you want to restore?'
+  public static readonly REORGANIZE_DIR_STRUCTURE_WITH_ELEMENT_SELECTORS = 'Reorganize dir structure flag with element selectors is not supported'
   public static readonly INVALID_FILTERS = (
     invalidFilters: string
   ): string => `Failed to created element ID filters for: ${invalidFilters}. Invalid Regex provided.`

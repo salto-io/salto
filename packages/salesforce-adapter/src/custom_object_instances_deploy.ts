@@ -15,12 +15,16 @@
 */
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, hash, strings, promises } from '@salto-io/lowerdash'
+import { collections, hash, strings, promises, values } from '@salto-io/lowerdash'
 import {
   getChangeData, DeployResult, Change, isPrimitiveType, InstanceElement, Value, PrimitiveTypes,
   ModificationChange, Field, ObjectType, isObjectType, Values, isAdditionChange, isRemovalChange,
   isModificationChange,
   TypeElement,
+  SaltoElementError,
+  SaltoError,
+  SeverityLevel,
+  isInstanceElement, isInstanceChange, toChange,
 } from '@salto-io/adapter-api'
 import { safeJsonStringify } from '@salto-io/adapter-utils'
 import { BatchResultInfo } from 'jsforce-types'
@@ -30,9 +34,14 @@ import {
   instancesToDeleteRecords, instancesToUpdateRecords, Types,
 } from './transformers/transformer'
 import SalesforceClient from './client/client'
-import { CUSTOM_OBJECT_ID_FIELD } from './constants'
+import {
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+  CUSTOM_OBJECT_ID_FIELD, OWNER_ID, SBAA_APPROVAL_CONDITION,
+  SBAA_APPROVAL_RULE,
+  SBAA_CONDITIONS_MET,
+} from './constants'
 import { getIdFields, transformRecordToValues } from './filters/custom_objects_instances'
-import { buildSelectQueries, getFieldNamesForQuery } from './filters/utils'
+import { buildSelectQueries, getFieldNamesForQuery, isInstanceOfTypeChange } from './filters/utils'
 import { isListCustomSettingsObject } from './filters/custom_settings_filter'
 import { SalesforceRecord } from './client/types'
 import { buildDataManagement, DataManagement } from './fetch_profile/data_management'
@@ -46,7 +55,7 @@ const log = logger(module)
 
 type ActionResult = {
   successInstances: InstanceElement[]
-  errorMessages: string[]
+  errorInstances: (SaltoElementError | SaltoError)[]
 }
 
 type InstanceAndResult = {
@@ -66,16 +75,23 @@ ${safeJsonStringify(instance.value, undefined, 2,)}
   })
 )
 
-const getErrorMessagesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): string[] =>
-  instancesAndResults
-    .map(({ instance, result }) => `${instance.elemID.name}:
-    \t${result.errors?.join('\n\t')}`)
+const getErrorInstancesFromInstAndResults = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] =>
+  instancesAndResults.flatMap(({ instance, result }) =>
+    (values.isDefined(result.errors)
+      ? result.errors
+        .filter(Boolean)
+        .map((error: string) => ({
+          elemID: instance.elemID,
+          message: error,
+          severity: 'Error',
+        } as SaltoElementError))
+      : []))
 
-const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): string[] => {
+const getAndLogErrors = (instancesAndResults: InstanceAndResult[]): SaltoElementError[] => {
   const errored = instancesAndResults
     .filter(({ result }) => !result.success && result.errors !== undefined)
   logErroredInstances(errored)
-  return getErrorMessagesFromInstAndResults(errored)
+  return getErrorInstancesFromInstAndResults(errored)
 }
 
 const groupInstancesAndResultsByIndex = (
@@ -105,6 +121,8 @@ const isCompoundFieldType = (type: TypeElement): type is ObjectType => (
   isObjectType(type)
   && Object.values(Types.compoundDataTypes).some(compoundType => compoundType.isEqual(type))
 )
+
+const MANDATORY_FIELDS_FOR_UPDATE = [CUSTOM_OBJECT_ID_FIELD, OWNER_ID]
 
 const getRecordsBySaltoIds = async (
   type: ObjectType,
@@ -139,15 +157,19 @@ const getRecordsBySaltoIds = async (
     return r
   }))
 
-  // Should always query Id together with the SaltoIdFields to match it to instances
-  const saltoIdFieldsWithIdField = (saltoIdFields
-    .find(field => field.name === CUSTOM_OBJECT_ID_FIELD) === undefined)
-    ? [type.fields[CUSTOM_OBJECT_ID_FIELD], ...saltoIdFields] : saltoIdFields
-
-  const fieldNames = await awu(saltoIdFieldsWithIdField).flatMap(getFieldNamesForQuery).toArray()
+  const fieldsToQuery = _.uniq(
+    // Should always query these fields along the SaltoIdFields as they're mandatory for update operation
+    MANDATORY_FIELDS_FOR_UPDATE
+      // Some mandatory fields might not be in the type (e.g. for custom settings or the detail side of
+      // master-detail relationship for CustomObjects)
+      .filter(mandatoryField => Object.keys(type.fields).includes(mandatoryField))
+      .concat(
+        (await awu(saltoIdFields).flatMap(getFieldNamesForQuery).toArray())
+      )
+  )
   const queries = await buildSelectQueries(
     await apiName(type),
-    fieldNames,
+    fieldsToQuery,
     instanceIdValues,
   )
   const recordsIterable = awu(queries).flatMap(query => client.queryAll(query))
@@ -174,6 +196,7 @@ type CrudFnArgs = {
   typeName: string
   instances: InstanceElement[]
   client: SalesforceClient
+  groupId: string
 }
 
 export type CrudFn = (fnArgs: CrudFnArgs) => Promise<InstanceAndResult[]>
@@ -189,28 +212,28 @@ export const retryFlow = async (
   crudFnArgs: CrudFnArgs,
   retriesLeft: number,
 ): Promise<ActionResult> => {
-  const { typeName, instances, client } = crudFnArgs
+  const { client } = crudFnArgs
   const { retryDelay, retryableFailures } = client.dataRetry
 
   let successes: InstanceElement[] = []
-  let errMsgs: string[] = []
+  let errors: (SaltoElementError | SaltoError)[] = []
 
-  const instanceResults = await crudFn({ typeName, instances, client })
+  const instanceResults = await crudFn(crudFnArgs)
 
   const [succeeded, failed] = _.partition(instanceResults, instanceResult =>
     instanceResult.result.success)
   const [recoverable, notRecoverable] = _.partition(failed, isRetryableErr(retryableFailures))
 
   successes = successes.concat(succeeded.map(instAndRes => instAndRes.instance))
-  errMsgs = errMsgs.concat(getAndLogErrors(notRecoverable))
+  errors = errors.concat(getAndLogErrors(notRecoverable))
 
   if (_.isEmpty(recoverable)) {
-    return { successInstances: successes, errorMessages: errMsgs }
+    return { successInstances: successes, errorInstances: errors }
   }
   if (retriesLeft === 0) {
     return {
       successInstances: successes,
-      errorMessages: errMsgs.concat(getAndLogErrors(recoverable)),
+      errorInstances: errors.concat(getAndLogErrors(recoverable)),
     }
   }
 
@@ -219,14 +242,14 @@ export const retryFlow = async (
   log.debug(`in custom object deploy retry-flow. retries left: ${retriesLeft},
                   remaining retryable failures are: ${recoverable}`)
 
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     crudFn,
     { ...crudFnArgs, instances: recoverable.map(instAndRes => instAndRes.instance) },
     retriesLeft - 1
   )
   return {
     successInstances: successes.concat(successInstances),
-    errorMessages: errMsgs.concat(errorMessages),
+    errorInstances: errors.concat(errorInstances),
   }
 }
 
@@ -256,7 +279,8 @@ const insertInstances: CrudFn = async (
 const updateInstances: CrudFn = async (
   { typeName,
     instances,
-    client }
+    client,
+    groupId }
 ): Promise<InstanceAndResult[]> => {
   if (instances.length === 0) {
     return []
@@ -264,7 +288,9 @@ const updateInstances: CrudFn = async (
   const results = await client.bulkLoadOperation(
     typeName,
     'update',
-    await instancesToUpdateRecords(instances)
+    // For this special group, we know it's safe to update without adding nulls, since the Record
+    // was previously added by us, and no Data could be deleted by the user during this process.
+    await instancesToUpdateRecords(instances, groupId !== ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP)
   )
   return groupInstancesAndResultsByIndex(results, instances)
 }
@@ -309,6 +335,21 @@ const deployAddInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
+  // Instances with internalIds have been already deployed previously, unless they are in the current
+  // deployed group of instances This is relevant to the ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP group for example.
+  const instancesReferencingToBeDeployedInstances = instances
+    .filter(instance => (
+      Object.values(instance.value)
+        // Only successfully deployed Instances have Id
+        .some(v => isInstanceElement(v) && v.value[CUSTOM_OBJECT_ID_FIELD] === undefined)
+    ))
+  // Replacing self-reference field values with the resolved instances that will later contain the Record Ids
+  const instanceByElemId = _.keyBy(instances, instance => instance.elemID.getFullName())
+  await awu(instancesReferencingToBeDeployedInstances).forEach(instance => {
+    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
+      ? instanceByElemId[val.elemID.getFullName()] ?? val
+      : val))
+  })
   const type = await instances[0].getType()
   const typeName = await apiName(type)
   const idFieldsNames = idFields.map(field => field.name)
@@ -336,29 +377,37 @@ const deployAddInstances = async (
   )
   const {
     successInstances: successInsertInstances,
-    errorMessages: insertErrorMessages,
+    errorInstances: insertErrorInstances,
   } = await retryFlow(
     insertInstances,
-    { typeName, instances: newInstances, client },
+    { typeName, instances: newInstances, client, groupId },
     client.dataRetry.maxAttempts
   )
   existingInstances.forEach(instance => {
-    instance.value[
-      CUSTOM_OBJECT_ID_FIELD
-    ] = existingRecordsLookup[computeSaltoIdHash(instance.value)][CUSTOM_OBJECT_ID_FIELD]
+    const existingRecordLookup = existingRecordsLookup[computeSaltoIdHash(instance.value)]
+    MANDATORY_FIELDS_FOR_UPDATE.forEach(mandatoryField => {
+      if (instance.value[mandatoryField] === undefined && existingRecordLookup[mandatoryField] !== undefined) {
+        instance.value[mandatoryField] = existingRecordLookup[mandatoryField]
+      }
+    })
   })
   const {
     successInstances: successUpdateInstances,
-    errorMessages: updateErrorMessages,
+    errorInstances: errorUpdateInstances,
   } = await retryFlow(
     updateInstances,
-    { typeName: await apiName(type), instances: existingInstances, client },
+    {
+      typeName: await apiName(type),
+      instances: existingInstances.concat(instancesReferencingToBeDeployedInstances),
+      client,
+      groupId,
+    },
     client.dataRetry.maxAttempts
   )
   const allSuccessInstances = [...successInsertInstances, ...successUpdateInstances]
   return {
     appliedChanges: allSuccessInstances.map(instance => ({ action: 'add', data: { after: instance } })),
-    errors: [...insertErrorMessages, ...updateErrorMessages].map(error => new Error(error)),
+    errors: [...insertErrorInstances, ...errorUpdateInstances],
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -370,14 +419,14 @@ const deployRemoveInstances = async (
   client: SalesforceClient,
   groupId: string
 ): Promise<DeployResult> => {
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     deleteInstances,
-    { typeName: await apiName(await instances[0].getType()), instances, client },
+    { typeName: await apiName(await instances[0].getType()), instances, client, groupId },
     client.dataRetry.maxAttempts
   )
   return {
     appliedChanges: successInstances.map(instance => ({ action: 'remove', data: { before: instance } })),
-    errors: errorMessages.map(error => new Error(error)),
+    errors: errorInstances,
     extraProperties: {
       groups: [{ id: groupId }],
     },
@@ -397,18 +446,20 @@ const deployModifyChanges = async (
     async changeData => await apiName(changeData.before) === await apiName(changeData.after)
   )
   const afters = validData.map(data => data.after)
-  const { successInstances, errorMessages } = await retryFlow(
+  const { successInstances, errorInstances } = await retryFlow(
     updateInstances,
-    { typeName: instancesType, instances: afters, client },
+    { typeName: instancesType, instances: afters, client, groupId },
     client.dataRetry.maxAttempts
   )
   const successData = validData
     .filter(changeData =>
       successInstances.find(instance => instance.isEqual(changeData.after)))
-  const diffApiNameErrors = await awu(diffApiNameData).map(async data => new Error(`Failed to update as api name prev=${await apiName(
-    data.before
-  )} and new=${await apiName(data.after)} are different`)).toArray()
-  const errors = errorMessages.map(error => new Error(error)).concat(diffApiNameErrors)
+  const diffApiNameErrors: SaltoElementError[] = await awu(diffApiNameData).map(async data => ({
+    elemID: data.before.elemID,
+    message: `Failed to update as api name prev=${await apiName(data.before)} and new=${await apiName(data.after)} are different`,
+    severity: 'Error' as SeverityLevel,
+  })).toArray()
+  const errors: (SaltoElementError | SaltoError)[] = [...errorInstances, ...diffApiNameErrors]
   return {
     appliedChanges: successData.map(data => ({ action: 'modify', data })),
     errors,
@@ -435,7 +486,7 @@ const isModificationChangeList = <T>(
     changes.every(isModificationChange)
   )
 
-export const deployCustomObjectInstancesGroup = async (
+const deploySingleTypeAndActionCustomObjectInstancesGroup = async (
   changes: ReadonlyArray<Change<InstanceElement>>,
   client: SalesforceClient,
   groupId: string,
@@ -454,11 +505,11 @@ export const deployCustomObjectInstancesGroup = async (
       throw new Error('dataManagement must be defined in the salesforce.nacl config to deploy Custom Object instances')
     }
     if (changes.every(isAdditionChange)) {
-      const { idFields, invalidFields } = await getIdFields(
+      const { idFields, invalidIdFields } = await getIdFields(
         await instances[0].getType(), actualDataManagement
       )
-      if (invalidFields !== undefined && invalidFields.length > 0) {
-        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidFields}`)
+      if (invalidIdFields !== undefined && invalidIdFields.length > 0) {
+        throw new Error(`Failed to add instances of type ${instanceTypes[0]} due to invalid SaltoIdFields - ${invalidIdFields}`)
       }
       return await deployAddInstances(instances, idFields, client, groupId)
     }
@@ -469,10 +520,117 @@ export const deployCustomObjectInstancesGroup = async (
       return await deployModifyChanges(changes, client, groupId)
     }
     throw new Error('Custom Object Instances change group must have one action')
-  } catch (error) {
+  } catch (error: unknown) {
     return {
       appliedChanges: [],
-      errors: [error],
+      errors: [{ message: (error as Error).message, severity: 'Error' }],
     }
   }
 }
+
+const createNonDeployableConditionChangeError = (change: Change): SaltoElementError => ({
+  message: `Cannot deploy ApprovalCondition instance ${getChangeData(change).elemID.getFullName()} since it depends on an ApprovalRule instance that was not deployed successfully`,
+  severity: 'Error',
+  elemID: getChangeData(change).elemID,
+})
+
+const deployAddCustomApprovalRulesAndConditions = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  dataManagement: DataManagement | undefined
+): Promise<DeployResult> => {
+  const approvalRuleChanges = await awu(changes)
+    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_RULE))
+    .toArray()
+  const approvalConditionChanges = await awu(changes)
+    .filter(isInstanceOfTypeChange(SBAA_APPROVAL_CONDITION))
+    .toArray()
+  if (approvalRuleChanges.map(getChangeData).some(instance => instance.value[SBAA_CONDITIONS_MET] !== 'Custom')) {
+    throw new Error('Received ApprovalRule instance without Custom ConditionsMet')
+  }
+  // On each ApprovalCondition instance, Replacing sbaa__ApprovalRule__c to point to the resolved instance
+  const approvalRuleByElemID = _.keyBy(
+    approvalRuleChanges.map(getChangeData),
+    instance => instance.elemID.getFullName()
+  )
+  await awu(approvalConditionChanges.map(getChangeData)).forEach(instance => {
+    instance.value = _.mapValues(instance.value, val => (isInstanceElement(val)
+      ? approvalRuleByElemID[val.elemID.getFullName()] ?? val
+      : val))
+  })
+  log.debug('Deploying ApprovalRule instances with "All" ConditionsMet instead of "Custom"')
+  approvalRuleChanges
+    .map(getChangeData)
+    .forEach(instance => {
+      instance.value[SBAA_CONDITIONS_MET] = 'All'
+    })
+  const approvalRulesWithAllConditionsMetDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    approvalRuleChanges,
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  log.debug('Deploying ApprovalCondition instances')
+  const [deployableConditionChanges, nonDeployableConditionChanges] = _.partition(
+    approvalConditionChanges,
+    change => {
+      const instance = getChangeData(change)
+      const approvalRule = instance.value[SBAA_APPROVAL_RULE]
+      if (!isInstanceElement(approvalRule)) {
+        log.error('Expected ApprovalCondition with name %s to contain InstanceElement for the sbaa__ApprovalRule__c field', instance.elemID.getFullName())
+        return false
+      }
+      // Only successfully deployed Instances have Id
+      if (approvalRule.value[CUSTOM_OBJECT_ID_FIELD] === undefined) {
+        log.error('The ApprovalCondition with name %s is not referencing a successfully deployed ApprovalRule instance with name %s', instance.elemID.getFullName(), approvalRule.elemID.getFullName())
+        return false
+      }
+      return true
+    }
+  )
+  const conditionsDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    deployableConditionChanges,
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+
+  log.debug('Updating the ApprovalRule instances with Custom ConditionsMet')
+  const firstDeployAppliedChanges = approvalRulesWithAllConditionsMetDeployResult.appliedChanges
+    .filter(isInstanceChange)
+  firstDeployAppliedChanges
+    .map(getChangeData)
+    .forEach(instance => {
+      instance.value[SBAA_CONDITIONS_MET] = 'Custom'
+    })
+  const approvalRulesWithCustomDeployResult = await deploySingleTypeAndActionCustomObjectInstancesGroup(
+    // Transforming to modification changes to trigger "update" instead of "insert"
+    firstDeployAppliedChanges.map(change => toChange({ before: getChangeData(change), after: getChangeData(change) })),
+    client,
+    ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP,
+    dataManagement,
+  )
+  return {
+    appliedChanges: approvalRulesWithCustomDeployResult.appliedChanges
+      // Transforming back to addition changes
+      .map(change => toChange({ after: getChangeData(change) }))
+      .concat(conditionsDeployResult.appliedChanges),
+    errors: approvalRulesWithAllConditionsMetDeployResult.errors.concat(
+      conditionsDeployResult.errors,
+      approvalRulesWithCustomDeployResult.errors,
+      nonDeployableConditionChanges.map(createNonDeployableConditionChangeError)
+    ),
+  }
+}
+
+
+export const deployCustomObjectInstancesGroup = async (
+  changes: ReadonlyArray<Change<InstanceElement>>,
+  client: SalesforceClient,
+  groupId: string,
+  dataManagement?: DataManagement,
+): Promise<DeployResult> => (
+  groupId === ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP
+    ? deployAddCustomApprovalRulesAndConditions(changes, client, dataManagement)
+    : deploySingleTypeAndActionCustomObjectInstancesGroup(changes, client, groupId, dataManagement)
+)

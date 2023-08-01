@@ -31,6 +31,7 @@ export type FetchProfile = {
   readonly shouldFetchAllCustomSettings: () => boolean
   readonly maxInstancesPerType: number
   readonly preferActiveFlowVersions: boolean
+  readonly addNamespacePrefixToFullName: boolean
 }
 
 export const buildFetchProfile = ({
@@ -41,9 +42,10 @@ export const buildFetchProfile = ({
   target,
   maxInstancesPerType,
   preferActiveFlowVersions,
-}: FetchParameters,
-changedAtSingleton?: InstanceElement): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, changedAtSingleton, isDefined(target)
+  addNamespacePrefixToFullName,
+  changedAtSingleton?: InstanceElement,
+}: FetchParameters): FetchProfile => ({
+  metadataQuery: buildMetadataQuery(metadata, isDefined(target)
     ? getFetchTargets(target as SupportedMetadataType[])
     : undefined),
   dataManagement: data && buildDataManagement(data),
@@ -51,6 +53,7 @@ changedAtSingleton?: InstanceElement): FetchProfile => ({
   shouldFetchAllCustomSettings: () => fetchAllCustomSettings ?? true,
   maxInstancesPerType: maxInstancesPerType ?? DEFAULT_MAX_INSTANCES_PER_TYPE,
   preferActiveFlowVersions: preferActiveFlowVersions ?? false,
+  addNamespacePrefixToFullName: addNamespacePrefixToFullName ?? true,
 })
 
 export const validateFetchParameters = (

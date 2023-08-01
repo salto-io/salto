@@ -22,7 +22,7 @@ import DummyAdapter from '../src/adapter'
 describe('adapter creator', () => {
   it('should return a config containing all of the generator params', () => {
     const config = adapter.configType as ObjectType
-    expect(Object.keys(config?.fields)).toEqual([...Object.keys(defaultParams), 'changeErrors', 'extraNaclPath', 'generateEnvName'])
+    expect(Object.keys(config?.fields)).toEqual([...Object.keys(defaultParams), 'changeErrors', 'extraNaclPath', 'generateEnvName', 'fieldsToOmitOnDeploy'])
   })
   it('should return an empty creds type', () => {
     expect(Object.keys(adapter.authenticationMethods.basic.credentialsType.fields)).toHaveLength(0)
@@ -31,7 +31,7 @@ describe('adapter creator', () => {
     expect(
       await adapter.validateCredentials(new InstanceElement(DUMMY_ADAPTER,
         adapter.authenticationMethods.basic.credentialsType))
-    ).toBe('')
+    ).toEqual({ accountId: '' })
   })
   it('should return the dummy adapter', () => {
     expect(adapter.operations({

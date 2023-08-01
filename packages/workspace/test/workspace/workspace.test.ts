@@ -22,7 +22,7 @@ import {
   Value, TypeReference, INSTANCE_ANNOTATIONS, ReferenceExpression, createRefToElmWithValue,
   SaltoError,
   StaticFile,
-  isStaticFile,
+  isStaticFile, TemplateExpression,
 } from '@salto-io/adapter-api'
 import { findElement, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { collections } from '@salto-io/lowerdash'
@@ -35,8 +35,18 @@ import { State, buildInMemState } from '../../src/workspace/state'
 import { createMockNaclFileSource } from '../common/nacl_file_source'
 import { mockStaticFilesSource, persistentMockCreateRemoteMap } from '../utils'
 import { DirectoryStore } from '../../src/workspace/dir_store'
-import { Workspace, initWorkspace, loadWorkspace, EnvironmentSource,
-  COMMON_ENV_PREFIX, UnresolvedElemIDs, UpdateNaclFilesResult, isValidEnvName } from '../../src/workspace/workspace'
+import {
+  Workspace,
+  initWorkspace,
+  loadWorkspace,
+  EnvironmentSource,
+  COMMON_ENV_PREFIX,
+  UnresolvedElemIDs,
+  UpdateNaclFilesResult,
+  isValidEnvName,
+  serializeReferenceTree,
+  deserializeReferenceTree,
+} from '../../src/workspace/workspace'
 import { DeleteCurrentEnvError, UnknownEnvError, EnvDuplicationError,
   AccountDuplicationError, InvalidEnvNameError, Errors, MAX_ENV_NAME_LEN, UnknownAccountError, InvalidAccountNameError } from '../../src/workspace/errors'
 import { StaticFilesSource, MissingStaticFile } from '../../src/workspace/static_files'
@@ -2606,11 +2616,8 @@ describe('workspace', () => {
         expect(result).toEqual(
           {
             'salesforce.lead.field.singleDef': 'single Def alias',
-            'salesforce.lead.field.multiDef': 'Multi Def',
             'salesforce.lead': 'lead alias',
             'salesforce.lead.instance.someName1': 'some name alias',
-            'salesforce.lead.instance.someName2': 'Some Name2',
-            'salesforce.text': 'Text',
           }
         )
       })
@@ -2681,6 +2688,30 @@ describe('workspace', () => {
         expect(multipleUsers).toEqual(expect.arrayContaining(unknownUser))
         expect(multipleUsers).toEqual(expect.arrayContaining(testUser))
       })
+    })
+  })
+  describe('referenceTargetsTree index', () => {
+    it('should return same result after serialize and deserialize', async () => {
+      const referenceTargetsTree = new collections.treeMap.TreeMap<ElemID>([
+        ['someAnnotation', [ElemID.fromFullName('test.target2.field.someField.value')]],
+        ['someValue', [ElemID.fromFullName('test.target2.instance.someInstance')]],
+        ['inner.templateValue', [
+          ElemID.fromFullName('test.target2.field.someTemplateField.value'),
+          ElemID.fromFullName('test.target2.field.anotherTemplateField.value'),
+        ],
+        ],
+        ['', [ElemID.fromFullName('test.target2.instance.someInstance2')]],
+
+      ])
+      const serializedTree = await serializeReferenceTree(referenceTargetsTree)
+      const deserializedTree = await deserializeReferenceTree(serializedTree)
+      expect(deserializedTree).toEqual(referenceTargetsTree)
+    })
+    it('should return same result after deserialize and serialize', async () => {
+      const serializedTree = '[["someAnnotation",["test.target2.field.someField.value"]],["someValue",["test.target2.instance.someInstance"]],["inner.templateValue",["test.target2.field.someTemplateField.value","test.target2.field.anotherTemplateField.value"]],["",["test.target2.instance.someInstance2"]]]'
+      const deserializedTree = await deserializeReferenceTree(serializedTree)
+      const reSerializedTree = await serializeReferenceTree(deserializedTree)
+      expect(reSerializedTree).toEqual(serializedTree)
     })
   })
   describe('deleteEnvironment', () => {
@@ -3263,17 +3294,87 @@ describe('workspace', () => {
 
   describe('getElementOutgoingReferences', () => {
     let workspace: Workspace
+    const ref1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref1'))
+    const ref2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'ref2'))
+    const templateRef1 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template1'))
+    const templateRef2 = new ReferenceExpression(new ElemID('adapter', 'refs', 'instance', 'template2'))
 
     beforeAll(async () => {
-      workspace = await createWorkspace()
+      const instanceElement = new InstanceElement(
+        'test',
+        new ObjectType({ elemID: new ElemID('adapter', 'test') }),
+        {
+          ref: ref1,
+          ref2,
+          inner: {
+            ref: ref2,
+            inner2: {
+              refs: new TemplateExpression({
+                parts: [templateRef1, templateRef2],
+              }),
+            },
+          },
+          none: 'none',
+        }
+      )
+      const objectType = new ObjectType({
+        elemID: new ElemID('adapter', 'object'),
+        annotations: {
+          typeRef: ref1,
+        },
+        fields: {
+          someField: {
+            refType: BuiltinTypes.STRING,
+            annotations: { fieldRef: ref2 },
+          },
+        },
+      })
+      const elementSources = {
+        default: {
+          naclFiles: createMockNaclFileSource([instanceElement, objectType]),
+          state: createState([]),
+        },
+        '': {
+          naclFiles: createMockNaclFileSource([]),
+          state: createState([]),
+        },
+      }
+      workspace = await createWorkspace(undefined, undefined, undefined, undefined, undefined, undefined,
+        elementSources)
     })
 
-    it('None-base type should throw', async () => {
-      await expect(workspace.getElementOutgoingReferences(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+    it('top level instance should return all references under it without duplicates', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test'))
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID, templateRef1.elemID, templateRef2.elemID])
     })
 
-    it('None-exist type should return empty array', async () => {
+    it('instance field should return all references nested under it', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner'))
+      expect(instanceRefs).toMatchObject([ref2.elemID, templateRef1.elemID, templateRef2.elemID])
+    })
+
+    it('specific nested instance field path should return references under it', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'inner', 'inner2', 'refs'))
+      expect(instanceRefs).toMatchObject([templateRef1.elemID, templateRef2.elemID])
+    })
+
+    it('nested instance field without references should return an empty array', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'none'))
+      expect(instanceRefs).toMatchObject([])
+    })
+
+    it('non-existent field should return an empty array', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'test', 'instance', 'test', 'nonexistent'))
+      expect(instanceRefs).toMatchObject([])
+    })
+
+    it('None-exist entry should return empty array', async () => {
       expect(await workspace.getElementOutgoingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
+    })
+
+    it('object type should also include the references of its fields', async () => {
+      const instanceRefs = await workspace.getElementOutgoingReferences(new ElemID('adapter', 'object'))
+      expect(instanceRefs).toMatchObject([ref1.elemID, ref2.elemID])
     })
   })
 
@@ -3290,6 +3391,22 @@ describe('workspace', () => {
 
     it('None-exist type should return empty array', async () => {
       expect(await workspace.getElementIncomingReferences(new ElemID('adapter', 'notExists'))).toEqual([])
+    })
+  })
+
+  describe('getElementAuthorInformation', () => {
+    let workspace: Workspace
+
+    beforeAll(async () => {
+      workspace = await createWorkspace()
+    })
+
+    it('None-base type should throw', async () => {
+      await expect(workspace.getElementAuthorInformation(new ElemID('adapter', 'type', 'attr', 'aaa'))).rejects.toThrow()
+    })
+
+    it('None-exist type should return empty object', async () => {
+      expect(await workspace.getElementAuthorInformation(new ElemID('adapter', 'notExists'))).toEqual({})
     })
   })
 

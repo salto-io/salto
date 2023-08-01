@@ -17,10 +17,16 @@ import _ from 'lodash'
 import { createMatchingObjectType } from '@salto-io/adapter-utils'
 import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, ListType, MapType, ObjectType } from '@salto-io/adapter-api'
 import { client as clientUtils, config as configUtils, elements } from '@salto-io/adapter-components'
-import { JIRA } from '../constants'
+import { JIRA, SCRIPT_RUNNER_API_DEFINITIONS } from '../constants'
 import { getProductSettings } from '../product_settings'
+import { JiraDuckTypeConfig } from './api_config'
 
-const { createUserFetchConfigType, createSwaggerAdapterApiConfigType } = configUtils
+const { createUserFetchConfigType,
+  createSwaggerAdapterApiConfigType,
+  createDucktypeAdapterApiConfigType,
+  defaultMissingUserFallbackField } = configUtils
+
+const FETCH_CONFIG = 'fetch'
 
 type JiraClientConfig = clientUtils.ClientBaseConfig<clientUtils.ClientRateLimitConfig>
   & {
@@ -46,7 +52,7 @@ type JiraApiConfig = Omit<configUtils.AdapterSwaggerApiConfig, 'swagger'> & {
   typesToFallbackToInternalId: string[]
 }
 
-type JiraDeployConfig = configUtils.UserDeployConfig & {
+type JiraDeployConfig = configUtils.UserDeployConfig & configUtils.DefaultMissingUserFallbackConfig & {
   forceDelete: boolean
 }
 
@@ -60,7 +66,10 @@ type JiraFetchConfig = configUtils.UserFetchConfig<JiraFetchFilters> & {
   convertUsersIds?: boolean
   parseTemplateExpressions?: boolean
   enableScriptRunnerAddon?: boolean
+  removeDuplicateProjectRoles?: boolean
   addAlias?: boolean
+  splitFieldConfiguration?: boolean
+  enableMissingReferences?: boolean
 }
 
 export type MaskingConfig = {
@@ -74,6 +83,7 @@ export type JiraConfig = {
   deploy: JiraDeployConfig
   apiDefinitions: JiraApiConfig
   masking: MaskingConfig
+  [SCRIPT_RUNNER_API_DEFINITIONS]?: JiraDuckTypeConfig
 }
 
 const jspUrlsType = createMatchingObjectType<Partial<JspUrls>>({
@@ -139,6 +149,9 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
   fetch: {
     ...elements.query.INCLUDE_ALL_CONFIG,
     hideTypes: true,
+    enableMissingReferences: true,
+    removeDuplicateProjectRoles: true,
+
   },
   deploy: {
     forceDelete: false,
@@ -152,6 +165,7 @@ export const PARTIAL_DEFAULT_CONFIG: Omit<JiraConfig, 'apiDefinitions'> = {
 export const getDefaultConfig = ({ isDataCenter }: { isDataCenter: boolean }): JiraConfig => ({
   ...PARTIAL_DEFAULT_CONFIG,
   apiDefinitions: getProductSettings({ isDataCenter }).defaultApiDefinitions,
+  [SCRIPT_RUNNER_API_DEFINITIONS]: getProductSettings({ isDataCenter }).defaultScriptRunnerApiDefinitions,
 })
 
 const createClientConfigType = (): ObjectType => {
@@ -169,9 +183,102 @@ const createClientConfigType = (): ObjectType => {
   return configType
 }
 
+export type ChangeValidatorName = (
+  | 'unresolvedReference'
+  | 'automationProjectUnresolvedReference'
+  | 'deployTypesNotSupported'
+  | 'readOnlyProjectRoleChange'
+  | 'defaultFieldConfiguration'
+  | 'screen'
+  | 'issueTypeScheme'
+  | 'issueTypeSchemeDefaultType'
+  | 'projectDeletion'
+  | 'status'
+  | 'privateApi'
+  | 'emptyValidatorWorkflowChange'
+  | 'readOnlyWorkflow'
+  | 'dashboardGadgets'
+  | 'dashboardLayout'
+  | 'permissionType'
+  | 'automations'
+  | 'activeSchemeDeletion'
+  | 'sameIssueTypeNameChange'
+  | 'statusMigrationChange'
+  | 'workflowSchemeMigration'
+  | 'issueTypeSchemeMigration'
+  | 'activeSchemeChange'
+  | 'masking'
+  | 'issueTypeDeletion'
+  | 'lockedFields'
+  | 'fieldContext'
+  | 'fieldSecondGlobalContext'
+  | 'systemFields'
+  | 'workflowProperties'
+  | 'permissionScheme'
+  | 'screenSchemeDefault'
+  | 'wrongUserPermissionScheme'
+  | 'accountId'
+  | 'workflowSchemeDups'
+  | 'workflowTransitionDuplicateName'
+  | 'permissionSchemeDeployment'
+  | 'projectCategory'
+  | 'unresolvedFieldConfigurationItems'
+  )
+
+type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
+
+const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig>({
+  elemID: new ElemID(JIRA, 'changeValidatorConfig'),
+  fields: {
+    unresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    automationProjectUnresolvedReference: { refType: BuiltinTypes.BOOLEAN },
+    deployTypesNotSupported: { refType: BuiltinTypes.BOOLEAN },
+    readOnlyProjectRoleChange: { refType: BuiltinTypes.BOOLEAN },
+    defaultFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    screen: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeScheme: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeSchemeDefaultType: { refType: BuiltinTypes.BOOLEAN },
+    projectDeletion: { refType: BuiltinTypes.BOOLEAN },
+    status: { refType: BuiltinTypes.BOOLEAN },
+    privateApi: { refType: BuiltinTypes.BOOLEAN },
+    emptyValidatorWorkflowChange: { refType: BuiltinTypes.BOOLEAN },
+    readOnlyWorkflow: { refType: BuiltinTypes.BOOLEAN },
+    dashboardGadgets: { refType: BuiltinTypes.BOOLEAN },
+    dashboardLayout: { refType: BuiltinTypes.BOOLEAN },
+    permissionType: { refType: BuiltinTypes.BOOLEAN },
+    automations: { refType: BuiltinTypes.BOOLEAN },
+    activeSchemeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    sameIssueTypeNameChange: { refType: BuiltinTypes.BOOLEAN },
+    statusMigrationChange: { refType: BuiltinTypes.BOOLEAN },
+    workflowSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeSchemeMigration: { refType: BuiltinTypes.BOOLEAN },
+    activeSchemeChange: { refType: BuiltinTypes.BOOLEAN },
+    masking: { refType: BuiltinTypes.BOOLEAN },
+    issueTypeDeletion: { refType: BuiltinTypes.BOOLEAN },
+    lockedFields: { refType: BuiltinTypes.BOOLEAN },
+    fieldContext: { refType: BuiltinTypes.BOOLEAN },
+    fieldSecondGlobalContext: { refType: BuiltinTypes.BOOLEAN },
+    systemFields: { refType: BuiltinTypes.BOOLEAN },
+    workflowProperties: { refType: BuiltinTypes.BOOLEAN },
+    permissionScheme: { refType: BuiltinTypes.BOOLEAN },
+    screenSchemeDefault: { refType: BuiltinTypes.BOOLEAN },
+    wrongUserPermissionScheme: { refType: BuiltinTypes.BOOLEAN },
+    accountId: { refType: BuiltinTypes.BOOLEAN },
+    workflowSchemeDups: { refType: BuiltinTypes.BOOLEAN },
+    workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
+    permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
+    projectCategory: { refType: BuiltinTypes.BOOLEAN },
+    unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },
+  },
+  annotations: {
+    [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
+  },
+})
 const jiraDeployConfigType = configUtils.createUserDeployConfigType(
   JIRA,
+  changeValidatorConfigType,
   {
+    ...defaultMissingUserFallbackField,
     forceDelete: { refType: BuiltinTypes.BOOLEAN },
   }
 )
@@ -194,9 +301,12 @@ const fetchConfigType = createUserFetchConfigType(
     addTypeToFieldName: { refType: BuiltinTypes.BOOLEAN },
     showUserDisplayNames: { refType: BuiltinTypes.BOOLEAN },
     enableScriptRunnerAddon: { refType: BuiltinTypes.BOOLEAN },
+    removeDuplicateProjectRoles: { refType: BuiltinTypes.BOOLEAN },
     // Default is true
     parseTemplateExpressions: { refType: BuiltinTypes.BOOLEAN },
     addAlias: { refType: BuiltinTypes.BOOLEAN },
+    splitFieldConfiguration: { refType: BuiltinTypes.BOOLEAN },
+    enableMissingReferences: { refType: BuiltinTypes.BOOLEAN },
   },
   fetchFiltersType,
 )
@@ -224,9 +334,18 @@ export const configType = createMatchingObjectType<Partial<JiraConfig>>({
     fetch: { refType: fetchConfigType },
     apiDefinitions: { refType: apiDefinitionsType },
     masking: { refType: maskingConfigType },
+    [SCRIPT_RUNNER_API_DEFINITIONS]: { refType: createDucktypeAdapterApiConfigType({
+      adapter: JIRA,
+      elemIdPrefix: 'ducktype',
+    }) },
   },
   annotations: {
-    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, ['client', 'masking', 'fetch.hideTypes']),
+    [CORE_ANNOTATIONS.DEFAULT]: _.omit(PARTIAL_DEFAULT_CONFIG, [
+      'client',
+      'masking',
+      'fetch.hideTypes',
+      'fetch.enableMissingReferences',
+      SCRIPT_RUNNER_API_DEFINITIONS]),
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,
   },
 })
@@ -240,4 +359,23 @@ export const getApiDefinitions = (config: JiraApiConfig): {
     platform: { ...baseConfig, swagger: config.platformSwagger },
     jira: { ...baseConfig, swagger: config.jiraSwagger },
   }
+}
+
+export const validateJiraFetchConfig = ({
+  fetchConfig,
+  apiDefinitions,
+  scriptRunnerApiDefinitions,
+}: {
+  fetchConfig: JiraFetchConfig
+  apiDefinitions: JiraApiConfig
+  scriptRunnerApiDefinitions: JiraDuckTypeConfig
+}): void => {
+  const supportedTypes = fetchConfig.enableScriptRunnerAddon
+    ? Object.keys(apiDefinitions.supportedTypes).concat(Object.keys(scriptRunnerApiDefinitions.supportedTypes))
+    : Object.keys(apiDefinitions.supportedTypes)
+  configUtils.validateSupportedTypes(
+    FETCH_CONFIG,
+    fetchConfig,
+    supportedTypes
+  )
 }

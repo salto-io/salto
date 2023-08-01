@@ -16,11 +16,12 @@
 import { toChange, Change, FetchOptions } from '@salto-io/adapter-api'
 import { mockFunction, MockInterface } from '@salto-io/test-utils'
 import SalesforceAdapter from '../../src/adapter'
-import { FilterWith, LocalFilterCreator } from '../../src/filter'
+import { LocalFilterCreator } from '../../src/filter'
 import mockAdapter from '../adapter'
 import { mockDeployResult, mockDeployMessage } from '../connection'
 import { apiName, createInstanceElement, metadataType } from '../../src/transformers/transformer'
 import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 describe('SalesforceAdapter filters', () => {
   describe('when filter methods are implemented', () => {

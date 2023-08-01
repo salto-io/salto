@@ -13,9 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Values } from '@salto-io/adapter-api'
+import { ElemID, Values } from '@salto-io/adapter-api'
 import Bottleneck from 'bottleneck'
-import { SuiteAppClientConfig } from '../../config'
+import { InstanceLimiterFunc, SuiteAppClientConfig } from '../../config'
 import { SuiteAppConfigRecordType, SUITEAPP_CONFIG_RECORD_TYPES } from '../../types'
 import { SuiteAppCredentials } from '../credentials'
 
@@ -88,11 +88,11 @@ export const isError = (results: RestletResults): results is RestletErrorResults
 
 export type HttpMethod = 'POST' | 'GET'
 
-
 export type SuiteAppClientParameters = {
   credentials: SuiteAppCredentials
   config?: SuiteAppClientConfig
   globalLimiter: Bottleneck
+  instanceLimiter: InstanceLimiterFunc
 }
 
 export type SavedSearchQuery = {
@@ -101,23 +101,50 @@ export type SavedSearchQuery = {
   filters: Array<string[] | string>
 }
 
-export const SYSTEM_INFORMATION_SCHEME = {
-  type: 'object',
-  properties: {
-    time: { type: 'number' },
-    appVersion: {
-      type: 'array',
-      items: { type: 'number' },
-    },
-  },
-  required: ['time', 'appVersion'],
-  additionalProperties: true,
+export enum EnvType {
+  PRODUCTION,
+  SANDBOX,
+  BETA,
+  INTERNAL
 }
 
+const BASIC_SYSTEM_INFO_SCHEME_PROPERTIES = {
+  time: { type: 'number' },
+  appVersion: {
+    type: 'array',
+    items: { type: 'number' },
+  },
+}
+
+export const SYSTEM_INFORMATION_SCHEME = {
+  anyOf: [
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+        envType: {
+          type: 'number',
+          enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
+        },
+      },
+      required: ['time', 'appVersion', 'envType'],
+    },
+    {
+      type: 'object',
+      properties: {
+        ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
+      },
+      required: ['time', 'appVersion'],
+    },
+  ],
+  additionalProperties: true,
+}
 
 export type SystemInformation = {
   time: Date
   appVersion: number[]
+  // TODO: make this field not optional once SALTO-2602 is merged and users are upgraded to SuiteApp version 0.1.7
+  envType?: EnvType
 }
 
 export const FILES_READ_SCHEMA = {
@@ -181,7 +208,7 @@ type ReadFailure = {
 
 export type ReadResults = (ReadSuccess | ReadFailure)[]
 
-export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config'
+export type RestletOperation = 'search' | 'sysInfo' | 'readFile' | 'config' | 'listBundles' | 'listSuiteApps'
 
 export type CallsLimiter = <T>(fn: () => Promise<T>) => Promise<T>
 
@@ -189,7 +216,7 @@ export type FileDetails = {
   type: 'file'
   path: string
   id?: number
-  folder: number | undefined
+  folder: string | undefined
   bundleable: boolean
   isInactive: boolean
   isOnline: boolean
@@ -205,7 +232,7 @@ export type FolderDetails = {
   type: 'folder'
   path: string
   id?: number
-  parent: number | undefined
+  parent: string | undefined
   bundleable: boolean
   isInactive: boolean
   isPrivate: boolean
@@ -320,6 +347,8 @@ export type FailSetConfig = {
 
 export type SetConfigResult = (SuccessSetConfig | FailSetConfig)[]
 
+export type HasElemIDFunc = (elemID: ElemID) => Promise<boolean>
+
 export const isSuccessSetConfig = (
   result: SuccessSetConfig | FailSetConfig
 ): result is SuccessSetConfig =>
@@ -344,6 +373,32 @@ export const SET_CONFIG_RESULT_SCHEMA = {
       },
       required: ['configType', 'status', 'errorMessage'],
     }],
+  },
+}
+
+export const GET_BUNDLES_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      name: { type: 'string' },
+      version: { type: ['string', 'null'] },
+    },
+    required: ['id', 'name', 'version'],
+  },
+}
+
+export const GET_SUITEAPPS_RESULT_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: {
+      appId: { type: 'string' },
+      name: { type: 'string' },
+      version: { type: 'string' },
+    },
+    required: ['appId', 'name', 'version'],
   },
 }
 

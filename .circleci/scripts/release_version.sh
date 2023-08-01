@@ -27,6 +27,11 @@ if [ -z "$GIT_BASE_REVISION" ]; then
   exit 1
 fi
 
+if [ -z "$VSCODE_MARKETPLACE_TOKEN" ]; then
+  echo >&2 "missing VSCODE_MARKETPLACE_TOKEN environment variable"
+  exit 1
+fi
+
 CURRENT_VERSION="$(jq -j .version lerna.json)"
 PREV_VERSION="$(git show ${GIT_BASE_REVISION}:lerna.json | jq -j .version)"
 
@@ -108,8 +113,18 @@ create_release_in_github() {
   wait
 }
 
+publish_extension_to_marketplace() {
+  pushd "$1"
+
+  echo "publishing extension to vscode market place"
+  npx vsce publish --packagePath ./salto.vsix --pat ${VSCODE_MARKETPLACE_TOKEN}
+  
+  popd
+}
+
 tmp_assets_dir=$(mktemp -d)
 copy_files_from_s3 $tmp_assets_dir
 push_new_git_tag
 publish_packages_to_npm
 create_release_in_github $tmp_assets_dir
+publish_extension_to_marketplace $tmp_assets_dir

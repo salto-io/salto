@@ -65,14 +65,15 @@ export const replaceTemplatesWithValues = (
     deployTemplateMapping[templateUsingIdField.value] = template
     return templateUsingIdField.value
   }
-  const replaceIfTemplate = (value: unknown): unknown =>
-    (isTemplateExpression(value) ? handleTemplateValue(value) : value)
-  container.values.forEach(value => {
-    if (Array.isArray(value[fieldName])) {
-      value[fieldName] = value[fieldName].map(replaceIfTemplate)
-    } else {
-      value[fieldName] = replaceIfTemplate(value[fieldName])
+  const replaceIfTemplate = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(replaceIfTemplate)
     }
+    return (isTemplateExpression(value) ? handleTemplateValue(value) : value)
+  }
+
+  container.values.forEach(value => {
+    value[fieldName] = replaceIfTemplate(value[fieldName])
   })
 }
 
@@ -83,10 +84,17 @@ export const resolveTemplates = (
   const resolveTemplate = (value: string): TemplateExpression | string =>
     deployTemplateMapping[value] ?? value
 
+  const resolveTemplateValue = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(resolveTemplateValue)
+    }
+    return _.isString(value) ? resolveTemplate(value) : value
+  }
+
   const { fieldName } = container
   container.values.forEach(value => {
     const val = value[fieldName]
-    value[fieldName] = Array.isArray(val) ? val.map(resolveTemplate) : resolveTemplate(val)
+    value[fieldName] = Array.isArray(val) ? val.map(resolveTemplateValue) : resolveTemplate(val)
   })
 }
 

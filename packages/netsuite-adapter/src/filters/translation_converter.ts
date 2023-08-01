@@ -18,7 +18,7 @@ import { elementAnnotationTypes, getPath, TransformFunc, transformValues } from 
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterWith } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { ATTRIBUTE_PREFIX } from '../client/constants'
 import { CENTER_CATEGORY, CENTER_TAB, DATASET, NETSUITE, SUBTAB, TRANSLATION_COLLECTION, WORKBOOK } from '../constants'
 import { isCustomRecordType } from '../types'
@@ -95,7 +95,7 @@ const transformAnnotationsAndValues = async (
   }) ?? {}
 }
 
-const filterCreator = (): FilterWith<'onFetch' | 'preDeploy'> => ({
+const filterCreator: LocalFilterCreator = () => ({
   name: 'translationConverter',
   onFetch: async elements => {
     addTranslateFields(elements.filter(isType))

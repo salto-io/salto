@@ -13,23 +13,25 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDeployConfig } from '../../src/config'
+import { ElemID, ObjectType } from '@salto-io/adapter-api'
+import { createUserDeployConfigType, createUserFetchConfigType, getConfigWithDefault, validateDefaultMissingUserFallbackConfig } from '../../src/config'
 
 describe('config_shared', () => {
   describe('createUserFetchConfigType', () => {
     it('should return default type when no custom fields were added', () => {
       const type = createUserFetchConfigType('myAdapter')
-      expect(Object.keys(type.fields)).toHaveLength(3)
+      expect(Object.keys(type.fields)).toHaveLength(4)
       expect(type.fields.include).toBeDefined()
       expect(type.fields.exclude).toBeDefined()
       expect(type.fields.hideTypes).toBeDefined()
+      expect(type.fields.asyncPagination).toBeDefined()
     })
   })
   describe('createUserDeployConfigType', () => {
     it('should return default type when no custom fields were added', () => {
-      const type = createUserDeployConfigType('myAdapter')
+      const type = createUserDeployConfigType('myAdapter', new ObjectType({ elemID: new ElemID('test') }))
       expect(Object.keys(type.fields)).toHaveLength(1)
-      expect(type.fields.defaultMissingUserFallback).toBeDefined()
+      expect(type.fields.changeValidators).toBeDefined()
     })
   })
   describe('getConfigWithDefault', () => {
@@ -56,7 +58,7 @@ describe('config_shared', () => {
   })
   describe('validateDeployConfig', () => {
     it('should not throw if defaultMissingUserFallback is ##DEPLOYER##', () => {
-      expect(() => validateDeployConfig(
+      expect(() => validateDefaultMissingUserFallbackConfig(
         'deploy',
         { defaultMissingUserFallback: '##DEPLOYER##' },
         (): boolean => true,
@@ -64,7 +66,7 @@ describe('config_shared', () => {
     })
 
     it('should throw if validateUserFunc returns false', async () => {
-      expect(() => validateDeployConfig(
+      expect(() => validateDefaultMissingUserFallbackConfig(
         'deploy',
         { defaultMissingUserFallback: 'invalid@user.name' },
         (): boolean => false,

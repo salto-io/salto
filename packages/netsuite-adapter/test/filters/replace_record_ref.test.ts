@@ -16,6 +16,7 @@
 import { ContainerType, ElemID, ObjectType, TypeElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/replace_record_ref'
 import { NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('replaceRecordRef', () => {
   let recordRefType: ObjectType
@@ -37,13 +38,13 @@ describe('replaceRecordRef', () => {
   })
 
   it('should add field to record ref type', async () => {
-    await filterCreator().onFetch(elements)
+    await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
     expect((await typeWithRecordRef.fields.recordRef.getType() as ObjectType).fields.id)
       .toBeDefined()
   })
 
   it('should replace all record refs references', async () => {
-    await filterCreator().onFetch(elements)
+    await filterCreator({} as LocalFilterOpts).onFetch?.(elements)
     expect((await typeWithRecordRef.fields.department.getType()).elemID.name).toBe('department')
     expect(
       (await (await typeWithRecordRef.fields.subsidiaryList.getType() as ContainerType)

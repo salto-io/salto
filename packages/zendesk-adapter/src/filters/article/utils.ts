@@ -26,6 +26,7 @@ import {
 } from '@salto-io/adapter-utils'
 import { collections, promises } from '@salto-io/lowerdash'
 import {
+  createSaltoElementError,
   InstanceElement,
   isReferenceExpression,
   isStaticFile,
@@ -47,7 +48,6 @@ const log = logger(module)
 const { awu } = collections.asynciterable
 
 const RESULT_MAXIMUM_OUTPUT_SIZE = 100
-export const ATTACHMENTS_FIELD_NAME = 'attachments'
 
 type Attachment = InstanceElement & {
   value: {
@@ -192,7 +192,7 @@ export const createUnassociatedAttachment = async (
     }
     attachmentInstance.value.id = createdAttachment[0].id
   } catch (err) {
-    throw getZendeskError(attachmentInstance.elemID, err)
+    throw getZendeskError(attachmentInstance.elemID, err) // caught in adapter.ts
   }
 }
 
@@ -227,17 +227,26 @@ export const updateArticleTranslationBody = async ({
     .filter(isReferenceExpression)
     .filter(translationInstance => isTemplateExpression(translationInstance.value.value.body))
     .forEach(async translationInstance => {
-      replaceTemplatesWithValues(
-        { values: [translationInstance.value.value], fieldName: 'body' },
-        {},
-        (part: ReferenceExpression) => {
-          const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
-          if (attachmentIndex !== -1) {
-            return attachmentInstances[attachmentIndex].value.id.toString()
+      try {
+        replaceTemplatesWithValues(
+          { values: [translationInstance.value.value], fieldName: 'body' },
+          {},
+          (part: ReferenceExpression) => {
+            const attachmentIndex = attachmentElementsNames.findIndex(name => name === part.elemID.name)
+            if (attachmentIndex !== -1) {
+              return attachmentInstances[attachmentIndex].value.id.toString()
+            }
+            return prepRef(part)
           }
-          return prepRef(part)
-        }
-      )
+        )
+      } catch (e) {
+        log.error(`Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`)
+        throw createSaltoElementError({ // caught in adapter.ts
+          message: `Error serializing article translation body in Deployment for ${translationInstance.elemID.getFullName()}: ${e}, stack: ${e.stack}`,
+          severity: 'Error',
+          elemID: translationInstance.elemID,
+        })
+      }
       await client.put({
         url: `/api/v2/help_center/articles/${articleValues?.id}/translations/${translationInstance.value.value.locale.value.value.locale}`,
         data: { translation: { body: translationInstance.value.value.body } },

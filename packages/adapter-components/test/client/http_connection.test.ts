@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import axios, { AxiosError } from 'axios'
+import axios, { AxiosError, AxiosResponse } from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import { RetryOptions } from '../../src/client/http_connection'
 import { validateCredentials, axiosConnection, UnauthorizedError, createRetryOptions } from '../../src/client'
@@ -41,7 +41,11 @@ describe('client_http_connection', () => {
         accountId: 'ACCOUNT_ID',
       })
       const validateRes = validateCredentials({ username: 'user123', password: 'pass' }, { createConnection })
-      expect(await validateRes).toEqual('ACCOUNT_ID:user123')
+      expect(await validateRes).toEqual({
+        accountId: 'ACCOUNT_ID:user123',
+        accountType: 'Sandbox',
+        isProduction: false,
+      })
       expect(mockAxiosAdapter.history.get.length).toBe(1)
       const req = mockAxiosAdapter.history.get[0]
       expect(req.url).toEqual('/users/me')
@@ -54,7 +58,7 @@ describe('client_http_connection', () => {
         { createConnection: retryOptions => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
-          baseURLFunc: () => BASE_URL,
+          baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new UnauthorizedError('aaa') },
         })) },
       )).rejects.toThrow(new UnauthorizedError('Unauthorized - update credentials and try again'))
@@ -65,7 +69,7 @@ describe('client_http_connection', () => {
         { createConnection: retryOptions => (axiosConnection({
           retryOptions,
           authParamsFunc: async () => ({}),
-          baseURLFunc: () => BASE_URL,
+          baseURLFunc: async () => BASE_URL,
           credValidateFunc: async () => { throw new Error('aaa') },
         })) },
       )).rejects.toThrow(new Error('Login failed with error: Error: aaa'))
@@ -73,6 +77,24 @@ describe('client_http_connection', () => {
   })
   describe('createRetryOptions', () => {
     let retryOptions: RetryOptions
+
+    const mockAxiosError = (args: Partial<AxiosError>): AxiosError => ({
+      name: 'MockAxiosError',
+      message: 'mock axios error message',
+      config: {},
+      isAxiosError: true,
+      toJSON: () => args,
+      ...args,
+    })
+
+    const mockAxiosResponse = (args: Partial<AxiosResponse>): AxiosResponse => ({
+      config: {},
+      data: null,
+      headers: {},
+      status: 200,
+      statusText: 'success',
+      ...args,
+    })
 
     beforeEach(() => {
       retryOptions = createRetryOptions({ maxAttempts: 3, retryDelay: 100, additionalStatusCodesToRetry: [] })
@@ -86,42 +108,42 @@ describe('client_http_connection', () => {
     })
 
     it('should use the retry-after header when available', () => {
-      expect(retryOptions.retryDelay?.(1, {
-        response: {
+      expect(retryOptions.retryDelay?.(1, mockAxiosError({
+        response: mockAxiosResponse({
           headers: {
             'Retry-After': '10',
           },
-        },
+        }),
         code: 'code',
         config: {
           url: 'url',
         },
-      } as AxiosError)).toBe(10000)
+      }))).toBe(10000)
 
-      expect(retryOptions.retryDelay?.(1, {
-        response: {
+      expect(retryOptions.retryDelay?.(1, mockAxiosError({
+        response: mockAxiosResponse({
           headers: {
             date: 'Wed, 14 Sep 2022 11:22:45 GMT',
             'x-rate-limit-reset': '1663154597',
           },
-        },
+        }),
         code: 'code',
         config: {
           url: 'url',
         },
-      } as AxiosError)).toBe(32000)
+      }))).toBe(32000)
 
-      expect(retryOptions.retryDelay?.(1, {
-        response: {
+      expect(retryOptions.retryDelay?.(1, mockAxiosError({
+        response: mockAxiosResponse({
           headers: {
             'retry-after': '10',
           },
-        },
+        }),
         code: 'code',
         config: {
           url: 'url',
         },
-      } as AxiosError)).toBe(10000)
+      }))).toBe(10000)
     })
 
     it('should use the input delay when retry-after header is not available', () => {
@@ -138,17 +160,17 @@ describe('client_http_connection', () => {
     })
 
     it('should use the input delay when retry-after header is invalid', () => {
-      expect(retryOptions.retryDelay?.(1, {
-        response: {
+      expect(retryOptions.retryDelay?.(1, mockAxiosError({
+        response: mockAxiosResponse({
           headers: {
             'Retry-After': 'invalid',
           },
-        },
+        }),
         code: 'code',
         config: {
           url: 'url',
         },
-      } as AxiosError)).toBe(100)
+      }))).toBe(100)
     })
   })
 })

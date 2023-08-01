@@ -19,23 +19,27 @@ import NetsuiteClient from './client/client'
 import { LazyElementsSourceIndexes } from './elements_source_index/types'
 import { DeployResult } from './types'
 import { NetsuiteConfig } from './config'
+import { TimeZoneAndFormat } from './changes_detector/date_formats'
 
 
 export type Filter = filter.Filter<void, DeployResult>
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<void, M, DeployResult>
-
-export type FilterOpts = {
-  client: NetsuiteClient
+export type LocalFilterOpts = {
   elementsSourceIndex: LazyElementsSourceIndexes
   elementsSource: ReadOnlyElementsSource
   isPartial: boolean
   config: NetsuiteConfig
+  timeZoneAndFormat?: TimeZoneAndFormat
   changesGroupId?: string
+  fetchTime?: Date
 }
 
-export type FilterCreator = filter.FilterCreator<
-  void,
-  FilterOpts,
-  DeployResult
->
+export type RemoteFilterOpts = LocalFilterOpts & {
+  client: NetsuiteClient
+}
+
+export type LocalFilterCreator = filter.FilterCreator<void, LocalFilterOpts, DeployResult>
+export type RemoteFilterCreator = filter.RemoteFilterCreator<void, RemoteFilterOpts, DeployResult>
+
+export type LocalFilterCreatorDefinition = filter.LocalFilterCreatorDefinition<void, LocalFilterOpts, DeployResult>
+export type RemoteFilterCreatorDefinition = filter.RemoteFilterCreatorDefinition<void, RemoteFilterOpts, DeployResult>

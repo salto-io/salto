@@ -16,9 +16,8 @@
 import _ from 'lodash'
 import { ObjectType, Element, InstanceElement, isInstanceElement } from '@salto-io/adapter-api'
 import filterCreator from '../../src/filters/profile_instance_split'
-import { FilterWith } from '../../src/filter'
 import { generateProfileType, defaultFilterContext } from '../utils'
-
+import { FilterWith } from './mocks'
 
 describe('Profile Instance Split filter', () => {
   describe('Map profile instances', () => {

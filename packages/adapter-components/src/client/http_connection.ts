@@ -14,9 +14,9 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosBasicCredentials, AxiosRequestConfig, AxiosRequestHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
-import { AccountId, CredentialError } from '@salto-io/adapter-api'
+import { AccountInfo, CredentialError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { ClientRetryConfig } from './config'
 import { DEFAULT_RETRY_OPTS } from './constants'
@@ -50,7 +50,7 @@ export type APIConnection<T = any, S = any> = {
 }
 
 export type AuthenticatedAPIConnection = APIConnection & {
-  accountId: AccountId
+  accountInfo: AccountInfo
 }
 
 export type RetryOptions = {
@@ -151,25 +151,25 @@ export const createClientConnection = <TCredentials>({
 export const validateCredentials = async <TCredentials>(
   creds: TCredentials,
   createConnectionArgs: ConnectionParams<TCredentials>,
-): Promise<AccountId> => {
+): Promise<AccountInfo> => {
   const conn = createClientConnection(createConnectionArgs)
-  const { accountId } = await conn.login(creds)
-  return accountId
+  const { accountInfo } = await conn.login(creds)
+  return accountInfo
 }
 
 export type AuthParams = {
   auth?: AxiosBasicCredentials
-  headers?: Record<string, unknown>
+  headers?: AxiosRequestHeaders
 }
 
 type AxiosConnectionParams<TCredentials> = {
   retryOptions: RetryOptions
   authParamsFunc: (creds: TCredentials) => Promise<AuthParams>
-  baseURLFunc: (creds: TCredentials) => string
+  baseURLFunc: (creds: TCredentials) => Promise<string>
   credValidateFunc: ({ credentials, connection }: {
     credentials: TCredentials
     connection: APIConnection
-  }) => Promise<AccountId>
+  }) => Promise<AccountInfo>
 }
 
 export const axiosConnection = <TCredentials>({
@@ -182,17 +182,14 @@ export const axiosConnection = <TCredentials>({
     creds: TCredentials,
   ): Promise<AuthenticatedAPIConnection> => {
     const httpClient = axios.create({
-      baseURL: baseURLFunc(creds),
+      baseURL: await baseURLFunc(creds),
       ...await authParamsFunc(creds),
     })
     axiosRetry(httpClient, retryOptions)
 
     try {
-      const accountId = await credValidateFunc({ credentials: creds, connection: httpClient })
-      return {
-        ...httpClient,
-        accountId,
-      }
+      const accountInfo = await credValidateFunc({ credentials: creds, connection: httpClient })
+      return Object.assign(httpClient, { accountInfo })
     } catch (e) {
       log.error(`Login failed: ${e}, stack: ${e.stack}`)
       if (e.response?.status === 401 || e instanceof UnauthorizedError) {

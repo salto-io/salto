@@ -42,6 +42,8 @@ describe('adapters config', () => {
     jest.resetAllMocks()
     mockNaclFilesSource = createMockNaclFileSource([])
 
+    mockNaclFilesSource.has.mockResolvedValue(true)
+
     mockNaclFilesSource.get.mockResolvedValue(new InstanceElement(
       ElemID.CONFIG_NAME,
       new ObjectType({ elemID: new ElemID(SALESFORCE, ElemID.CONFIG_NAME) }),
@@ -162,7 +164,6 @@ describe('adapters config', () => {
       })
     ))
     expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce', 'salesforce'] })])
-    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should set adapter in nacl files source with the config path', async () => {
@@ -175,7 +176,6 @@ describe('adapters config', () => {
       ['dir', 'file']
     ))
     expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce', 'dir', 'file'] })])
-    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should set adapter in nacl files source with the config path, if account name isnt same as service', async () => {
@@ -186,7 +186,6 @@ describe('adapters config', () => {
       }),
     ))
     expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledWith([expect.objectContaining({ path: ['salto.config', 'adapters', 'salesforce2', 'salesforce2'] })])
-    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('should return errors with "config" source', async () => {
@@ -211,7 +210,6 @@ describe('adapters config', () => {
     ))
     const receivedChange = mockNaclFilesSource.updateNaclFiles.mock.calls[1][0][0]
     expect(getChangeData(receivedChange).value).toEqual({ value: { inner2: 2, inner3: [] } })
-    expect(mockNaclFilesSource.flush).toHaveBeenCalled()
   })
 
   it('getElementNaclFiles should return the configuration files', async () => {
@@ -230,7 +228,6 @@ describe('adapters config', () => {
       conf.value.overridden = 3
       await expect(configSource.setAdapter(SALESFORCE, SALESFORCE, conf)).rejects.toThrow()
       expect(mockNaclFilesSource.updateNaclFiles).not.toHaveBeenCalled()
-      expect(mockNaclFilesSource.flush).not.toHaveBeenCalled()
     })
 
     it('update a none overridden field should not throw an exception', async () => {
@@ -238,7 +235,6 @@ describe('adapters config', () => {
       conf.value.other = 3
       await configSource.setAdapter(SALESFORCE, SALESFORCE, conf)
       expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalled()
-      expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })
 
     it('should call updateNaclFiles twice when there is no configuration', async () => {
@@ -246,7 +242,6 @@ describe('adapters config', () => {
       mockNaclFilesSource.get.mockResolvedValue(undefined)
       await configSource.setAdapter(SALESFORCE, SALESFORCE, conf)
       expect(mockNaclFilesSource.updateNaclFiles).toHaveBeenCalledTimes(2)
-      expect(mockNaclFilesSource.flush).toHaveBeenCalled()
     })
 
     it('setNaclFile should recalculate errors', async () => {

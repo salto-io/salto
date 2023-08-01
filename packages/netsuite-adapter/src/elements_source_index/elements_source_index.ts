@@ -14,13 +14,13 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value } from '@salto-io/adapter-api'
+import { CORE_ANNOTATIONS, InstanceElement, isInstanceElement, ReadOnlyElementsSource, ElemID, Element, isObjectType, Value, ObjectType } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { getElementValueOrAnnotations, isCustomRecordType } from '../types'
 import { ElementsSourceIndexes, LazyElementsSourceIndexes, ServiceIdRecords } from './types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
-import { getElementServiceIdRecords } from '../filters/element_references'
+import { extractCustomRecordFields, getElementServiceIdRecords } from '../filters/element_references'
 import { CUSTOM_LIST, CUSTOM_RECORD_TYPE, INTERNAL_ID, IS_SUB_INSTANCE } from '../constants'
 import { TYPES_TO_INTERNAL_ID } from '../data_elements/types'
 
@@ -82,13 +82,14 @@ export const assignToInternalIdsIndex = async (
   }
 }
 
-const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean):
+const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: boolean, deletedElements: ElemID[]):
   Promise<ElementsSourceIndexes> => {
   const serviceIdRecordsIndex: ServiceIdRecords = {}
   const internalIdsIndex: Record<string, ElemID> = {}
   const customFieldsIndex: Record<string, InstanceElement[]> = {}
   const elemIdToChangeByIndex: Record<string, string> = {}
   const elemIdToChangeAtIndex: Record<string, string> = {}
+  const customRecordFieldsServiceIdRecordsIndex: ServiceIdRecords = {}
 
   const updateInternalIdsIndex = async (element: Element): Promise<void> => {
     await assignToInternalIdsIndex(element, internalIdsIndex, elementsSource)
@@ -123,8 +124,16 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     }
   }
 
+  const updateCustomRecordFieldsIndex = (customObjectType: ObjectType): void => {
+    const serviceIdRecords = _.keyBy(extractCustomRecordFields(customObjectType), 'serviceID')
+    _.assign(customRecordFieldsServiceIdRecordsIndex, serviceIdRecords)
+  }
+
+  const deletedElementSet = new Set(deletedElements.map(elemId => elemId.getFullName()))
   const elements = await elementsSource.getAll()
   await awu(elements)
+    // avoid creating reference to a deleted element
+    .filter(element => !deletedElementSet.has(element.elemID.getFullName()))
     .filter(element => isInstanceElement(element) || (isObjectType(element) && isCustomRecordType(element)))
     .forEach(async element => {
       updateElemIdToChangedByIndex(element)
@@ -134,6 +143,8 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
         await updateInternalIdsIndex(element)
         if (isInstanceElement(element)) {
           updateCustomFieldsIndex(element)
+        } else if (isObjectType(element) && isCustomRecordType(element)) {
+          updateCustomRecordFieldsIndex(element)
         }
       }
     })
@@ -144,18 +155,20 @@ const createIndexes = async (elementsSource: ReadOnlyElementsSource, isPartial: 
     customFieldsIndex,
     elemIdToChangeByIndex,
     elemIdToChangeAtIndex,
+    customRecordFieldsServiceIdRecordsIndex,
   }
 }
 
 export const createElementsSourceIndex = (
   elementsSource: ReadOnlyElementsSource,
-  isPartial: boolean
+  isPartial: boolean,
+  deletedElements?: ElemID[],
 ): LazyElementsSourceIndexes => {
   let cachedIndex: ElementsSourceIndexes | undefined
   return {
     getIndexes: async () => {
       if (cachedIndex === undefined) {
-        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial), 'createIndexes')
+        cachedIndex = await log.time(() => createIndexes(elementsSource, isPartial, deletedElements ?? []), 'createIndexes')
       }
       return cachedIndex
     },

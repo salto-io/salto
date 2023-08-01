@@ -24,8 +24,7 @@ import {
 import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
 import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
-import { APP_INSTALLATION_TYPE_NAME } from '../filters/app'
-import { APP_OWNED_TYPE_NAME } from '../constants'
+import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
 

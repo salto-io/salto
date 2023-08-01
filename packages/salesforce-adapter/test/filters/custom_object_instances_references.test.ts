@@ -15,13 +15,22 @@
 */
 import { Element, ElemID, ObjectType, PrimitiveTypes, PrimitiveType, CORE_ANNOTATIONS, InstanceElement, ReferenceExpression, isInstanceElement, SaltoError } from '@salto-io/adapter-api'
 import { buildFetchProfile } from '../../src/fetch_profile/fetch_profile'
-import { FilterWith } from '../../src/filter'
 import SalesforceClient from '../../src/client/client'
 import filterCreator from '../../src/filters/custom_object_instances_references'
 import mockClient from '../client'
-import { SALESFORCE, API_NAME, CUSTOM_OBJECT, METADATA_TYPE, LABEL, FIELD_ANNOTATIONS } from '../../src/constants'
+import {
+  SALESFORCE,
+  API_NAME,
+  CUSTOM_OBJECT,
+  METADATA_TYPE,
+  LABEL,
+  FIELD_ANNOTATIONS,
+  CUSTOM_OBJECT_ID_FIELD,
+} from '../../src/constants'
 import { Types } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { mockTypes } from '../mock_elements'
+import { FilterWith } from './mocks'
 
 describe('Custom Object Instances References filter', () => {
   let client: SalesforceClient
@@ -159,6 +168,20 @@ describe('Custom Object Instances References filter', () => {
             ],
           },
         },
+        HiddenValueField: {
+          refType: Types.primitiveDataTypes.MasterDetail,
+          annotations: {
+            [CORE_ANNOTATIONS.REQUIRED]: true,
+            [LABEL]: 'hiddenValueField',
+            [API_NAME]: 'HiddenValueField',
+            [FIELD_ANNOTATIONS.CREATABLE]: true,
+            [FIELD_ANNOTATIONS.UPDATEABLE]: true,
+            [CORE_ANNOTATIONS.HIDDEN_VALUE]: true,
+            referenceTo: [
+              masterName,
+            ],
+          },
+        },
       },
     }
   )
@@ -188,6 +211,7 @@ describe('Custom Object Instances References filter', () => {
       LookupExample: 'refToId',
       MasterDetailExample: 'masterToId',
       NonDeployableLookup: 'ToNothing',
+      HiddenValueField: 'ToNothing',
       RefToUser: 'aaa',
     }
     const refToInstanceName = 'refToInstance'
@@ -310,15 +334,18 @@ describe('Custom Object Instances References filter', () => {
     })
 
     it('should replace lookup and master values with reference and not replace ref to user', () => {
-      const afterFilterRefToInst = elements.find(e => e.elemID.isEqual(refFromInstance.elemID))
+      const afterFilterRefToInst = elements
+        .filter(isInstanceElement)
+        .find(e => e.elemID.isEqual(refFromInstance.elemID)) as InstanceElement
       expect(afterFilterRefToInst).toBeDefined()
-      expect(isInstanceElement(afterFilterRefToInst)).toBeTruthy()
-      expect((afterFilterRefToInst as InstanceElement).value.LookupExample)
-        .toEqual(new ReferenceExpression(refToInstance.elemID))
-      expect((afterFilterRefToInst as InstanceElement).value.MasterDetailExample)
-        .toEqual(new ReferenceExpression(masterToInstance.elemID))
-      expect((afterFilterRefToInst as InstanceElement).value.RefToUser)
-        .toEqual('aaa')
+      expect(afterFilterRefToInst.value).toEqual({
+        Id: '1234',
+        LookupExample: new ReferenceExpression(refToInstance.elemID),
+        MasterDetailExample: new ReferenceExpression(masterToInstance.elemID),
+        NonDeployableLookup: 'ToNothing',
+        RefToUser: 'aaa',
+        HiddenValueField: 'ToNothing',
+      })
     })
 
     it('should drop the referencing instance if ref is to non existing instance', () => {
@@ -358,6 +385,50 @@ describe('Custom Object Instances References filter', () => {
           errorMsg => errorMsg.includes(instance.elemID.name)
         ) || errorMessages.some(errorMsg => errorMsg.includes(instance.value.Id))
         expect(warningsIncludeNameOrId).toBeTruthy()
+      })
+    })
+    describe('when instances with empty Salto ID exist', () => {
+      let instancesWithEmptyNames: InstanceElement[]
+      beforeEach(async () => {
+        instancesWithEmptyNames = [
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Product2,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '01t8d000003NIL3AAO',
+            }
+          ),
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Product2,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '01t3f005723ACL3AAO',
+            }
+          ),
+          new InstanceElement(
+            ElemID.CONFIG_NAME,
+            mockTypes.Account,
+            {
+              [CUSTOM_OBJECT_ID_FIELD]: '0018d00000PxfVvAAJ',
+            }
+          ),
+        ]
+        elements = instancesWithEmptyNames.map(instance => instance.clone())
+        const fetchResult = await filter.onFetch(elements)
+        errors = fetchResult ? fetchResult.errors ?? [] : []
+      })
+      it('should create fetch warnings and omit the instances', () => {
+        expect(errors).toIncludeSameMembers([
+          expect.objectContaining({
+            severity: 'Warning',
+            message: expect.stringContaining('collisions') && expect.stringContaining('Product2'),
+          }),
+          expect.objectContaining({
+            severity: 'Warning',
+            message: expect.stringContaining('Omitted Instance of type Account'),
+          }),
+        ])
+        expect(elements).not.toIncludeAnyMembers(instancesWithEmptyNames)
       })
     })
   })

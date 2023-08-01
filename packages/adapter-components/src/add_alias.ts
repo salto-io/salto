@@ -14,118 +14,121 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { InstanceElement, CORE_ANNOTATIONS,
-  ElemID, INSTANCE_ANNOTATIONS,
-  isReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, CORE_ANNOTATIONS, ElemID, INSTANCE_ANNOTATIONS, isReferenceExpression, ObjectType, isInstanceElement, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 
 const log = logger(module)
-type AliasComponent = {
+export type AliasComponent = {
   fieldName: string
   referenceFieldName?: string
 }
 
-type ConstantComponent = {
+export type ConstantComponent = {
   constant: string
 }
 
-export type AliasData = {
-  aliasComponents: (AliasComponent | ConstantComponent)[]
+type Component = AliasComponent | ConstantComponent
+export type AliasData<T extends Component[] = Component[]> = {
+  aliasComponents: T
   separator?: string
 }
 
-const isInstanceAnnotation = (field: string): boolean =>
-  Object.values(INSTANCE_ANNOTATIONS).includes(field?.split(ElemID.NAMESPACE_SEPARATOR)[0])
+type SupportedElement = ObjectType | InstanceElement
 
-const isValidAlias = (aliasParts: (string | undefined)[], instance: InstanceElement): boolean =>
+const isInstanceAnnotation = (field: string): boolean =>
+  Object.values(INSTANCE_ANNOTATIONS).includes(field.split(ElemID.NAMESPACE_SEPARATOR)[0])
+
+const isValidAlias = (aliasParts: (string | undefined)[], element: SupportedElement): boolean =>
   aliasParts.every((val, index) => {
     if (val === undefined) {
-      log.debug(`for instance ${instance.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
+      log.debug(`for element ${element.elemID.getFullName()}, component number ${index} in the alias map resulted in undefined`)
       return false
     }
     return true
   })
 
-const getFieldVal = ({ instance, component, elementPart, instById }:{
-  instance: InstanceElement
+const getFieldValue = (element: SupportedElement, fieldName: string): Value => (
+  !isInstanceElement(element) || isInstanceAnnotation(fieldName)
+    ? _.get(element.annotations, fieldName)
+    : _.get(element.value, fieldName)
+)
+
+const getAliasFromField = ({ element, component, elementsById }:{
+  element: SupportedElement
   component: AliasComponent
-  elementPart: 'value'|'annotations'
-  instById: Record<string, InstanceElement>
+  elementsById: Record<string, SupportedElement>
 }): string | undefined => {
-  const fieldValue = _.get(instance[elementPart], component.fieldName)
-  if (component.referenceFieldName === undefined) {
+  const { fieldName, referenceFieldName } = component
+
+  const fieldValue = getFieldValue(element, fieldName)
+  if (referenceFieldName === undefined) {
     return _.isString(fieldValue) ? fieldValue : undefined
   }
   if (!isReferenceExpression(fieldValue)) {
-    log.error(`${component.fieldName} is treated as a reference expression but it is not`)
+    log.error(`${fieldName} is treated as a reference expression but it is not`)
     return undefined
   }
-  const referencedInstance = instById[fieldValue.elemID.getFullName()]
-  if (referencedInstance === undefined) {
-    log.error(`could not find ${fieldValue.elemID.getFullName()} in instById`)
+  const topLevelReferenceFullName = fieldValue.elemID.createTopLevelParentID().parent.getFullName()
+  const referencedElement = elementsById[topLevelReferenceFullName]
+  if (referencedElement === undefined) {
+    log.error(`could not find ${topLevelReferenceFullName} in elementById`)
     return undefined
   }
-  return isInstanceAnnotation(component.referenceFieldName)
-    ? _.get(referencedInstance.annotations, component.referenceFieldName)
-    : _.get(referencedInstance.value, component.referenceFieldName)
+  const referencedFieldValue = getFieldValue(referencedElement, referenceFieldName)
+  return _.isString(referencedFieldValue) ? referencedFieldValue : undefined
 }
 
-const isConstantComponent = (component: AliasComponent | ConstantComponent): component is ConstantComponent => 'constant' in component
+const isConstantComponent = (
+  component: AliasComponent | ConstantComponent
+): component is ConstantComponent => 'constant' in component
 
-const isAliasComponent = (component: AliasComponent | ConstantComponent): component is AliasComponent => 'fieldName' in component
-
-
-const calculateAlias = ({ instance, instById, aliasMap }: {
-  instance: InstanceElement
-  instById: Record<string, InstanceElement>
-  aliasMap: Record<string, AliasData>
+const calculateAlias = ({ element, elementsById, aliasData }: {
+  element: SupportedElement
+  elementsById: Record<string, SupportedElement>
+  aliasData: AliasData
 }): string | undefined => {
-  const currentType = instance.elemID.typeName
-  const { aliasComponents } = aliasMap[currentType]
-  const separator = aliasMap[currentType].separator ?? ' '
-  const aliasParts = aliasComponents
-    .map(component => {
-      if (isConstantComponent(component)) {
-        return component.constant
-      }
-      if (isAliasComponent(component) && isInstanceAnnotation(component.fieldName)) {
-        return getFieldVal({ instance, component, elementPart: 'annotations', instById })
-      }
-      return getFieldVal({ instance, component, elementPart: 'value', instById })
-    })
-  if (!isValidAlias(aliasParts, instance)) {
+  const { aliasComponents, separator = ' ' } = aliasData
+  const aliasParts = aliasComponents.map(component => (
+    isConstantComponent(component)
+      ? component.constant
+      : getAliasFromField({ element, component, elementsById })
+  ))
+  if (!isValidAlias(aliasParts, element)) {
     return undefined
   }
   return aliasParts.join(separator)
 }
 
 
-export const addAliasToInstance = ({ instances, aliasMap, secondIterationTypeNames }: {
-  instances: InstanceElement[]
+export const addAliasToElements = ({
+  elementsMap,
+  aliasMap,
+  secondIterationGroupNames = [],
+}: {
+  elementsMap: Record<string, SupportedElement[]>
   aliasMap: Record<string, AliasData>
-  secondIterationTypeNames: string[]
+  secondIterationGroupNames?: string[]
 }): void => {
-  const elementById = _.keyBy(instances, elem => elem.elemID.getFullName())
-  const relevantInstancesByType = _.groupBy(
-    instances.filter(inst => aliasMap[inst.elemID.typeName] !== undefined),
-    inst => inst.elemID.typeName
-  )
+  const allElements = Object.values(elementsMap).flat()
+  const elementsById = _.keyBy(allElements, elem => elem.elemID.getFullName())
+  const relevantElementsMap = _.pick(elementsMap, Object.keys(aliasMap))
 
-  const addAlias = (typeName: string): void => {
-    relevantInstancesByType[typeName].forEach(inst => {
-      const alias = calculateAlias({ instance: inst, instById: elementById, aliasMap })
+  const addAlias = (group: string): void => {
+    const aliasData = aliasMap[group]
+    relevantElementsMap[group].forEach(element => {
+      const alias = calculateAlias({ element, elementsById, aliasData })
       if (alias !== undefined) {
-        inst.annotations[CORE_ANNOTATIONS.ALIAS] = alias
+        element.annotations[CORE_ANNOTATIONS.ALIAS] = alias
       }
     })
   }
-  const [firstIterationTypes, secondIterationTypes] = _.partition(
-    Object.keys(relevantInstancesByType),
-    typeName => !secondIterationTypeNames.includes(typeName)
+  const [firstIterationGroups, secondIterationGroups] = _.partition(
+    Object.keys(relevantElementsMap),
+    group => !secondIterationGroupNames.includes(group)
   )
   // first iteration
-  firstIterationTypes.forEach(addAlias)
+  firstIterationGroups.forEach(addAlias)
 
   // second iteration
-  secondIterationTypes.forEach(addAlias)
+  secondIterationGroups.forEach(addAlias)
 }

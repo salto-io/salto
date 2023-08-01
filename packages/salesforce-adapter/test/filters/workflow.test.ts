@@ -20,7 +20,6 @@ import {
   getChangeData, ModificationChange, isModificationChange, Value, isListType, ListType,
   createRefToElmWithValue,
 } from '@salto-io/adapter-api'
-import { FilterWith } from '../../src/filter'
 import filterCreator, {
   WORKFLOW_ALERTS_FIELD, WORKFLOW_FIELD_UPDATES_FIELD, WORKFLOW_RULES_FIELD,
   WORKFLOW_TASKS_FIELD, WORKFLOW_FIELD_TO_TYPE,
@@ -32,6 +31,7 @@ import { mockTypes } from '../mock_elements'
 import { metadataType, apiName, createInstanceElement, MetadataValues, MetadataTypeAnnotations } from '../../src/transformers/transformer'
 import { isInstanceOfTypeChange } from '../../src/filters/utils'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 const { awu, groupByAsync } = collections.asynciterable
 

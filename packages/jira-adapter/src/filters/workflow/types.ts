@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element } from '@salto-io/adapter-api'
+import { Change, getChangeData, InstanceElement, isInstanceChange, Values, Element, Value } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { WORKFLOW_TYPE_NAME } from '../../constants'
 
 const log = logger(module)
@@ -68,6 +69,7 @@ type PostFunctionConfiguration = {
   projectRole?: ConfigRef
   event?: ConfigRef
   id?: unknown
+  scriptRunner?: Value
 }
 
 const postFunctionConfigurationSchema = Joi.object({
@@ -112,7 +114,7 @@ export type Condition = {
 }
 
 const conditionScheme = Joi.object({
-  conditions: Joi.array().items(Joi.link('/')).optional(),
+  conditions: Joi.array().items(Joi.link('...')).optional(),
   type: Joi.string().optional(),
   configuration: Joi.object().optional(),
 }).unknown(true)
@@ -133,28 +135,42 @@ const rulesSchema = Joi.object({
   conditions: conditionScheme.optional(),
 }).unknown(true)
 
+export type StatusLocation ={
+  x?: string
+  y?: string
+}
+
+export type TransitionFrom = {
+  id?: string
+  sourceAngle?: string
+  targetAngle?: string
+}
+
 export type Transition = {
   id?: string
   type?: string
   rules?: Rules
-  name?: string
-  from?: unknown[]
+  name: string
+  from?: (TransitionFrom | string)[]
   properties?: Values
+  to?: unknown
 }
 
-const transitionsSchema = Joi.object({
+export const transitionsSchema = Joi.object({
   id: Joi.string().optional(),
   type: Joi.string().optional(),
   rules: rulesSchema.optional(),
-  name: Joi.string().optional(),
+  name: Joi.string().required(),
   from: Joi.array().items(Joi.any()).optional(),
   properties: Joi.alternatives(Joi.object(), Joi.array()).optional(),
+  to: Joi.any().optional(),
 }).unknown(true)
 
 export type Status = {
   id?: unknown
   name?: string
   properties?: Values
+  location?: StatusLocation
 }
 
 const statusSchema = Joi.object({
@@ -167,19 +183,32 @@ export type Workflow = {
   id?: Id
   entityId?: string
   name?: string
-  transitions?: Transition[]
+  transitions: Record<string, Transition>
   statuses?: Status[]
+  diagramInitialEntry?: StatusLocation
+  diagramGlobalLoopedTransition?: StatusLocation
 }
 
-export const workflowSchema = Joi.object({
+export type WorkflowResponse = Omit<Workflow, 'transitions'> & {
+  transitions: Transition[]
+}
+
+export const WORKFLOW_RESPONSE_SCHEMA = Joi.object({
   id: idSchema.optional(),
   entityId: Joi.string().optional(),
   name: Joi.string().optional(),
-  transitions: Joi.array().items(transitionsSchema).optional(),
+  transitions: Joi.array().items(transitionsSchema).required(),
   statuses: Joi.array().items(statusSchema).optional(),
 }).unknown(true).required()
 
+export const workflowSchema = WORKFLOW_RESPONSE_SCHEMA.keys({
+  transitions: Joi.object().pattern(Joi.string(), transitionsSchema).required(),
+})
+
 export type WorkflowInstance = InstanceElement & { value: InstanceElement['value'] & Workflow }
+export type WorkflowResponseInstance = InstanceElement & { value: InstanceElement['value'] & WorkflowResponse }
+
+const isWorkflowResponseValues = createSchemeGuard<WorkflowResponse>(WORKFLOW_RESPONSE_SCHEMA, 'Received unexpected workflow response from service')
 
 export const isWorkflowValues = (values: unknown): values is Workflow => {
   const { error } = workflowSchema.validate(values)
@@ -194,6 +223,9 @@ export const isWorkflowInstance = (instance: InstanceElement)
 : instance is WorkflowInstance =>
   instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowValues(instance.value)
 
+export const isWorkflowResponseInstance = (instance: InstanceElement)
+: instance is WorkflowResponseInstance =>
+  instance.elemID.typeName === WORKFLOW_TYPE_NAME && isWorkflowResponseValues(instance.value)
 
 export type PostFetchWorkflow = Workflow & {
   name: string
@@ -205,6 +237,9 @@ export const isPostFetchWorkflowInstance = (instance: InstanceElement)
 : instance is PostFetchWorkflowInstance => isWorkflowValues(instance.value)
   && instance.value.name !== undefined
 
+export const isPostFetchWorkflowChange = (change: Change<Element>): change is Change<PostFetchWorkflowInstance> =>
+  isInstanceChange(change) && isPostFetchWorkflowInstance(getChangeData(change))
+
 export const getWorkflowChanges = (changes: Change<Element>[]): Change<WorkflowInstance>[] => changes
   .filter(isInstanceChange)
-  .filter(change => isWorkflowInstance(getChangeData(change)))
+  .filter((change): change is Change<WorkflowInstance> => isWorkflowInstance(getChangeData(change)))

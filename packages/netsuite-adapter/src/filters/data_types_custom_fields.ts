@@ -17,7 +17,7 @@ import { BuiltinTypes, Field, isInstanceElement, isObjectType, ListType, ObjectT
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { INTERNAL_ID_TO_TYPES } from '../data_elements/types'
 import { getFieldInstanceTypes } from '../data_elements/custom_fields'
 import { FILE, SCRIPT_ID } from '../constants'
@@ -133,7 +133,7 @@ export const getCustomField = ({
   })
 }
 
-const filterCreator: FilterCreator = ({ isPartial, elementsSourceIndex }) => ({
+const filterCreator: LocalFilterCreator = ({ isPartial, elementsSourceIndex }) => ({
   name: 'dataTypesCustomFields',
   onFetch: async elements => {
     const nameToType = _.keyBy(elements.filter(isObjectType), e => e.elemID.name)

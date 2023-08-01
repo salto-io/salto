@@ -13,11 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-export * from './src/change_validator'
+export * from './src/change'
 export * from './src/compare'
 export * from './src/decorators'
 export * from './src/dependencies'
-export * from './src/deploy'
 export * from './src/element_source'
 export * from './src/element'
 export * as filter from './src/filter'
@@ -27,3 +26,4 @@ export * from './src/template'
 export * from './src/walk_element'
 export * from './src/collisions'
 export * as references from './src/references'
+export * from './src/elem_id_discrepancy'

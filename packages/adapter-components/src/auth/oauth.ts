@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import qs from 'qs'
-import axios from 'axios'
+import axios, { AxiosRequestHeaders } from 'axios'
 import axiosRetry from 'axios-retry'
 import { logger } from '@salto-io/logging'
 import { RetryOptions } from '../client/http_connection'
@@ -41,12 +41,14 @@ export const oauthClientCredentialsBearerToken = async ({
   clientSecret,
   retryOptions,
   additionalHeaders = {},
+  additionalData = {},
 }: OAuthClientCredentialsArgs & {
   endpoint?: string
   baseURL: string
   retryOptions: RetryOptions
   additionalHeaders?: Record<string, string>
-}): Promise<{ headers?: Record<string, unknown> }> => {
+  additionalData?: Record<string, string>
+}): Promise<{ headers?: AxiosRequestHeaders }> => {
   const httpClient = axios.create({
     baseURL,
     headers: {
@@ -65,6 +67,7 @@ export const oauthClientCredentialsBearerToken = async ({
       client_secret: clientSecret,
       // eslint-disable-next-line camelcase
       grant_type: 'client_credentials',
+      ...additionalData,
     }),
   )
   const { token_type: tokenType, access_token: accessToken, expires_in: expiresIn } = res.data

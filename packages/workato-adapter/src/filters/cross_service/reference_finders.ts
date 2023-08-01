@@ -22,12 +22,13 @@ import { SalesforceBlock } from './salesforce/recipe_block_types'
 import { NetsuiteBlock } from './netsuite/recipe_block_types'
 import { ZuoraBlock } from './zuora_billing/recipe_block_types'
 import { BlockBase } from './recipe_block_types'
+import { JiraBlock } from './jira/recipe_block_types'
 
 const { isDefined } = lowerdashValues
 const { matchAll } = strings
 const log = logger(module)
 
-type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock
+type SupportedRecipeBlock = SalesforceBlock | NetsuiteBlock | ZuoraBlock | JiraBlock
 
 
 export type MappedReference = FlatDetailedDependency & {

@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, Change, PostFetchOptions, DeployResult } from '@salto-io/adapter-api'
+import { Element, Change, PostFetchOptions, DeployResult, SaltoElementError, SaltoError } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { types, promises, values, collections, objects } from '@salto-io/lowerdash'
 
@@ -58,6 +58,44 @@ export type FilterCreator<
   T,
   DeployInfo=void,
 > = (opts: T) => Filter<R, DeployInfo>
+
+export type RemoteFilterCreator<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = (opts: T) => Filter<R, DeployInfo> & { remote: true }
+
+export type LocalFilterCreatorDefinition<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = {
+  creator: FilterCreator<R, T, DeployInfo>
+  addsNewInformation?: false
+}
+
+export type RemoteFilterCreatorDefinition<
+  R extends FilterResult | void,
+  T,
+  DeployInfo=void,
+> = {
+  creator: RemoteFilterCreator<R, T, DeployInfo>
+  addsNewInformation: true
+}
+
+export const isLocalFilterCreator = <
+  RLocal extends FilterResult | void,
+  RRemote extends FilterResult | void,
+  TLocal,
+  TRemote,
+  DLocal=void,
+  DRemote=void,
+>(
+    filterDef: LocalFilterCreatorDefinition<RLocal, TLocal, DLocal>
+      | RemoteFilterCreatorDefinition<RRemote, TRemote, DRemote>
+  ): filterDef is LocalFilterCreatorDefinition<RLocal, TLocal, DLocal> => (
+    filterDef.addsNewInformation !== true
+  )
 
 export const filtersRunner = <
   R extends FilterResult | void,
@@ -107,7 +145,7 @@ export const filtersRunner = <
         {
           deployResult: {
             appliedChanges: [] as ReadonlyArray<Change>,
-            errors: [] as ReadonlyArray<Error>,
+            errors: [] as ReadonlyArray<SaltoError | SaltoElementError>,
           },
           leftoverChanges: changes,
         }

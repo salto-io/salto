@@ -19,6 +19,8 @@ import {
   NETSUITE, PATH, ROLE, SCRIPT_ID, SOAP, SOURCE, TRANSACTION_COLUMN_CUSTOM_FIELD, WORKFLOW,
 } from '../src/constants'
 
+const CUSTOM_RECORD_SCRIPT_ID = 'customrecord_slt_e2e_test'
+
 export const mockDefaultValues: Record<string, Values> = {
   [ENTITY_CUSTOM_FIELD]: {
     [SCRIPT_ID]: 'custentity_slt_e2e_test',
@@ -76,7 +78,7 @@ export const mockDefaultValues: Record<string, Values> = {
     annotations: {
       [METADATA_TYPE]: CUSTOM_RECORD_TYPE,
       [SOURCE]: SOAP,
-      [SCRIPT_ID]: 'customrecord_slt_e2e_test',
+      [SCRIPT_ID]: CUSTOM_RECORD_SCRIPT_ID,
       accesstype: 'CUSTRECORDENTRYPERM',
       allowattachments: true,
       allowinlinedeleting: false,

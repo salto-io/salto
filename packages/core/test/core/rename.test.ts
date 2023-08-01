@@ -15,7 +15,6 @@
 */
 import _ from 'lodash'
 import { DetailedChange, ElemID, InstanceElement, isInstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
-import { resolvePath } from '@salto-io/adapter-utils'
 import * as workspace from '@salto-io/workspace'
 import * as rename from '../../src/core/rename'
 
@@ -151,45 +150,6 @@ describe('rename.ts', () => {
       expect(await index.get(nestedElemId.getFullName())).toBeUndefined()
       expect(await index.get(targetElemId.getFullName())).toEqual(topLevelPaths)
       expect(await index.get(targetElemId.createNestedID('name').getFullName())).toEqual(specificPath)
-    })
-  })
-  describe('updateStateElements', () => {
-    let state: workspace.state.State
-    let targetElement: InstanceElement
-    let refElemId: ElemID
-    beforeAll(async () => {
-      const sourceElement = await ws.getValue(sourceElemId)
-
-      targetElement = new InstanceElement(
-        'renamed',
-        sourceElement.refType,
-        sourceElement.value,
-        sourceElement.path,
-        sourceElement.annotations
-      )
-
-      refElemId = new ElemID('salto', 'employee', 'instance', 'anotherInstance', 'friend')
-      const beforeRef = new ReferenceExpression(sourceElemId)
-      const afterRef = new ReferenceExpression(targetElement.elemID)
-
-      // this would test if changes in unexisting top level elements are ignored
-      const wrongRefElemId = new ElemID('salto', 'notexist', 'instance', 'anotherInstance', 'friend')
-
-      const changes = [
-        { id: sourceElemId, action: 'remove' as const, data: { before: sourceElement } },
-        { id: targetElement.elemID, action: 'add' as const, data: { after: targetElement } },
-        { id: refElemId, action: 'modify' as const, data: { before: beforeRef, after: afterRef } },
-        { id: wrongRefElemId, action: 'modify' as const, data: { before: beforeRef, after: afterRef } },
-      ]
-
-      state = ws.state()
-      await rename.updateStateElements(state, changes)
-    })
-    it('should update state', async () => {
-      expect(await state.get(sourceElemId)).toBeUndefined()
-      expect(await state.get(targetElement.elemID)).toEqual(targetElement)
-      expect(resolvePath(await state.get(refElemId.createTopLevelParentID().parent),
-        refElemId)).toEqual(new ReferenceExpression(targetElement.elemID))
     })
   })
 })

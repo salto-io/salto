@@ -13,9 +13,10 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { collections } from '@salto-io/lowerdash'
+import { collections, types } from '@salto-io/lowerdash'
 import { ConfigValidationError, validateRegularExpressions } from '../config_validation'
 import { DataManagementConfig } from '../types'
+import { DETECTS_PARENTS_INDICATOR } from '../constants'
 
 const { makeArray } = collections.array
 
@@ -26,7 +27,46 @@ export type DataManagement = {
   isReferenceAllowed: (name: string) => boolean
   shouldIgnoreReference: (name: string) => boolean
   getObjectIdsFields: (name: string) => string[]
+  getObjectAliasFields: (name: string) => types.NonEmptyArray<string>
   showReadOnlyValues?: boolean
+}
+
+
+const DEFAULT_ALIAS_FIELDS: types.NonEmptyArray<string> = [DETECTS_PARENTS_INDICATOR, 'Name']
+const ALIAS_FIELDS_BY_TYPE: Record<string, types.NonEmptyArray<string>> = {
+  SBQQ__ProductFeature__c: [
+    DETECTS_PARENTS_INDICATOR,
+    'SBQQ__ConfiguredSKU__c',
+    'Name',
+  ],
+  SBQQ__LineColumn__c: [
+    DETECTS_PARENTS_INDICATOR,
+    'SBQQ__FieldName__c',
+    'Name',
+  ],
+  SBQQ__LookupQuery__c: [
+    DETECTS_PARENTS_INDICATOR,
+    'SBQQ__PriceRule2__c',
+    'Name',
+  ],
+  SBQQ__Dimension__c: [
+    DETECTS_PARENTS_INDICATOR,
+    'SBQQ__Product__c',
+    'Name',
+  ],
+  PricebookEntry: [
+    'Pricebook2Id',
+    'Name',
+  ],
+  Product2: [
+    'ProductCode',
+    'Family',
+    'Name',
+  ],
+  sbaa__ApprovalCondition__c: [
+    'sbaa__ApprovalRule__c',
+    'sbaa__Index__c',
+  ],
 }
 
 export const buildDataManagement = (params: DataManagementConfig): DataManagement => (
@@ -44,6 +84,14 @@ export const buildDataManagement = (params: DataManagementConfig): DataManagemen
       const matchedOverride = params.saltoIDSettings.overrides
         ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
       return matchedOverride?.idFields ?? params.saltoIDSettings.defaultIdFields
+    },
+    getObjectAliasFields: name => {
+      const defaultFields = params.saltoAliasSettings?.defaultAliasFields ?? DEFAULT_ALIAS_FIELDS
+      const matchedOverride = params.saltoAliasSettings?.overrides
+        ?.find(override => new RegExp(`^${override.objectsRegex}$`).test(name))
+      return matchedOverride !== undefined && types.isNonEmptyArray(matchedOverride.aliasFields)
+        ? matchedOverride.aliasFields
+        : ALIAS_FIELDS_BY_TYPE[name] ?? defaultFields
     },
     showReadOnlyValues: params.showReadOnlyValues,
   }
@@ -70,5 +118,12 @@ export const validateDataManagementConfig = (
     const overridesObjectRegexs = dataManagementConfig.saltoIDSettings.overrides
       .map(override => override.objectsRegex)
     validateRegularExpressions(overridesObjectRegexs, [...fieldPath, 'saltoIDSettings', 'overrides'])
+  }
+  const saltoAliasOverrides = dataManagementConfig.saltoAliasSettings?.overrides
+  if (saltoAliasOverrides !== undefined) {
+    validateRegularExpressions(
+      saltoAliasOverrides.map(override => override.objectsRegex),
+      [...fieldPath, 'saltoAliasSettings', 'overrides'],
+    )
   }
 }

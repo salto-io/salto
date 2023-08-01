@@ -209,9 +209,12 @@ export const addDefaults = async (element: ChangeDataType): Promise<void> => {
 
 const ENDS_WITH_CUSTOM_SUFFIX_REGEX = new RegExp(`__(${INSTANCE_SUFFIXES.join('|')})$`)
 
+export const removeCustomSuffix = (elementApiName: string): string => (
+  elementApiName.replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+)
+
 const getNamespaceFromString = (relativeApiName: string): string | undefined => {
-  const parts = relativeApiName
-    .replace(ENDS_WITH_CUSTOM_SUFFIX_REGEX, '')
+  const parts = removeCustomSuffix(relativeApiName)
     .split(NAMESPACE_SEPARATOR)
   return parts.length !== 1
     ? parts[0]
@@ -253,8 +256,12 @@ export const buildAnnotationsObjectType = (annotationTypes: TypeMap): ObjectType
       .map(([name, type]) => ({ [name]: { refType: createRefToElmWithValue(type) } }))) })
 }
 
+export const namePartsFromApiName = (elementApiName: string): string[] => (
+  elementApiName.split(/\.|-/g)
+)
+
 export const apiNameParts = async (elem: Element): Promise<string[]> =>
-  (await apiName(elem)).split(/\.|-/g)
+  namePartsFromApiName(await apiName(elem))
 
 export const parentApiName = async (elem: Element): Promise<string> =>
   (await apiNameParts(elem))[0]
@@ -390,7 +397,7 @@ export const buildElementsSourceForFetch = (
 ): ReadOnlyElementsSource => (
   buildElementsSourceFromElements(
     elements,
-    config.fetchProfile.metadataQuery.isPartialFetch() ? config.elementsSource : undefined,
+    config.fetchProfile.metadataQuery.isPartialFetch() ? [config.elementsSource] : [],
   )
 )
 

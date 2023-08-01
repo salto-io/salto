@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, toChange, Values } from '@salto-io/adapter-api'
+import { BuiltinTypes, CORE_ANNOTATIONS, ElemID, Field, InstanceElement, ListType, ObjectType, SeverityLevel, toChange, Values } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { filterUtils, client as clientUtils } from '@salto-io/adapter-components'
 import { MockInterface } from '@salto-io/test-utils'
@@ -206,7 +206,7 @@ describe('notificationSchemeDeploymentFilter', () => {
             id: '1',
           }],
           startAt: 0,
-          isLast: true,
+          total: 1,
         },
       })
 
@@ -422,7 +422,7 @@ describe('notificationSchemeDeploymentFilter', () => {
 
       deployWithJspEndpointsMock.mockImplementationOnce(async () => ({
         appliedChanges: [],
-        errors: [new Error('someError')],
+        errors: [{ message: 'someError', severity: 'Error' as SeverityLevel }],
       }))
 
       const { deployResult } = await filter.deploy([

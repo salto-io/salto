@@ -45,9 +45,11 @@ netsuite {
     fetchTypeTimeoutInMinutes = 4
     maxItemsInImportObjectsRequest = 40
     sdfConcurrencyLimit = 4
+    maxFileCabinetSizeInGB = 3
   }
   suiteAppClient = {
    suiteAppConcurrencyLimit = 4 
+   httpTimeoutLimitInMinutes = 20
   }
 }
 ```
@@ -75,9 +77,11 @@ netsuite {
 | -------------------------------| ------------------------| -----------
 | deploy.additionalDependencies.include.features              | []                      | Feature dependencies list (string[]) to be included in the manifest passed to SDF when deploying
 | deploy.additionalDependencies.include.objects               | []                      | Object dependencies list (string[]) to be included in the manifest passed to SDF when deploying
+| deploy.additionalDependencies.include.files                 | []                      | File dependencies list (string[]) to be included in the manifest passed to SDF when deploying
 | deploy.additionalDependencies.exclude.features              | []                      | Feature dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
 | deploy.additionalDependencies.exclude.objects               | []                      | Object dependencies list (string[]) to be excluded from the manifest passed to SDF when deploying
-
+| deploy.additionalDependencies.exclude.files                 | []                      | Files dependencies list (string[]) to be 
+excluded from the manifest passed to SDF when deploying
 Features are included as optional by default. In order to include a required feature add the `":required"` suffix to it.
 Example:
 ```
@@ -110,7 +114,7 @@ netsuite {
 | fileCabinet                    | no files are excluded   | Specify which files to exclude on fetch
 | customRecords                  | no custom records are excluded | Specify which custom records to exclude on fetch
 
-### SDF Client configuration options
+### Client configuration options
 
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
@@ -119,12 +123,16 @@ netsuite {
 | maxItemsInImportObjectsRequest | 40                      | Limits the max number of requested items a single import-objects request
 | sdfConcurrencyLimit            | 4                       | Limits the max number of concurrent SDF API calls. The number should not exceed the concurrency limit enforced by the upstream service.
 | installedSuiteApps             | []                      | The SuiteApps ids to deploy and fetch elements from
+| maxInstancesPerType            | 5000                    | Limits the amount of instances per type
+| maxFileCabinetSizeInGB         | 3                       | Limits the max size in GB of the fileCabinet size
+
 
 ### Salto SuiteApp client configuration options
 
 | Name                           | Default when undefined  | Description
 | -------------------------------| ------------------------| -----------
 | suiteAppConcurrencyLimit            | 4                       | Limits the max number of concurrent Salto SuiteApp API calls. The number should not exceed the concurrency limit enforced by the upstream service.
+| httpTimeoutLimitInMinutes           | 20                      | Set a timeout, in minutes, for HTTP calls. Restricted to a value greater than 1.
 
 
 ### Skip list configuration options

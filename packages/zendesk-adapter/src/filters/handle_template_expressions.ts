@@ -15,7 +15,7 @@
 */
 import {
   Change, Element, getChangeData, InstanceElement, isInstanceElement,
-  ReferenceExpression, TemplateExpression, TemplatePart, Values,
+  ReferenceExpression, TemplateExpression, TemplatePart, UnresolvedReference, Values,
 } from '@salto-io/adapter-api'
 import { extractTemplate, TemplateContainer, replaceTemplatesWithValues, resolveTemplates } from '@salto-io/adapter-utils'
 import { references as referencesUtils } from '@salto-io/adapter-components'
@@ -229,6 +229,15 @@ const formulaToTemplate = (
     if (elem) {
       return new ReferenceExpression(elem.elemID, elem)
     }
+    if (!_.isEmpty(dcPlaceholder) && enableMissingReferences) {
+      const missingInstance = createMissingInstance(
+        ZENDESK,
+        DYNAMIC_CONTENT_ITEM_TYPE_NAME,
+        dcPlaceholder.startsWith('dc.') ? dcPlaceholder.slice(3) : dcPlaceholder
+      )
+      missingInstance.value.placeholder = `{{${dcPlaceholder}}}`
+      return new ReferenceExpression(missingInstance.elemID, missingInstance)
+    }
     return expression
   }
   // The second part is a split that separates the now-marked ids, so they could be replaced
@@ -265,20 +274,20 @@ const getContainers = async (instances: InstanceElement[]): Promise<TemplateCont
 const replaceFormulasWithTemplates = async (
   instances: InstanceElement[], enableMissingReferences?: boolean
 ): Promise<void> => {
+  const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
+
+  const formulaToTemplateValue = (value: unknown): unknown => {
+    if (Array.isArray(value)) {
+      return value.map(innerValue => formulaToTemplateValue(innerValue))
+    }
+    return _.isString(value) ? formulaToTemplate(value, instancesByType, enableMissingReferences) : value
+  }
+
   try {
     (await getContainers(instances)).forEach(container => {
       const { fieldName } = container
-      const instancesByType = _.groupBy(instances, i => i.elemID.typeName)
       container.values.forEach(value => {
-        if (Array.isArray(value[fieldName])) {
-          value[fieldName] = value[fieldName].map((innerValue: unknown) =>
-            (_.isString(innerValue)
-              ? formulaToTemplate(innerValue, instancesByType, enableMissingReferences)
-              : innerValue))
-        } else if (value[fieldName]) {
-          value[fieldName] = formulaToTemplate(value[fieldName], instancesByType,
-            enableMissingReferences)
-        }
+        value[fieldName] = formulaToTemplateValue(value[fieldName])
       })
     })
   } catch (e) {
@@ -287,6 +296,14 @@ const replaceFormulasWithTemplates = async (
 }
 
 export const prepRef = (part: ReferenceExpression): TemplatePart => {
+  // In some cases this function may run on the .before value of a Change, which may contain unresolved references.
+  // .after values are always resolved because unresolved references are dropped by unresolved_references validator
+  // This case should be handled more generic but at the moment this is a quick fix to avoid crashing (SALTO-3988)
+  // This fix is enough since the .before value is not used in the deployment process
+  if (part.value instanceof UnresolvedReference) {
+    log.debug('prepRef received a part as unresolved reference, returning an empty string, instance fullName: %s ', part.elemID.getFullName())
+    return ''
+  }
   if (Object.values(ZENDESK_REFERENCE_TYPE_TO_SALTO_TYPE).includes(part.elemID.typeName)) {
     return `${part.value.value[ZENDESK_TYPE_TO_FIELD[part.elemID.typeName]]}`
   }

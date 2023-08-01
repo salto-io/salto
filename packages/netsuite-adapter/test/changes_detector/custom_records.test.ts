@@ -14,11 +14,12 @@
 * limitations under the License.
 */
 import SuiteAppClient from '../../src/client/suiteapp_client/suiteapp_client'
-import { getChangedCustomRecords } from '../../src/changes_detector/changes_detectors/custom_records'
+import { getChangedCustomRecords, getCustomRecords } from '../../src/changes_detector/changes_detectors/custom_records'
 import { ChangedCustomRecord } from '../../src/changes_detector/types'
 import mockSdfClient from '../client/sdf_client'
 import NetsuiteClient from '../../src/client/client'
 import { createDateRange } from '../../src/changes_detector/date_formats'
+import { TIME_DATE_FORMAT } from '../client/mocks'
 
 describe('custom records', () => {
   const runSuiteQLMock = jest.fn()
@@ -43,7 +44,7 @@ describe('custom records', () => {
 
       results = await getChangedCustomRecords(
         client,
-        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z')),
+        createDateRange(new Date('2021-01-11T18:55:17.949Z'), new Date('2021-02-22T18:55:17.949Z'), TIME_DATE_FORMAT),
         { isCustomRecordTypeMatch: name => name !== 'customrecord2' },
       )
     })
@@ -63,7 +64,7 @@ describe('custom records', () => {
     runSuiteQLMock.mockResolvedValueOnce(undefined)
     await expect(getChangedCustomRecords(
       client,
-      createDateRange(new Date(), new Date()),
+      createDateRange(new Date(), new Date(), TIME_DATE_FORMAT),
       { isCustomRecordTypeMatch: () => true },
     )).resolves.toHaveLength(0)
   })
@@ -78,8 +79,87 @@ describe('custom records', () => {
     runSuiteQLMock.mockResolvedValueOnce(undefined)
     await expect(getChangedCustomRecords(
       client,
-      createDateRange(new Date(), new Date()),
+      createDateRange(new Date(), new Date(), TIME_DATE_FORMAT),
       { isCustomRecordTypeMatch: () => true },
     )).resolves.toHaveLength(0)
+  })
+
+  describe('get custom records', () => {
+    beforeEach(() => {
+      runSuiteQLMock.mockReset()
+    })
+
+    it('should return nothing when custom record types query fails', async () => {
+      runSuiteQLMock.mockResolvedValueOnce(undefined)
+
+      const results = await getCustomRecords(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return nothing when all custom record types are marked as ignore', async () => {
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+
+      const results = await getCustomRecords(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(['customrecord1', 'customrecord2']),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return nothing when relevant custom record type is marked to ignore', async () => {
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+
+      const results = await getCustomRecords(
+        client,
+        { isCustomRecordTypeMatch: name => name === 'customrecord2' },
+        new Set(['customrecord2']),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(1)
+      expect(results.size).toEqual(0)
+    })
+
+    it('should return relevant record scripts', async () => {
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1' },
+        { scriptid: 'customrecord2' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord1-1' },
+        { scriptid: 'customrecord1-2' },
+      ])
+      runSuiteQLMock.mockResolvedValueOnce([
+        { scriptid: 'customrecord2-1' },
+      ])
+
+      const results = await getCustomRecords(
+        client,
+        { isCustomRecordTypeMatch: () => true },
+        new Set(),
+      )
+
+      expect(runSuiteQLMock).toHaveBeenCalledTimes(3)
+      expect(results.size).toEqual(2)
+      expect(results.get('customrecord1')?.size).toEqual(2)
+      expect(results.get('customrecord2')?.size).toEqual(1)
+      expect(results.get('customrecord1')).toContain('customrecord1-1')
+      expect(results.get('customrecord1')).toContain('customrecord1-2')
+      expect(results.get('customrecord2')).toContain('customrecord2-1')
+    })
   })
 })

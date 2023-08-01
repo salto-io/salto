@@ -33,15 +33,18 @@ describe('resolutionPropertyFilter', () => {
       'instance',
       workflowType,
       {
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             properties: {
               'jira.field.resolution.include': '1,2',
               b: '3,4',
             },
           },
-          {},
-        ],
+          tran2: {
+            name: 'tran2',
+          },
+        },
       }
     )
     const { client: cli, paginator } = mockClient()
@@ -56,15 +59,18 @@ describe('resolutionPropertyFilter', () => {
     it('should split the resolution property', async () => {
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             properties: {
               'jira.field.resolution.include': ['1', '2'],
               b: '3,4',
             },
           },
-          {},
-        ],
+          tran2: {
+            name: 'tran2',
+          },
+        },
       })
     })
 
@@ -77,19 +83,22 @@ describe('resolutionPropertyFilter', () => {
 
   describe('preDeploy', () => {
     it('should join the resolution property', async () => {
-      instance.value.transitions[0].properties['jira.field.resolution.include'] = ['1', '2']
+      instance.value.transitions.tran1.properties['jira.field.resolution.include'] = ['1', '2']
       await filter.preDeploy([toChange({ after: instance })])
 
       expect(instance.value).toEqual({
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             properties: {
               'jira.field.resolution.include': '1,2',
               b: '3,4',
             },
           },
-          {},
-        ],
+          tran2: {
+            name: 'tran2',
+          },
+        },
       })
     })
 
@@ -105,15 +114,18 @@ describe('resolutionPropertyFilter', () => {
       await filter.onDeploy([toChange({ after: instance })])
 
       expect(instance.value).toEqual({
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             properties: {
               'jira.field.resolution.include': ['1', '2'],
               b: '3,4',
             },
           },
-          {},
-        ],
+          tran2: {
+            name: 'tran2',
+          },
+        },
       })
     })
   })

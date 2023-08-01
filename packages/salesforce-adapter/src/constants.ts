@@ -67,18 +67,6 @@ export enum FIELD_TYPE_NAMES {
   FILE = 'File',
 }
 
-const RELATIONSHIP_FIELD_NAMES = [
-  'MetadataRelationship',
-  'Lookup',
-  'MasterDetail',
-] as const
-
-type RelationshipFieldName = typeof RELATIONSHIP_FIELD_NAMES[number]
-
-export const isRelationshipFieldName = (fieldName: string): fieldName is RelationshipFieldName => (
-  (RELATIONSHIP_FIELD_NAMES as ReadonlyArray<string>).includes(fieldName)
-)
-
 export enum INTERNAL_FIELD_TYPE_NAMES {
   UNKNOWN = 'Unknown', // internal-only placeholder for fields whose type is unknown
   ANY = 'AnyType',
@@ -146,6 +134,9 @@ export enum ANNOTATION_TYPE_NAMES {
   VALUE_SETTINGS = 'ValueSettings',
 }
 
+// Salesforce System Fields
+export const OWNER_ID = 'OwnerId'
+
 // Salto annotations
 export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadataType'
@@ -157,6 +148,8 @@ export const IS_ATTRIBUTE = 'isAttribute'
 export const FOLDER_CONTENT_TYPE = 'folderContentType'
 // must have the same name as INTERNAL_ID_FIELD
 export const INTERNAL_ID_ANNOTATION = INTERNAL_ID_FIELD
+export const HISTORY_TRACKED_FIELDS = 'historyTrackedFields'
+export const FEED_HISTORY_TRACKED_FIELDS = 'feedHistoryTrackedFields'
 
 // Salesforce annotations
 export const LABEL = 'label'
@@ -171,6 +164,10 @@ export const BUSINESS_STATUS = 'businessStatus'
 export const SECURITY_CLASSIFICATION = 'securityClassification'
 export const COMPLIANCE_GROUP = 'complianceGroup'
 export const KEY_PREFIX = 'keyPrefix'
+export const OBJECT_HISTORY_TRACKING_ENABLED = 'enableHistory'
+export const RECORD_TYPE_HISTORY_TRACKING_ENABLED = 'recordTypeTrackHistory'
+export const OBJECT_FEED_HISTORY_TRACKING_ENABLED = 'enableFeeds'
+export const RECORD_TYPE_FEED_HISTORY_TRACKING_ENABLED = 'recordTypeTrackFeedHistory'
 
 export const FIELD_ANNOTATIONS = {
   UNIQUE: 'unique',
@@ -333,6 +330,7 @@ export const PATH_ASSISTANT_METADATA_TYPE = 'PathAssistant'
 export const TOPICS_FOR_OBJECTS_METADATA_TYPE = 'TopicsForObjects'
 export const PROFILE_METADATA_TYPE = 'Profile'
 export const PERMISSION_SET_METADATA_TYPE = 'PermissionSet'
+export const FIELD_PERMISSIONS = 'fieldPermissions'
 export const WORKFLOW_METADATA_TYPE = 'Workflow'
 export const ASSIGNMENT_RULES_METADATA_TYPE = 'AssignmentRules'
 export const VALIDATION_RULES_METADATA_TYPE = 'ValidationRule'
@@ -375,8 +373,12 @@ export const FLOW_DEFINITION_METADATA_TYPE = 'FlowDefinition'
 export const INSTALLED_PACKAGE_METADATA = 'InstalledPackage'
 export const ACCOUNT_SETTINGS_METADATA_TYPE = 'AccountSettings'
 export const PERMISSION_SET_TYPE_ID_METADATA_TYPE = 'PermissionSet'
+export const DATA_CATEGORY_GROUP_METADATA_TYPE = 'DataCategoryGroup'
+export const CUSTOM_APPLICATION_METADATA_TYPE = 'CustomApplication'
+export const APEX_CLASS_METADATA_TYPE = 'ApexClass'
+export const APEX_PAGE_METADATA_TYPE = 'ApexPage'
 
-// Artifitial Types
+// Artificial Types
 export const CURRENCY_CODE_TYPE_NAME = 'CurrencyIsoCodes'
 export const CHANGED_AT_SINGLETON = 'ChangedAtSingleton'
 
@@ -401,6 +403,12 @@ export const RETRIEVE_SIZE_LIMIT_ERROR = 'LIMIT_EXCEEDED'
 // According to Salesforce spec the keyPrefix length is 3
 // If this changes in the future we need to change this and add further logic where it's used
 export const KEY_PREFIX_LENGTH = 3
+
+// Magics
+export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
+
+// Change Groups
+export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_Custom_ApprovalRule_and_ApprovalCondition_instances'
 
 // CPQ CustomObjects
 export const CPQ_NAMESPACE = 'SBQQ'
@@ -473,6 +481,9 @@ export const SBAA_NAMESPACE = 'sbaa'
 // sbaa Objects
 export const SBAA_APPROVAL_CONDITION = 'sbaa__ApprovalCondition__c'
 export const SBAA_APPROVAL_RULE = 'sbaa__ApprovalRule__c'
+
+// sbaa Fields
+export const SBAA_CONDITIONS_MET = 'sbaa__ConditionsMet__c'
 
 export const UNLIMITED_INSTANCES_VALUE = -1
 

@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 
-import { formatPrimitiveLogTagValue, formatLogTags } from '../../src/internal/log-tags'
+import { formatPrimitiveLogTagValue, formatTextFormatLogTags } from '../../src/internal/log-tags'
 
 describe('logTags', () => {
   // The rest of the coverage is covered in pino_logger.test.ts
@@ -37,10 +37,10 @@ describe('logTags', () => {
   })
   describe('formatLogTags', () => {
     it('should return empty string for function value', () => {
-      expect(formatLogTags({ some: undefined }, [])).toEqual('')
+      expect(formatTextFormatLogTags({ some: undefined }, [])).toEqual('')
     })
     it('should print error stack-trace and message', () => {
-      const tagValue = formatLogTags({ error: new Error('something bad') }, [])
+      const tagValue = formatTextFormatLogTags({ error: new Error('something bad') }, [])
       expect(tagValue).toContain('stack')
       expect(tagValue).toContain('.ts')
       expect(tagValue).toContain('something bad')

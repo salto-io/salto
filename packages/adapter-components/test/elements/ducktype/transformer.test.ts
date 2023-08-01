@@ -14,7 +14,15 @@
 * limitations under the License.
 */
 
-import { ObjectType, ElemID, InstanceElement, BuiltinTypes, CORE_ANNOTATIONS, ReferenceExpression } from '@salto-io/adapter-api'
+import {
+  ObjectType,
+  ElemID,
+  InstanceElement,
+  BuiltinTypes,
+  CORE_ANNOTATIONS,
+  ReferenceExpression,
+  ListType,
+} from '@salto-io/adapter-api'
 import { mockFunction } from '@salto-io/test-utils'
 import { getTypeAndInstances, getAllElements, EntriesRequester } from '../../../src/elements/ducktype'
 import * as typeElements from '../../../src/elements/ducktype/type_elements'
@@ -25,6 +33,7 @@ import { TypeDuckTypeConfig, TypeDuckTypeDefaultsConfig } from '../../../src/con
 import { simpleGetArgs, returnFullEntry, computeGetArgs } from '../../../src/elements'
 import { findDataField } from '../../../src/elements/field_finder'
 import { createElementQuery } from '../../../src/elements/query'
+import { InvalidSingletonType } from '../../../src/config/shared'
 
 describe('ducktype_transformer', () => {
   describe('getTypeAndInstances', () => {
@@ -85,6 +94,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })
       expect(res).toHaveLength(5)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
@@ -130,6 +140,63 @@ describe('ducktype_transformer', () => {
         defaultName: 'unnamed_1',
       })
     })
+    it('should not return the instances if the entry is empty', async () => {
+      jest.spyOn(typeElements, 'generateType').mockReset()
+      jest.spyOn(typeElements, 'generateType').mockImplementationOnce(({ adapterName, name }) => {
+        const someNested = new ObjectType({ elemID: new ElemID(adapterName, `${name}__some_nested`) })
+        return {
+          type: new ObjectType({
+            elemID: new ElemID(adapterName, name),
+            fields: {
+              articles: { refType: new ListType(BuiltinTypes.UNKNOWN) },
+              meta: { refType: someNested },
+            },
+          }),
+          nestedTypes: [someNested],
+        }
+      })
+      mockPaginator = mockFunction<Paginator>().mockImplementation(async function *get() {
+        yield [{
+          meta: { has_more: false },
+          links: {
+            first: 'one',
+            last: 'two',
+          },
+          articles: [],
+        }]
+      })
+      const res = await getTypeAndInstances({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        computeGetArgs: simpleGetArgs,
+        typeName: 'myType',
+        typesConfig: {
+          myType: {
+            request: {
+              url: 'url',
+            },
+          },
+        },
+        typeDefaultConfig: {
+          transformation: {
+            dataField: 'articles',
+            idFields: ['name'],
+            fileNameFields: ['also_name'],
+          },
+        },
+        nestedFieldFinder: findDataField,
+        reversedSupportedTypes: { myTypes: ['myType'] },
+      })
+      expect(res).toHaveLength(2)
+      expect(res.map(e => e.elemID.getFullName())).toEqual([
+        'something.myType',
+        'something.myType__some_nested',
+      ])
+      expect(mockPaginator).toHaveBeenCalledTimes(1)
+      expect(mockPaginator).toHaveBeenCalledWith({ url: 'url', queryParams: undefined, recursiveQueryParams: undefined, paginationField: undefined }, expect.anything())
+      expect(typeElements.generateType).toHaveBeenCalledTimes(1)
+      expect(instanceElements.toInstance).toHaveBeenCalledTimes(0)
+    })
 
     it('should omit fieldsToOmit from instances but not from type', async () => {
       const res = await getTypeAndInstances({
@@ -154,6 +221,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })
       expect(res).toHaveLength(5)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
@@ -237,6 +305,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: findDataField,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })
       expect(res).toHaveLength(5)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
@@ -303,6 +372,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: findDataField,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })).rejects.toThrow(new Error('Invalid type config - type something.myType has no request config'))
     })
     it('should fail if type does not have request details', async () => {
@@ -329,6 +399,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: findDataField,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })).rejects.toThrow(new Error('could not find type missing'))
     })
     it('should fail if type is setting but there\'s more than one instance', async () => {
@@ -366,6 +437,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { myTypes: ['myType'] },
       })).rejects.toThrow(new Error('Could not fetch type myType, singleton types should not have more than one instance'))
     })
     it('should returns recurseInto values in the instances', async () => {
@@ -418,6 +490,7 @@ describe('ducktype_transformer', () => {
           },
         },
         nestedFieldFinder: returnFullEntry,
+        reversedSupportedTypes: { folders: ['folder'], subfolder: ['subfolder'] },
       })
       expect(res).toHaveLength(6)
       expect(res.map(e => e.elemID.getFullName())).toEqual([
@@ -570,6 +643,7 @@ describe('ducktype_transformer', () => {
         computeGetArgs: simpleGetArgs,
         typesConfig,
         typeDefaultConfig,
+        reversedSupportedTypes: { folder: ['folder'], file: ['file'], permission: ['permission'] },
       })
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -583,6 +657,7 @@ describe('ducktype_transformer', () => {
           folder: [expect.anything(), expect.anything()],
           permission: [expect.anything(), expect.anything()],
         },
+        reversedSupportedTypes: { folder: ['folder'], file: ['file'], permission: ['permission'] },
       })
       expect(transformer.getTypeAndInstances).toHaveBeenCalledWith({
         adapterName: 'something',
@@ -593,6 +668,7 @@ describe('ducktype_transformer', () => {
         typesConfig,
         typeDefaultConfig,
         contextElements: undefined,
+        reversedSupportedTypes: { folder: ['folder'], file: ['file'], permission: ['permission'] },
       })
     })
     it('should run a function to retrieve entries responses and not adding the remaining types', async () => {
@@ -631,6 +707,7 @@ describe('ducktype_transformer', () => {
         typesConfig,
         typeDefaultConfig,
         getEntriesResponseValuesFunc,
+        reversedSupportedTypes: { folder: ['folder'] },
       })
     })
     it('should return config changes', async () => {
@@ -676,6 +753,39 @@ describe('ducktype_transformer', () => {
       })
       const { configChanges } = res
       expect(configChanges).toEqual([{ typeToExclude: 'folder' }])
+    })
+    it('should return singleton type errors as fetch warnings', async () => {
+      jest.spyOn(transformer, 'getTypeAndInstances').mockImplementation(() => {
+        throw new InvalidSingletonType('singleton err')
+      })
+      const res = await getAllElements({
+        adapterName: 'something',
+        paginator: mockPaginator,
+        fetchQuery: createElementQuery({
+          include: [
+            { type: 'folder' },
+          ],
+          exclude: [],
+        }),
+        supportedTypes: {
+          folder: ['folders'],
+        },
+        computeGetArgs: simpleGetArgs,
+        nestedFieldFinder: returnFullEntry,
+        types: {
+          folders: {
+            request: {
+              url: '/folders',
+            },
+            transformation: {
+              idFields: ['name'],
+            },
+          },
+        },
+        typeDefaults: typeDefaultConfig,
+      })
+      const { errors } = res
+      expect(errors).toEqual([{ message: 'singleton err', severity: 'Warning' }])
     })
   })
 

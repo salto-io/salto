@@ -13,8 +13,9 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Element, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { Element, isInstanceElement } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { FIELD_CONFIGURATION_ITEM_TYPE_NAME } from '../../constants'
 import { FilterCreator } from '../../filter'
 
@@ -26,7 +27,7 @@ const filter: FilterCreator = () => ({
       .filter(isInstanceElement)
       .filter(instance => instance.elemID.typeName === FIELD_CONFIGURATION_ITEM_TYPE_NAME)
       .filter(instance => _.isEmpty(instance.value.description))
-      .filter(instance => isReferenceExpression(instance.value.id)
+      .filter(instance => isResolvedReferenceExpression(instance.value.id)
         && isInstanceElement(instance.value.id.value))
       .forEach(instance => {
         instance.value.description = instance.value.id.value.value.description ?? ''

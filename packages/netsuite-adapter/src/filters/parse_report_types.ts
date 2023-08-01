@@ -19,7 +19,7 @@ import _ from 'lodash'
 import { collections } from '@salto-io/lowerdash'
 import { resolvePath, setPath } from '@salto-io/adapter-utils'
 import { FINANCIAL_LAYOUT, REPORT_DEFINITION, SAVED_SEARCH } from '../constants'
-import { FilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { savedsearchType } from '../type_parsers/saved_search_parsing/parsed_saved_search'
 import { financiallayoutType } from '../type_parsers/financial_layout_parsing/parsed_financial_layout'
 import { reportdefinitionType } from '../type_parsers/report_definition_parsing/parsed_report_definition'
@@ -55,7 +55,7 @@ const transformLists = (instance: InstanceElement): void => {
   })
 }
 
-const filterCreator: FilterCreator = ({ elementsSource }) => ({
+const filterCreator: LocalFilterCreator = ({ elementsSource }) => ({
   name: 'parseReportTypes',
   onFetch: async elements => {
     const cloneReportInstance = (instance: InstanceElement, type: ObjectType): InstanceElement =>

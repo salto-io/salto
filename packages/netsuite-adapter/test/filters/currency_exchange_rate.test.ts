@@ -17,6 +17,7 @@
 import { ElemID, getChangeData, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import filterCreator, { DEFAULT_EXCHANGE_RATE } from '../../src/filters/currency_exchange_rate'
 import { CURRENCY, NETSUITE } from '../../src/constants'
+import { LocalFilterOpts } from '../../src/filter'
 
 const currencyType = new ObjectType({ elemID: new ElemID(NETSUITE, CURRENCY) })
 
@@ -41,13 +42,13 @@ describe('currency exchange rate filter', () => {
   it('should not change instance when exchange rate is specified', async () => {
     instance.value.exchangeRate = 0.35
     const change = toChange({ after: instance })
-    await filterCreator().preDeploy([change])
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
     expect(getChangeData(change).value.exchangeRate).toEqual(0.35)
   })
 
   it('should insert exchang rate with default value when it is not specified', async () => {
     const change = toChange({ after: instance })
-    await filterCreator().preDeploy([change])
+    await filterCreator({} as LocalFilterOpts).preDeploy?.([change])
     expect(getChangeData(change).value.exchangeRate).toEqual(DEFAULT_EXCHANGE_RATE)
   })
 })

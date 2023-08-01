@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
+import { inspect } from 'util'
 import { BUILTIN_TYPE_NAMES, CORE_ANNOTATIONS } from './constants'
 
 export type ElemIDType = 'type' | 'field' | 'instance' | 'attr' | 'annotation' | 'var'
@@ -180,6 +181,10 @@ export class ElemID {
     return this.fullName
   }
 
+  [inspect.custom](): string {
+    return `ElemID(${this.getFullName()})`
+  }
+
   getFullNameParts(): string[] {
     const nameParts = this.fullNameParts()
     return nameParts
@@ -323,5 +328,11 @@ export class ElemID {
       return getContainerPrefix(this.typeName)
     }
     return undefined
+  }
+
+  isIDNestedInType(): boolean {
+    // These id types represent "logical groups" of IDs that count towards the nesting level
+    // e.g - adapter.type.field.bla is nested under adapter.type.field
+    return this.idType === 'annotation' || this.idType === 'attr' || this.idType === 'field'
   }
 }

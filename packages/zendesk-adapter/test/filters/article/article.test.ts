@@ -123,29 +123,83 @@ describe('article filter', () => {
       permission_group_id: '666',
       brand: brandInstance.value.id,
       title: 'title',
+      body: '<p><img src=\\"https://salto87.zendesk.com/hc/article_attachments/123\\" alt=\\"nacl.png\\"></p>',
     }
   )
   const attachmentType = new ObjectType({ elemID: new ElemID(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME) })
   const content = Buffer.from('test')
-  const articleAttachmentInstance = new InstanceElement(
+  const notInlineArticleAttachmentInstance = new InstanceElement(
     'title_12345__attachmentFileName_png_false@uuuvu',
     attachmentType,
     {
       id: 20222022,
       file_name: 'attachmentFileName.png',
       content_type: 'image/png',
-      inline: 'false',
+      inline: false,
       brand: brandInstance.value.id,
       content_url: 'https://someURL.com',
     },
     undefined,
-    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
-      articleWithAttachmentInstance.elemID,
-      articleWithAttachmentInstance,
-    )] },
+    { [CORE_ANNOTATIONS.PARENT]: [
+      new ReferenceExpression(articleWithAttachmentInstance.elemID, articleWithAttachmentInstance),
+    ] },
+  )
+  const inlineArticleAttachmentInstance = new InstanceElement(
+    'title_12345__attachmentFileName_png_true@uuuvu',
+    attachmentType,
+    {
+      id: 123,
+      file_name: 'attachmentFileName.png',
+      content_type: 'image/png',
+      inline: true,
+      brand: brandInstance.value.id,
+      content_url: 'https://someURL.com',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [
+      new ReferenceExpression(articleWithAttachmentInstance.elemID, articleWithAttachmentInstance),
+    ] },
+  )
+  const otherTranslationInlineArticleAttachmentInstance = new InstanceElement(
+    'title_12345__otherTranslaitonAttachmentFileName_png_true@uuuvu',
+    attachmentType,
+    {
+      id: 133,
+      file_name: 'attachmentFileName.png',
+      content_type: 'image/png',
+      inline: true,
+      brand: brandInstance.value.id,
+      content_url: 'https://someURL.com',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [
+      new ReferenceExpression(articleWithAttachmentInstance.elemID, articleWithAttachmentInstance),
+    ] },
+  )
+  const deletedInlineArticleAttachmentInstance = new InstanceElement(
+    'title_12345__attachmentFileName2_png_true@uuuvu',
+    attachmentType,
+    {
+      id: 124,
+      file_name: 'attachmentFileName2.png',
+      content_type: 'image/png',
+      inline: true,
+      brand: brandInstance.value.id,
+      content_url: 'https://someURL.com',
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [
+      new ReferenceExpression(articleWithAttachmentInstance.elemID, articleWithAttachmentInstance),
+    ] },
   )
   articleWithAttachmentInstance.value.attachments = [
-    new ReferenceExpression(articleAttachmentInstance.elemID, articleAttachmentInstance),
+    new ReferenceExpression(deletedInlineArticleAttachmentInstance.elemID, deletedInlineArticleAttachmentInstance),
+    new ReferenceExpression(notInlineArticleAttachmentInstance.elemID, notInlineArticleAttachmentInstance),
+    new ReferenceExpression(inlineArticleAttachmentInstance.elemID, inlineArticleAttachmentInstance),
+    new ReferenceExpression(
+      otherTranslationInlineArticleAttachmentInstance.elemID,
+      otherTranslationInlineArticleAttachmentInstance
+    ),
   ]
   const articleTranslationInstance = new InstanceElement(
     'testArticleTranslation',
@@ -170,6 +224,7 @@ describe('article filter', () => {
     {
       locale: { id: 'en-us' },
       title: 'This translation has attachment',
+      body: '<p><img src=\\"https://salto87.zendesk.com/hc/article_attachments/123\\" alt=\\"nacl.png\\"></p>',
       draft: false,
       brand: brandInstance.value.id,
     },
@@ -179,10 +234,26 @@ describe('article filter', () => {
       articleWithAttachmentInstance,
     )] },
   )
-  articleWithAttachmentInstance.value.translations = [new ReferenceExpression(
-    translationWithAttachmentInstance.elemID,
-    translationWithAttachmentInstance,
-  )]
+  const otherTranslationWithAttachmentInstance = new InstanceElement(
+    'otherTranslationWithAttachment',
+    new ObjectType({ elemID: new ElemID(ZENDESK, 'article_translation') }),
+    {
+      locale: { id: 'other' },
+      title: 'This translation has attachment',
+      body: '<p><img src=\\"https://salto87.zendesk.com/hc/article_attachments/133\\" alt=\\"nacl.png\\"></p>',
+      draft: false,
+      brand: brandInstance.value.id,
+    },
+    undefined,
+    { [CORE_ANNOTATIONS.PARENT]: [new ReferenceExpression(
+      articleWithAttachmentInstance.elemID,
+      articleWithAttachmentInstance,
+    )] },
+  )
+  articleWithAttachmentInstance.value.translations = [
+    new ReferenceExpression(translationWithAttachmentInstance.elemID, translationWithAttachmentInstance),
+    new ReferenceExpression(otherTranslationWithAttachmentInstance.elemID, otherTranslationWithAttachmentInstance),
+  ]
   const userSegmentType = new ObjectType({ elemID: new ElemID(ZENDESK, USER_SEGMENT_TYPE_NAME) })
   const everyoneUserSegmentInstance = createEveryoneUserSegmentInstance(userSegmentType)
 
@@ -199,7 +270,7 @@ describe('article filter', () => {
     const elementsSource = buildElementsSourceFromElements([
       userSegmentType,
       everyoneUserSegmentInstance,
-      articleAttachmentInstance,
+      notInlineArticleAttachmentInstance,
     ])
     const brandIdToClient = { [brandInstance.value.id]: client }
     filter = filterCreator(createFilterCreatorParams({
@@ -237,10 +308,10 @@ describe('article filter', () => {
             data: {
               article_attachments: [
                 {
-                  id: articleAttachmentInstance.value.id,
-                  file_name: articleAttachmentInstance.value.filename,
-                  content_type: articleAttachmentInstance.value.contentType,
-                  inline: articleAttachmentInstance.value.inline,
+                  id: notInlineArticleAttachmentInstance.value.id,
+                  file_name: notInlineArticleAttachmentInstance.value.filename,
+                  content_type: notInlineArticleAttachmentInstance.value.contentType,
+                  inline: notInlineArticleAttachmentInstance.value.inline,
                   content_url: 'https://yo.com',
                 },
               ],
@@ -254,6 +325,13 @@ describe('article filter', () => {
           return { status: 200, data: { article_attachments: [] } }
         }
         if (params.url === '/hc/article_attachments/20222022/attachmentFileName.png') {
+          return {
+            status: 200,
+            data: content,
+          }
+        }
+        if (params.url === '/hc/article_attachments/123/attachmentFileName.png'
+          || params.url === '/hc/article_attachments/133/attachmentFileName.png') {
           return {
             status: 200,
             data: content,
@@ -284,14 +362,28 @@ describe('article filter', () => {
       expect(fetchedArticle?.value).toEqual(anotherArticleInstance.value)
     })
     it('should create article_attachment instance', async () => {
-      const clonedElements = [articleWithAttachmentInstance, attachmentType, articleAttachmentInstance]
+      const clonedElements = [
+        articleWithAttachmentInstance,
+        translationWithAttachmentInstance,
+        otherTranslationWithAttachmentInstance,
+        attachmentType,
+        inlineArticleAttachmentInstance,
+        otherTranslationInlineArticleAttachmentInstance,
+        deletedInlineArticleAttachmentInstance,
+        notInlineArticleAttachmentInstance,
+      ]
         .map(e => e.clone())
       await filter.onFetch(clonedElements)
+      // deleted article shoule be removed
       expect(clonedElements.map(e => e.elemID.getFullName()).sort())
         .toEqual([
           'zendesk.article.instance.articleWithAttachment',
           'zendesk.article_attachment',
           'zendesk.article_attachment.instance.title_12345__attachmentFileName_png_false@uuuvu',
+          'zendesk.article_attachment.instance.title_12345__attachmentFileName_png_true@uuuvu',
+          'zendesk.article_attachment.instance.title_12345__otherTranslaitonAttachmentFileName_png_true@uuuvu',
+          'zendesk.article_translation.instance.otherTranslationWithAttachment',
+          'zendesk.article_translation.instance.translationWithAttachment',
         ])
       const fetchedAttachment = clonedElements
         .filter(isInstanceElement)
@@ -299,6 +391,15 @@ describe('article filter', () => {
       expect(fetchedAttachment?.value.content).toEqual(new StaticFile({
         filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
       }))
+      const article = clonedElements
+        .filter(isInstanceElement)
+        .find(i => i.elemID.typeName === ARTICLE_TYPE_NAME)
+      expect(article?.value.attachments.map((e:ReferenceExpression) => e.elemID.getFullName()).sort())
+        .toEqual([
+          'zendesk.article_attachment.instance.title_12345__attachmentFileName_png_false@uuuvu',
+          'zendesk.article_attachment.instance.title_12345__attachmentFileName_png_true@uuuvu',
+          'zendesk.article_attachment.instance.title_12345__otherTranslaitonAttachmentFileName_png_true@uuuvu',
+        ])
     })
   })
 
@@ -341,14 +442,14 @@ describe('article filter', () => {
       ])
       const filteredArticle = getChangeData(articleAddition)
       expect(filteredArticle.value.title).toBe('The title of the article')
-      expect(filteredArticle.value.body).toBe('<p>ppppp</p>')
+      expect(filteredArticle.value.body).toBe('')
       expect(getChangeData(TranslationAddition)).toBe(clonedTranslation)
     })
     it('should run the creation of unassociated attachment', async () => {
       const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
         .mockImplementation(jest.fn())
       const clonedArticle = articleWithAttachmentInstance.clone()
-      const clonedAttachment = articleAttachmentInstance.clone()
+      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
       await filter.preDeploy([
         { action: 'add', data: { after: clonedArticle } },
         { action: 'add', data: { after: clonedAttachment } },
@@ -360,8 +461,8 @@ describe('article filter', () => {
       const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
         .mockImplementation(jest.fn())
       const clonedArticle = articleWithAttachmentInstance.clone()
-      const beforeClonedAttachment = articleAttachmentInstance.clone()
-      const afterClonedAttachment = articleAttachmentInstance.clone()
+      const beforeClonedAttachment = notInlineArticleAttachmentInstance.clone()
+      const afterClonedAttachment = notInlineArticleAttachmentInstance.clone()
       afterClonedAttachment.value.content = new StaticFile({
         filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
       })
@@ -382,8 +483,8 @@ describe('article filter', () => {
         .mockImplementation(jest.fn())
       mockPost.mockReturnValueOnce({ status: 400 })
       const clonedArticle = articleWithAttachmentInstance.clone()
-      const beforeClonedAttachment = articleAttachmentInstance.clone()
-      const afterClonedAttachment = articleAttachmentInstance.clone()
+      const beforeClonedAttachment = notInlineArticleAttachmentInstance.clone()
+      const afterClonedAttachment = notInlineArticleAttachmentInstance.clone()
       afterClonedAttachment.value.content = new StaticFile({
         filepath: 'zendesk/article_attachment/title/modified.png', encoding: 'binary', content: Buffer.from('modified'),
       })
@@ -492,13 +593,20 @@ describe('article filter', () => {
     })
 
     it('should associate attachments to articles on creation', async () => {
+      const mockAttachmentCreation = jest.spyOn(articleUtils, 'createUnassociatedAttachment')
+        .mockImplementation(jest.fn())
       const clonedArticle = articleWithAttachmentInstance.clone()
-      const clonedAttachment = articleAttachmentInstance.clone()
+      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
       clonedArticle.value.attachments = [
         new ReferenceExpression(clonedAttachment.elemID, clonedAttachment),
       ]
       const id = 2
       mockDeployChange.mockImplementation(async () => ({ workspace: { id } }))
+      await filter.preDeploy([
+        { action: 'add', data: { after: clonedArticle } },
+        { action: 'add', data: { after: clonedAttachment } },
+      ])
+      expect(mockAttachmentCreation).toHaveBeenCalledTimes(1)
       const res = await filter.deploy([
         { action: 'add', data: { after: clonedArticle } },
         { action: 'add', data: { after: clonedAttachment } },
@@ -539,7 +647,7 @@ describe('article filter', () => {
             content: new StaticFile({
               filepath: 'zendesk/article_attachment/title/attachmentFileName.png', encoding: 'binary', content,
             }),
-            inline: 'false',
+            inline: false,
             brand: brandInstance.value.id,
           }],
         }

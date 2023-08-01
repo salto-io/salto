@@ -119,10 +119,11 @@ const ReferenceSerializationStrategyLookup: Record<
 
 export type ReferenceContextStrategyName = (
   'instanceParent' | 'neighborTypeWorkflow' | 'neighborCPQLookup' | 'neighborCPQRuleLookup'
-  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborPicklistObjectLookup'
+  | 'neighborLookupValueTypeLookup' | 'neighborObjectLookup' | 'neighborSobjectLookup' | 'neighborPicklistObjectLookup'
   | 'neighborTypeLookup' | 'neighborActionTypeFlowLookup' | 'neighborActionTypeLookup' | 'parentObjectLookup'
   | 'parentInputObjectLookup' | 'parentOutputObjectLookup' | 'neighborSharedToTypeLookup' | 'neighborTableLookup'
   | 'neighborCaseOwnerTypeLookup' | 'neighborAssignedToTypeLookup' | 'neighborRelatedEntityTypeLookup'
+  | 'parentSObjectTypeLookupTopLevel'
 )
 
 type SourceDef = {
@@ -243,7 +244,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'ApexPage' },
   },
   {
-    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'ProfileApexClassAccess', 'TransactionSecurityPolicy'] },
+    src: { field: 'apexClass', parentTypes: ['FlowApexPluginCall', 'FlowVariable', 'TransactionSecurityPolicy'] },
     target: { type: 'ApexClass' },
   },
   {
@@ -251,28 +252,8 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: 'Role' },
   },
   {
-    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
-    target: { type: 'CustomApplication' },
-  },
-  {
     src: { field: 'permissionSets', parentTypes: ['PermissionSetGroup', 'DelegateGroup'] },
     target: { type: 'PermissionSet' },
-  },
-  {
-    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'Layout' },
-  },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
-    target: { type: 'RecordType' },
-  },
-  {
-    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
-    target: { type: 'Flow' },
-  },
-  {
-    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
-    target: { type: 'RecordType' },
   },
   {
     src: { field: 'tabs', parentTypes: ['CustomApplication'] },
@@ -308,7 +289,7 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_OBJECT },
   },
   {
-    src: { field: 'object', parentTypes: ['ProfileObjectPermissions', 'FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
+    src: { field: 'object', parentTypes: ['FlowDynamicChoiceSet', 'FlowRecordLookup', 'FlowRecordUpdate', 'FlowRecordCreate', 'FlowRecordDelete', 'FlowStart', 'PermissionSetObjectPermissions'] },
     target: { type: CUSTOM_OBJECT },
   },
   {
@@ -635,6 +616,11 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     target: { type: CUSTOM_LABEL_METADATA_TYPE },
   },
   {
+    src: { field: 'name', parentTypes: ['WorkflowActionReference'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'parentSObjectTypeLookupTopLevel', typeContext: 'neighborTypeWorkflow' },
+  },
+  {
     src: { field: 'milestoneName', parentTypes: ['EntitlementProcessMilestoneItem'] },
     target: { type: 'MilestoneType' },
   },
@@ -652,13 +638,63 @@ export const defaultFieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
     src: { field: 'links', parentTypes: ['HomePageComponent'] },
     target: { type: 'CustomPageWebLink' },
   },
+  {
+    src: { field: 'recordTypeName', parentTypes: ['AnimationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborSobjectLookup', type: 'RecordType' },
+  },
+  {
+    src: { field: 'targetField', parentTypes: ['AnimationRule'] },
+    serializationStrategy: 'relativeApiName',
+    target: { parentContext: 'neighborSobjectLookup', type: CUSTOM_FIELD },
+  },
+  {
+    src: { field: 'sobjectType', parentTypes: ['AnimationRule'] },
+    target: { type: CUSTOM_OBJECT },
+  },
 ]
 
 // Optional reference that should not be used if enumFieldPermissions config is on
-const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
+export const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = [
   {
     src: { field: 'field', parentTypes: ['ProfileFieldLevelSecurity'] },
     target: { type: CUSTOM_FIELD },
+  },
+]
+
+export const referencesFromProfile: FieldReferenceDefinition[] = [
+  {
+    src: { field: 'object', parentTypes: ['ProfileObjectPermissions'] },
+    target: { type: CUSTOM_OBJECT },
+  },
+  {
+    src: { field: 'apexClass', parentTypes: ['ProfileApexClassAccess'] },
+    target: { type: 'ApexClass' },
+  },
+  {
+    src: { field: 'layout', parentTypes: ['ProfileLayoutAssignment'] },
+    target: { type: 'Layout' },
+  },
+  {
+    src: { field: 'recordType', parentTypes: ['ProfileLayoutAssignment'] },
+    target: { type: 'RecordType' },
+  },
+  {
+    src: { field: 'flow', parentTypes: ['ProfileFlowAccess'] },
+    target: { type: 'Flow' },
+  },
+  {
+    src: { field: 'recordType', parentTypes: ['ProfileRecordTypeVisibility'] },
+    target: { type: 'RecordType' },
+  },
+  {
+    src: { field: 'application', parentTypes: ['ProfileApplicationVisibility'] },
+    target: { type: 'CustomApplication' },
+  },
+  {
+    src: { field: 'columns', parentTypes: ['ListView'] },
+    serializationStrategy: 'relativeApiName',
+    target: { type: CUSTOM_FIELD, parentContext: 'instanceParent' },
   },
 ]
 
@@ -673,10 +709,24 @@ const fieldPermissionEnumDisabledExtraMappingDefs: FieldReferenceDefinition[] = 
  * 1. An element matching the rule is found.
  * 2. Resolving the resulting reference expression back returns the original value.
  */
-export const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
+const fieldNameToTypeMappingDefs: FieldReferenceDefinition[] = [
   ...defaultFieldNameToTypeMappingDefs,
   ...fieldPermissionEnumDisabledExtraMappingDefs,
+  ...referencesFromProfile,
 ]
+
+export const getReferenceMappingDefs = (
+  args: {enumFieldPermissions: boolean; otherProfileRefs: boolean }
+): FieldReferenceDefinition[] => {
+  let refDefs = defaultFieldNameToTypeMappingDefs
+  if (args.enumFieldPermissions) {
+    refDefs = refDefs.concat(fieldPermissionEnumDisabledExtraMappingDefs)
+  }
+  if (args.otherProfileRefs) {
+    refDefs = refDefs.concat(referencesFromProfile)
+  }
+  return refDefs
+}
 
 const matchName = (name: string, matcher: string | RegExp): boolean => (
   _.isString(matcher)
@@ -736,7 +786,7 @@ export type ReferenceResolverFinder = (
  * Generates a function that filters the relevant resolvers for a given field.
  */
 export const generateReferenceResolverFinder = (
-  defs = fieldNameToTypeMappingDefs
+  defs: FieldReferenceDefinition[],
 ): ReferenceResolverFinder => {
   const referenceDefinitions = defs.map(
     def => FieldReferenceResolver.create(def)
@@ -799,7 +849,7 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        return defaultStrategy.serialize({ ref, element })
+        return await defaultStrategy.serialize({ ref, element }) ?? ref.value
       }
     }
     return ref.value
@@ -809,4 +859,4 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl()
+export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)

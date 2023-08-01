@@ -21,6 +21,7 @@ import { instancesToCreateRecords } from '../src/transformers/transformer'
 import mockClient from './client'
 
 describe('Custom Object Deploy', () => {
+  const groupId = 'test_group_id'
   describe('retry mechanism', () => {
     const { client } = mockClient()
     const inst1 = new InstanceElement('inst1', new ObjectType({ elemID: new ElemID('', 'test') }))
@@ -55,8 +56,8 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -74,8 +75,20 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr555'] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual(
+        expect.objectContaining({
+          errorInstances: [expect.objectContaining({
+            elemID: inst2.elemID,
+            message: expect.stringContaining('err555'),
+            severity: 'Error',
+          })],
+          successInstances: [expect.objectContaining({
+            elemID: inst1.elemID,
+          })],
+        }),
+      )
+
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -93,8 +106,27 @@ describe('Custom Object Deploy', () => {
           },
         ]
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1\n\tbla bla bla'] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual(
+        expect.objectContaining({
+          errorInstances: [
+            expect.objectContaining({
+              elemID: inst2.elemID,
+              message: expect.stringContaining('err1'),
+              severity: 'Error',
+            }),
+            expect.objectContaining({
+              elemID: inst2.elemID,
+              message: expect.stringContaining('bla bla bla'),
+              severity: 'Error',
+            }),
+          ],
+          successInstances: [expect.objectContaining({
+            elemID: inst1.elemID,
+          })],
+        }),
+      )
+
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(1)
     })
 
@@ -124,8 +156,22 @@ describe('Custom Object Deploy', () => {
         }
 
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1 bla bla bla'] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual(
+        expect.objectContaining({
+          errorInstances: [
+            expect.objectContaining({
+              elemID: inst2.elemID,
+              message: expect.stringContaining('err1 bla bla bla'),
+              severity: 'Error',
+            }),
+          ],
+          successInstances: [expect.objectContaining({
+            elemID: inst1.elemID,
+          })],
+        }),
+      )
+
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
     })
 
@@ -154,8 +200,8 @@ describe('Custom Object Deploy', () => {
         }
 
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1, inst2], errorMessages: [] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual({ successInstances: [inst1, inst2], errorInstances: [] })
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(2)
     })
 
@@ -184,8 +230,20 @@ describe('Custom Object Deploy', () => {
           }]
         }
       )
-      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client }, retries)
-      expect(res).toEqual({ successInstances: [inst1], errorMessages: ['inst2:\n    \terr1'] })
+      const res = await retryFlow(clientOp, { typeName: 'typtyp', instances: instanceElements, client, groupId }, retries)
+      expect(res).toEqual(
+        expect.objectContaining({
+          errorInstances: [expect.objectContaining({
+            elemID: inst2.elemID,
+            message: expect.stringContaining('err1'),
+            severity: 'Error',
+          })],
+          successInstances: [expect.objectContaining({
+            elemID: inst1.elemID,
+          })],
+        }),
+      )
+
       expect(clientBulkOpSpy).toHaveBeenCalledTimes(4)
     })
   })
@@ -202,7 +260,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1', 'ENTITY_IS_DELETED:entity is deleted:--', 'error2'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const result = await deleteInstances({ typeName, instances, client, groupId })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ errors: ['error1', 'error2'] })
     })
@@ -210,7 +268,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: ['ENTITY_IS_DELETED:entity is deleted:--'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const result = await deleteInstances({ typeName, instances, client, groupId })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: [] })
     })
@@ -218,7 +276,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', errors: ['error1'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const result = await deleteInstances({ typeName, instances, client, groupId })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: ['error1'] })
     })
@@ -226,7 +284,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: false, errors: [] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const result = await deleteInstances({ typeName, instances, client, groupId })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: false, errors: [] })
     })
@@ -234,7 +292,7 @@ describe('Custom Object Deploy', () => {
       clientBulkOpSpy.mockResolvedValue([
         { id: '', success: true, errors: ['error'] },
       ])
-      const result = await deleteInstances({ typeName, instances, client })
+      const result = await deleteInstances({ typeName, instances, client, groupId })
       expect(result).toHaveLength(1)
       expect(result[0].result).toMatchObject({ success: true, errors: ['error'] })
     })

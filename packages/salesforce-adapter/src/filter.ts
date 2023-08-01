@@ -47,31 +47,20 @@ export type FilterResult = {
 
 export type Filter = filter.Filter<FilterResult>
 
-export type FilterWith<M extends keyof Filter> = filter.FilterWith<FilterResult, M>
-
 // Local filters only use information in existing elements
 // They can change the format of elements, but cannot use external sources of information
-export type LocalFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config'>>
+type LocalFilterOpts = Pick<FilterOpts, 'config'>
+export type LocalFilterCreator = filter.FilterCreator<FilterResult, LocalFilterOpts>
 
 // Remote filters can add more information to existing elements
 // They should not change the format of existing elements, they should focus only on adding
 // the new information
-export type RemoteFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config' | 'client'>>
+type RemoteFilterOpts = Pick<FilterOpts, 'config' | 'client'>
+export type RemoteFilterCreator = filter.RemoteFilterCreator<FilterResult, RemoteFilterOpts>
 
 // Files filters can run on folders and get additional context from the list of available files
-export type FilesFilterCreator = filter.FilterCreator<FilterResult, Pick<FilterOpts, 'config' | 'files'>>
+type FilesFilterOpts = Pick<FilterOpts, 'config' | 'files'>
+export type FilesFilterCreator = filter.FilterCreator<FilterResult, FilesFilterOpts>
 
-export type RemoteFilterCreatorDefinition = {
-  creator: RemoteFilterCreator
-  addsNewInformation: true
-}
-export type LocalFilterCreatorDefinition = {
-  creator: LocalFilterCreator
-  addsNewInformation?: false
-}
-
-export const isLocalFilterCreator = (
-  filterDef: LocalFilterCreatorDefinition | RemoteFilterCreatorDefinition
-): filterDef is LocalFilterCreatorDefinition => (
-  filterDef.addsNewInformation !== true
-)
+export type LocalFilterCreatorDefinition = filter.LocalFilterCreatorDefinition<FilterResult, LocalFilterOpts>
+export type RemoteFilterCreatorDefinition = filter.RemoteFilterCreatorDefinition<FilterResult, RemoteFilterOpts>

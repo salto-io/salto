@@ -13,29 +13,70 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
+import _ from 'lodash'
 import { ChangeValidator } from '@salto-io/adapter-api'
 import { deployment } from '@salto-io/adapter-components'
-import { createChangeValidator } from '@salto-io/adapter-utils'
 import { applicationValidator } from './application'
 import { groupRuleStatusValidator } from './group_rule_status'
 import { groupRuleActionsValidator } from './group_rule_actions'
 import { defaultPoliciesValidator } from './default_policies'
 import { groupRuleAdministratorValidator } from './group_rule_administrator'
 import { customApplicationStatusValidator } from './custom_application_status'
+import { appGroupValidator } from './app_group'
 import { userTypeAndSchemaValidator } from './user_type_and_schema'
+import { appIntegrationSetupValidator } from './app_integration_setup'
+import { assignedAccessPoliciesValidator } from './assigned_policies'
+import { groupSchemaModifyBaseValidator } from './group_schema_modify_base_fields'
+import { enabledAuthenticatorsValidator } from './enabled_authenticators'
+import { roleAssignmentValidator } from './role_assignment'
+import { usersValidator } from './user'
+import OktaClient from '../client/client'
+import {
+  API_DEFINITIONS_CONFIG,
+  ChangeValidatorName,
+  DEPLOY_CONFIG,
+  OktaConfig,
+  PRIVATE_API_DEFINITIONS_CONFIG,
+} from '../config'
+import { appUserSchemaWithInactiveAppValidator } from './app_schema_with_inactive_app'
 
-export default (
-): ChangeValidator => {
-  const validators: ChangeValidator[] = [
-    ...deployment.changeValidators.getDefaultChangeValidators(),
-    applicationValidator,
-    groupRuleStatusValidator,
-    groupRuleActionsValidator,
-    defaultPoliciesValidator,
-    groupRuleAdministratorValidator,
-    customApplicationStatusValidator,
-    userTypeAndSchemaValidator,
-  ]
+const {
+  createCheckDeploymentBasedOnConfigValidator,
+  getDefaultChangeValidators,
+  createChangeValidator,
+} = deployment.changeValidators
 
-  return createChangeValidator(validators)
+export default ({
+  client,
+  config,
+}: {
+  client: OktaClient
+  config: OktaConfig
+}): ChangeValidator => {
+  const validators: Record<ChangeValidatorName, ChangeValidator> = {
+    ...getDefaultChangeValidators(),
+    createCheckDeploymentBasedOnConfig: createCheckDeploymentBasedOnConfigValidator({
+      typesConfig: _.merge(config[API_DEFINITIONS_CONFIG].types, config[PRIVATE_API_DEFINITIONS_CONFIG].types),
+    }),
+    application: applicationValidator,
+    appGroup: appGroupValidator,
+    groupRuleStatus: groupRuleStatusValidator,
+    groupRuleActions: groupRuleActionsValidator,
+    defaultPolicies: defaultPoliciesValidator,
+    groupRuleAdministrator: groupRuleAdministratorValidator,
+    customApplicationStatus: customApplicationStatusValidator,
+    userTypeAndSchema: userTypeAndSchemaValidator,
+    appIntegrationSetup: appIntegrationSetupValidator(client),
+    assignedAccessPolicies: assignedAccessPoliciesValidator,
+    groupSchemaModifyBase: groupSchemaModifyBaseValidator,
+    enabledAuthenticators: enabledAuthenticatorsValidator,
+    roleAssignment: roleAssignmentValidator,
+    users: usersValidator(client, config),
+    appUserSchemaWithInactiveApp: appUserSchemaWithInactiveAppValidator,
+  }
+
+  return createChangeValidator({
+    validators,
+    validatorsActivationConfig: config[DEPLOY_CONFIG]?.changeValidators,
+  })
 }

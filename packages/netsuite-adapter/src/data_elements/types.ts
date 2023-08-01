@@ -21,6 +21,49 @@ export const TRANSACTION_TYPE_ID = '-30'
 const FIELD_TYPE = '-124'
 const SCRIPT_TYPE = '-417'
 
+type ItemType = 'assemblyItem' |
+'lotNumberedAssemblyItem' |
+'serializedAssemblyItem' |
+'descriptionItem' |
+'discountItem' |
+'kitItem' |
+'markupItem' |
+'nonInventoryPurchaseItem' |
+'nonInventorySaleItem' |
+'nonInventoryResaleItem' |
+'otherChargeSaleItem' |
+'otherChargeResaleItem' |
+'otherChargePurchaseItem' |
+'paymentItem' |
+'serviceResaleItem' |
+'servicePurchaseItem' |
+'serviceSaleItem' |
+'subtotalItem' |
+'inventoryItem' |
+'lotNumberedInventoryItem' |
+'serializedInventoryItem' |
+'itemGroup' |
+'giftCertificateItem' |
+'downloadItem'
+
+type TypeWithMultiFieldsIdentifier = 'accountingPeriod' |
+'nexus' |
+'account'
+
+type TypeWithSingleFieldIdentifier = 'subsidiary' |
+'department' |
+'classification' |
+'location' |
+'currency' |
+'customer' |
+'employee' |
+'job' |
+'manufacturingCostTemplate' |
+'partner' |
+'solution'
+
+export type SupportedDataType = ItemType | TypeWithMultiFieldsIdentifier | TypeWithSingleFieldIdentifier
+
 // Was taken from https://<account_id>.app.netsuite.com/app/help/helpcenter.nl?fid=section_n3432681.html&whence=
 const ORIGINAL_TYPES_TO_INTERNAL_ID: Record<string, string> = {
   account: '-112',
@@ -227,7 +270,7 @@ export const INTERNAL_ID_TO_TYPES: Record<string, string[]> = _(TYPES_TO_INTERNA
   .mapValues(values => values.map(([type]) => type))
   .value()
 
-export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
+export const ITEM_TYPE_TO_SEARCH_STRING: Record<ItemType, string> = {
   assemblyItem: '_assembly',
   lotNumberedAssemblyItem: '_assembly',
   serializedAssemblyItem: '_assembly',
@@ -254,17 +297,23 @@ export const ITEM_TYPE_TO_SEARCH_STRING: Record<string, string> = {
   downloadItem: '_downloadItem',
 }
 
+export const isItemType = (type: string): type is ItemType =>
+  type in ITEM_TYPE_TO_SEARCH_STRING
+
 // This is used for constructing a unique identifier for data types
 // field using multiple other fields
-export const TYPE_TO_ID_FIELD_PATHS: Record<string, string[][]> = {
+export const TYPE_TO_ID_FIELD_PATHS: Record<TypeWithMultiFieldsIdentifier, string[][]> = {
   accountingPeriod: [['periodName'], ['fiscalCalendar', 'name']],
   nexus: [['country'], ['state', 'name']],
   account: [['acctName'], ['acctNumber']],
 }
 
+export const isTypeWithMultiFieldsIdentifier = (type: string): type is TypeWithMultiFieldsIdentifier =>
+  type in TYPE_TO_ID_FIELD_PATHS
+
 export const IDENTIFIER_FIELD = 'identifier'
 
-export const TYPE_TO_IDENTIFIER: Record<string, string> = {
+const TYPE_TO_SINGLE_FIELD_IDENTIFIER: Record<TypeWithSingleFieldIdentifier, string> = {
   subsidiary: 'name',
   department: 'name',
   classification: 'name',
@@ -276,9 +325,48 @@ export const TYPE_TO_IDENTIFIER: Record<string, string> = {
   manufacturingCostTemplate: 'name',
   partner: 'partnerCode',
   solution: 'solutionCode',
-  ...Object.fromEntries(Object.keys(ITEM_TYPE_TO_SEARCH_STRING).map(type => [type, 'itemId'])),
-  ...Object.fromEntries(Object.keys(TYPE_TO_ID_FIELD_PATHS).map(type => [type, IDENTIFIER_FIELD])),
 }
+
+const ITEM_TYPE_TO_IDENTIFIER: Record<ItemType, 'itemId'> = {
+  assemblyItem: 'itemId',
+  lotNumberedAssemblyItem: 'itemId',
+  serializedAssemblyItem: 'itemId',
+  descriptionItem: 'itemId',
+  discountItem: 'itemId',
+  kitItem: 'itemId',
+  markupItem: 'itemId',
+  nonInventoryPurchaseItem: 'itemId',
+  nonInventorySaleItem: 'itemId',
+  nonInventoryResaleItem: 'itemId',
+  otherChargeSaleItem: 'itemId',
+  otherChargeResaleItem: 'itemId',
+  otherChargePurchaseItem: 'itemId',
+  paymentItem: 'itemId',
+  serviceResaleItem: 'itemId',
+  servicePurchaseItem: 'itemId',
+  serviceSaleItem: 'itemId',
+  subtotalItem: 'itemId',
+  inventoryItem: 'itemId',
+  lotNumberedInventoryItem: 'itemId',
+  serializedInventoryItem: 'itemId',
+  itemGroup: 'itemId',
+  giftCertificateItem: 'itemId',
+  downloadItem: 'itemId',
+}
+
+const TYPE_WITH_MULTI_FIELDS_TO_IDENTIFIER: Record<TypeWithMultiFieldsIdentifier, typeof IDENTIFIER_FIELD> = {
+  accountingPeriod: IDENTIFIER_FIELD,
+  account: IDENTIFIER_FIELD,
+  nexus: IDENTIFIER_FIELD,
+}
+
+const supportedTypesToIdentifier: Record<SupportedDataType, string> = {
+  ...TYPE_TO_SINGLE_FIELD_IDENTIFIER,
+  ...ITEM_TYPE_TO_IDENTIFIER,
+  ...TYPE_WITH_MULTI_FIELDS_TO_IDENTIFIER,
+}
+
+export const TYPE_TO_IDENTIFIER: Record<string, string> = supportedTypesToIdentifier
 
 export const getTypeIdentifier = (type: ObjectType): string => (
   type.fields[IDENTIFIER_FIELD] !== undefined

@@ -17,8 +17,15 @@ import {
   TypeElement, ObjectType, InstanceElement, isAdditionChange, getChangeData, Change,
   ElemIdGetter, FetchResult, AdapterOperations, DeployResult, FetchOptions, DeployOptions,
   ReadOnlyElementsSource,
+  setPartialFetchData,
 } from '@salto-io/adapter-api'
-import { filter, logDuration, resolveChangeElement, restoreChangeElement } from '@salto-io/adapter-utils'
+import {
+  filter,
+  logDuration,
+  resolveChangeElement,
+  restoreChangeElement,
+  safeJsonStringify,
+} from '@salto-io/adapter-utils'
 import { MetadataObject } from 'jsforce'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
@@ -79,9 +86,12 @@ import fetchFlowsFilter from './filters/fetch_flows'
 import customMetadataToObjectTypeFilter from './filters/custom_metadata_to_object_type'
 import installedPackageGeneratedDependencies from './filters/installed_package_generated_dependencies'
 import createMissingInstalledPackagesInstancesFilter from './filters/create_missing_installed_packages_instances'
+import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases'
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
+import { FetchElements, SalesforceConfig } from './types'
+import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
 import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
@@ -92,7 +102,14 @@ import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from 
 import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
-import { ArtificialTypes, FLOW_DEFINITION_METADATA_TYPE, FLOW_METADATA_TYPE } from './constants'
+import {
+  ArtificalTypes,
+  CUSTOM_OBJECT,
+  FLOW_DEFINITION_METADATA_TYPE,
+  FLOW_METADATA_TYPE,
+  OWNER_ID,
+  PROFILE_METADATA_TYPE,
+} from './constants'
 
 const { awu } = collections.asynciterable
 const { partition } = promises.array
@@ -155,6 +172,8 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: xmlAttributesFilter },
   { creator: minifyDeployFilter },
   { creator: formulaDepsFilter },
+  // centralizeTrackingInfoFilter depends on customObjectsToObjectTypeFilter and must run before customTypeSplit
+  { creator: centralizeTrackingInfoFilter },
   // The following filters should remain last in order to make sure they fix all elements
   { creator: convertListsFilter },
   { creator: convertTypeFilter },
@@ -170,11 +189,12 @@ export const allFilters: Array<LocalFilterCreatorDefinition | RemoteFilterCreato
   { creator: foreignKeyReferencesFilter },
   // extraDependenciesFilter should run after addMissingIdsFilter
   { creator: extraDependenciesFilter, addsNewInformation: true },
-  { creator: installedPackageGeneratedDependencies, addsNewInformation: true },
+  { creator: installedPackageGeneratedDependencies },
   { creator: customTypeSplit },
   { creator: profileInstanceSplitFilter },
   // Any filter that relies on _created_at or _changed_at should run after removeUnixTimeZero
   { creator: removeUnixTimeZeroFilter },
+  { creator: metadataInstancesAliasesFilter },
   // createChangedAtSingletonInstanceFilter should run last
   { creator: changedAtSingletonFilter },
 ]
@@ -231,7 +251,10 @@ const METADATA_TO_RETRIEVE = [
   'AuraDefinitionBundle', // Has several fields with base64Binary encoded content
   'Certificate', // contains encoded zip content
   'ContentAsset', // contains encoded zip content
+  'CustomApplication',
   'CustomMetadata', // For the XML attributes
+  'CustomObject',
+  'CustomPermission',
   'Dashboard', // contains encoded zip content, is under a folder
   'DashboardFolder',
   'Document', // contains encoded zip content, is under a folder
@@ -239,12 +262,20 @@ const METADATA_TO_RETRIEVE = [
   'EclairGeoData', // contains encoded zip content
   'EmailFolder',
   'EmailTemplate', // contains encoded zip content, is under a folder
+  'EmbeddedServiceConfig',
+  'ExperienceBundle',
+  'ExternalDataSource',
+  'FlexiPage',
+  'FlowDefinition',
   'LightningComponentBundle', // Has several fields with base64Binary encoded content
   'NetworkBranding', // contains encoded zip content
+  'Profile',
+  'PermissionSet',
   'Report', // contains encoded zip content, is under a folder
   'ReportFolder',
   'ReportType',
   'Scontrol', // contains encoded zip content
+  'SharingRules',
   'SiteDotCom', // contains encoded zip content
   'StaticResource', // contains encoded zip content
   // Other types that need retrieve / deploy to work
@@ -253,7 +284,9 @@ const METADATA_TO_RETRIEVE = [
   'Territory2Model', // All Territory2 types do not support CRUD
   'Territory2Rule', // All Territory2 types do not support CRUD
   'Territory2Type', // All Territory2 types do not support CRUD
+  'TopicsForObjects',
   'Layout', // retrieve returns more information about relatedLists
+  'Workflow',
 ]
 
 // See: https://developer.salesforce.com/docs/atlas.en-us.api.meta/api/sforce_api_objects_custom_object__c.htm
@@ -272,7 +305,7 @@ export const SYSTEM_FIELDS = [
   'Name',
   'RecordTypeId',
   'SystemModstamp',
-  'OwnerId',
+  OWNER_ID,
   'SetupOwnerId',
 ]
 
@@ -352,6 +385,14 @@ export default class SalesforceAdapter implements AdapterOperations {
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {}, changedAtSingleton)
     this.fetchProfile = fetchProfile
+    if (!this.fetchProfile.isFeatureEnabled('fetchCustomObjectUsingRetrieveApi')) {
+      // We have to fetch custom objects using retrieve in order to be able to fetch the field-level permissions
+      // in profiles. If custom objects are fetched via the read API, we have to fetch profiles using that API too.
+      _.pull(this.metadataToRetrieve, CUSTOM_OBJECT, PROFILE_METADATA_TYPE)
+    }
+    if (this.fetchProfile.isFeatureEnabled('fetchProfilesUsingReadApi')) {
+      _.pull(this.metadataToRetrieve, PROFILE_METADATA_TYPE)
+    }
     this.createFiltersRunner = () => filter.filtersRunner(
       {
         client,
@@ -420,7 +461,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
-      isPartial: this.fetchProfile.metadataQuery.isPartialFetch(),
+      partialFetchData: setPartialFetchData(this.fetchProfile.metadataQuery.isPartialFetch()),
     }
   }
 
@@ -428,6 +469,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
+    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()
@@ -435,13 +477,14 @@ export default class SalesforceAdapter implements AdapterOperations {
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
     const filtersRunner = this.createFiltersRunner()
     await filtersRunner.preDeploy(resolvedChanges)
+    log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 
     let deployResult: DeployResult
     if (await isCustomObjectInstanceChanges(resolvedChanges)) {
       if (checkOnly) {
         return {
           appliedChanges: [],
-          errors: [new Error('Cannot deploy CustomObject Records as part of check-only deployment')],
+          errors: [{ message: 'Cannot deploy CustomObject Records as part of check-only deployment', severity: 'Error' }],
         }
       }
       deployResult = await deployCustomObjectInstancesGroup(
@@ -455,9 +498,11 @@ export default class SalesforceAdapter implements AdapterOperations {
         this.nestedMetadataTypes, this.userConfig.client?.deploy?.deleteBeforeUpdate, checkOnly,
           this.userConfig.client?.deploy?.quickDeployParams)
     }
+    log.debug(`received deployResult for group ${changeGroup.groupID}`)
     // onDeploy can change the change list in place, so we need to give it a list it can modify
     const appliedChangesBeforeRestore = [...deployResult.appliedChanges]
     await filtersRunner.onDeploy(appliedChangesBeforeRestore)
+    log.debug(`onDeploy of group ${changeGroup.groupID} finished`)
 
     const sourceChanges = _.keyBy(
       changeGroup.changes,
@@ -559,7 +604,8 @@ export default class SalesforceAdapter implements AdapterOperations {
         types: metadataTypesToRetrieve,
         metadataQuery: this.fetchProfile.metadataQuery,
         maxItemsInRetrieveRequest: this.maxItemsInRetrieveRequest,
-        addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
+        addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
+        typesToSkip: new Set(this.metadataTypesOfInstancesFetchedInFilters),
       }),
       readInstances(metadataTypesToRead),
     ])
@@ -586,7 +632,7 @@ export default class SalesforceAdapter implements AdapterOperations {
       metadataType: type,
       metadataQuery: this.fetchProfile.metadataQuery,
       maxInstancesPerType: this.fetchProfile.maxInstancesPerType,
-      addNamespacePrefixToFullName: this.userConfig[FETCH_CONFIG]?.addNamespacePrefixToFullName,
+      addNamespacePrefixToFullName: this.fetchProfile.addNamespacePrefixToFullName,
     })
     return {
       elements: instances.elements,

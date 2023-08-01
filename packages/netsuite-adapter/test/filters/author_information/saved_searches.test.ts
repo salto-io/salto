@@ -15,18 +15,17 @@
 */
 import { CORE_ANNOTATIONS, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import { SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES } from '../../../src/types'
 import filterCreator from '../../../src/filters/author_information/saved_searches'
 import { NETSUITE, SAVED_SEARCH } from '../../../src/constants'
 import NetsuiteClient from '../../../src/client/client'
-import { FilterOpts } from '../../../src/filter'
+import { RemoteFilterOpts } from '../../../src/filter'
 import SuiteAppClient from '../../../src/client/suiteapp_client/suiteapp_client'
 import mockSdfClient from '../../client/sdf_client'
 import { createEmptyElementsSourceIndexes, getDefaultAdapterConfig } from '../../utils'
 import 'moment-timezone'
 
 describe('netsuite saved searches author information tests', () => {
-  let filterOpts: FilterOpts
+  let filterOpts: RemoteFilterOpts
   let elements: InstanceElement[]
   let savedSearch: InstanceElement
   let missingSavedSearch: InstanceElement
@@ -51,18 +50,8 @@ describe('netsuite saved searches author information tests', () => {
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
     missingSavedSearch = new InstanceElement(SAVED_SEARCH,
       new ObjectType({ elemID: new ElemID(NETSUITE, SAVED_SEARCH) }))
-    userPreferenceInstance = new InstanceElement(ElemID.CONFIG_NAME,
-      new ObjectType({ elemID: new ElemID(NETSUITE,
-        SUITEAPP_CONFIG_TYPES_TO_TYPE_NAMES.USER_PREFERENCES) }))
     savedSearch.value.scriptid = '1'
     missingSavedSearch.value.scriptid = '2'
-    userPreferenceInstance.value.configRecord = { data: {
-      fields: {
-        DATEFORMAT: 'MM/DD/YYYY',
-        TIMEZONE: 'America/Toronto',
-        TIMEFORMAT: 'H:mm',
-      },
-    } }
     elements = [savedSearch, missingSavedSearch, userPreferenceInstance]
     filterOpts = {
       client,
@@ -72,6 +61,7 @@ describe('netsuite saved searches author information tests', () => {
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,
       config: await getDefaultAdapterConfig(),
+      timeZoneAndFormat: { format: 'MM/DD/YYYY H:mm a', timeZone: 'America/Toronto' },
     }
   })
 
@@ -101,7 +91,16 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different formats', async () => {
-    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D/M/YYYY'
+    filterOpts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+      timeZoneAndFormat: { format: 'DD/M/YYYY h:mm a', timeZone: 'America/Toronto' },
+    }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28/1/1995 6:17 am' },
     ])
@@ -110,8 +109,16 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should add last modified date for different format', async () => {
-    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D Month, YYYY'
-    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE = 'Asia/Jerusalem'
+    filterOpts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+      timeZoneAndFormat: { format: 'D MMMM, YYYY h:mm a', timeZone: 'Asia/Jerusalem' },
+    }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 1995 6:17 am' },
     ])
@@ -119,8 +126,16 @@ describe('netsuite saved searches author information tests', () => {
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T04:17:00Z')
   })
   it('should not assign change at if the date is from the future', async () => {
-    userPreferenceInstance.value.configRecord.data.fields.DATEFORMAT = 'D Month, YYYY'
-    userPreferenceInstance.value.configRecord.data.fields.TIMEZONE = 'Asia/Jerusalem'
+    filterOpts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+      timeZoneAndFormat: { format: 'D MMMM, YYYY h:mm a', timeZone: 'Asia/Jerusalem' },
+    }
     runSavedSearchQueryMock.mockResolvedValue([
       { id: '1', modifiedby: [{ value: '1', text: 'user 1 name' }], datemodified: '28 January, 3995 6:17 am' },
     ])
@@ -129,36 +144,24 @@ describe('netsuite saved searches author information tests', () => {
   })
 
   it('should not add last modified date when the account date format isnt avaible', async () => {
-    userPreferenceInstance.value.configRecord.data.fields = {}
+    filterOpts = {
+      client,
+      elementsSourceIndex: {
+        getIndexes: () => Promise.resolve(createEmptyElementsSourceIndexes()),
+      },
+      elementsSource: buildElementsSourceFromElements([]),
+      isPartial: false,
+      config: await getDefaultAdapterConfig(),
+      timeZoneAndFormat: { format: undefined, timeZone: 'Asia/Jerusalem' },
+    }
     await filterCreator(filterOpts).onFetch?.(elements)
     expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toBeUndefined()
   })
 
-  it('it should get the date format from elementSource', async () => {
-    filterOpts.isPartial = true
-    userPreferenceInstance.value = {
-      DATEFORMAT: {
-        text: 'MM/DD/YYYY',
-        value: 'MM/DD/YYYY',
-      },
-      TIMEZONE: {
-        value: 'America/Toronto',
-      },
-      TIMEFORMAT: {
-        value: 'H:mm',
-      },
-    }
-    filterOpts.elementsSource = buildElementsSourceFromElements(elements)
-    elements = [savedSearch, missingSavedSearch]
-    await filterCreator(filterOpts).onFetch?.(elements)
-    expect(savedSearch.annotations[CORE_ANNOTATIONS.CHANGED_AT]).toEqual('1995-01-28T11:17:00Z')
-  })
-
-
   it('elements will stay the same if they were not found by the search', async () => {
     runSavedSearchQueryMock.mockReset()
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+    expect(savedSearch.annotations).toEqual({})
   })
   it('elements will stay the same if a modified by was empty in search', async () => {
     runSavedSearchQueryMock.mockReset()
@@ -166,7 +169,7 @@ describe('netsuite saved searches author information tests', () => {
       { id: '1', modifiedby: [] },
     ])
     await filterCreator(filterOpts).onFetch?.(elements)
-    expect(Object.values(savedSearch.annotations)).toHaveLength(0)
+    expect(savedSearch.annotations).toEqual({})
   })
   describe('failure', () => {
     it('undefined saved search result', async () => {

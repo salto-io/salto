@@ -14,17 +14,38 @@
 * limitations under the License.
 */
 import {
-  Adapter, InstanceElement, ObjectType, ElemID, AccountId, getChangeData, isField,
-  Change, ChangeDataType, isFieldChange, AdapterFailureInstallResult,
-  isAdapterSuccessInstallResult, AdapterSuccessInstallResult, AdapterAuthentication,
-  SaltoError, Element, DetailedChange, isCredentialError, DeployExtraProperties,
+  Adapter,
+  InstanceElement,
+  ObjectType,
+  ElemID,
+  getChangeData,
+  isField,
+  Change,
+  ChangeDataType,
+  isFieldChange,
+  AdapterFailureInstallResult,
+  isAdapterSuccessInstallResult,
+  AdapterSuccessInstallResult,
+  AdapterAuthentication,
+  SaltoError,
+  Element,
+  DetailedChange,
+  isCredentialError,
+  DeployExtraProperties,
+  ReferenceMapping,
+  AccountInfo,
+  isAdditionOrModificationChange,
 } from '@salto-io/adapter-api'
 import { EventEmitter } from 'pietile-eventemitter'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
-import { promises, collections } from '@salto-io/lowerdash'
-import { Workspace, ElementSelector, elementSource } from '@salto-io/workspace'
+import { promises, collections, values } from '@salto-io/lowerdash'
+import { Workspace, ElementSelector, elementSource, expressions, merger } from '@salto-io/workspace'
 import { EOL } from 'os'
+import {
+  buildElementsSourceFromElements,
+  getDetailedChanges as getDetailedChangesFromChange,
+} from '@salto-io/adapter-utils'
 import { deployActions, DeployError, ItemStatus } from './core/deploy'
 import {
   adapterCreators, getAdaptersCredentialsTypes, getAdapters, getAdapterDependencyChangers,
@@ -39,13 +60,14 @@ import {
   MergeErrorWithElements,
   fetchChangesFromWorkspace,
   getFetchAdapterAndServicesSetup,
+  calcFetchChanges,
 } from './core/fetch'
 import { defaultDependencyChangers } from './core/plan/plan'
-import { createRestoreChanges } from './core/restore'
+import { createRestoreChanges, createRestorePathChanges } from './core/restore'
 import { getAdapterChangeGroupIdFunctions } from './core/adapters/custom_group_key'
 import { createDiffChanges } from './core/diff'
 import getChangeValidators from './core/plan/change_validators'
-import { renameChecks, renameElement, updateStateElements } from './core/rename'
+import { renameChecks, renameElement } from './core/rename'
 import { ChangeWithDetails } from './core/plan/plan_item'
 
 export { cleanWorkspace } from './core/clean'
@@ -58,10 +80,9 @@ const { mapValuesAsync } = promises.object
 const getAdapterFromLoginConfig = (loginConfig: Readonly<InstanceElement>): Adapter =>
   adapterCreators[loginConfig.elemID.adapter]
 
-type VerifyCredentialsResult = {
-    success: true
-    accountId: AccountId
-} | {
+type VerifyCredentialsResult = (
+  { success: true } & AccountInfo
+  ) | {
   success: false
   error: Error
 }
@@ -72,8 +93,8 @@ export const verifyCredentials = async (
   const adapterCreator = getAdapterFromLoginConfig(loginConfig)
   if (adapterCreator) {
     try {
-      const accountId = await adapterCreator.validateCredentials(loginConfig)
-      return { success: true, accountId }
+      const account = await adapterCreator.validateCredentials(loginConfig)
+      return { success: true, ...account }
     } catch (error) {
       if (isCredentialError(error)) {
         return {
@@ -124,11 +145,11 @@ export const preview = async (
   return getPlan({
     before: stateElements,
     after: await workspace.elements(),
-    changeValidators: getChangeValidators(adapters, checkOnly),
+    changeValidators: getChangeValidators(adapters, checkOnly, await workspace.errors()),
     dependencyChangers: defaultDependencyChangers.concat(getAdapterDependencyChangers(adapters)),
     customGroupIdFunctions: getAdapterChangeGroupIdFunctions(adapters),
     topLevelFilters: [shouldElementBeIncluded(accounts)],
-    compareOptions: { compareReferencesByValue: true },
+    compareOptions: { compareByValue: true },
   })
 }
 
@@ -148,42 +169,37 @@ export const deploy = async (
   checkOnly = false,
 ): Promise<DeployResult> => {
   const changedElements = elementSource.createInMemoryElementSource()
+  const adaptersElementSource = buildElementsSourceFromElements([], [changedElements, await workspace.elements()])
   const adapters = await getAdapters(
     accounts,
     await workspace.accountCredentials(accounts),
     workspace.accountConfig.bind(workspace),
-    await workspace.elements(),
+    adaptersElementSource,
     getAccountToServiceNameMap(workspace, accounts)
   )
 
-  const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
-    const changeElem = getChangeData(change)
-    if (!isField(changeElem)) {
-      return changeElem
+  const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => log.time(async () => {
+    // This function is inside 'postDeployAction' because it assumes the state is already updated
+    const getUpdatedElement = async (change: Change): Promise<ChangeDataType> => {
+      const changeElem = getChangeData(change)
+      // Because this function is called after we updated the state, the top level is already update with the field
+      return isField(changeElem)
+        ? workspace.state().get(changeElem.parent.elemID)
+        : changeElem
     }
-    const topLevelElem = await workspace.state().get(changeElem.parent.elemID) as ObjectType
-    return new ObjectType({
-      ...topLevelElem,
-      annotationRefsOrTypes: topLevelElem.annotationRefTypes,
-      fields: change.action === 'remove'
-        ? _.omit(topLevelElem.fields, changeElem.name)
-        : _.merge({}, topLevelElem.fields, { [changeElem.name]: changeElem }),
-    })
-  }
 
-  const postDeployAction = async (appliedChanges: ReadonlyArray<Change>): Promise<void> => {
-    await promises.array.series(appliedChanges.map(change => async () => {
-      const updatedElement = await getUpdatedElement(change)
-      if (change.action === 'remove' && !isFieldChange(change)) {
-        await workspace.state().remove(updatedElement.elemID)
-      } else {
-        await workspace.state().set(updatedElement)
-        await changedElements.set(updatedElement)
-      }
-    }))
-  }
+    const detailedChanges = appliedChanges.flatMap(change => getDetailedChangesFromChange(change))
+    await workspace.state().updateStateFromChanges({ changes: detailedChanges })
+
+    const updatedElements = await awu(appliedChanges)
+      .filter(change => (isAdditionOrModificationChange(change) || isFieldChange(change)))
+      .map(getUpdatedElement)
+      .toArray()
+    await changedElements.setAll(updatedElements)
+  }, 'postDeployAction')
+
   const { errors, appliedChanges, extraProperties } = await deployActions(
-    actionPlan, adapters, reportProgress, postDeployAction, checkOnly,
+    actionPlan, adapters, reportProgress, postDeployAction, checkOnly
   )
 
   // Add workspace elements as an additional context for resolve so that we can resolve
@@ -208,7 +224,7 @@ export const deploy = async (
 export type FillConfigFunc = (configType: ObjectType) => Promise<InstanceElement>
 
 export type FetchResult = {
-  changes: Iterable<FetchChange>
+  changes: FetchChange[]
   mergeErrors: MergeErrorWithElements[]
   fetchErrors: SaltoError[]
   success: boolean
@@ -235,25 +251,6 @@ export type FetchFromWorkspaceFuncParams = {
 }
 export type FetchFromWorkspaceFunc = (args: FetchFromWorkspaceFuncParams) => Promise<FetchResult>
 
-const updateStateWithFetchResults = async (
-  workspace: Workspace,
-  mergedElements: Element[],
-  unmergedElements: Element[],
-  fetchedAccounts: string[],
-  partiallyFetchedAccounts: string[],
-): Promise<void> => {
-  const fetchElementsFilter = shouldElementBeIncluded(fetchedAccounts)
-  const stateElementsNotCoveredByFetch = await awu(await workspace.state().getAll())
-    .filter(element => !fetchElementsFilter(element.elemID)).toArray()
-  await workspace.state()
-    .override(awu(mergedElements)
-      .concat(stateElementsNotCoveredByFetch), fetchedAccounts)
-  const accountsToMaintain = partiallyFetchedAccounts
-    .concat((await workspace.state().existingAccounts()).filter(key => !fetchedAccounts.includes(key)))
-  await workspace.state().updatePathIndex(unmergedElements, accountsToMaintain)
-  log.debug(`finish to override state with ${mergedElements.length} elements`)
-}
-
 export const fetch: FetchFunc = async (
   workspace,
   progressEmitter?,
@@ -271,6 +268,7 @@ export const fetch: FetchFunc = async (
     workspace,
     fetchAccounts,
     accountToServiceNameMap,
+    await workspace.elements(),
     ignoreStateElemIdMapping,
   )
   const accountToAdapter = initAdapters(adaptersCreatorConfigs, accountToServiceNameMap)
@@ -280,9 +278,8 @@ export const fetch: FetchFunc = async (
   }
   try {
     const {
-      changes, elements, mergeErrors, errors, updatedConfig,
+      changes, serviceToStateChanges, elements, mergeErrors, errors, updatedConfig,
       configChanges, accountNameToConfigMessage, unmergedElements,
-      partiallyFetchedAccounts,
     } = await fetchChanges(
       accountToAdapter,
       await workspace.elements(),
@@ -293,13 +290,12 @@ export const fetch: FetchFunc = async (
       withChangesDetection,
     )
     log.debug(`${elements.length} elements were fetched [mergedErrors=${mergeErrors.length}]`)
-    await updateStateWithFetchResults(
-      workspace,
-      elements,
+    await workspace.state().updateStateFromChanges({
+      changes: serviceToStateChanges,
       unmergedElements,
       fetchAccounts,
-      Array.from(partiallyFetchedAccounts),
-    )
+    })
+
     return {
       changes,
       fetchErrors: errors,
@@ -339,10 +335,11 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     workspace,
     fetchAccounts,
     getAccountToServiceNameMap(workspace, fetchAccounts),
+    await workspace.elements()
   )
 
   const {
-    changes, elements, mergeErrors, errors,
+    changes, serviceToStateChanges, elements, mergeErrors, errors,
     configChanges, accountNameToConfigMessage, unmergedElements,
   } = await fetchChangesFromWorkspace(
     otherWorkspace,
@@ -356,7 +353,11 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
   )
 
   log.debug(`${elements.length} elements were fetched from a remote workspace [mergedErrors=${mergeErrors.length}]`)
-  await updateStateWithFetchResults(workspace, elements, unmergedElements, fetchAccounts, [])
+  await workspace.state().updateStateFromChanges({
+    changes: serviceToStateChanges,
+    unmergedElements,
+    fetchAccounts,
+  })
   return {
     changes,
     fetchErrors: errors,
@@ -366,6 +367,112 @@ export const fetchFromWorkspace: FetchFromWorkspaceFunc = async ({
     configChanges,
     accountNameToConfigMessage,
     progressEmitter,
+  }
+}
+
+type CalculatePatchArgs = {
+  workspace: Workspace
+  fromDir: string
+  toDir: string
+  accountName: string
+  ignoreStateElemIdMapping?: boolean
+}
+
+export const calculatePatch = async (
+  {
+    workspace,
+    fromDir,
+    toDir,
+    accountName,
+    ignoreStateElemIdMapping,
+  }: CalculatePatchArgs,
+): Promise<FetchResult> => {
+  const accountToServiceNameMap = getAccountToServiceNameMap(workspace, workspace.accounts())
+  const adapterName = accountToServiceNameMap[accountName]
+  if (adapterName !== accountName) {
+    throw new Error('Account name that is different from the adapter name is not supported')
+  }
+  const { loadElementsFromFolder } = adapterCreators[adapterName]
+  if (loadElementsFromFolder === undefined) {
+    throw new Error(`Account ${accountName}'s adapter ${adapterName} does not support calculate patch`)
+  }
+  const wsElements = await workspace.elements()
+  const resolvedWSElements = await expressions.resolve(
+    await awu(await wsElements.getAll()).toArray(),
+    wsElements,
+  )
+  const { adaptersCreatorConfigs } = await getFetchAdapterAndServicesSetup(
+    workspace,
+    [accountName],
+    accountToServiceNameMap,
+    elementSource.createInMemoryElementSource(resolvedWSElements),
+    ignoreStateElemIdMapping
+  )
+  const adapterContext = adaptersCreatorConfigs[accountName]
+
+  const loadElementsAndMerge = async (
+    dir: string,
+  ): Promise<{
+    elements: Element[]
+    loadErrors?: SaltoError[]
+    mergeErrors: MergeErrorWithElements[]
+    mergedElements: Element[]
+  }> => {
+    const { elements, errors } = await loadElementsFromFolder({ baseDir: dir, ...adapterContext })
+    const mergeResult = await merger.mergeElements(awu(elements))
+    return {
+      elements,
+      loadErrors: errors,
+      mergeErrors: await awu(mergeResult.errors.values()).flat().toArray(),
+      mergedElements: await awu(mergeResult.merged.values()).toArray(),
+    }
+  }
+  const {
+    loadErrors: beforeLoadErrors,
+    mergeErrors: beforeMergeErrors,
+    mergedElements: mergedBeforeElements,
+  } = await loadElementsAndMerge(fromDir)
+  if (beforeMergeErrors.length > 0) {
+    return {
+      changes: [],
+      mergeErrors: beforeMergeErrors,
+      fetchErrors: [],
+      success: false,
+      updatedConfig: {},
+    }
+  }
+  const {
+    elements: afterElements,
+    loadErrors: afterLoadErrors,
+    mergeErrors: afterMergeErrors,
+    mergedElements: mergedAfterElements,
+  } = await loadElementsAndMerge(toDir)
+  if (afterMergeErrors.length > 0) {
+    return {
+      changes: [],
+      mergeErrors: afterMergeErrors,
+      fetchErrors: [],
+      success: false,
+      updatedConfig: {},
+    }
+  }
+  const { changes } = await calcFetchChanges(
+    afterElements,
+    mergedAfterElements,
+    elementSource.createInMemoryElementSource(mergedBeforeElements),
+    adapterContext.elementsSource,
+    new Map([[accountName, {}]]),
+    new Set([accountName]),
+  )
+  return {
+    changes,
+    mergeErrors: [],
+    fetchErrors: [
+      ...(beforeLoadErrors ?? []),
+      ...(afterLoadErrors ?? []),
+    ],
+    success: true,
+    updatedConfig: {},
   }
 }
 
@@ -413,6 +520,15 @@ export async function restore(
   )
   return detailedChanges.map(change => ({ change, serviceChanges: [change] }))
 }
+
+export const restorePaths = async (
+  workspace: Workspace,
+  accounts?: string[],
+): Promise<LocalChange[]> => (await createRestorePathChanges(
+  await awu(await (await workspace.elements()).getAll()).toArray(),
+  await workspace.state().getPathIndex(),
+  accounts,
+)).map(change => ({ change, serviceChanges: [change] }))
 
 export function diff(
   workspace: Workspace,
@@ -564,7 +680,7 @@ export const rename = async (
       sourceElemId,
       targetElemId,
     )
-    await updateStateElements(workspace.state(), changes)
+    await workspace.state().updateStateFromChanges({ changes })
   }
 
   return renameElementChanges
@@ -572,3 +688,22 @@ export const rename = async (
 
 export const getAdapterConfigOptionsType = (adapterName: string): ObjectType | undefined =>
   adapterCreators[adapterName].configCreator?.optionsType
+
+
+export const getAdditionalReferences = async (
+  workspace: Workspace,
+  changes: Change[],
+): Promise<ReferenceMapping[]> => {
+  const accountToService = getAccountToServiceNameMap(workspace, workspace.accounts())
+
+  const changeGroups = _.groupBy(changes, change => getChangeData(change).elemID.adapter)
+
+  const referenceGroups = await Promise.all(
+    Object.entries(changeGroups).map(([account, changeGroup]) =>
+      adapterCreators[accountToService[account]]
+        .getAdditionalReferences?.(changeGroup))
+  )
+  return referenceGroups
+    .flat()
+    .filter(values.isDefined)
+}

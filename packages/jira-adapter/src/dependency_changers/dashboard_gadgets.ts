@@ -17,16 +17,15 @@ import { Change, dependencyChange, DependencyChanger, getChangeData, InstanceEle
 import { getParents } from '@salto-io/adapter-utils'
 import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { deployment } from '@salto-io/adapter-components'
 import { getGadgetInstanceKey, getGadgetKey } from '../change_validators/dashboard_gadgets'
 import { DASHBOARD_GADGET_TYPE, DASHBOARD_TYPE } from '../constants'
-import { ChangeWithKey } from './types'
-
 
 export const dashboardGadgetsDependencyChanger: DependencyChanger = async changes => {
   const instanceChanges = Array.from(changes.entries())
     .map(([key, change]) => ({ key, change }))
     .filter(
-      (change): change is ChangeWithKey<Change<InstanceElement>> =>
+      (change): change is deployment.dependency.ChangeWithKey<Change<InstanceElement>> =>
         isInstanceChange(change.change)
     )
 

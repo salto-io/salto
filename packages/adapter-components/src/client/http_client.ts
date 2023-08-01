@@ -141,7 +141,10 @@ export abstract class AdapterHTTPClient<
   protected extractHeaders(headers: Record<string, string> | undefined): Record<string, string> | undefined {
     return headers !== undefined
       // include headers related to rate limits
-      ? _.pickBy(headers, (_val, key) => key.toLowerCase().startsWith('rate-') || key.toLowerCase().startsWith('x-rate-'))
+      ? _.pickBy(headers, (_val, key) =>
+        key.toLowerCase().startsWith('rate-')
+        || key.toLowerCase().startsWith('x-rate-')
+        || key.toLowerCase().startsWith('retry-'))
       : undefined
   }
 
@@ -198,6 +201,27 @@ export abstract class AdapterHTTPClient<
     }
 
     const { url, queryParams, headers, responseType } = params
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const logResponse = (res: Response<any>): void => {
+      log.debug('Received response for %s on %s', method.toUpperCase(), url)
+
+      const responseText = safeJsonStringify({
+        url,
+        method: method.toUpperCase(),
+        status: res.status,
+        queryParams,
+        response: Buffer.isBuffer(res.data)
+          ? `<omitted buffer of length ${res.data.length}>`
+          : this.clearValuesFromResponseData(res.data, url),
+        headers: this.extractHeaders(res.headers),
+      })
+
+      log.debug('Response size for %s on %s is %d', method.toUpperCase(), url, responseText.length)
+
+      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, responseText)
+    }
+
     try {
       const requestConfig = [queryParams, headers, responseType].some(values.isDefined)
         ? {
@@ -218,27 +242,21 @@ export abstract class AdapterHTTPClient<
           requestConfig,
         )
       log.debug('Received response for %s on %s (%s) with status %d', method.toUpperCase(), url, safeJsonStringify({ url, queryParams }), res.status)
-      const responseHeaders = this.extractHeaders(res.headers)
-      log.trace('Full HTTP response for %s on %s: %s', method.toUpperCase(), url, safeJsonStringify({
-        url,
-        queryParams,
-        response: Buffer.isBuffer(res.data) ? `<omitted buffer of length ${res.data.length}>` : this.clearValuesFromResponseData(res.data, url),
-        headers: responseHeaders,
-        method: method.toUpperCase(),
-      }))
+      logResponse(res)
       const { data, status } = res
       return {
         data,
         status,
-        headers: responseHeaders,
+        headers: this.extractHeaders(res.headers),
       }
     } catch (e) {
-      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, stack: ${e.stack}, data: ${safeJsonStringify(e?.response?.data)}`)
+      log.warn(`failed to ${method} ${url} ${safeJsonStringify(queryParams)}: ${e}, data: ${safeJsonStringify(e?.response?.data)}, stack: ${e.stack}`)
       if (e.code === 'ETIMEDOUT') {
         throw new TimeoutError(`Failed to ${method} ${url} with error: ${e}`)
       }
       if (e.response !== undefined) {
-        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, e.response)
+        logResponse(e.response)
+        throw new HTTPError(`Failed to ${method} ${url} with error: ${e}`, _.pick(e.response, ['status', 'data']))
       }
       throw new Error(`Failed to ${method} ${url} with error: ${e}`)
     }

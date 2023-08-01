@@ -15,16 +15,15 @@
 */
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType } from '@salto-io/adapter-api'
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
-import NetsuiteClient from '../../src/client/client'
 import { LazyElementsSourceIndexes } from '../../src/elements_source_index/types'
 import { getDefaultAdapterConfig } from '../utils'
 import { NETSUITE, WORKFLOW } from '../../src/constants'
 import filterCreator from '../../src/filters/omit_sdf_untyped_values'
-import { FilterOpts } from '../../src/filter'
+import { LocalFilterOpts } from '../../src/filter'
 
 describe('omit sdf untyped values filter', () => {
   let instance: InstanceElement
-  let defaultOpts: FilterOpts
+  let defaultOpts: LocalFilterOpts
   beforeEach(async () => {
     instance = new InstanceElement(
       'test',
@@ -38,7 +37,6 @@ describe('omit sdf untyped values filter', () => {
       }
     )
     defaultOpts = {
-      client: {} as NetsuiteClient,
       elementsSourceIndex: {} as LazyElementsSourceIndexes,
       elementsSource: buildElementsSourceFromElements([]),
       isPartial: false,

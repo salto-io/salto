@@ -43,7 +43,7 @@ describe('fieldConfigurationIrrelevantFields', () => {
   })
 
   describe('onFetch', () => {
-    it('should remove fields that are not references', async () => {
+    it('should remove fields that are not references with values', async () => {
       const instance = new InstanceElement(
         'instance',
         fieldConfigurationType,
@@ -54,6 +54,9 @@ describe('fieldConfigurationIrrelevantFields', () => {
             },
             {
               id: '2',
+            },
+            {
+              id: new ReferenceExpression(fieldInstance.elemID),
             },
           ],
         }

@@ -23,19 +23,17 @@ const createChangeError = (instanceElemID: ElemID): ChangeError => ({
   elemID: instanceElemID,
   severity: 'Error',
   message: 'Data instances are not supported when executing a \'validate only\' deployment.',
-  detailedMessage: `Data instances are not supported when executing a 'validate only' deployment. Therefore, Instance ${instanceElemID.getFullName()} will be omitted from the deployment plan`,
+  detailedMessage: `Data instances are not supported when executing a 'validate only' deployment. Therefore, Instance ${instanceElemID.getFullName()} will be omitted from the deployment plan. You can learn more about this deployment preview error here: https://help.salto.io/en/articles/8058150-data-instances-are-not-supported-in-validation-deployments`,
 })
 
 /**
  * Data (CustomObject instances) is deployed although running in Salesforce validation process
  * (salesforce.client.deploy.checkOnly=true)
  */
-const createOmitDataValidator = (): ChangeValidator => (
-  async changes => awu(changes)
-    .filter(isInstanceOfCustomObjectChange)
-    .map(getChangeData)
-    .map(changeInstance => createChangeError(changeInstance.elemID))
-    .toArray()
-)
+const createOmitDataValidator: ChangeValidator = async changes => awu(changes)
+  .filter(isInstanceOfCustomObjectChange)
+  .map(getChangeData)
+  .map(changeInstance => createChangeError(changeInstance.elemID))
+  .toArray()
 
 export default createOmitDataValidator

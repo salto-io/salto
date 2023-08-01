@@ -20,6 +20,10 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { parseSdfProjectDir } from './client/sdf_parser'
 import { createElements } from './transformer'
 import { netsuiteConfigFromConfig } from './config'
+import { INTEGRATION } from './constants'
+
+// see comment on typesToSkip in adapter.ts
+const typesToSkip = new Set([INTEGRATION])
 
 const localFilters = allFilters
   .filter(filter.isLocalFilterCreator)
@@ -40,7 +44,11 @@ const loadElementsFromFolder = async (
     filters,
   )
   const customizationInfos = await parseSdfProjectDir(baseDir)
-  const elements = await createElements(customizationInfos, elementsSource, getElemIdFunc)
+  const elements = await createElements(
+    customizationInfos.filter(custInfo => !typesToSkip.has(custInfo.typeName)),
+    elementsSource,
+    getElemIdFunc,
+  )
   await filtersRunner.onFetch(elements)
 
   return { elements }

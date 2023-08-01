@@ -1698,6 +1698,54 @@ Object: customrecord_flo_customization.custrecord_flo_custz_link (customrecordcu
         } catch (e) {
           isRejected = true
           expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(errorMessage)
+        }
+        expect(isRejected).toBe(true)
+      })
+      it('should throw shorten error', async () => {
+        const errorMessage = `
+The deployment process has encountered an error.
+Deploying to TSTDRV2259448 - Salto Extended Dev - Administrator.
+2022-03-30 23:55:26 (PST) Installation started
+Info -- Account [(PRODUCTION) Salto Extended Dev]
+Info -- Account Customization Project [TempSdfProject-e5a4eed4-e331-490f-9cfa-69cf84bd231b]
+Info -- Framework Version [1.0]
+Validate manifest -- Success
+Validate deploy file -- Success
+Validate configuration -- Success
+Validate objects -- Success
+Validate files -- Success
+Validate folders -- Success
+Validate translation imports -- Success
+Validation of referenceability from custom objects to translations collection strings in progress. -- Success
+Validate preferences -- Success
+Validate flags -- Success
+Validate for circular dependencies -- Success
+Validate account settings -- Failed
+*** ERROR ***
+
+Validation of account settings failed.
+
+An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`
+        mockExecuteAction.mockImplementation(({ commandName }) => {
+          if (commandName === COMMANDS.DEPLOY_PROJECT) {
+            throw errorMessage
+          }
+          return { isSuccess: () => true }
+        })
+        let isRejected: boolean
+        testGraph.addNodes([new GraphNode('name', testSDFNode)])
+        try {
+          await client.deploy(...DEFAULT_DEPLOY_PARAMS)
+          isRejected = false
+        } catch (e) {
+          isRejected = true
+          expect(e instanceof ObjectsDeployError).toBeFalsy()
+          expect(e.message).toEqual(`An error occurred during account settings validation.
+Details: To install this SuiteCloud project, the INVENTORYSTATUS(Inventory Status) feature must be enabled in the account.
+Details: To install this SuiteCloud project, the CHARGEBASEDBILLING(Charge-Based Billing) feature must be enabled in the account.`)
         }
         expect(isRejected).toBe(true)
       })

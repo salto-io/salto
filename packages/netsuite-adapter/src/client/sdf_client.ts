@@ -843,6 +843,7 @@ export default class SdfClient {
       missingFeatureErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
+      otherErrorRegexes,
     } = multiLanguageErrorDetectors[sdfLanguage]
 
     const manifestErrorScriptids = getFailedObjects(messages, manifestErrorDetailsRegex)
@@ -890,7 +891,9 @@ ${this.manifestXmlContent}
 deploy.xml:
 ${this.deployXmlContent}
 `)
-    return error
+
+    const detectedErrors = messages.filter(message => otherErrorRegexes.some(regex => regex.test(message)))
+    return detectedErrors.length > 0 ? new Error(detectedErrors.join(os.EOL)) : error
   }
 
   private async runDeployCommands(

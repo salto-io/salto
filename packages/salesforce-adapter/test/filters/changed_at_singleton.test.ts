@@ -23,10 +23,10 @@ import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import _ from 'lodash'
 import { mockInstances } from '../mock_elements'
 import filterCreator from '../../src/filters/changed_at_singleton'
-import { FilterWith } from '../../src/filter'
 import { CHANGED_AT_SINGLETON, FLOW_METADATA_TYPE } from '../../src/constants'
 import { apiName } from '../../src/transformers/transformer'
 import { defaultFilterContext } from '../utils'
+import { FilterWith } from './mocks'
 
 describe('createChangedAtSingletonInstanceFilter', () => {
   describe('onFetch', () => {

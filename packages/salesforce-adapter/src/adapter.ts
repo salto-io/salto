@@ -90,10 +90,9 @@ import metadataInstancesAliasesFilter from './filters/metadata_instances_aliases
 import formulaDepsFilter from './filters/formula_deps'
 import removeUnixTimeZeroFilter from './filters/remove_unix_time_zero'
 import organizationWideDefaults from './filters/organization_wide_sharing_defaults'
-import { FetchElements, SalesforceConfig } from './types'
 import centralizeTrackingInfoFilter from './filters/centralize_tracking_info'
 import changedAtSingletonFilter from './filters/changed_at_singleton'
-import { FetchElements, FETCH_CONFIG, SalesforceConfig } from './types'
+import { FetchElements, SalesforceConfig } from './types'
 import { getConfigFromConfigChanges } from './config_change'
 import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFilterCreatorDefinition, RemoteFilterCreatorDefinition } from './filter'
 import { addDefaults } from './filters/utils'
@@ -103,7 +102,7 @@ import { getLookUpName } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
-  ArtificalTypes,
+  ArtificialTypes,
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,

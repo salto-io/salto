@@ -43,9 +43,9 @@ export const buildFetchProfile = ({
   maxInstancesPerType,
   preferActiveFlowVersions,
   addNamespacePrefixToFullName,
-  changedAtSingleton?: InstanceElement,
-}: FetchParameters): FetchProfile => ({
-  metadataQuery: buildMetadataQuery(metadata, isDefined(target)
+}: FetchParameters,
+changedAtSingleton?: InstanceElement): FetchProfile => ({
+  metadataQuery: buildMetadataQuery(metadata, changedAtSingleton, isDefined(target)
     ? getFetchTargets(target as SupportedMetadataType[])
     : undefined),
   dataManagement: data && buildDataManagement(data),

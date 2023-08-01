@@ -24,7 +24,7 @@ import {
 } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
-import { FilterWith, LocalFilterCreator } from '../filter'
+import { LocalFilterCreator } from '../filter'
 import { apiName, isMetadataInstanceElement } from '../transformers/transformer'
 import { ArtificialTypes, INSTANCE_FULL_NAME_FIELD } from '../constants'
 import { getChangedAtSingleton } from './utils'
@@ -60,7 +60,7 @@ const getChangedAtSingletonInstance = async (
   return changedAtSingleton ?? createEmptyChangedAtSingletonInstance()
 }
 
-const filterCreator: LocalFilterCreator = ({ config }): FilterWith<'onFetch'> => ({
+const filterCreator: LocalFilterCreator = ({ config }) => ({
   name: 'changedAtSingletonFilter',
   onFetch: async (elements: Element[]) => {
     const metadataInstancesByType = await groupByAsync(

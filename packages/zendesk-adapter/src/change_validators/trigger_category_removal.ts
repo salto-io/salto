@@ -25,8 +25,7 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
 import { config as configUtils } from '@salto-io/adapter-components'
-import { TRIGGER_TYPE_NAME } from '../constants'
-import { TRIGGER_CATEGORY_TYPE_NAME } from '../filters/reorder/trigger'
+import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 import { ZendeskApiConfig } from '../config'
 
 const { isDefined } = lowerDashValues
@@ -62,7 +61,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       .filter(isInstanceElement)
       .toArray()
 
-    const triggersByTriggerCategory: Record<string, InstanceElement[]> = _.fromPairs(
+    const triggersByRemovedTriggerCategory: Record<string, InstanceElement[]> = _.fromPairs(
       removedTriggerCategories.map(instance => instance.elemID.name).map(name => [name, []])
     )
 
@@ -70,15 +69,15 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       const triggerCategory = trigger.value.category_id
       const triggerCategoryName = isReferenceExpression(triggerCategory) ? triggerCategory.elemID.name : triggerCategory
       // If this trigger's category wasn't removed, we don't care about it
-      if (triggersByTriggerCategory[triggerCategoryName] === undefined) {
+      if (triggersByRemovedTriggerCategory[triggerCategoryName] === undefined) {
         return
       }
-      triggersByTriggerCategory[triggerCategoryName].push(trigger)
+      triggersByRemovedTriggerCategory[triggerCategoryName].push(trigger)
     })
 
 
     const removalErrors = removedTriggerCategories.map((removedTriggerCategory): ChangeError | undefined => {
-      const triggerCategoryActiveTriggers = triggersByTriggerCategory[removedTriggerCategory.elemID.name]
+      const triggerCategoryActiveTriggers = triggersByRemovedTriggerCategory[removedTriggerCategory.elemID.name]
         .filter(trigger => trigger.value.active)
         .map(trigger => trigger.elemID.name)
 
@@ -106,7 +105,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
         }
       }
 
-      const triggerCategoryInactiveTriggers = triggersByTriggerCategory[removedTriggerCategory.elemID.name]
+      const triggerCategoryInactiveTriggers = triggersByRemovedTriggerCategory[removedTriggerCategory.elemID.name]
         .filter(trigger => !trigger.value.active)
         .map(trigger => trigger.elemID.name)
 

@@ -22,9 +22,8 @@ import {
 } from '@salto-io/adapter-api'
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import _ from 'lodash'
-import { TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
+import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../src/constants'
 import { triggerCategoryRemovalValidator } from '../../src/change_validators'
-import { TRIGGER_CATEGORY_TYPE_NAME } from '../../src/filters/reorder/trigger'
 import { API_DEFINITIONS_CONFIG, DEFAULT_CONFIG, ZendeskApiConfig } from '../../src/config'
 
 const { createInMemoryElementSource } = elementSourceUtils

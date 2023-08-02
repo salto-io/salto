@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ElemID, getChangeData, InstanceElement, ListType, ObjectType, toChange } from '@salto-io/adapter-api'
+import { ElemID, getChangeData, InstanceElement, ListType, MapType, ObjectType, toChange } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
 import JiraClient from '../../../src/client/client'
 import { JIRA, WORKFLOW_TYPE_NAME } from '../../../src/constants'
@@ -33,7 +33,7 @@ describe('workflowPropertiesFilter', () => {
       elemID: new ElemID(JIRA, WORKFLOW_TYPE_NAME),
       fields: {
         statuses: { refType: new ListType(workflowStatusType) },
-        transitions: { refType: new ListType(workflowTransitionType) },
+        transitions: { refType: new MapType(workflowTransitionType) },
       },
     })
 
@@ -79,7 +79,7 @@ describe('workflowPropertiesFilter', () => {
               },
             },
           ],
-          transitions: [],
+          transitions: {},
         }
       )
       await filter.onFetch([instance])
@@ -98,7 +98,7 @@ describe('workflowPropertiesFilter', () => {
             ],
           },
         ],
-        transitions: [],
+        transitions: {},
       })
     })
 
@@ -107,38 +107,42 @@ describe('workflowPropertiesFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            a: {
+              name: 'a',
               properties: {
                 a: '1',
                 b: '2',
               },
             },
-            {
+            b: {
+              name: 'b',
               properties: {
                 c: '3',
                 d: '4',
               },
             },
-          ],
+          },
         }
       )
       await filter.onFetch([instance])
       expect(instance.value).toEqual({
-        transitions: [
-          {
+        transitions: {
+          a: {
+            name: 'a',
             properties: [
               { key: 'a', value: '1' },
               { key: 'b', value: '2' },
             ],
           },
-          {
+          b: {
+            name: 'b',
             properties: [
               { key: 'c', value: '3' },
               { key: 'd', value: '4' },
             ],
           },
-        ],
+        },
       })
     })
   })
@@ -163,7 +167,7 @@ describe('workflowPropertiesFilter', () => {
               ],
             },
           ],
-          transitions: [],
+          transitions: {},
         }
       )
       const changes = [toChange({ after: instance })]
@@ -185,7 +189,7 @@ describe('workflowPropertiesFilter', () => {
             },
           },
         ],
-        transitions: [],
+        transitions: {},
       })
 
       await filter.onDeploy?.(changes)
@@ -199,20 +203,22 @@ describe('workflowPropertiesFilter', () => {
         'instance',
         workflowType,
         {
-          transitions: [
-            {
+          transitions: {
+            a: {
+              name: 'a',
               properties: [
                 { key: 'a', value: '1' },
                 { key: 'b', value: '2' },
               ],
             },
-            {
+            b: {
+              name: 'b',
               properties: [
                 { key: 'c', value: '3' },
                 { key: 'd', value: '4' },
               ],
             },
-          ],
+          },
         }
       )
       const changes = [toChange({ after: instance })]
@@ -220,20 +226,22 @@ describe('workflowPropertiesFilter', () => {
 
       const instanceAfter = getChangeData(changes[0])
       expect(instanceAfter.value).toEqual({
-        transitions: [
-          {
+        transitions: {
+          a: {
+            name: 'a',
             properties: {
               a: '1',
               b: '2',
             },
           },
-          {
+          b: {
+            name: 'b',
             properties: {
               c: '3',
               d: '4',
             },
           },
-        ],
+        },
       })
 
       await filter.onDeploy?.(changes)

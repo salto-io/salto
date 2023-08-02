@@ -20,6 +20,7 @@ import { createElementsSourceIndex } from './elements_source_index/elements_sour
 import { parseSdfProjectDir } from './client/sdf_parser'
 import { createElements } from './transformer'
 import { netsuiteConfigFromConfig } from './config'
+import { TYPES_TO_SKIP } from './types'
 
 const localFilters = allFilters
   .filter(filter.isLocalFilterCreator)
@@ -40,7 +41,11 @@ const loadElementsFromFolder = async (
     filters,
   )
   const customizationInfos = await parseSdfProjectDir(baseDir)
-  const elements = await createElements(customizationInfos, elementsSource, getElemIdFunc)
+  const elements = await createElements(
+    customizationInfos.filter(custInfo => !TYPES_TO_SKIP.includes(custInfo.typeName)),
+    elementsSource,
+    getElemIdFunc,
+  )
   await filtersRunner.onFetch(elements)
 
   return { elements }

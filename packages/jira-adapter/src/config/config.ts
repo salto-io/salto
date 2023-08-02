@@ -219,6 +219,7 @@ export type ChangeValidatorName = (
   | 'wrongUserPermissionScheme'
   | 'accountId'
   | 'workflowSchemeDups'
+  | 'workflowTransitionDuplicateName'
   | 'permissionSchemeDeployment'
   | 'projectCategory'
   | 'unresolvedFieldConfigurationItems'
@@ -264,6 +265,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     wrongUserPermissionScheme: { refType: BuiltinTypes.BOOLEAN },
     accountId: { refType: BuiltinTypes.BOOLEAN },
     workflowSchemeDups: { refType: BuiltinTypes.BOOLEAN },
+    workflowTransitionDuplicateName: { refType: BuiltinTypes.BOOLEAN },
     permissionSchemeDeployment: { refType: BuiltinTypes.BOOLEAN },
     projectCategory: { refType: BuiltinTypes.BOOLEAN },
     unresolvedFieldConfigurationItems: { refType: BuiltinTypes.BOOLEAN },

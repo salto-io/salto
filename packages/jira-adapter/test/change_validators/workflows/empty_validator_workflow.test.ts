@@ -28,8 +28,9 @@ describe('workflowPropertiesValidator', () => {
       'instance',
       type,
       {
-        transitions: [
-          {
+        transitions: {
+          tran1: {
+            name: 'tran1',
             rules: {
               validators: [
                 {
@@ -47,7 +48,7 @@ describe('workflowPropertiesValidator', () => {
               ],
             },
           },
-        ],
+        },
       },
     )
     changes = [toChange({ after: instance })]
@@ -63,7 +64,7 @@ describe('workflowPropertiesValidator', () => {
     ])
   })
   it('should return an plural error if there are multiple invalid validators', async () => {
-    instance.value.transitions[0].rules.validators.push({
+    instance.value.transitions.tran1.rules.validators.push({
       type: 'PreviousStatusValidator',
     })
     expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
@@ -76,7 +77,7 @@ describe('workflowPropertiesValidator', () => {
     ])
   })
   it('should return an plural error if there are multiple invalid validators but only once per type', async () => {
-    instance.value.transitions[0].rules.validators.push({
+    instance.value.transitions.tran1.rules.validators.push({
       type: 'FieldHasSingleValueValidator',
     })
     expect(await emptyValidatorWorkflowChangeValidator(changes)).toEqual([
@@ -89,7 +90,7 @@ describe('workflowPropertiesValidator', () => {
     ])
   })
   it('should not return an error if workflow has only valid validator', async () => {
-    instance.value.transitions[0].rules.validators.pop()
+    instance.value.transitions.tran1.rules.validators.pop()
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({
         after: instance,
@@ -98,7 +99,7 @@ describe('workflowPropertiesValidator', () => {
   })
 
   it('should not return an error when there are no validators', async () => {
-    delete instance.value.transitions[0].rules
+    delete instance.value.transitions.tran1.rules
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({
         after: instance,
@@ -107,7 +108,7 @@ describe('workflowPropertiesValidator', () => {
   })
 
   it('should not return an error when there are no rules', async () => {
-    delete instance.value.transitions[0]
+    delete instance.value.transitions.tran1
     expect(await emptyValidatorWorkflowChangeValidator([
       toChange({
         after: instance,

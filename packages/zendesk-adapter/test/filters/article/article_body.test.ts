@@ -18,12 +18,11 @@ import { ElemID, InstanceElement, ObjectType,
 import { filterUtils, references as referencesUtils } from '@salto-io/adapter-components'
 import filterCreator from '../../../src/filters/article/article_body'
 import {
-  ARTICLE_ATTACHMENT_TYPE_NAME, ARTICLE_ATTACHMENTS_FIELD,
+  ARTICLE_ATTACHMENT_TYPE_NAME,
   ARTICLE_TYPE_NAME,
-  ARTICLES_FIELD,
-  BRAND_TYPE_NAME, CATEGORIES_FIELD,
+  BRAND_TYPE_NAME,
   CATEGORY_TYPE_NAME,
-  SECTION_TYPE_NAME, SECTIONS_FIELD,
+  SECTION_TYPE_NAME,
   ZENDESK,
 } from '../../../src/constants'
 import { createFilterCreatorParams } from '../../utils'
@@ -204,10 +203,10 @@ describe('article body filter', () => {
       it('should only match elements that exists in the matched brand', async () => {
         const filterResult = await filter.onFetch(elements) as FilterResult
         const brandName = emptyBrandInstance.value.name
-        const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLES_FIELD, `${brandName}_124`)
-        const missingSectionInstance = createMissingInstance(ZENDESK, SECTIONS_FIELD, `${brandName}_123`)
-        const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORIES_FIELD, `${brandName}_123`)
-        const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENTS_FIELD, `${brandName}_123`)
+        const missingArticleInstance = createMissingInstance(ZENDESK, ARTICLE_TYPE_NAME, `${brandName}_124`)
+        const missingSectionInstance = createMissingInstance(ZENDESK, SECTION_TYPE_NAME, `${brandName}_123`)
+        const missingCategoryInstance = createMissingInstance(ZENDESK, CATEGORY_TYPE_NAME, `${brandName}_123`)
+        const missingArticleAttachmentInstance = createMissingInstance(ZENDESK, ARTICLE_ATTACHMENT_TYPE_NAME, `${brandName}_123`)
         missingArticleInstance.value.id = '124'
         missingSectionInstance.value.id = '123'
         missingCategoryInstance.value.id = '123'

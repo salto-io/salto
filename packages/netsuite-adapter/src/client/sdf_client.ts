@@ -839,10 +839,11 @@ export default class SdfClient {
     const {
       settingsValidationErrorRegex,
       manifestErrorDetailsRegex,
-      objectValidationErrorRegex,
-      missingFeatureErrorRegex,
+      objectValidationErrorRegexes,
+      missingFeatureErrorRegexes,
       deployedObjectRegex,
       errorObjectRegex,
+      otherErrorRegexes,
     } = multiLanguageErrorDetectors[sdfLanguage]
 
     const manifestErrorScriptids = getFailedObjects(messages, manifestErrorDetailsRegex)
@@ -850,13 +851,13 @@ export default class SdfClient {
       return new ManifestValidationError(error.message, manifestErrorScriptids)
     }
 
-    const missingFeatureNames = missingFeatureErrorRegex
+    const missingFeatureNames = missingFeatureErrorRegexes
       .flatMap(regex => getGroupItemFromRegex(error.message, regex, FEATURE_NAME))
     if (missingFeatureNames.length > 0) {
       return new MissingManifestFeaturesError(error.message, _.uniq(missingFeatureNames))
     }
 
-    const validationErrorsMap = getFailedObjectsMap(messages, objectValidationErrorRegex)
+    const validationErrorsMap = getFailedObjectsMap(messages, ...objectValidationErrorRegexes)
     if (validationErrorsMap.size > 0) {
       return new ObjectsDeployError(error.message, validationErrorsMap)
     }
@@ -890,7 +891,9 @@ ${this.manifestXmlContent}
 deploy.xml:
 ${this.deployXmlContent}
 `)
-    return error
+
+    const detectedErrors = messages.filter(message => otherErrorRegexes.some(regex => regex.test(message)))
+    return detectedErrors.length > 0 ? new Error(detectedErrors.join(os.EOL)) : error
   }
 
   private async runDeployCommands(

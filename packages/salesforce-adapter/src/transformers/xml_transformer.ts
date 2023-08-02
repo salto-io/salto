@@ -305,7 +305,7 @@ export const fromRetrieveResult = async (
           contentFileName, file.type, file.namespacePrefix)
       }
     }
-    if (file.id !== undefined) {
+    if (file.id !== undefined && file.id !== '') {
       metadataValues[INTERNAL_ID_FIELD] = file.id
     }
     return metadataValues

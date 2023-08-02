@@ -71,6 +71,7 @@ import {
   uniqueAutomationConditionsValidator,
   defaultAutomationRemovalValidator,
   attachmentWithoutContentValidator,
+  duplicateRoutingAttributeValueValidator,
   triggerCategoryRemovalValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
@@ -155,6 +156,7 @@ export default ({
     uniqueAutomationConditions: uniqueAutomationConditionsValidator,
     defaultAutomationRemoval: defaultAutomationRemovalValidator,
     attachmentWithoutContent: attachmentWithoutContentValidator,
+    duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,

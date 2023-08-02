@@ -38,6 +38,7 @@ import { wrongUserPermissionSchemeValidator } from './wrong_user_permission_sche
 import { accountIdValidator } from './account_id'
 import { screenSchemeDefaultValidator } from './screen_scheme_default'
 import { workflowSchemeDupsValidator } from './workflows/workflow_scheme_dups'
+import { workflowTransitionDuplicateNameValidator } from './workflows/workflow_transition_duplicate_names'
 import { issueTypeSchemeDefaultTypeValidator } from './issue_type_scheme_default_type'
 import { emptyValidatorWorkflowChangeValidator } from './workflows/empty_validator_workflow'
 import { fieldContextValidator } from './field_contexts/field_contexts'
@@ -102,6 +103,7 @@ export default (
     wrongUserPermissionScheme: wrongUserPermissionSchemeValidator(client, config),
     accountId: accountIdValidator(client, config),
     workflowSchemeDups: workflowSchemeDupsValidator,
+    workflowTransitionDuplicateName: workflowTransitionDuplicateNameValidator,
     permissionSchemeDeployment: permissionSchemeDeploymentValidator(client),
     projectCategory: projectCategoryValidator(client),
     unresolvedFieldConfigurationItems: unresolvedFieldConfigurationItemsValidator,

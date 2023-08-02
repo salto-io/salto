@@ -427,7 +427,11 @@ export const createCustomTypeFromCustomObjectInstance = async ({
       }
     })
   if (!skipAliases && _.isString(label)) {
-    object.annotations[CORE_ANNOTATIONS.ALIAS] = label
+    const namespace = await getNamespace(object)
+    object.annotations[CORE_ANNOTATIONS.ALIAS] = [
+      label,
+      namespace !== undefined ? `(${namespace})` : undefined,
+    ].filter(isDefined).join(' ')
   }
   return object
 }

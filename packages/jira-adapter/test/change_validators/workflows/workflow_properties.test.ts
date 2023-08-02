@@ -28,14 +28,16 @@ describe('workflowPropertiesValidator', () => {
       'instance',
       type,
       {
-        transitions:
-        {
-          properties: [
-            {
-              key: 'key',
-              value: 'true',
-            },
-          ],
+        transitions: {
+          tran1: {
+            name: 'tran1',
+            properties: [
+              {
+                key: 'key',
+                value: 'true',
+              },
+            ],
+          },
         },
         statuses:
         {
@@ -53,14 +55,15 @@ describe('workflowPropertiesValidator', () => {
       type,
       {
         transitions:
-        [{
+        { tran1: {
+          name: 'tran1',
           properties: [
             {
               key: 'key',
               value: 'true',
             },
           ],
-        }],
+        } },
         statuses:
         [{
           properties: [
@@ -74,7 +77,8 @@ describe('workflowPropertiesValidator', () => {
     )
   })
   it('should return an error if there are transition properties with the same key', async () => {
-    afterInstance.value.transitions = [{
+    afterInstance.value.transitions = { tran1: {
+      name: 'tran1',
       properties: [
         {
           key: 'key',
@@ -85,7 +89,7 @@ describe('workflowPropertiesValidator', () => {
           value: 'false',
         },
       ],
-    }]
+    } }
     expect(await workflowPropertiesValidator([
       toChange({
         before: instance,

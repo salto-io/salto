@@ -34,7 +34,7 @@ export const CONFIGURATION_VALIDATOR_TYPE = new Set([
 
 const workflowHasEmptyValidator = (instance: WorkflowInstance): Set<string> => {
   const invalidValidators = new Set<string>()
-  instance.value.transitions?.forEach(transition => {
+  Object.values(instance.value.transitions).forEach(transition => {
     transition.rules?.validators?.forEach(validator => {
       if (validator.type !== undefined && CONFIGURATION_VALIDATOR_TYPE.has(validator.type) && !('configuration' in validator)) {
         invalidValidators.add(validator.type)

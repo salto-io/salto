@@ -184,10 +184,12 @@ const associateAttachments = async (
   const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
     log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
 
-    const createErrorMsg = (error: Value, status?: number): string =>
-      (`could not associate chunk number ${index} for article ${article.elemID.name}${
-        status !== undefined ? `, status: ${status}` : ''
-      }The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`)
+    const createErrorMsg = (error: Value, status?: number): string => (
+      [
+        `could not associate chunk number ${index} for article ${article.elemID.name}`,
+        status !== undefined ? `, status: ${status}` : '',
+        `The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`,
+      ].join())
 
     try {
       const res = await client.post({

@@ -32,10 +32,10 @@ const hasNewOption = (change : ModificationChange<InstanceElement> | AdditionCha
 export const customFieldsWith10KOptionValidator: ChangeValidator = async changes => changes
   .filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
+  .filter(change => getChangeData(change).elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
+  .filter(change => getOptionsFromContext(getChangeData(change)).length > 10000)
   .filter(hasNewOption)
   .map(getChangeData)
-  .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
-  .filter(instance => getOptionsFromContext(instance).length > 10000)
   .filter(instance => getParents(instance)[0].elemID.typeName === FIELD_TYPE_NAME)
   .map(instance => ({
     elemID: instance.elemID,

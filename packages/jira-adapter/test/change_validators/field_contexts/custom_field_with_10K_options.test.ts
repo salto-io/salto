@@ -48,9 +48,8 @@ describe('customFieldsWith10KOptionValidator', () => {
   })
   it('should return info message when context has more than 10K options', async () => {
     const largeOptionsObject = tenKOptions
-    const contextInstanceAfter = contextInstance.clone()
-    contextInstanceAfter.value.options = largeOptionsObject
-    const changes = [toChange({ after: contextInstanceAfter })]
+    contextInstance.value.options = largeOptionsObject
+    const changes = [toChange({ after: contextInstance })]
     const changeErrors = await customFieldsWith10KOptionValidator(changes)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{
@@ -62,9 +61,8 @@ describe('customFieldsWith10KOptionValidator', () => {
   })
   it('should not return info message when context has less than 10K options', async () => {
     const smallOptionsObject = generateOptions(100)
-    const contextInstanceAfter = contextInstance.clone()
-    contextInstanceAfter.value.options = smallOptionsObject
-    const changes = [toChange({ after: contextInstanceAfter })]
+    contextInstance.value.options = smallOptionsObject
+    const changes = [toChange({ after: contextInstance })]
     const changeErrors = await customFieldsWith10KOptionValidator(changes)
     expect(changeErrors).toHaveLength(0)
   })
@@ -97,23 +95,22 @@ describe('customFieldsWith10KOptionValidator', () => {
     }])
   })
   it('should not return error if context has no new options', async () => {
-    const contextInstanceBefore = contextInstance.clone()
-    contextInstanceBefore.value.options = tenKOptions
-    const contextInstanceAfter = contextInstanceBefore.clone()
-    const changes = [toChange({ before: contextInstanceBefore, after: contextInstanceAfter })]
+    contextInstance.value.options = tenKOptions
+    const contextInstanceAfter = contextInstance.clone()
+    contextInstanceAfter.value.disabled = true
+    const changes = [toChange({ before: contextInstance, after: contextInstanceAfter })]
     const changeErrors = await customFieldsWith10KOptionValidator(changes)
     expect(changeErrors).toHaveLength(0)
   })
   it('should return error for modification change', async () => {
-    const contextInstanceBefore = contextInstance.clone()
-    contextInstanceBefore.value.options = tenKOptions
-    const contextInstanceAfter = contextInstanceBefore.clone()
+    contextInstance.value.options = tenKOptions
+    const contextInstanceAfter = contextInstance.clone()
     contextInstanceAfter.value.options.p20002 = {
       value: 'p20002',
       disabled: false,
       position: 20002,
     }
-    const changes = [toChange({ before: contextInstanceBefore, after: contextInstanceAfter })]
+    const changes = [toChange({ before: contextInstance, after: contextInstanceAfter })]
     const changeErrors = await customFieldsWith10KOptionValidator(changes)
     expect(changeErrors).toHaveLength(1)
     expect(changeErrors).toEqual([{

@@ -34,8 +34,9 @@ import {
   ModificationChange,
   ReadOnlyElementsSource,
   ReferenceExpression,
+  Value,
 } from '@salto-io/adapter-api'
-import { createSchemeGuard, getParents, resolveChangeElement } from '@salto-io/adapter-utils'
+import { createSchemeGuard, getParents, resolveChangeElement, safeJsonStringify } from '@salto-io/adapter-utils'
 import Joi from 'joi'
 import { FilterCreator } from '../../filter'
 import { deployChange, deployChanges } from '../../deployment'
@@ -182,14 +183,29 @@ const associateAttachments = async (
   log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
   const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
     log.debug(`starting article attachment associate chunk ${index + 1}/${attachChunk.length} for article ${article.elemID.name}`)
-    const res = await client.post({
-      url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
-      data: { attachment_ids: chunk },
-    })
-    if (res.status !== SUCCESS_STATUS_CODE) {
-      log.warn(`could not associate chunk number ${index} for article ${article.elemID.name} received status ${res.status}. The unassociated attachment ids are: ${chunk}`)
+
+    const createErrorMsg = (error: Value, status?: number): string =>
+      (`could not associate chunk number ${index} for article ${article.elemID.name}${
+        status !== undefined ? `, status: ${status}` : ''
+      }The unassociated attachment ids are: ${chunk}, error: ${safeJsonStringify(error)}`)
+
+    try {
+      const res = await client.post({
+        url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
+        data: { attachment_ids: chunk },
+      })
+      if (res.status !== SUCCESS_STATUS_CODE) {
+        log.warn(createErrorMsg(res.data, res.status))
+      }
+      return { status: res.status, ids: chunk }
+    } catch (e) {
+      if (e.reponse) {
+        log.error(createErrorMsg(e.reponse.data, e.reponse.status))
+        return { status: e.reponse.status, ids: chunk }
+      }
+      log.error(createErrorMsg(e))
+      return { status: undefined, ids: chunk }
     }
-    return { status: res.status, ids: chunk }
   }))
   return allRes
 }

@@ -120,4 +120,35 @@ describe('connection', () => {
       }))
     })
   })
+  describe('validate isProduction', () => {
+    let mockAxios: MockAdapter
+    let connection: clientUtils.APIConnection
+    beforeEach(async () => {
+      mockAxios = new MockAdapter(axios)
+      mockAxios.onGet('/rest/api/3/configuration').reply(200)
+    })
+    afterEach(() => {
+      mockAxios.restore()
+    })
+    it('should return isProduction true when account id does not include -sandbox-', async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
+      )
+      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      const { isProduction } = await validateCredentials({
+        connection,
+      })
+      expect(isProduction).toEqual(true)
+    })
+    it('should return isProduction false when account id includes -sandbox-', async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
+      )
+      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test-sandbox-999.atlassian.net' })
+      const { isProduction } = await validateCredentials({
+        connection,
+      })
+      expect(isProduction).toEqual(false)
+    })
+  })
 })

@@ -39,12 +39,15 @@ const getBaseUrl = async (
   return response.data.baseUrl
 }
 
+const isProd = (accountId: string): boolean => !accountId.includes('-sandbox-')
+
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
 ): Promise<AccountInfo> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
-    return { accountId }
+    const isProduction = isProd(accountId)
+    return { accountId, isProduction }
   }
   throw new CredentialError('Invalid Credentials')
 }

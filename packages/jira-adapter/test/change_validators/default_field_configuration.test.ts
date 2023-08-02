@@ -28,6 +28,14 @@ describe('defaultFieldConfigurationValidator', () => {
       type,
       {
         isDefault: true,
+        fields:
+          {
+            item:
+            {
+              isHidden: true,
+              isRequired: false,
+            },
+          },
       }
     )
   })
@@ -48,6 +56,18 @@ describe('defaultFieldConfigurationValidator', () => {
         message: 'Modifying the default field configuration is not supported',
         detailedMessage: 'Modifying the default field configuration is not supported.',
       },
+    ])
+  })
+  it('should not return an error if the change is in the default field configuration item', async () => {
+    const afterInstance = instance.clone()
+    afterInstance.value.fields.item.isRequired = true
+
+    expect(await defaultFieldConfigurationValidator([
+      toChange({
+        before: instance,
+        after: afterInstance,
+      }),
+    ])).toEqual([
     ])
   })
 

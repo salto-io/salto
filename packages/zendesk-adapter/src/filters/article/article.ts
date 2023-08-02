@@ -201,12 +201,11 @@ const associateAttachments = async (
       }
       return { status: res.status, ids: chunk }
     } catch (e) {
-      if (e.reponse) {
-        log.error(createErrorMsg(e.reponse.data, e.reponse.status))
-        return { status: e.reponse.status, ids: chunk }
-      }
-      log.error(createErrorMsg(e))
-      return { status: undefined, ids: chunk }
+      const error = e.reponse?.data ?? e
+      const status = e.reponse?.status
+
+      log.error(createErrorMsg(error, status))
+      return { status, ids: chunk }
     }
   }))
   return allRes

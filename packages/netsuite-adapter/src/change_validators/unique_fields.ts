@@ -109,17 +109,17 @@ const customRecordGetters: RestrictedTypeGetters = {
 const workflowGetters: RestrictedTypeGetters = {
   getChangeRestrictedField: getWorkflowChangeRestrictedData,
   getSourceRestrictedFields: workflowSourceGetter,
-  getMessage: () => 'This Workflow contains a custom field with an existing ID',
-  getDetailedMessage: scriptids => `Can't deploy this Workflow as it contains custom fields with IDs that already exist in the target environment: "${scriptids.toString()}".`
-  + ' To deploy it, change their IDs to a unique one.', // need to change the message
+  getMessage: () => 'Workflow contains custom fields with non-unique IDs',
+  getDetailedMessage: scriptids => `Can't deploy this workflow as it contains custom fields with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
+  + ' To deploy it, change their IDs to unique ones.',
 }
 
 const scriptGetters: RestrictedTypeGetters = {
   getChangeRestrictedField: getscriptChangeRestrictedData,
   getSourceRestrictedFields: scriptSourceGetter,
-  getMessage: () => 'This script contains a parameter with an existing ID',
-  getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that already exist in the target environment: "${scriptids.toString()}".`
-  + ' To deploy it, change their IDs to a unique one.', // need to change the message
+  getMessage: () => 'Script contains parameters with non-unique IDs',
+  getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that are not unique within this environment: "${scriptids.join(', ')}"`
+  + ' To deploy it, change their IDs to unique ones.',
 }
 
 const restrictedTypeGettersMap: Record<RestrictedType, RestrictedTypeGetters> = {

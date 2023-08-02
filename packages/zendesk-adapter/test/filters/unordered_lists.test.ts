@@ -489,19 +489,19 @@ describe('Unordered lists filter', () => {
           execution: {
             custom_fields: [
               {
+                id: 1,
+                title: 'b',
+                type: 'b',
+              },
+              {
                 id: 2,
-                title: 'zip code with validation',
-                type: 'regexp',
+                title: 'b',
+                type: 'a',
               },
               {
                 id: 3,
-                title: 'custom_field2',
-                type: 'regexp',
-              },
-              {
-                id: 1,
-                title: 'custom_field3',
-                type: 'regexp',
+                title: 'a',
+                type: 'c',
               },
             ],
           },
@@ -513,19 +513,19 @@ describe('Unordered lists filter', () => {
       await filter.onFetch([testView])
       expect(testView.value.execution.custom_fields).toEqual([
         {
-          id: 1,
-          title: 'custom_field3',
-          type: 'regexp',
+          id: 3,
+          title: 'a',
+          type: 'c',
         },
         {
           id: 2,
-          title: 'zip code with validation',
-          type: 'regexp',
+          title: 'b',
+          type: 'a',
         },
         {
-          id: 3,
-          title: 'custom_field2',
-          type: 'regexp',
+          id: 1,
+          title: 'b',
+          type: 'b',
         },
       ])
     })

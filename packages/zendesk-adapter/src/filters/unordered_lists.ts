@@ -207,7 +207,7 @@ const orderViewCustomFields = (instances: InstanceElement[]): void => {
   instances.filter(e => e.elemID.typeName === VIEW_TYPE_NAME).forEach(view => {
     const customFields = view.value.execution?.custom_fields
     if (isArray(customFields)) {
-      view.value.execution.custom_fields = _.sortBy(customFields, ['id'])
+      view.value.execution.custom_fields = _.sortBy(customFields, ['title', 'type'])
     }
   })
 }

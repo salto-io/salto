@@ -14,14 +14,25 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, getChangeData, isAdditionOrModificationChange, isInstanceChange } from '@salto-io/adapter-api'
+import { AdditionChange, ChangeValidator, InstanceElement, ModificationChange, getChangeData, isAdditionChange, isAdditionOrModificationChange, isEqualValues, isInstanceChange } from '@salto-io/adapter-api'
 import { getParents } from '@salto-io/adapter-utils'
 import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../filters/fields/constants'
 import { getOptionsFromContext } from '../../filters/fields/context_options'
 
+const hasNewOption = (change : ModificationChange<InstanceElement> | AdditionChange<InstanceElement>): boolean => {
+  if (isAdditionChange(change)) {
+    return true
+  }
+  const { before, after } = change.data
+  const optionsBefore = getOptionsFromContext(before)
+  const optionsAfter = getOptionsFromContext(after)
+  return !isEqualValues(optionsBefore, optionsAfter)
+}
+
 export const customFieldsWith10KOptionValidator: ChangeValidator = async changes => changes
   .filter(isInstanceChange)
   .filter(isAdditionOrModificationChange)
+  .filter(hasNewOption)
   .map(getChangeData)
   .filter(instance => instance.elemID.typeName === FIELD_CONTEXT_TYPE_NAME)
   .filter(instance => getOptionsFromContext(instance).length > 10000)

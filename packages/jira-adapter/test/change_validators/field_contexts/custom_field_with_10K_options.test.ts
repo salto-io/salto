@@ -96,4 +96,31 @@ describe('customFieldsWith10KOptionValidator', () => {
       detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
     }])
   })
+  it('should not return error if context has no new options', async () => {
+    const contextInstanceBefore = contextInstance.clone()
+    contextInstanceBefore.value.options = tenKOptions
+    const contextInstanceAfter = contextInstanceBefore.clone()
+    const changes = [toChange({ before: contextInstanceBefore, after: contextInstanceAfter })]
+    const changeErrors = await customFieldsWith10KOptionValidator(changes)
+    expect(changeErrors).toHaveLength(0)
+  })
+  it('should return error for modification change', async () => {
+    const contextInstanceBefore = contextInstance.clone()
+    contextInstanceBefore.value.options = tenKOptions
+    const contextInstanceAfter = contextInstanceBefore.clone()
+    contextInstanceAfter.value.options.p20002 = {
+      value: 'p20002',
+      disabled: false,
+      position: 20002,
+    }
+    const changes = [toChange({ before: contextInstanceBefore, after: contextInstanceAfter })]
+    const changeErrors = await customFieldsWith10KOptionValidator(changes)
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors).toEqual([{
+      elemID: contextInstance.elemID,
+      severity: 'Info',
+      message: 'Slow deployment due to field with more than 10K options',
+      detailedMessage: `The deployment of custom field ${parentField.elemID.name} will be slower because it is associated with this context, which has more than 10K options.`,
+    }])
+  })
 })

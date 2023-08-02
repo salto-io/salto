@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, isAdditionOrModificationChange, ChangeError,
-  ReadOnlyElementsSource, ChangeDataType, isObjectType, isInstanceElement } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ChangeDataType, isObjectType, InstanceElement } from '@salto-io/adapter-api'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -67,16 +67,16 @@ const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterP
 }
 
 const getWorkflowChangeRestrictedData = (change: ChangeDataType): string[] =>
-  (isInstanceElement(change)
-    ? _.values(change.value.workflowcustomfields?.workflowcustomfield ?? {}).map(val => val.scriptid) : [])
+  // The change nust be an instance, we call this function only on instances of workflows we filtered from the changes
+  _.values((change as InstanceElement).value.workflowcustomfields?.workflowcustomfield ?? {}).map(val => val.scriptid)
 
 const workflowSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
   _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
     .map(val => val.scriptid)
 
 const getscriptChangeRestrictedData = (change: ChangeDataType): string[] =>
-  (isInstanceElement(change)
-    ? _.values(change.value.scriptcustomfields?.scriptcustomfield ?? {}).map(val => val.scriptid) : [])
+  // The change nust be an instance, we call this function only on instances of scripts we filtered from the changes
+  _.values((change as InstanceElement).value.scriptcustomfields?.scriptcustomfield ?? {}).map(val => val.scriptid)
 
 const scriptSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
   _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
@@ -209,7 +209,7 @@ const validateDuplication = (
       elemID: change.elemID,
       fields: Array.from(
         new Set(
-          getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field] ?? 0) > 1)
+          getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field]) > 1)
         )
       ),
     }))

@@ -32,7 +32,7 @@ import { logger } from '@salto-io/logging'
 import { collections, values, promises, objects } from '@salto-io/lowerdash'
 import SalesforceClient from './client/client'
 import * as constants from './constants'
-import { apiName, Types, isMetadataObjectType } from './transformers/transformer'
+import { apiName, Types, isMetadataObjectType, MetadataObjectType } from './transformers/transformer'
 import layoutFilter from './filters/layouts'
 import customObjectsFromDescribeFilter from './filters/custom_objects_from_soap_describe'
 import customObjectsToObjectTypeFilter, { NESTED_INSTANCE_VALUE_TO_TYPE_NAME } from './filters/custom_objects_to_object_type'
@@ -313,6 +313,14 @@ export const UNSUPPORTED_SYSTEM_FIELDS = [
   'LastViewedDate',
 ]
 
+const getMetadataTypesFromElementsSource = async (
+  elementsSource: ReadOnlyElementsSource
+): Promise<MetadataObjectType[]> => (
+  awu(await elementsSource.getAll())
+    .filter(isMetadataObjectType)
+    .toArray()
+)
+
 export default class SalesforceAdapter implements AdapterOperations {
   private maxItemsInRetrieveRequest: number
   private metadataToRetrieve: string[]
@@ -420,7 +428,7 @@ export default class SalesforceAdapter implements AdapterOperations {
    * Account credentials were given in the constructor.
    */
   @logDuration('fetching account configuration')
-  async fetch({ progressReporter }: FetchOptions): Promise<FetchResult> {
+  async fetch({ progressReporter, withChangesDetection = false }: FetchOptions): Promise<FetchResult> {
     const allElements = await awu(await this.elementsSource.getAll()).toArray()
     log.debug('going to fetch salesforce account configuration.. %d', allElements.length)
     const fieldTypes = Types.getAllFieldTypes()
@@ -430,10 +438,12 @@ export default class SalesforceAdapter implements AdapterOperations {
       ...Object.values(ArtificialTypes),
     ]
     const metadataTypeInfosPromise = this.listMetadataTypes()
-    const metadataTypesPromise = this.fetchMetadataTypes(
-      metadataTypeInfosPromise,
-      hardCodedTypes,
-    )
+    const metadataTypesPromise = withChangesDetection
+      ? getMetadataTypesFromElementsSource(this.elementsSource)
+      : this.fetchMetadataTypes(
+        metadataTypeInfosPromise,
+        hardCodedTypes,
+      )
     const metadataInstancesPromise = this.fetchMetadataInstances(
       metadataTypeInfosPromise,
       metadataTypesPromise
@@ -460,7 +470,9 @@ export default class SalesforceAdapter implements AdapterOperations {
       this.userConfig,
     )
     return {
-      elements,
+      elements: withChangesDetection
+        ? elements.filter(element => !isMetadataObjectType(element))
+        : elements,
       errors: onFetchFilterResult.errors ?? [],
       updatedConfig,
       partialFetchData: setPartialFetchData(this.fetchProfile.metadataQuery.isPartialFetch()),

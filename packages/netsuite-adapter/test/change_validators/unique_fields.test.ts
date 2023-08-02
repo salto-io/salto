@@ -15,6 +15,7 @@
 */
 import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { ElemID, InstanceElement, ObjectType, toChange, ReadOnlyElementsSource, Field, Element, ChangeDataType } from '@salto-io/adapter-api'
+import _ from 'lodash'
 import uniqueFields from '../../src/change_validators/unique_fields'
 import { CUSTOM_RECORD_TYPE, CUSTOM_RECORD_TYPE_PREFIX, FINANCIAL_LAYOUT, METADATA_TYPE, NAME_FIELD, NETSUITE, SAVED_SEARCH, WORKFLOW } from '../../src/constants'
 
@@ -65,8 +66,7 @@ describe('unique fields validator', () => {
   ): Map<string, string> => new Map(Object.values(testInstances)
     .map(elem =>
       [elem.elemID.createNestedID(nestedField).getFullName(),
-        (elem as InstanceElement).value
-          .workflowcustomfields.workflowcustomfield.custworkflow1.scriptid]))
+        _.get((elem as InstanceElement).value, nestedField)]))
 
   const getIDToValScript = (
     testInstances: TestElements,
@@ -74,8 +74,7 @@ describe('unique fields validator', () => {
   ): Map<string, string> => new Map(Object.values(testInstances)
     .map(elem =>
       [elem.elemID.createNestedID(nestedField).getFullName(),
-        (elem as InstanceElement).value
-          .scriptcustomfields.scriptcustomfield.custscript1.scriptid]))
+        _.get((elem as InstanceElement).value, nestedField)]))
 
   const buildMockElementsSource = (
     elementSource: ReadOnlyElementsSource,
@@ -355,17 +354,32 @@ describe('unique fields validator', () => {
   })
 
   describe('Workflow custom field unique `scriptid` field validator', () => {
-    const testElements = getWorkflowElements()
-    const idToVal = getIDToValWorkflow(testElements, 'workflowcustomfields.workflowcustomfield.custworkflow1.scriptid')
-    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
-      buildMockElementsSource(buildElementsSourceFromElements(elements), idToVal)
+    let testElements: TestElements
+
+    beforeEach(() => {
+      testElements = getWorkflowElements()
+    })
+
 
     describe('Workflow custom field with a unique scriptid', () => {
+      it('Should not have a change error when adding a new Workflow without a custom field', async () => {
+        const emptyElement = new InstanceElement('empty', new ObjectType({ elemID: new ElemID(NETSUITE, WORKFLOW) }))
+        const changeErrors = await uniqueFields(
+          [toChange({ after: emptyElement })],
+          undefined,
+          buildElementsSourceFromElements([
+            testElements.diffField,
+            testElements.basic,
+            emptyElement,
+          ])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
       it('Should not have a change error when adding a new Workflow with a custom field that has unique scriptid', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElements.basic })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElements.diffField,
             testElements.basic])
         )
@@ -379,7 +393,7 @@ describe('unique fields validator', () => {
               after: testElements.sameField }
           )],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElements.diffField,
             testElements.sameField])
         )
@@ -392,7 +406,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElements.sameField })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElements.basic,
             testElements.sameField])
         )
@@ -409,7 +423,7 @@ describe('unique fields validator', () => {
               after: testElements.sameField }
           ),
         ], undefined,
-        buildElementsSource([
+        buildElementsSourceFromElements([
           testElements.basic,
           testElements.sameField]))
         expect(changeErrors).toHaveLength(1)
@@ -421,21 +435,35 @@ describe('unique fields validator', () => {
   })
 
   describe('Script custom field unique `scriptid` field validator', () => {
-    const testElementsRestlet = getScriptRestletElements()
-    const testElementsSuitelet = getScriptSuiteletElements()
-    const idToValRestlet = getIDToValScript(testElementsRestlet, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
-    const idToValSuitelet = getIDToValScript(testElementsSuitelet, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
-    const idToEval = new Map([...idToValRestlet.entries(), ...idToValSuitelet.entries()])
+    let testElementsRestlet: TestElements
+    let testElementsSuitelet: TestElements
 
-    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
-      buildMockElementsSource(buildElementsSourceFromElements(elements), idToEval)
+    beforeEach(() => {
+      testElementsRestlet = getScriptRestletElements()
+      testElementsSuitelet = getScriptSuiteletElements()
+    })
 
     describe('Script custom field with a unique scriptid', () => {
+      it('Should not have a change error when adding a new Script without a custom field', async () => {
+        const emptyElement = new InstanceElement('empty', new ObjectType({ elemID: new ElemID(NETSUITE, 'suitelet') }))
+        const changeErrors = await uniqueFields(
+          [
+            toChange({ after: emptyElement }),
+          ],
+          undefined,
+          buildElementsSourceFromElements([
+            testElementsRestlet.diffField,
+            testElementsRestlet.basic,
+            emptyElement,
+          ])
+        )
+        expect(changeErrors).toHaveLength(0)
+      })
       it('Should not have a change error when adding a new Script with a custom field that has unique scriptid', async () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.basic })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElementsRestlet.diffField,
             testElementsRestlet.basic])
         )
@@ -449,7 +477,7 @@ describe('unique fields validator', () => {
               after: testElementsRestlet.sameField }
           )],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElementsRestlet.diffField,
             testElementsRestlet.sameField])
         )
@@ -459,7 +487,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.basic })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElementsRestlet.diffField,
             testElementsSuitelet.basic])
         )
@@ -472,7 +500,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.sameField })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElementsRestlet.basic,
             testElementsRestlet.sameField])
         )
@@ -485,7 +513,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.sameField })],
           undefined,
-          buildElementsSource([
+          buildElementsSourceFromElements([
             testElementsRestlet.basic,
             testElementsSuitelet.sameField])
         )
@@ -501,7 +529,7 @@ describe('unique fields validator', () => {
               after: testElementsRestlet.sameField }
           ),
         ], undefined,
-        buildElementsSource([
+        buildElementsSourceFromElements([
           testElementsRestlet.basic,
           testElementsRestlet.sameField]))
         expect(changeErrors).toHaveLength(1)

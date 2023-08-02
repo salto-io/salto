@@ -17,7 +17,7 @@ import {
   ObjectType, ElemID, InstanceElement,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ROUTING_ATTRIBUTE_VALUE_TYPE, ZENDESK } from '../../src/constants'
+import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME, ZENDESK } from '../../src/constants'
 import filterCreator from '../../src/filters/routing_attribute_value'
 import { createFilterCreatorParams } from '../utils'
 
@@ -38,7 +38,7 @@ describe('routing attribute value filter', () => {
   let filter: FilterType
   const routingAttributeValue = new InstanceElement(
     'Test',
-    new ObjectType({ elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE) }),
+    new ObjectType({ elemID: new ElemID(ZENDESK, ROUTING_ATTRIBUTE_VALUE_TYPE_NAME) }),
     { name: 'Test', values: [] },
   )
 

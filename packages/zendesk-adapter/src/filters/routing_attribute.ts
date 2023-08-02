@@ -19,8 +19,7 @@ import {
 } from '@salto-io/adapter-api'
 import { FilterCreator } from '../filter'
 import { deployChange, deployChanges } from '../deployment'
-
-const ROUTING_ATTRIBUTE_TYPE_NAME = 'routing_attribute'
+import { ROUTING_ATTRIBUTE_TYPE_NAME } from '../constants'
 
 /**
  * Deploys routing attribute

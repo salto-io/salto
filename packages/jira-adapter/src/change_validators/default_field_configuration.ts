@@ -14,7 +14,6 @@
 * limitations under the License.
 */
 import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-// import { getDetailedChanges } from '@salto-io/adapter-utils'
 
 export const defaultFieldConfigurationValidator: ChangeValidator = async changes => (
   changes

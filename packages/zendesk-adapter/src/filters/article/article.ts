@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _ from 'lodash'
+import _, { parseInt } from 'lodash'
 import { logger } from '@salto-io/logging'
 import { collections, strings } from '@salto-io/lowerdash'
 import {
@@ -68,6 +68,7 @@ const { matchAll } = strings
 
 const USER_SEGMENT_ID_FIELD = 'user_segment_id'
 const ATTACHMENTS_IDS_REGEX = new RegExp(`(?<url>/${ARTICLE_ATTACHMENTS_FIELD}/)(?<id>\\d+)`, 'g')
+const SUCCESS_STATUS_CODE = 200
 
 export type TranslationType = {
   title: string
@@ -170,12 +171,13 @@ const getAttachmentArticleRef = (
   return parentArticleRef
 }
 
+const MAX_BULK_SIZE = 20
 const associateAttachments = async (
   client: ZendeskClient,
   article: InstanceElement,
   attachmentsIds: number[]
-): Promise<boolean> => {
-  const attachChunk = _.chunk(attachmentsIds, 20)
+): Promise<{ status: number; ids: number[] }[]> => {
+  const attachChunk = _.chunk(attachmentsIds, MAX_BULK_SIZE)
   const articleId = article.value.id
   log.debug(`there are ${attachmentsIds.length} attachments to associate for article ${article.elemID.name}, associating in chunks of 20`)
   const allRes = await Promise.all(attachChunk.map(async (chunk: number[], index: number) => {
@@ -184,12 +186,12 @@ const associateAttachments = async (
       url: `/api/v2/help_center/articles/${articleId}/bulk_attachments`,
       data: { attachment_ids: chunk },
     })
-    if (res.status !== 200) {
+    if (res.status !== SUCCESS_STATUS_CODE) {
       log.warn(`could not associate chunk number ${index} for article ${article.elemID.name} received status ${res.status}. The unassociated attachment ids are: ${chunk}`)
     }
-    return res.status
+    return { status: res.status, ids: chunk }
   }))
-  return _.isEmpty(allRes.filter(status => status !== 200))
+  return allRes
 }
 
 const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSource, articleNameToAttachments }: {
@@ -202,6 +204,7 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
     .filter(isAdditionOrModificationChange)
     .filter(change => getChangeData(change).elemID.typeName === ARTICLE_ATTACHMENT_TYPE_NAME)
 
+  const articleToModifiedAttachments: Record<string, [InstanceElement, ModificationChange<InstanceElement>[]]> = {}
   await Promise.all(
     attachmentChanges
       .map(async attachmentChange => {
@@ -225,19 +228,15 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         // To do so we're going to delete the existing attachment and create a new one instead
         if (isModificationChange(attachmentChange)) {
           const articleInstance = await parentArticleRef.getResolvedValue(elementsSource)
-          if (articleInstance === undefined) {
+          if (articleInstance === undefined || !isInstanceElement(articleInstance)) {
             log.error(`Couldn't get article ${parentArticleRef} in the elementsSource`)
             await deleteArticleAttachment(client, attachmentInstance)
             return
           }
-          const res = await associateAttachments(client, articleInstance, [attachmentInstance.value.id])
-          if (!res) {
-            log.error(`Association of attachment ${instanceBeforeResolve.elemID.name} with id ${attachmentInstance.value.id} has failed `)
-            await deleteArticleAttachment(client, attachmentInstance)
-            return
-          }
-          await deleteArticleAttachment(client, attachmentChange.data.before)
-          return
+          const articleName = articleInstance.elemID.getFullName()
+          // We want to associate all attachments in bulks, so we fill it up here handle it later
+          articleToModifiedAttachments[articleName] = articleToModifiedAttachments[articleName] ?? [articleInstance, []]
+          articleToModifiedAttachments[articleName][1].push(attachmentChange)
         }
         const parentArticleName = parentArticleRef.elemID.name
         articleNameToAttachments[parentArticleName] = (
@@ -245,6 +244,27 @@ const handleArticleAttachmentsPreDeploy = async ({ changes, client, elementsSour
         ).concat(attachmentInstance.value.id)
       })
   )
+
+  Object.values(articleToModifiedAttachments).forEach(async ([article, modificationChanges]) => {
+    const attachmentChangesById = _.keyBy<ModificationChange<InstanceElement>>(
+      modificationChanges,
+      attachment => getChangeData(attachment).value.id
+    )
+    const results = await associateAttachments(client, article, Object.keys(attachmentChangesById).map(parseInt))
+    const [successes, failures] = _.partition(results, result => result.status === SUCCESS_STATUS_CODE)
+    // On success, delete the old attachment
+    // On failure, alert and delete the new attachment
+    await Promise.all([
+      ...successes.map(
+        ({ ids }) => ids.forEach(id => deleteArticleAttachment(client, attachmentChangesById[id].data.before))
+      ),
+      ...failures.map(({ ids }) => ids.forEach(id => {
+        const afterAttachment = attachmentChangesById[id].data.after
+        log.error(`Association of attachment ${afterAttachment.elemID.name} with id ${afterAttachment.value.id} has failed `)
+        return deleteArticleAttachment(client, afterAttachment)
+      })),
+    ])
+  })
 
   // Article bodies needs to be updated when modifying inline attachments
   // There might be another request if the article_translation 'body' fields also changed

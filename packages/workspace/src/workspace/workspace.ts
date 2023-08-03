@@ -369,8 +369,9 @@ export const loadWorkspace = async (
   )
   let workspaceState: Promise<WorkspaceState> | undefined
 
+  type WorkspaceChanges = Record<string, ChangeSet<Change>>
   type BuildWorkspaceStateArgs = {
-    workspaceChanges: Promise<Record<string, ChangeSet<Change>>>
+    workspaceChanges: Promise<WorkspaceChanges> | WorkspaceChanges
     stateOnlyChanges?: Record<string, ChangeSet<Change>>
     validate?: boolean
   }
@@ -380,8 +381,6 @@ export const loadWorkspace = async (
     stateOnlyChanges = {},
     validate = true,
   }: BuildWorkspaceStateArgs): Promise<WorkspaceState> => {
-    const wsChanges = await workspaceChanges
-
     const initState = async (): Promise<WorkspaceState> => {
       const wsConfig = await config.getWorkspaceConfig()
       log.debug('initializing state for workspace %s/%s', wsConfig.uid, wsConfig.name)
@@ -493,10 +492,20 @@ export const loadWorkspace = async (
       return initializedState
     }
 
+    /** HERE BE DRAGONS!
+     *
+     * `workspaceState` will be `undefined` until `buildWorkspaceState` returns a promise (see the code in
+     * `getWorkspaceState`). `buildWorkspaceState` will return a promise the first time it executes an `await`.
+     * This means you can't put an `await` between the start of `buildWorkspaceState` and the following lines.
+     */
     const initBuild = workspaceState === undefined
     const stateToBuild = workspaceState !== undefined
       ? await workspaceState
       : await initState()
+
+    const wsChanges = await workspaceChanges
+
+    const getWorkspaceChangesForEnv = (envName: string): ChangeSet<Change> | undefined => wsChanges[envName]
 
     if (ignoreFileChanges) {
       // Skip all updates to the state since this flag means we are operating under the assumption
@@ -577,7 +586,7 @@ export const loadWorkspace = async (
           : []
         log.debug('got %d init hidden element changes', initHiddenElementsChanges.length)
 
-        const stateRemovedElementChanges = await awu(wsChanges[envName]?.changes ?? [])
+        const stateRemovedElementChanges = await awu(getWorkspaceChangesForEnv(envName)?.changes ?? [])
           .filter(async change => (
             isRemovalChange(change)
             && getChangeData(change).elemID.isTopLevel()
@@ -621,7 +630,7 @@ export const loadWorkspace = async (
       }
 
       const workspaceChangedElements = Object.fromEntries(
-        await awu(wsChanges[envName]?.changes ?? [])
+        await awu(getWorkspaceChangesForEnv(envName)?.changes ?? [])
           .map(async change => {
             const workspaceElement = getChangeData(change)
             const hiddenOnlyElement = isRemovalChange(change)
@@ -657,7 +666,7 @@ export const loadWorkspace = async (
       }
 
       const changeResult = await stateToBuild.mergeManager.mergeComponents({
-        src1Changes: wsChanges[envName],
+        src1Changes: getWorkspaceChangesForEnv(envName),
         src2Changes: await completeStateOnlyChanges(
           stateOnlyChanges[envName]
           ?? createEmptyChangeSet(
@@ -767,10 +776,16 @@ export const loadWorkspace = async (
   const getWorkspaceState = async (): Promise<WorkspaceState> => {
     const wsConfig = await config.getWorkspaceConfig()
     if (_.isUndefined(workspaceState)) {
+      /** NOTE!
+       * If there's an await between the `if` above and the call to `buildWorkspaceState` then we may context-switch to
+       * another call stack that also calls `getWorkspaceState` before we assign a value to `workspaceState` and end up
+       * having multiple contexts all stepping over eachother's state (and also calling naclFilesSource.load and using
+       * a whole bunch of file descriptors).
+       * Don't `await` in this `if` block.
+       * */
       log.debug('No workspace state for %s/%s. Building new workspace state.', wsConfig.uid, wsConfig.name)
       const changes = naclFilesSource.load({ ignoreFileChanges })
       workspaceState = buildWorkspaceState({ workspaceChanges: changes })
-      // workspaceState = buildWorkspaceState({ workspaceFileSource: naclFilesSource })
     }
     return workspaceState
   }
@@ -830,7 +845,7 @@ export const loadWorkspace = async (
       state(),
       await (await getLoadedNaclFilesSource()).getElementsSource(currentEnv()),
     )
-    const workspaceChanges = ((await getLoadedNaclFilesSource())
+    const workspaceChanges = await ((await getLoadedNaclFilesSource())
       .updateNaclFiles(
         currentEnv(),
         stateOnly ? [] : visibleChanges,
@@ -868,7 +883,7 @@ export const loadWorkspace = async (
     }
 
     if (otherFiles.length !== 0) {
-      const elementChanges = (await getLoadedNaclFilesSource()).setNaclFiles(otherFiles)
+      const elementChanges = await (await getLoadedNaclFilesSource()).setNaclFiles(otherFiles)
       workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
       return elementChanges
     }
@@ -877,7 +892,7 @@ export const loadWorkspace = async (
   }
 
   const removeNaclFiles = async (names: string[], validate = true): Promise<EnvsChanges> => {
-    const elementChanges = (await getLoadedNaclFilesSource()).removeNaclFiles(names)
+    const elementChanges = await (await getLoadedNaclFilesSource()).removeNaclFiles(names)
     workspaceState = buildWorkspaceState({ workspaceChanges: elementChanges, validate })
     return elementChanges
   }
@@ -975,7 +990,7 @@ export const loadWorkspace = async (
     (_.isUndefined(names) ? accounts() : accounts().filter(s => names.includes(s)))
   const credsPath = (account: string): string => path.join(currentEnv(), account)
   const copyTo = async (ids: ElemID[], targetEnvs: string[]): Promise<void> => {
-    const workspaceChanges = (await getLoadedNaclFilesSource())
+    const workspaceChanges = await (await getLoadedNaclFilesSource())
       .copyTo(currentEnv(), ids, targetEnvs)
     workspaceState = buildWorkspaceState({ workspaceChanges })
   }
@@ -1227,21 +1242,21 @@ export const loadWorkspace = async (
       (await getSourceByFilename(filename)).getParsedNaclFile(filename)
     ),
     promote: async (idsToMove, idsToRemove) => {
-      const workspaceChanges = (await getLoadedNaclFilesSource())
+      const workspaceChanges = await (await getLoadedNaclFilesSource())
         .promote(currentEnv(), idsToMove, idsToRemove)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     demote: async (ids: ElemID[]) => {
-      const workspaceChanges = (await getLoadedNaclFilesSource()).demote(ids)
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).demote(ids)
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     demoteAll: async () => {
-      const workspaceChanges = (await getLoadedNaclFilesSource()).demoteAll()
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).demoteAll()
       workspaceState = buildWorkspaceState({ workspaceChanges })
     },
     copyTo,
     sync: async (idsToCopy, idsToRemove, targetEnvs) => {
-      const workspaceChanges = (await getLoadedNaclFilesSource()).sync(
+      const workspaceChanges = await (await getLoadedNaclFilesSource()).sync(
         currentEnv(),
         idsToCopy,
         idsToRemove,

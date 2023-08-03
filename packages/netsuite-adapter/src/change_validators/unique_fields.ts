@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { ElemID, getChangeData, isAdditionOrModificationChange, ChangeError,
-  ReadOnlyElementsSource, ChangeDataType, isObjectType, InstanceElement } from '@salto-io/adapter-api'
+  ReadOnlyElementsSource, ChangeDataType, isObjectType, Value } from '@salto-io/adapter-api'
 import { values, collections, promises } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { resolvePath } from '@salto-io/adapter-utils'
@@ -28,6 +28,8 @@ const { mapValuesAsync } = promises.object
 
 
 const FIELD_DEFAULT_NAME = 'FIELD_DEFAULT_NAME'
+const WORKFLOW_RESTRICTED_PATH = ['workflowcustomfields', 'workflowcustomfield']
+const SCRIPT_RESTRICTED_PATH = ['scriptcustomfields', 'scriptcustomfield']
 
 type RestrictedType = 'savedSearch' | 'financialLayout' | 'customRecordField' | 'workflow' | 'script'
 
@@ -40,7 +42,7 @@ type ElementGetter = (params: GetterParams) => Promise<string[]>
 type ChangeGetter = (change: ChangeDataType) => string[]
 
 type RestrictedTypeGetters = {
-  getChangeRestrictedField: ChangeGetter
+  getChangeRestrictedFields: ChangeGetter
   getSourceRestrictedFields: ElementGetter
   getMessage: () => string
   getDetailedMessage: (field: string[]) => string
@@ -51,8 +53,8 @@ const getNestedField = async ({ elemID, elementsSource }: GetterParams, field: s
 
 const getChangeNestedField = (
   change: ChangeDataType,
-  field: string
-) : string => resolvePath(change, change.elemID.createNestedID(field))
+  fieldPath: string[]
+) : Value => resolvePath(change, change.elemID.createNestedID(...fieldPath))
 
 const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterParams
 ): Promise<string[]> => {
@@ -66,48 +68,41 @@ const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterP
     .map(field => element.fields[field].annotations[SCRIPT_ID])
 }
 
-const getWorkflowChangeRestrictedData = (change: ChangeDataType): string[] =>
-  // The change nust be an instance, we call this function only on instances of workflows we filtered from the changes
-  _.values((change as InstanceElement).value.workflowcustomfields?.workflowcustomfield ?? {}).map(val => val.scriptid)
-
 const workflowSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
   _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
     .map(val => val.scriptid)
-
-const getscriptChangeRestrictedData = (change: ChangeDataType): string[] =>
-  // The change nust be an instance, we call this function only on instances of scripts we filtered from the changes
-  _.values((change as InstanceElement).value.scriptcustomfields?.scriptcustomfield ?? {}).map(val => val.scriptid)
 
 const scriptSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
   _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
     .map(val => val.scriptid)
 
 const savedSearchGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => [getChangeNestedField(change, FIELD_DEFAULT_NAME)],
+  getChangeRestrictedFields: change => [getChangeNestedField(change, [FIELD_DEFAULT_NAME])],
   getSourceRestrictedFields: params => getNestedField(params, FIELD_DEFAULT_NAME),
   getMessage: () => 'A Saved Search with that title already exists',
-  getDetailedMessage: title => `Can't deploy this Saved Search because there is already a Saved Search with the title "${title[0]}" in the target account.`
+  getDetailedMessage: ([title]) => `Can't deploy this Saved Search because there is already a Saved Search with the title "${title}" in the target account.`
     + ' To deploy it, change its title to a unique one.',
 }
 
 const financialLayoutGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => [getChangeNestedField(change, NAME_FIELD)],
+  getChangeRestrictedFields: change => [getChangeNestedField(change, [NAME_FIELD])],
   getSourceRestrictedFields: params => getNestedField(params, NAME_FIELD),
   getMessage: () => 'A Financial Layout with that name already exists',
-  getDetailedMessage: name => `Can't deploy this Financial Layout because there is already a Financial Layout with the name "${name[0]}" in the target account.`
+  getDetailedMessage: ([name]) => `Can't deploy this Financial Layout because there is already a Financial Layout with the name "${name}" in the target account.`
     + ' To deploy it, change its name to a unique one.',
 }
 
 const customRecordGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: change => [getChangeNestedField(change, SCRIPT_ID)],
+  getChangeRestrictedFields: change => [getChangeNestedField(change, [SCRIPT_ID])],
   getSourceRestrictedFields: getCustomRecordRestrictedData,
   getMessage: () => 'A Custom Record Type Field with that ID already exists',
-  getDetailedMessage: scriptID => `Can't deploy this Custom Record Type Field because there is already a Custom Record Type Field with the ID "${scriptID[0]}" in the target account.`
+  getDetailedMessage: ([scriptID]) => `Can't deploy this Custom Record Type Field because there is already a Custom Record Type Field with the ID "${scriptID}" in the target account.`
     + ' To deploy it, change its ID to a unique one.',
 }
 
 const workflowGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: getWorkflowChangeRestrictedData,
+  getChangeRestrictedFields: change =>
+    _.values(getChangeNestedField(change, WORKFLOW_RESTRICTED_PATH)).map(val => val.scriptid),
   getSourceRestrictedFields: workflowSourceGetter,
   getMessage: () => 'Workflow contains custom fields with non-unique IDs',
   getDetailedMessage: scriptids => `Can't deploy this workflow as it contains custom fields with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
@@ -115,10 +110,11 @@ const workflowGetters: RestrictedTypeGetters = {
 }
 
 const scriptGetters: RestrictedTypeGetters = {
-  getChangeRestrictedField: getscriptChangeRestrictedData,
+  getChangeRestrictedFields: change =>
+    _.values(getChangeNestedField(change, SCRIPT_RESTRICTED_PATH)).map(val => val.scriptid),
   getSourceRestrictedFields: scriptSourceGetter,
   getMessage: () => 'Script contains parameters with non-unique IDs',
-  getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that are not unique within this environment: "${scriptids.join(', ')}"`
+  getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
   + ' To deploy it, change their IDs to unique ones.',
 }
 
@@ -209,7 +205,7 @@ const validateDuplication = (
       elemID: change.elemID,
       fields: Array.from(
         new Set(
-          getters.getChangeRestrictedField(change).filter(field => (uniqueFieldToID[field]) > 1)
+          getters.getChangeRestrictedFields(change).filter(field => uniqueFieldToID[field] > 1)
         )
       ),
     }))

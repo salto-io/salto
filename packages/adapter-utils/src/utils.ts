@@ -1323,3 +1323,11 @@ export const formatConfigSuggestionsReasons = (reasons: string[]): string => {
 export const isResolvedReferenceExpression = (value: unknown): value is ReferenceExpression => (
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
 )
+
+export const getInstancesFromElementSource = async (elementSource: ReadOnlyElementsSource, typeName: string)
+  : Promise<InstanceElement[]> =>
+  awu(await elementSource.list())
+    .filter(id => id.typeName === typeName)
+    .filter(id => id.idType === 'instance')
+    .map(id => elementSource.get(id))
+    .toArray()

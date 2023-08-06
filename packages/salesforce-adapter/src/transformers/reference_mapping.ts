@@ -865,7 +865,7 @@ const getLookUpNameImpl = (
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        const resolvedValue = await defaultStrategy.serialize({ ref, element }) ?? ref.value
+        const resolvedValue = await defaultStrategy.serialize({ ref, element })
         if (resolvedValue !== undefined) {
           return resolvedValue
         }

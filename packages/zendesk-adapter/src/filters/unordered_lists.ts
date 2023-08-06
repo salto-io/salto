@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import _, { isArray } from 'lodash'
+import _ from 'lodash'
 import {
   Element, InstanceElement, isInstanceElement, isReferenceExpression, ReferenceExpression,
 } from '@salto-io/adapter-api'
@@ -206,8 +206,10 @@ const orderFormCondition = (instances: InstanceElement[]): void => {
 const orderViewCustomFields = (instances: InstanceElement[]): void => {
   instances.filter(e => e.elemID.typeName === VIEW_TYPE_NAME).forEach(view => {
     const customFields = view.value.execution?.custom_fields
-    if (isArray(customFields)) {
+    if (_.isArray(customFields)) {
       view.value.execution.custom_fields = _.sortBy(customFields, ['title', 'type'])
+    } else if (customFields !== undefined) {
+      log.warn(`orderViewCustomFields - custom fields are not an array in ${view.elemID.getFullName()}`)
     }
   })
 }

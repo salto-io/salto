@@ -103,6 +103,7 @@ import {
   CUSTOM_OBJECT,
   FLOW_DEFINITION_METADATA_TYPE,
   FLOW_METADATA_TYPE,
+  OWNER_ID,
   PROFILE_METADATA_TYPE,
 } from './constants'
 
@@ -295,7 +296,7 @@ export const SYSTEM_FIELDS = [
   'Name',
   'RecordTypeId',
   'SystemModstamp',
-  'OwnerId',
+  OWNER_ID,
   'SetupOwnerId',
 ]
 
@@ -457,7 +458,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     { changeGroup }: DeployOptions,
     checkOnly: boolean
   ): Promise<DeployResult> {
-    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
+    log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
     const resolvedChanges = await awu(changeGroup.changes)
       .map(change => resolveChangeElement(change, getLookUpName))
       .toArray()

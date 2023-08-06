@@ -16,7 +16,6 @@
 import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression, UnresolvedReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
 import { PROJECT_TYPE } from '../../constants'
 import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
@@ -84,7 +83,7 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     .map(project => [
       project.elemID.name,
       new Set(project.value[PROJECT_CONTEXTS_FIELD].filter((ref: ReferenceExpression) => {
-        if (!isResolvedReferenceExpression(ref)) {
+        if (!isReferenceExpression(ref)) {
           log.warn(`Found a non reference expression in project ${project.elemID.getFullName()}`)
           return false
         }

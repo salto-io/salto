@@ -1128,6 +1128,7 @@ export const DEFAULT_TYPES: ZendeskApiConfig['types'] = {
   workspace__selected_macros: {
     transformation: {
       fieldsToHide: [],
+      fieldsToOmit: [{ fieldName: 'usage_7d', fieldType: 'number' }],
     },
   },
   workspace__selected_macros__restriction: {

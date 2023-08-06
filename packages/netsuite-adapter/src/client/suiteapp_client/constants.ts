@@ -21,6 +21,7 @@ export const ECONN_ERROR = 'ECONN'
 export const UNEXPECTED_ERROR = 'UNEXPECTED_ERROR'
 export const INSUFFICIENT_PERMISSION_ERROR = 'INSUFFICIENT_PERMISSION'
 export const VALIDATION_ERROR = 'VALIDATION_ERROR'
+export const REQUEST_ABORTED_ERROR = 'REQUEST ABORTED'
 
 // SuiteApp instance fields
 export const PLATFORM_CORE_CUSTOM_FIELD = 'platformCore:customField'

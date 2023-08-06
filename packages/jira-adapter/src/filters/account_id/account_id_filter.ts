@@ -84,9 +84,14 @@ const callbackValueOrValues = (
   }
 }
 
-const walkOnAutomationValue = (regexPath: string, callback: WalkOnUsersCallback)
-: WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
-  if (new RegExp(regexPath).test(path.getFullName()) && value.type === 'ID') {
+const walkOnAutomationValue = (
+  regexPath: string,
+  callback: WalkOnUsersCallback,
+  excludeValues?: string[]
+): WalkOnFunc => ({ value, path }): WALK_NEXT_STEP => {
+  if (new RegExp(regexPath).test(path.getFullName())
+    && value.type === 'ID'
+    && !excludeValues?.includes(value.value)) {
     callbackValueOrValues({ value, path, callback })
     return WALK_NEXT_STEP.SKIP
   }
@@ -173,7 +178,8 @@ const accountIdsScenarios = (
         // the second is 'value.operations.0.value' (numbers can differ)
         func: walkOnAutomationValue('value\\.operations\\.\\d+.value\\.\\d+'
           + '|value\\.operations\\.\\d+\\.value',
-        callback) })
+        callback,
+        ['assignee', 'reporter']) })
       return WALK_NEXT_STEP.SKIP
     }
     // user condition

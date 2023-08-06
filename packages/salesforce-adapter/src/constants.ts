@@ -133,6 +133,9 @@ export enum ANNOTATION_TYPE_NAMES {
   VALUE_SETTINGS = 'ValueSettings',
 }
 
+// Salesforce System Fields
+export const OWNER_ID = 'OwnerId'
+
 // Salto annotations
 export const API_NAME = 'apiName'
 export const METADATA_TYPE = 'metadataType'

@@ -71,7 +71,7 @@ export const duplicateIdFieldValuesValidator = (
           elemID: instance.elemID,
           severity: 'Error',
           message: 'Duplicate id field values',
-          detailedMessage: `sames as ${instancesWithSameIdFields.map(i => i.elemID.getFullName()).join(', ')}`,
+          detailedMessage: `sames as ${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}`,
         }
         : undefined
     }).filter(isDefined)

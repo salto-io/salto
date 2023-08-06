@@ -875,7 +875,7 @@ const getLookUpNameImpl = (
           // and also for the case of Data Records that reference the same type (and are deployed in the same group)
           return ref.value
         }
-        log.error('could not resolve reference to %s in path %s, resolving to undefined', ref.elemID.getFullName(), path?.getFullName())
+        log.warn('could not resolve reference to %s in path %s, resolving to undefined', ref.elemID.getFullName(), path?.getFullName())
         return undefined
       }
     }

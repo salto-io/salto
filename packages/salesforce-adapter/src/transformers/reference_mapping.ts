@@ -870,7 +870,7 @@ const getLookUpNameImpl = (
           return resolvedValue
         }
         if (groupElemIds !== undefined && groupElemIds.has(ref.value.elemID.getFullName())) {
-          // We want to return the referenced Element in that case, which will be handled later in the deploy flow.
+          // We want to return the referenced Element in that case, which will be handled later in the deployment flow.
           // This is relevant for ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP deploy group
           // and also for the case of Data Records that reference the same type (and are deployed in the same group)
           return ref.value
@@ -888,6 +888,6 @@ const getLookUpNameImpl = (
  */
 export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)
 
-export const getLookupNameFromChangeGroup = (changeGroup: ChangeGroup) => (
+export const getLookupNameFromChangeGroup = (changeGroup: ChangeGroup): GetLookupNameFunc => (
   getLookUpNameImpl(fieldNameToTypeMappingDefs, changeGroup)
 )

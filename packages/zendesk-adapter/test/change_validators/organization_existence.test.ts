@@ -128,7 +128,9 @@ describe('OrganizationExistence', () => {
 
   it('should return an error if the organization does not exist, and request all orgs in one request, with unresolved Ids', async () => {
     const validator = organizationExistenceValidator(client, DEFAULT_CONFIG[FETCH_CONFIG])
-    mockAxios.onGet().replyOnce(200).onGet().replyOnce(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
+    mockAxios.onGet().replyOnce(200).onGet().replyOnce(200)
+      .onGet()
+      .replyOnce(200, { organizations: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }] })
       .onGet()
       .replyOnce(401) // Makes sure that there is only one request
 

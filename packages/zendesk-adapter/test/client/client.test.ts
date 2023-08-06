@@ -52,12 +52,16 @@ describe('client', () => {
     })
     it('should throw when there is a 403 response', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(403)
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(200)
+        .onGet()
+        .replyOnce(403)
       await expect(client.getSinglePage({ url: '/api/v2/routing/attributes' })).rejects.toThrow()
     })
     it('should throw if there is no status in the error', async () => {
       // The first replyOnce with 200 is for the client authentication
-      mockAxios.onGet().replyOnce(200).onGet().replyOnce(() => { throw new Error('Err') })
+      mockAxios.onGet().replyOnce(200).onGet().replyOnce(200)
+        .onGet()
+        .replyOnce(() => { throw new Error('Err') })
       await expect(
         client.getSinglePage({ url: '/api/v2/routing/attributes' })
       ).rejects.toThrow()

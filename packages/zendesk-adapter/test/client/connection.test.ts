@@ -35,13 +35,13 @@ describe('client connection', () => {
         .onGet('/api/v2/a/b').reply(200, { something: 'bla' })
       const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
       expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
-      expect(mockAxiosAdapter.history.get.length).toBe(1)
+      expect(mockAxiosAdapter.history.get.length).toBe(2) // for /api/v2/account
 
       const getRes = apiConn.get('/api/v2/a/b')
       const res = await getRes
       expect(res.data).toEqual({ something: 'bla' })
       expect(res.status).toEqual(200)
-      expect(mockAxiosAdapter.history.get.length).toBe(2)
+      expect(mockAxiosAdapter.history.get.length).toBe(3)
       expect(mockAxiosAdapter.history.get[0].headers).toMatchObject({
         'X-Zendesk-Marketplace-Name': 'Salto',
         'X-Zendesk-Marketplace-Organization-Id': 5110,

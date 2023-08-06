@@ -70,3 +70,4 @@ export { uniqueAutomationConditionsValidator } from './unique_automation_conditi
 export { defaultAutomationRemovalValidator } from './default_automation_removal'
 export { attachmentWithoutContentValidator } from './attachment_without_content'
 export { duplicateRoutingAttributeValueValidator } from './duplicate_routing_attribute_value'
+export { triggerCategoryRemovalValidator } from './trigger_category_removal'

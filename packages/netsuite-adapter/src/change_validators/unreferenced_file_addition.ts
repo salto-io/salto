@@ -20,20 +20,25 @@ import { NetsuiteChangeValidator } from './types'
 
 const fileIsReferenced = (
   changes: InstanceElement[],
-  fileChange: string
+  file: InstanceElement
 ): boolean => {
+  const fullName = file.elemID.getFullName()
   let answer = false
 
-  // how to do it whitout for
   const func: WalkOnFunc = ({ value }) => {
-    if (value === fileChange) {
+    if (value.elemID?.createTopLevelParentID().parent.getFullName() === fullName) {
       answer = true
       return WALK_NEXT_STEP.EXIT
     }
     return WALK_NEXT_STEP.RECURSE
   }
 
-  changes.forEach(element => walkOnElement({ element, func }))
+  changes.some(element => {
+    if (!file.isEqual(element)) {
+      walkOnElement({ element, func })
+    }
+    return answer
+  })
 
   return answer
 }
@@ -44,13 +49,15 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     .filter(isInstanceElement)
   const fileAdditions = changes
     .filter(isAdditionChange)
-    .map(getChangeData).filter(change => change.elemID.typeName === 'file')
+    .map(getChangeData)
+    .filter(isInstanceElement)
+    .filter(change => change.elemID.typeName === 'file')
   const unreferencedFiles = fileAdditions
-    .filter(file => !fileIsReferenced(instanceElementChanges, file.elemID.getFullName()))
+    .filter(file => !fileIsReferenced(instanceElementChanges, file))
   const res = unreferencedFiles
     .map(({ elemID }): ChangeError => ({
       elemID,
-      severity: 'Info',
+      severity: 'Warning',
       message: 'This file is not referenced by any element',
       detailedMessage: 'Usually files are referenced by an element, it is possible that you forgot to deploy the relevant element',
     }))

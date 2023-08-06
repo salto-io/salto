@@ -47,6 +47,7 @@ import fileCabinetInternalIdsValidator from './change_validators/file_cabinet_in
 import rolePermissionValidator from './change_validators/role_permission_ids'
 import translationCollectionValidator from './change_validators/translation_collection_references'
 import omitFieldsValidator from './change_validators/omit_fields'
+import unreferensedFileAdditionValidator from './change_validators/unreferenced_file_addition'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
@@ -88,6 +89,7 @@ const netsuiteChangeValidators: Record<NetsuiteValidatorName, NetsuiteChangeVali
   rolePermission: rolePermissionValidator,
   translationCollectionReferences: translationCollectionValidator,
   omitFields: omitFieldsValidator,
+  unreferensedFileAddition: unreferensedFileAdditionValidator,
 }
 
 const nonSuiteAppValidators: Record<NonSuiteAppValidatorName, NetsuiteChangeValidator> = {

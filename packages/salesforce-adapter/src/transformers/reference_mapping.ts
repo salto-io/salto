@@ -13,7 +13,17 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, isElement, Value, Element, ReferenceExpression, ElemID, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import {
+  Field,
+  isElement,
+  Value,
+  Element,
+  ReferenceExpression,
+  ElemID,
+  isInstanceElement,
+  InstanceElement,
+  ChangeGroup, getChangeData,
+} from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -809,7 +819,13 @@ export const generateReferenceResolverFinder = (
   ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
-const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
+const getLookUpNameImpl = (
+  defs = fieldNameToTypeMappingDefs,
+  changeGroup?: ChangeGroup,
+): GetLookupNameFunc => {
+  const groupElemIds = changeGroup !== undefined
+    ? new Set(changeGroup.changes.map(change => getChangeData(change).elemID.getFullName()))
+    : undefined
   const resolverFinder = generateReferenceResolverFinder(defs)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
@@ -849,7 +865,18 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        return await defaultStrategy.serialize({ ref, element }) ?? ref.value
+        const resolvedValue = await defaultStrategy.serialize({ ref, element }) ?? ref.value
+        if (resolvedValue !== undefined) {
+          return resolvedValue
+        }
+        if (groupElemIds !== undefined && groupElemIds.has(ref.value.elemID.getFullName())) {
+          // We want to return the referenced Element in that case, which will be handled later in the deploy flow.
+          // This is relevant for ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP deploy group
+          // and also for the case of Data Records that reference the same type (and are deployed in the same group)
+          return ref.value
+        }
+        log.error('could not resolve reference to %s in path %s, resolving to undefined', ref.elemID.getFullName(), path?.getFullName())
+        return undefined
       }
     }
     return ref.value
@@ -860,3 +887,7 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
  * Translate a reference expression back to its original value before deploy.
  */
 export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)
+
+export const getLookupNameFromChangeGroup = (changeGroup: ChangeGroup) => (
+  getLookUpNameImpl(fieldNameToTypeMappingDefs, changeGroup)
+)

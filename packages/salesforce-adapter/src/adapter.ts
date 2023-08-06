@@ -97,7 +97,7 @@ import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFil
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
-import { getLookUpName } from './transformers/reference_mapping'
+import { getLookupNameFromChangeGroup } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
@@ -461,8 +461,10 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean
   ): Promise<DeployResult> {
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
+    const getLookUpNameFunc = getLookupNameFromChangeGroup(changeGroup)
+
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookUpName))
+      .map(change => resolveChangeElement(change, getLookUpNameFunc))
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
@@ -501,7 +503,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceChanges, getLookUpName))
+      .map(change => restoreChangeElement(change, sourceChanges, getLookUpNameFunc))
       .toArray()
     return {
       appliedChanges,

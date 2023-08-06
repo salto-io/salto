@@ -60,13 +60,13 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     instance => instance.elemID.typeName
   )
 
-  const fieldsToContexts = Object.fromEntries(await awu(relevantInstances[FIELD_TYPE_NAME]
+  const fieldsToContexts = Object.fromEntries(await awu((relevantInstances[FIELD_TYPE_NAME] ?? [])
     .filter(field => field.value.contexts !== undefined))
     .map(async field => [
       field.elemID.getFullName(),
       await getFieldContexts(field, elementSource),
     ]).toArray())
-  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(relevantInstances[PROJECT_TYPE]
+  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries((relevantInstances[PROJECT_TYPE] ?? [])
     .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
     .map(project => [
       project.elemID.name,
@@ -87,6 +87,6 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
 
   return [
     ...getUnreferencedContextErrors(fieldsToContexts, mergedContexts),
-    ...getGlobalContextsUsedInProjectErrors(relevantInstances[FIELD_CONTEXT_TYPE_NAME], projectNamesToContexts),
+    ...getGlobalContextsUsedInProjectErrors(relevantInstances[FIELD_CONTEXT_TYPE_NAME] ?? [], projectNamesToContexts),
   ].filter(change => changesIds.has(change.elemID.getFullName()))
 }

@@ -1326,8 +1326,7 @@ export const isResolvedReferenceExpression = (value: unknown): value is Referenc
 
 export const getInstancesFromElementSource = async (elementSource: ReadOnlyElementsSource, typeNames: string[])
   : Promise<InstanceElement[]> =>
-  awu(await elementSource.list())
-    .filter(id => typeNames.includes(id.typeName))
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
+  awu(await elementSource.getAll())
+    .filter(isInstanceElement)
+    .filter(instance => typeNames.includes(instance.elemID.typeName))
     .toArray()

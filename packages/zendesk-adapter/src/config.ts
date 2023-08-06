@@ -2670,6 +2670,7 @@ export type ChangeValidatorName = (
   | 'guideOrderDeletion'
   | 'attachmentWithoutContent'
   | 'duplicateRoutingAttributeValue'
+  | 'duplicateIdFieldValues'
   )
 
 type ChangeValidatorConfig = Partial<Record<ChangeValidatorName, boolean>>
@@ -2736,6 +2737,7 @@ const changeValidatorConfigType = createMatchingObjectType<ChangeValidatorConfig
     orderChildrenParent: { refType: BuiltinTypes.BOOLEAN },
     guideOrderDeletion: { refType: BuiltinTypes.BOOLEAN },
     duplicateRoutingAttributeValue: { refType: BuiltinTypes.BOOLEAN },
+    duplicateIdFieldValues: { refType: BuiltinTypes.BOOLEAN },
   },
   annotations: {
     [CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES]: false,

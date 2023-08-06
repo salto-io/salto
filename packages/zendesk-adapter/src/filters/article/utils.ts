@@ -31,7 +31,7 @@ import {
   isReferenceExpression,
   isStaticFile,
   isTemplateExpression,
-  ObjectType,
+  ObjectType, ReadOnlyElementsSource,
   ReferenceExpression,
   StaticFile,
   Values,
@@ -253,3 +253,11 @@ export const updateArticleTranslationBody = async ({
       })
     })
 }
+
+export const getInstancesFromElementSource = async (elementSource: ReadOnlyElementsSource, typeName: string)
+  : Promise<InstanceElement[]> =>
+  awu(await elementSource.list())
+    .filter(id => id.typeName === typeName)
+    .filter(id => id.idType === 'instance')
+    .map(id => elementSource.get(id))
+    .toArray()

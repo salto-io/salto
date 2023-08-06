@@ -76,6 +76,7 @@ import {
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
+import { duplicateIdFieldValuesValidator } from './change_validators/duplicate_id_field_values'
 
 const {
   deployTypesNotSupportedValidator,
@@ -158,6 +159,7 @@ export default ({
     attachmentWithoutContent: attachmentWithoutContentValidator,
     duplicateRoutingAttributeValue: duplicateRoutingAttributeValueValidator,
     triggerCategoryRemoval: triggerCategoryRemovalValidator(apiConfig),
+    duplicateIdFieldValues: duplicateIdFieldValuesValidator(apiConfig),
     // *** Guide Order Validators ***
     childInOrder: childInOrderValidator,
     childrenReferences: childrenReferencesValidator,

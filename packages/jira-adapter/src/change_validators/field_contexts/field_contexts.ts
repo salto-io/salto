@@ -16,9 +16,11 @@
 import { ChangeValidator, getChangeData, InstanceElement, isInstanceElement, isReferenceExpression, ReadOnlyElementsSource, ReferenceExpression, UnresolvedReference } from '@salto-io/adapter-api'
 import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import _ from 'lodash'
 import { PROJECT_CONTEXTS_FIELD } from '../../filters/fields/contexts_projects_filter'
 import { PROJECT_TYPE } from '../../constants'
-import { FIELD_CONTEXT_TYPE_NAME } from '../../filters/fields/constants'
+import { FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME } from '../../filters/fields/constants'
 import { getUnreferencedContextErrors } from './unreferenced_context'
 import { getGlobalContextsUsedInProjectErrors } from './referenced_global_context'
 
@@ -53,32 +55,18 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
     return []
   }
 
-  const ids = await awu(await elementSource.list()).toArray()
+  const relevantInstances = _.groupBy(
+    await getInstancesFromElementSource(elementSource, [PROJECT_TYPE, FIELD_CONTEXT_TYPE_NAME, FIELD_TYPE_NAME]),
+    instance => instance.elemID.typeName
+  )
 
-  const projects = await awu(ids)
-    .filter(id => id.typeName === PROJECT_TYPE)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-
-  const contexts = await awu(ids)
-    .filter(id => id.typeName === FIELD_CONTEXT_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-
-  const fields = await awu(ids)
-    .filter(id => id.typeName === 'Field')
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
-  const fieldsToContexts = Object.fromEntries(await awu(fields
+  const fieldsToContexts = Object.fromEntries(await awu(relevantInstances[FIELD_TYPE_NAME]
     .filter(field => field.value.contexts !== undefined))
     .map(async field => [
       field.elemID.getFullName(),
       await getFieldContexts(field, elementSource),
     ]).toArray())
-  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(projects
+  const projectNamesToContexts: Record<string, Set<string>> = Object.fromEntries(relevantInstances[PROJECT_TYPE]
     .filter(project => project.value[PROJECT_CONTEXTS_FIELD] !== undefined)
     .map(project => [
       project.elemID.name,
@@ -99,6 +87,6 @@ export const fieldContextValidator: ChangeValidator = async (changes, elementSou
 
   return [
     ...getUnreferencedContextErrors(fieldsToContexts, mergedContexts),
-    ...getGlobalContextsUsedInProjectErrors(contexts, projectNamesToContexts),
+    ...getGlobalContextsUsedInProjectErrors(relevantInstances[FIELD_CONTEXT_TYPE_NAME], projectNamesToContexts),
   ].filter(change => changesIds.has(change.elemID.getFullName()))
 }

@@ -223,30 +223,30 @@ export const createResolvedTypesElementsSource = (
         shouldResolveReferences: false,
       }
     )).filter(isType)
-      .forEach(objectType => {
-        resolvedTypes.set(objectType.elemID.getFullName(), objectType)
+      .forEach(typeElement => {
+        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
       })
     return element
   }
   return {
     get: getResolved,
     getAll: async () => {
-      const [objectTypes, rest] = _.partition(
+      const [typeElements, rest] = _.partition(
         await awu(await elementsSource.getAll())
           .filter(isElement)
           .toArray(),
-        isObjectType,
+        isType,
       );
       // Resolve all the types together for better performance
       (await expressions.resolve(
-        objectTypes,
+        typeElements,
         elementsSource,
         {
           shouldResolveReferences: false,
         }
-      )).filter(isObjectType)
-        .forEach(objectType => {
-          resolvedTypes.set(objectType.elemID.getFullName(), objectType)
+      )).filter(isType)
+        .forEach(typeElement => {
+          resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
         })
       return awu(([] as Element[])
         .concat(

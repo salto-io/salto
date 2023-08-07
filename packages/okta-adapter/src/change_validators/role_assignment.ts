@@ -14,16 +14,15 @@
 * limitations under the License.
 */
 
-import { ChangeValidator, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, InstanceElement, ReferenceExpression, getChangeData, isAdditionChange, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { resolvePath, getParents } from '@salto-io/adapter-utils'
-import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
+import { resolvePath, getParents, getInstancesFromElementSource } from '@salto-io/adapter-utils'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME } from '../constants'
 
 const log = logger(module)
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
 const GROUP_ID_PATH = ['actions', 'assignUserToGroups', 'groupIds']
 
 const isArrayOfRefExpr = (values: unknown): values is ReferenceExpression[] => (
@@ -60,12 +59,7 @@ export const roleAssignmentValidator: ChangeValidator = async (changes, elementS
     return []
   }
 
-  const groupRuleInstances = (await awu(await elementSource.list())
-    .filter(id => id.typeName === GROUP_RULE_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray())
+  const groupRuleInstances = await getInstancesFromElementSource(elementSource, [GROUP_RULE_TYPE_NAME])
 
   const targetGroupIdtoRuleIds = _.groupBy(groupRuleInstances.flatMap(rule => {
     const groups = getTargetGroupsForRule(rule)

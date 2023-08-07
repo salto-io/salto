@@ -18,7 +18,7 @@ import { values, collections } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { filters, client as clientUtils } from '@salto-io/adapter-components'
 import os from 'os'
-import { isResolvedReferenceExpression } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, isResolvedReferenceExpression } from '@salto-io/adapter-utils'
 import { updateSchemeId } from '../filters/workflow_scheme'
 import JiraClient from '../client/client'
 import { JiraConfig } from '../config/config'
@@ -240,12 +240,7 @@ export const workflowSchemeMigrationValidator = (
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
     }
-    const idsIterator = awu(await elementSource.list())
-    const projects = await awu(idsIterator)
-      .filter(id => id.typeName === PROJECT_TYPE)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .toArray()
+    const projects = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
     const workflowSchemesToProjects = _.groupBy(
       projects.filter(projectHasWorkflowSchemeReference),
       project => project.value.workflowScheme.elemID.getFullName(),

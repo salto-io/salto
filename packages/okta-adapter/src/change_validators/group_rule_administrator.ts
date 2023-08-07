@@ -13,16 +13,15 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, isInstanceElement, isReferenceExpression } from '@salto-io/adapter-api'
-import { getParents } from '@salto-io/adapter-utils'
+import { ChangeValidator, getChangeData, isInstanceChange, isAdditionChange, isReferenceExpression } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource, getParents } from '@salto-io/adapter-utils'
 import _ from 'lodash'
-import { values as lowerDashValues, collections } from '@salto-io/lowerdash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import { GROUP_RULE_TYPE_NAME, GROUP_TYPE_NAME, ROLE_ASSIGNMENT_TYPE_NAME } from '../constants'
 import { getTargetGroupsForRule } from './role_assignment'
 
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -42,12 +41,7 @@ export const groupRuleAdministratorValidator: ChangeValidator = async (changes, 
     return []
   }
 
-  const roleAssignments = await awu(await elementSource.list())
-    .filter(id => id.typeName === ROLE_ASSIGNMENT_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const roleAssignments = await getInstancesFromElementSource(elementSource, [ROLE_ASSIGNMENT_TYPE_NAME])
 
   const groupNamesWithRoles = new Set(roleAssignments.map(role => {
     const parent = getParents(role)?.[0]

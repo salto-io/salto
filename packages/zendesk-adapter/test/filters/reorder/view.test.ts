@@ -19,9 +19,8 @@ import {
   toChange, getChangeData,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../../src/constants'
+import { VIEW_TYPE_NAME, ZENDESK } from '../../../src/constants'
 import filterCreator, { ORDER_FIELD_NAME } from '../../../src/filters/reorder/view'
-import { VIEW_TYPE_NAME } from '../../../src/filters/view'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 import { createFilterCreatorParams } from '../../utils'
 

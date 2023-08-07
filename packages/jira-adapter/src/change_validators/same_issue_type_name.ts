@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import { AdditionChange, Change, ChangeDataType, ChangeError, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange, isInstanceChange, ModificationChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
 import _ from 'lodash'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_NAME } from '../constants'
 
-
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
 const getSameIssueTypeNameError = (
@@ -46,12 +45,8 @@ export const sameIssueTypeNameChangeValidator: ChangeValidator = async (changes,
   if (elementSource === undefined || relevantChanges.length === 0) {
     return []
   }
-  const idsIterator = awu(await elementSource.list())
-  const issueTypes: InstanceElement[] = await awu(idsIterator)
-    .filter(id => id.typeName === ISSUE_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
+  const issueTypes = await getInstancesFromElementSource(elementSource, [ISSUE_TYPE_NAME])
+
   const issuesByNames = _.groupBy(
     [...issueTypes, ...relevantChanges.map(getChangeData)],
     issueType => issueType.value.name,

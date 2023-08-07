@@ -18,8 +18,8 @@ import {
   ReferenceExpression, ModificationChange,
 } from '@salto-io/adapter-api'
 import { filterUtils } from '@salto-io/adapter-components'
-import { ZENDESK } from '../../../src/constants'
-import filterCreator, { TRIGGER_CATEGORY_TYPE_NAME, TYPE_NAME as TRIGGER_TYPE_NAME } from '../../../src/filters/reorder/trigger'
+import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME, ZENDESK } from '../../../src/constants'
+import filterCreator from '../../../src/filters/reorder/trigger'
 import { createOrderTypeName } from '../../../src/filters/reorder/creator'
 import { createFilterCreatorParams } from '../../utils'
 

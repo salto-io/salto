@@ -16,14 +16,14 @@
 import {
   ChangeError,
   ChangeValidator, CORE_ANNOTATIONS, getChangeData, InstanceElement, isAdditionChange,
-  isInstanceChange, isInstanceElement, isReferenceExpression,
+  isInstanceChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
 import _ from 'lodash'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ROUTING_ATTRIBUTE_VALUE_TYPE_NAME } from '../constants'
 
-const { awu } = collections.asynciterable
 const { isDefined } = lowerDashValues
 const log = logger(module)
 
@@ -56,12 +56,7 @@ export const duplicateRoutingAttributeValueValidator: ChangeValidator = async (c
     return []
   }
 
-  const routingAttributeValues = await awu(await elementSource.list())
-    .filter(id => id.typeName === ROUTING_ATTRIBUTE_VALUE_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const routingAttributeValues = await getInstancesFromElementSource(elementSource, [ROUTING_ATTRIBUTE_VALUE_TYPE_NAME])
 
   const valueNameAndParentToInstance = _.groupBy(routingAttributeValues, instance => getNameAndParent(instance))
 

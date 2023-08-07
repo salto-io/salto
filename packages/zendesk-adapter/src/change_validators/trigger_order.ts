@@ -20,8 +20,7 @@ import { Change, ChangeError, ChangeValidator, ElemID, getChangeData,
   ReferenceExpression, Values } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
 import { createOrderTypeName } from '../filters/reorder/creator'
-import { TYPE_NAME as TRIGGER_TYPE_NAME } from '../filters/reorder/trigger'
-import { ZENDESK } from '../constants'
+import { TRIGGER_TYPE_NAME, ZENDESK } from '../constants'
 
 const log = logger(module)
 

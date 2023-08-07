@@ -55,7 +55,7 @@ describe('validateCredentials', () => {
     })
 
     it('should return the org id from the response as account id', () => {
-      expect(result).toEqual({ accountId: 'abc123' })
+      expect(result.accountId).toEqual('abc123')
     })
   })
 

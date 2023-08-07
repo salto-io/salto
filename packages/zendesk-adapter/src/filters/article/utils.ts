@@ -24,7 +24,7 @@ import {
   replaceTemplatesWithValues,
   safeJsonStringify,
 } from '@salto-io/adapter-utils'
-import { collections, promises } from '@salto-io/lowerdash'
+import { collections, promises, values as lowerDashValues } from '@salto-io/lowerdash'
 import {
   createSaltoElementError,
   InstanceElement,
@@ -33,6 +33,7 @@ import {
   isTemplateExpression,
   ObjectType,
   ReferenceExpression,
+  SaltoElementError,
   StaticFile,
   Values,
 } from '@salto-io/adapter-api'
@@ -42,6 +43,7 @@ import { getZendeskError } from '../../errors'
 import { CLIENT_CONFIG, ZendeskApiConfig, ZendeskConfig } from '../../config'
 import { prepRef } from './article_body'
 
+const { isDefined } = lowerDashValues
 
 const { sleep } = promises.timeout
 const log = logger(module)
@@ -116,28 +118,44 @@ const getAttachmentContent = async ({
   attachment: Attachment
   article: InstanceElement | undefined
   attachmentType: ObjectType
-}): Promise<void> => {
+}): Promise<SaltoElementError | undefined> => {
+  const contentWarning = (error: string): SaltoElementError => ({
+    message: error,
+    severity: 'Warning',
+    elemID: attachment.elemID,
+  })
+
   if (article === undefined) {
-    log.error(`could not add attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`)
-    return
+    const error = `could not add attachment ${attachment.elemID.getFullName()}, as could not find article for article_id ${attachment.value.article_id}`
+    log.error(error)
+    return contentWarning(error)
   }
   const client = brandIdToClient[attachment.value.brand]
-  const res = await client.getSinglePage({
-    url: `/hc/article_attachments/${attachment.value.id}/${attachment.value.file_name}`,
-    responseType: 'arraybuffer',
-  })
+  let res
+  try {
+    res = await client.getSinglePage({
+      url: `/hc/article_attachments/${attachment.value.id}/${attachment.value.file_name}`,
+      responseType: 'arraybuffer',
+    })
+  } catch (e) {
+    const error = `Failed to get attachment content for attachment ${attachment.elemID.getFullName()}`
+    log.error(`${error}, error: ${safeJsonStringify(e)}`)
+    return contentWarning(error)
+  }
   const content = _.isString(res.data) ? Buffer.from(res.data) : res.data
   if (!Buffer.isBuffer(content)) {
-    log.error(`Received invalid response from Zendesk API for attachment content, ${
-      Buffer.from(safeJsonStringify(res.data, undefined, 2)).toString('base64').slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
-    }. Not adding article attachments`)
-    return
+    const error = `Received invalid content response from Zendesk API for attachment ${attachment.elemID.getFullName()}`
+    const buffer = Buffer.from(safeJsonStringify(res.data, undefined, 2)).toString('base64').slice(0, RESULT_MAXIMUM_OUTPUT_SIZE)
+    log.error(`${error}, ${buffer}. Not adding article attachment`)
+    return contentWarning(error)
   }
+
   const resourcePathName = `${normalizeFilePathPart(article.value.title)}/${normalizeFilePathPart(attachment.value.file_name)}`
   attachment.value.content = new StaticFile({
     filepath: `${ZENDESK}/${attachmentType.elemID.name}/${resourcePathName}`,
     content,
   })
+  return undefined
 }
 
 export const getArticleAttachments = async ({ brandIdToClient, articleById, attachmentType, attachments, config }: {
@@ -147,18 +165,19 @@ export const getArticleAttachments = async ({ brandIdToClient, articleById, atta
   apiDefinitions: ZendeskApiConfig
   attachments: Attachment[]
   config: ZendeskConfig
-}): Promise<void> => {
+}): Promise<SaltoElementError[]> => {
   const rateLimit = config[CLIENT_CONFIG]?.rateLimit?.get ?? 100
   log.debug(`there are ${attachments.length} attachments, going to get their content in chunks of ${rateLimit}`)
   const attachChunk = _.chunk(attachments, rateLimit)
-  await awu(attachChunk).map(async (attach: Attachment[], index: number) => {
+  return awu(attachChunk).flatMap(async (attach: Attachment[], index: number) => {
     log.debug(`starting article attachment chunk ${index + 1}/${attachChunk.length}`)
-    await Promise.all(attach.map(async attachment => {
+    const errors = await Promise.all(attach.map(async attachment => {
       const article = articleById[getParent(attachment).value.id]
-      await getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
+      return getAttachmentContent({ brandIdToClient, attachment, article, attachmentType })
     }))
     await sleep(1000)
-  }).toArray()
+    return errors
+  }).filter(isDefined).toArray()
 }
 
 export const createUnassociatedAttachment = async (

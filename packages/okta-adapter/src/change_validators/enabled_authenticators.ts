@@ -15,14 +15,12 @@
 */
 import Joi from 'joi'
 import _ from 'lodash'
-import { createSchemeGuard } from '@salto-io/adapter-utils'
-import { collections } from '@salto-io/lowerdash'
+import { createSchemeGuard, getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
-import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isInstanceElement, isReferenceExpression, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
+import { ChangeValidator, getChangeData, isInstanceChange, isModificationChange, isReferenceExpression, InstanceElement, ReferenceExpression } from '@salto-io/adapter-api'
 import { AUTHENTICATOR_TYPE_NAME, MFA_POLICY_TYPE_NAME } from '../constants'
 import { isDeactivationChange } from '../deployment'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 type PolicyToAuthenticator = {
@@ -88,12 +86,7 @@ export const enabledAuthenticatorsValidator: ChangeValidator = async (changes, e
     return []
   }
 
-  const mfaPolicies = await awu(await elementSource.list())
-    .filter(id => id.typeName === MFA_POLICY_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const mfaPolicies = await getInstancesFromElementSource(elementSource, [MFA_POLICY_TYPE_NAME])
 
   const authenticatorToPolicies = _.groupBy(
     mfaPolicies.flatMap(policy => getAutheticatorsForPolicy(policy)),

@@ -1324,10 +1324,9 @@ export const isResolvedReferenceExpression = (value: unknown): value is Referenc
   isReferenceExpression(value) && !(value.value instanceof UnresolvedReference) && value.value !== undefined
 )
 
-export const getInstancesFromElementSource = async (elementSource: ReadOnlyElementsSource, typeName: string)
+export const getInstancesFromElementSource = async (elementSource: ReadOnlyElementsSource, typeNames: string[])
   : Promise<InstanceElement[]> =>
-  awu(await elementSource.list())
-    .filter(id => id.typeName === typeName)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
+  awu(await elementSource.getAll())
+    .filter(isInstanceElement)
+    .filter(instance => typeNames.includes(instance.elemID.typeName))
     .toArray()

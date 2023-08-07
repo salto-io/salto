@@ -19,17 +19,17 @@ import {
   ChangeError,
   getChangeData,
   InstanceElement,
-  isInstanceElement, isRemovalChange, isReferenceExpression,
+  isRemovalChange, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
 import { config as configUtils } from '@salto-io/adapter-components'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TRIGGER_CATEGORY_TYPE_NAME, TRIGGER_TYPE_NAME } from '../constants'
 import { ZendeskApiConfig } from '../config'
 
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -54,12 +54,7 @@ export const triggerCategoryRemovalValidator: (apiConfig: ZendeskApiConfig)
       return []
     }
 
-    const elementSourceTriggers = await awu(await elementSource.list())
-      .filter(id => id.typeName === TRIGGER_TYPE_NAME)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .filter(isInstanceElement)
-      .toArray()
+    const elementSourceTriggers = await getInstancesFromElementSource(elementSource, [TRIGGER_TYPE_NAME])
 
     const triggersByRemovedTriggerCategory: Record<string, InstanceElement[]> = _.fromPairs(
       removedTriggerCategories.map(instance => instance.elemID.name).map(name => [name, []])

@@ -15,12 +15,11 @@
 */
 import _ from 'lodash'
 import { Change, ChangeValidator, getChangeData, InstanceElement, isAdditionChange,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement, isModificationChange } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+  isAdditionOrModificationChange, isInstanceChange, isModificationChange } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { CUSTOM_ROLE_TYPE_NAME } from '../constants'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 const SYSTEM_ROLE_NAMES = [
   'agen', 'agent', 'administrator', 'admin', 'billing admin', 'light agent',
@@ -47,12 +46,7 @@ export const customRoleNameValidator: ChangeValidator = async (
   if (_.isEmpty(relevantInstances)) {
     return []
   }
-  const allCustomRoles = await awu(await elementSource.list())
-    .filter(id => id.typeName === CUSTOM_ROLE_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const allCustomRoles = await getInstancesFromElementSource(elementSource, [CUSTOM_ROLE_TYPE_NAME])
   return relevantInstances
     .flatMap(instance => {
       if (SYSTEM_ROLE_NAMES.includes(instance.value.name?.toLowerCase())) {

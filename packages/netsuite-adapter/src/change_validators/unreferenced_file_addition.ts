@@ -58,8 +58,8 @@ const changeValidator: NetsuiteChangeValidator = async (changes, _deployReferenc
     .map(({ elemID }): ChangeError => ({
       elemID,
       severity: 'Warning',
-      message: 'This file is not referenced by any element',
-      detailedMessage: 'Files are typically referenced by an element. This deployment does not contain any element referencing this file',
+      message: 'File not referenced by any element',
+      detailedMessage: "This file isn't referenced by any other element. This may indicate that you forgot to include some element in your deployment which uses this file.",
     }))
   return res
 }

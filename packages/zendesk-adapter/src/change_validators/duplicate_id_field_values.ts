@@ -54,7 +54,7 @@ export const duplicateIdFieldValuesValidator = (
   )
 
   const errors = await Promise.all(Object.entries(changedInstancesByType).map(async ([typeName, instances]) => {
-    const typeInstances = await getInstancesFromElementSource(elementSource, typeName)
+    const typeInstances = await getInstancesFromElementSource(elementSource, [typeName])
     const instancesByIdFields = _.groupBy(
       typeInstances,
       instance => generateInstanceNameFromConfig(instance.value, typeName, apiConfig)

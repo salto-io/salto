@@ -18,7 +18,7 @@ import _ from 'lodash'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { collections, values } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
-import { isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
+import { getInstancesFromElementSource, isResolvedReferenceExpression, safeJsonStringify } from '@salto-io/adapter-utils'
 import JiraClient from '../client/client'
 import { ISSUE_TYPE_SCHEMA_NAME, PROJECT_TYPE } from '../constants'
 
@@ -91,12 +91,7 @@ export const issueTypeSchemeMigrationValidator = (
     if (elementSource === undefined || relevantChanges.length === 0) {
       return []
     }
-    const idsIterator = awu(await elementSource.list())
-    const projects = await awu(idsIterator)
-      .filter(id => id.typeName === PROJECT_TYPE)
-      .filter(id => id.idType === 'instance')
-      .map(id => elementSource.get(id))
-      .toArray()
+    const projects = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
     const issueTypeSchemesToProjects = _.groupBy(
       projects.filter(project => project.value.issueTypeScheme !== undefined
         && isResolvedReferenceExpression(project.value.issueTypeScheme)),

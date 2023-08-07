@@ -16,9 +16,10 @@
 import _ from 'lodash'
 import { collections, values } from '@salto-io/lowerdash'
 import {
-  Change, ChangeValidator, ElemID, getChangeData, InstanceElement, isAdditionOrModificationChange,
-  isInstanceChange, isInstanceElement, isModificationChange, ReadOnlyElementsSource,
+  Change, ChangeValidator, getChangeData, InstanceElement, isAdditionOrModificationChange,
+  isInstanceChange, isModificationChange,
 } from '@salto-io/adapter-api'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { TICKET_FIELD_TYPE_NAME, USER_FIELD_TYPE_NAME, ORG_FIELD_TYPE_NAME } from '../constants'
 
 const { awu } = collections.asynciterable
@@ -94,22 +95,6 @@ const getConflictedIds = ({
   }
 }
 
-const getRelevantInstances = async ({
-  relevantTypeToElementIds, typeName, elementSource, filter = (() => true),
-}: {
-  relevantTypeToElementIds: Record<string, ElemID[]>
-  typeName: string
-  elementSource: ReadOnlyElementsSource
-  filter?: (instance: InstanceElement) => boolean
-}): Promise<InstanceElement[]> => {
-  const elementIds = relevantTypeToElementIds[typeName] ?? []
-  return awu(elementIds)
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .filter(filter)
-    .toArray()
-}
-
 export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async (
   changes, elementSource
 ) => {
@@ -126,20 +111,14 @@ export const duplicateCustomFieldOptionValuesValidator: ChangeValidator = async 
       .filter(values.isDefined),
     pair => pair.parent,
   )
-  const relevantTypeToElementIds = await awu(await elementSource.list())
-    .filter(id => relevantTypes.flatMap(pair => [pair.parent, pair.child]).includes(id.typeName))
-    .filter(id => id.idType === 'instance')
-    .groupBy(id => id.typeName)
+  const relevantTypeToInstances = _.groupBy(
+    await getInstancesFromElementSource(elementSource, relevantTypes.flatMap(pair => [pair.parent, pair.child])),
+    instance => instance.elemID.typeName,
+  )
   return awu(relevantTypes).map(async pair => {
-    const childInstances = await getRelevantInstances({
-      relevantTypeToElementIds, typeName: pair.child, elementSource,
-    })
-    const parentInstances = await getRelevantInstances({
-      relevantTypeToElementIds,
-      typeName: pair.parent,
-      elementSource,
-      filter: inst => inst.value.type === CHECKBOX_TYPE_NAME && !_.isEmpty(inst.value.tag),
-    })
+    const childInstances = relevantTypeToInstances[pair.child] ?? []
+    const parentInstances = (relevantTypeToInstances[pair.parent] ?? [])
+      .filter(inst => inst.value.type === CHECKBOX_TYPE_NAME && !_.isEmpty(inst.value.tag))
     return relevantChanges
       .filter(change => getRelevantPairType(change)?.parent === pair.parent)
       .flatMap(change => {

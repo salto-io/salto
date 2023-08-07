@@ -73,6 +73,25 @@ describe('adapter creator', () => {
         await expect(result).rejects.toThrow()
       })
     })
+    describe('identify account type', () => {
+      beforeEach(async () => {
+        mockAxiosAdapter.onGet().reply(200, { id: 'orgId', subdomain: 'my' })
+      })
+      it('when using a preview account', async () => {
+        const { accountType, isProduction } = await adapter.validateCredentials(
+          createCredentialsInstance({ baseUrl: 'http://my-account.oktapreview.com', token: 't' })
+        )
+        expect(accountType).toEqual('Preview')
+        expect(isProduction).toEqual(false)
+      })
+      it('when using production account', async () => {
+        const { accountType, isProduction } = await adapter.validateCredentials(
+          createCredentialsInstance({ baseUrl: 'http://my-account.okta.net', token: 't' })
+        )
+        expect(accountType).toEqual('Production')
+        expect(isProduction).toEqual(true)
+      })
+    })
   })
 
   describe('create adapter', () => {

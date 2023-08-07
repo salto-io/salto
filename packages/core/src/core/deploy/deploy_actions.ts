@@ -171,7 +171,7 @@ export const deployActions = async (
             ({
               elemID: getChangeData(change).elemID,
               groupId: item.groupKey,
-              message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
+              message: `Element was not deployed, as it depends on ${nodeError.causingNode} which failed to deploy`,
               severity: 'Error' as SeverityLevel,
               type: 'dependency' as SaltoErrorType,
             })))

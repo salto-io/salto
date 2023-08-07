@@ -16,7 +16,7 @@
 import {
   ChangeError,
   ChangeValidator,
-  getChangeData,
+  getChangeData, InstanceElement,
   isAdditionChange, isInstanceChange,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
@@ -55,10 +55,15 @@ export const duplicateIdFieldValuesValidator = (
 
   const errors = await Promise.all(Object.entries(changedInstancesByType).map(async ([typeName, instances]) => {
     const typeInstances = await getInstancesFromElementSource(elementSource, [typeName])
-    const instancesByIdFields = _.groupBy(
-      typeInstances,
-      instance => generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
-    )
+    const instancesByIdFields: Record<string, InstanceElement[]> = {}
+    // generated name can be undefined, so we can't use _.groupBy
+    typeInstances.forEach(instance => {
+      const instanceName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
+      if (instanceName) {
+        instancesByIdFields[instanceName] = (instancesByIdFields[instanceName] ?? []).concat(instance)
+      }
+    })
+
     return instances.map((instance): ChangeError | undefined => {
       const instanceName = generateInstanceNameFromConfig(instance.value, typeName, apiConfig)
       if (!instanceName) {

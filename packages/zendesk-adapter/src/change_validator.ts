@@ -73,6 +73,7 @@ import {
   attachmentWithoutContentValidator,
   duplicateRoutingAttributeValueValidator,
   triggerCategoryRemovalValidator,
+  ticketFieldDeactivationValidator,
 } from './change_validators'
 import ZendeskClient from './client/client'
 import { ChangeValidatorName, ZedneskDeployConfig, ZendeskFetchConfig } from './config'
@@ -163,6 +164,7 @@ export default ({
     childrenReferences: childrenReferencesValidator,
     orderChildrenParent: orderChildrenParentValidator,
     guideOrderDeletion: guideOrderDeletionValidator,
+    ticketFieldDeactivation: ticketFieldDeactivationValidator(apiConfig),
     // ******************************
   }
 

@@ -24,9 +24,11 @@ import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
 import { ZendeskApiConfig } from '../config'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 type ConditionChildField = {
@@ -68,6 +70,7 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
       .filter(isRemovalOrModificationChange)
       .filter(change => getChangeData(change).elemID.typeName === TICKET_FIELD_TYPE_NAME)
       .filter(change => change.data.before.value.active === true)
+      // Removal also counts as deactivation
       .filter(change => isRemovalChange(change) || change.data.after.value.active === false)
       .map(getChangeData)
 
@@ -76,35 +79,40 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
     }
 
     const ticketForms = await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME])
-    const ticketFormConditions: TicketFormCondition[] = []
-    ticketForms.forEach(ticketForm => {
-      TICKET_FORM_CONDITION_FIELDS.forEach(field => {
-        if (ticketForm.value[field] === undefined) {
-          return
+    // TICKET_FORM_CONDITION_FIELDS has 'parent_field_id' in them
+    // Each condition also may (or must?) have 'child_fields' with 'id' in them
+    const ticketFormConditions = ticketForms.flatMap(ticketForm =>
+      TICKET_FORM_CONDITION_FIELDS.flatMap(field => {
+        const conditions = ticketForm.value[field]
+        if (conditions === undefined) {
+          return []
         }
-        if (!_.isArray(ticketForm.value[field])) {
-          log.error(`${field} is not an array in ${ticketForm.elemID.getFullName()}`)
-          return
-        }
-        ticketForm.value[field].forEach((condition: Value) => {
-          if (isTicketFormCondition(condition)) {
-            ticketFormConditions.push(condition)
-          } else {
-            log.error(`${field} has an invalid format in ${ticketForm.elemID.getFullName()}}`)
-          }
-        })
-      })
-    })
 
-    const conditionalTicketFields = new Set<number>(ticketFormConditions.flatMap(condition =>
+        if (!_.isArray(conditions)) {
+          log.error(`${field} is not an array in ${ticketForm.elemID.getFullName()}`)
+          return []
+        }
+
+        return conditions.map((condition: Value) => {
+          if (isTicketFormCondition(condition)) {
+            return condition
+          }
+          log.error(`${field} has an invalid format in ${ticketForm.elemID.getFullName()}}`)
+          return undefined
+        }).filter(isDefined)
+      }))
+
+    const conditionalTicketFieldIds = new Set<number>(ticketFormConditions.flatMap(condition =>
       ([condition.parent_field_id, ...(condition.child_fields ?? []).map(field => field.id)])))
 
 
     const inactiveTicketFormsOmitted = configUtils.getConfigWithDefault(
       apiConfig.types?.[TICKET_FORM_TYPE_NAME]?.transformation,
-      apiConfig.typeDefaults.transformation
+      apiConfig.typeDefaults?.transformation
     ).omitInactive === true
 
+    // Even inactive ticket form prevents deactivation of a ticket field
+    // If they are omitted, we can only warn about the deactivation
     const warnings: ChangeError[] = inactiveTicketFormsOmitted
       ? deactivatedTicketFields.map(ticketField => ({
         elemID: ticketField.elemID,
@@ -115,7 +123,7 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
       : []
 
     const errors: ChangeError[] = deactivatedTicketFields
-      .filter(ticketField => conditionalTicketFields.has(ticketField.value.id))
+      .filter(ticketField => conditionalTicketFieldIds.has(ticketField.value.id))
       .map(ticketField => ({
         elemID: ticketField.elemID,
         severity: 'Error',

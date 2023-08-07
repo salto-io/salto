@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import { createReorderFilterCreator, deployFuncCreator } from './creator'
-import { VIEW_TYPE_NAME } from '../view'
+import { VIEW_TYPE_NAME } from '../../constants'
 
 export const ORDER_FIELD_NAME = 'ids'
 export const TYPE_NAME = VIEW_TYPE_NAME

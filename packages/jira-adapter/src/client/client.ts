@@ -20,7 +20,7 @@ import { createConnection } from './connection'
 import { JIRA } from '../constants'
 import { Credentials } from '../auth'
 import { getProductSettings } from '../product_settings'
-import { JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
+import { JIRA_GQL_HEADERS, JSP_API_HEADERS, PRIVATE_API_HEADERS } from './headers'
 
 const log = logger(module)
 
@@ -112,6 +112,22 @@ export default class JiraClient extends clientUtils.AdapterHTTPClient<
       headers: {
         ...JSP_API_HEADERS,
         ...(args.headers ?? {}),
+      },
+    })
+  }
+
+  // Sends a post request to Jira with GQL body
+  public async gqlPost(
+    args: {url: string; query: string; variables?: Record<string, unknown> },
+  ): Promise<clientUtils.Response<clientUtils.ResponseValue | clientUtils.ResponseValue[]>> {
+    return this.post({
+      ...args,
+      data: {
+        query: args.query,
+        variables: args.variables,
+      },
+      headers: {
+        ...JIRA_GQL_HEADERS,
       },
     })
   }

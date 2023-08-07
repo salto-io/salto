@@ -17,7 +17,7 @@ import { InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapte
 import { GetLookupNameFunc, resolveValues } from '@salto-io/adapter-utils'
 import { mockTypes } from '../mock_elements'
 import { getLookupNameFromChangeGroup } from '../../src/transformers/reference_mapping'
-import { CUSTOM_OBJECT_ID_FIELD } from '../../src/constants'
+import { CUSTOM_OBJECT_ID_FIELD, SALESFORCE_METADATA_GROUP } from '../../src/constants'
 
 describe('referenceMapping tests', () => {
   describe('getLookupNameFromChangeGroup', () => {
@@ -47,26 +47,53 @@ describe('referenceMapping tests', () => {
     })
     describe('when the default strategy resolves to undefined', () => {
       describe('when both Products are in the same ChangeGroup', () => {
-        beforeEach(() => {
-          const changes = [
-            toChange({ after: firstProduct }),
-            toChange({ after: secondProduct }),
-          ]
-          getLookupNameFunc = getLookupNameFromChangeGroup({
-            groupID: 'Test_Group',
-            changes,
+        describe(`when the groupID is ${SALESFORCE_METADATA_GROUP}`, () => {
+          beforeEach(() => {
+            const changes = [
+              toChange({ after: firstProduct }),
+              toChange({ after: secondProduct }),
+            ]
+            getLookupNameFunc = getLookupNameFromChangeGroup({
+              groupID: SALESFORCE_METADATA_GROUP,
+              changes,
+            })
+          })
+          it('should resolve to undefined', async () => {
+            const resolvedFirstProduct = await resolveValues(firstProduct, getLookupNameFunc)
+            const resolvedSecondProduct = await resolveValues(secondProduct, getLookupNameFunc)
+            expect(resolvedFirstProduct.value).toEqual({
+              Name: 'Product1',
+              [FIELD_NAME]: undefined,
+            })
+            expect(resolvedSecondProduct.value).toEqual({
+              Name: 'Product2',
+              [FIELD_NAME]: undefined,
+            })
           })
         })
-        it('should resolve to the referenced Product InstanceElement', async () => {
-          const resolvedFirstProduct = await resolveValues(firstProduct, getLookupNameFunc)
-          const resolvedSecondProduct = await resolveValues(secondProduct, getLookupNameFunc)
-          expect(resolvedFirstProduct.value).toEqual({
-            Name: 'Product1',
-            [FIELD_NAME]: secondProduct,
+        describe(`when the groupID is not ${SALESFORCE_METADATA_GROUP}`, () => {
+          beforeEach(() => {
+            const changes = [
+              toChange({ after: firstProduct }),
+              toChange({ after: secondProduct }),
+            ]
+            getLookupNameFunc = getLookupNameFromChangeGroup({
+              groupID: 'Test_Group',
+              changes,
+            })
           })
-          expect(resolvedSecondProduct.value).toEqual({
-            Name: 'Product2',
-            [FIELD_NAME]: firstProduct,
+
+          it('should resolve to the referenced Product InstanceElement', async () => {
+            const resolvedFirstProduct = await resolveValues(firstProduct, getLookupNameFunc)
+            const resolvedSecondProduct = await resolveValues(secondProduct, getLookupNameFunc)
+            expect(resolvedFirstProduct.value).toEqual({
+              Name: 'Product1',
+              [FIELD_NAME]: secondProduct,
+            })
+            expect(resolvedSecondProduct.value).toEqual({
+              Name: 'Product2',
+              [FIELD_NAME]: firstProduct,
+            })
           })
         })
       })

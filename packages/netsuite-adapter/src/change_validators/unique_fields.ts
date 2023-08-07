@@ -68,13 +68,18 @@ const getCustomRecordRestrictedData = async ({ elemID, elementsSource }: GetterP
     .map(field => element.fields[field].annotations[SCRIPT_ID])
 }
 
-const workflowSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
-  _.values((await elementsSource.get(elemID)).value.workflowcustomfields?.workflowcustomfield ?? {})
-    .map(val => val.scriptid)
+const getChangeNestedScriptIDField = (
+  change: ChangeDataType,
+  nestPath: string[],
+): string[] =>
+  _.values(getChangeNestedField(change, nestPath)).map(val => val[SCRIPT_ID])
 
-const scriptSourceGetter = async ({ elemID, elementsSource }: GetterParams): Promise<string[]> =>
-  _.values((await elementsSource.get(elemID)).value.scriptcustomfields?.scriptcustomfield ?? {})
-    .map(val => val.scriptid)
+const getNestedScriptIDField = async (
+  { elemID, elementsSource }: GetterParams,
+  nestPath: string[],
+): Promise<string[]> =>
+  _.values(await elementsSource.get(elemID.createNestedID(...nestPath)))
+    .map(val => val[SCRIPT_ID])
 
 const savedSearchGetters: RestrictedTypeGetters = {
   getChangeRestrictedFields: change => [getChangeNestedField(change, [FIELD_DEFAULT_NAME])],
@@ -101,18 +106,16 @@ const customRecordGetters: RestrictedTypeGetters = {
 }
 
 const workflowGetters: RestrictedTypeGetters = {
-  getChangeRestrictedFields: change =>
-    _.values(getChangeNestedField(change, WORKFLOW_RESTRICTED_PATH)).map(val => val.scriptid),
-  getSourceRestrictedFields: workflowSourceGetter,
+  getChangeRestrictedFields: change => getChangeNestedScriptIDField(change, WORKFLOW_RESTRICTED_PATH),
+  getSourceRestrictedFields: params => getNestedScriptIDField(params, WORKFLOW_RESTRICTED_PATH),
   getMessage: () => 'Workflow contains custom fields with non-unique IDs',
   getDetailedMessage: scriptids => `Can't deploy this workflow as it contains custom fields with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
   + ' To deploy it, change their IDs to unique ones.',
 }
 
 const scriptGetters: RestrictedTypeGetters = {
-  getChangeRestrictedFields: change =>
-    _.values(getChangeNestedField(change, SCRIPT_RESTRICTED_PATH)).map(val => val.scriptid),
-  getSourceRestrictedFields: scriptSourceGetter,
+  getChangeRestrictedFields: change => getChangeNestedScriptIDField(change, SCRIPT_RESTRICTED_PATH),
+  getSourceRestrictedFields: params => getNestedScriptIDField(params, SCRIPT_RESTRICTED_PATH),
   getMessage: () => 'Script contains parameters with non-unique IDs',
   getDetailedMessage: scriptids => `Can't deploy this script as it contains parameters ("scriptcustomfields") with IDs that are not unique within this environment: "${scriptids.join(', ')}".`
   + ' To deploy it, change their IDs to unique ones.',

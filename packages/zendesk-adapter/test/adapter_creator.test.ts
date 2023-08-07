@@ -235,7 +235,7 @@ describe('adapter creator', () => {
   it('should validate credentials using createConnection', async () => {
     jest.spyOn(connection, 'createConnection')
     jest.spyOn(connection, 'validateCredentials')
-    mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
+    mockAxiosAdapter.onGet('/api/v2/account').reply(200, {
       settings: {},
     })
 
@@ -355,17 +355,14 @@ describe('adapter creator', () => {
     it('should not return isProduction on failed status', async () => {
       jest.spyOn(connection, 'createConnection')
       jest.spyOn(connection, 'validateCredentials')
-      mockAxiosAdapter.onGet('/api/v2/account/settings').reply(200, {
-        settings: {},
-      })
       mockAxiosAdapter.onGet('/api/v2/account').reply(400, {})
 
       // basic auth method
-      expect(await adapter.validateCredentials(new InstanceElement(
+      await expect(() => adapter.validateCredentials(new InstanceElement(
         'config',
         usernamePasswordCredentialsType,
         { username: 'user123', password: 'pwd456', subdomain: 'abc' },
-      ))).toEqual({ accountId: 'https://abc.zendesk.com' })
+      ))).rejects.toThrow()
     })
   })
 })

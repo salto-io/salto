@@ -104,7 +104,7 @@ describe('adapter', () => {
 
   beforeEach(async () => {
     mockAxiosAdapter = new MockAdapter(axios, { delayResponse: 1, onNoMatch: 'throwException' })
-    mockAxiosAdapter.onGet('/api/v2/account/settings').replyOnce(200, { settings: {} })
+    mockAxiosAdapter.onGet('/api/v2/account').replyOnce(200, { settings: {} })
   })
 
   afterEach(() => {

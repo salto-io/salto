@@ -54,26 +54,10 @@ describe('unique fields validator', () => {
 
   const getIDToVal = (
     testInstances: TestElements,
-    nestedField: string
+    ...nestedField: string[]
   ): Map<string, string> => new Map(Object.values(testInstances)
     .map(elem =>
-      [elem.elemID.createNestedID(nestedField).getFullName(),
-        (elem as InstanceElement).value[nestedField]]))
-
-  const getIDToValWorkflow = (
-    testInstances: TestElements,
-    nestedField: string
-  ): Map<string, string> => new Map(Object.values(testInstances)
-    .map(elem =>
-      [elem.elemID.createNestedID(nestedField).getFullName(),
-        _.get((elem as InstanceElement).value, nestedField)]))
-
-  const getIDToValScript = (
-    testInstances: TestElements,
-    nestedField: string
-  ): Map<string, string> => new Map(Object.values(testInstances)
-    .map(elem =>
-      [elem.elemID.createNestedID(nestedField).getFullName(),
+      [elem.elemID.createNestedID(...nestedField).getFullName(),
         _.get((elem as InstanceElement).value, nestedField)]))
 
   const buildMockElementsSource = (
@@ -100,34 +84,28 @@ describe('unique fields validator', () => {
       new InstanceElement(name, elemID, { name: uniqueField }))
 
   const getWorkflowElements = (): TestElements => getTestElements(WORKFLOW,
-    (name: string, elemID: ObjectType, uniqueField: string) => {
-      const custworkflow1 = {
-        scriptid: uniqueField,
-      }
-      const workflowcustomfield = { custworkflow1 }
-      const workflowCustomFields = { workflowcustomfield }
-      return new InstanceElement(name, elemID, { workflowcustomfields: workflowCustomFields })
-    })
+    (name: string, elemID: ObjectType, uniqueField: string) =>
+      new InstanceElement(name, elemID, {
+        workflowcustomfields: {
+          workflowcustomfield: {
+            custworkflow1: {
+              scriptid: uniqueField,
+            },
+          },
+        },
+      }))
 
-  const getScriptSuiteletElements = (): TestElements => getTestElements('suitelet',
-    (name: string, elemID: ObjectType, uniqueField: string) => {
-      const custscript1 = {
-        scriptid: uniqueField,
-      }
-      const scriptcustomfield = { custscript1 }
-      const scriptCustomFields = { scriptcustomfield }
-      return new InstanceElement(name, elemID, { scriptcustomfields: scriptCustomFields })
-    })
-
-  const getScriptRestletElements = (): TestElements => getTestElements('restlet',
-    (name: string, elemID: ObjectType, uniqueField: string) => {
-      const custscript1 = {
-        scriptid: uniqueField,
-      }
-      const scriptcustomfield = { custscript1 }
-      const scriptCustomFields = { scriptcustomfield }
-      return new InstanceElement(name, elemID, { scriptcustomfields: scriptCustomFields })
-    })
+  const getScriptElements = (scriptType: string): TestElements => getTestElements(scriptType,
+    (name: string, elemID: ObjectType, uniqueField: string) =>
+      new InstanceElement(name, elemID, {
+        scriptcustomfields: {
+          scriptcustomfield: {
+            custscript1: {
+              scriptid: uniqueField,
+            },
+          },
+        },
+      }))
 
   const getCustomRecordElements = (): TestElements => getTestElements(CUSTOM_RECORD_TYPE_PREFIX,
     (name: string, elemID: ObjectType, uniqueField: string) =>
@@ -354,12 +332,10 @@ describe('unique fields validator', () => {
   })
 
   describe('Workflow custom field unique `scriptid` field validator', () => {
-    let testElements: TestElements
-
-    beforeEach(() => {
-      testElements = getWorkflowElements()
-    })
-
+    const testElements = getWorkflowElements()
+    const idToVal = getIDToVal(testElements, 'workflowcustomfields', 'workflowcustomfield')
+    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
+      buildMockElementsSource(buildElementsSourceFromElements(elements), idToVal)
 
     describe('Workflow custom field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Workflow without a custom field', async () => {
@@ -367,7 +343,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: emptyElement })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElements.diffField,
             testElements.basic,
             emptyElement,
@@ -379,7 +355,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElements.basic })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElements.diffField,
             testElements.basic])
         )
@@ -393,7 +369,7 @@ describe('unique fields validator', () => {
               after: testElements.sameField }
           )],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElements.diffField,
             testElements.sameField])
         )
@@ -406,7 +382,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElements.sameField })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElements.basic,
             testElements.sameField])
         )
@@ -423,7 +399,7 @@ describe('unique fields validator', () => {
               after: testElements.sameField }
           ),
         ], undefined,
-        buildElementsSourceFromElements([
+        buildElementsSource([
           testElements.basic,
           testElements.sameField]))
         expect(changeErrors).toHaveLength(1)
@@ -435,13 +411,13 @@ describe('unique fields validator', () => {
   })
 
   describe('Script custom field unique `scriptid` field validator', () => {
-    let testElementsRestlet: TestElements
-    let testElementsSuitelet: TestElements
-
-    beforeEach(() => {
-      testElementsRestlet = getScriptRestletElements()
-      testElementsSuitelet = getScriptSuiteletElements()
-    })
+    const testElementsRestlet = getScriptElements('restlet')
+    const testElementsSuitelet = getScriptElements('suitelet')
+    const idToValRestlet = getIDToVal(testElementsRestlet, 'scriptcustomfields', 'scriptcustomfield')
+    const idToValSuitelet = getIDToVal(testElementsSuitelet, 'scriptcustomfields', 'scriptcustomfield')
+    const idToVal = new Map([...idToValRestlet, ...idToValSuitelet])
+    const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>
+      buildMockElementsSource(buildElementsSourceFromElements(elements), idToVal)
 
     describe('Script custom field with a unique scriptid', () => {
       it('Should not have a change error when adding a new Script without a custom field', async () => {
@@ -451,7 +427,7 @@ describe('unique fields validator', () => {
             toChange({ after: emptyElement }),
           ],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.diffField,
             testElementsRestlet.basic,
             emptyElement,
@@ -463,7 +439,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.basic })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.diffField,
             testElementsRestlet.basic])
         )
@@ -477,7 +453,7 @@ describe('unique fields validator', () => {
               after: testElementsRestlet.sameField }
           )],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.diffField,
             testElementsRestlet.sameField])
         )
@@ -487,7 +463,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.basic })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.diffField,
             testElementsSuitelet.basic])
         )
@@ -500,7 +476,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.sameField })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.basic,
             testElementsRestlet.sameField])
         )
@@ -513,7 +489,7 @@ describe('unique fields validator', () => {
         const changeErrors = await uniqueFields(
           [toChange({ after: testElementsRestlet.sameField })],
           undefined,
-          buildElementsSourceFromElements([
+          buildElementsSource([
             testElementsRestlet.basic,
             testElementsSuitelet.sameField])
         )
@@ -529,7 +505,7 @@ describe('unique fields validator', () => {
               after: testElementsRestlet.sameField }
           ),
         ], undefined,
-        buildElementsSourceFromElements([
+        buildElementsSource([
           testElementsRestlet.basic,
           testElementsRestlet.sameField]))
         expect(changeErrors).toHaveLength(1)
@@ -544,14 +520,14 @@ describe('unique fields validator', () => {
     const savedSearchTestInstances = getSavedSearchElements()
     const financialLayoutTestInstances = getFinancialLayoutElements()
     const workflowTestInstances = getWorkflowElements()
-    const scriptTestInstances = getScriptRestletElements()
+    const scriptTestInstances = getScriptElements('restlet')
     const customRecordTestObjects = getCustomRecordElements()
     const customRecordTestChanges = getCustomRecordChanges(customRecordTestObjects)
 
     const idToValSavedSearch = getIDToVal(savedSearchTestInstances, FIELD_DEFAULT_NAME)
     const idToValFinancialLayout = getIDToVal(financialLayoutTestInstances, NAME_FIELD)
-    const idToValWorkflow = getIDToValWorkflow(workflowTestInstances, 'workflowcustomfields.workflowcustomfield.custworkflow1.scriptid')
-    const idToValScript = getIDToValScript(scriptTestInstances, 'scriptcustomfields.scriptcustomfield.custscript1.scriptid')
+    const idToValWorkflow = getIDToVal(workflowTestInstances, 'workflowcustomfields', 'workflowcustomfield')
+    const idToValScript = getIDToVal(scriptTestInstances, 'scriptcustomfields', 'scriptcustomfield')
     const idToVal = new Map([...idToValSavedSearch, ...idToValFinancialLayout, ...idToValWorkflow, ...idToValScript])
 
     const buildElementsSource = (elements: readonly Element[]): ReadOnlyElementsSource =>

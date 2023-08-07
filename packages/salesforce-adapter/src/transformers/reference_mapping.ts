@@ -849,10 +849,10 @@ export const generateReferenceResolverFinder = (
   ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
-const getLookUpNameImpl = (
-  defs = fieldNameToTypeMappingDefs,
-  resolveToElementFallback: boolean,
-): GetLookupNameFunc => {
+const getLookUpNameImpl = ({ defs, resolveToElementFallback }: {
+  defs: FieldReferenceDefinition[]
+  resolveToElementFallback: boolean
+}): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
@@ -913,5 +913,8 @@ const getLookUpNameImpl = (
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs, false)
-export const getLookupNameWithFallbackToElement = getLookUpNameImpl(fieldNameToTypeMappingDefs, true)
+export const getLookUpName = getLookUpNameImpl({ defs: fieldNameToTypeMappingDefs, resolveToElementFallback: false })
+export const getLookupNameWithFallbackToElement = getLookUpNameImpl({
+  defs: fieldNameToTypeMappingDefs,
+  resolveToElementFallback: true,
+})

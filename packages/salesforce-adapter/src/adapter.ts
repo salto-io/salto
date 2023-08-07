@@ -461,7 +461,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean
   ): Promise<DeployResult> {
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
-    const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes as Change[])
+    const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes)
     const getLookupNameFunc = isDataDeployGroup
       ? getLookupNameWithFallbackToElement
       : getLookUpName

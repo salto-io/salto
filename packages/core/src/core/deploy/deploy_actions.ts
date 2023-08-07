@@ -18,7 +18,7 @@ import {
   AdapterOperations, getChangeData, Change,
   isAdditionOrModificationChange,
   DeployExtraProperties, DeployOptions, Group,
-  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType,
+  SaltoElementError, SaltoError, SeverityLevel, DeployResult, ChangeDataType, SaltoErrorType,
 } from '@salto-io/adapter-api'
 import { detailedCompare, applyDetailedChanges } from '@salto-io/adapter-utils'
 import { WalkError, NodeSkippedError } from '@salto-io/dag'
@@ -173,6 +173,7 @@ export const deployActions = async (
               groupId: item.groupKey,
               message: `Element ${key} was not deployed, as it depends on element ${nodeError.causingNode} which failed to deploy`,
               severity: 'Error' as SeverityLevel,
+              type: 'dependency' as SaltoErrorType,
             })))
         } else if (nodeError instanceof WalkDeployError) {
           deployErrors.push(...nodeError.errors.map(deployError => ({ ...deployError, groupId: item.groupKey })))

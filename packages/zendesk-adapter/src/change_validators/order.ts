@@ -16,11 +16,11 @@
 import _ from 'lodash'
 import {
   Change, ChangeError, ChangeValidator, getChangeData, InstanceElement,
-  isAdditionOrModificationChange, isInstanceChange, isInstanceElement,
+  isAdditionOrModificationChange, isInstanceChange,
   isReferenceExpression,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import { logger } from '@salto-io/logging'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { createOrderTypeName } from '../filters/reorder/creator'
 import { ORG_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, USER_FIELD_TYPE_NAME } from '../constants'
 import { TYPE_NAME as AUTOMATION_TYPE_NAME } from '../filters/reorder/automation'
@@ -28,7 +28,6 @@ import { TYPE_NAME as SLA_POLICY_TYPE_NAME } from '../filters/reorder/sla_policy
 import { TYPE_NAME as VIEW_TYPE_NAME } from '../filters/reorder/view'
 import { TYPE_NAME as WORKSPACE_TYPE_NAME } from '../filters/reorder/workspace'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 const RELEVANT_TYPE_NAMES = [
@@ -84,12 +83,10 @@ export const orderInstanceContainsAllTheInstancesValidator: ChangeValidator = as
     .map(inst => createOrderTypeName(inst.elemID.typeName))
     .uniq()
     .value()
-  const relevantOrderInstances = await awu(await elementSource.list())
-    .filter(id => relevantOrderTypeNames.includes(id.typeName))
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .keyBy(inst => inst.elemID.typeName)
+  const relevantOrderInstances = _.keyBy(
+    await getInstancesFromElementSource(elementSource, relevantOrderTypeNames),
+    instance => instance.elemID.typeName
+  )
   return relevantInstances
     .flatMap(instance => {
       const orderTypeName = createOrderTypeName(instance.elemID.typeName)

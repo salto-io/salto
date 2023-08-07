@@ -14,10 +14,10 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ChangeValidator, ElemID, getChangeData, InstanceElement, isInstanceChange, isRemovalChange, ReferenceExpression, RemovalChange, SeverityLevel } from '@salto-io/adapter-api'
-import { collections, values } from '@salto-io/lowerdash'
+import { values } from '@salto-io/lowerdash'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ISSUE_TYPE_SCHEMA_NAME, NOTIFICATION_SCHEME_TYPE_NAME, PERMISSION_SCHEME_TYPE_NAME, PROJECT_TYPE, SECURITY_SCHEME_TYPE, WORKFLOW_SCHEME_TYPE_NAME } from '../constants'
 
-const { awu } = collections.asynciterable
 const { isDefined } = values
 
 const SCHEME_TYPE_TO_PROJECT_FIELD: Record<string, string> = {
@@ -57,12 +57,7 @@ export const activeSchemeDeletionValidator: ChangeValidator = async (changes, el
   if (elementSource === undefined || relevantChanges.length === 0) {
     return []
   }
-  const idsIterator = awu(await elementSource.list())
-  const projects: InstanceElement[] = await awu(idsIterator)
-    .filter(id => id.typeName === PROJECT_TYPE)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
+  const projects: InstanceElement[] = await getInstancesFromElementSource(elementSource, [PROJECT_TYPE])
   return relevantChanges.map(change => {
     const linkedProjects = projects.filter(project => isProjectUsingScheme(project, getChangeData(change).elemID))
     if (linkedProjects.length === 0) {

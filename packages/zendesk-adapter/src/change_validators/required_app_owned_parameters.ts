@@ -21,12 +21,9 @@ import {
   isInstanceElement,
   InstanceElement,
 } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
 import Joi from 'joi'
-import { createSchemeGuardForInstance } from '@salto-io/adapter-utils'
+import { createSchemeGuardForInstance, getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { APP_INSTALLATION_TYPE_NAME, APP_OWNED_TYPE_NAME } from '../constants'
-
-const { awu } = collections.asynciterable
 
 type AppOwnedParameter = {
   required: boolean
@@ -109,11 +106,7 @@ export const requiredAppOwnedParametersValidator: ChangeValidator = async (
     return []
   }
 
-  const appOwnedInstances = await awu(await elementSource.list())
-    .filter(id => id.typeName === APP_OWNED_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .toArray()
+  const appOwnedInstances = await getInstancesFromElementSource(elementSource, [APP_OWNED_TYPE_NAME])
 
   const appOwnedInstancesById:
       Record<number, InstanceElement> = _.keyBy(appOwnedInstances

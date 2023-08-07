@@ -14,12 +14,11 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { ChangeValidator, getChangeData, isInstanceChange, isAdditionOrModificationChange, isInstanceElement, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
-import { collections } from '@salto-io/lowerdash'
+import { ChangeValidator, getChangeData, isInstanceChange, isAdditionOrModificationChange, isReferenceExpression, ReferenceExpression } from '@salto-io/adapter-api'
 import { logger } from '@salto-io/logging'
+import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { ACCESS_POLICY_TYPE_NAME, APPLICATION_TYPE_NAME, INACTIVE_STATUS } from '../constants'
 
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 /**
@@ -37,12 +36,7 @@ export const assignedAccessPoliciesValidator: ChangeValidator = async (changes, 
     .filter(instance => instance.elemID.typeName === ACCESS_POLICY_TYPE_NAME)
     .filter(instance => instance.value.status === INACTIVE_STATUS)
 
-  const applications = await awu(await elementSource.list())
-    .filter(id => id.typeName === APPLICATION_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
-    .toArray()
+  const applications = await getInstancesFromElementSource(elementSource, [APPLICATION_TYPE_NAME])
 
   const accessPolicyToApplications = _.groupBy(
     applications.filter(app => app.value.accessPolicy !== undefined && isReferenceExpression(app.value.accessPolicy)),

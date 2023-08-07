@@ -21,16 +21,14 @@ import {
   getChangeData,
   InstanceElement,
   isReferenceExpression,
-  isInstanceElement,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
-import { collections, values as lowerDashValues } from '@salto-io/lowerdash'
-import { safeJsonStringify } from '@salto-io/adapter-utils'
+import { values as lowerDashValues } from '@salto-io/lowerdash'
+import { getInstancesFromElementSource, safeJsonStringify } from '@salto-io/adapter-utils'
 import { AUTOMATION_TYPE_NAME } from '../constants'
 
 const { isDefined } = lowerDashValues
-const { awu } = collections.asynciterable
 const log = logger(module)
 
 const stringifyAutomationConditions = (automation: InstanceElement): string =>
@@ -58,13 +56,8 @@ export const uniqueAutomationConditionsValidator: ChangeValidator = async (chang
     .filter(instance => instance.elemID.typeName === AUTOMATION_TYPE_NAME)
     .filter(instance => instance.value.active === true)
 
-  const elementSourceActiveAutomations = await awu(await elementSource.list())
-    .filter(id => id.typeName === AUTOMATION_TYPE_NAME)
-    .filter(id => id.idType === 'instance')
-    .map(id => elementSource.get(id))
-    .filter(isInstanceElement)
+  const elementSourceActiveAutomations = (await getInstancesFromElementSource(elementSource, [AUTOMATION_TYPE_NAME]))
     .filter(automation => automation.value.active === true)
-    .toArray()
 
   // We map all automations to their conditions in advance, to avoid running on the whole list every time
   const conditionsToAutomations = _.groupBy(

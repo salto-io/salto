@@ -20,6 +20,7 @@ import { values } from '@salto-io/lowerdash'
 import { ROLE } from '../constants'
 import { NetsuiteChangeValidator } from './types'
 import { ID_TO_PERMISSION_INFO, PermissionLevel } from '../autogen/role_permissions/role_permissions'
+import { captureServiceIdInfo } from '../service_id_info'
 
 const { isDefined } = values
 const log = logger(module)
@@ -41,7 +42,7 @@ const isValidPermissions = ({ permkey, permlevel }: RolePermissionType): boolean
     ? permissionsToAdd[permkey] ?? ID_TO_PERMISSION_INFO[permkey] : undefined
   if (!isDefined(validPermissionLevels)) {
     // in case of undocumented premission we log the id and ignore
-    if (!isReferenceExpression(permkey)) {
+    if (!isReferenceExpression(permkey) && captureServiceIdInfo(permkey).length === 0) {
       log.debug(`The following permissions does not appear in the documentation: ${permkey}`)
     }
     return true

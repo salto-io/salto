@@ -18,7 +18,7 @@ import { AdditionChange, CORE_ANNOTATIONS, getChangeData, InstanceElement, isIns
 import { collections, values } from '@salto-io/lowerdash'
 import _ from 'lodash'
 import { v4 as uuidv4 } from 'uuid'
-import { getInstancesFromElementSource, transformElement } from '@salto-io/adapter-utils'
+import { transformElement } from '@salto-io/adapter-utils'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { WORKFLOW_SCHEME_TYPE_NAME, WORKFLOW_TYPE_NAME } from '../../constants'
 import { addAnnotationRecursively, findObject } from '../../utils'
@@ -182,16 +182,20 @@ const deployWorkflowModification = async ({
 }
 
 const getWorkflowSchemes = (elementsSource: ReadOnlyElementsSource): () => Promise<InstanceElement[]> => {
-  let workflowSchemes: InstanceElement[]
+  let workflowSchemesPromise: Promise<InstanceElement[]>
   return async (): Promise<InstanceElement[]> => {
-    if (workflowSchemes === undefined) {
-      workflowSchemes = (await getInstancesFromElementSource(elementsSource, [WORKFLOW_SCHEME_TYPE_NAME]))
+    if (workflowSchemesPromise === undefined) {
+      workflowSchemesPromise = awu(await elementsSource.list())
+        .filter(id => id.typeName === WORKFLOW_SCHEME_TYPE_NAME)
+        .filter(id => id.idType === 'instance')
+        .map(id => elementsSource.get(id))
         // instance.value.id is undefined when the workflow scheme
         // is an addition change in the current deployment and was
         // not deployed yet
         .filter(instance => instance.value.id !== undefined)
+        .toArray()
     }
-    return workflowSchemes
+    return workflowSchemesPromise
   }
 }
 

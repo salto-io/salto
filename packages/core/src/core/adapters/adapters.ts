@@ -251,7 +251,7 @@ export const createResolvedTypesElementsSource = (
       return awu(([] as Element[])
         .concat(
           await awu(rest).map(element => getResolved(element.elemID)).toArray(),
-          Object.values(resolvedTypes),
+          Array.from(resolvedTypes.values()),
         ))
     },
     list: elementsSource.list,

@@ -79,26 +79,27 @@ describe('ticketFieldDeactivationValidator', () => {
     const ticketField2 = createTicketFieldInstance('ticketField2', 2)
     const ticketField1Deactivated = ticketField1.clone()
     ticketField1Deactivated.value.active = false
-    const ticketForm = createTicketFormInstance('ticketForm', [1], [2])
+    const ticketForm1 = createTicketFormInstance('ticketForm1', [1], [2])
+    const ticketForm2 = createTicketFormInstance('ticketForm2', [1])
     const changes = [
       toChange({ before: ticketField1, after: ticketField1Deactivated }),
       toChange({ before: ticketField2 }),
     ]
 
-    const elementSource = createInMemoryElementSource([ticketField1, ticketField2, ticketForm])
+    const elementSource = createInMemoryElementSource([ticketField1, ticketField2, ticketForm1, ticketForm2])
     const errors = await ticketFieldDeactivationValidator({} as ZendeskApiConfig)(changes, elementSource)
     expect(errors).toMatchObject([
       {
         elemID: ticketField1.elemID,
         severity: 'Error',
-        message: 'TODO',
-        detailedMessage: 'TODO',
+        message: 'Deactivation of a conditional ticket field',
+        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed, ticket forms: ticketForm1, ticketForm2',
       },
       {
         elemID: ticketField2.elemID,
         severity: 'Error',
-        message: 'TODO',
-        detailedMessage: 'TODO',
+        message: 'Deactivation of a conditional ticket field',
+        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed, ticket forms: ticketForm1',
       },
     ])
   })
@@ -120,14 +121,14 @@ describe('ticketFieldDeactivationValidator', () => {
       {
         elemID: ticketField1.elemID,
         severity: 'Warning',
-        message: 'TODO',
-        detailedMessage: 'TODO',
+        message: 'Deactivation of a ticket field',
+        detailedMessage: 'This ticket field may be a conditional ticket field of an omitted deactivated ticket form, if true, the deployment will fail',
       },
       {
         elemID: ticketField2.elemID,
         severity: 'Warning',
-        message: 'TODO',
-        detailedMessage: 'TODO',
+        message: 'Deactivation of a ticket field',
+        detailedMessage: 'This ticket field may be a conditional ticket field of an omitted deactivated ticket form, if true, the deployment will fail',
       },
     ])
   })

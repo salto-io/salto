@@ -395,7 +395,6 @@ export const KEY_PREFIX_LENGTH = 3
 export const DETECTS_PARENTS_INDICATOR = '##allMasterDetailFields##'
 
 // Change Groups
-export const SALESFORCE_METADATA_GROUP = 'salesforce_metadata'
 export const ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP = 'add_Custom_ApprovalRule_and_ApprovalCondition_instances'
 
 // CPQ CustomObjects

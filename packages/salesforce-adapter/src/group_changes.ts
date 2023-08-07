@@ -30,7 +30,7 @@ import wu from 'wu'
 import { isInstanceOfCustomObjectChange } from './custom_object_instances_deploy'
 import { isInstanceOfTypeChange, safeApiName } from './filters/utils'
 import {
-  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SALESFORCE_METADATA_GROUP, SBAA_APPROVAL_CONDITION,
+  ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP, SBAA_APPROVAL_CONDITION,
   SBAA_APPROVAL_RULE,
   SBAA_CONDITIONS_MET,
 } from './constants'
@@ -39,7 +39,7 @@ const { awu } = collections.asynciterable
 
 const getGroupId = async (change: Change): Promise<string> => {
   if (!isInstanceChange(change) || !(await isInstanceOfCustomObjectChange(change))) {
-    return SALESFORCE_METADATA_GROUP
+    return 'salesforce_metadata'
   }
   const typeName = await safeApiName(await getChangeData(change).getType()) ?? 'UNKNOWN'
   return `${change.action}_${typeName}_instances`

@@ -97,7 +97,7 @@ import { LocalFilterCreator, Filter, FilterResult, RemoteFilterCreator, LocalFil
 import { addDefaults } from './filters/utils'
 import { retrieveMetadataInstances, fetchMetadataType, fetchMetadataInstances, listMetadataObjects } from './fetch'
 import { isCustomObjectInstanceChanges, deployCustomObjectInstancesGroup } from './custom_object_instances_deploy'
-import { getLookupNameFromChangeGroup } from './transformers/reference_mapping'
+import { getLookUpName, getLookupNameWithFallbackToElement } from './transformers/reference_mapping'
 import { deployMetadata, NestedMetadataTypeInfo } from './metadata_deploy'
 import { FetchProfile, buildFetchProfile } from './fetch_profile/fetch_profile'
 import {
@@ -461,10 +461,12 @@ export default class SalesforceAdapter implements AdapterOperations {
     checkOnly: boolean
   ): Promise<DeployResult> {
     log.debug(`about to ${checkOnly ? 'validate' : 'deploy'} group ${changeGroup.groupID} with scope (first 100): ${safeJsonStringify(changeGroup.changes.slice(0, 100).map(getChangeData).map(e => e.elemID.getFullName()))}`)
-    const getLookUpNameFunc = getLookupNameFromChangeGroup(changeGroup)
-
+    const isDataDeployGroup = await isCustomObjectInstanceChanges(changeGroup.changes as Change[])
+    const getLookupNameFunc = isDataDeployGroup
+      ? getLookupNameWithFallbackToElement
+      : getLookUpName
     const resolvedChanges = await awu(changeGroup.changes)
-      .map(change => resolveChangeElement(change, getLookUpNameFunc))
+      .map(change => resolveChangeElement(change, getLookupNameFunc))
       .toArray()
 
     await awu(resolvedChanges).filter(isAdditionChange).map(getChangeData).forEach(addDefaults)
@@ -473,7 +475,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     log.debug(`preDeploy of group ${changeGroup.groupID} finished`)
 
     let deployResult: DeployResult
-    if (await isCustomObjectInstanceChanges(resolvedChanges)) {
+    if (isDataDeployGroup) {
       if (checkOnly) {
         return {
           appliedChanges: [],
@@ -503,7 +505,7 @@ export default class SalesforceAdapter implements AdapterOperations {
     )
 
     const appliedChanges = await awu(appliedChangesBeforeRestore)
-      .map(change => restoreChangeElement(change, sourceChanges, getLookUpNameFunc))
+      .map(change => restoreChangeElement(change, sourceChanges, getLookupNameFunc))
       .toArray()
     return {
       appliedChanges,

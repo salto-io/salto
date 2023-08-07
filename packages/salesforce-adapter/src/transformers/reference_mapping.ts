@@ -22,7 +22,6 @@ import {
   ElemID,
   isInstanceElement,
   InstanceElement,
-  ChangeGroup, getChangeData,
 } from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
@@ -73,7 +72,6 @@ import {
   CPQ_QUOTE,
   CPQ_CONSTRAINT_FIELD,
   CUSTOM_LABEL_METADATA_TYPE,
-  SALESFORCE_METADATA_GROUP,
 } from '../constants'
 
 const log = logger(module)
@@ -853,11 +851,8 @@ export const generateReferenceResolverFinder = (
 
 const getLookUpNameImpl = (
   defs = fieldNameToTypeMappingDefs,
-  changeGroup?: ChangeGroup,
+  resolveToElementFallback: boolean,
 ): GetLookupNameFunc => {
-  const groupElemIds = changeGroup !== undefined
-    ? new Set(changeGroup.changes.map(change => getChangeData(change).elemID.getFullName()))
-    : undefined
   const resolverFinder = generateReferenceResolverFinder(defs)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
@@ -901,10 +896,7 @@ const getLookUpNameImpl = (
         if (resolvedValue !== undefined) {
           return resolvedValue
         }
-        if (changeGroup?.groupID !== SALESFORCE_METADATA_GROUP
-          && groupElemIds !== undefined
-          && groupElemIds.has(ref.value.elemID.getFullName())
-        ) {
+        if (resolveToElementFallback) {
           // We want to return the referenced Element in that case, which will be handled later in the deployment flow.
           // This is relevant for ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP deploy group
           // and also for the case of Data Records that reference the same type (and are deployed in the same group)
@@ -921,8 +913,5 @@ const getLookUpNameImpl = (
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)
-
-export const getLookupNameFromChangeGroup = (changeGroup: ChangeGroup): GetLookupNameFunc => (
-  getLookUpNameImpl(fieldNameToTypeMappingDefs, changeGroup)
-)
+export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs, false)
+export const getLookupNameWithFallbackToElement = getLookUpNameImpl(fieldNameToTypeMappingDefs, true)

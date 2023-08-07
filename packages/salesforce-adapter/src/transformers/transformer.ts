@@ -988,6 +988,11 @@ const toRecord = async (
         }
         return referencedRecordId
       }
+      // Can happen when we failed to resolve a reference to Metadata Element.
+      if (isElement(val)) {
+        log.warn('Unexpected non deployable value of Element with elemID %s in toRecord on Instance with elemID %s. Omitting value', val.elemID.getFullName(), instance.elemID.getFullName())
+        return undefined
+      }
       return val
     }),
   }

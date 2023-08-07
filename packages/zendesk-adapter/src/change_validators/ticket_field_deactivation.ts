@@ -18,34 +18,36 @@ import {
   ChangeValidator,
   getChangeData,
   isRemovalOrModificationChange,
-  isRemovalChange, Value, ChangeError,
+  isRemovalChange, Value, ChangeError, ReferenceExpression, isReferenceExpression,
 } from '@salto-io/adapter-api'
 import _ from 'lodash'
 import { logger } from '@salto-io/logging'
 import { getInstancesFromElementSource } from '@salto-io/adapter-utils'
 import { config as configUtils } from '@salto-io/adapter-components'
+import { values as lowerdashValues } from '@salto-io/lowerdash'
 import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME } from '../constants'
 import { ZendeskApiConfig } from '../config'
 
+const { isDefined } = lowerdashValues
 const log = logger(module)
 
 type ConditionChildField = {
-  id: number
+  id: number | ReferenceExpression
 }
 
 type TicketFormCondition = {
   // eslint-disable-next-line camelcase
-  parent_field_id: number
+  parent_field_id: number | ReferenceExpression
   // eslint-disable-next-line camelcase
   child_fields?: ConditionChildField[]
 }
 
 const isConditionChildField = (value: Value): value is ConditionChildField =>
-  _.isPlainObject(value) && _.isNumber(value.id)
+  _.isPlainObject(value) && (_.isNumber(value.id) || isReferenceExpression(value.id))
 
 const isTicketFormCondition = (value: Value): value is TicketFormCondition =>
   _.isPlainObject(value)
-  && _.isNumber(value.parent_field_id)
+  && (_.isNumber(value.parent_field_id) || isReferenceExpression(value.parent_field_id))
   && (
     value.child_fields === undefined
     || (_.isArray(value.child_fields) && value.child_fields.every((child: Value) => isConditionChildField(child)))
@@ -77,7 +79,7 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
     }
 
     const ticketForms = await getInstancesFromElementSource(elementSource, [TICKET_FORM_TYPE_NAME])
-    const ticketFieldIdToTicketForm: Record<number, string[]> = {}
+    const ticketFieldIdToTicketForm: Record<string, string[]> = {}
     // TICKET_FORM_CONDITION_FIELDS has 'parent_field_id' in them
     // Each condition also may (or must?) have 'child_fields' with 'id' in them
     ticketForms.forEach(ticketForm =>
@@ -97,11 +99,16 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
             log.error(`${field} has an invalid format in ${ticketForm.elemID.getFullName()}}`)
             return
           }
-          const ticketFieldIds = new Set<number>(
-            [condition.parent_field_id, ...(condition.child_fields ?? []).map(ticketField => ticketField.id)]
-          )
+          // Support both options of resolved and unresolved values
+          const parentFieldId = _.isNumber(condition.parent_field_id)
+            ? condition.parent_field_id.toString()
+            : condition.parent_field_id.elemID.getFullName()
+          const childFields = (condition.child_fields ?? []).map(child => (_.isNumber(child.id)
+            ? child.id.toString()
+            : child.id.elemID.getFullName()))
+          const ticketFieldIds = new Set<string>(childFields.concat(parentFieldId))
           ticketFieldIds.forEach(id => {
-            ticketFieldIdToTicketForm[id] = [...ticketFieldIdToTicketForm[id] ?? [], ticketForm.elemID.name]
+            ticketFieldIdToTicketForm[id] = (ticketFieldIdToTicketForm[id] ?? []).concat(ticketForm.elemID.name)
           })
         })
       }))
@@ -122,14 +129,19 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
       }))
       : []
 
-    const errors: ChangeError[] = deactivatedTicketFields
-      .filter(ticketField => ticketFieldIdToTicketForm[ticketField.value.id])
-      .map(ticketField => ({
+    const errors = deactivatedTicketFields.map((ticketField): ChangeError | undefined => {
+      const usingTicketForms = (ticketFieldIdToTicketForm[ticketField.value.id] ?? [])
+        .concat(ticketFieldIdToTicketForm[ticketField.elemID.getFullName()] ?? [])
+      if (usingTicketForms.length === 0) {
+        return undefined
+      }
+      return {
         elemID: ticketField.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: `This ticket field is a conditional ticket field of ticket forms, and cannot be removed, ticket forms: ${ticketFieldIdToTicketForm[ticketField.value.id].join(', ')}`,
-      }))
+        detailedMessage: `This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ${usingTicketForms.join(', ')}`,
+      }
+    }).filter(isDefined)
 
     return errors.concat(warnings)
   }

@@ -17,7 +17,7 @@ import {
   InstanceElement,
   ObjectType,
   ElemID,
-  toChange,
+  toChange, ReferenceExpression,
 } from '@salto-io/adapter-api'
 import { elementSource as elementSourceUtils } from '@salto-io/workspace'
 import { TICKET_FIELD_TYPE_NAME, TICKET_FORM_TYPE_NAME, ZENDESK } from '../../src/constants'
@@ -36,14 +36,18 @@ const createTicketFieldInstance = (name: string, id: number): InstanceElement =>
     },
   )
 
-const createTicketFormInstance = (name: string, ticketIds?: number[], childIds?: number[]): InstanceElement =>
+const createTicketFormInstance = (
+  name: string,
+  ticketFields?: (number | ReferenceExpression)[],
+  childTicketFields?: (number | ReferenceExpression)[]
+): InstanceElement =>
   new InstanceElement(
     name,
     new ObjectType({ elemID: new ElemID(ZENDESK, TICKET_FORM_TYPE_NAME) }),
     {
-      agent_conditions: ticketIds?.map(id => ({
+      agent_conditions: ticketFields?.map(id => ({
         parent_field_id: id,
-        child_fields: childIds?.map(childId => ({ id: childId })),
+        child_fields: childTicketFields?.map(childId => ({ id: childId })),
       })),
     },
   )
@@ -80,7 +84,11 @@ describe('ticketFieldDeactivationValidator', () => {
     const ticketField1Deactivated = ticketField1.clone()
     ticketField1Deactivated.value.active = false
     const ticketForm1 = createTicketFormInstance('ticketForm1', [1], [2])
-    const ticketForm2 = createTicketFormInstance('ticketForm2', [1])
+    const ticketForm2 = createTicketFormInstance(
+      'ticketForm2',
+      [new ReferenceExpression(ticketField1.elemID)],
+      [new ReferenceExpression(ticketField2.elemID)]
+    )
     const changes = [
       toChange({ before: ticketField1, after: ticketField1Deactivated }),
       toChange({ before: ticketField2 }),
@@ -93,13 +101,13 @@ describe('ticketFieldDeactivationValidator', () => {
         elemID: ticketField1.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed, ticket forms: ticketForm1, ticketForm2',
+        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ticketForm1, ticketForm2',
       },
       {
         elemID: ticketField2.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed, ticket forms: ticketForm1',
+        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ticketForm1, ticketForm2',
       },
     ])
   })

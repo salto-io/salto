@@ -234,6 +234,21 @@ describe('Values', () => {
         const ref1 = new ReferenceExpression(new ElemID('adapter', 'type', 'instance', 'inst', 'val1'), 1)
         expect(isEqualValues(ref1, 1, { compareByValue: true })).toBeTruthy()
       })
+
+      it('Comparing circular dependencies should return true', () => {
+        const instance = new InstanceElement(
+          'instance',
+          new ObjectType({ elemID: new ElemID('adapter', 'type') }),
+        )
+
+        instance.value.a = {
+          ref: new ReferenceExpression(instance.elemID.createNestedID('a')),
+        }
+
+        instance.value.a.ref.value = instance.value.a
+
+        expect(isEqualValues(instance, instance, { compareByValue: true })).toBeTruthy()
+      })
     })
     it('calculate hash', () => {
       const zOMGBuffer = Buffer.from('ZOMG')

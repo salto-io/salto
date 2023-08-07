@@ -264,9 +264,10 @@ const shouldCompareByValue = (
   && shouldResolve(first)
   && shouldResolve(second)
 
-export const compareSpecialValues = (
+const compareSpecialValuesWithCircularRefs = (
   first: Value,
   second: Value,
+  comparedReferences: Set<string>,
   options?: CompareOptions,
 ): boolean | undefined => {
   if (isStaticFile(first) && isStaticFile(second)) {
@@ -277,13 +278,23 @@ export const compareSpecialValues = (
   }
   if (isReferenceExpression(first) || isReferenceExpression(second)) {
     if (shouldCompareByValue(first, second, options)) {
+      if (isReferenceExpression(first) && isReferenceExpression(second)) {
+        const key = `${first.elemID.getFullName()}-${second.elemID.getFullName()}`
+        if (comparedReferences.has(key)) {
+          // We assume two circular references are equal (sames as _.isEqual with two circular objects)
+          return true
+        }
+
+        comparedReferences.add(key)
+      }
+
       const fValue = isReferenceExpression(first) ? first.value : first
       const sValue = isReferenceExpression(second) ? second.value : second
 
       return _.isEqualWith(
         fValue,
         sValue,
-        (va1, va2) => compareSpecialValues(va1, va2, options),
+        (va1, va2) => compareSpecialValuesWithCircularRefs(va1, va2, comparedReferences, options),
       )
     }
 
@@ -299,6 +310,14 @@ export const compareSpecialValues = (
   }
   return undefined
 }
+
+
+export const compareSpecialValues = (
+  first: Value,
+  second: Value,
+  options?: CompareOptions,
+): boolean | undefined =>
+  compareSpecialValuesWithCircularRefs(first, second, new Set(), options)
 
 export const isEqualValues = (
   first: Value,

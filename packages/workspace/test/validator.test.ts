@@ -2364,6 +2364,29 @@ describe('Elements validation', () => {
       expect(errors).toHaveLength(1)
       expect(errors[0].message).toBe('Error validating "instance.notExists.instance.name": type notExists of instance name does not exist')
     })
+
+    it('should handle circular references in the same instance', async () => {
+      const type = new ObjectType({ elemID: new ElemID('instance', 'type') })
+      const instance = new InstanceElement(
+        'name',
+        type,
+      )
+
+      instance.value.a = {
+        ref: new ReferenceExpression(instance.elemID.createNestedID('a')),
+      }
+
+      instance.value.a.ref.value = instance.value.a
+
+      const errors = await validateElements(
+        [instance],
+        createInMemoryElementSource([
+          instance,
+          type,
+        ]),
+      )
+      expect(errors).toHaveLength(0)
+    })
   })
 
   describe('InvalidStaticFileError', () => {

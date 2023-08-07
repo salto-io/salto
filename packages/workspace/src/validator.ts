@@ -480,6 +480,7 @@ const validateValue = (
   elemID: ElemID,
   value: Value,
   type: TypeElement,
+  validatedReferences = new Set<string>(),
 ): ValidationError[] => {
   if (Array.isArray(value) && !isListType(type)) {
     if (value.length === 0) {
@@ -491,11 +492,16 @@ const validateValue = (
         type,
       ) ?? []
     }
-    return validateValue(elemID, value, new ListType(type))
+    return validateValue(elemID, value, new ListType(type), validatedReferences)
   }
 
   if (isReferenceExpression(value)) {
-    return isElement(value.value) ? [] : validateValue(elemID, value.value, type)
+    const key = `${value.elemID.getFullName()}-${type.elemID.getFullName()}`
+    if (!isElement(value.value) && !(validatedReferences.has(key) && value.elemID.isParentOf(elemID))) {
+      validatedReferences.add(key)
+      return validateValue(elemID, value.value, type, validatedReferences)
+    }
+    return []
   }
 
   if (isTemplateExpression(value)) {
@@ -504,7 +510,7 @@ const validateValue = (
     )).flat()
     return [
       ...templatedReferenceValidationErrors,
-      ...(validateValue(elemID, value.value, type)),
+      ...(validateValue(elemID, value.value, type, validatedReferences)),
     ]
   }
 
@@ -548,6 +554,7 @@ const validateValue = (
         value: value[k],
         fieldName: k,
         objType: objectType,
+        validatedIds: validatedReferences,
       })
     )
   }
@@ -563,6 +570,7 @@ const validateValue = (
         value[k],
         BuiltinTypes.UNKNOWN,
         {},
+        validatedReferences,
       )
     )
   }
@@ -581,6 +589,7 @@ const validateValue = (
       item.nestedID,
       item.value,
       innerType,
+      validatedReferences,
     ))
   }
 
@@ -592,6 +601,7 @@ const validateFieldValue = (
   value: Value,
   fieldType: TypeElement,
   annotations: Values,
+  validatedIds: Set<string>,
 ): ValidationError[] => {
   if (!isListType(fieldType) && Array.isArray(value) && value.length === 0) {
     // return an error if value is required
@@ -615,6 +625,7 @@ const validateFieldValue = (
     item.nestedID,
     item.value,
     innerType,
+    validatedIds
   ))
 }
 
@@ -629,11 +640,12 @@ const validateNotAdditionalProperty = (
     )]
     : [])
 
-const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType } : {
+const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType, validatedIds } : {
   parentElemID: ElemID
   value: Value
   fieldName: string
   objType: ObjectType
+  validatedIds: Set<string>
  }): ValidationError[] => {
   const errors = objType.annotations[CORE_ANNOTATIONS.ADDITIONAL_PROPERTIES] === false
     ? validateNotAdditionalProperty(parentElemID, fieldName, objType)
@@ -643,6 +655,7 @@ const validateFieldValueAndName = ({ parentElemID, value, fieldName, objType } :
     value,
     objType.fields[fieldName]?.refType.type ?? BuiltinTypes.UNKNOWN,
     objType.fields[fieldName]?.annotations ?? {},
+    validatedIds,
   ))
 }
 

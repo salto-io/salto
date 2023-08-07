@@ -206,11 +206,7 @@ const validateDuplication = (
   return awu(changesData)
     .map(change => ({
       elemID: change.elemID,
-      fields: Array.from(
-        new Set(
-          getters.getChangeRestrictedFields(change).filter(field => uniqueFieldToID[field] > 1)
-        )
-      ),
+      fields: _.uniq(getters.getChangeRestrictedFields(change).filter(field => uniqueFieldToID[field] > 1)),
     }))
     .filter(({ fields }) => fields.length > 0)
     .map(({ elemID, fields }): ChangeError => ({

@@ -83,20 +83,20 @@ describe('duplicateIdFieldValuesValidator', () => {
       {
         elemID: duplicateGroup1.elemID,
         severity: 'Error',
-        message: 'Duplicate id field values',
-        detailedMessage: 'sames as duplicate2',
+        message: 'Duplicate unique field values',
+        detailedMessage: 'This element has the same unique fields as \'duplicate2\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
       },
       {
         elemID: duplicateGroup3.elemID,
         severity: 'Error',
-        message: 'Duplicate id field values',
-        detailedMessage: 'sames as duplicate4, duplicate5',
+        message: 'Duplicate unique field values',
+        detailedMessage: 'This element has the same unique fields as \'duplicate4, duplicate5\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
       },
       {
         elemID: duplicateGroup4.elemID,
         severity: 'Error',
-        message: 'Duplicate id field values',
-        detailedMessage: 'sames as duplicate3, duplicate5',
+        message: 'Duplicate unique field values',
+        detailedMessage: 'This element has the same unique fields as \'duplicate3, duplicate5\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
       },
     ])
   })

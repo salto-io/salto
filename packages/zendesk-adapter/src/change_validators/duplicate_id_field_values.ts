@@ -70,8 +70,8 @@ export const duplicateIdFieldValuesValidator = (
         ? {
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Duplicate id field values',
-          detailedMessage: `sames as ${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}`,
+          message: 'Duplicate unique field values',
+          detailedMessage: `This element has the same unique fields as '${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}', deploying it will cause Salto collisions, please make sure this is not an existing modified element`,
         }
         : undefined
     }).filter(isDefined)

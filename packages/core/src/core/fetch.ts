@@ -319,48 +319,46 @@ const isAdapterOperationsWithPostFetch = (
   v.postFetch !== undefined
 )
 
+type AccountInput = {
+  adapterName: string
+  elements: Element[] | undefined
+  stateElements: ReadonlyArray<Element>
+  partiallyFetchedAccountData: PartiallyFetchedAccountData | undefined
+}
+
 const runPostFetch = async ({
   adapters,
-  accountElements,
-  stateElementsByAccount,
-  partiallyFetchedAccountData,
-  accountToServiceNameMap,
+  accountInputs,
   progressReporters,
 }: {
   adapters: Record<string, AdapterOperationsWithPostFetch>
-  accountElements: Element[]
-  stateElementsByAccount: Record<string, ReadonlyArray<Element>>
-  partiallyFetchedAccountData: Map<string, PartiallyFetchedAccountData>
-  accountToServiceNameMap: Record<string, string>
+  accountInputs: Record<string, AccountInput>
   progressReporters: Record<string, ProgressReporter>
 }): Promise<void> => {
-  const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
   const getAdapterElements = (accountName: string): ReadonlyArray<Element> => {
-    if (!partiallyFetchedAccountData.has(accountName)) {
-      return serviceElementsByAccount[accountName] ?? stateElementsByAccount[accountName]
+    const accountInput = accountInputs[accountName]
+    if (accountInput.partiallyFetchedAccountData === undefined) {
+      return accountInput.elements ?? accountInput.stateElements
     }
     const fetchedIDs = new Set(
-      serviceElementsByAccount[accountName].map(e => e.elemID.getFullName())
+      accountInput.elements?.map(e => e.elemID.getFullName())
     )
-    const missingElements = stateElementsByAccount[accountName]
+    const missingElements = accountInput.stateElements
       .filter(e => !fetchedIDs.has(e.elemID.getFullName()))
-      .filter(e => !partiallyFetchedAccountData.get(accountName)?.deletedElements?.has(e.elemID.getFullName()))
+      .filter(e => !accountInput.partiallyFetchedAccountData?.deletedElements?.has(e.elemID.getFullName()))
     return [
-      ...serviceElementsByAccount[accountName],
+      ...accountInput.elements ?? [],
       ...missingElements,
     ]
   }
-  const elementsByAccount = Object.fromEntries(
-    [...new Set([
-      ...Object.keys(stateElementsByAccount),
-      ...Object.keys(serviceElementsByAccount),
-    ])].map(accountName => [accountName, getAdapterElements(accountName)])
-  )
+  const elementsByAccount = Object.fromEntries(Object.keys(accountInputs)
+    .map(accountName => [accountName, getAdapterElements(accountName)]))
   // only modifies elements in-place, done sequentially to avoid race conditions
+  const accountToServiceNameMap = Object.fromEntries(Object.entries(accountInputs).map(([k, v]) => [k, v.adapterName]))
   await promises.array.series(
     Object.entries(adapters).map(([adapterName, adapter]) => async () => (
       adapter.postFetch({
-        currentAdapterElements: serviceElementsByAccount[adapterName],
+        currentAdapterElements: accountInputs[adapterName].elements ?? [],
         elementsByAccount,
         accountToServiceNameMap,
         progressReporter: progressReporters[adapterName],
@@ -497,16 +495,25 @@ const fetchAndProcessMergeErrors = async (
       await stateElements.getAll(),
       elem => elem.elemID.adapter
     )
+    const serviceElementsByAccount = _.groupBy(accountElements, e => e.elemID.adapter)
+    const accountInputs = Object.keys(accountToServiceNameMap)
+      .reduce((acc: Record<string, AccountInput>, key: string) => {
+        acc[key] = {
+          adapterName: accountToServiceNameMap[key],
+          elements: serviceElementsByAccount[key],
+          stateElements: stateElementsByAccount[key],
+          partiallyFetchedAccountData: partiallyFetchedAccountData.get(key),
+        }
+        return acc
+      }, {})
+
     const adaptersWithPostFetch = _.pickBy(accountsToAdapters, isAdapterOperationsWithPostFetch)
     if (!_.isEmpty(adaptersWithPostFetch)) {
       try {
         // update elements based on fetch results from other services
         await runPostFetch({
           adapters: adaptersWithPostFetch,
-          accountElements,
-          stateElementsByAccount,
-          partiallyFetchedAccountData,
-          accountToServiceNameMap,
+          accountInputs,
           progressReporters,
         })
         log.debug('ran post-fetch in the following adapters: %s', Object.keys(adaptersWithPostFetch))

@@ -27,7 +27,7 @@ import {
   GLOBAL_ADAPTER,
   ObjectType,
   isElement,
-  isInstanceElement, isObjectType,
+  isInstanceElement, isObjectType, isType, TypeElement,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -195,11 +195,11 @@ const filterElementsSource = (
 export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
-  const resolvedTypes: Record<string, ObjectType> = {}
+  const resolvedTypes: Map<string, TypeElement> = new Map()
   const getResolved = async (id: ElemID): Promise<Element> => {
-    const elemFullName = id.getFullName()
-    if (resolvedTypes[elemFullName] !== undefined) {
-      return resolvedTypes[elemFullName]
+    const alreadyResolvedType = resolvedTypes.get(id.getFullName())
+    if (alreadyResolvedType !== undefined) {
+      return alreadyResolvedType
     }
     const value = await elementsSource.get(id)
     if (!isObjectType(value) && !isInstanceElement(value)) {
@@ -208,9 +208,9 @@ export const createResolvedTypesElementsSource = (
     const element = value.clone()
     // If the type of the instance is resolved, simply set the type on the instance
     if (isInstanceElement(element)) {
-      const resolvedType = resolvedTypes[element.refType.elemID.getFullName()]
-      if (resolvedType !== undefined) {
-        element.refType.type = resolvedType
+      const instanceResolvedType = resolvedTypes.get(element.refType.elemID.getFullName())
+      if (instanceResolvedType !== undefined) {
+        element.refType.type = instanceResolvedType
         return element
       }
     }
@@ -222,37 +222,36 @@ export const createResolvedTypesElementsSource = (
         shouldCloneElements: false,
         shouldResolveReferences: false,
       }
-    )).filter(isObjectType)
-      .forEach(objectType => {
-        resolvedTypes[objectType.elemID.getFullName()] = objectType
+    )).filter(isType)
+      .forEach(typeElement => {
+        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
       })
     return element
   }
   return {
     get: getResolved,
     getAll: async () => {
-      const [objectTypes, rest] = _.partition(
+      const [typeElements, rest] = _.partition(
         await awu(await elementsSource.getAll())
           .filter(isElement)
           .toArray(),
-        isObjectType,
+        isType,
       );
       // Resolve all the types together for better performance
       (await expressions.resolve(
-        objectTypes.map(objectType => objectType.clone()),
+        typeElements,
         elementsSource,
         {
-          shouldCloneElements: false,
           shouldResolveReferences: false,
         }
-      )).filter(isObjectType)
-        .forEach(objectType => {
-          resolvedTypes[objectType.elemID.getFullName()] = objectType
+      )).filter(isType)
+        .forEach(typeElement => {
+          resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
         })
       return awu(([] as Element[])
         .concat(
           await awu(rest).map(element => getResolved(element.elemID)).toArray(),
-          Object.values(resolvedTypes),
+          Array.from(resolvedTypes.values()),
         ))
     },
     list: elementsSource.list,

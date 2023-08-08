@@ -357,8 +357,12 @@ describe('adapters.ts', () => {
       describe('when element is InstanceElement', () => {
         it('should return instance with resolved type', async () => {
           const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
-          expect(resolvedInstance.refType.type).toBeInstanceOf(ObjectType)
-          expect(resolveSpy).toHaveBeenCalledOnce()
+          const resolvedType = resolvedInstance.refType.type as ObjectType
+          expect(isObjectType(resolvedType)).toBeTrue()
+          const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
+          expect(isObjectType(resolvedInnerType)).toBeTrue()
+          const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
+          expect(isObjectType(resolvedInnerInnerType)).toBeTrue()
         })
       })
     })

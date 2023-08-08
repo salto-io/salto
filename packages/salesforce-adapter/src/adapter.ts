@@ -330,7 +330,6 @@ export default class SalesforceAdapter implements AdapterOperations {
   private client: SalesforceClient
   private userConfig: SalesforceConfig
   private fetchProfile: FetchProfile
-  private elementsSource: ReadOnlyElementsSource
 
   public constructor({
     metadataTypesOfInstancesFetchedInFilters = [FLOW_METADATA_TYPE, FLOW_DEFINITION_METADATA_TYPE],
@@ -390,7 +389,6 @@ export default class SalesforceAdapter implements AdapterOperations {
     this.metadataTypesOfInstancesFetchedInFilters = metadataTypesOfInstancesFetchedInFilters
     this.nestedMetadataTypes = nestedMetadataTypes
     this.client = client
-    this.elementsSource = elementsSource
 
     const fetchProfile = buildFetchProfile(config.fetch ?? {}, changedAtSingleton)
     this.fetchProfile = fetchProfile

@@ -18,6 +18,11 @@ import { client as clientUtils } from '@salto-io/adapter-components'
 import { Credentials } from '../auth'
 import { FORCE_ACCEPT_LANGUAGE_HEADERS } from './headers'
 
+type appInfo = {
+  id: string
+  plan: string
+}
+
 const isAuthorized = async (
   connection: clientUtils.APIConnection,
 ): Promise<boolean> => {
@@ -39,14 +44,19 @@ const getBaseUrl = async (
   return response.data.baseUrl
 }
 
-const isProd = (accountId: string): boolean => !accountId.includes('-sandbox-')
+const isProd = async (connection: clientUtils.APIConnection): Promise<boolean> => {
+  const baseURL = await getBaseUrl(connection)
+  const response = await connection.get('/rest/api/3/instance/license')
+  const hasPaidApp = response.data?.applications.some((app: appInfo) => app.plan === 'PAID') ?? false
+  return !baseURL.includes('-sandbox-') && hasPaidApp
+}
 
 export const validateCredentials = async (
   { connection }: { connection: clientUtils.APIConnection },
 ): Promise<AccountInfo> => {
   if (await isAuthorized(connection)) {
     const accountId = await getBaseUrl(connection)
-    const isProduction = isProd(accountId)
+    const isProduction = await isProd(connection)
     return { accountId, isProduction }
   }
   throw new CredentialError('Invalid Credentials')

@@ -27,6 +27,7 @@ describe('connection', () => {
       mockAxios = new MockAdapter(axios)
       mockAxios.onGet('/rest/api/3/configuration').reply(200)
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: false }
       )
@@ -78,6 +79,7 @@ describe('connection', () => {
       mockAxios = new MockAdapter(axios)
       mockAxios.onGet('/rest/api/3/configuration').reply(200)
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: false }
       )
@@ -102,6 +104,7 @@ describe('connection', () => {
       mockAxios = new MockAdapter(axios)
       mockAxios.onGet('/rest/api/3/configuration').reply(200)
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       )
@@ -115,6 +118,7 @@ describe('connection', () => {
 
     it('should not have force accept language headers when calling Jira DC', async () => {
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       expect(mockAxios.history.get).toContainEqual(expect.objectContaining({
         headers: expect.not.objectContaining(FORCE_ACCEPT_LANGUAGE_HEADERS),
       }))
@@ -130,11 +134,12 @@ describe('connection', () => {
     afterEach(() => {
       mockAxios.restore()
     })
-    it('should return isProduction true when account id does not include -sandbox-', async () => {
+    it('should return isProduction true when account id does not include -sandbox- and has paid app', async () => {
       connection = await createConnection({ retries: 1 }).login(
         { baseUrl: 'http://myJira.net', user: 'me', token: 'tok', isDataCenter: true }
       )
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'http://my.jira.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ id: 'software', plan: 'PAID' }, { id: 'serviceDesk', plan: 'FREE' }] })
       const { isProduction } = await validateCredentials({
         connection,
       })
@@ -145,6 +150,18 @@ describe('connection', () => {
         { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
       )
       mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test-sandbox-999.atlassian.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'PAID' }] })
+      const { isProduction } = await validateCredentials({
+        connection,
+      })
+      expect(isProduction).toEqual(false)
+    })
+    it('should return isProduction false when account id does not include -sandbox- but has no paid app', async () => {
+      connection = await createConnection({ retries: 1 }).login(
+        { baseUrl: 'https://test-sandbox-999.atlassian.net', user: 'me', token: 'tok', isDataCenter: true }
+      )
+      mockAxios.onGet('/rest/api/3/serverInfo').reply(200, { baseUrl: 'https://test.atlassian.net' })
+      mockAxios.onGet('/rest/api/3/instance/license').reply(200, { applications: [{ plan: 'FREE' }] })
       const { isProduction } = await validateCredentials({
         connection,
       })

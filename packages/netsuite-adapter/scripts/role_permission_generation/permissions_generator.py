@@ -32,7 +32,6 @@ def parse_permissions_table():
     table = pd.read_html(permissions_table_link)[0].dropna(how='all')
     permissions = {}
     for row in table.values.tolist():
-      print(row)
       parse_table_row(row, permissions)
     return permissions
 

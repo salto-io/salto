@@ -18,7 +18,6 @@ import { config, deployment, client as clientUtils, elements as elementUtils } f
 import { resolveChangeElement, resolveValues } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
 import { collections, values } from '@salto-io/lowerdash'
-import JiraClient from '../client/client'
 import { getLookUpName } from '../reference_mapping'
 
 const { awu } = collections.asynciterable
@@ -27,7 +26,7 @@ const log = logger(module)
 
 type DeployChangeParam = {
   change: Change<InstanceElement>
-  client: JiraClient
+  client: clientUtils.HTTPWriteClientInterface
   apiDefinitions: config.AdapterApiConfig
   fieldsToIgnore?: string[] | ((path: ElemID) => boolean)
   additionalUrlVars?: Record<string, string>

@@ -22,7 +22,12 @@ import { AUTOMATION_PROJECT_TYPE, AUTOMATION_FIELD, AUTOMATION_COMPONENT_VALUE_T
   BOARD_ESTIMATION_TYPE, ISSUE_TYPE_NAME, ISSUE_TYPE_SCHEMA_NAME, AUTOMATION_STATUS,
   AUTOMATION_CONDITION, AUTOMATION_CONDITION_CRITERIA, AUTOMATION_SUBTASK,
   AUTOMATION_ROLE, AUTOMATION_GROUP, AUTOMATION_EMAIL_RECIPENT, PROJECT_TYPE,
-  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME, AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME, PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME, ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION, BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME } from './constants'
+  SECURITY_LEVEL_TYPE, SECURITY_SCHEME_TYPE, STATUS_TYPE_NAME, WORKFLOW_TYPE_NAME,
+  AUTOMATION_COMPARE_VALUE, AUTOMATION_TYPE, AUTOMATION_LABEL_TYPE, GROUP_TYPE_NAME,
+  PRIORITY_SCHEME_TYPE_NAME, SCRIPT_RUNNER_TYPE, POST_FUNCTION_CONFIGURATION, RESOLUTION_TYPE_NAME,
+  ISSUE_EVENT_TYPE_NAME, CONDITION_CONFIGURATION, PROJECT_ROLE_TYPE, VALIDATOR_CONFIGURATION,
+  BOARD_TYPE_NAME, ISSUE_LINK_TYPE_NAME, DIRECTED_LINK_TYPE, MAIL_LIST_TYPE_NAME,
+  SCRIPT_RUNNER_LISTENER_TYPE, SCRIPTED_FIELD_TYPE } from './constants'
 import { getFieldsLookUpName } from './filters/fields/field_type_references_filter'
 import { getRefType } from './references/workflow_properties'
 import { FIELD_TYPE_NAME } from './filters/fields/constants'
@@ -874,6 +879,25 @@ export const referencesRules: JiraFieldReferenceDefinition[] = [
     serializationStrategy: 'name',
     jiraMissingRefStrategy: 'typeAndValue',
     target: { type: PROJECT_ROLE_TYPE },
+  },
+  // ScriptRunner
+  {
+    src: { field: 'projects', parentTypes: [SCRIPT_RUNNER_LISTENER_TYPE] },
+    jiraSerializationStrategy: 'key',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'projectKeys', parentTypes: [SCRIPTED_FIELD_TYPE] },
+    jiraSerializationStrategy: 'key',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: PROJECT_TYPE },
+  },
+  {
+    src: { field: 'issueTypeIds', parentTypes: [SCRIPTED_FIELD_TYPE] },
+    serializationStrategy: 'id',
+    jiraMissingRefStrategy: 'typeAndValue',
+    target: { type: ISSUE_TYPE_NAME },
   },
 ]
 

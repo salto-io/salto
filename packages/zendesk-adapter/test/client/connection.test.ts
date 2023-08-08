@@ -31,7 +31,7 @@ describe('client connection', () => {
     it('should make get requests with correct parameters', async () => {
       const conn = createConnection({ retries: 3 })
       mockAxiosAdapter
-        .onGet('/api/v2/account/settings').reply(200, { settings: {} })
+        .onGet('/api/v2/account').reply(200, { settings: {} })
         .onGet('/api/v2/a/b').reply(200, { something: 'bla' })
       const apiConn = await conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })
       expect(apiConn.accountInfo).toEqual({ accountId: 'https://abc.zendesk.com' })
@@ -52,7 +52,7 @@ describe('client connection', () => {
     it('should throw when authentication fails', async () => {
       const conn = createConnection({ retries: 3 })
       mockAxiosAdapter
-        .onGet('/api/v2/account/settings').reply(403)
+        .onGet('/api/v2/account').reply(403)
       await expect(() => conn.login({ username: 'user123', password: 'pwd456', subdomain: 'abc' })).rejects.toThrow('Unauthorized - update credentials and try again')
     })
   })

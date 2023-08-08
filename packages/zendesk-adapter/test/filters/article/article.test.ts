@@ -401,6 +401,38 @@ describe('article filter', () => {
           'zendesk.article_attachment.instance.title_12345__otherTranslaitonAttachmentFileName_png_true@uuuvu',
         ])
     })
+    it('should not create attachment content if article is missing, and return a fetch warning', async () => {
+      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
+      const errors = await filter.onFetch([clonedAttachment, attachmentType])
+      expect(errors).toMatchObject({ errors: [{
+        message: `could not add attachment ${clonedAttachment.elemID.getFullName()}, as could not find article for article_id ${clonedAttachment.value.article_id}`,
+        severity: 'Warning',
+        elemID: clonedAttachment.elemID,
+      }] })
+      expect(clonedAttachment.value.content).toBeUndefined()
+    })
+    it('should not create attachment content if get content request fails, and return a fetch warning', async () => {
+      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
+      mockGet.mockImplementation(() => { throw new Error('err') })
+      const errors = await filter.onFetch([articleWithAttachmentInstance, clonedAttachment, attachmentType])
+      expect(errors).toMatchObject({ errors: [{
+        message: `Failed to get attachment content for attachment ${clonedAttachment.elemID.getFullName()}`,
+        severity: 'Warning',
+        elemID: clonedAttachment.elemID,
+      }] })
+      expect(clonedAttachment.value.content).toBeUndefined()
+    })
+    it('should not create attachment content if received content buffer is invalid, and return a fetch warning', async () => {
+      const clonedAttachment = notInlineArticleAttachmentInstance.clone()
+      mockGet.mockImplementation(() => ({ status: 200, data: 123 }))
+      const errors = await filter.onFetch([articleWithAttachmentInstance, clonedAttachment, attachmentType])
+      expect(errors).toMatchObject({ errors: [{
+        message: `Received invalid content response from Zendesk API for attachment ${clonedAttachment.elemID.getFullName()}`,
+        severity: 'Warning',
+        elemID: clonedAttachment.elemID,
+      }] })
+      expect(clonedAttachment.value.content).toBeUndefined()
+    })
   })
 
   describe('preDeploy', () => {

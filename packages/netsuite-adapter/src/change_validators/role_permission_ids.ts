@@ -56,6 +56,7 @@ const permissionsToAdd: Readonly<Record<string, ReadonlySet<PermissionLevel>>> =
   TRAN_GATEWAYNOTIFICATION: new Set(['VIEW', 'NONE', 'CREATE', 'EDIT', 'FULL']),
   TRAN_GENERATECHARGES: new Set(['VIEW', 'CREATE', 'FULL']),
   TRAN_VPREPAPPRV: new Set(['FULL']),
+  REPO_CUSTOMIZATION: new Set(['FULL', 'VIEW', 'CREATE', 'EDIT']),
 }
 
 const isValidPermissions = ({ permkey, permlevel }: RolePermissionType): boolean => {

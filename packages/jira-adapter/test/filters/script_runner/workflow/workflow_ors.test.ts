@@ -16,10 +16,10 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import orFilter, { OR_FIELDS } from '../../../src/filters/script_runner/workflow/workflow_lists_parsing'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
+import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
+import orFilter, { OR_FIELDS } from '../../../../src/filters/script_runner/workflow/workflow_lists_parsing'
+import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
 
 const REDUCED_OR_FIELDS = OR_FIELDS.filter(field => field !== 'FIELD_LINK_DIRECTION')
 describe('ScriptRunner ors in DC', () => {

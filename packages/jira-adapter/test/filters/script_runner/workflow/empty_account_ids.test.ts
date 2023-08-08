@@ -16,11 +16,11 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { InstanceElement, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import { SCRIPT_RUNNER_POST_FUNCTION_TYPE, SCRIPT_RUNNER_SEND_NOTIFICATIONS } from '../../../src/filters/script_runner/workflow/workflow_cloud'
-import emptyAccountIds from '../../../src/filters/script_runner/workflow/empty_account_ids'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
+import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
+import { SCRIPT_RUNNER_POST_FUNCTION_TYPE, SCRIPT_RUNNER_SEND_NOTIFICATIONS } from '../../../../src/filters/script_runner/workflow/workflow_cloud'
+import emptyAccountIds from '../../../../src/filters/script_runner/workflow/empty_account_ids'
+import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
 
 describe('ScriptRunner cloud empty account id', () => {
   let filter: filterUtils.FilterWith<'onFetch' | 'preDeploy' | 'onDeploy'>

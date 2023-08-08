@@ -16,10 +16,10 @@
 import { filterUtils } from '@salto-io/adapter-components'
 import { ElemID, InstanceElement, ReferenceExpression, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { createEmptyType, getFilterParams, mockClient } from '../../utils'
-import referencesFilter from '../../../src/filters/script_runner/workflow/workflow_references'
-import { WORKFLOW_TYPE_NAME } from '../../../src/constants'
-import { getDefaultConfig } from '../../../src/config/config'
+import { createEmptyType, getFilterParams, mockClient } from '../../../utils'
+import referencesFilter from '../../../../src/filters/script_runner/workflow/workflow_references'
+import { WORKFLOW_TYPE_NAME } from '../../../../src/constants'
+import { getDefaultConfig } from '../../../../src/config/config'
 
 
 const resolvedInstance = new InstanceElement(

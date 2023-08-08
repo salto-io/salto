@@ -141,7 +141,9 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
       return
     }
 
-    const typeNames = await awu(await elementsSource.list()).map(elemId => elemId.name).toArray()
+    const typeNames = await awu(await elementsSource.list())
+      .filter(elemId => elemId.idType === 'type')
+      .map(elemId => elemId.name).toArray()
     const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
     if (_.isEmpty(fieldsToOmitByType)) {
       return

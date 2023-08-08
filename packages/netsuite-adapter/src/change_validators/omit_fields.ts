@@ -49,16 +49,16 @@ const getModificationChangeError = (
   }
 }
 
-const getMissingKeys = (value: Values, clonedValue: Values): string[] =>
+const getMissingKeys = (value: Values, clonedValue: Values, prefix = ''): string[] =>
   Object.keys(value).reduce((missingKeys, key) => {
-    if (value[key] !== undefined && _.isPlainObject(value[key])) {
-      return clonedValue[key] === undefined
-        ? [...missingKeys, key]
-        : [...missingKeys, ...getMissingKeys(value[key], clonedValue[key])]
+    const currentKey = prefix ? `${prefix}.${key}` : key
+    if (clonedValue[key] === undefined) {
+      return [...missingKeys, currentKey]
     }
-    return clonedValue[key] === undefined
-      ? [...missingKeys, key]
-      : missingKeys
+    if (_.isPlainObject(value[key])) {
+      return [...missingKeys, ...getMissingKeys(value[key], clonedValue[key], currentKey)]
+    }
+    return missingKeys
   }, [] as string[])
 
 
@@ -70,10 +70,20 @@ const changeValidator: NetsuiteChangeValidator = async (
 ) => {
   const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY
     .concat(config?.deploy?.fieldsToOmit ?? [])
+  if (fieldsToOmit.length === 0) {
+    return []
+  }
+
   const typeNames = elementsSource !== undefined
-    ? await awu(await elementsSource.list()).map(elemId => elemId.name).toArray()
+    ? await awu(await elementsSource.list())
+      .filter(elemId => elemId.idType === 'type')
+      .map(elemId => elemId.name).toArray()
     : []
   const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
+  if (_.isEmpty(fieldsToOmitByType)) {
+    return []
+  }
+
   const typesForDeepTransformation = getTypesForDeepTransformation(typeNames, fieldsToOmit)
   return (await awu(changes)
     .filter(isAdditionOrModificationChange)

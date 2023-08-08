@@ -103,8 +103,8 @@ describe('omit fields change validator test', () => {
     expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Warning',
-      message: 'This element will be deployed without the following fields: \'currency\', \'inner2\'',
-      detailedMessage: 'This element will be deployed without the following fields: \'currency\', \'inner2\', as NetSuite does not support deploying them.',
+      message: 'This element will be deployed without the following fields: \'currency\', \'innerField.inner2\'',
+      detailedMessage: 'This element will be deployed without the following fields: \'currency\', \'innerField.inner2\', as NetSuite does not support deploying them.',
     })
   })
 

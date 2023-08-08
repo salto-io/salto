@@ -612,6 +612,7 @@ const baseDeployConfigType = createMatchingObjectType<Omit<DeployParams, keyof U
     validate: { refType: BuiltinTypes.BOOLEAN },
     deployReferencedElements: { refType: BuiltinTypes.BOOLEAN },
     additionalDependencies: { refType: additionalDependenciesType },
+    fieldsToOmit: { refType: new ListType(fieldsToOmitConfig) },
   },
 })
 
@@ -702,6 +703,7 @@ export const validateDeployParams = (
     warnOnStaleWorkspaceData,
     validate,
     additionalDependencies,
+    fieldsToOmit,
   }: Record<keyof DeployParams, unknown>
 ): void => {
   if (deployReferencedElements !== undefined
@@ -719,6 +721,9 @@ export const validateDeployParams = (
   if (additionalDependencies !== undefined) {
     validatePlainObject(additionalDependencies, additionalDependenciesConfigPath)
     validateAdditionalDependencies(additionalDependencies)
+  }
+  if (fieldsToOmit !== undefined) {
+    validateFieldsToOmitConfig(fieldsToOmit)
   }
 }
 

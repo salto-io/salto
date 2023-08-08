@@ -50,6 +50,7 @@ import omitFieldsValidator from './change_validators/omit_fields'
 import NetsuiteClient from './client/client'
 import {
   AdditionalDependencies,
+  NetsuiteConfig,
   NetsuiteValidatorName,
   NonSuiteAppValidatorName,
   OnlySuiteAppValidatorName,
@@ -148,6 +149,7 @@ const getChangeValidator: ({
   filtersRunner: (groupID: string) => Required<Filter>
   elementsSource: ReadOnlyElementsSource
   validatorsActivationConfig?: ValidatorsActivationConfig
+  userConfig?: NetsuiteConfig
   }) => ChangeValidator = (
     {
       client,
@@ -160,6 +162,7 @@ const getChangeValidator: ({
       filtersRunner,
       elementsSource,
       validatorsActivationConfig,
+      userConfig,
     }
   ) =>
     async (changes, elementSource) => {
@@ -171,7 +174,8 @@ const getChangeValidator: ({
       const validators: Record<string, ChangeValidator> = _.mapValues(
         netsuiteValidators,
         validator =>
-          (innerChanges: ReadonlyArray<Change>) => validator(innerChanges, deployReferencedElements, elementsSource)
+          (innerChanges: ReadonlyArray<Change>) =>
+            validator(innerChanges, deployReferencedElements, elementsSource, userConfig)
       )
 
       const safeDeploy = warnStaleData

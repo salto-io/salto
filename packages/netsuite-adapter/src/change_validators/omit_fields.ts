@@ -14,60 +14,99 @@
 * limitations under the License.
 */
 
-import { Change, ChangeDataType, ChangeError, getChangeData, isAdditionOrModificationChange, isModificationChange, Values } from '@salto-io/adapter-api'
-import { values } from '@salto-io/lowerdash'
+import { ChangeError, isAdditionOrModificationChange, Values, isEqualValues, ChangeDataType, isAdditionChange } from '@salto-io/adapter-api'
+import { values, collections } from '@salto-io/lowerdash'
+import _ from 'lodash'
 import { NetsuiteChangeValidator } from './types'
-import { FIELDS_TO_OMIT_PRE_DEPLOY, getFieldsToOmitByType } from '../filters/omit_fields'
-import { getDifferentKeys } from '../filters/data_instances_diff'
+import { cloneChange } from './utils'
+import { FIELDS_TO_OMIT_PRE_DEPLOY, getFieldsToOmitByType, getTypesForDeepTransformation, omitFieldsFromElements } from '../filters/omit_fields'
 import { getElementValueOrAnnotations } from '../types'
 
 const { isDefined } = values
+const { awu } = collections.asynciterable
 
-const getFieldsToOmit = (
-  value: Values,
-  typeName: string,
-  fieldsToOmitByType: Record<string, string[]>
-): string[] =>
-  fieldsToOmitByType[typeName]
-    .filter(fieldToOmit => fieldToOmit in value)
-
-const getChangeError = (
-  change: Change,
-  fieldsToOmitByType: Record<string, string[]>,
-  element: ChangeDataType,
+const getModificationChangeError = (
+  clonedBefore: ChangeDataType,
+  clonedAfter: ChangeDataType,
+  wrappedFieldsToOmit: string,
 ): ChangeError => {
-  if (isModificationChange(change) && getDifferentKeys(change).size === 1) {
+  if (isEqualValues(
+    getElementValueOrAnnotations(clonedBefore),
+    getElementValueOrAnnotations(clonedAfter)
+  )) {
     return {
-      elemID: element.elemID,
+      elemID: clonedAfter.elemID,
       severity: 'Error',
       message: 'This element contains an undeployable change',
-      detailedMessage: `This element will be removed from deployment because it only contains changes to the undeployable field '${fieldsToOmitByType[element.elemID.typeName].join(', ')}'.`,
+      detailedMessage: `This element will be removed from deployment because it only contains changes to the undeployable fields: ${wrappedFieldsToOmit}.`,
     }
   }
-  const wrappedFieldNames = fieldsToOmitByType[element.elemID.typeName].map(field => `'${field}'`).join(', ')
   return {
-    elemID: element.elemID,
+    elemID: clonedAfter.elemID,
     severity: 'Warning',
-    message: `This element will be deployed without the following fields: ${wrappedFieldNames}`,
-    detailedMessage: `This element will be deployed without the following fields: ${wrappedFieldNames}, as NetSuite does not support deploying them.`,
+    message: `This element will be deployed without the following fields: ${wrappedFieldsToOmit}`,
+    detailedMessage: `This element will be deployed without the following fields: ${wrappedFieldsToOmit}, as NetSuite does not support deploying them.`,
   }
 }
 
-const changeValidator: NetsuiteChangeValidator = async changes => {
-  const typeNames = FIELDS_TO_OMIT_PRE_DEPLOY.map(fieldToOmit => fieldToOmit.type)
-  const fieldsToOmitByType = getFieldsToOmitByType(typeNames, FIELDS_TO_OMIT_PRE_DEPLOY)
+const getMissingKeys = (value: Values, clonedValue: Values): string[] =>
+  Object.keys(value).reduce((missingKeys, key) => {
+    if (value[key] !== undefined && _.isPlainObject(value[key])) {
+      return clonedValue[key] === undefined
+        ? [...missingKeys, key]
+        : [...missingKeys, ...getMissingKeys(value[key], clonedValue[key])]
+    }
+    return clonedValue[key] === undefined
+      ? [...missingKeys, key]
+      : missingKeys
+  }, [] as string[])
 
-  return changes
+
+const changeValidator: NetsuiteChangeValidator = async (
+  changes,
+  _deployReferencedElements,
+  elementsSource,
+  config,
+) => {
+  const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY
+    .concat(config?.deploy?.fieldsToOmit ?? [])
+  const typeNames = elementsSource !== undefined
+    ? await awu(await elementsSource.list()).map(elemId => elemId.name).toArray()
+    : []
+  const fieldsToOmitByType = getFieldsToOmitByType(typeNames, fieldsToOmit)
+  const typesForDeepTransformation = getTypesForDeepTransformation(typeNames, fieldsToOmit)
+  return (await awu(changes)
     .filter(isAdditionOrModificationChange)
-    .map(change => {
-      const element = getChangeData(change)
-      const { typeName } = element.elemID
-      if (typeName in fieldsToOmitByType
-        && getFieldsToOmit(getElementValueOrAnnotations(element), typeName, fieldsToOmitByType).length > 0) {
-        return getChangeError(change, fieldsToOmitByType, element)
+    .map(async change => {
+      const clonedChange = cloneChange(change)
+      const { after } = change.data
+      const { after: clonedAfter } = clonedChange.data
+
+      await omitFieldsFromElements([clonedAfter], fieldsToOmitByType, typesForDeepTransformation)
+
+      const missingKeys = getMissingKeys(
+        getElementValueOrAnnotations(after),
+        getElementValueOrAnnotations(clonedAfter)
+      )
+
+      if (missingKeys.length === 0) {
+        return undefined
       }
-      return undefined
+      const wrappedFieldsToOmit = missingKeys.map(field => `'${field}'`).join(', ')
+      if (isAdditionChange(clonedChange)) {
+        return {
+          elemID: clonedAfter.elemID,
+          severity: 'Warning',
+          message: `This element will be deployed without the following fields: ${wrappedFieldsToOmit}`,
+          detailedMessage: `This element will be deployed without the following fields: ${wrappedFieldsToOmit}, as NetSuite does not support deploying them.`,
+        } as ChangeError
+      }
+
+      const { before: clonedBefore } = clonedChange.data
+      await omitFieldsFromElements([clonedBefore], fieldsToOmitByType, typesForDeepTransformation)
+      return getModificationChangeError(clonedBefore, clonedAfter, wrappedFieldsToOmit)
     })
+    .toArray())
     .filter(isDefined)
 }
 

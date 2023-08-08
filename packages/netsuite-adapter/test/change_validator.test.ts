@@ -14,6 +14,7 @@
 * limitations under the License.
 */
 import { Change, ChangeError, ElemID, InstanceElement, ObjectType, ProgressReporter, toChange, getChangeData, SeverityLevel, ReadOnlyElementsSource } from '@salto-io/adapter-api'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { Filter } from '../src/filter'
 import { fileType } from '../src/types/file_cabinet_types'
 import getChangeValidator from '../src/change_validator'
@@ -65,7 +66,7 @@ describe('change validator', () => {
     describe('without SuiteApp', () => {
       it('should have change error when removing an instance with file cabinet type', async () => {
         const changeValidator = getChangeValidator(
-          { ...DEFAULT_OPTIONS, client, fetchByQuery }
+          { ...DEFAULT_OPTIONS, client, fetchByQuery, elementsSource: buildElementsSourceFromElements([]) }
         )
         const instance = new InstanceElement('test', file, { path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance })])
@@ -75,7 +76,7 @@ describe('change validator', () => {
       })
       it('should not have change error when modifying an file cabinet instance without internal id', async () => {
         const changeValidator = getChangeValidator(
-          { ...DEFAULT_OPTIONS, client, fetchByQuery }
+          { ...DEFAULT_OPTIONS, client, fetchByQuery, elementsSource: buildElementsSourceFromElements([]) }
         )
         const instance = new InstanceElement('test', file, { path: 'somePath' })
         const changeErrors = await changeValidator([toChange({ before: instance, after: instance })])
@@ -91,6 +92,7 @@ describe('change validator', () => {
             withSuiteApp: true,
             client,
             fetchByQuery,
+            elementsSource: buildElementsSourceFromElements([]),
           }
         )
         const instance = new InstanceElement('test', file, { [INTERNAL_ID]: '1', path: 'somePath' })
@@ -104,6 +106,7 @@ describe('change validator', () => {
             withSuiteApp: true,
             client,
             fetchByQuery,
+            elementsSource: buildElementsSourceFromElements([]),
           }
         )
         const instance = new InstanceElement('test', file, { path: 'somePath' })
@@ -144,6 +147,7 @@ describe('change validator', () => {
           ...DEFAULT_OPTIONS,
           client,
           fetchByQuery,
+          elementsSource: buildElementsSourceFromElements([]),
         }
       )([change])
       expect(changeErrors).toHaveLength(0)
@@ -155,6 +159,7 @@ describe('change validator', () => {
           warnStaleData: true,
           client,
           fetchByQuery,
+          elementsSource: buildElementsSourceFromElements([]),
         }
       )([change])
       expect(changeErrors).toHaveLength(1)
@@ -168,6 +173,7 @@ describe('change validator', () => {
         {
           ...DEFAULT_OPTIONS,
           client,
+          elementsSource: buildElementsSourceFromElements([]),
         }
       )([toChange({ after: new InstanceElement('test', file, { path: 'somePath' }) })])
       expect(netsuiteClientValidationMock).not.toHaveBeenCalled()
@@ -179,6 +185,7 @@ describe('change validator', () => {
           ...DEFAULT_OPTIONS,
           client,
           validate: true,
+          elementsSource: buildElementsSourceFromElements([]),
         }
       )(changes)
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(
@@ -203,6 +210,7 @@ describe('change validator', () => {
           ...DEFAULT_OPTIONS,
           client,
           validate: true,
+          elementsSource: buildElementsSourceFromElements([]),
         }
       )([validChange, invalidChange])
       expect(netsuiteClientValidationMock).toHaveBeenCalledWith(

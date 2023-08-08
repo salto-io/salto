@@ -14,7 +14,7 @@
 * limitations under the License.
 */
 import _ from 'lodash'
-import { getChangeData, isInstanceElement, isObjectType, Values, Element } from '@salto-io/adapter-api'
+import { isInstanceElement, isObjectType, Values, Element, isAdditionOrModificationChange } from '@salto-io/adapter-api'
 import { transformElementAnnotations, TransformFunc, transformValues } from '@salto-io/adapter-utils'
 import { collections, regex } from '@salto-io/lowerdash'
 import { LocalFilterCreator } from '../filter'
@@ -49,13 +49,13 @@ export const getFieldsToOmitByType = (
     ]).filter(([_t, fields]) => fields.length > 0)
   )
 
-const getTypesForDeepTransformation = (typeNames: string[], fieldsToOmit: FieldToOmitParams[]): Set<string> =>
+export const getTypesForDeepTransformation = (typeNames: string[], fieldsToOmit: FieldToOmitParams[]): Set<string> =>
   new Set(
     typeNames.filter(typeName => fieldsToOmit
       .some(({ type, subtype }) => subtype !== undefined && subtype !== type && isFullRegexMatch(typeName, type)))
   )
 
-const omitFieldsFromElements = async (
+export const omitFieldsFromElements = async (
   elements: Element[],
   fieldsToOmitByType: Record<string, string[]>,
   typesForDeepTransformation: Set<string>,
@@ -132,7 +132,9 @@ const filterCreator: LocalFilterCreator = ({ config, elementsSource }) => ({
     await omitFieldsFromElements(elements, fieldsToOmitByType, typesForDeepTransformation)
   },
   preDeploy: async changes => {
-    const elements = changes.map(getChangeData)
+    const elements = changes
+      .filter(isAdditionOrModificationChange)
+      .flatMap(change => Object.values(change.data))
     const fieldsToOmit = FIELDS_TO_OMIT_PRE_DEPLOY.concat(config.deploy?.fieldsToOmit ?? [])
 
     if (fieldsToOmit.length === 0) {

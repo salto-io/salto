@@ -16,31 +16,40 @@
 
 import { BuiltinTypes, ElemID, InstanceElement, ObjectType, toChange } from '@salto-io/adapter-api'
 import _ from 'lodash'
+import { buildElementsSourceFromElements } from '@salto-io/adapter-utils'
 import { NETSUITE } from '../../src/constants'
 import omitFieldsValidation from '../../src/change_validators/omit_fields'
 
 describe('omit fields change validator test', () => {
   let type: ObjectType
+  let innerType: ObjectType
   let instance: InstanceElement
   let after: InstanceElement
-  beforeEach(() => {
+  beforeEach(async () => {
+    innerType = new ObjectType({ elemID: new ElemID(NETSUITE, 'innerType') })
     type = new ObjectType({
       elemID: new ElemID(NETSUITE, 'inventoryItem'),
       fields: {
         currency: { refType: BuiltinTypes.STRING },
         field2: { refType: BuiltinTypes.BOOLEAN },
+        innerField: { refType: innerType },
       },
     })
     instance = new InstanceElement('test', type, {
       currency: 'Shekel',
       field2: true,
+      innerField: { inner1: 'inner1', inner2: 'inner2' },
     })
     after = instance.clone()
   })
   it('should have warning on elements that contain fields that will be omitted', async () => {
-    const changeError = await omitFieldsValidation([toChange({ after: instance })])
-    expect(changeError).toHaveLength(1)
-    expect(changeError[0]).toEqual({
+    const changeErrors = await omitFieldsValidation(
+      [toChange({ after: instance })],
+      undefined,
+      buildElementsSourceFromElements([instance, type, innerType])
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Warning',
       message: 'This element will be deployed without the following fields: \'currency\'',
@@ -48,21 +57,64 @@ describe('omit fields change validator test', () => {
     })
   })
 
-  it('should have error when only a single field has been changed and will be ommited', async () => {
+  it('should have warning on modification change the contains a field that will be omitted', async () => {
     after.value.currency = 'Dong'
-    const changeError = await omitFieldsValidation([toChange({ before: instance, after })])
-    expect(changeError).toHaveLength(1)
-    expect(changeError[0]).toEqual({
+    after.value.field2 = false
+    const changeErrors = await omitFieldsValidation(
+      [toChange({ before: instance, after })],
+      undefined,
+      buildElementsSourceFromElements([instance, type, innerType])
+    )
+    expect(changeErrors[0]).toEqual({
+      elemID: instance.elemID,
+      severity: 'Warning',
+      message: 'This element will be deployed without the following fields: \'currency\'',
+      detailedMessage: 'This element will be deployed without the following fields: \'currency\', as NetSuite does not support deploying them.',
+    })
+  })
+
+  it('should have error when all changed fields will be ommited', async () => {
+    after.value.currency = 'Dong'
+    after.value.field2 = false
+    const changeErrors = await omitFieldsValidation(
+      [toChange({ before: instance, after })],
+      undefined,
+      buildElementsSourceFromElements([instance, type, innerType]),
+      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', fields: ['field.*'] }] } }
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
       elemID: instance.elemID,
       severity: 'Error',
       message: 'This element contains an undeployable change',
-      detailedMessage: 'This element will be removed from deployment because it only contains changes to the undeployable field \'currency\'.',
+      detailedMessage: 'This element will be removed from deployment because it only contains changes to the undeployable fields: \'currency\', \'field2\'.',
+    })
+  })
+
+  it('should have warning when omitting an inner field', async () => {
+    after.value.innerField.inner1 = 'afterValue'
+    const changeErrors = await omitFieldsValidation(
+      [toChange({ before: instance, after })],
+      undefined,
+      buildElementsSourceFromElements([instance, type, innerType]),
+      { deploy: { fieldsToOmit: [{ type: 'inventoryItem', subtype: 'inner.*', fields: ['.*2'] }] } }
+    )
+    expect(changeErrors).toHaveLength(1)
+    expect(changeErrors[0]).toEqual({
+      elemID: instance.elemID,
+      severity: 'Warning',
+      message: 'This element will be deployed without the following fields: \'currency\', \'inner2\'',
+      detailedMessage: 'This element will be deployed without the following fields: \'currency\', \'inner2\', as NetSuite does not support deploying them.',
     })
   })
 
   it('should not have change error if no field is about to be ommited', async () => {
     instance.value = _.omit(instance.value, ['currency'])
-    const changeError = await omitFieldsValidation([toChange({ after: instance })])
-    expect(changeError).toHaveLength(0)
+    const changeErrors = await omitFieldsValidation(
+      [toChange({ after: instance })],
+      undefined,
+      buildElementsSourceFromElements([instance, type, innerType])
+    )
+    expect(changeErrors).toHaveLength(0)
   })
 })

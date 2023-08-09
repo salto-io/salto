@@ -128,6 +128,7 @@ export const SYSTEM_INFORMATION_SCHEME = {
         },
       },
       required: ['time', 'appVersion', 'envType'],
+      additionalProperties: false,
     },
     {
       type: 'object',
@@ -138,7 +139,6 @@ export const SYSTEM_INFORMATION_SCHEME = {
       additionalProperties: false,
     },
   ],
-  additionalProperties: true,
 }
 
 export type SystemInformation = {

@@ -127,30 +127,23 @@ const generateServiceIdToElemID = async (
 const resolveRelativePath = (absolutePath: string, relativePath: string): string =>
   osPath.resolve(osPath.dirname(absolutePath), relativePath)
 
-const getFileNameFromPath = (path: string):string =>
-  path.split(FILE_CABINET_PATH_SEPARATOR)
-    .slice(-1)[0]
-    .split('.')[0]
-
 const getServiceElemIDsFromPaths = (
   foundReferences: string[],
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
   element: InstanceElement,
-  fileNames: Set<string>,
+  // fileNames: Set<string>,
 ): ElemID[] =>
   foundReferences
     .flatMap(ref => {
-      if (fileNames.has(getFileNameFromPath(ref))) {
-        const prefixedRef = pathPrefixRegex.test(ref) ? ref : FILE_CABINET_PATH_SEPARATOR.concat(ref)
-        const absolutePath = resolveRelativePath(element.value[PATH], prefixedRef)
-        return [absolutePath].concat(
-          osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
-            ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
-            : []
-        )
-      }
-      return [ref]
+      const absolutePath = pathPrefixRegex.test(ref)
+        ? resolveRelativePath(element.value[PATH], ref)
+        : FILE_CABINET_PATH_SEPARATOR.concat(ref)
+      return [ref, absolutePath].concat(
+        osPath.extname(absolutePath) === '' && osPath.extname(element.value[PATH]) !== ''
+          ? [absolutePath.concat(osPath.extname(element.value[PATH]))]
+          : []
+      )
     })
     .map(ref => {
       const serviceIdRecord = serviceIdToElemID[ref]
@@ -171,7 +164,6 @@ const getSuiteScriptReferences = async (
   element: InstanceElement,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
-  fileNames: Set<string>,
 ): Promise<ElemID[]> => {
   const content = (await getContent(element.value.content)).toString()
 
@@ -185,7 +177,6 @@ const getSuiteScriptReferences = async (
     serviceIdToElemID,
     customRecordFieldsToServiceIds,
     element,
-    fileNames,
   )
 }
 
@@ -193,7 +184,6 @@ const replaceReferenceValues = async (
   element: Element,
   serviceIdToElemID: ServiceIdRecords,
   customRecordFieldsToServiceIds: ServiceIdRecords,
-  fileNames: Set<string>,
 ): Promise<Element> => {
   const dependenciesToAdd: Array<ElemID> = []
   const replacePrimitive: TransformFunc = ({ path, value }) => {
@@ -241,7 +231,7 @@ const replaceReferenceValues = async (
   })
 
   const suiteScriptReferences = isFileCabinetInstance(element) && isFileInstance(element)
-    ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds, fileNames)
+    ? await getSuiteScriptReferences(element, serviceIdToElemID, customRecordFieldsToServiceIds)
     : []
 
   extendGeneratedDependencies(
@@ -323,9 +313,6 @@ const filterCreator: LocalFilterCreator = ({
       createCustomRecordFieldsToElemID(elements),
       await createElementsSourceCustomRecordFieldsToElemID(elementsSourceIndex, isPartial)
     )
-    const fileNames = new Set(elements.filter(isFileCabinetInstance)
-      .map(instance =>
-        getFileNameFromPath(instance.value[PATH])))
     await awu(elements).filter(element => isInstanceElement(element) || (
       isObjectType(element) && isCustomRecordType(element)
     )).forEach(async element => {
@@ -333,7 +320,6 @@ const filterCreator: LocalFilterCreator = ({
         element,
         serviceIdToElemID,
         customRecordFieldsToServiceIds,
-        fileNames,
       )
       applyValuesAndAnnotationsToElement(element, newElement)
     })

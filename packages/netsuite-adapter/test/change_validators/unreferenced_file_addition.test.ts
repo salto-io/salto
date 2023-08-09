@@ -32,7 +32,7 @@ describe('unreferenced file addition validator', () => {
       })
     const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', suitelet)
 
-    it('Should not have a change error when adding a File and a script referencing it', async () => {
+    it('Should not have a change error when adding a file and a script referencing it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: scriptFileNacl }),
         toChange({ after: scriptReferenceElement }),
@@ -40,7 +40,7 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should not have a change error when adding a File and changing a script to reference it', async () => {
+    it('Should not have a change error when adding a file and changing a script to reference it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: scriptFileNacl }),
         toChange({ before: scriptNonReferenceElement, after: scriptReferenceElement }),
@@ -55,7 +55,14 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should have a change error when adding a File without changing (adding or modifying) any element to reference it', async () => {
+    it('Should not have a change error when modifying a file', async () => {
+      const changeErrors = await unreferencedFileAddition([
+        toChange({ before: scriptFileNacl, after: scriptFileNacl }),
+      ])
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('Should have a change error when adding a file without changing (adding or modifying) any element to reference it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: scriptFileNacl }),
         toChange({ after: scriptNonReferenceElement }),
@@ -70,13 +77,13 @@ describe('unreferenced file addition validator', () => {
   describe('email template file', () => {
     const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', fileType())
     const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', emailTemplate,
-      { addcompanyaddress: true,
-        mediaitem: new ReferenceExpression(
-          emailTemplateFileNacl.elemID
-        ) })
+      {
+        addcompanyaddress: true,
+        mediaitem: new ReferenceExpression(emailTemplateFileNacl.elemID),
+      })
     const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', emailTemplate)
 
-    it('Should not have a change error when adding a File and a template referencing it', async () => {
+    it('Should not have a change error when adding a file and a template referencing it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateReferenceElement }),
@@ -84,7 +91,7 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should not have a change error when adding a File and changing a template to reference it', async () => {
+    it('Should not have a change error when adding a file and changing a template to reference it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ before: emailTemplateNonReferenceElement, after: emailTemplateReferenceElement }),
@@ -92,14 +99,21 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should not have a change error when not adding an email template', async () => {
+    it('Should not have a change error when not adding an email template file', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateNonReferenceElement }),
       ])
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should have a change error when adding a File without changing (adding or modifying) any element to reference it', async () => {
+    it('Should not have a change error when modifying an email template file', async () => {
+      const changeErrors = await unreferencedFileAddition([
+        toChange({ before: emailTemplateFileNacl, after: emailTemplateFileNacl }),
+      ])
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('Should have a change error when adding a file without changing (adding or modifying) any element to reference it', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateNonReferenceElement }),
@@ -113,20 +127,20 @@ describe('unreferenced file addition validator', () => {
   describe('both type of files', () => {
     const emailTemplateFileNacl = new InstanceElement('emailTemplateFileNacl', fileType())
     const emailTemplateReferenceElement = new InstanceElement('emailTemplateElemWithReference', emailTemplate,
-      { addcompanyaddress: true,
-        mediaitem: new ReferenceExpression(
-          emailTemplateFileNacl.elemID
-        ) })
+      {
+        addcompanyaddress: true,
+        mediaitem: new ReferenceExpression(emailTemplateFileNacl.elemID),
+      })
     const emailTemplateNonReferenceElement = new InstanceElement('emailTemplateElemWithoutReference', emailTemplate)
     const scriptFileNacl = new InstanceElement('scriptFileNacl', fileType())
     const scriptReferenceElement = new InstanceElement('scriptElemWithReference', suitelet,
-      { defaultfunction: 'svda',
-        scriptfile: new ReferenceExpression(
-          scriptFileNacl.elemID
-        ) })
+      {
+        defaultfunction: 'svda',
+        scriptfile: new ReferenceExpression(scriptFileNacl.elemID),
+      })
     const scriptNonReferenceElement = new InstanceElement('scriptElemWithoutReference', suitelet)
 
-    it('Should not have a change error when adding files and templates referencing them', async () => {
+    it('Should not have a change error when adding files and scripts/templates referencing them', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateReferenceElement }),
@@ -136,7 +150,7 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should not have a change error when adding a File and changing a template to reference it', async () => {
+    it('Should not have a change error when adding files and changing scripts/templates to reference them', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ before: emailTemplateNonReferenceElement, after: emailTemplateReferenceElement }),
@@ -146,7 +160,7 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should not have a change error when not adding an email template', async () => {
+    it('Should not have a change error when not adding an email-template/script', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateNonReferenceElement }),
         toChange({ after: scriptNonReferenceElement }),
@@ -154,7 +168,15 @@ describe('unreferenced file addition validator', () => {
       expect(changeErrors).toHaveLength(0)
     })
 
-    it('Should have a change error when adding a File without changing (adding or modifying) any element to reference it', async () => {
+    it('Should not have a change error when modifying an email-template/script', async () => {
+      const changeErrors = await unreferencedFileAddition([
+        toChange({ before: emailTemplateFileNacl, after: emailTemplateFileNacl }),
+        toChange({ before: scriptFileNacl, after: scriptFileNacl }),
+      ])
+      expect(changeErrors).toHaveLength(0)
+    })
+
+    it('Should have a change error when adding files without changing (adding or modifying) any element to reference them', async () => {
       const changeErrors = await unreferencedFileAddition([
         toChange({ after: emailTemplateFileNacl }),
         toChange({ after: emailTemplateNonReferenceElement }),

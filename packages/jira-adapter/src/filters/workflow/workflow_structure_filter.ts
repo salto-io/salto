@@ -15,7 +15,7 @@
 */
 import { BuiltinTypes, CORE_ANNOTATIONS, Element, ElemID, Field, isInstanceElement, ListType, MapType, SaltoError } from '@salto-io/adapter-api'
 import _ from 'lodash'
-import { walkOnValue, WALK_NEXT_STEP } from '@salto-io/adapter-utils'
+import { walkOnValue, WALK_NEXT_STEP, naclCase } from '@salto-io/adapter-utils'
 import { findObject } from '../../utils'
 import { FilterCreator } from '../../filter'
 import { postFunctionType, types as postFunctionTypes } from './post_functions_types'
@@ -185,36 +185,6 @@ const transformRules = (rules: Rules, transitionType?: string): void => {
   }
   transformPostFunctions(rules, transitionType)
   rules.validators?.forEach(transformValidator)
-}
-
-const transformTransitions = (value: Value): SaltoError[] => {
-  const statusesMap = createStatusMap(value.statuses ?? [])
-  const maxCounts = _(value.transitions).map(transition => getTransitionKey(transition, statusesMap)).countBy().value()
-
-  const counts: Record<string, number> = {}
-
-  value.transitions = Object.fromEntries(value.transitions
-    // This is Value and not the actual type as we change types
-    .map((transition: Value) => {
-      const key = getTransitionKey(transition, statusesMap)
-      counts[key] = (counts[key] ?? 0) + 1
-      if (maxCounts[key] > 1) {
-        return [naclCase(`${invertNaclCase(key)}${TRANSITION_PARTS_SEPARATOR}${counts[key]}`), transition]
-      }
-      return [key, transition]
-    }))
-  const errorKeyNames = Object.entries(counts)
-    .filter(([, count]) => count > 1)
-    .map(([key]) => invertNaclCase(key).split(TRANSITION_PARTS_SEPARATOR)[0])
-
-
-  return errorKeyNames.length === 0
-    ? []
-    : [{
-      message: `The following transitions of workflow ${value.name} are not unique: ${errorKeyNames.join(', ')}.
-It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
-      severity: 'Warning',
-    }]
 }
 
 const transformWorkflowInstance = (workflowValues: WorkflowResponse): SaltoError[] => {

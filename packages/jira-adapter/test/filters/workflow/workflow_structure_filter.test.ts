@@ -854,7 +854,7 @@ describe('workflowStructureFilter', () => {
         expect(fetchResults).toEqual({ errors: [
           {
             severity: 'Warning',
-            message: `The following transitions of workflow instance are not unique: tran1, tran2.
+            message: `The following transitions of workflow instance have the same key: tran1__From__any_status__Circular@fffssff, tran2__From__any_status__Circular@fffssff.
 It is strongly recommended to rename these transitions so they are unique in Jira, then re-fetch`,
           },
         ] })

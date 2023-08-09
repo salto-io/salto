@@ -27,7 +27,9 @@ import {
   GLOBAL_ADAPTER,
   ObjectType,
   isElement,
-  isInstanceElement, isObjectType, isType, TypeElement,
+  isInstanceElement,
+  isType,
+  TypeElement, isField,
 } from '@salto-io/adapter-api'
 import { createDefaultInstanceFromType, getSubtypes, safeJsonStringify } from '@salto-io/adapter-utils'
 import { logger } from '@salto-io/logging'
@@ -196,64 +198,59 @@ export const createResolvedTypesElementsSource = (
   elementsSource: ReadOnlyElementsSource
 ): ReadOnlyElementsSource => {
   const resolvedTypes: Map<string, TypeElement> = new Map()
+  const resolveAllTypes = async (): Promise<void> => {
+    const typeElements = await awu(await elementsSource.getAll())
+      .filter(isElement)
+      .filter(isType)
+      .toArray()
+      // Resolve all the types together for better performance
+    const resolved = await expressions.resolve(
+      typeElements,
+      elementsSource,
+      {
+        shouldResolveReferences: false,
+      }
+    )
+    resolved.filter(isType)
+      .forEach(typeElement => {
+        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
+      })
+  }
+
   const getResolved = async (id: ElemID): Promise<Element> => {
+    if (resolvedTypes.size === 0) {
+      await resolveAllTypes()
+    }
+    // TypeElements
     const alreadyResolvedType = resolvedTypes.get(id.getFullName())
     if (alreadyResolvedType !== undefined) {
       return alreadyResolvedType
     }
+    // InstanceElements / Fields
     const value = await elementsSource.get(id)
-    if (!isObjectType(value) && !isInstanceElement(value)) {
+    if (!isElement(value)) {
       return value
     }
     const element = value.clone()
-    // If the type of the instance is resolved, simply set the type on the instance
-    if (isInstanceElement(element)) {
+    if (isInstanceElement(element) || isField(element)) {
       const instanceResolvedType = resolvedTypes.get(element.refType.elemID.getFullName())
-      if (instanceResolvedType !== undefined) {
-        element.refType.type = instanceResolvedType
+      // The type of the Element must be resolved here, otherwise we have a bug
+      if (instanceResolvedType === undefined) {
+        log.warn('Expected type of Element %s to be resolved. Type elemID: %s. Returning Element with non fully resolved type.', element.elemID.getFullName(), element.refType.elemID.getFullName())
         return element
       }
+      // If the type of the Element is resolved, simply set the type on the instance
+      element.refType.type = instanceResolvedType
+      return element
     }
-    // Resolve the instance / type alongside the already resolved types
-    (await expressions.resolve(
-      ([] as Element[]).concat(element, Object.values(resolvedTypes)),
-      elementsSource,
-      {
-        shouldCloneElements: false,
-        shouldResolveReferences: false,
-      }
-    )).filter(isType)
-      .forEach(typeElement => {
-        resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
-      })
+    // We should never reach here. otherwise we have a bug
+    log.warn('Did not fully resolve type of Element %s.', element.elemID.getFullName())
     return element
   }
   return {
     get: getResolved,
-    getAll: async () => {
-      const [typeElements, rest] = _.partition(
-        await awu(await elementsSource.getAll())
-          .filter(isElement)
-          .toArray(),
-        isType,
-      );
-      // Resolve all the types together for better performance
-      (await expressions.resolve(
-        typeElements,
-        elementsSource,
-        {
-          shouldResolveReferences: false,
-        }
-      )).filter(isType)
-        .forEach(typeElement => {
-          resolvedTypes.set(typeElement.elemID.getFullName(), typeElement)
-        })
-      return awu(([] as Element[])
-        .concat(
-          await awu(rest).map(element => getResolved(element.elemID)).toArray(),
-          Array.from(resolvedTypes.values()),
-        ))
-    },
+    getAll: async () => awu(await elementsSource.getAll())
+      .map(element => getResolved(element.elemID)),
     list: elementsSource.list,
     has: elementsSource.has,
   }

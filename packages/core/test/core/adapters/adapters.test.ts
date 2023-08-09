@@ -22,7 +22,7 @@ import {
   AdapterOperationsContext,
   Adapter,
   ReadOnlyElementsSource,
-  isObjectType,
+  isObjectType, TypeElement, Field, isType,
 } from '@salto-io/adapter-api'
 import * as utils from '@salto-io/adapter-utils'
 import { buildElementsSourceFromElements, createDefaultInstanceFromType } from '@salto-io/adapter-utils'
@@ -306,9 +306,10 @@ describe('adapters.ts', () => {
   describe('createResolvedTypesElementsSource', () => {
     const ADAPTER = 'salesforce'
 
-    let type: ObjectType
-    let innerType: ObjectType
-    let innerInnerType: ObjectType
+    let type: TypeElement
+    let innerType: TypeElement
+    let innerInnerType: TypeElement
+    let field: Field
     let instance: InstanceElement
     let elementsSource: ReadOnlyElementsSource
 
@@ -328,9 +329,11 @@ describe('adapters.ts', () => {
           field: { refType: innerType },
         },
       })
+      field = type.fields.field
       instance = new InstanceElement('TestInstance', type)
       elementsSource = createResolvedTypesElementsSource(utils.buildElementsSourceFromElements([
         type,
+        field,
         innerType,
         innerInnerType,
         instance,
@@ -338,38 +341,32 @@ describe('adapters.ts', () => {
     })
 
     describe('get', () => {
-      describe('when element is ObjectType', () => {
-        it('should return recursively resolved type', async () => {
-          const resolvedType = await elementsSource.get(type.elemID) as ObjectType
-          const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
-          const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
-          expect([resolvedType, resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isObjectType)
-        })
-        describe('when element was already resolved before', () => {
-          it('should invoke expressions.resolve once', async () => {
-            await elementsSource.get(type.elemID)
-            await elementsSource.get(type.elemID)
-            expect(jest.isMockFunction(expressions.resolve)).toBeTrue()
-            expect(resolveSpy).toHaveBeenCalledOnce()
-          })
-        })
+      it('should return fully resolved TypeElement', async () => {
+        const resolvedType = await elementsSource.get(type.elemID) as ObjectType
+        const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
+        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
+        expect([resolvedType, resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isType)
       })
-      describe('when element is InstanceElement', () => {
-        it('should return instance with resolved type', async () => {
-          const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
-          const resolvedType = resolvedInstance.refType.type as ObjectType
-          expect(isObjectType(resolvedType)).toBeTrue()
-          const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
-          expect(isObjectType(resolvedInnerType)).toBeTrue()
-          const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
-          expect(isObjectType(resolvedInnerInnerType)).toBeTrue()
-        })
+      it('should return Field with fully resolved type', async () => {
+        const resolvedField = await elementsSource.get(field.elemID) as Field
+        const resolvedInnerType = resolvedField.refType.type as ObjectType
+        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
+        expect([resolvedInnerType, resolvedInnerInnerType]).toSatisfyAll(isType)
+      })
+      it('should return Instance with fully resolved type', async () => {
+        const resolvedInstance = await elementsSource.get(instance.elemID) as InstanceElement
+        const resolvedType = resolvedInstance.refType.type as ObjectType
+        expect(isObjectType(resolvedType)).toBeTrue()
+        const resolvedInnerType = resolvedType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedInnerType)).toBeTrue()
+        const resolvedInnerInnerType = resolvedInnerType.fields.field.refType.type as ObjectType
+        expect(isObjectType(resolvedInnerInnerType)).toBeTrue()
       })
     })
     describe('getAll', () => {
-      it('should return all elements with resolved types', async () => {
+      it('should return all elements with resolved types, and resolve all the types ones', async () => {
         const resolvedElements = await toArrayAsync(await elementsSource.getAll())
-        expect(resolvedElements).toHaveLength(4)
+        expect(resolvedElements).toHaveLength(5)
         const resolvedElementsByElemId = _.keyBy(
           resolvedElements,
           element => element.elemID.getFullName(),
@@ -378,9 +375,13 @@ describe('adapters.ts', () => {
         const resolvedInnerType = resolvedElementsByElemId[innerType.elemID.getFullName()] as ObjectType
         const resolvedInnerInnerType = resolvedElementsByElemId[innerInnerType.elemID.getFullName()] as ObjectType
         const resolvedInstance = resolvedElementsByElemId[instance.elemID.getFullName()] as InstanceElement
+        const resolvedField = resolvedElementsByElemId[field.elemID.getFullName()] as Field
         expect(resolvedInnerType.fields.field.refType.type).toEqual(resolvedInnerInnerType)
         expect(resolvedType.fields.field.refType.type).toEqual(resolvedInnerType)
         expect(resolvedInstance.refType.type).toEqual(resolvedType)
+        expect(resolvedField.refType.type).toEqual(resolvedInnerType)
+        // Verify that expressions.resolve was invoked once for the whole process
+        expect(resolveSpy).toHaveBeenCalledOnce()
       })
     })
     describe('list', () => {
@@ -391,6 +392,7 @@ describe('adapters.ts', () => {
           innerType.elemID,
           innerInnerType.elemID,
           instance.elemID,
+          field.elemID,
         ])
       })
     })

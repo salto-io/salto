@@ -19,27 +19,25 @@ import { WALK_NEXT_STEP, WalkOnFunc, walkOnElement } from '@salto-io/adapter-uti
 import { isFileInstance } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
-const fileIsReferenced = (
+const getUnreferencedFilesFullNames = (
+  files: InstanceElement[],
   instances: InstanceElement[],
-  file: InstanceElement
-): boolean => {
-  const fullName = file.elemID.getFullName()
-  let answer = false
+): Set<string> => {
+  const unreferencedFilesFullNames = new Set(files.map(file => file.elemID.getFullName()))
 
   const func: WalkOnFunc = ({ value }) => {
-    if (isReferenceExpression(value) && value.elemID.createTopLevelParentID().parent.getFullName() === fullName) {
-      answer = true
-      return WALK_NEXT_STEP.EXIT
+    if (isReferenceExpression(value)) {
+      unreferencedFilesFullNames.delete(value.elemID.createTopLevelParentID().parent.getFullName())
+      if (unreferencedFilesFullNames.size === 0) {
+        return WALK_NEXT_STEP.EXIT
+      }
+      return WALK_NEXT_STEP.SKIP
     }
     return WALK_NEXT_STEP.RECURSE
   }
 
-  return instances.some(element => {
-    if (!file.isEqual(element)) {
-      walkOnElement({ element, func })
-    }
-    return answer
-  })
+  instances.forEach(element => walkOnElement({ element, func }))
+  return unreferencedFilesFullNames
 }
 const changeValidator: NetsuiteChangeValidator = async changes => {
   const instanceElementChanges = changes
@@ -50,8 +48,16 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
     .map(getChangeData)
     .filter(isFileInstance)
 
+  if (fileAdditions.length === 0) {
+    return []
+  }
+
+  const unreferencedFilesFullNames = getUnreferencedFilesFullNames(
+    fileAdditions, instanceElementChanges.map(getChangeData)
+  )
+
   return fileAdditions
-    .filter(file => !fileIsReferenced(instanceElementChanges.map(getChangeData), file))
+    .filter(file => unreferencedFilesFullNames.has(file.elemID.getFullName()))
     .map(({ elemID }): ChangeError => ({
       elemID,
       severity: 'Warning',

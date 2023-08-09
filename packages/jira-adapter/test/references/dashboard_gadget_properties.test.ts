@@ -57,7 +57,7 @@ describe('DashboardGadgetReferences', () => {
             { key: 'filterId', value: '123' },
             { key: 'projectOrFilterId', value: 'project-123' },
             { key: 'projectOrFilterId', value: 'filter-123' },
-            { key: 'statType', value: 'customfield_123' }
+            { key: 'statType', value: 'customfield_123' },
           ],
         },
       },

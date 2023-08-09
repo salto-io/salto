@@ -14,14 +14,14 @@
 * limitations under the License.
 */
 
-import { InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, ChangeError, isInstanceChange, isReferenceExpression } from '@salto-io/adapter-api'
+import { InstanceElement, getChangeData, isAdditionChange, isAdditionOrModificationChange, ChangeError, isReferenceExpression, ChangeDataType, isInstanceElement } from '@salto-io/adapter-api'
 import { WALK_NEXT_STEP, WalkOnFunc, walkOnElement } from '@salto-io/adapter-utils'
 import { isFileInstance } from '../types'
 import { NetsuiteChangeValidator } from './types'
 
 const getUnreferencedFilesFullNames = (
   files: InstanceElement[],
-  instances: InstanceElement[],
+  changesData: ChangeDataType[],
 ): Set<string> => {
   const unreferencedFilesFullNames = new Set(files.map(file => file.elemID.getFullName()))
 
@@ -36,16 +36,17 @@ const getUnreferencedFilesFullNames = (
     return WALK_NEXT_STEP.RECURSE
   }
 
-  instances.forEach(element => walkOnElement({ element, func }))
+  changesData.forEach(element => walkOnElement({ element, func }))
   return unreferencedFilesFullNames
 }
+
 const changeValidator: NetsuiteChangeValidator = async changes => {
-  const instanceElementChanges = changes
+  const additionAndModificationChanges = changes
     .filter(isAdditionOrModificationChange)
-    .filter(isInstanceChange)
-  const fileAdditions = instanceElementChanges
+  const fileAdditions = additionAndModificationChanges
     .filter(isAdditionChange)
     .map(getChangeData)
+    .filter(isInstanceElement)
     .filter(isFileInstance)
 
   if (fileAdditions.length === 0) {
@@ -53,7 +54,7 @@ const changeValidator: NetsuiteChangeValidator = async changes => {
   }
 
   const unreferencedFilesFullNames = getUnreferencedFilesFullNames(
-    fileAdditions, instanceElementChanges.map(getChangeData)
+    fileAdditions, additionAndModificationChanges.map(getChangeData)
   )
 
   return fileAdditions

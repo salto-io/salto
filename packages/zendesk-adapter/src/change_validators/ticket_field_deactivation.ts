@@ -125,7 +125,7 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
         elemID: ticketField.elemID,
         severity: 'Warning',
         message: 'Deactivation of a ticket field',
-        detailedMessage: 'This ticket field may be a conditional ticket field of an omitted deactivated ticket form, if true, the deployment will fail',
+        detailedMessage: 'This may be a conditional ticket field of a deactivated ticket form, if true, the deployment will fail',
       }))
       : []
 
@@ -139,7 +139,7 @@ export const ticketFieldDeactivationValidator: (apiConfig: ZendeskApiConfig)
         elemID: ticketField.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: `This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ${usingTicketForms.join(', ')}`,
+        detailedMessage: `Cannot remove this ticket field because it is configured as a conditional field in the following ticket forms: ${usingTicketForms.join(', ')}`,
       }
     }).filter(isDefined)
 

@@ -101,13 +101,13 @@ describe('ticketFieldDeactivationValidator', () => {
         elemID: ticketField1.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ticketForm1, ticketForm2',
+        detailedMessage: 'Cannot remove this ticket field because it is configured as a conditional field in the following ticket forms: ticketForm1, ticketForm2',
       },
       {
         elemID: ticketField2.elemID,
         severity: 'Error',
         message: 'Deactivation of a conditional ticket field',
-        detailedMessage: 'This ticket field is a conditional ticket field of ticket forms, and cannot be removed. The ticket forms are: ticketForm1, ticketForm2',
+        detailedMessage: 'Cannot remove this ticket field because it is configured as a conditional field in the following ticket forms: ticketForm1, ticketForm2',
       },
     ])
   })
@@ -130,13 +130,13 @@ describe('ticketFieldDeactivationValidator', () => {
         elemID: ticketField1.elemID,
         severity: 'Warning',
         message: 'Deactivation of a ticket field',
-        detailedMessage: 'This ticket field may be a conditional ticket field of an omitted deactivated ticket form, if true, the deployment will fail',
+        detailedMessage: 'This may be a conditional ticket field of a deactivated ticket form, if true, the deployment will fail',
       },
       {
         elemID: ticketField2.elemID,
         severity: 'Warning',
         message: 'Deactivation of a ticket field',
-        detailedMessage: 'This ticket field may be a conditional ticket field of an omitted deactivated ticket form, if true, the deployment will fail',
+        detailedMessage: 'This may be a conditional ticket field of a deactivated ticket form, if true, the deployment will fail',
       },
     ])
   })

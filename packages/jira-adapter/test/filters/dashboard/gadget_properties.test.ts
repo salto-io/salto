@@ -240,13 +240,14 @@ describe('gadgetPropertiesFilter', () => {
       await filter.preDeploy(changes)
       await filter.onDeploy(changes)
       const relevantChange = changes.find(
-        change => getChangeData(change).elemID.getFullName() === instance.elemID.getFullName()
+        change => getChangeData(change).elemID.getFullName() === inst.elemID.getFullName()
       ) as AdditionChange<InstanceElement>
-      // TODO complete
-      // expect((relevantChange?.data?.after.value.properties[0].values.value[0] as ReferenceExpression)
-      //   .elemID.getFullName()).toEqual(filterInst.elemID.getFullName())
-      // expect((relevantChange.data.after.annotations[CORE_ANNOTATIONS.PARENT][0] as ReferenceExpression)
-      //   .elemID.getFullName()).toEqual(dashboard.elemID.getFullName())
+      expect(getChangeData(relevantChange).annotations[CORE_ANNOTATIONS.PARENT]).toEqual(
+        [new ReferenceExpression(dashboard.elemID, dashboard)]
+      )
+      expect(getChangeData(relevantChange).value.properties[0].values[0].value).toEqual(
+        new ReferenceExpression(filterInst.elemID, filterInst)
+      )
     })
   })
 })

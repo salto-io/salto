@@ -75,8 +75,8 @@ export const duplicateIdFieldValuesValidator = (
         ? {
           elemID: instance.elemID,
           severity: 'Error',
-          message: 'Duplicate unique field values',
-          detailedMessage: `This element has the same unique fields as '${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}', deploying it will cause Salto collisions, please make sure this is not an existing modified element`,
+          message: `${typeName} duplication detected`,
+          detailedMessage: `This ${typeName} cannot be deployed as it is a duplicate of '${instancesWithSameIdFields.map(i => i.elemID.name).join(', ')}'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the 'Regenerate Salto IDs' option in the advanced settings.`,
         }
         : undefined
     }).filter(isDefined)

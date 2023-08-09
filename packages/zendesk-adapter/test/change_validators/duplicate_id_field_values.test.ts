@@ -83,20 +83,20 @@ describe('duplicateIdFieldValuesValidator', () => {
       {
         elemID: duplicateGroup1.elemID,
         severity: 'Error',
-        message: 'Duplicate unique field values',
-        detailedMessage: 'This element has the same unique fields as \'duplicate2\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
+        message: 'group duplication detected',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate2\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
       },
       {
         elemID: duplicateGroup3.elemID,
         severity: 'Error',
-        message: 'Duplicate unique field values',
-        detailedMessage: 'This element has the same unique fields as \'duplicate4, duplicate5\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
+        message: 'group duplication detected',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate4, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
       },
       {
         elemID: duplicateGroup4.elemID,
         severity: 'Error',
-        message: 'Duplicate unique field values',
-        detailedMessage: 'This element has the same unique fields as \'duplicate3, duplicate5\', deploying it will cause Salto collisions, please make sure this is not an existing modified element',
+        message: 'group duplication detected',
+        detailedMessage: 'This group cannot be deployed as it is a duplicate of \'duplicate3, duplicate5\'. This likely indicates a misalignment of Salto IDs. To address this, please execute a fetch on both the source and target environments. Ensure you select the \'Regenerate Salto IDs\' option in the advanced settings.',
       },
     ])
   })

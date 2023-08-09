@@ -13,7 +13,16 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-import { Field, isElement, Value, Element, ReferenceExpression, ElemID, isInstanceElement, InstanceElement } from '@salto-io/adapter-api'
+import {
+  Field,
+  isElement,
+  Value,
+  Element,
+  ReferenceExpression,
+  ElemID,
+  isInstanceElement,
+  InstanceElement,
+} from '@salto-io/adapter-api'
 import { references as referenceUtils } from '@salto-io/adapter-components'
 import { GetLookupNameFunc, GetLookupNameFuncArgs } from '@salto-io/adapter-utils'
 import _ from 'lodash'
@@ -21,17 +30,48 @@ import { logger } from '@salto-io/logging'
 import { collections } from '@salto-io/lowerdash'
 import { apiName } from './transformer'
 import {
-  LAYOUT_ITEM_METADATA_TYPE, WORKFLOW_FIELD_UPDATE_METADATA_TYPE, CUSTOM_OBJECT, API_NAME_SEPARATOR,
-  WORKFLOW_ACTION_REFERENCE_METADATA_TYPE, CPQ_LOOKUP_FIELD, CPQ_LOOKUP_QUERY, CPQ_PRICE_RULE,
-  CPQ_SOURCE_LOOKUP_FIELD, CPQ_PRICE_ACTION, CPQ_LOOKUP_PRODUCT_FIELD, CPQ_PRODUCT_RULE,
-  CPQ_LOOKUP_MESSAGE_FIELD, CPQ_LOOKUP_REQUIRED_FIELD, CPQ_LOOKUP_TYPE_FIELD, CUSTOM_FIELD,
-  CPQ_LOOKUP_OBJECT_NAME, CPQ_RULE_LOOKUP_OBJECT_FIELD, CPQ_OBJECT_NAME, CPQ_FIELD_METADATA,
-  VALIDATION_RULES_METADATA_TYPE, RECORD_TYPE_METADATA_TYPE, BUSINESS_PROCESS_METADATA_TYPE,
-  WEBLINK_METADATA_TYPE, SUMMARY_LAYOUT_ITEM_METADATA_TYPE, CPQ_CUSTOM_SCRIPT, CPQ_QUOTE_FIELDS,
-  CPQ_CONSUMPTION_RATE_FIELDS, CPQ_CONSUMPTION_SCHEDULE_FIELDS, CPQ_GROUP_FIELDS,
-  CPQ_QUOTE_LINE_FIELDS, DEFAULT_OBJECT_TO_API_MAPPING, SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
-  TEST_OBJECT_TO_API_MAPPING, CPQ_TESTED_OBJECT, CPQ_PRICE_SCHEDULE, CPQ_DISCOUNT_SCHEDULE,
-  CPQ_CONFIGURATION_ATTRIBUTE, CPQ_DEFAULT_OBJECT_FIELD, CPQ_QUOTE, CPQ_CONSTRAINT_FIELD, CUSTOM_LABEL_METADATA_TYPE,
+  LAYOUT_ITEM_METADATA_TYPE,
+  WORKFLOW_FIELD_UPDATE_METADATA_TYPE,
+  CUSTOM_OBJECT,
+  API_NAME_SEPARATOR,
+  WORKFLOW_ACTION_REFERENCE_METADATA_TYPE,
+  CPQ_LOOKUP_FIELD,
+  CPQ_LOOKUP_QUERY,
+  CPQ_PRICE_RULE,
+  CPQ_SOURCE_LOOKUP_FIELD,
+  CPQ_PRICE_ACTION,
+  CPQ_LOOKUP_PRODUCT_FIELD,
+  CPQ_PRODUCT_RULE,
+  CPQ_LOOKUP_MESSAGE_FIELD,
+  CPQ_LOOKUP_REQUIRED_FIELD,
+  CPQ_LOOKUP_TYPE_FIELD,
+  CUSTOM_FIELD,
+  CPQ_LOOKUP_OBJECT_NAME,
+  CPQ_RULE_LOOKUP_OBJECT_FIELD,
+  CPQ_OBJECT_NAME,
+  CPQ_FIELD_METADATA,
+  VALIDATION_RULES_METADATA_TYPE,
+  RECORD_TYPE_METADATA_TYPE,
+  BUSINESS_PROCESS_METADATA_TYPE,
+  WEBLINK_METADATA_TYPE,
+  SUMMARY_LAYOUT_ITEM_METADATA_TYPE,
+  CPQ_CUSTOM_SCRIPT,
+  CPQ_QUOTE_FIELDS,
+  CPQ_CONSUMPTION_RATE_FIELDS,
+  CPQ_CONSUMPTION_SCHEDULE_FIELDS,
+  CPQ_GROUP_FIELDS,
+  CPQ_QUOTE_LINE_FIELDS,
+  DEFAULT_OBJECT_TO_API_MAPPING,
+  SCHEDULE_CONTRAINT_FIELD_TO_API_MAPPING,
+  TEST_OBJECT_TO_API_MAPPING,
+  CPQ_TESTED_OBJECT,
+  CPQ_PRICE_SCHEDULE,
+  CPQ_DISCOUNT_SCHEDULE,
+  CPQ_CONFIGURATION_ATTRIBUTE,
+  CPQ_DEFAULT_OBJECT_FIELD,
+  CPQ_QUOTE,
+  CPQ_CONSTRAINT_FIELD,
+  CUSTOM_LABEL_METADATA_TYPE,
 } from '../constants'
 
 const log = logger(module)
@@ -809,7 +849,10 @@ export const generateReferenceResolverFinder = (
   ]).filter(resolver => resolver.match(field, element)).toArray())
 }
 
-const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc => {
+const getLookUpNameImpl = ({ defs, resolveToElementFallback }: {
+  defs: FieldReferenceDefinition[]
+  resolveToElementFallback: boolean
+}): GetLookupNameFunc => {
   const resolverFinder = generateReferenceResolverFinder(defs)
 
   const determineLookupStrategy = async (args: GetLookupNameFuncArgs):
@@ -849,7 +892,18 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
       }
       if (isElement(ref.value)) {
         const defaultStrategy = ReferenceSerializationStrategyLookup.absoluteApiName
-        return await defaultStrategy.serialize({ ref, element }) ?? ref.value
+        const resolvedValue = await defaultStrategy.serialize({ ref, element })
+        if (resolvedValue !== undefined) {
+          return resolvedValue
+        }
+        if (resolveToElementFallback) {
+          // We want to return the referenced Element in that case, which will be handled later in the deployment flow.
+          // This is relevant for ADD_CUSTOM_APPROVAL_RULE_AND_CONDITION_GROUP deploy group
+          // and also for the case of Data Records that reference the same type (and are deployed in the same group)
+          return ref.value
+        }
+        log.warn('could not resolve reference to %s in path %s, resolving to undefined', ref.elemID.getFullName(), path?.getFullName())
+        return undefined
       }
     }
     return ref.value
@@ -859,4 +913,8 @@ const getLookUpNameImpl = (defs = fieldNameToTypeMappingDefs): GetLookupNameFunc
 /**
  * Translate a reference expression back to its original value before deploy.
  */
-export const getLookUpName = getLookUpNameImpl(fieldNameToTypeMappingDefs)
+export const getLookUpName = getLookUpNameImpl({ defs: fieldNameToTypeMappingDefs, resolveToElementFallback: false })
+export const getLookupNameWithFallbackToElement = getLookUpNameImpl({
+  defs: fieldNameToTypeMappingDefs,
+  resolveToElementFallback: true,
+})

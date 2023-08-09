@@ -18,9 +18,26 @@ import axiosRetry from 'axios-retry'
 import { AccountInfo } from '@salto-io/adapter-api'
 import { client as clientUtils } from '@salto-io/adapter-components'
 import { logger } from '@salto-io/logging'
+import Joi from 'joi'
+import { createSchemeGuard } from '@salto-io/adapter-utils'
 import { Credentials, isOauthAccessTokenCredentials, OauthAccessTokenCredentials, UsernamePasswordCredentials } from '../auth'
 
 const log = logger(module)
+type AccountRes = {
+  data: {
+    account: {
+      sandbox: boolean
+    }
+  }
+}
+
+const EXPECTED_VALID_ACCOUNT_RES = Joi.object({
+  data: Joi.object({
+    account: Joi.object({
+      sandbox: Joi.boolean().required(),
+    }).unknown(true).required(),
+  }).unknown(true).required(),
+}).unknown(true).required()
 
 export const instanceUrl = (subdomain: string, domain?: string): string => (
   domain === undefined ? `https://${subdomain}.zendesk.com` : `https://${subdomain}.${domain}`
@@ -39,18 +56,25 @@ export const APP_MARKETPLACE_HEADERS = {
   'X-Zendesk-Marketplace-App-Id': MARKETPLACE_APP_ID,
 }
 
+const isValidAccountRes = createSchemeGuard<AccountRes>(EXPECTED_VALID_ACCOUNT_RES, 'Received an invalid current account response')
+
 export const validateCredentials = async ({ credentials, connection }: {
   credentials: Credentials
   connection: clientUtils.APIConnection
 }): Promise<AccountInfo> => {
   try {
-    await connection.get('/api/v2/account/settings')
+    const res = await connection.get('/api/v2/account')
+    const accountId = instanceUrl(credentials.subdomain, credentials.domain)
+    if (isValidAccountRes(res)) {
+      const isProduction = !res.data.account.sandbox
+      return { accountId, isProduction }
+    }
+    log.warn('res is not valid for /api/v2/account, could not find if account is production')
+    return { accountId }
   } catch (e) {
     log.error('Failed to validate credentials: %s', e)
     throw new clientUtils.UnauthorizedError(e)
   }
-  const accountId = instanceUrl(credentials.subdomain, credentials.domain)
-  return { accountId }
 }
 
 const usernamePasswordAuthParamsFunc = (

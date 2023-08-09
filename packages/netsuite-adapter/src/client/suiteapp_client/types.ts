@@ -123,7 +123,7 @@ export const SYSTEM_INFORMATION_SCHEME = {
       properties: {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
         envType: {
-          type: 'number',
+          type: 'string',
           enum: [EnvType.PRODUCTION, EnvType.SANDBOX, EnvType.BETA, EnvType.INTERNAL],
         },
       },
@@ -135,11 +135,7 @@ export const SYSTEM_INFORMATION_SCHEME = {
         ...BASIC_SYSTEM_INFO_SCHEME_PROPERTIES,
       },
       required: ['time', 'appVersion'],
-      additionalProperties: {
-        not: {
-          required: ['envType'], // Ensure that envType is not present in this case
-        },
-      },
+      additionalProperties: false,
     },
   ],
   additionalProperties: true,
